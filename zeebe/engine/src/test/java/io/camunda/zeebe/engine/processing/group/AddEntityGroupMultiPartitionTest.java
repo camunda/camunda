@@ -51,7 +51,9 @@ public class AddEntityGroupMultiPartitionTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     assertThat(
@@ -113,7 +115,9 @@ public class AddEntityGroupMultiPartitionTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // then
@@ -143,7 +147,9 @@ public class AddEntityGroupMultiPartitionTest {
 
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // Increase time to trigger a redistribution

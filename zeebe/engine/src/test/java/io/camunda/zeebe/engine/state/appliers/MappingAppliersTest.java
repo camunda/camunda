@@ -154,14 +154,16 @@ public class MappingAppliersTest {
     tenantState.createTenant(tenant);
     tenantState.addEntity(tenant);
     // create group
-    final long groupKey = 4L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     mappingState.addGroup(mappingKey, groupKey);
     final var group =
         new GroupRecord()
             .setGroupKey(groupKey)
+            .setGroupId(groupId)
             .setEntityKey(mappingKey)
             .setEntityType(EntityType.MAPPING);
-    groupState.create(groupKey, group);
+    groupState.create(group);
     groupState.addEntity(groupKey, group);
     // create authorization
     authorizationState.create(

@@ -49,7 +49,9 @@ public class RemoveEntityGroupMultiPartitionTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     engine
         .group()
@@ -117,7 +119,9 @@ public class RemoveEntityGroupMultiPartitionTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     engine
         .group()
@@ -153,7 +157,9 @@ public class RemoveEntityGroupMultiPartitionTest {
 
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     engine
         .group()

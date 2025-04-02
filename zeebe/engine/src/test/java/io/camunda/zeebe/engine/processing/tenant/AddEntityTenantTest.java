@@ -113,7 +113,9 @@ public class AddEntityTenantTest {
   public void shouldAddGroupToTenant() {
     // given
     final var entityType = GROUP;
-    final var entityKey = createGroup();
+    final var groupId = "123";
+    final var entityKey = Long.parseLong(groupId);
+    createGroup(groupId);
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine
@@ -224,8 +226,14 @@ public class AddEntityTenantTest {
         .getValue();
   }
 
-  private long createGroup() {
-    return engine.group().newGroup("groupName").create().getValue().getGroupKey();
+  private long createGroup(final String groupId) {
+    return engine
+        .group()
+        .newGroup("groupName")
+        .withGroupId(groupId)
+        .create()
+        .getValue()
+        .getGroupKey();
   }
 
   private String createMapping() {

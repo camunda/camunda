@@ -39,7 +39,9 @@ public class DeleteGroupMultiPartitionTest {
   public void shouldDistributeGroupDeleteCommand() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().deleteGroup(groupKey).delete();
 
     assertThat(
@@ -92,7 +94,9 @@ public class DeleteGroupMultiPartitionTest {
   public void shouldDistributeInIdentityQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().deleteGroup(groupKey).delete();
 
     // then
@@ -111,7 +115,9 @@ public class DeleteGroupMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptGroupCreateForPartition(partitionId);
     }
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().deleteGroup(groupKey).delete();
 
     // Increase time to trigger a redistribution

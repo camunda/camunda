@@ -1048,6 +1048,8 @@ public class CompactRecordLogger {
     builder
         .append("Key=")
         .append(shortenKey(value.getGroupKey()))
+        .append(", Id=")
+        .append(formatId(value.getGroupId()))
         .append(", Name=")
         .append(formatId(value.getName()))
         .append(", EntityKey=")

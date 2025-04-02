@@ -15,11 +15,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -31,40 +31,46 @@ public class GroupTest {
   @Test
   public void shouldCreateGroup() {
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
 
     final var createdGroup = groupRecord.getValue();
     assertThat(createdGroup).hasName(name);
+    assertThat(createdGroup).hasGroupId(groupId);
   }
 
-  @Ignore("Re-enable with https://github.com/camunda/camunda/issues/30022")
   @Test
   public void shouldNotDuplicate() {
     // given
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when
-    final var duplicatedGroupRecord = engine.group().newGroup(name).expectRejection().create();
+    final var duplicatedGroupRecord =
+        engine.group().newGroup(name).withGroupId(groupId).expectRejection().create();
 
     final var createdGroup = groupRecord.getValue();
     Assertions.assertThat(createdGroup).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    Assertions.assertThat(createdGroup).isNotNull().hasFieldOrPropertyWithValue("groupId", groupId);
 
     assertThat(duplicatedGroupRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to create group with name '%s', but a group with this name already exists."
-                .formatted(name));
+            "Expected to create group with ID '%s', but a group with this ID already exists."
+                .formatted(groupId));
   }
 
   @Test
   public void shouldUpdateGroup() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30024
     // given
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when
-    final var groupKey = groupRecord.getKey();
     final var updatedName = name + "-updated";
     final var updatedGroupRecord =
         engine.group().updateGroup(groupKey).withName(updatedName).update();
@@ -75,6 +81,7 @@ public class GroupTest {
 
   @Test
   public void shouldRejectUpdatedIfNoGroupExists() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30024
     // when
     final var groupKey = 1L;
     final var updatedName = "yolo";
@@ -91,7 +98,10 @@ public class GroupTest {
 
   @Test
   public void shouldAddEntityToGroup() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30028
     // given
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
     final var userKey =
         engine
             .user()
@@ -102,7 +112,7 @@ public class GroupTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    engine.group().newGroup(name).withGroupId(groupId).create().getValue().getGroupKey();
 
     // when
     final var updatedGroup =
@@ -120,6 +130,7 @@ public class GroupTest {
 
   @Test
   public void shouldRejectIfGroupIsNotPresentWhileAddingEntity() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30028
     // when
     final var notPresentGroupKey = 1L;
     final var notPresentUpdateRecord =
@@ -135,13 +146,15 @@ public class GroupTest {
 
   @Test
   public void shouldRejectIfEntityIsNotPresent() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30028
     // given
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when
     final var createdGroup = groupRecord.getValue();
-    final var groupKey = createdGroup.getGroupKey();
     final var notPresentUpdateRecord =
         engine
             .group()
@@ -162,10 +175,12 @@ public class GroupTest {
 
   @Test
   public void shouldRejectIfEntityIsAlreadyAssigned() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30028
     // given
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
-    final var groupKey = groupRecord.getValue().getGroupKey();
+    engine.group().newGroup(name).withGroupId(groupId).create();
     final var userKey =
         engine
             .user()
@@ -197,7 +212,10 @@ public class GroupTest {
 
   @Test
   public void shouldRemoveEntityToGroup() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30029
     // given
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
     final var userKey =
         engine
             .user()
@@ -208,7 +226,7 @@ public class GroupTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // when
@@ -230,6 +248,7 @@ public class GroupTest {
 
   @Test
   public void shouldRejectIfGroupIsNotPresentEntityRemoval() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30029
     // when
     final var notPresentGroupKey = 1L;
     final var notPresentUpdateRecord =
@@ -245,13 +264,15 @@ public class GroupTest {
 
   @Test
   public void shouldRejectIfEntityIsNotPresentEntityRemoval() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30029
     // given
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when
     final var createdGroup = groupRecord.getValue();
-    final var groupKey = createdGroup.getGroupKey();
     final var notPresentUpdateRecord =
         engine
             .group()
@@ -272,9 +293,12 @@ public class GroupTest {
 
   @Test
   public void shouldDeleteGroup() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30025
     // given
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when
     final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();
@@ -285,7 +309,10 @@ public class GroupTest {
 
   @Test
   public void shouldDeleteGroupWithAssignedEntities() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30025
     // given
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
     final var userKey =
         engine
             .user()
@@ -296,7 +323,7 @@ public class GroupTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    engine.group().newGroup(name).withGroupId(groupId).create().getValue().getGroupKey();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // when
@@ -317,6 +344,7 @@ public class GroupTest {
 
   @Test
   public void shouldRejectIfGroupIsNotPresentOnDeletion() {
+    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30025
     // when
     final var notPresentGroupKey = 1L;
     final var notPresentUpdateRecord =

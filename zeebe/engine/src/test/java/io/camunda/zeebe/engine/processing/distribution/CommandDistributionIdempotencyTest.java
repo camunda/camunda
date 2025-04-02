@@ -83,6 +83,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -258,7 +259,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.GROUP,
                 GroupIntent.CREATE,
-                CommandDistributionIdempotencyTest::createGroup),
+                () -> createGroup(Strings.newRandomValidIdentityId())),
             GroupCreateProcessor.class
           },
           {
@@ -267,8 +268,11 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.DELETE,
                 () -> {
-                  final var group = createGroup();
-                  return ENGINE.group().deleteGroup(group.getKey()).delete();
+                  // TODO: refactor with https://github.com/camunda/camunda/issues/30025
+                  final var groupId = "456";
+                  final var groupKey = Long.parseLong(groupId);
+                  createGroup(groupId);
+                  return ENGINE.group().deleteGroup(groupKey).delete();
                 }),
             GroupDeleteProcessor.class
           },
@@ -278,10 +282,13 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.UPDATE,
                 () -> {
-                  final var group = createGroup();
+                  // TODO: refactor with https://github.com/camunda/camunda/issues/30024
+                  final var groupId = "789";
+                  final var groupKey = Long.parseLong(groupId);
+                  createGroup(groupId);
                   return ENGINE
                       .group()
-                      .updateGroup(group.getKey())
+                      .updateGroup(groupKey)
                       .withName(UUID.randomUUID().toString())
                       .update();
                 }),
@@ -293,11 +300,14 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.ADD_ENTITY,
                 () -> {
-                  final var group = createGroup();
+                  // TODO: refactor with https://github.com/camunda/camunda/issues/30028
+                  final var groupId = "321";
+                  final var groupKey = Long.parseLong(groupId);
+                  createGroup(groupId);
                   final var user = createUser();
                   return ENGINE
                       .group()
-                      .addEntity(group.getKey())
+                      .addEntity(groupKey)
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .add();
@@ -310,17 +320,20 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.REMOVE_ENTITY,
                 () -> {
-                  final var group = createGroup();
+                  // TODO: refactor with https://github.com/camunda/camunda/issues/30029
+                  final var groupId = "654";
+                  final var groupKey = Long.parseLong(groupId);
+                  createGroup(groupId);
                   final var user = createUser();
                   ENGINE
                       .group()
-                      .addEntity(group.getKey())
+                      .addEntity(groupKey)
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .add();
                   return ENGINE
                       .group()
-                      .removeEntity(group.getKey())
+                      .removeEntity(groupKey)
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .remove();
@@ -669,8 +682,8 @@ public class CommandDistributionIdempotencyTest {
         .create();
   }
 
-  private static Record<GroupRecordValue> createGroup() {
-    return ENGINE.group().newGroup(UUID.randomUUID().toString()).create();
+  private static Record<GroupRecordValue> createGroup(final String groupId) {
+    return ENGINE.group().newGroup(UUID.randomUUID().toString()).withGroupId(groupId).create();
   }
 
   private static Record<RoleRecordValue> createRole() {

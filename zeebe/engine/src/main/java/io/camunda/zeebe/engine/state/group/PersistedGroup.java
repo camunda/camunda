@@ -22,17 +22,22 @@ import java.util.stream.StreamSupport;
 public class PersistedGroup extends UnpackedObject implements DbValue {
 
   private final LongProperty groupKeyProp = new LongProperty("groupKey");
+  private final StringProperty groupIdProp = new StringProperty("groupId");
   private final StringProperty nameProp = new StringProperty("name");
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>("tenantIds", StringValue::new);
 
   public PersistedGroup() {
-    super(3);
-    declareProperty(groupKeyProp).declareProperty(nameProp).declareProperty(tenantIdsProp);
+    super(4);
+    declareProperty(groupKeyProp)
+        .declareProperty(groupIdProp)
+        .declareProperty(nameProp)
+        .declareProperty(tenantIdsProp);
   }
 
   public void wrap(final GroupRecord group) {
     groupKeyProp.setValue(group.getGroupKey());
+    groupIdProp.setValue(group.getGroupId());
     nameProp.setValue(group.getNameBuffer());
     tenantIdsProp.reset();
   }
@@ -43,6 +48,15 @@ public class PersistedGroup extends UnpackedObject implements DbValue {
 
   public PersistedGroup setGroupKey(final long groupKey) {
     groupKeyProp.setValue(groupKey);
+    return this;
+  }
+
+  public String getGroupId() {
+    return BufferUtil.bufferAsString(groupIdProp.getValue());
+  }
+
+  public PersistedGroup setGroupId(final String groupId) {
+    groupIdProp.setValue(groupId);
     return this;
   }
 

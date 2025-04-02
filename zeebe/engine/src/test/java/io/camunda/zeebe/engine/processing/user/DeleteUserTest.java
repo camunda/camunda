@@ -20,6 +20,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -47,6 +48,7 @@ public class DeleteUserTest {
     assertThat(deletedUser).isNotNull().hasFieldOrPropertyWithValue("userKey", userRecord.getKey());
   }
 
+  @Ignore("Re-enable with https://github.com/camunda/camunda/issues/30028")
   @Test
   public void shouldCleanupMembership() {
     final var username = UUID.randomUUID().toString();

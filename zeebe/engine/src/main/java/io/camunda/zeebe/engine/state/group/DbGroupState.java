@@ -58,8 +58,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public void create(final long groupKey, final GroupRecord group) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public void create(final GroupRecord group) {
+    groupId.wrapString(group.getGroupId());
     persistedGroup.wrap(group);
     groupColumnFamily.insert(groupId, persistedGroup);
   }
