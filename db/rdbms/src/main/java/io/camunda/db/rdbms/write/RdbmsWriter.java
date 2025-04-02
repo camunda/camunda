@@ -79,7 +79,7 @@ public class RdbmsWriter {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      final BatchOperationReader batchOperationReader) {
+      final BatchOperationReader batchOperationReader,
       final JobMapper jobMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;

@@ -50,7 +50,7 @@ public class RdbmsWriterFactory {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final RdbmsWriterMetrics metrics,
-      final BatchOperationReader batchOperationReader, {
+      final BatchOperationReader batchOperationReader,
       final JobMapper jobMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;

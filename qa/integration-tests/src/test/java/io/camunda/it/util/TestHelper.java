@@ -260,7 +260,7 @@ public final class TestHelper {
             () -> {
               final var result =
                   camundaClient
-                      .newProcessInstanceQuery()
+                      .newProcessInstanceSearchRequest()
                       .filter(f -> f.hasRetriesLeft(true))
                       .send()
                       .join();
