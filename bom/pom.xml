@@ -8,12 +8,12 @@
     <artifactId>camunda-release-parent</artifactId>
     <version>3.9.1</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
-    <relativePath></relativePath>
+    <relativePath />
   </parent>
 
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>8.5.16-SNAPSHOT</version>
+  <version>8.5.17</version>
   <packaging>pom</packaging>
 
   <name>Zeebe BOM</name>
@@ -24,7 +24,7 @@
   <scm>
     <connection>scm:git:git@github.com:camunda/zeebe.git</connection>
     <developerConnection>scm:git:git@github.com:camunda/zeebe.git</developerConnection>
-    <tag>8.5.0</tag>
+    <tag>8.5.17</tag>
     <url>https://github.com/camunda/zeebe</url>
   </scm>
 
@@ -164,7 +164,7 @@
           <configuration>
             <pom>
               <!-- https://github.com/diffplug/spotless/blob/main/plugin-maven/README.md#sortpom -->
-              <sortPom></sortPom>
+              <sortPom />
             </pom>
           </configuration>
         </plugin>
