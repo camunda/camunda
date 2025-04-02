@@ -98,10 +98,9 @@ public class GroupTest {
 
   @Test
   public void shouldAddEntityToGroup() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30028
     // given
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
     final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
     final var userKey =
         engine
             .user()
@@ -118,7 +117,7 @@ public class GroupTest {
     final var updatedGroup =
         engine
             .group()
-            .addEntity(groupKey)
+            .addEntity(groupId)
             .withEntityKey(userKey)
             .withEntityType(EntityType.USER)
             .add()
@@ -130,26 +129,23 @@ public class GroupTest {
 
   @Test
   public void shouldRejectIfGroupIsNotPresentWhileAddingEntity() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30028
     // when
-    final var notPresentGroupKey = 1L;
+    final var notPresentGroupId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
-        engine.group().addEntity(notPresentGroupKey).expectRejection().add();
+        engine.group().addEntity(notPresentGroupId).expectRejection().add();
 
     // then
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update group with key '%d', but a group with this key does not exist."
-                .formatted(notPresentGroupKey));
+            "Expected to update group with ID '%s', but a group with this ID does not exist."
+                .formatted(notPresentGroupId));
   }
 
   @Test
   public void shouldRejectIfEntityIsNotPresent() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30028
     // given
-    final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
     final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
 
@@ -158,7 +154,7 @@ public class GroupTest {
     final var notPresentUpdateRecord =
         engine
             .group()
-            .addEntity(groupKey)
+            .addEntity(groupId)
             .withEntityKey(1L)
             .withEntityType(EntityType.USER)
             .expectRejection()
@@ -169,16 +165,15 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add an entity with key '%s' and type '%s' to group with key '%s', but the entity does not exist."
-                .formatted(1L, EntityType.USER, groupKey));
+            "Expected to add an entity with key '%s' and type '%s' to group with ID '%s', but the entity does not exist."
+                .formatted(1L, EntityType.USER, groupId));
   }
 
   @Test
   public void shouldRejectIfEntityIsAlreadyAssigned() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30028
     // given
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
     final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create();
     final var userKey =
@@ -190,13 +185,13 @@ public class GroupTest {
             .withPassword("zabraboof")
             .create()
             .getKey();
-    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // when
     final var notPresentUpdateRecord =
         engine
             .group()
-            .addEntity(groupKey)
+            .addEntity(groupId)
             .withEntityKey(userKey)
             .withEntityType(EntityType.USER)
             .expectRejection()
@@ -206,8 +201,8 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to add entity with key '%d' to group with key '%d', but the entity is already assigned to this group."
-                .formatted(userKey, groupKey));
+            "Expected to add entity with key '%d' to group with ID '%s', but the entity is already assigned to this group."
+                .formatted(userKey, groupId));
   }
 
   @Test
@@ -227,7 +222,7 @@ public class GroupTest {
             .getKey();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // when
     final var groupWithRemovedEntity =
@@ -252,7 +247,7 @@ public class GroupTest {
     // when
     final var notPresentGroupKey = 1L;
     final var notPresentUpdateRecord =
-        engine.group().addEntity(notPresentGroupKey).expectRejection().add();
+        engine.group().removeEntity(notPresentGroupKey).expectRejection().remove();
 
     // then
     assertThat(notPresentUpdateRecord)
@@ -324,7 +319,7 @@ public class GroupTest {
             .getKey();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create().getValue().getGroupKey();
-    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // when
     final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();

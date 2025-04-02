@@ -164,7 +164,7 @@ public class MappingAppliersTest {
             .setEntityKey(mappingKey)
             .setEntityType(EntityType.MAPPING);
     groupState.create(group);
-    groupState.addEntity(groupKey, group);
+    groupState.addEntity(group);
     // create authorization
     authorizationState.create(
         5L,

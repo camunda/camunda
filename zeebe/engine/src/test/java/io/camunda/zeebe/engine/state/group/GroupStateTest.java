@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,21 +88,19 @@ public class GroupStateTest {
   @Test
   void shouldAddEntity() {
     // given
-    final var groupId = "1";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "group";
-    final var groupRecord =
-        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
 
     // when
     final var userKey = 2L;
     final var userEntityType = EntityType.USER;
     groupRecord.setEntityKey(userKey).setEntityType(userEntityType);
-    groupState.addEntity(groupKey, groupRecord);
+    groupState.addEntity(groupRecord);
 
     // then
-    final var entityType = groupState.getEntityType(groupKey, userKey);
+    final var entityType = groupState.getEntityType(groupId, userKey);
     assertThat(entityType.isPresent()).isTrue();
     assertThat(entityType.get()).isEqualTo(userEntityType);
   }
@@ -117,10 +116,10 @@ public class GroupStateTest {
     groupState.create(groupRecord);
     final var userKey = 2L;
     groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
-    groupState.addEntity(groupKey, groupRecord);
+    groupState.addEntity(groupRecord);
     final var mappingKey = 3L;
     groupRecord.setEntityKey(mappingKey).setEntityType(EntityType.MAPPING);
-    groupState.addEntity(groupKey, groupRecord);
+    groupState.addEntity(groupRecord);
 
     // when
     final var entities = groupState.getEntitiesByType(groupKey);
@@ -142,10 +141,10 @@ public class GroupStateTest {
     groupState.create(groupRecord);
     final var userKey = 2L;
     groupRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
-    groupState.addEntity(groupKey, groupRecord);
+    groupState.addEntity(groupRecord);
     final var mappingKey = 3L;
     groupRecord.setEntityKey(mappingKey).setEntityType(EntityType.MAPPING);
-    groupState.addEntity(groupKey, groupRecord);
+    groupState.addEntity(groupRecord);
 
     // when
     groupState.removeEntity(groupKey, userKey);
@@ -165,9 +164,9 @@ public class GroupStateTest {
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
     groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
-    groupState.addEntity(groupKey, groupRecord);
+    groupState.addEntity(groupRecord);
     groupRecord.setEntityKey(3L).setEntityType(EntityType.MAPPING);
-    groupState.addEntity(groupKey, groupRecord);
+    groupState.addEntity(groupRecord);
 
     // when
     groupState.delete(groupKey);
