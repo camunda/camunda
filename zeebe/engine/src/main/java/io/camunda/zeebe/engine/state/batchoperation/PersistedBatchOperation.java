@@ -25,8 +25,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   private final LongProperty keyProp = new LongProperty("key");
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
-      new EnumProperty<>(
-          "batchOperationType", BatchOperationType.class, BatchOperationType.UNSPECIFIED);
+      new EnumProperty<>("batchOperationType", BatchOperationType.class);
   private final EnumProperty<BatchOperationStatus> statusProp =
       new EnumProperty<>("status", BatchOperationStatus.class);
   private final BinaryProperty entityFilterProp = new BinaryProperty("entityFilter");

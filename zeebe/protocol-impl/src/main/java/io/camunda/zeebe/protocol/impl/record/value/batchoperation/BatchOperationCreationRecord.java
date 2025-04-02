@@ -26,8 +26,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
-      new EnumProperty<>(
-          PROP_BATCH_OPERATION_TYPE, BatchOperationType.class, BatchOperationType.UNSPECIFIED);
+      new EnumProperty<>(PROP_BATCH_OPERATION_TYPE, BatchOperationType.class);
   private final BinaryProperty entityFilterProp =
       new BinaryProperty(PROP_ENTITY_FILTER, new UnsafeBuffer());
 
