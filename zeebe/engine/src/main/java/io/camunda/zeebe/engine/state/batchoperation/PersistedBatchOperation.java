@@ -129,7 +129,6 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     CREATED,
     ACTIVATED,
     PAUSED,
-    CANCELED,
-    COMPLETED
+    CANCELED
   }
 }

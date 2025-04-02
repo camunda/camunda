@@ -23,7 +23,6 @@ public class BatchOperationCompletedApplier
 
   @Override
   public void applyState(final long key, final BatchOperationExecutionRecord value) {
-    // TODO
-    // batchOperationState.complete(key, value);
+    batchOperationState.complete(key);
   }
 }
