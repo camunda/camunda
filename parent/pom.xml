@@ -60,7 +60,7 @@
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.3.20</version.identity>
+    <version.identity>8.3.21</version.identity>
     <version.jackson>2.15.3</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.jna>5.13.0</version.jna>
