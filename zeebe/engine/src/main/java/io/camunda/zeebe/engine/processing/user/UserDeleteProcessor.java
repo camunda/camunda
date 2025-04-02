@@ -145,7 +145,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     }
 
     for (final var roleId :
-        membershipState.getRelations(
+        membershipState.getMemberships(
             EntityType.USER,
             // TODO: use the username instead of the userKey
             Long.toString(userKey),

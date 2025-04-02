@@ -36,7 +36,7 @@ final class DbMembershipStateTest {
     membershipState.insertRelation(EntityType.USER, "foo", RelationType.ROLE, "bar");
 
     // then
-    assertThat(membershipState.getRelations(EntityType.USER, "foo", RelationType.ROLE))
+    assertThat(membershipState.getMemberships(EntityType.USER, "foo", RelationType.ROLE))
         .singleElement()
         .isEqualTo("bar");
   }
@@ -49,7 +49,7 @@ final class DbMembershipStateTest {
     membershipState.insertRelation(EntityType.USER, "m1", RelationType.ROLE, "r3");
 
     // then
-    assertThat(membershipState.getRelations(EntityType.USER, "m1", RelationType.ROLE))
+    assertThat(membershipState.getMemberships(EntityType.USER, "m1", RelationType.ROLE))
         .containsExactlyInAnyOrder("r1", "r2", "r3");
   }
 
@@ -60,7 +60,7 @@ final class DbMembershipStateTest {
     membershipState.insertRelation(EntityType.USER, "m2", RelationType.ROLE, "r2");
 
     // then
-    assertThat(membershipState.getRelations(EntityType.USER, "m1", RelationType.ROLE))
+    assertThat(membershipState.getMemberships(EntityType.USER, "m1", RelationType.ROLE))
         .containsExactly("r1");
   }
 
@@ -74,7 +74,7 @@ final class DbMembershipStateTest {
     membershipState.deleteRelation(EntityType.USER, "foo", RelationType.ROLE, "bar");
 
     // then
-    assertThat(membershipState.getRelations(EntityType.USER, "foo", RelationType.ROLE))
+    assertThat(membershipState.getMemberships(EntityType.USER, "foo", RelationType.ROLE))
         .containsExactly("baz");
   }
 

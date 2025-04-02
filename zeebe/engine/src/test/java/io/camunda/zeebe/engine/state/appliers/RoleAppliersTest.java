@@ -77,7 +77,7 @@ public class RoleAppliersTest {
 
     // then
     assertThat(
-            membershipState.getRelations(
+            membershipState.getMemberships(
                 EntityType.USER, Long.toString(entityKey), RelationType.ROLE))
         .singleElement()
         .isEqualTo(Long.toString(roleKey));
@@ -165,7 +165,7 @@ public class RoleAppliersTest {
     // then
     assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
     assertThat(
-            membershipState.getRelations(
+            membershipState.getMemberships(
                 EntityType.USER, Long.toString(userKey), RelationType.ROLE))
         .isEmpty();
   }

@@ -295,12 +295,12 @@ public final class AuthorizationCheckBehavior {
         authorizationState.getResourceIdentifiers(
             AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
     // Get resource identifiers for the user's roles
-    final var roles =
-        membershipState.getRelations(
+    final var roleIds =
+        membershipState.getMemberships(
             EntityType.USER, Long.toString(user.getUserKey()), RelationType.ROLE);
     final var roleAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
-            AuthorizationOwnerType.ROLE, roles, resourceType, permissionType);
+            AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
     // Get resource identifiers for the user's groups
     final var groupAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwnerKeys(

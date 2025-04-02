@@ -72,7 +72,7 @@ public final class DbMembershipState implements MutableMembershipState {
   }
 
   @Override
-  public List<String> getRelations(
+  public List<String> getMemberships(
       final EntityType entityType, final String entityId, final RelationType relationType) {
     final var relationIds = new ArrayList<String>();
 
