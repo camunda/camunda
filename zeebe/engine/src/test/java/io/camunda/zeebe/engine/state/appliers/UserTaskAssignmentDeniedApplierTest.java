@@ -94,9 +94,9 @@ public class UserTaskAssignmentDeniedApplierTest {
 
     // assignee is present in the creating event
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATING, given);
-
-    // created event is written without assignee
-    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, given.unsetAssignee());
+    // but we clear the assignee for created event
+    final UserTaskRecord recordWithoutAssignee = given.unsetAssignee();
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.ASSIGNING, given);
 
     Assertions.assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
