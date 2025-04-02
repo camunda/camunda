@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -32,6 +34,7 @@ public class GroupAppliersTest {
   private MutableGroupState groupState;
   private MutableUserState userState;
   private MutableMappingState mappingState;
+  private MutableMembershipState membershipState;
 
   private GroupCreatedApplier groupCreatedApplier;
   private GroupUpdatedApplier groupUpdatedApplier;
@@ -44,6 +47,7 @@ public class GroupAppliersTest {
     groupState = processingState.getGroupState();
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
+    membershipState = processingState.getMembershipState();
 
     groupCreatedApplier = new GroupCreatedApplier(groupState);
     groupUpdatedApplier = new GroupUpdatedApplier(groupState);
@@ -123,10 +127,10 @@ public class GroupAppliersTest {
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // then
-    final var entitiesByType = groupState.getEntitiesByType(groupKey);
-    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityKey)));
-    final var persistedUser = userState.getUser(entityKey).get();
-    assertThat(persistedUser.getGroupKeysList()).containsExactly(groupKey);
+    assertThat(
+            membershipState.getMemberships(
+                EntityType.USER, Long.toString(entityKey), RelationType.GROUP))
+        .containsExactly(Long.toString(groupKey));
   }
 
   @Test
@@ -184,10 +188,10 @@ public class GroupAppliersTest {
     groupEntityRemovedApplier.applyState(groupKey, groupRecord);
 
     // then
-    final var entitiesByType = groupState.getEntitiesByType(groupKey);
-    assertThat(entitiesByType).isEmpty();
-    final var persistedUser = userState.getUser(entityKey).get();
-    assertThat(persistedUser.getGroupKeysList()).isEmpty();
+    assertThat(
+            membershipState.getMemberships(
+                EntityType.USER, Long.toString(entityKey), RelationType.GROUP))
+        .isEmpty();
   }
 
   @Test
