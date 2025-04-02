@@ -589,6 +589,13 @@ public final class EventAppliers implements EventApplier {
         BatchOperationIntent.CREATED,
         new BatchOperationCreatedApplier(state.getBatchOperationState()));
     register(
+        BatchOperationIntent.STARTED,
+        new BatchOperationStartedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationIntent.FAILED,
+        new BatchOperationFailedApplier(state.getBatchOperationState()));
+
+    register(
         BatchOperationChunkIntent.CREATED,
         new BatchOperationChunkCreatedApplier(state.getBatchOperationState()));
     register(
