@@ -122,11 +122,12 @@
       SELECT 1
       FROM ${prefix}JOB j
       WHERE j.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+      AND j.STATE IN ('FAILED', 'ERROR_THROWN')
       <if test="filter.hasRetriesLeft == true">
-        AND j.STATE IN ('FAILED', 'ERROR_THROWN') AND j.RETRIES > 0
+        AND j.RETRIES > 0
       </if>
       <if test="filter.hasRetriesLeft == false">
-        AND j.STATE IN ('FAILED', 'ERROR_THROWN') AND j.RETRIES = 0
+         AND j.RETRIES = 0
       </if>
       )
     </if>
