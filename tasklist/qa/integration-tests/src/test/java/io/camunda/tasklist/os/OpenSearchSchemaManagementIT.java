@@ -90,7 +90,7 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
     tasklistProperties.getOpenSearch().setNumberOfReplicas(modifiedNumberOfReplicas);
 
-    assertThat(indexSchemaValidator.schemaExists()).isFalse();
+    assertThat(indexSchemaValidator.isValidNumberOfReplicas()).isFalse();
 
     schemaManager.createSchema();
 

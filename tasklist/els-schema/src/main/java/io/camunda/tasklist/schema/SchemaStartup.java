@@ -40,7 +40,8 @@ public class SchemaStartup {
           TasklistProperties.OPEN_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())
               ? tasklistProperties.getOpenSearch().isCreateSchema()
               : tasklistProperties.getElasticsearch().isCreateSchema();
-      if (createSchema && !schemaValidator.schemaExists()) {
+      if (createSchema
+          && !(schemaValidator.schemaExists() && schemaValidator.isValidNumberOfReplicas())) {
         LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
         schemaManager.createSchema();
         LOGGER.info("SchemaStartup: update index mappings.");

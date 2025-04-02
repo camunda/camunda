@@ -82,7 +82,7 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
               tasklistProperties.getOpenSearch().getIndexPrefix() + "*");
       final List<String> allIndexNames =
           map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
-      return indices.containsAll(allIndexNames) && validateNumberOfReplicas(allIndexNames);
+      return indices.containsAll(allIndexNames);
     } catch (final Exception e) {
       LOGGER.error("Check for existing schema failed", e);
       return false;
@@ -119,6 +119,22 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
     }
   }
 
+  @Override
+  public boolean isValidNumberOfReplicas() {
+    final List<String> allIndexNames = map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
+    for (final String index : allIndexNames) {
+      final IndexSettings response =
+          retryOpenSearchClient.getIndexSettingsFor(
+              index, RetryOpenSearchClient.NUMBERS_OF_REPLICA);
+      if (!response
+          .numberOfReplicas()
+          .equals(String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas()))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
    * Validates existing indices mappings against schema files defined in codebase.
    *
@@ -151,19 +167,5 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
         .filter(Optional::isPresent)
         .map(Optional::get)
         .collect(Collectors.toSet());
-  }
-
-  public boolean validateNumberOfReplicas(final List<String> indexes) {
-    for (final String index : indexes) {
-      final IndexSettings response =
-          retryOpenSearchClient.getIndexSettingsFor(
-              index, RetryOpenSearchClient.NUMBERS_OF_REPLICA);
-      if (!response
-          .numberOfReplicas()
-          .equals(String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas()))) {
-        return false;
-      }
-    }
-    return true;
   }
 }

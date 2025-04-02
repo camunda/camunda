@@ -93,7 +93,7 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
 
     tasklistProperties.getElasticsearch().setNumberOfReplicas(modifiedNumberOfReplicas);
 
-    assertThat(indexSchemaValidator.schemaExists()).isFalse();
+    assertThat(indexSchemaValidator.isValidNumberOfReplicas()).isFalse();
 
     schemaManager.createSchema();
 
