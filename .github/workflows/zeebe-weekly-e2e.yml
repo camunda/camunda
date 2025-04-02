@@ -22,32 +22,29 @@ jobs:
     name: Compute branch matrix
     runs-on: ubuntu-latest
     outputs:
-      latest-major-minor-version: ${{ env.LATEST_MAJOR_MINOR_VERSION }}
-      latest-major-minor-patch-version: ${{ env.LATEST_MAJOR_MINOR_PATCH_VERSION }}
-      previous-latest-major-minor-version: ${{ env.PREVIOUS_LATEST_MAJOR_MINOR_VERSION }}
-      previous-latest-major-minor-patch-version: ${{ env.PREVIOUS_LATEST_MAJOR_MINOR_PATCH_VERSION }}
-      previous-previous-latest-major-minor-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_MINOR_VERSION }}
-      previous-previous-latest-major-minor-patch-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_MINOR_PATCH_VERSION }}
+      latest-version: ${{ env.LATEST_VERSION }}
+      second-last-version: ${{ env.SECOND_LAST_VERSION }}
+      third-last-version: ${{ env.THIRD_LAST_VERSION }}
+      fourth-last-version: ${{ env.FOURTH_LAST_VERSION }}
     steps:
       - uses: actions/checkout@v4
       - run: git fetch --tags
       - run: |
-          latest_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr | head -n1)
-          latest_major_minor=$(echo $latest_major_minor_patch | sed -E -e 's/\.[0-9]+$//')
-          previous_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "${latest_major_minor}" | sort -Vr | head -n1)
-          previous_major_minor=$(echo $previous_major_minor_patch | sed -E -e 's/\.[0-9]+$//')
-          previous_previous_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "${latest_major_minor}" | grep -v "${previous_major_minor}" | sort -Vr | head -n1)
-          previous_previous_major_minor=$(echo $previous_previous_major_minor_patch | sed -E -e 's/\.[0-9]+$//')
+          versions=($(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | uniq))
 
-          if [ ! -z $latest_major_minor ] && [ ! -z $previous_major_minor ] && [ ! -z $previous_previous_major_minor ]; then
-            echo "Successfully computed latest versions: ${latest_major_minor_patch} and ${previous_major_minor_patch} and ${previous_previous_major_minor_patch}"
+          latest="${versions[0]}"
+          second_last="${versions[1]}"
+          third_last="${versions[2]}"
+          fourth_last="${versions[3]}"
+          if [ ! -z $latest ] && [ ! -z $second_last ] && [ ! -z $third_last ] && [ ! -z $fourth_last ]; then
+            echo "Successfully computed latest versions: ${latest} and ${second_last} and ${third_last} and ${fourth_last}"
           else
             echo "Failed to compute latest versions"
           fi
-
-          echo "LATEST_MAJOR_MINOR_VERSION=${latest_major_minor}" >> $GITHUB_ENV
-          echo "PREVIOUS_LATEST_MAJOR_MINOR_VERSION=${previous_major_minor}" >> $GITHUB_ENV
-          echo "PREVIOUS_PREVIOUS_LATEST_MINOR_VERSION=${previous_previous_major_minor}" >> $GITHUB_ENV
+          echo "LATEST_VERSION=${latest}" >> $GITHUB_ENV
+          echo "SECOND_LAST_VERSION=${second_last}" >> $GITHUB_ENV
+          echo "THIRD_LAST_VERSION=${third_last}" >> $GITHUB_ENV
+          echo "FOURTH_LAST_VERSION=${fourth_last}" >> $GITHUB_ENV
 
   e2e:
     needs:
@@ -58,21 +55,21 @@ jobs:
       matrix:
         branch:
           - 'main'
-          - 'stable/8.7'
-          - ${{ format('stable/{0}', needs.get-versions.outputs.latest-major-minor-version) }}
-          - ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-major-minor-version) }}
-          - ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.fourth-last-version) }}
         include:
           - branch: 'main'
             generation_template: 'Zeebe SNAPSHOT'
-          - branch: 'stable/8.7'
-            generation_template: 'Camunda 8.7.0-alpha4'
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-major-minor-version) }}
-            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.latest-major-minor-version) }}
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-major-minor-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-latest-major-minor-version) }}
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
+            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.latest-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
+            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.second-last-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.third-last-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.fourth-last-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.fourth-last-version) }}
     runs-on: ubuntu-latest
     name: Weekly E2E
     steps:
