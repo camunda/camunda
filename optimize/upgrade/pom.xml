@@ -277,15 +277,15 @@
             <configuration>
               <skip>${skip.docker}</skip>
               <target description="Check whether ES is running" name="check-es-is-up">
-                <echo message="Check ES is running..." />
+                <echo message="Check ES is running..."></echo>
                 <waitfor checkevery="1" checkeveryunit="second" maxwait="30" maxwaitunit="second">
-                  <socket port="9200" server="localhost" />
+                  <socket port="9200" server="localhost"></socket>
                 </waitfor>
-                <echo message="ES http socket is open. Checking for ES cluster state..." />
+                <echo message="ES http socket is open. Checking for ES cluster state..."></echo>
                 <waitfor checkevery="1" checkeveryunit="second" maxwait="30" maxwaitunit="second">
-                  <http url="http://localhost:9200/_cluster/state" />
+                  <http url="http://localhost:9200/_cluster/state"></http>
                 </waitfor>
-                <echo message="ES is running." />
+                <echo message="ES is running."></echo>
               </target>
             </configuration>
           </execution>
