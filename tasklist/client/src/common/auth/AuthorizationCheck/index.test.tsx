@@ -66,6 +66,18 @@ describe('<AuthorizationCheck />', () => {
   });
 
   it('should show the provided content', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/authentication/me',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
     render(
       <AuthorizationCheck>
         <h1>{AUTHORIZED_CONTENT}</h1>
