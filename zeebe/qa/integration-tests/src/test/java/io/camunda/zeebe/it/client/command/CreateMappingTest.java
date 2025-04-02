@@ -54,7 +54,7 @@ public class CreateMappingTest {
             .join();
 
     // then
-    assertThat(response.getMappingKey()).isGreaterThan(0);
+    assertThat(response.getMappingId()).isEqualTo(ID);
     ZeebeAssertHelper.assertMappingCreated(
         CLAIM_NAME,
         CLAIM_VALUE,

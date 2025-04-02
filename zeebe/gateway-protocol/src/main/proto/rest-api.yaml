@@ -2717,6 +2717,36 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    get:
+      tags:
+        - Mapping rule
+      operationId: getMappingRule
+      summary: Get a mapping rule (Work-in-Progress)
+      description: |
+        Gets the mapping rule with the given ID.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
+      parameters:
+        - name: mappingId
+          in: path
+          required: true
+          description: The ID of the mapping rule to get.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The mapping rule was returned successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The mapping rule with the mappingId was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /mapping-rules/search:
     post:

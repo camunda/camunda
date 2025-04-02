@@ -42,13 +42,13 @@ public class MappingQueryControllerTest extends RestControllerTest {
   @Test
   void getMappingShouldReturnOk() {
     // given
-    final var mapping = new MappingEntity("100-id", 100L, "Claim Name", "Claim Value", "Map Name");
-    when(mappingServices.getMapping(mapping.mappingKey())).thenReturn(mapping);
+    final var mapping = new MappingEntity("id", 100L, "Claim Name", "Claim Value", "Map Name");
+    when(mappingServices.getMapping(mapping.mappingId())).thenReturn(mapping);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(MAPPING_BASE_URL, mapping.mappingKey()))
+        .uri("%s/%s".formatted(MAPPING_BASE_URL, mapping.mappingId()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -64,15 +64,15 @@ public class MappingQueryControllerTest extends RestControllerTest {
                           }""");
 
     // then
-    verify(mappingServices, times(1)).getMapping(mapping.mappingKey());
+    verify(mappingServices, times(1)).getMapping(mapping.mappingId());
   }
 
   @Test
   void getNonExistingMappingShouldReturnNotFound() {
     // given
-    final var mappingKey = 100L;
-    final var path = "%s/%s".formatted(MAPPING_BASE_URL, mappingKey);
-    when(mappingServices.getMapping(mappingKey))
+    final var mappingId = "id";
+    final var path = "%s/%s".formatted(MAPPING_BASE_URL, mappingId);
+    when(mappingServices.getMapping(mappingId))
         .thenThrow(
             new CamundaSearchException(
                 "mapping not found", CamundaSearchException.Reason.NOT_FOUND));
@@ -98,7 +98,7 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .formatted(path));
 
     // then
-    verify(mappingServices, times(1)).getMapping(mappingKey);
+    verify(mappingServices, times(1)).getMapping(mappingId);
   }
 
   @Test
@@ -112,12 +112,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
-                        new MappingEntity(
-                            "100-id", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
-                        new MappingEntity(
-                            "200-id", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
-                        new MappingEntity(
-                            "300-id", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
+                        new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingEntity("id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingEntity("id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
                 .build());
 
     // when / then
@@ -175,12 +172,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new MappingEntity(
-                            "100-id", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
-                        new MappingEntity(
-                            "200-id", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
-                        new MappingEntity(
-                            "300-id", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
+                        new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingEntity("id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingEntity("id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
                 .build());
 
     // when / then
@@ -217,12 +211,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new MappingEntity(
-                            "100-id", 100L, "Claim Name1", "Claim Value1", "Map Name3"),
-                        new MappingEntity(
-                            "200-id", 200L, "Claim Name2", "Claim Value2", "Map Name1"),
-                        new MappingEntity(
-                            "300-id", 300L, "Claim Name3", "Claim Value3", "Map Name2")))
+                        new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name3"),
+                        new MappingEntity("id2", 200L, "Claim Name2", "Claim Value2", "Map Name1"),
+                        new MappingEntity("id3", 300L, "Claim Name3", "Claim Value3", "Map Name2")))
                 .build());
 
     // when / then

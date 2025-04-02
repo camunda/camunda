@@ -23,8 +23,7 @@ public class ErrorMessages {
   public static final String ERROR_NOT_FOUND_FORM_BY_KEY = "Form with formKey %d not found";
   public static final String ERROR_NOT_FOUND_GROUP_BY_KEY = "Group with groupKey %d not found";
   public static final String ERROR_NOT_FOUND_GROUP_BY_NAME = "Group with group name %s not found";
-  public static final String ERROR_NOT_FOUND_MAPPING_BY_KEY =
-      "Mapping with mappingKey %d not found";
+  public static final String ERROR_NOT_FOUND_MAPPING_BY_ID = "Mapping with mappingId %s not found";
   public static final String ERROR_NOT_FOUND_ROLE_BY_KEY = "Role with roleKey %d not found";
   public static final String ERROR_NOT_FOUND_TENANT = "Tenant matching %s not found";
 
