@@ -19,7 +19,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import java.util.List;
 import java.util.function.Consumer;
@@ -193,7 +193,7 @@ public class ProcessDefinitionStatisticsIT {
     assertStatisticsResult(actual, NODE2, 0L, 0L, 0L, 1L);
   }
 
-  private static List<ProcessDefinitionFlowNodeStatisticsEntity>
+  private static List<ProcessFlowNodeStatisticsEntity>
       getProcessDefinitionFlowNodeStatisticsEntities(
           final ProcessDefinitionReader processDefinitionReader,
           final Long processDefinitionKey,
@@ -263,7 +263,7 @@ public class ProcessDefinitionStatisticsIT {
   }
 
   private void assertStatisticsResult(
-      final List<ProcessDefinitionFlowNodeStatisticsEntity> statistics,
+      final List<ProcessFlowNodeStatisticsEntity> statistics,
       final String flowNodeId,
       final long active,
       final long canceled,

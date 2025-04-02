@@ -18,7 +18,7 @@ import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsA
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -31,14 +31,14 @@ public class ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer
     final var children = aggregations.get(AGGREGATION_TO_FLOW_NODES);
     final var filter = children.aggregations().get(AGGREGATION_FILTER_FLOW_NODES);
     final var group = filter.aggregations().get(AGGREGATION_GROUP_FLOW_NODES);
-    final var items = new ArrayList<ProcessDefinitionFlowNodeStatisticsEntity>();
+    final var items = new ArrayList<ProcessFlowNodeStatisticsEntity>();
     group
         .aggregations()
         .forEach(
             (flowNodeId, terms) -> {
               final var groupFilters = terms.aggregations().get(AGGREGATION_GROUP_FILTERS);
               items.add(
-                  new ProcessDefinitionFlowNodeStatisticsEntity.Builder()
+                  new ProcessFlowNodeStatisticsEntity.Builder()
                       .flowNodeId(flowNodeId)
                       .active(groupFilters.aggregations().get(AGGREGATION_ACTIVE).docCount())
                       .completed(groupFilters.aggregations().get(AGGREGATION_COMPLETED).docCount())

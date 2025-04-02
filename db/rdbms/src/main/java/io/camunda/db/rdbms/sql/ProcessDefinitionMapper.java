@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.sql;
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import java.util.List;
 
@@ -22,6 +22,6 @@ public interface ProcessDefinitionMapper {
 
   List<ProcessDefinitionEntity> search(ProcessDefinitionDbQuery filter);
 
-  List<ProcessDefinitionFlowNodeStatisticsEntity> flowNodeStatistics(
+  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
       ProcessDefinitionStatisticsFilter filter);
 }

@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
@@ -246,8 +246,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldGetFlowNodeStatistics() {
     // given
     final long processDefinitionKey = 1L;
-    final var stats =
-        List.of(new ProcessDefinitionFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
+    final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
     when(processDefinitionServices.flowNodeStatistics(any())).thenReturn(stats);
     final var request =
         """
