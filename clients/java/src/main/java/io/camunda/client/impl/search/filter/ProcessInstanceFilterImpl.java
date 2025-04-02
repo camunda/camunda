@@ -34,7 +34,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<
@@ -234,21 +233,9 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
-      final List<ProcessInstanceVariableFilterRequest> variableFilters =
-          variableValueFilters.entrySet().stream()
-              .map(
-                  entry -> {
-                    variableValueNullCheck(entry.getValue());
-                    final ProcessInstanceVariableFilterRequest request =
-                        new ProcessInstanceVariableFilterRequest();
-                    request.setName(entry.getKey());
-                    final StringProperty property = new StringPropertyImpl();
-                    property.eq(entry.getValue().toString());
-                    request.setValue(property.build());
-                    return request;
-                  })
-              .collect(Collectors.toList());
-      filter.setVariables(RequestMapper.toProtocolList(variableFilters));
+      filter.setVariables(
+          RequestMapper.toProtocolList(
+              RequestMapper.toProcessInstanceVariableFilterRequestList(variableValueFilters)));
     }
     return this;
   }
@@ -286,7 +273,7 @@ public class ProcessInstanceFilterImpl
     return filter;
   }
 
-  static void variableValueNullCheck(Object value) {
+  static void variableValueNullCheck(final Object value) {
     if (value == null) {
       throw new IllegalArgumentException("Variable value cannot be null");
     }
