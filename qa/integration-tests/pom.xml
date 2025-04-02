@@ -438,6 +438,11 @@
       <artifactId>camunda-search-client-elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-schema-manager</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
   <repositories>
