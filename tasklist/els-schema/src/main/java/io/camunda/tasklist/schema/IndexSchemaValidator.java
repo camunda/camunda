@@ -23,6 +23,8 @@ public interface IndexSchemaValidator {
 
   void validateIndexVersions();
 
+  boolean isValidNumberOfReplicas();
+
   Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() throws IOException;
 
   Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor);
