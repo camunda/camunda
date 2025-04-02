@@ -148,19 +148,19 @@ public class RoleServicesTest {
   @Test
   public void shouldAddUserToRole() {
     // given
-    final var roleKey = 100L;
-    final var entityKey = 42;
+    final var roleId = "roleId";
+    final var entityId = "entityId";
 
     // when
-    services.addMember(roleKey, EntityType.USER, entityKey);
+    services.addMember(roleId, EntityType.USER, entityId);
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.ADD_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getRoleKey()).isEqualTo(roleKey);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 
@@ -178,8 +178,8 @@ public class RoleServicesTest {
     assertThat(request.getIntent()).isEqualTo(RoleIntent.REMOVE_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getRoleKey()).isEqualTo(roleKey);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getRoleId()).isEqualTo(String.valueOf(roleKey));
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(String.valueOf(entityKey));
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 
