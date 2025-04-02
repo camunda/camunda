@@ -6587,10 +6587,10 @@ components:
       properties:
         value:
           type: string
-          description: The sort values of the item in the result set. .
+          description: The serialized value of the respective sort field of an item in the result set.
         type:
             type: string
-            description: The data type of the sort value.
+            description: The data type of the sort field value.
             enum:
                 - string
                 - int64
