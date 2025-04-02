@@ -203,7 +203,7 @@ public class TaskListenerDenialsTest {
         .describedAs(
             "Verify that the assignee changes. The assignment of the second assignee should be rejected.")
         .containsSequence(
-            tuple(UserTaskIntent.CREATING, ""),
+            tuple(UserTaskIntent.CREATING, "first_assignee"),
             tuple(UserTaskIntent.CREATED, ""),
             tuple(UserTaskIntent.ASSIGNING, "first_assignee"),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "first_assignee"),
