@@ -27,7 +27,6 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -106,10 +105,10 @@ public class RoleController {
 
   @CamundaPutMapping(
       path = "/{roleId}/users/{username}",
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+      consumes = {})
   public CompletableFuture<ResponseEntity<Object>> addRole(
       @PathVariable final String roleId, @PathVariable final String username) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             roleServices
                 .withAuthentication(RequestMapper.getAuthentication())
