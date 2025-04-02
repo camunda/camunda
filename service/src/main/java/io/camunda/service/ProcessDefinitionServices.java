@@ -11,7 +11,7 @@ import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearc
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -49,7 +49,7 @@ public class ProcessDefinitionServices
         .searchProcessDefinitions(query);
   }
 
-  public List<ProcessDefinitionFlowNodeStatisticsEntity> flowNodeStatistics(
+  public List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     return processDefinitionSearchClient
         .withSecurityContext(

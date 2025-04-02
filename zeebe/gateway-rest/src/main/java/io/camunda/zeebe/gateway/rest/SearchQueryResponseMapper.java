@@ -28,7 +28,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
@@ -70,9 +70,9 @@ import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessFlowNodeStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
@@ -121,20 +121,18 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static ProcessDefinitionFlowNodeStatisticsQueryResult
-      toProcessDefinitionFlowNodeStatisticsQueryResult(
-          final List<ProcessDefinitionFlowNodeStatisticsEntity> result) {
+  public static ProcessDefinitionFlowNodeStatisticsQueryResult toProcessFlowNodeStatisticsResult(
+      final List<ProcessFlowNodeStatisticsEntity> result) {
     return new ProcessDefinitionFlowNodeStatisticsQueryResult()
         .items(
             result.stream()
-                .map(SearchQueryResponseMapper::toProcessDefinitionFlowNodeStatisticsResult)
+                .map(SearchQueryResponseMapper::toProcessFlowNodeStatisticsResult)
                 .toList());
   }
 
-  private static ProcessDefinitionFlowNodeStatisticsResult
-      toProcessDefinitionFlowNodeStatisticsResult(
-          final ProcessDefinitionFlowNodeStatisticsEntity result) {
-    return new ProcessDefinitionFlowNodeStatisticsResult()
+  private static ProcessFlowNodeStatisticsResult toProcessFlowNodeStatisticsResult(
+      final ProcessFlowNodeStatisticsEntity result) {
+    return new ProcessFlowNodeStatisticsResult()
         .flowNodeId(result.flowNodeId())
         .active(result.active())
         .canceled(result.canceled())

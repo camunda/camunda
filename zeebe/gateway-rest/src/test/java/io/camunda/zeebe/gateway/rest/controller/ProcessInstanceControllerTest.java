@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1337,5 +1339,48 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class));
+  }
+
+  @Test
+  public void shouldGetFlowNodeStatistics() {
+    // given
+    final long processInstanceKey = 1L;
+    final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
+    when(processInstanceServices.flowNodeStatistics(processInstanceKey)).thenReturn(stats);
+    final var request =
+        """
+            {
+              "filter": {
+                "hasIncident": true
+              }
+            }""";
+    final var response =
+        """
+            {"items":[
+              {
+                "flowNodeId": "node1",
+                "active": 1,
+                "canceled": 1,
+                "incidents": 1,
+                "completed": 1
+              }
+            ]}""";
+
+    // when / then
+    webClient
+        .get()
+        .uri(
+            "%s/%d/statistics/flownode-instances"
+                .formatted(PROCESS_INSTANCES_START_URL, processInstanceKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response);
+
+    verify(processInstanceServices).flowNodeStatistics(processInstanceKey);
   }
 }
