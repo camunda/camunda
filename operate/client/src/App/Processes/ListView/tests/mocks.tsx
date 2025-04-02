@@ -10,11 +10,11 @@ import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 import {Paths} from 'modules/Routes';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -22,7 +22,6 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
       return () => {
         processInstancesSelectionStore.reset();
         processInstancesStore.reset();
-        processXmlStore.reset();
         processStatisticsStore.reset();
         operationsStore.reset();
         processesStore.reset();
@@ -30,7 +29,9 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
+      </QueryClientProvider>
     );
   };
 

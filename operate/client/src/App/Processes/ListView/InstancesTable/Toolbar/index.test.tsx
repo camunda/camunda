@@ -11,6 +11,8 @@ import {Toolbar} from '.';
 import {MemoryRouter} from 'react-router-dom';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 type Props = {
   children?: React.ReactNode;
@@ -21,12 +23,14 @@ const Wrapper = ({children}: Props) => {
     return batchModificationStore.reset;
   });
   return (
-    <MemoryRouter>
-      {children}
-      <button onClick={batchModificationStore.enable}>
-        Enter batch modification mode
-      </button>
-    </MemoryRouter>
+    <QueryClientProvider client={getMockQueryClient()}>
+      <MemoryRouter>
+        {children}
+        <button onClick={batchModificationStore.enable}>
+          Enter batch modification mode
+        </button>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 };
 

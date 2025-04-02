@@ -13,14 +13,13 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockProcessInstances} from 'modules/testUtils';
 import {
   fetchProcessInstances,
-  fetchProcessXml,
   getProcessInstance,
   getWrapper,
 } from '../../mocks';
 import {MoveAction} from '..';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'MoveModificationProcess';
@@ -40,6 +39,8 @@ jest.mock('modules/stores/processes/processes.list', () => ({
 
 describe('<MoveAction />', () => {
   it('should disable button when no process version is selected', () => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
     render(<MoveAction />, {wrapper: getWrapper()});
 
     const moveButton = screen.getByRole('button', {name: /move/i});
@@ -53,7 +54,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button when only finished instances are selected', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -61,8 +62,8 @@ describe('<MoveAction />', () => {
       ),
     });
 
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     const instance = getProcessInstance('CANCELED', mockProcessInstances);
 
@@ -81,7 +82,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button when start event is selected', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -90,7 +91,6 @@ describe('<MoveAction />', () => {
     });
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
@@ -109,7 +109,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button when boundary event is selected', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -118,7 +118,6 @@ describe('<MoveAction />', () => {
     });
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
@@ -137,7 +136,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button when multi instance task is selected', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -146,7 +145,6 @@ describe('<MoveAction />', () => {
     });
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
@@ -165,7 +163,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button if element is attached to event based gateway', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -174,7 +172,6 @@ describe('<MoveAction />', () => {
     });
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
@@ -193,7 +190,7 @@ describe('<MoveAction />', () => {
 
   it('should disable button if element is inside multi instance sub process', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -202,7 +199,6 @@ describe('<MoveAction />', () => {
     });
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
@@ -221,7 +217,7 @@ describe('<MoveAction />', () => {
 
   it('should enable move button when active or incident instances are selected', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -230,7 +226,6 @@ describe('<MoveAction />', () => {
     });
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
@@ -245,7 +240,7 @@ describe('<MoveAction />', () => {
 
   it('should enable move button when all instances are selected', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -256,7 +251,6 @@ describe('<MoveAction />', () => {
     expect(screen.getByRole('button', {name: /move/i})).toBeDisabled();
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     await user.click(
       screen.getByRole('button', {name: /select all instances/i}),
@@ -267,7 +261,7 @@ describe('<MoveAction />', () => {
 
   it('should display migration helper modal and enter migration mode', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -276,7 +270,6 @@ describe('<MoveAction />', () => {
     });
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     await user.click(
       screen.getByRole('button', {name: /select all instances/i}),
@@ -305,7 +298,7 @@ describe('<MoveAction />', () => {
 
   it('should hide helper modal after checkbox click', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -314,7 +307,6 @@ describe('<MoveAction />', () => {
     });
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     await user.click(
       screen.getByRole('button', {name: /select all instances/i}),
