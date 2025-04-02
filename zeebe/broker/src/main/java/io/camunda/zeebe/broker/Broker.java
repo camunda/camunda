@@ -136,7 +136,7 @@ public final class Broker implements AutoCloseable {
 
   /**
    * Create an instance of BrokerInfo with the fields that can be initialized from the
-   * configuration. It does not initialize fields that are part of the ClusterConfiguration.
+   * configuration.
    */
   private BrokerInfo createBrokerInfo(final BrokerCfg brokerCfg) {
     final var clusterCfg = brokerCfg.getCluster();
@@ -146,6 +146,13 @@ public final class Broker implements AutoCloseable {
             clusterCfg.getNodeId(),
             NetUtil.toSocketAddressString(
                 brokerCfg.getNetwork().getCommandApi().getAdvertisedAddress()));
+
+    // initialize this fields from config for the first startup, they will be overwritten with
+    // the persisted values once the cluster has bootstrapped
+    result
+        .setClusterSize(clusterCfg.getClusterSize())
+        .setPartitionsCount(clusterCfg.getPartitionsCount())
+        .setReplicationFactor(clusterCfg.getReplicationFactor());
 
     final String version = VersionUtil.getVersion();
     if (version != null && !version.isBlank()) {
