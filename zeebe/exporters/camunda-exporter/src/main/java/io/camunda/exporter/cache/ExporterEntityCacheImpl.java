@@ -10,6 +10,7 @@ package io.camunda.exporter.cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import java.util.Optional;
 
 public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> {
@@ -19,11 +20,11 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
   public ExporterEntityCacheImpl(
       final long maxSize,
       final CacheLoader<K, T> cacheLoader,
-      final ExporterCacheMetrics exporterCacheMetrics) {
+      final CaffeineCacheStatsCounter statsCounter) {
     cache =
         Caffeine.newBuilder()
             .maximumSize(maxSize)
-            .recordStats(() -> exporterCacheMetrics)
+            .recordStats(() -> statsCounter)
             .build(
                 k -> {
                   try {

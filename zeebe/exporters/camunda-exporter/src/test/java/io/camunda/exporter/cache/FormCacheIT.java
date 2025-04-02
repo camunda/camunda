@@ -13,6 +13,7 @@ import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OP
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
+import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.cache.ExporterEntityCache.CacheLoaderFailedException;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
@@ -22,6 +23,7 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.entities.form.FormEntity;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -118,7 +120,8 @@ class FormCacheIT {
         new ExporterEntityCacheImpl<>(
             10,
             new ElasticSearchFormCacheLoader(searchDB.esClient(), indexName),
-            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
+            new CaffeineCacheStatsCounter(
+                DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
         FormCacheIT::indexInElasticSearch);
   }
 
@@ -127,7 +130,8 @@ class FormCacheIT {
         new ExporterEntityCacheImpl<>(
             10,
             new OpenSearchFormCacheLoader(searchDB.osClient(), indexName),
-            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
+            new CaffeineCacheStatsCounter(
+                DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
         FormCacheIT::indexInOpenSearch);
   }
 

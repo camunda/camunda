@@ -13,6 +13,7 @@ import static io.camunda.zeebe.model.bpmn.Bpmn.convertToString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
+import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.cache.ExporterEntityCache.CacheLoaderFailedException;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
@@ -24,6 +25,7 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
@@ -68,8 +70,7 @@ class ProcessCacheImplIT {
 
   @ParameterizedTest
   @MethodSource("provideProcessCache")
-  void shouldLoadProcessEntityFromBackend(final ProcessCacheArgument processCacheArgument)
-      throws IOException {
+  void shouldLoadProcessEntityFromBackend(final ProcessCacheArgument processCacheArgument) {
     // given
     final var processEntity =
         new ProcessEntity()
@@ -141,19 +142,21 @@ class ProcessCacheImplIT {
 
   static ProcessCacheArgument getESProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ExporterEntityCacheImpl(
+        new ExporterEntityCacheImpl<>(
             10,
             new ElasticSearchProcessCacheLoader(SEARCH_DB.esClient(), indexName),
-            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
+            new CaffeineCacheStatsCounter(
+                DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInElasticSearch);
   }
 
   static ProcessCacheArgument getOSProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ExporterEntityCacheImpl(
+        new ExporterEntityCacheImpl<>(
             10,
             new OpenSearchProcessCacheLoader(SEARCH_DB.osClient(), indexName),
-            new ExporterCacheMetrics("OS", new SimpleMeterRegistry())),
+            new CaffeineCacheStatsCounter(
+                DefaultExporterResourceProvider.NAMESPACE, "OS", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInOpenSearch);
   }
 

@@ -8,7 +8,6 @@
 package io.camunda.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.cache.ExporterCacheMetrics;
 import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -99,6 +98,7 @@ import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTempla
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.net.http.HttpClient;
 import java.util.Collection;
@@ -113,8 +113,8 @@ import java.util.function.BiConsumer;
  * template descriptors available
  */
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
+  public static final String NAMESPACE = "zeebe.camunda.exporter.cache";
   private IndexDescriptors indexDescriptors;
-
   private Set<ExportHandler<?, ?>> exportHandlers;
 
   private ExporterMetadata exporterMetadata;
@@ -139,14 +139,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
-            new ExporterCacheMetrics("process", meterRegistry));
+            new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry));
 
     final var formCache =
         new ExporterEntityCacheImpl<>(
             configuration.getFormCache().getMaxCacheSize(),
             entityCacheProvider.getFormCacheLoader(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
-            new ExporterCacheMetrics("form", meterRegistry));
+            new CaffeineCacheStatsCounter(NAMESPACE, "form", meterRegistry));
 
     final M2mTokenManager m2mTokenManager =
         new M2mTokenManager(configuration.getNotifier(), HttpClient.newHttpClient(), objectMapper);

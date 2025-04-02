@@ -16,6 +16,8 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -38,18 +40,22 @@ import org.slf4j.LoggerFactory;
  */
 public class ProcessCache {
 
+  public static final String NAMESPACE = "camunda.gateway.rest.cache";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
-
   private final LoadingCache<Long, ProcessCacheItem> cache;
   private final ProcessFlowNodeProvider processFlowNodeProvider;
 
   public ProcessCache(
       final GatewayRestConfiguration configuration,
       final ProcessFlowNodeProvider processFlowNodeProvider,
-      final BrokerTopologyManager brokerTopologyManager) {
+      final BrokerTopologyManager brokerTopologyManager,
+      final MeterRegistry meterRegistry) {
     this.processFlowNodeProvider = processFlowNodeProvider;
+    final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry);
     final var cacheBuilder =
-        Caffeine.newBuilder().maximumSize(configuration.getProcessCache().getMaxSize());
+        Caffeine.newBuilder()
+            .maximumSize(configuration.getProcessCache().getMaxSize())
+            .recordStats(() -> statsCounter);
     final var expirationIdle = configuration.getProcessCache().getExpirationIdleMillis();
     if (expirationIdle != null && expirationIdle > 0) {
       cacheBuilder.expireAfterAccess(expirationIdle, TimeUnit.MILLISECONDS);
