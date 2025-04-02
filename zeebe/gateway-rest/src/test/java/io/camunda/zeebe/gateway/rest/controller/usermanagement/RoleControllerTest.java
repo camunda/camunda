@@ -22,12 +22,15 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -44,10 +47,10 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
   }
 
-  @Test
-  void createRoleShouldReturnCreated() {
+  @ParameterizedTest
+  @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
+  void createRoleShouldReturnCreated(final String roleId) {
     // given
-    final var roleId = "testRoleId";
     final var roleName = "Test Role";
     final var description = "A role used for testing";
     final var request = new CreateRoleRequest(roleId, roleName, description);
@@ -164,6 +167,69 @@ public class RoleControllerTest extends RestControllerTest {
                 .formatted(ROLE_BASE_URL));
 
     // then
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldFailOnCreateRoleWithTooLongGroupId() {
+    // given
+    final var roleId = "x".repeat(257);
+
+    // when
+    webClient
+        .post()
+        .uri(ROLE_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new RoleCreateRequest().name("name").roleId(roleId))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided roleId exceeds the limit of 256 characters.",
+              "instance": "%s"
+            }"""
+                .formatted(ROLE_BASE_URL));
+
+    // then
+    verifyNoInteractions(roleServices);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
+        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
+        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+      })
+  void shouldRejectRoleCreationWithIllegalCharactersInId(final String roleId) {
+    // when then
+    webClient
+        .post()
+        .uri(ROLE_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new RoleCreateRequest().name("name").roleId(roleId))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, ROLE_BASE_URL));
     verifyNoInteractions(roleServices);
   }
 
