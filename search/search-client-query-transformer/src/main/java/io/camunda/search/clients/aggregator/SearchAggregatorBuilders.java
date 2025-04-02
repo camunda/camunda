@@ -19,6 +19,14 @@ public final class SearchAggregatorBuilders {
     return children().name(name).type(type).build();
   }
 
+  public static SearchParentAggregator.Builder parent() {
+    return new SearchParentAggregator.Builder();
+  }
+
+  public static SearchParentAggregator parent(final String name, final String type) {
+    return parent().name(name).type(type).build();
+  }
+
   public static SearchTermsAggregator.Builder terms() {
     return new SearchTermsAggregator.Builder();
   }
