@@ -8,7 +8,7 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {authAPI} from 'utils/apiHelpers';
+import {authAPI, pollAPI} from 'utils/apiHelpers';
 import {createInstances, deploy} from 'utils/zeebeClient';
 
 const baseURL = process.env.CORE_APPLICATION_OPERATE_URL;
@@ -23,25 +23,25 @@ test.beforeAll(async () => {
 
 test.describe('API tests', () => {
   test.use({
-    storageState: 'utils/.auth',
+    storageState: 'utils/.auth_operate',
     baseURL: baseURL,
   });
 
   test('Search for process definitions', async ({request}) => {
-    const processDefinitionsList = await request.post(
-      '/v1/process-definitions/search',
-    );
-    expect(processDefinitionsList.status()).toBe(200);
+    const taskList = await request.post('/v1/process-definitions/search');
+    expect(taskList.status()).toBe(200);
   });
 
   test('Get a process definition via key', async ({request}) => {
-    const searchProcessDefinitions = await request.post(
+    // Use pollAPI to wait until process definitions are available
+    const processDefinitions = await pollAPI<{items: {key: number}[]}>(
+      request,
       '/v1/process-definitions/search',
+      (response) => response.items.length > 0, // Condition: process definitions are available
     );
-    const processKey = await searchProcessDefinitions.json();
-    expect(processKey.items.length).toBeGreaterThan(0);
+    // Fetch details of the first process definition
     const response = await request.get(
-      '/v1/process-definitions/' + processKey.items[0].key,
+      `/v1/process-definitions/${processDefinitions.items[0].key}`,
     );
     expect(response.status()).toBe(200);
   });
