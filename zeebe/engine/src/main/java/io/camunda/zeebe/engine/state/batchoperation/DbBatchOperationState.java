@@ -131,6 +131,13 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void complete(final long batchOperationKey) {
+    LOGGER.trace("Completing batch operation with key {}", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+    batchOperationColumnFamily.deleteExisting(batchKey);
+  }
+
+  @Override
   public Optional<PersistedBatchOperation> get(final long key) {
     batchKey.wrapLong(key);
     return Optional.ofNullable(batchOperationColumnFamily.get(batchKey));

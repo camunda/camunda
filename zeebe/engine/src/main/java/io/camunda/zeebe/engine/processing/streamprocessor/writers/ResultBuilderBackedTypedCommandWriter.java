@@ -34,17 +34,29 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
   }
 
   @Override
+  public void appendFollowUpCommand(
+      final long key, final Intent intent, final RecordValue value, final long operationReference) {
+    appendRecord(key, intent, value, operationReference);
+  }
+
+  @Override
   public boolean canWriteCommandOfLength(final int commandLength) {
     return resultBuilder().canWriteEventOfLength(commandLength);
   }
 
   private void appendRecord(final long key, final Intent intent, final RecordValue value) {
+    appendRecord(key, intent, value, -1);
+  }
+
+  private void appendRecord(
+      final long key, final Intent intent, final RecordValue value, final long operationReference) {
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
             .intent(intent)
             .rejectionType(RejectionType.NULL_VAL)
-            .rejectionReason("");
+            .rejectionReason("")
+            .operationReference(operationReference);
     resultBuilder().appendRecord(key, value, metadata);
   }
 }

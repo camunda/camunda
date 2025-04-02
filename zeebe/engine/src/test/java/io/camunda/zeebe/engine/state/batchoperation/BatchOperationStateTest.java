@@ -76,11 +76,11 @@ public class BatchOperationStateTest {
 
     // when
     final var batchOperationKey = 1L;
-    final var roleRecord =
+    final var batchRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
-    state.create(batchOperationKey, roleRecord);
+    state.create(batchOperationKey, batchRecord);
 
     // then
     final var pendingKeys = new ArrayList<>();
@@ -93,11 +93,11 @@ public class BatchOperationStateTest {
   void startedBatchShouldNotBePending() {
     // given
     final var batchOperationKey = 1L;
-    final var roleRecord =
+    final var batchRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
-    state.create(batchOperationKey, roleRecord);
+    state.create(batchOperationKey, batchRecord);
 
     // when
     state.appendItemKeys(
@@ -283,6 +283,23 @@ public class BatchOperationStateTest {
         batchOperationKey, LongStream.range(0, numKeys).boxed().collect(Collectors.toSet()));
 
     return batchOperationKey;
+  }
+
+  @Test
+  void completedBatchShouldBeRemoved() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+    state.create(batchOperationKey, batchRecord);
+
+    // when
+    state.complete(batchOperationKey);
+
+    // then
+    assertThat(state.get(batchOperationKey)).isEmpty();
   }
 
   private static UnsafeBuffer convertToBuffer(final Object object) {

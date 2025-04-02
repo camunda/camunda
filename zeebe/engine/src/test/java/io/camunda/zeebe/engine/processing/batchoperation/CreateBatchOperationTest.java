@@ -51,7 +51,7 @@ public final class CreateBatchOperationTest {
     final var batchOperationKey =
         engine
             .batchOperation()
-            .ofType(BatchOperationType.PROCESS_CANCELLATION)
+            .newCreation(BatchOperationType.PROCESS_CANCELLATION)
             .withFilter(new UnsafeBuffer())
             .expectRejection()
             .create()
@@ -75,7 +75,7 @@ public final class CreateBatchOperationTest {
     final var batchOperationKey =
         engine
             .batchOperation()
-            .ofType(BatchOperationType.PROCESS_CANCELLATION)
+            .newCreation(BatchOperationType.PROCESS_CANCELLATION)
             .withFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}")))
             .expectRejection()
             .create()
@@ -117,7 +117,7 @@ public final class CreateBatchOperationTest {
     final long batchOperationKey =
         engine
             .batchOperation()
-            .ofType(BatchOperationType.PROCESS_CANCELLATION)
+            .newCreation(BatchOperationType.PROCESS_CANCELLATION)
             .withFilter(filterBuffer)
             .create()
             .getValue()
