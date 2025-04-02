@@ -106,7 +106,7 @@ public class RoleController {
   @CamundaPutMapping(
       path = "/{roleId}/users/{username}",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> addRole(
+  public CompletableFuture<ResponseEntity<Object>> addUserToRole(
       @PathVariable final String roleId, @PathVariable final String username) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
