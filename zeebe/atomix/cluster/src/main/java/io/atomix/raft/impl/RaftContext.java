@@ -572,7 +572,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
               "Failed to commit index %s because of a flush error: %s", commitIndex, e);
         }
       }
-      raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
+      raftLog.setCommitIndex(commitIndex);
       this.commitIndex = commitIndex;
       meta.storeCommitIndex(commitIndex);
       final var clusterConfig = cluster.getConfiguration();
