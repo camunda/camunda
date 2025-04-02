@@ -82,4 +82,28 @@ public class UserTaskCreatingV2ApplierTest {
         .describedAs("Expect intermediate assignee to be present")
         .isEqualTo(initialAssignee);
   }
+
+  @Test
+  public void shouldStoreIntermediateStateAndNoAssigneeWhenCreatingUserTaskWithoutAssignee() {
+    // given
+    final long userTaskKey = new Random().nextLong();
+    final long elementInstanceKey = new Random().nextLong();
+
+    final var userTaskRecord =
+        new UserTaskRecord().setUserTaskKey(userTaskKey).setElementInstanceKey(elementInstanceKey);
+
+    // when
+    userTaskCreatingV2Applier.applyState(userTaskKey, userTaskRecord);
+
+    // then
+    // ensure the intermediate state is present without an assignee
+    assertThat(userTaskState.getIntermediateState(userTaskKey).getRecord().getAssignee())
+        .describedAs("Expect that intermediate state to be present")
+        .isEmpty();
+
+    // ensure the intermediate assignee is not present
+    assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+        .describedAs("Expect intermediate assignee to not be present")
+        .isNull();
+  }
 }
