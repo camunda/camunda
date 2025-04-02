@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.8.0-alpha3</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../optimize/pom.xml</relativePath>
   </parent>
 
