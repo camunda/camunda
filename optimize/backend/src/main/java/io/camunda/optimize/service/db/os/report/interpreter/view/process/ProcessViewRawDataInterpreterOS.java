@@ -176,7 +176,8 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
             context.getAllVariablesNames(),
             instanceIdsToUserTaskCount,
             processInstanceIdsToFlowNodeIdsAndDurations,
-            flowNodeIdsToFlowNodeNames);
+            flowNodeIdsToFlowNodeNames,
+            !context.isJsonExport());
 
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
     return ViewResult.builder().rawData(rawData).build();
