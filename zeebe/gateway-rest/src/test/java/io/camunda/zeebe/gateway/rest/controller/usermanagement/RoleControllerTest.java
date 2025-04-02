@@ -26,6 +26,7 @@ import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -391,5 +392,79 @@ public class RoleControllerTest extends RestControllerTest {
 
     // then
     verify(roleServices, times(1)).deleteRole(roleId);
+  }
+
+  @Test
+  void shouldAssignUserToRoleAndReturnAccepted() {
+    // given
+    final var roleId = "roleId";
+    final var username = "username";
+
+    when(roleServices.addMember(roleId, EntityType.USER, username))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(roleServices, times(1)).addMember(roleId, EntityType.USER, username);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingMissingUserToRole() {
+    // given
+    final var roleId = "roleId";
+    final var username = "username";
+    final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
+    when(roleServices.addMember(roleId, EntityType.USER, username))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "User not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).addMember(roleId, EntityType.USER, username);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingUserToMissingRole() {
+    // given
+    final String roleId = "roleId";
+    final String username = "username";
+    final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
+    when(roleServices.addMember(roleId, EntityType.USER, username))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).addMember(roleId, EntityType.USER, username);
   }
 }
