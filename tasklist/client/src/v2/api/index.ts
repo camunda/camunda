@@ -7,22 +7,39 @@
  */
 
 import {
-  endpoints,
+  endpoints as tasklistEndpoints,
   type QueryUserTasksRequestBody,
 } from '@vzeta/camunda-api-zod-schemas/tasklist';
+import {
+  endpoints as operateEndpoints,
+  type QueryProcessDefinitionsRequestBody,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
 
 const api = {
-  queryTasks: (body: QueryUserTasksRequestBody) => {
-    return new Request(getFullURL(endpoints.queryUserTasks.getUrl()), {
+  queryTasks: (body: QueryUserTasksRequestBody = {}) => {
+    return new Request(getFullURL(tasklistEndpoints.queryUserTasks.getUrl()), {
       ...BASE_REQUEST_OPTIONS,
-      method: endpoints.queryUserTasks.method,
-      body: JSON.stringify(body),
+      method: tasklistEndpoints.queryUserTasks.method,
+      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
       headers: {
         'Content-Type': 'application/json',
         'x-is-polling': 'true',
       },
     });
+  },
+  queryProcesses: (body: QueryProcessDefinitionsRequestBody = {}) => {
+    return new Request(
+      getFullURL(operateEndpoints.queryProcessDefinitions.getUrl()),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: operateEndpoints.queryProcessDefinitions.method,
+        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
   },
 } as const;
 

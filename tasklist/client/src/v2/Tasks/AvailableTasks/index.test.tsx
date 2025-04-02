@@ -16,7 +16,7 @@ import {AvailableTasks} from './index';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
-import * as tasksMocks from 'v1/mocks/tasks';
+import * as tasksMocks from 'v2/mocks/tasks';
 import * as userMocks from 'common/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
@@ -65,6 +65,8 @@ describe('<AvailableTasks />', () => {
         loading
         onScrollDown={noop}
         onScrollUp={noop}
+        hasNextPage={false}
+        hasPreviousPage={false}
         tasks={[]}
       />,
       {
@@ -80,6 +82,8 @@ describe('<AvailableTasks />', () => {
         loading={false}
         onScrollDown={noop}
         onScrollUp={noop}
+        hasNextPage={false}
+        hasPreviousPage={false}
         tasks={tasksMocks.tasks}
       />,
     );
@@ -96,6 +100,8 @@ describe('<AvailableTasks />', () => {
         loading={false}
         onScrollDown={noop}
         onScrollUp={noop}
+        hasNextPage={false}
+        hasPreviousPage={false}
         tasks={tasksMocks.tasks}
       />,
       {wrapper: getWrapper()},
@@ -108,21 +114,21 @@ describe('<AvailableTasks />', () => {
     const withinFirstTask = within(screen.getByTestId('task-0'));
     const withinSecondTask = within(screen.getByTestId('task-1'));
 
-    expect(withinFirstTask.getByText(firstTask.name)).toBeInTheDocument();
+    expect(withinFirstTask.getByText(firstTask.name!)).toBeInTheDocument();
     expect(
-      withinFirstTask.getByText(firstTask.processName),
+      withinFirstTask.getByText(firstTask.processName!),
     ).toBeInTheDocument();
     expect(
-      withinFirstTask.getByTitle('Created on 28th of May, 2023 at 10:11 AM'),
+      withinFirstTask.getByTitle('Created on 1st of January, 2024 at 12:00 AM'),
     ).toBeInTheDocument();
     expect(await withinFirstTask.findByText('Me')).toBeInTheDocument();
 
-    expect(withinSecondTask.getByText(secondTask.name)).toBeInTheDocument();
+    expect(withinSecondTask.getByText(secondTask.name!)).toBeInTheDocument();
     expect(
-      withinSecondTask.getByText(secondTask.processName),
+      withinSecondTask.getByText(secondTask.processName!),
     ).toBeInTheDocument();
     expect(
-      withinSecondTask.getByTitle('Created on 29th of May, 2023 at 1:14 PM'),
+      withinSecondTask.getByTitle('Created on 1st of January, 2024 at 1:00 AM'),
     ).toBeInTheDocument();
     expect(withinSecondTask.getByText('mustermann')).toBeInTheDocument();
   });
@@ -133,6 +139,8 @@ describe('<AvailableTasks />', () => {
         loading={false}
         onScrollDown={noop}
         onScrollUp={noop}
+        hasNextPage={false}
+        hasPreviousPage={false}
         tasks={[]}
       />,
       {wrapper: getWrapper()},

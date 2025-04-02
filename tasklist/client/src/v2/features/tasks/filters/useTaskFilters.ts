@@ -15,7 +15,8 @@ import {querySortOrderSchema} from '@vzeta/camunda-api-zod-schemas';
 const apiFiltersSchema = queryUserTasksRequestBodySchema.shape.filter
   .unwrap()
   .omit({
-    variables: true,
+    localVariables: true,
+    processInstanceVariables: true,
   });
 
 const filtersSchema = z
@@ -33,8 +34,8 @@ const filtersSchema = z
   })
   .merge(
     apiFiltersSchema.omit({
-      candidateGroups: true,
-      candidateUsers: true,
+      candidateGroup: true,
+      candidateUser: true,
       processInstanceKey: true,
       processDefinitionKey: true,
       userTaskKey: true,

@@ -9,7 +9,54 @@
 import {Select, SelectItem} from '@carbon/react';
 import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 import {useProcesses} from 'v1/api/useProcesses.query';
+import {useAllProcessDefinitions} from 'v2/api/useAllProcessDefinitions.query';
 import {useTranslation} from 'react-i18next';
+import {getClientConfig} from 'common/config/getClientConfig';
+import type {Process} from 'v1/api/types';
+import type {ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/operate';
+
+const useMultiModeProcesses =
+  getClientConfig().clientMode === 'v2'
+    ? useAllProcessDefinitions
+    : useProcesses;
+
+function isV2Process(
+  process: Process[] | ProcessDefinition[],
+): process is ProcessDefinition[] {
+  return process.length > 0 && 'processDefinitionKey' in process[0];
+}
+
+function normalizeProcesses(processes: Process[] | ProcessDefinition[]): {
+  value: string;
+  label: string;
+}[] {
+  if (processes.length === 0) {
+    return [];
+  }
+
+  if (isV2Process(processes)) {
+    return processes.map(
+      ({processDefinitionKey, name, processDefinitionId, version}) => ({
+        value: processDefinitionKey.toString(),
+        label: `${name ?? processDefinitionId} - v${version}`,
+      }),
+    );
+  }
+
+  return processes.map(({id, name, bpmnProcessId}) => ({
+    value: id,
+    label: name ?? bpmnProcessId,
+  }));
+}
+
+function isV2Result(data: unknown): data is {items: ProcessDefinition[]} {
+  return (
+    getClientConfig().clientMode === 'v2' &&
+    data !== null &&
+    typeof data === 'object' &&
+    'items' in data
+  );
+}
 
 type Props = {
   tenantId?: string;
@@ -21,7 +68,7 @@ const ProcessesSelect: React.FC<Props> = ({
   ...props
 }) => {
   const {t} = useTranslation();
-  const {data} = useProcesses(
+  const {data} = useMultiModeProcesses(
     {
       tenantId,
     },
@@ -30,17 +77,16 @@ const ProcessesSelect: React.FC<Props> = ({
       refetchInterval: false,
     },
   );
-  const processes = data?.processes ?? [];
+
+  const processes = normalizeProcesses(
+    (isV2Result(data) ? data.items : data?.processes) ?? [],
+  );
 
   return (
     <Select {...props} disabled={disabled || processes.length === 0}>
       <SelectItem value="all" text={t('customFiltersModalAllProcesses')} />
-      {processes.map((process) => (
-        <SelectItem
-          key={process.id}
-          value={process.id}
-          text={process.name ?? process.bpmnProcessId}
-        />
+      {processes.map(({value, label}) => (
+        <SelectItem key={value} value={value} text={label} />
       ))}
     </Select>
   );

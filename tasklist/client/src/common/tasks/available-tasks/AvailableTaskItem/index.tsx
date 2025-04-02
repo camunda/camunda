@@ -23,7 +23,7 @@ import {
 } from 'common/dates/formatDateRelative';
 import {unraw} from './unraw';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
-import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
+import {useMultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';
 import {encodeTaskOpenedRef} from 'common/tracking/reftags';
 import {AssigneeTag} from 'common/components/AssigneeTag';
 import {DateLabel} from 'common/tasks/available-tasks/DateLabel';
@@ -38,12 +38,12 @@ type Props = {
   taskId: string;
   displayName: string;
   processDisplayName: string;
-  context: string | null;
-  assignee: string | null;
+  context?: string | null;
+  assignee: string | null | undefined;
   creationDate: string;
-  followUpDate: string | null;
-  dueDate: string | null;
-  completionDate: string | null;
+  followUpDate: string | null | undefined;
+  dueDate: string | null | undefined;
+  completionDate: string | null | undefined;
   priority: number | null;
   currentUser: CurrentUser;
   position: number;
@@ -55,7 +55,7 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
       taskId,
       displayName,
       processDisplayName,
-      context,
+      context = null,
       assignee,
       creationDate: creationDateString,
       followUpDate: followUpDateString,
@@ -69,7 +69,7 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
   ) => {
     const location = useLocation();
     const isActive = useIsCurrentTaskOpen(taskId);
-    const {filter, sortBy} = useTaskFilters();
+    const {filter, sortBy} = useMultiModeTaskFilters();
     const {t} = useTranslation();
 
     const creationDate = formatISODateTime(creationDateString);

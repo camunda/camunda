@@ -40,10 +40,11 @@ const getQueryVariables = (
       limit: pageSize,
     },
   };
-  const {variables = [], ...parsedFilters} = convertFiltersToQueryVariables({
-    ...remainingFilters,
-    filter,
-  });
+  const {processInstanceVariables = [], ...parsedFilters} =
+    convertFiltersToQueryVariables({
+      ...remainingFilters,
+      filter,
+    });
 
   switch (filter) {
     case 'assigned-to-me': {
@@ -61,6 +62,9 @@ const getQueryVariables = (
         ...BASE_QUERY_VARIABLES,
         filter: {
           state: 'CREATED',
+          assignee: {
+            $exists: false,
+          },
           ...parsedFilters,
         },
       };
@@ -88,11 +92,11 @@ const getQueryVariables = (
       return {
         ...BASE_QUERY_VARIABLES,
         filter:
-          variables.length === 0
+          processInstanceVariables.length === 0
             ? parsedFilters
             : {
                 ...parsedFilters,
-                variables,
+                processInstanceVariables,
               },
       };
     }
@@ -124,18 +128,20 @@ function convertFiltersToQueryVariables(
   const customFilters = getStateLocally('customFilters')?.[filter];
 
   if (customFilters !== undefined && Array.isArray(customFilters?.variables)) {
-    updatedFilters.variables = customFilters.variables.map(({name, value}) => ({
-      name: name!,
-      value: value!,
-    }));
+    updatedFilters.processInstanceVariables = customFilters.variables.map(
+      ({name, value}) => ({
+        name: name!,
+        value: value!,
+      }),
+    );
   }
 
   if (candidateGroup !== undefined) {
-    updatedFilters.candidateGroups = [candidateGroup];
+    updatedFilters.candidateGroup = candidateGroup;
   }
 
   if (candidateUser !== undefined) {
-    updatedFilters.candidateUsers = [candidateUser];
+    updatedFilters.candidateUser = candidateUser;
   }
 
   return updatedFilters;
