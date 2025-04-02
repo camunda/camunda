@@ -29,7 +29,7 @@ import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregat
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.util.List;
 
 public class ProcessDefinitionFlowNodeStatisticsAggregationTransformer
