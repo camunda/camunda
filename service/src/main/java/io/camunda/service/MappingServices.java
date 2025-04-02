@@ -86,15 +86,6 @@ public class MappingServices
             .setMappingId(request.mappingId()));
   }
 
-  public MappingEntity getMapping(final Long mappingKey) {
-    return findMapping(mappingKey)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_KEY.formatted(mappingKey),
-                    CamundaSearchException.Reason.NOT_FOUND));
-  }
-
   public MappingEntity getMapping(final String mappingId) {
     return findMapping(mappingId)
         .orElseThrow(
@@ -102,14 +93,6 @@ public class MappingServices
                 new CamundaSearchException(
                     ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_ID.formatted(mappingId),
                     CamundaSearchException.Reason.NOT_FOUND));
-  }
-
-  public Optional<MappingEntity> findMapping(final Long mappingKey) {
-    return search(
-            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingKey(mappingKey)).build())
-        .items()
-        .stream()
-        .findFirst();
   }
 
   public Optional<MappingEntity> findMapping(final String mappingId) {
