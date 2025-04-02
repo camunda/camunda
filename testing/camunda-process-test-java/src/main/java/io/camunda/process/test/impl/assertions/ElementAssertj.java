@@ -229,6 +229,67 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
         });
   }
 
+  public void hasCompletedElementsInOrder(
+      final long processInstanceKey, final List<ElementSelector> elementSelectors) {
+
+    awaitFlowNodeInstanceAssertion(
+        processInstanceFilter(processInstanceKey),
+        flowNodeInstances -> {
+          final List<FlowNodeInstance> completedFlowNodeInstances =
+              getInstancesInState(flowNodeInstances, FlowNodeInstanceState.COMPLETED);
+
+          final List<FlowNodeInstance> relevantFlowNodeInstances =
+              completedFlowNodeInstances.stream()
+                  .filter(i -> elementSelectors.stream().anyMatch(e -> e.test(i)))
+                  .collect(Collectors.toList());
+
+          if (elementSelectors.size() > relevantFlowNodeInstances.size()) {
+            fail(
+                String.format(
+                    "%s should have completed elements %s in order, but only the following elements were encountered:\n%s",
+                    actual,
+                    formatElementSelectors(elementSelectors),
+                    formatFlowNodeInstanceStates(
+                        flowNodeInstances, FlowNodeInstance::getFlowNodeId)));
+          }
+
+          // Loop over flowNodeInstances and check if the order is correct. With each iteration,
+          // remove the first element of the flow node instance list and call isSequenceFound() to
+          // with the remaining list.
+          // This ensures we pass with instances 'A, B, A' for selectors 'B, A'.
+          boolean sequenceFound = false;
+          for (int i = 0; i <= relevantFlowNodeInstances.size() - elementSelectors.size(); i++) {
+            if (isSequenceFound(
+                relevantFlowNodeInstances.subList(i, relevantFlowNodeInstances.size()),
+                elementSelectors)) {
+              sequenceFound = true;
+              break;
+            }
+          }
+
+          if (!sequenceFound) {
+            fail(
+                String.format(
+                    "%s should have completed elements %s in order, but only the following elements were encountered:\n%s",
+                    actual,
+                    formatElementSelectors(elementSelectors),
+                    formatFlowNodeInstanceStates(
+                        flowNodeInstances, FlowNodeInstance::getFlowNodeId)));
+          }
+        });
+  }
+
+  private static boolean isSequenceFound(
+      final List<FlowNodeInstance> flowNodeInstances,
+      final List<ElementSelector> elementSelectors) {
+    for (int i = 0; i < elementSelectors.size(); i++) {
+      if (!elementSelectors.get(i).test(flowNodeInstances.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   private void awaitFlowNodeInstanceAssertion(
       final Consumer<FlownodeInstanceFilter> filter,
       final Consumer<List<FlowNodeInstance>> assertion) {
