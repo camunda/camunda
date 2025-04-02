@@ -16,7 +16,7 @@ import java.util.Collections;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends DbKey>
+public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends DbKey>
     implements DbKey, DbValue, ContainsForeignKeys {
   final FirstKeyType first;
   final SecondKeyType second;
