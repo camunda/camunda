@@ -495,9 +495,21 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();
       }
+<<<<<<< HEAD:atomix/cluster/src/main/java/io/atomix/raft/impl/RaftContext.java
       final long configurationIndex = cluster.getConfiguration().index();
       if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
         cluster.commitCurrentConfiguration();
+=======
+      raftLog.setCommitIndex(commitIndex);
+      this.commitIndex = commitIndex;
+      meta.storeCommitIndex(commitIndex);
+      final var clusterConfig = cluster.getConfiguration();
+      if (clusterConfig != null) {
+        final long configurationIndex = clusterConfig.index();
+        if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
+          cluster.commitCurrentConfiguration();
+        }
+>>>>>>> b494f4b4 (refactor: merge checks on commitIndex/raftLog.getLastIndex()):zeebe/atomix/cluster/src/main/java/io/atomix/raft/impl/RaftContext.java
       }
       replicationMetrics.setCommitIndex(commitIndex);
       notifyCommitListeners(commitIndex);
