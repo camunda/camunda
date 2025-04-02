@@ -36,7 +36,7 @@ const SourceDiagram: React.FC = observer(() => {
     isLoading: isMigrationSourceXmlLoading,
     isError: isMigrationSourceXmlError,
   } = useMigrationSourceXml({
-    processDefinitionKey: sourceProcessDefinitionKey!,
+    processDefinitionKey: sourceProcessDefinitionKey ?? undefined,
     bpmnProcessId: processesStore.getSelectedProcessDetails().bpmnProcessId,
   });
 
@@ -56,7 +56,7 @@ const SourceDiagram: React.FC = observer(() => {
         processInstanceKey: getProcessInstanceKey(),
       },
     },
-    sourceProcessDefinitionKey!,
+    sourceProcessDefinitionKey ?? undefined,
     processInstancesSelectionStore.selectedProcessInstanceIds.length > 0,
   );
 
