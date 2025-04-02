@@ -53,16 +53,6 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
 
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
-    final var record = command.getValue();
-    final var groupId = record.getGroupId();
-    final var persistedGroup = groupState.get(groupId);
-    if (persistedGroup.isPresent()) {
-      final var errorMessage = GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(groupId);
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      return;
-    }
-
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.CREATE);
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
@@ -71,6 +61,16 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    final var record = command.getValue();
+    final var groupId = record.getGroupId();
+    final var persistedGroup = groupState.get(groupId);
+    if (persistedGroup.isPresent()) {
+      final var errorMessage = GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(groupId);
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 
