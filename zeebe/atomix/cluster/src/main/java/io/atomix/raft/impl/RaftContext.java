@@ -959,7 +959,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                    creating an inconsistent timeline of events: \
                    THE CLUSTER SHOULD BE STOPPED IMMEDIATELY to further prevent inconsistencies.""",
                 firstCommitIndex, lastFlushedIndex, commitIndex);
-        throw new RuntimeException(errorMessage);
+        throw new IllegalStateException(errorMessage);
       }
       this.firstCommitIndex = firstCommitIndex;
       LOGGER.info(
