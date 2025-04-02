@@ -762,12 +762,6 @@ public class PassiveRole extends InactiveRole {
     // Set the first commit index.
     raft.setFirstCommitIndex(request.commitIndex());
 
-    // Update the context commit and global indices.
-    final long previousCommitIndex = raft.setCommitIndex(commitIndex);
-    if (previousCommitIndex < commitIndex) {
-      log.trace("Committed entries up to index {}", commitIndex);
-    }
-
     try {
       //     Make sure all entries are flushed before ack to ensure we have persisted what we
       //     acknowledge
@@ -779,6 +773,12 @@ public class PassiveRole extends InactiveRole {
       // Flush failed, return error to the leader so we can retry.
       failAppend(request.prevLogIndex(), future);
       return;
+    }
+
+    // Update the context commit and global indices.
+    final long previousCommitIndex = raft.setCommitIndex(commitIndex);
+    if (previousCommitIndex < commitIndex) {
+      log.trace("Committed entries up to index {}", commitIndex);
     }
 
     // Return a successful append response.
