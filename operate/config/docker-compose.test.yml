@@ -23,7 +23,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.5.16
+    image: camunda/zeebe:8.5.17
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -37,7 +37,7 @@ services:
       - 8000:8000
     restart: always
   operate:
-    image: camunda/operate:8.5.12
+    image: camunda/operate:8.5.13
     container_name: operate
     environment:
       - SERVER_PORT=8081
