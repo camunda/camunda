@@ -383,9 +383,9 @@ public final class ControllableRaftContexts {
   }
 
   public void restart(final MemberId memberId) {
-    final var raftcontext = raftServers.get(memberId);
-    try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
-      raftServers.get(memberId).close();
+    {
+      final var raftcontext = raftServers.get(memberId);
+      raftcontext.getThreadContext().execute(raftcontext::close);
     }
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
@@ -402,8 +402,9 @@ public final class ControllableRaftContexts {
   // of one node at a time.
   public void restartWithDataLoss(final MemberId memberId) {
     LOG.info("Shutting down member {}", memberId.id());
-    try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
-      raftServers.get(memberId).close();
+    {
+      final var raftContext = raftServers.get(memberId);
+      raftContext.getThreadContext().execute(raftContext::close);
     }
     deterministicExecutors.remove(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));

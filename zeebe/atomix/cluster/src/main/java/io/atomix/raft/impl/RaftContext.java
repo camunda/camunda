@@ -878,10 +878,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       LOGGER.error("Failed to close metastore", e);
     }
 
+    LOGGER.debug("Raft context closed");
     // close thread contexts
     threadContext.close();
-
-    LOGGER.debug("Raft context closed");
   }
 
   /** Unregisters server handlers on the configured protocol. */
