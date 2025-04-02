@@ -863,7 +863,7 @@
             <goals>
               <goal>unpack</goal>
             </goals>
-            <phase>generate-resources</phase>
+            <phase>prepare-package</phase>
             <configuration>
               <artifactItems>
                 <artifactItem>
