@@ -23,19 +23,14 @@ public class PersistedUser extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<UserRecord> userProp =
       new ObjectProperty<>("user", new UserRecord());
-  private final ArrayProperty<LongValue> roleKeysProp =
-      new ArrayProperty<>("roleKeys", LongValue::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>("tenantIds", StringValue::new);
   private final ArrayProperty<LongValue> groupKeysProp =
       new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedUser() {
-    super(4);
-    declareProperty(userProp)
-        .declareProperty(roleKeysProp)
-        .declareProperty(tenantIdsProp)
-        .declareProperty(groupKeysProp);
+    super(3);
+    declareProperty(userProp).declareProperty(tenantIdsProp).declareProperty(groupKeysProp);
   }
 
   public PersistedUser copy() {
@@ -70,23 +65,6 @@ public class PersistedUser extends UnpackedObject implements DbValue {
 
   public String getPassword() {
     return getUser().getPassword();
-  }
-
-  public List<Long> getRoleKeysList() {
-    return StreamSupport.stream(roleKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
-        .collect(Collectors.toList());
-  }
-
-  public PersistedUser setRoleKeysList(final List<Long> roleKeys) {
-    roleKeysProp.reset();
-    roleKeys.forEach(roleKey -> roleKeysProp.add().setValue(roleKey));
-    return this;
-  }
-
-  public PersistedUser addRoleKey(final long roleKey) {
-    roleKeysProp.add().setValue(roleKey);
-    return this;
   }
 
   public List<String> getTenantIdsList() {

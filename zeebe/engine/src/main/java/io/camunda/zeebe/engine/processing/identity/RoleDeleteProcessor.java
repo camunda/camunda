@@ -14,8 +14,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -35,6 +37,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
       "Expected to delete role with key '%s', but a role with this key doesn't exist.";
   private final RoleState roleState;
   private final AuthorizationState authorizationState;
+  private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -50,6 +53,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = state.getRoleState();
     authorizationState = state.getAuthorizationState();
+    membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -115,6 +119,18 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
   private void removeMembers(final RoleRecord record) {
     final var roleKey = record.getRoleKey();
+    membershipState.forEachMember(
+        RelationType.ROLE,
+        String.valueOf(roleKey),
+        (entityType, entityId) -> {
+          stateWriter.appendFollowUpEvent(
+              roleKey,
+              RoleIntent.ENTITY_REMOVED,
+              new RoleRecord()
+                  .setRoleKey(roleKey)
+                  .setEntityType(entityType)
+                  .setEntityKey(Long.parseLong(entityId)));
+        });
     roleState
         .getEntitiesByType(roleKey)
         .forEach(

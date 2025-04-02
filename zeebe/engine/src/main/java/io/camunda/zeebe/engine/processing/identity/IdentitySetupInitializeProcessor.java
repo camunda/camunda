@@ -16,8 +16,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
@@ -55,6 +57,7 @@ public final class IdentitySetupInitializeProcessor
   private final MappingState mappingState;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedCommandWriter commandWriter;
+  private final MembershipState membershipState;
 
   public IdentitySetupInitializeProcessor(
       final ProcessingState processingState,
@@ -65,6 +68,7 @@ public final class IdentitySetupInitializeProcessor
     userState = processingState.getUserState();
     tenantState = processingState.getTenantState();
     mappingState = processingState.getMappingState();
+    membershipState = processingState.getMembershipState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
@@ -264,7 +268,17 @@ public final class IdentitySetupInitializeProcessor
 
   private boolean assignEntityToRole(
       final long roleKey, final long entityKey, final EntityType entityType) {
-    final var isAlreadyAssigned = roleState.getEntityType(roleKey, entityKey).isPresent();
+
+    final var isAlreadyAssigned =
+        switch (entityType) {
+          case USER ->
+              membershipState.hasRelation(
+                  EntityType.USER,
+                  Long.toString(entityKey),
+                  RelationType.ROLE,
+                  Long.toString(roleKey));
+          default -> roleState.getEntityType(roleKey, entityKey).isPresent();
+        };
     if (isAlreadyAssigned) {
       return false;
     }

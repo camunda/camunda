@@ -222,57 +222,6 @@ public class UserStateTest {
     assertThat(persistedUser).isEmpty();
   }
 
-  @Test
-  void shouldAddRole() {
-    // given
-    final long userKey = 1L;
-    final var username = "username";
-    final var name = "Foo";
-    final var email = "foo@bar.com";
-    final var password = "password";
-    userState.create(
-        new UserRecord()
-            .setUserKey(userKey)
-            .setUsername(username)
-            .setName(name)
-            .setEmail(email)
-            .setPassword(password));
-
-    // when
-    final long roleKey = 1L;
-    userState.addRole(username, roleKey);
-
-    // then
-    final var persistedUser = userState.getUser(username).get();
-    assertThat(persistedUser.getRoleKeysList()).contains(roleKey);
-  }
-
-  @Test
-  void shouldRemoveRole() {
-    // given
-    final long userKey = 1L;
-    final var username = "username";
-    final var name = "Foo";
-    final var email = "foo@bar.com";
-    final var password = "password";
-    userState.create(
-        new UserRecord()
-            .setUserKey(userKey)
-            .setUsername(username)
-            .setName(name)
-            .setEmail(email)
-            .setPassword(password));
-    final long roleKey = 1L;
-    userState.addRole(username, roleKey);
-
-    // when
-    userState.removeRole(username, roleKey);
-
-    // then
-    final var persistedUser = userState.getUser(username).get();
-    assertThat(persistedUser.getRoleKeysList()).isEmpty();
-  }
-
   @DisplayName("should add a tenant to the user")
   @Test
   void shouldAddTenantToUser() {

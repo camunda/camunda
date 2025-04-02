@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.scaling.redistribution.DbRedistributionState;
 import io.camunda.zeebe.engine.scaling.redistribution.MutableRedistributionState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
 import io.camunda.zeebe.engine.state.authorization.DbMappingState;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
 import io.camunda.zeebe.engine.state.authorization.DbRoleState;
 import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
 import io.camunda.zeebe.engine.state.clock.DbClockState;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
@@ -122,6 +124,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableGroupState groupState;
   private final MutableMappingState mappingState;
   private final MutableBatchOperationState batchOperationState;
+  private final MutableMembershipState membershipState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
 
@@ -177,6 +180,7 @@ public class ProcessingDbState implements MutableProcessingState {
     tenantState = new DbTenantState(zeebeDb, transactionContext);
     mappingState = new DbMappingState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
+    membershipState = new DbMembershipState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
@@ -346,6 +350,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableBatchOperationState getBatchOperationState() {
     return batchOperationState;
+  }
+
+  @Override
+  public MutableMembershipState getMembershipState() {
+    return membershipState;
   }
 
   @Override

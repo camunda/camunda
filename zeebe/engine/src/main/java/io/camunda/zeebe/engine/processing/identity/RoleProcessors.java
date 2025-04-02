@@ -45,9 +45,7 @@ public class RoleProcessors {
         ValueType.ROLE,
         RoleIntent.ADD_ENTITY,
         new RoleAddEntityProcessor(
-            processingState.getRoleState(),
-            processingState.getUserState(),
-            processingState.getMappingState(),
+            processingState,
             authCheckBehavior,
             keyGenerator,
             writers,
@@ -56,9 +54,7 @@ public class RoleProcessors {
         ValueType.ROLE,
         RoleIntent.REMOVE_ENTITY,
         new RoleRemoveEntityProcessor(
-            processingState.getRoleState(),
-            processingState.getUserState(),
-            processingState.getMappingState(),
+            processingState,
             authCheckBehavior,
             keyGenerator,
             writers,

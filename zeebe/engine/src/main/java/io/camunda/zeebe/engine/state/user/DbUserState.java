@@ -68,24 +68,6 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public void addRole(final String username, final long roleKey) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    persistedUser.addRoleKey(roleKey);
-    usersColumnFamily.update(this.username, persistedUser);
-  }
-
-  @Override
-  public void removeRole(final String username, final long roleKey) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    final List<Long> roleKeys = persistedUser.getRoleKeysList();
-    roleKeys.remove(roleKey);
-    persistedUser.setRoleKeysList(roleKeys);
-    usersColumnFamily.update(this.username, persistedUser);
-  }
-
-  @Override
   public void addTenantId(final String username, final String tenantId) {
     this.username.wrapString(username);
     final var persistedUser = usersColumnFamily.get(this.username);

@@ -10,16 +10,19 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -51,6 +54,8 @@ public final class AuthorizationCheckBehavior {
   private final UserState userState;
   private final MappingState mappingState;
   private final GroupState groupState;
+  private final MembershipState membershipState;
+
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
 
@@ -60,7 +65,7 @@ public final class AuthorizationCheckBehavior {
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
     groupState = processingState.getGroupState();
-    processingState.getTenantState();
+    membershipState = processingState.getMembershipState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isEnabled();
   }
@@ -290,9 +295,12 @@ public final class AuthorizationCheckBehavior {
         authorizationState.getResourceIdentifiers(
             AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
     // Get resource identifiers for the user's roles
+    final var roleIds =
+        membershipState.getMemberships(
+            EntityType.USER, Long.toString(user.getUserKey()), RelationType.ROLE);
     final var roleAuthorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiersForOwnerKeys(
-            AuthorizationOwnerType.ROLE, user.getRoleKeysList(), resourceType, permissionType);
+        getAuthorizedResourceIdentifiersForOwners(
+            AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
     // Get resource identifiers for the user's groups
     final var groupAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwnerKeys(
