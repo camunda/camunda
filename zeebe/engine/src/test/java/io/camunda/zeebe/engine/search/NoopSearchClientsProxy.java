@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.search;
 
+import static java.util.Collections.emptyList;
+
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -55,7 +57,7 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
@@ -66,7 +68,7 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
@@ -77,35 +79,35 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
       final DecisionInstanceQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       final DecisionRequirementsQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
@@ -115,12 +117,12 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
@@ -131,24 +133,24 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
-    return null;
+    return emptyList();
   }
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery query) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
@@ -158,7 +160,7 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
@@ -168,22 +170,22 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
-    return null;
+    return SearchQueryResult.empty();
   }
 
   @Override
   public SearchClientsProxy withSecurityContext(final SecurityContext securityContext) {
-    return null;
+    return this;
   }
 
   @Override
