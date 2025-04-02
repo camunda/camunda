@@ -15,6 +15,10 @@ import java.util.Objects;
 public record SearchQueryResult<T>(
     long total, List<T> items, Object[] firstSortValues, Object[] lastSortValues) {
 
+  public static <T> SearchQueryResult<T> empty() {
+    return new SearchQueryResult<>(0, Collections.emptyList(), null, null);
+  }
+
   public static final class Builder<T> implements ObjectBuilder<SearchQueryResult<T>> {
 
     private long total;
