@@ -8,7 +8,7 @@
 
 import {Popover, Stack} from '@carbon/react';
 import {formatISODateTime} from 'common/dates/formatDateRelative';
-import {LabelWithPopover} from './LabelWithPopover';
+import {LabelWithPopover} from 'common/tasks/available-tasks/LabelWithPopover';
 import styles from './styles.module.scss';
 
 const DateLabel: React.FC<{

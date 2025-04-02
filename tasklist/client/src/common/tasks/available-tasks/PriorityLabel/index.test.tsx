@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'common/testing/testing-library';
-import {PriorityLabel} from './PriorityLabel';
+import {PriorityLabel} from './index';
 
 describe('PriorityLabel', () => {
   const priorities = [

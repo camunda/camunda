@@ -1,0 +1,78 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/type';
+@use '@carbon/layout';
+@use 'src/common/tasks/available-tasks/variables' as vars;
+
+.label {
+  @include type.type-style('label-01');
+  color: var(--cds-text-secondary);
+
+  &.labelPrimary {
+    color: var(--cds-text-primary);
+  }
+
+  &.contextWrap {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre;
+  }
+}
+
+.name {
+  @include type.type-style('body-short-02');
+  color: var(--cds-text-primary);
+}
+
+.flex {
+  min-height: layout.to-rem(20px);
+  display: flex;
+
+  &.flexRow {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  &.flexColumn {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  & .clip {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &.alignItemsEnd {
+    align-items: flex-end;
+  }
+}
+
+.taskSkeleton {
+  min-height: layout.to-rem(136px);
+  max-height: layout.to-rem(136px);
+
+  &:last-child > * {
+    border-bottom: vars.$ENTRY_DEFAULT_BORDER_WIDTH solid
+      var(--cds-border-subtle-selected);
+    padding: calc(vars.$SPACING - vars.$ENTRY_DEFAULT_BORDER_WIDTH)
+      vars.$SPACING;
+  }
+
+  & > * {
+    border-top: vars.$ENTRY_DEFAULT_BORDER_WIDTH solid
+      var(--cds-border-subtle-selected);
+    padding: calc(vars.$SPACING - vars.$ENTRY_DEFAULT_BORDER_WIDTH)
+      vars.$SPACING vars.$SPACING vars.$SPACING;
+  }
+}

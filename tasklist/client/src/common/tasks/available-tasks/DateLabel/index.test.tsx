@@ -8,7 +8,7 @@
 
 import {render, screen} from 'common/testing/testing-library';
 import {formatDate} from 'common/dates/formatDateRelative';
-import {DateLabel} from './DateLabel';
+import {DateLabel} from './index';
 
 describe('DateLabel', () => {
   it('uses the absolute title for far dates when the difference is less than a week', () => {

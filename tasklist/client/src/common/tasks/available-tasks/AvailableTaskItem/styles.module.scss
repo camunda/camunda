@@ -8,11 +8,7 @@
 
 @use '@carbon/type';
 @use '@carbon/layout';
-
-$SPACING: var(--cds-spacing-05);
-$ENTRY_DEFAULT_BORDER_WIDTH: 1px;
-$ENTRY_SELECTED_BORDER_WIDTH: 4px;
-$ENTRY_FOCUSED_BORDER_WIDTH: 2px;
+@use 'src/common/tasks/available-tasks/variables' as vars;
 
 .label {
   @include type.type-style('label-01');
@@ -80,20 +76,20 @@ $ENTRY_FOCUSED_BORDER_WIDTH: 2px;
 
   &.active .taskLink {
     background-color: var(--cds-layer-selected);
-    border-left: $ENTRY_SELECTED_BORDER_WIDTH solid
+    border-left: vars.$ENTRY_SELECTED_BORDER_WIDTH solid
       var(--cds-border-interactive);
-    padding: $SPACING $SPACING $SPACING
-      calc($SPACING - $ENTRY_SELECTED_BORDER_WIDTH);
+    padding: vars.$SPACING vars.$SPACING vars.$SPACING
+      calc(vars.$SPACING - vars.$ENTRY_SELECTED_BORDER_WIDTH);
   }
 
   &.active:last-child .taskLink {
-    padding: $SPACING $SPACING $SPACING
-      calc($SPACING - $ENTRY_SELECTED_BORDER_WIDTH);
+    padding: vars.$SPACING vars.$SPACING vars.$SPACING
+      calc(vars.$SPACING - vars.$ENTRY_SELECTED_BORDER_WIDTH);
   }
 
   &.active + & .task-link:not(:focus) {
     border-top: none;
-    padding: $SPACING;
+    padding: vars.$SPACING;
   }
 
   &:not(.active) {
@@ -102,50 +98,33 @@ $ENTRY_FOCUSED_BORDER_WIDTH: 2px;
     }
 
     &:last-child .taskLink {
-      border-bottom: $ENTRY_DEFAULT_BORDER_WIDTH solid
+      border-bottom: vars.$ENTRY_DEFAULT_BORDER_WIDTH solid
         var(--cds-border-subtle-selected);
-      padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING;
+      padding: calc(vars.$SPACING - vars.$ENTRY_DEFAULT_BORDER_WIDTH)
+        vars.$SPACING;
     }
 
     & .taskLink {
-      border-top: $ENTRY_DEFAULT_BORDER_WIDTH solid
+      border-top: vars.$ENTRY_DEFAULT_BORDER_WIDTH solid
         var(--cds-border-subtle-selected);
-      padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING $SPACING
-        $SPACING;
+      padding: calc(vars.$SPACING - vars.$ENTRY_DEFAULT_BORDER_WIDTH)
+        vars.$SPACING vars.$SPACING vars.$SPACING;
     }
   }
 
   & .taskLink:focus {
     border: none;
-    padding: $SPACING;
-    outline: $ENTRY_FOCUSED_BORDER_WIDTH solid var(--cds-focus);
-    outline-offset: -$ENTRY_FOCUSED_BORDER_WIDTH;
+    padding: vars.$SPACING;
+    outline: vars.$ENTRY_FOCUSED_BORDER_WIDTH solid var(--cds-focus);
+    outline-offset: -(vars.$ENTRY_FOCUSED_BORDER_WIDTH);
   }
 
   &:last-child .taskLink:focus {
-    padding: $SPACING;
+    padding: vars.$SPACING;
   }
 
   &:first-child .taskLink {
     border-top-color: transparent;
-  }
-}
-
-.taskSkeleton {
-  min-height: layout.to-rem(136px);
-  max-height: layout.to-rem(136px);
-
-  &:last-child > * {
-    border-bottom: $ENTRY_DEFAULT_BORDER_WIDTH solid
-      var(--cds-border-subtle-selected);
-    padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING;
-  }
-
-  & > * {
-    border-top: $ENTRY_DEFAULT_BORDER_WIDTH solid
-      var(--cds-border-subtle-selected);
-    padding: calc($SPACING - $ENTRY_DEFAULT_BORDER_WIDTH) $SPACING $SPACING
-      $SPACING;
   }
 }
 

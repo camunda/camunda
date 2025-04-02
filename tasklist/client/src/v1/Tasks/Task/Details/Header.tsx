@@ -11,7 +11,7 @@ import {t as _t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
-import {AssigneeTag} from 'v1/Tasks/AssigneeTag';
+import {AssigneeTag} from 'common/components/AssigneeTag';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
 import type {Task} from 'v1/api/types';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';

@@ -10,7 +10,7 @@ import {SkeletonText, Stack} from '@carbon/react';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 
-const TaskSkeleton: React.FC = () => {
+const TaskPanelItemSkeleton: React.FC = () => {
   return (
     <article className={styles.taskSkeleton}>
       <Stack gap={3}>
@@ -37,4 +37,4 @@ const TaskSkeleton: React.FC = () => {
   );
 };
 
-export {TaskSkeleton};
+export {TaskPanelItemSkeleton};

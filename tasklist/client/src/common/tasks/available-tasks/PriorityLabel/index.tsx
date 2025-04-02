@@ -14,7 +14,7 @@ import {
   SkillLevelAdvanced,
   Critical,
 } from '@carbon/icons-react';
-import {LabelWithPopover} from './LabelWithPopover';
+import {LabelWithPopover} from 'common/tasks/available-tasks/LabelWithPopover';
 import {getPriorityLabel} from 'common/tasks/getPriorityLabel';
 
 type PriorityLabelProps = {

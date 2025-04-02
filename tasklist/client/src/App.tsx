@@ -85,6 +85,7 @@ const v1Routes = createRoutesFromElements(
 
 const v2Routes = createRoutesFromElements(
   <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
+    <Route path="login" lazy={() => import('common/auth/Login')} />
     <Route path="/" lazy={() => import('./common/components/Layout')}>
       <Route path="forbidden" element={<Forbidden />} />
       <Route
@@ -92,8 +93,12 @@ const v2Routes = createRoutesFromElements(
         ErrorBoundary={ErrorWithinLayout}
         Component={null}
       />
+      <Route
+        path="/"
+        lazy={() => import('./v2/Tasks')}
+        ErrorBoundary={ErrorWithinLayout}
+      />
     </Route>
-    <Route path="login" lazy={() => import('common/auth/Login')} />
   </Route>,
 );
 

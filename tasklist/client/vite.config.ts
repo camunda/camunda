@@ -72,6 +72,11 @@ export default defineConfig(({mode}) => ({
       },
     },
   },
+  resolve: {
+    alias: {
+      src: path.resolve(__dirname, './src'),
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
