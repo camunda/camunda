@@ -59,6 +59,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedCommandWriter commandWriter;
+  private final DeploymentRecord cachedDeploymentRecordCommand = new DeploymentRecord();
 
   public DeploymentReconstructProcessor(
       final KeyGenerator keyGenerator,
@@ -76,11 +77,6 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
   @Override
   public void processRecord(final TypedRecord<DeploymentRecord> record) {
-    if (record.getIntent() != DeploymentIntent.RECONSTRUCT) {
-      throw new IllegalArgumentException(
-          "Expected a record with intent DeploymentIntent.RECONSTRUCT, but got "
-              + record.getIntent());
-    }
     if (deploymentState.hasStoredAllDeployments()) {
       rejectionWriter.appendRejection(
           record,
@@ -109,8 +105,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     stateWriter.appendFollowUpEvent(
         deploymentRecord.getDeploymentKey(), DeploymentIntent.RECONSTRUCTED, deploymentRecord);
     // trigger reconstruction of another deployment reconstruction
-    // TODO: is there a "safe" way to avoid allocating a new DeploymentRecord each time?
-    commandWriter.appendNewCommand(DeploymentIntent.RECONSTRUCT, new DeploymentRecord());
+    commandWriter.appendNewCommand(DeploymentIntent.RECONSTRUCT, cachedDeploymentRecordCommand);
   }
 
   private Resource findNextResource() {
