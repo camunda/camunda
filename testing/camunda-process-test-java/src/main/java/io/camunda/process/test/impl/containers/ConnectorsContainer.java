@@ -15,6 +15,9 @@
  */
 package io.camunda.process.test.impl.containers;
 
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_GRPC_ADDRESS;
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_REST_ADDRESS;
+
 import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
 import java.net.URI;
@@ -49,15 +52,12 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
   }
 
   public ConnectorsContainer withZeebeGrpcApi(final String zeebeGrpcApi) {
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_ZEEBE_CLIENT_BROKER_GATEWAY_ADDRESS, zeebeGrpcApi);
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_ZEEBE_CLIENT_SECURITY_PLAINTEXT, "true");
+    withEnv(CONNECTORS_ENV_CAMUNDA_CLIENT_GRPC_ADDRESS, zeebeGrpcApi);
     return this;
   }
 
   public ConnectorsContainer withOperateApi(final String operateRestApi) {
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_URL, operateRestApi);
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_USERNAME, "demo");
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_PASSWORD, "demo");
+    withEnv(CONNECTORS_ENV_CAMUNDA_CLIENT_REST_ADDRESS, operateRestApi);
     return this;
   }
 
