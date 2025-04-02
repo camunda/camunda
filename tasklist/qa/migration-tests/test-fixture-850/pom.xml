@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-qa-migration-tests-parent</artifactId>
-    <version>8.6.13</version>
+    <version>8.6.14-SNAPSHOT</version>
   </parent>
   <artifactId>tasklist-qa-migration-tests-test-fixture-850</artifactId>
 
