@@ -119,14 +119,14 @@ public class UserTaskCreatedV2ApplierTest {
         UserTaskIntent.CORRECTED,
         userTaskRecord
             .setCandidateGroupsList(List.of("overwritten"))
-            .setCandidateUsersList(List.of("overwritten"))
-            .setDueDate("overwritten")
-            .setFollowUpDate("overwritten")
-            .setPriority(99)
             .setCandidateGroupsChanged()
+            .setCandidateUsersList(List.of("overwritten"))
             .setCandidateUsersChanged()
+            .setDueDate("overwritten")
             .setDueDateChanged()
+            .setFollowUpDate("overwritten")
             .setFollowUpDateChanged()
+            .setPriority(99)
             .setPriorityChanged());
 
     // when
