@@ -126,7 +126,9 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
 
           if (importPositionIsNotCompleted(key) && lastProcessedPosition.getCompleted()) {
             LOGGER.info(
-                "Import position [{}] for partition [{}] completed for tasklist", aliasName, partition);
+                "Import position [{}] for partition [{}] completed for tasklist",
+                aliasName,
+                partition);
           }
 
           mostRecentProcessedImportPositions.merge(
