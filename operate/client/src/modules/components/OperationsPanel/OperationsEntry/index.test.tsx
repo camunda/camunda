@@ -20,6 +20,8 @@ import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Filters} from 'App/Processes/ListView/Filters';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 function createWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -303,7 +305,7 @@ describe('OperationsEntry', () => {
 
   it('should not remove optional operation id filter when operation filter is applied twice', async () => {
     const {user} = render(
-      <>
+      <QueryClientProvider client={getMockQueryClient()}>
         <OperationsEntry
           {...mockProps}
           operation={{
@@ -312,7 +314,7 @@ describe('OperationsEntry', () => {
           }}
         />
         <Filters />
-      </>,
+      </QueryClientProvider>,
       {wrapper: createWrapper()},
     );
 

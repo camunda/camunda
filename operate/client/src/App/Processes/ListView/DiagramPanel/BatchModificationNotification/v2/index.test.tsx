@@ -14,6 +14,9 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockProcessXML} from 'modules/testUtils';
 
 jest.mock('modules/hooks/useProcessInstancesFilters');
 jest.mock('modules/stores/processes/processes.list', () => ({
@@ -32,9 +35,11 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <MemoryRouter initialEntries={[initialPath]}>
-        <QueryClientProvider client={getMockQueryClient()}>
-          {children}
-        </QueryClientProvider>
+        <ProcessDefinitionKeyContext.Provider value={'123'}>
+          <QueryClientProvider client={getMockQueryClient()}>
+            {children}
+          </QueryClientProvider>
+        </ProcessDefinitionKeyContext.Provider>
       </MemoryRouter>
     );
   };
@@ -56,21 +61,11 @@ describe('BatchModificationNotification', () => {
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [],
     });
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('should initially render batch modification notification', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess({
-      items: [],
-    });
-    render(<BatchModificationNotification />, {
-      wrapper: getWrapper(),
-    });
-
-    expect(screen.getByText(notificationText1)).toBeInTheDocument();
   });
 
   it('should render batch modification notification with instance count', async () => {

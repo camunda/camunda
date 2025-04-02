@@ -13,6 +13,8 @@ import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';
 import {createMemoryHistory} from 'history';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -21,16 +23,18 @@ function getWrapper(initialPath: string = Paths.processes()) {
     });
 
     return (
-      <HistoryRouter
-        history={createMemoryHistory({
-          initialEntries: [initialPath],
-        })}
-      >
-        {children}
-        <button onClick={batchModificationStore.enable}>
-          Enable batch modification mode
-        </button>
-      </HistoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <HistoryRouter
+          history={createMemoryHistory({
+            initialEntries: [initialPath],
+          })}
+        >
+          {children}
+          <button onClick={batchModificationStore.enable}>
+            Enable batch modification mode
+          </button>
+        </HistoryRouter>
+      </QueryClientProvider>
     );
   };
 

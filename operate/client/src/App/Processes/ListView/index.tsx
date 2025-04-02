@@ -29,6 +29,7 @@ import {tracking} from 'modules/tracking';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
+import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -39,7 +40,7 @@ const ListView: React.FC = observer(() => {
   const navigate = useNavigate();
 
   const filters = getProcessInstanceFilters(location.search);
-  const {process, tenant} = filters;
+  const {process, tenant, version} = filters;
   const {
     state: {status: processesStatus},
     isInitialLoadComplete,
@@ -121,8 +122,14 @@ const ListView: React.FC = observer(() => {
     }
   }, [process, tenant, navigate, processesStatus, location]);
 
+  const processDefinitionKey = processesStore.getProcessId({
+    process,
+    tenant,
+    version,
+  });
+
   return (
-    <>
+    <ProcessDefinitionKeyContext.Provider value={processDefinitionKey}>
       <VisuallyHiddenH1>Operate Process Instances</VisuallyHiddenH1>
       <InstancesList
         type="process"
@@ -147,7 +154,7 @@ const ListView: React.FC = observer(() => {
           headerTitle: 'Batch Modification Mode',
         }}
       />
-    </>
+    </ProcessDefinitionKeyContext.Provider>
   );
 });
 

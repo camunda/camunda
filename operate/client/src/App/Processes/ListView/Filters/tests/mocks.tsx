@@ -10,8 +10,9 @@ import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {Paths} from 'modules/Routes';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 
 const GROUPED_BIG_VARIABLE_PROCESS = {
   bpmnProcessId: 'bigVarProcess',
@@ -31,17 +32,20 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
     useEffect(() => {
       return () => {
         processesStore.reset();
-        processXmlStore.reset();
       };
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path={Paths.dashboard()} element={children} />
-        </Routes>
-        <LocationLog />
-      </MemoryRouter>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter initialEntries={[initialPath]}>
+            <Routes>
+              <Route path={Paths.dashboard()} element={children} />
+            </Routes>
+            <LocationLog />
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 

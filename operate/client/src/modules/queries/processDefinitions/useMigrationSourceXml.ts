@@ -9,7 +9,7 @@
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {useProcessDefinitionXml} from './useProcessDefinitionXml';
 import {DiagramModel} from 'bpmn-moddle';
-import {isMigratableFlowNode} from 'modules/stores/processXml/utils/isMigratableFlowNode';
+import {isMigratableFlowNode} from 'modules/bpmn-js/utils/isMigratableFlowNode';
 import {hasParentProcess} from 'modules/bpmn-js/utils/hasParentProcess';
 
 const getMigrationSourceXmlParser =
