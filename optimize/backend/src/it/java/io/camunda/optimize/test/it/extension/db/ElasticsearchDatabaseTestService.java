@@ -438,10 +438,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                     u.index(zeebeRecordPrefix + "_" + indexName + "*")
                         .refresh(true)
                         .script(
-                            Script.of(
-                                s ->
-                                    s.inline(
-                                        i -> i.lang(ScriptLanguage.Painless).source(updateScript))))
+                            Script.of(i -> i.lang(ScriptLanguage.Painless).source(updateScript)))
                         .query(Query.of(q -> q.matchAll(m -> m)))));
   }
 
@@ -460,10 +457,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                     u.index(zeebeRecordPrefix + "_" + indexName + "*")
                         .refresh(true)
                         .script(
-                            Script.of(
-                                s ->
-                                    s.inline(
-                                        i -> i.lang(ScriptLanguage.Painless).source(updateScript))))
+                            Script.of(i -> i.lang(ScriptLanguage.Painless).source(updateScript)))
                         .query(
                             Query.of(
                                 q ->
@@ -491,10 +485,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                     u.index(zeebeRecordPrefix + "_" + ZEEBE_PROCESS_INSTANCE_INDEX_NAME + "*")
                         .refresh(true)
                         .script(
-                            Script.of(
-                                s ->
-                                    s.inline(
-                                        i -> i.lang(ScriptLanguage.Painless).source(updateScript))))
+                            Script.of(i -> i.lang(ScriptLanguage.Painless).source(updateScript)))
                         .query(
                             Query.of(
                                 q ->
@@ -527,10 +518,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                             getProcessInstanceIndexAliasName(processDefinitionKey))
                         .id(processInstanceId)
                         .script(
-                            Script.of(
-                                s ->
-                                    s.inline(
-                                        i -> i.lang(ScriptLanguage.Painless).source(updateScript))))
+                            Script.of(i -> i.lang(ScriptLanguage.Painless).source(updateScript)))
                         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
             Object.class);
   }
@@ -768,17 +756,14 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             .query(Query.of(q -> q.matchAll(m -> m)))
             .script(
                 Script.of(
-                    s ->
-                        s.inline(
-                            i ->
-                                i.lang(ScriptLanguage.Painless)
-                                    .source(scriptData.scriptString())
-                                    .params(
-                                        scriptData.params().entrySet().stream()
-                                            .collect(
-                                                Collectors.toMap(
-                                                    Map.Entry::getKey,
-                                                    e -> JsonData.of(e.getValue())))))))
+                    i ->
+                        i.lang(ScriptLanguage.Painless)
+                            .source(scriptData.scriptString())
+                            .params(
+                                scriptData.params().entrySet().stream()
+                                    .collect(
+                                        Collectors.toMap(
+                                            Map.Entry::getKey, e -> JsonData.of(e.getValue()))))))
             .refresh(true);
 
     try {
@@ -808,17 +793,14 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                                     .value(processInstanceId))))))
             .script(
                 Script.of(
-                    s ->
-                        s.inline(
-                            i ->
-                                i.lang(ScriptLanguage.Painless)
-                                    .source(script.scriptString())
-                                    .params(
-                                        script.params().entrySet().stream()
-                                            .collect(
-                                                Collectors.toMap(
-                                                    Map.Entry::getKey,
-                                                    e -> JsonData.of(e.getValue())))))))
+                    i ->
+                        i.lang(ScriptLanguage.Painless)
+                            .source(script.scriptString())
+                            .params(
+                                script.params().entrySet().stream()
+                                    .collect(
+                                        Collectors.toMap(
+                                            Map.Entry::getKey, e -> JsonData.of(e.getValue()))))))
             .refresh(true);
 
     try {

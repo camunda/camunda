@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_S
 
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
@@ -48,7 +47,7 @@ public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
 
   @Override
   protected void performDeleteTerminatedUserSessionOlderThan(final OffsetDateTime timestamp) {
-    Query filterQuery =
+    final Query filterQuery =
         Query.of(
             b ->
                 b.bool(
@@ -57,9 +56,13 @@ public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
                             f ->
                                 f.range(
                                     r ->
-                                        r.field(TerminatedUserSessionIndex.TERMINATION_TIMESTAMP)
-                                            .lt(JsonData.of(timestamp))
-                                            .format(OPTIMIZE_DATE_FORMAT)))));
+                                        r.date(
+                                            d ->
+                                                d.field(
+                                                        TerminatedUserSessionIndex
+                                                            .TERMINATION_TIMESTAMP)
+                                                    .lt(String.valueOf(timestamp))
+                                                    .format(OPTIMIZE_DATE_FORMAT))))));
 
     taskRepositoryES.tryDeleteByQueryRequest(
         filterQuery,

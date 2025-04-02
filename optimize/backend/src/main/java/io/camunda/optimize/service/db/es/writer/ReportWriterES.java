@@ -97,7 +97,7 @@ public class ReportWriterES implements ReportWriter {
     reportDefinitionDto.setCollectionId(collectionId);
 
     try {
-      IndexResponse indexResponse =
+      final IndexResponse indexResponse =
           esClient.index(
               OptimizeIndexRequestBuilderES.of(
                   i ->
@@ -107,15 +107,15 @@ public class ReportWriterES implements ReportWriter {
                           .refresh(Refresh.True)));
 
       if (!indexResponse.result().equals(Result.Created)) {
-        String message = "Could not write report to Elasticsearch. ";
+        final String message = "Could not write report to Elasticsearch. ";
         log.error(message);
         throw new OptimizeRuntimeException(message);
       }
 
       log.debug("Report with id [{}] has successfully been created.", id);
       return new IdResponseDto(id);
-    } catch (IOException e) {
-      String errorMessage = "Was not able to insert combined report.!";
+    } catch (final IOException e) {
+      final String errorMessage = "Was not able to insert combined report.!";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -145,7 +145,7 @@ public class ReportWriterES implements ReportWriter {
     reportDefinitionDto.setCollectionId(collectionId);
 
     try {
-      IndexResponse indexResponse =
+      final IndexResponse indexResponse =
           esClient.index(
               OptimizeIndexRequestBuilderES.of(
                   i ->
@@ -155,15 +155,15 @@ public class ReportWriterES implements ReportWriter {
                           .refresh(Refresh.True)));
 
       if (!indexResponse.result().equals(Result.Created)) {
-        String message = "Could not write single process report to Elasticsearch.";
+        final String message = "Could not write single process report to Elasticsearch.";
         log.error(message);
         throw new OptimizeRuntimeException(message);
       }
 
       log.debug("Single process report with id [{}] has successfully been created.", id);
       return new IdResponseDto(id);
-    } catch (IOException e) {
-      String errorMessage = "Was not able to insert single process report.";
+    } catch (final IOException e) {
+      final String errorMessage = "Was not able to insert single process report.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -193,7 +193,7 @@ public class ReportWriterES implements ReportWriter {
     reportDefinitionDto.setCollectionId(collectionId);
 
     try {
-      IndexResponse indexResponse =
+      final IndexResponse indexResponse =
           esClient.index(
               OptimizeIndexRequestBuilderES.of(
                   i ->
@@ -203,15 +203,15 @@ public class ReportWriterES implements ReportWriter {
                           .refresh(Refresh.True)));
 
       if (!indexResponse.result().equals(Result.Created)) {
-        String message = "Could not write single decision report to Elasticsearch.";
+        final String message = "Could not write single decision report to Elasticsearch.";
         log.error(message);
         throw new OptimizeRuntimeException(message);
       }
 
       log.debug("Single decision report with id [{}] has successfully been created.", id);
       return new IdResponseDto(id);
-    } catch (IOException e) {
-      String errorMessage = "Was not able to insert single decision report.";
+    } catch (final IOException e) {
+      final String errorMessage = "Was not able to insert single decision report.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -241,15 +241,12 @@ public class ReportWriterES implements ReportWriter {
 
     final Script updateDefinitionXmlScript =
         Script.of(
-            s ->
-                s.inline(
-                    i ->
-                        i.lang(ScriptLanguage.Painless)
-                            // this script is deliberately not updating the modified date as this is
-                            // no user operation
-                            .source("ctx._source.data.configuration.xml = params.newXml;")
-                            .params(
-                                Collections.singletonMap("newXml", JsonData.of(definitionXml)))));
+            i ->
+                i.lang(ScriptLanguage.Painless)
+                    // this script is deliberately not updating the modified date as this is
+                    // no user operation
+                    .source("ctx._source.data.configuration.xml = params.newXml;")
+                    .params(Collections.singletonMap("newXml", JsonData.of(definitionXml))));
 
     taskRepositoryES.tryUpdateByQueryRequest(
         updateItem,
@@ -279,21 +276,19 @@ public class ReportWriterES implements ReportWriter {
 
   @Override
   public void removeSingleReportFromCombinedReports(final String reportId) {
-    String updateItemName = String.format("report with ID [%s]", reportId);
+    final String updateItemName = String.format("report with ID [%s]", reportId);
     log.info("Removing {} from combined report.", updateItemName);
 
-    Script removeReportIdFromCombinedReportsScript =
+    final Script removeReportIdFromCombinedReportsScript =
         Script.of(
-            s ->
-                s.inline(
-                    i ->
-                        i.lang(ScriptLanguage.Painless)
-                            .source(
-                                "def reports = ctx._source.data.reports;"
-                                    + "if(reports != null) {"
-                                    + "  reports.removeIf(r -> r.id.equals(params.idToRemove));"
-                                    + "}")
-                            .params(Map.of("idToRemove", JsonData.of(reportId)))));
+            i ->
+                i.lang(ScriptLanguage.Painless)
+                    .source(
+                        "def reports = ctx._source.data.reports;"
+                            + "if(reports != null) {"
+                            + "  reports.removeIf(r -> r.id.equals(params.idToRemove));"
+                            + "}")
+                    .params(Map.of("idToRemove", JsonData.of(reportId))));
 
     taskRepositoryES.tryUpdateByQueryRequest(
         updateItemName,
@@ -327,7 +322,7 @@ public class ReportWriterES implements ReportWriter {
   @Override
   public void deleteCombinedReport(final String reportId) {
     log.debug("Deleting combined report with id [{}]", reportId);
-    DeleteResponse deleteResponse;
+    final DeleteResponse deleteResponse;
     try {
       deleteResponse =
           esClient.delete(
@@ -336,14 +331,15 @@ public class ReportWriterES implements ReportWriter {
                       d.optimizeIndex(esClient, COMBINED_REPORT_INDEX_NAME)
                           .id(reportId)
                           .refresh(Refresh.True)));
-    } catch (IOException e) {
-      String reason = String.format("Could not delete combined report with id [%s].", reportId);
+    } catch (final IOException e) {
+      final String reason =
+          String.format("Could not delete combined report with id [%s].", reportId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
     if (!deleteResponse.result().equals(Result.Deleted)) {
-      String message =
+      final String message =
           String.format(
               "Could not delete combined process report with id [%s]. "
                   + "Combined process report does not exist."
@@ -355,7 +351,7 @@ public class ReportWriterES implements ReportWriter {
   }
 
   @Override
-  public void deleteAllReportsOfCollection(String collectionId) {
+  public void deleteAllReportsOfCollection(final String collectionId) {
     taskRepositoryES.tryDeleteByQueryRequest(
         Query.of(q -> q.term(t -> t.field(COLLECTION_ID).value(collectionId))),
         String.format("all reports of collection with collectionId [%s]", collectionId),
@@ -365,7 +361,7 @@ public class ReportWriterES implements ReportWriter {
         SINGLE_DECISION_REPORT_INDEX_NAME);
   }
 
-  private void updateReport(ReportDefinitionUpdateDto updatedReport, String indexName) {
+  private void updateReport(final ReportDefinitionUpdateDto updatedReport, final String indexName) {
     log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
       final Map<String, JsonData> updateParams =
@@ -401,8 +397,8 @@ public class ReportWriterES implements ReportWriter {
             updatedReport.getName());
         throw new OptimizeRuntimeException("Was not able to update collection!");
       }
-    } catch (IOException e) {
-      String errorMessage =
+    } catch (final IOException e) {
+      final String errorMessage =
           String.format("Was not able to update report with id [%s].", updatedReport.getId());
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);

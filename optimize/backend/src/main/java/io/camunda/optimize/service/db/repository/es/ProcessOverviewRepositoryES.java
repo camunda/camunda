@@ -47,111 +47,7 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
   private final ObjectMapper objectMapper;
 
   @Override
-  public void updateProcessConfiguration(
-      final String processDefinitionKey, final ProcessOverviewDto overviewDto) {
-    try {
-      final Map<String, JsonData> paramMap = new HashMap<>();
-      if (overviewDto.getOwner() != null) {
-        paramMap.put("owner", JsonData.of(overviewDto.getOwner()));
-      }
-      paramMap.put("processDefinitionKey", JsonData.of(overviewDto.getProcessDefinitionKey()));
-      paramMap.put("digestEnabled", JsonData.of(overviewDto.getDigest().isEnabled()));
-      final UpdateRequest<ProcessOverviewDto, ?> updateRequest =
-          OptimizeUpdateRequestBuilderES.of(
-              u ->
-                  u.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
-                      .id(processDefinitionKey)
-                      .script(
-                          Script.of(
-                              s ->
-                                  s.inline(
-                                      i ->
-                                          i.lang(ScriptLanguage.Painless)
-                                              .source(
-                                                  ProcessOverviewScriptFactory
-                                                      .createUpdateOverviewScript())
-                                              .params(paramMap))))
-                      .upsert(overviewDto)
-                      .refresh(Refresh.True)
-                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
-      esClient.update(updateRequest, ProcessOverviewDto.class);
-    } catch (Exception e) {
-      final String errorMessage =
-          String.format("There was a problem while updating the process: [%s].", overviewDto);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-  }
-
-  @Override
-  public void updateProcessDigestResults(
-      final String processDefKey, final ProcessDigestDto processDigestDto) {
-    try {
-      final UpdateRequest<ProcessDigestDto, ?> updateRequest =
-          OptimizeUpdateRequestBuilderES.of(
-              u ->
-                  u.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
-                      .id(processDefKey)
-                      .script(
-                          Script.of(
-                              s ->
-                                  s.inline(
-                                      i ->
-                                          i.lang(ScriptLanguage.Painless)
-                                              .source(
-                                                  ProcessOverviewScriptFactory
-                                                      .createUpdateProcessDigestScript())
-                                              .params(
-                                                  Map.of(
-                                                      "kpiReportResults",
-                                                      JsonData.of(
-                                                          processDigestDto
-                                                              .getKpiReportResults()))))))
-                      .refresh(Refresh.True)
-                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
-      esClient.update(updateRequest, ProcessDigestDto.class);
-    } catch (Exception e) {
-      final String errorMessage =
-          String.format(
-              "There was a problem while updating the digest results for process with key: [%s] and digest results: %s.",
-              processDefKey, processDigestDto.getKpiReportResults());
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-  }
-
-  @Override
-  public void updateProcessOwnerIfNotSet(
-      final String processDefinitionKey,
-      final String ownerId,
-      final ProcessOverviewDto processOverviewDto) {
-    try {
-      final UpdateRequest<ProcessOverviewDto, ?> updateRequestBuilder =
-          OptimizeUpdateRequestBuilderES.of(
-              b ->
-                  b.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
-                      .id(processDefinitionKey)
-                      .script(
-                          ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-                              ProcessOverviewScriptFactory.createUpdateOwnerIfNotSetScript(),
-                              Map.of(
-                                  "owner", ownerId, "processDefinitionKey", processDefinitionKey)))
-                      .upsert(processOverviewDto)
-                      .refresh(Refresh.True)
-                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
-      esClient.update(updateRequestBuilder, ProcessOverviewDto.class);
-    } catch (Exception e) {
-      final String errorMessage =
-          String.format(
-              "There was a problem while updating the owner for process with key: [%s] and owner ID: %s.",
-              processDefinitionKey, ownerId);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-  }
-
-  @Override
-  public void updateKpisForProcessDefinitions(List<ProcessOverviewDto> processOverviewDtos) {
+  public void updateKpisForProcessDefinitions(final List<ProcessOverviewDto> processOverviewDtos) {
     final BulkRequest bulkRequest =
         processOverviewDtos.isEmpty()
             ? null
@@ -187,13 +83,111 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
   }
 
   @Override
+  public void updateProcessConfiguration(
+      final String processDefinitionKey, final ProcessOverviewDto overviewDto) {
+    try {
+      final Map<String, JsonData> paramMap = new HashMap<>();
+      if (overviewDto.getOwner() != null) {
+        paramMap.put("owner", JsonData.of(overviewDto.getOwner()));
+      }
+      paramMap.put("processDefinitionKey", JsonData.of(overviewDto.getProcessDefinitionKey()));
+      paramMap.put("digestEnabled", JsonData.of(overviewDto.getDigest().isEnabled()));
+      final UpdateRequest<ProcessOverviewDto, ?> updateRequest =
+          OptimizeUpdateRequestBuilderES.of(
+              u ->
+                  u.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
+                      .id(processDefinitionKey)
+                      .script(
+                          Script.of(
+                              i ->
+                                  i.lang(ScriptLanguage.Painless)
+                                      .source(
+                                          ProcessOverviewScriptFactory.createUpdateOverviewScript())
+                                      .params(paramMap)))
+                      .upsert(overviewDto)
+                      .refresh(Refresh.True)
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
+      esClient.update(updateRequest, ProcessOverviewDto.class);
+    } catch (final Exception e) {
+      final String errorMessage =
+          String.format("There was a problem while updating the process: [%s].", overviewDto);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  @Override
+  public void updateProcessDigestResults(
+      final String processDefKey, final ProcessDigestDto processDigestDto) {
+    try {
+      final UpdateRequest<ProcessDigestDto, ?> updateRequest =
+          OptimizeUpdateRequestBuilderES.of(
+              u ->
+                  u.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
+                      .id(processDefKey)
+                      .script(
+                          Script.of(
+                              i ->
+                                  i.lang(ScriptLanguage.Painless)
+                                      .source(
+                                          ProcessOverviewScriptFactory
+                                              .createUpdateProcessDigestScript())
+                                      .params(
+                                          Map.of(
+                                              "kpiReportResults",
+                                              JsonData.of(
+                                                  processDigestDto.getKpiReportResults())))))
+                      .refresh(Refresh.True)
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
+      esClient.update(updateRequest, ProcessDigestDto.class);
+    } catch (final Exception e) {
+      final String errorMessage =
+          String.format(
+              "There was a problem while updating the digest results for process with key: [%s] and digest results: %s.",
+              processDefKey, processDigestDto.getKpiReportResults());
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  @Override
+  public void updateProcessOwnerIfNotSet(
+      final String processDefinitionKey,
+      final String ownerId,
+      final ProcessOverviewDto processOverviewDto) {
+    try {
+      final UpdateRequest<ProcessOverviewDto, ?> updateRequestBuilder =
+          OptimizeUpdateRequestBuilderES.of(
+              b ->
+                  b.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
+                      .id(processDefinitionKey)
+                      .script(
+                          ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+                              ProcessOverviewScriptFactory.createUpdateOwnerIfNotSetScript(),
+                              Map.of(
+                                  "owner", ownerId, "processDefinitionKey", processDefinitionKey)))
+                      .upsert(processOverviewDto)
+                      .refresh(Refresh.True)
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
+      esClient.update(updateRequestBuilder, ProcessOverviewDto.class);
+    } catch (final Exception e) {
+      final String errorMessage =
+          String.format(
+              "There was a problem while updating the owner for process with key: [%s] and owner ID: %s.",
+              processDefinitionKey, ownerId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  @Override
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
     try {
       esClient.delete(
           OptimizeDeleteRequestBuilderES.of(
               d ->
                   d.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME).id(processDefinitionKey)));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage =
           String.format(
               "There was a problem while deleting process owner entry for %s",
