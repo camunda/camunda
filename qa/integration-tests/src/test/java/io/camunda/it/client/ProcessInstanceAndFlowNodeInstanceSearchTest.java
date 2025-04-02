@@ -1366,7 +1366,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
 
       // when
       final var result =
-          camundaClient.newProcessInstanceSearchRequest().filter(f -> f.hasRetriesLeft(true)).send().join();
+          camundaClient
+              .newProcessInstanceSearchRequest()
+              .filter(f -> f.hasRetriesLeft(true))
+              .send()
+              .join();
 
       // then
       assertThat(result.items().size()).isEqualTo(2);
