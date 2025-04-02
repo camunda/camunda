@@ -15,7 +15,6 @@ import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggrega
 import co.elastic.clients.elasticsearch._types.aggregations.ExtendedBounds;
 import co.elastic.clients.elasticsearch._types.aggregations.FieldDateMath;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
@@ -38,15 +37,17 @@ public class DateHistogramFilterUtilES {
   public static BoolQuery.Builder createModelElementDateHistogramLimitingFilterFor(
       final DateAggregationContextES context, final DateTimeFormatter dateTimeFormatter) {
 
-    BoolQuery.Builder queryDate = new BoolQuery.Builder();
+    final BoolQuery.Builder queryDate = new BoolQuery.Builder();
     queryDate.filter(
         f ->
             f.range(
                 r ->
-                    r.field(context.getDateField())
-                        .gte(JsonData.of(dateTimeFormatter.format(context.getEarliestDate())))
-                        .lte(JsonData.of(dateTimeFormatter.format(context.getLatestDate())))
-                        .format(OPTIMIZE_DATE_FORMAT)));
+                    r.date(
+                        d ->
+                            d.field(context.getDateField())
+                                .gte(dateTimeFormatter.format(context.getEarliestDate()))
+                                .lte(dateTimeFormatter.format(context.getLatestDate()))
+                                .format(OPTIMIZE_DATE_FORMAT))));
     return queryDate;
   }
 

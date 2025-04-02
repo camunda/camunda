@@ -278,12 +278,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
-  @Override
-  public void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex) {
-    getOptimizeOpenSearchClient()
-        .deleteByQuery(QueryDSL.matchAll(), true, optimizeIndexAliasForIndex);
-  }
-
   @SneakyThrows
   @Override
   public void deleteAllIndicesContainingTerm(final String indexTerm) {
@@ -302,99 +296,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
             QueryDSL.matchAll(),
             true,
             getIndexNameService().getOptimizeIndexAliasForIndex(new SingleProcessReportIndexOS()));
-  }
-
-  @Override
-  public void insertTestDocuments(int amount, String indexName, String jsonDocument)
-      throws IOException {
-    getOptimizeOpenSearchClient()
-        .getOpenSearchClient()
-        .bulk(
-            BulkRequest.of(
-                r -> {
-                  for (int i = 0; i < amount; i++) {
-                    int finalI = i;
-                    r.operations(
-                        o ->
-                            o.index(
-                                OptimizeIndexOperationOS.of(
-                                    b -> {
-                                      try {
-                                        return b.optimizeIndex(
-                                                getOptimizeOpenSearchClient(), indexName)
-                                            .document(
-                                                getObjectMapper()
-                                                    .readValue(
-                                                        String.format(jsonDocument, finalI),
-                                                        Map.class));
-                                      } catch (JsonProcessingException e) {
-                                        throw new RuntimeException(e);
-                                      }
-                                    })));
-                  }
-                  return r;
-                }));
-    getOptimizeOpenSearchClient().refresh(indexName);
-  }
-
-  @Override
-  public void performLowLevelBulkRequest(String methodName, String endpoint, String bulkPayload)
-      throws IOException {
-    final HttpEntity entity = new NStringEntity(bulkPayload, ContentType.APPLICATION_JSON);
-    final Request request = new Request(methodName, endpoint);
-    request.setEntity(entity);
-    getOptimizeOpenSearchClient().getRestClient().performRequest(request);
-  }
-
-  @Override
-  public void initSchema(final DatabaseSchemaManager schemaManager) {
-    schemaManager.initializeSchema(getOptimizeOpenSearchClient());
-  }
-
-  private IndexSettings createIndexSettings(
-      final IndexMappingCreator indexMappingCreator, ConfigurationService configurationService) {
-    try {
-      return OpenSearchIndexSettingsBuilder.buildAllSettings(
-          configurationService, indexMappingCreator);
-    } catch (final IOException e) {
-      throw new OptimizeRuntimeException("Could not create index settings");
-    }
-  }
-
-  @Override
-  public Map<String, ? extends Object> getMappingFields(String indexName) throws IOException {
-    GetMappingResponse getMappingResponse =
-        getOptimizeOpenSearchClient().getMapping(new GetMappingRequest.Builder(), indexName);
-    final Object propertiesMap =
-        getMappingResponse.result().values().stream()
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new OptimizeRuntimeException(
-                        "There should be at least one mapping available for the index!"))
-            .mappings()
-            .properties();
-    if (propertiesMap instanceof Map) {
-      return (Map<String, Object>) propertiesMap;
-    } else {
-      throw new OptimizeRuntimeException("Database index mapping properties should be of type map");
-    }
-  }
-
-  @Override
-  public boolean indexExists(final String versionedIndexName, final Boolean addMappingFeatures) {
-    return false;
-  }
-
-  @Override
-  public boolean templateExists(String optimizeIndexTemplateNameWithVersion) throws IOException {
-    final ExistsTemplateRequest.Builder request =
-        new ExistsTemplateRequest.Builder().name(optimizeIndexTemplateNameWithVersion);
-    return getOptimizeOpenSearchClient()
-        .getOpenSearchClient()
-        .indices()
-        .existsTemplate(request.build())
-        .value();
   }
 
   @Override
@@ -648,7 +549,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public int getNestedDocumentsLimit(final ConfigurationService configurationService) {
-    return configurationService.getOpenSearchConfiguration().getNestedDocumentsLimit();
+    return configurationService.getOpenSearchConfiguration().getNestedDocumentsLimit().intValue();
   }
 
   @Override
@@ -699,37 +600,17 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public Optional<MetadataDto> readMetadata() {
-    return getBean(OpenSearchMetadataService.class).readMetadata(getOptimizeOpenSearchClient());
-  }
-
-  @Override
-  public boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException {
-    final GetAliasResponse aliases =
-        getOptimizeOpenSearchClient()
-            .getAlias(
-                GetAliasRequest.of(
-                    a ->
-                        a.name(
-                            getOptimizeOpenSearchClient()
-                                .applyIndexPrefixes(readOnlyAliasForIndex))));
-    return aliases.result().values().stream()
-        .flatMap(a -> a.aliases().values().stream())
-        .collect(Collectors.toSet())
-        .stream()
-        .noneMatch(AliasDefinition::isWriteIndex);
-  }
-
-  @Override
   public void createIndex(
-      String indexName, Map<String, Boolean> aliases, DefaultIndexMappingCreator indexMapping)
+      final String indexName,
+      final Map<String, Boolean> aliases,
+      final DefaultIndexMappingCreator indexMapping)
       throws IOException {
 
     final IndexSettings indexSettings =
         createIndexSettings(indexMapping, createConfigurationService());
 
     final HashMap<String, Alias> aliasData = new HashMap<>();
-    for (Map.Entry<String, Boolean> entry : aliases.entrySet()) {
+    for (final Map.Entry<String, Boolean> entry : aliases.entrySet()) {
       aliasData.put(entry.getKey(), new Alias.Builder().isWriteIndex(entry.getValue()).build());
     }
 
@@ -742,6 +623,11 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     if (!created) {
       throw new IOException("Could not create index " + indexName);
     }
+  }
+
+  @Override
+  public Optional<MetadataDto> readMetadata() {
+    return getBean(OpenSearchMetadataService.class).readMetadata(getOptimizeOpenSearchClient());
   }
 
   @Override
@@ -821,6 +707,124 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @Override
   public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
     return new VariableUpdateInstanceIndexOS();
+  }
+
+  @Override
+  public void deleteAllDocumentsInIndex(final String optimizeIndexAliasForIndex) {
+    getOptimizeOpenSearchClient()
+        .deleteByQuery(QueryDSL.matchAll(), true, optimizeIndexAliasForIndex);
+  }
+
+  @Override
+  public void insertTestDocuments(
+      final int amount, final String indexName, final String jsonDocument) throws IOException {
+    getOptimizeOpenSearchClient()
+        .getOpenSearchClient()
+        .bulk(
+            BulkRequest.of(
+                r -> {
+                  for (int i = 0; i < amount; i++) {
+                    final int finalI = i;
+                    r.operations(
+                        o ->
+                            o.index(
+                                OptimizeIndexOperationOS.of(
+                                    b -> {
+                                      try {
+                                        return b.optimizeIndex(
+                                                getOptimizeOpenSearchClient(), indexName)
+                                            .document(
+                                                getObjectMapper()
+                                                    .readValue(
+                                                        String.format(jsonDocument, finalI),
+                                                        Map.class));
+                                      } catch (final JsonProcessingException e) {
+                                        throw new RuntimeException(e);
+                                      }
+                                    })));
+                  }
+                  return r;
+                }));
+    getOptimizeOpenSearchClient().refresh(indexName);
+  }
+
+  @Override
+  public void performLowLevelBulkRequest(
+      final String methodName, final String endpoint, final String bulkPayload) throws IOException {
+    final HttpEntity entity = new NStringEntity(bulkPayload, ContentType.APPLICATION_JSON);
+    final Request request = new Request(methodName, endpoint);
+    request.setEntity(entity);
+    getOptimizeOpenSearchClient().getRestClient().performRequest(request);
+  }
+
+  @Override
+  public void initSchema(final DatabaseSchemaManager schemaManager) {
+    schemaManager.initializeSchema(getOptimizeOpenSearchClient());
+  }
+
+  @Override
+  public Map<String, ? extends Object> getMappingFields(final String indexName) throws IOException {
+    final GetMappingResponse getMappingResponse =
+        getOptimizeOpenSearchClient().getMapping(new GetMappingRequest.Builder(), indexName);
+    final Object propertiesMap =
+        getMappingResponse.result().values().stream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new OptimizeRuntimeException(
+                        "There should be at least one mapping available for the index!"))
+            .mappings()
+            .properties();
+    if (propertiesMap instanceof Map) {
+      return (Map<String, Object>) propertiesMap;
+    } else {
+      throw new OptimizeRuntimeException("Database index mapping properties should be of type map");
+    }
+  }
+
+  @Override
+  public boolean indexExists(final String versionedIndexName, final Boolean addMappingFeatures) {
+    return false;
+  }
+
+  @Override
+  public boolean templateExists(final String optimizeIndexTemplateNameWithVersion)
+      throws IOException {
+    final ExistsTemplateRequest.Builder request =
+        new ExistsTemplateRequest.Builder().name(optimizeIndexTemplateNameWithVersion);
+    return getOptimizeOpenSearchClient()
+        .getOpenSearchClient()
+        .indices()
+        .existsTemplate(request.build())
+        .value();
+  }
+
+  @Override
+  public boolean isAliasReadOnly(final String readOnlyAliasForIndex) throws IOException {
+    final GetAliasResponse aliases =
+        getOptimizeOpenSearchClient()
+            .getAlias(
+                GetAliasRequest.of(
+                    a ->
+                        a.name(
+                            getOptimizeOpenSearchClient()
+                                .applyIndexPrefixes(readOnlyAliasForIndex))));
+    return aliases.result().values().stream()
+        .flatMap(a -> a.aliases().values().stream())
+        .collect(Collectors.toSet())
+        .stream()
+        .noneMatch(AliasDefinition::isWriteIndex);
+  }
+
+  private IndexSettings createIndexSettings(
+      final IndexMappingCreator indexMappingCreator,
+      final ConfigurationService configurationService) {
+    try {
+      return OpenSearchIndexSettingsBuilder.buildAllSettings(
+          configurationService, indexMappingCreator);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not create index settings");
+    }
   }
 
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {

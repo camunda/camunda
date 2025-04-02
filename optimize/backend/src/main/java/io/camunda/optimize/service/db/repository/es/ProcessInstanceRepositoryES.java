@@ -27,7 +27,6 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -67,7 +66,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
   @Override
   public void deleteByIds(
       final String index, final String itemName, final List<String> processInstanceIds) {
-    BulkRequest bulkRequest =
+    final BulkRequest bulkRequest =
         BulkRequest.of(
             b ->
                 b.operations(
@@ -116,7 +115,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
     try {
       response = esClient.search(searchRequest, Object.class);
       return !response.hits().hits().isEmpty();
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       // If the index doesn't exist yet, then this exception is thrown. No need to worry, just
       // return false
       return false;
@@ -149,7 +148,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
           esClient,
           configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
           previousPage.getLimit());
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (e.status() == NOT_FOUND.code()) {
         // this error occurs when the scroll id expired in the meantime, thus just restart it
         return firstPageFetchFunction.get();
@@ -169,8 +168,10 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
                         q ->
                             q.range(
                                 r ->
-                                    r.field(END_DATE)
-                                        .lt(JsonData.of(dateTimeFormatter.format(endDate)))))
+                                    r.date(
+                                        d ->
+                                            d.field(END_DATE)
+                                                .lt(dateTimeFormatter.format(endDate)))))
                     .filter(
                         f ->
                             f.nested(
@@ -196,8 +197,9 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
                     q ->
                         q.range(
                             r ->
-                                r.field(END_DATE)
-                                    .lt(JsonData.of(dateTimeFormatter.format(endDate)))))),
+                                r.date(
+                                    d ->
+                                        d.field(END_DATE).lt(dateTimeFormatter.format(endDate)))))),
         limit);
   }
 

@@ -159,13 +159,11 @@ public class DashboardWriterES implements DashboardWriter {
 
     final Script removeReportFromDashboardScript =
         Script.of(
-            s ->
-                s.inline(
-                    i ->
-                        i.lang(ScriptLanguage.Painless)
-                            .params("idToRemove", JsonData.of(reportId))
-                            .source(
-                                "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))")));
+            i ->
+                i.lang(ScriptLanguage.Painless)
+                    .params("idToRemove", JsonData.of(reportId))
+                    .source(
+                        "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))"));
 
     final Query query =
         Query.of(

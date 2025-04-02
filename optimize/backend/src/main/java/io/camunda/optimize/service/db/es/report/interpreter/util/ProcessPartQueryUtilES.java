@@ -48,7 +48,7 @@ public class ProcessPartQueryUtilES extends AbstractProcessPartQueryUtil {
         nested.aggregations().get(getScriptAggregationName(aggregationType)).scriptedMetric();
     try {
       return scriptedMetric.value().to(Double.class);
-    } catch (IllegalStateException i) {
+    } catch (final IllegalStateException i) {
       return NO_DATA_AVAILABLE_RESULT;
     }
   }
@@ -89,7 +89,7 @@ public class ProcessPartQueryUtilES extends AbstractProcessPartQueryUtil {
           params.put("endFlowNodeId", JsonData.of(endFlowNodeId));
           params.put("aggregationType", JsonData.of(aggregationType.getType().getId()));
 
-          String scriptAggregationName = getScriptAggregationName(aggregationType);
+          final String scriptAggregationName = getScriptAggregationName(aggregationType);
           final Aggregation findStartAndEndDatesForEvents =
               scriptedMetric(
                   s ->
@@ -108,12 +108,10 @@ public class ProcessPartQueryUtilES extends AbstractProcessPartQueryUtil {
   private static Script createInitScript() {
     // @formatter:off
     return Script.of(
-        s ->
-            s.inline(
-                i ->
-                    i.source(
-                        ("state.procInstIdToStartDates = new HashMap();"
-                            + "state.procInstIdToEndDates = new HashMap();"))));
+        i ->
+            i.source(
+                ("state.procInstIdToStartDates = new HashMap();"
+                    + "state.procInstIdToEndDates = new HashMap();")));
     // @formatter:on
   }
 
@@ -131,105 +129,99 @@ public class ProcessPartQueryUtilES extends AbstractProcessPartQueryUtil {
 
     // @formatter:off
     return Script.of(
-        s ->
-            s.inline(
-                i ->
-                    i.source(
-                        substitutor.replace(
-                            "def processInstanceId = doc['${flowNodeProcessInstanceIdField}'].value;"
-                                + "if(doc['${flowNodeIdField}'].value == params.startFlowNodeId && "
-                                + "doc['${flowNodeStartDateField}'].size() != 0 && doc['${flowNodeStartDateField}'].value != null && "
-                                + "doc['${flowNodeStartDateField}'].value.toInstant().toEpochMilli() != 0) {"
-                                + "long startDateInMillis = doc['${flowNodeStartDateField}'].value.toInstant().toEpochMilli();"
-                                + "state.procInstIdToStartDates.putIfAbsent(processInstanceId, new ArrayList());"
-                                + "state.procInstIdToStartDates.get(processInstanceId).add(startDateInMillis);"
-                                + "} else if(doc['${flowNodeIdField}'].value == params.endFlowNodeId && "
-                                + "doc['${flowNodeEndDateField}'].size() != 0 && doc['${flowNodeEndDateField}'].value != null && "
-                                + "doc['${flowNodeEndDateField}'].value.toInstant().toEpochMilli() != 0) {"
-                                + "long endDateInMillis = doc['${flowNodeEndDateField}'].value.toInstant().toEpochMilli();"
-                                + "state.procInstIdToEndDates.putIfAbsent(processInstanceId, new ArrayList());"
-                                + "state.procInstIdToEndDates.get(processInstanceId).add(endDateInMillis);"
-                                + "}"))));
+        i ->
+            i.source(
+                substitutor.replace(
+                    "def processInstanceId = doc['${flowNodeProcessInstanceIdField}'].value;"
+                        + "if(doc['${flowNodeIdField}'].value == params.startFlowNodeId && "
+                        + "doc['${flowNodeStartDateField}'].size() != 0 && doc['${flowNodeStartDateField}'].value != null && "
+                        + "doc['${flowNodeStartDateField}'].value.toInstant().toEpochMilli() != 0) {"
+                        + "long startDateInMillis = doc['${flowNodeStartDateField}'].value.toInstant().toEpochMilli();"
+                        + "state.procInstIdToStartDates.putIfAbsent(processInstanceId, new ArrayList());"
+                        + "state.procInstIdToStartDates.get(processInstanceId).add(startDateInMillis);"
+                        + "} else if(doc['${flowNodeIdField}'].value == params.endFlowNodeId && "
+                        + "doc['${flowNodeEndDateField}'].size() != 0 && doc['${flowNodeEndDateField}'].value != null && "
+                        + "doc['${flowNodeEndDateField}'].value.toInstant().toEpochMilli() != 0) {"
+                        + "long endDateInMillis = doc['${flowNodeEndDateField}'].value.toInstant().toEpochMilli();"
+                        + "state.procInstIdToEndDates.putIfAbsent(processInstanceId, new ArrayList());"
+                        + "state.procInstIdToEndDates.get(processInstanceId).add(endDateInMillis);"
+                        + "}")));
     // @formatter:on
   }
 
   private static Script createCombineScript() {
     // @formatter:off
     return Script.of(
-        s ->
-            s.inline(
-                i ->
-                    i.source(
-                        "double sum = 0.0;"
-                            + "long count = 0;"
-                            + "double min = Double.MAX_VALUE;"
-                            + "double max = Double.MIN_VALUE;"
-                            + "for (procInstIdToStartDatesEntry in state.procInstIdToStartDates.entrySet()) {  "
-                            + "def endDates = state.procInstIdToEndDates.getOrDefault(procInstIdToStartDatesEntry.getKey(), new ArrayList());"
-                            + "def startDates = procInstIdToStartDatesEntry.getValue();"
-                            + "if (!startDates.isEmpty() && !endDates.isEmpty()) {"
-                            + "long minStartDate = startDates.stream().min(Long::compareTo).get(); "
-                            + "List endDatesLargerMinStartDate = endDates.stream().filter(e -> e >= minStartDate).collect(Collectors.toList());"
-                            + "if (!endDatesLargerMinStartDate.isEmpty()) {"
-                            + "long closestEndDate = endDatesLargerMinStartDate.stream()"
-                            + ".min(Comparator.comparingDouble(v -> Math.abs(v - minStartDate))).get();"
-                            + "double duration = closestEndDate - minStartDate;"
-                            + "min = duration < min? duration : min;"
-                            + "max = duration > max? duration : max;"
-                            + "sum += duration;"
-                            + "count += 1;"
-                            + "}"
-                            + "}"
-                            + "}"
-                            + "Map result = new HashMap();"
-                            + "result.put('aggregationType', params.aggregationType);"
-                            + "result.put('sum', sum);"
-                            + "result.put('count', count);"
-                            + "result.put('min', min);"
-                            + "result.put('max', max);"
-                            + "return result;")));
+        i ->
+            i.source(
+                "double sum = 0.0;"
+                    + "long count = 0;"
+                    + "double min = Double.MAX_VALUE;"
+                    + "double max = Double.MIN_VALUE;"
+                    + "for (procInstIdToStartDatesEntry in state.procInstIdToStartDates.entrySet()) {  "
+                    + "def endDates = state.procInstIdToEndDates.getOrDefault(procInstIdToStartDatesEntry.getKey(), new ArrayList());"
+                    + "def startDates = procInstIdToStartDatesEntry.getValue();"
+                    + "if (!startDates.isEmpty() && !endDates.isEmpty()) {"
+                    + "long minStartDate = startDates.stream().min(Long::compareTo).get(); "
+                    + "List endDatesLargerMinStartDate = endDates.stream().filter(e -> e >= minStartDate).collect(Collectors.toList());"
+                    + "if (!endDatesLargerMinStartDate.isEmpty()) {"
+                    + "long closestEndDate = endDatesLargerMinStartDate.stream()"
+                    + ".min(Comparator.comparingDouble(v -> Math.abs(v - minStartDate))).get();"
+                    + "double duration = closestEndDate - minStartDate;"
+                    + "min = duration < min? duration : min;"
+                    + "max = duration > max? duration : max;"
+                    + "sum += duration;"
+                    + "count += 1;"
+                    + "}"
+                    + "}"
+                    + "}"
+                    + "Map result = new HashMap();"
+                    + "result.put('aggregationType', params.aggregationType);"
+                    + "result.put('sum', sum);"
+                    + "result.put('count', count);"
+                    + "result.put('min', min);"
+                    + "result.put('max', max);"
+                    + "return result;"));
     // @formatter:on
   }
 
   private static Script getReduceScript() {
     // @formatter:off
     return Script.of(
-        s ->
-            s.inline(
-                i ->
-                    i.source(
-                        "if (states == null || states.isEmpty()) {"
-                            + "return null;"
-                            + "}"
-                            + "double sum = 0; "
-                            + "long count = 0; "
-                            + "double min = Double.MAX_VALUE;"
-                            + "double max = Double.MIN_VALUE;"
-                            + "def aggregationType = 'avg';"
-                            + "for (a in states) { "
-                            + "if (a != null) {"
-                            + "sum += a.get('sum');"
-                            + "count += a.get('count');"
-                            + "min = a.get('min') < min? a.get('min') : min;"
-                            + "max = a.get('max') > max? a.get('max') : max;"
-                            + "}"
-                            + "}"
-                            + "if (count == 0) {"
-                            + "return null;"
-                            + "}"
-                            +
-                            // return correct result depending on the aggregation type
-                            "if (params.aggregationType == 'avg') {"
-                            + "return sum / count;"
-                            + "} else if (params.aggregationType == 'min') {"
-                            + "return min;"
-                            + "} else if (params.aggregationType == 'max') {"
-                            + "return max;"
-                            + "} else if (params.aggregationType == 'sum') {"
-                            + "return sum;"
-                            + "} else {"
-                            + "Debug.explain('Aggregation type ' + params.aggregationType + ' is not supported!');"
-                            + "}")));
+        i ->
+            i.source(
+                "if (states == null || states.isEmpty()) {"
+                    + "return null;"
+                    + "}"
+                    + "double sum = 0; "
+                    + "long count = 0; "
+                    + "double min = Double.MAX_VALUE;"
+                    + "double max = Double.MIN_VALUE;"
+                    + "def aggregationType = 'avg';"
+                    + "for (a in states) { "
+                    + "if (a != null) {"
+                    + "sum += a.get('sum');"
+                    + "count += a.get('count');"
+                    + "min = a.get('min') < min? a.get('min') : min;"
+                    + "max = a.get('max') > max? a.get('max') : max;"
+                    + "}"
+                    + "}"
+                    + "if (count == 0) {"
+                    + "return null;"
+                    + "}"
+                    +
+                    // return correct result depending on the aggregation type
+                    "if (params.aggregationType == 'avg') {"
+                    + "return sum / count;"
+                    + "} else if (params.aggregationType == 'min') {"
+                    + "return min;"
+                    + "} else if (params.aggregationType == 'max') {"
+                    + "return max;"
+                    + "} else if (params.aggregationType == 'sum') {"
+                    + "return sum;"
+                    + "} else {"
+                    + "Debug.explain('Aggregation type ' + params.aggregationType + ' is not supported!');"
+                    + "}"));
     // @formatter:on
   }
 }

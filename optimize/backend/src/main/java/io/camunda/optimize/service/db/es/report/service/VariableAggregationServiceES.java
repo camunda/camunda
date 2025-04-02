@@ -19,7 +19,6 @@ import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregate
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
 import co.elastic.clients.elasticsearch._types.aggregations.ReverseNestedAggregate;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
 import io.camunda.optimize.service.db.es.report.context.VariableAggregationContextES;
@@ -58,7 +57,7 @@ public class VariableAggregationServiceES {
     switch (context.getVariableType()) {
       case STRING:
       case BOOLEAN:
-        Aggregation.Builder.ContainerBuilder builder =
+        final Aggregation.Builder.ContainerBuilder builder =
             new Aggregation.Builder()
                 .terms(
                     t ->
@@ -91,9 +90,11 @@ public class VariableAggregationServiceES {
                       q ->
                           q.range(
                               r ->
-                                  r.field(context.getNestedVariableValueFieldLabel())
-                                      .lte(JsonData.of(context.getMaxVariableValue()))
-                                      .gte(JsonData.of(baseLineValue)))));
+                                  r.number(
+                                      n ->
+                                          n.field(context.getNestedVariableValueFieldLabel())
+                                              .lte(context.getMaxVariableValue())
+                                              .gte(baseLineValue)))));
     } else {
       return Optional.empty();
     }
@@ -120,7 +121,7 @@ public class VariableAggregationServiceES {
       final Aggregate variableTermsAgg,
       final VariableType variableType,
       final ZoneId timezone) {
-    Map<String, Map<String, Aggregate>> bucketAggregations;
+    final Map<String, Map<String, Aggregate>> bucketAggregations;
     if (VariableType.DATE.equals(variableType)) {
       bucketAggregations =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(
@@ -147,7 +148,7 @@ public class VariableAggregationServiceES {
   }
 
   public Map<String, Aggregate> retrieveSubAggregationFromBucketMapEntry(
-      Map.Entry<String, Map<String, Aggregate>> bucketMapEntry) {
+      final Map.Entry<String, Map<String, Aggregate>> bucketMapEntry) {
     final ReverseNestedAggregate reverseNested =
         bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION).reverseNested();
     if (reverseNested == null) {
@@ -158,7 +159,7 @@ public class VariableAggregationServiceES {
       if (nestedFlowNodeAgg == null) {
         return reverseNested.aggregations(); // this is an instance report
       } else {
-        Map<String, Aggregate> flowNodeAggs =
+        final Map<String, Aggregate> flowNodeAggs =
             nestedFlowNodeAgg.nested().aggregations(); // this is a flownode report
         final FilterAggregate aggregation =
             flowNodeAggs.get(FILTERED_FLOW_NODE_AGGREGATION).filter();
