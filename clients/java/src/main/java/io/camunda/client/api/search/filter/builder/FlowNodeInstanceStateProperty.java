@@ -15,8 +15,8 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
-import io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.filter.FlowNodeInstanceStateFilterProperty;
 
 public interface FlowNodeInstanceStateProperty
     extends LikeProperty<

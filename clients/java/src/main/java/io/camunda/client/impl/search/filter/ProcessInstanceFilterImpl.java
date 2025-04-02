@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
@@ -24,9 +25,6 @@ import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
-import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
@@ -289,7 +287,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setFlowNodeId(property.build());
+    filter.setFlowNodeId(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -305,7 +303,7 @@ public class ProcessInstanceFilterImpl
       final Consumer<FlowNodeInstanceStateProperty> fn) {
     final FlowNodeInstanceStateProperty property = new FlowNodeInstanceStatePropertyImpl();
     fn.accept(property);
-    filter.setFlowNodeInstanceState(property.build());
+    filter.setFlowNodeInstanceState(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 

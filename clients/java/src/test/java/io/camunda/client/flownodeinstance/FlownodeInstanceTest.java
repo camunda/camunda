@@ -135,57 +135,6 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 
-  @Test
-  public void shouldConvertFlowNodeInstanceType() {
-
-    for (final FlowNodeInstanceType value : FlowNodeInstanceType.values()) {
-      final FlowNodeInstanceFilter.TypeEnum protocolValue =
-          FlowNodeInstanceType.toProtocolType(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == FlowNodeInstanceType.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue)
-            .isEqualTo(FlowNodeInstanceFilter.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final FlowNodeInstanceResult.TypeEnum protocolValue :
-        FlowNodeInstanceResult.TypeEnum.values()) {
-      final FlowNodeInstanceType value = FlowNodeInstanceType.fromProtocolType(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == FlowNodeInstanceResult.TypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(FlowNodeInstanceType.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
-  @Test
-  public void shouldConvertFlowNodeInstanceState() {
-
-    for (final FlowNodeInstanceState value : FlowNodeInstanceState.values()) {
-      final FlowNodeInstanceStateEnum protocolValue = FlowNodeInstanceState.toProtocolState(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue).isEqualTo(FlowNodeInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final FlowNodeInstanceStateEnum protocolValue : FlowNodeInstanceStateEnum.values()) {
-      final FlowNodeInstanceState value = FlowNodeInstanceState.fromProtocolState(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == FlowNodeInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
   private void assertSort(
       final SearchRequestSort sort, final String field, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(field);

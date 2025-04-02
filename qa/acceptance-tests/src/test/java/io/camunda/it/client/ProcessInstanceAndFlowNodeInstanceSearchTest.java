@@ -32,7 +32,6 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
@@ -1397,7 +1396,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(
                 f ->
                     f.processInstanceKey(flowNodeInstance.getProcessInstanceKey())
@@ -1411,13 +1410,12 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldQueryProcessInstancesByFlowNodeIdAndFlowNodeInstanceStateFilter()
-      throws InterruptedException {
+  void shouldQueryProcessInstancesByFlowNodeIdAndFlowNodeInstanceStateFilter() {
 
     // when
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(f -> f.flowNodeId("taskA").flowNodeInstanceState(FlowNodeInstanceState.ACTIVE))
             .send()
             .join();
@@ -1429,12 +1427,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldQueryProcessInstancesByFlowNodeIdAndFlowNodeInstanceIncidentFilter()
-      throws InterruptedException {
+  void shouldQueryProcessInstancesByFlowNodeIdAndFlowNodeInstanceIncidentFilter() {
     // when
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(
                 f ->
                     f.flowNodeId(flowNodeInstanceWithIncident.getFlowNodeId())

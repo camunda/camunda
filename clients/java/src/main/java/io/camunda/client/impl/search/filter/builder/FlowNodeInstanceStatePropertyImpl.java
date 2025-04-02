@@ -15,12 +15,11 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.filter.FlowNodeInstanceStateFilterProperty;
 import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class FlowNodeInstanceStatePropertyImpl implements FlowNodeInstanceStateProperty {
   private final FlowNodeInstanceStateFilterProperty filterProperty =
@@ -28,26 +27,25 @@ public class FlowNodeInstanceStatePropertyImpl implements FlowNodeInstanceStateP
 
   @Override
   public FlowNodeInstanceStateProperty eq(final FlowNodeInstanceState value) {
-    filterProperty.set$Eq(FlowNodeInstanceState.toProtocolState(value));
+    filterProperty.setEq(value);
     return this;
   }
 
   @Override
   public FlowNodeInstanceStateProperty neq(final FlowNodeInstanceState value) {
-    filterProperty.set$Neq(FlowNodeInstanceState.toProtocolState(value));
+    filterProperty.setNeq(value);
     return this;
   }
 
   @Override
   public FlowNodeInstanceStateProperty exists(final boolean value) {
-    filterProperty.set$Exists(value);
+    filterProperty.setExists(value);
     return this;
   }
 
   @Override
   public FlowNodeInstanceStateProperty in(final List<FlowNodeInstanceState> values) {
-    filterProperty.set$In(
-        values.stream().map(FlowNodeInstanceState::toProtocolState).collect(Collectors.toList()));
+    filterProperty.setIn(values);
     return this;
   }
 
@@ -63,7 +61,7 @@ public class FlowNodeInstanceStatePropertyImpl implements FlowNodeInstanceStateP
 
   @Override
   public FlowNodeInstanceStateProperty like(final String value) {
-    filterProperty.$like(value);
+    filterProperty.setLike(value);
     return this;
   }
 }

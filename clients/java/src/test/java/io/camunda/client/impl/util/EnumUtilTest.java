@@ -204,39 +204,6 @@ public class EnumUtilTest {
   }
 
   @Test
-  public void shouldConvertFlowNodeInstanceResultState() {
-
-    for (final FlowNodeInstanceState value : FlowNodeInstanceState.values()) {
-      final io.camunda.client.protocol.rest.FlowNodeInstanceResult.StateEnum protocolValue =
-          EnumUtil.convert(
-              value, io.camunda.client.protocol.rest.FlowNodeInstanceResult.StateEnum.class);
-      assertThat(protocolValue).isNotNull();
-      if (value == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue)
-            .isEqualTo(
-                io.camunda.client.protocol.rest.FlowNodeInstanceResult.StateEnum
-                    .UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final io.camunda.client.protocol.rest.FlowNodeInstanceResult.StateEnum protocolValue :
-        io.camunda.client.protocol.rest.FlowNodeInstanceResult.StateEnum.values()) {
-      final FlowNodeInstanceState value =
-          EnumUtil.convert(protocolValue, FlowNodeInstanceState.class);
-      assertThat(value).isNotNull();
-      if (protocolValue
-          == io.camunda.client.protocol.rest.FlowNodeInstanceResult.StateEnum
-              .UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
-  @Test
   public void shouldConvertFlowNodeInstanceFilterType() {
 
     for (final FlowNodeInstanceType value : FlowNodeInstanceType.values()) {
@@ -273,28 +240,25 @@ public class EnumUtilTest {
   public void shouldConvertFlowNodeInstanceFilterState() {
 
     for (final FlowNodeInstanceState value : FlowNodeInstanceState.values()) {
-      final io.camunda.client.protocol.rest.FlowNodeInstanceFilter.StateEnum protocolValue =
-          EnumUtil.convert(
-              value, io.camunda.client.protocol.rest.FlowNodeInstanceFilter.StateEnum.class);
+      final io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum protocolValue =
+          EnumUtil.convert(value, io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum.class);
       assertThat(protocolValue).isNotNull();
       if (value == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
         assertThat(protocolValue)
             .isEqualTo(
-                io.camunda.client.protocol.rest.FlowNodeInstanceFilter.StateEnum
-                    .UNKNOWN_DEFAULT_OPEN_API);
+                io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }
     }
 
-    for (final io.camunda.client.protocol.rest.FlowNodeInstanceFilter.StateEnum protocolValue :
-        io.camunda.client.protocol.rest.FlowNodeInstanceFilter.StateEnum.values()) {
+    for (final io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum protocolValue :
+        io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum.values()) {
       final FlowNodeInstanceState value =
           EnumUtil.convert(protocolValue, FlowNodeInstanceState.class);
       assertThat(value).isNotNull();
       if (protocolValue
-          == io.camunda.client.protocol.rest.FlowNodeInstanceFilter.StateEnum
-              .UNKNOWN_DEFAULT_OPEN_API) {
+          == io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
