@@ -484,7 +484,7 @@ public final class ResponseMapper {
         new BatchOperationCreatedResult()
             .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
             .batchOperationType(brokerResponse.getBatchOperationType().toString());
-    return new ResponseEntity<>(response, HttpStatus.CREATED);
+    return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
   }
 
   public static ResponseEntity<Object> toSignalBroadcastResponse(
