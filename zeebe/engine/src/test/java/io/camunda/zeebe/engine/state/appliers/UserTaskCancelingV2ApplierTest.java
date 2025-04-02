@@ -220,9 +220,11 @@ public class UserTaskCancelingV2ApplierTest {
             .setElementInstanceKey(elementInstanceKey);
 
     // simulate user task creation
+    // assignee is present in the creating event
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
-    testSetup.applyEventToState(
-        userTaskKey, UserTaskIntent.CREATED, userTaskRecord.unsetAssignee());
+    // but we clear the assignee for created event
+    final UserTaskRecord recordWithoutAssignee = userTaskRecord.unsetAssignee();
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
 
     assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
         .describedAs("Expect intermediate assignee to be present")

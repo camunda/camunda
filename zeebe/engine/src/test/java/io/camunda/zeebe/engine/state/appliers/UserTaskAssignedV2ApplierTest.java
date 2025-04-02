@@ -56,8 +56,9 @@ public class UserTaskAssignedV2ApplierTest {
 
     // assignee is present in the creating event
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
-    testSetup.applyEventToState(
-        userTaskKey, UserTaskIntent.CREATED, userTaskRecord.unsetAssignee());
+    final UserTaskRecord recordWithoutAssignee = userTaskRecord.unsetAssignee();
+    // but we clear the assignee for created event
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
 
     // when
@@ -84,8 +85,9 @@ public class UserTaskAssignedV2ApplierTest {
 
     // assignee is present in the creating event
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
-    testSetup.applyEventToState(
-        userTaskKey, UserTaskIntent.CREATED, userTaskRecord.unsetAssignee());
+    // but we clear the assignee for created event
+    final UserTaskRecord recordWithoutAssignee = userTaskRecord.unsetAssignee();
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
 
     assertThat(userTaskState.getIntermediateState(userTaskKey).getRecord().getAssignee())
