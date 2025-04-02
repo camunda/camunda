@@ -24,12 +24,13 @@ public class BasicStringFilterProperty {
   private String neq;
   private Boolean exists;
   private List<String> in = new ArrayList<>();
+  private List<String> notIn = new ArrayList<>();
 
   public String getEq() {
     return eq;
   }
 
-  public void setEq(String eq) {
+  public void setEq(final String eq) {
     this.eq = eq;
   }
 
@@ -37,7 +38,7 @@ public class BasicStringFilterProperty {
     return neq;
   }
 
-  public void setNeq(String neq) {
+  public void setNeq(final String neq) {
     this.neq = neq;
   }
 
@@ -45,7 +46,7 @@ public class BasicStringFilterProperty {
     return exists;
   }
 
-  public void setExists(Boolean exists) {
+  public void setExists(final Boolean exists) {
     this.exists = exists;
   }
 
@@ -53,7 +54,15 @@ public class BasicStringFilterProperty {
     return in;
   }
 
-  public void setIn(List<String> in) {
+  public void setIn(final List<String> in) {
     this.in = in;
+  }
+
+  public List<String> getNotIn() {
+    return notIn;
+  }
+
+  public void setNotIn(final List<String> notIn) {
+    this.notIn = notIn;
   }
 }

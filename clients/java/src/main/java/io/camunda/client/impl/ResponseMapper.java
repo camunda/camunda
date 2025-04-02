@@ -28,7 +28,7 @@ import java.util.List;
 public class ResponseMapper {
 
   public static AdHocSubprocessActivityRequestFilter fromProtocolObject(
-      io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter protocolObject) {
+      final io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -40,7 +40,7 @@ public class ResponseMapper {
   }
 
   public static BasicStringFilterProperty fromProtocolObject(
-      io.camunda.client.protocol.rest.BasicStringFilterProperty protocolObject) {
+      final io.camunda.client.protocol.rest.BasicStringFilterProperty protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -55,11 +55,18 @@ public class ResponseMapper {
       object.setIn(new ArrayList<>());
       object.getIn().addAll(protocolObject.get$In());
     }
+    if (protocolObject.get$NotIn() == null) {
+      object.setNotIn(null);
+    } else {
+      object.setNotIn(new ArrayList<>());
+      object.getNotIn().addAll(protocolObject.get$NotIn());
+    }
+
     return object;
   }
 
   public static DateTimeFilterProperty fromProtocolObject(
-      io.camunda.client.protocol.rest.DateTimeFilterProperty protocolObject) {
+      final io.camunda.client.protocol.rest.DateTimeFilterProperty protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -82,7 +89,7 @@ public class ResponseMapper {
   }
 
   public static GroupChangeset fromProtocolObject(
-      io.camunda.client.protocol.rest.GroupChangeset protocolObject) {
+      final io.camunda.client.protocol.rest.GroupChangeset protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -93,7 +100,7 @@ public class ResponseMapper {
   }
 
   public static IntegerFilterProperty fromProtocolObject(
-      io.camunda.client.protocol.rest.IntegerFilterProperty protocolObject) {
+      final io.camunda.client.protocol.rest.IntegerFilterProperty protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -116,7 +123,7 @@ public class ResponseMapper {
   }
 
   public static JobChangeset fromProtocolObject(
-      io.camunda.client.protocol.rest.JobChangeset protocolObject) {
+      final io.camunda.client.protocol.rest.JobChangeset protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -128,7 +135,7 @@ public class ResponseMapper {
   }
 
   public static ProblemDetail fromProtocolObject(
-      io.camunda.client.protocol.rest.ProblemDetail protocolObject) {
+      final io.camunda.client.protocol.rest.ProblemDetail protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -143,7 +150,7 @@ public class ResponseMapper {
   }
 
   public static ProcessInstanceStateFilterProperty fromProtocolObject(
-      io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty protocolObject) {
+      final io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -166,7 +173,7 @@ public class ResponseMapper {
   }
 
   public static StringFilterProperty fromProtocolObject(
-      io.camunda.client.protocol.rest.StringFilterProperty protocolObject) {
+      final io.camunda.client.protocol.rest.StringFilterProperty protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -186,7 +193,7 @@ public class ResponseMapper {
   }
 
   public static ProcessInstanceVariableFilterRequest fromProtocolObject(
-      io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest protocolObject) {
+      final io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -198,7 +205,8 @@ public class ResponseMapper {
   }
 
   public static List<ProcessInstanceVariableFilterRequest> fromProtocolList(
-      List<io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest> protocolList) {
+      final List<io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest>
+          protocolList) {
     if (protocolList == null) {
       return null;
     }
@@ -209,7 +217,7 @@ public class ResponseMapper {
   }
 
   public static UserTaskVariableFilterRequest fromProtocolObject(
-      io.camunda.client.protocol.rest.UserTaskVariableFilterRequest protocolObject) {
+      final io.camunda.client.protocol.rest.UserTaskVariableFilterRequest protocolObject) {
     if (protocolObject == null) {
       return null;
     }
@@ -221,7 +229,7 @@ public class ResponseMapper {
   }
 
   public static List<UserTaskVariableFilterRequest> fromUserTaskVariableFilterRequestList(
-      List<io.camunda.client.protocol.rest.UserTaskVariableFilterRequest> protocolList) {
+      final List<io.camunda.client.protocol.rest.UserTaskVariableFilterRequest> protocolList) {
     if (protocolList == null) {
       return null;
     }

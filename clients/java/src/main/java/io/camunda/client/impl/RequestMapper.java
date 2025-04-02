@@ -62,6 +62,13 @@ public class RequestMapper {
       object.getIn().forEach(protocolObject::add$InItem);
     }
 
+    if (object.getNotIn() == null) {
+      protocolObject.set$NotIn(null);
+    } else {
+      protocolObject.set$NotIn(new ArrayList<>());
+      object.getNotIn().forEach(protocolObject::add$NotInItem);
+    }
+
     return protocolObject;
   }
 
