@@ -75,8 +75,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public void addEntity(final long groupKey, final GroupRecord group) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public void addEntity(final GroupRecord group) {
+    groupId.wrapString(group.getGroupId());
     entityKey.wrapLong(group.getEntityKey());
     entityTypeValue.setEntityType(group.getEntityType());
     entityTypeByGroupColumnFamily.insert(fkGroupIdAndEntityKey, entityTypeValue);
@@ -136,8 +136,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public Optional<EntityType> getEntityType(final long groupKey, final long entityKey) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public Optional<EntityType> getEntityType(final String groupId, final long entityKey) {
+    this.groupId.wrapString(groupId);
     this.entityKey.wrapLong(entityKey);
     final var entityType = entityTypeByGroupColumnFamily.get(fkGroupIdAndEntityKey);
     return Optional.ofNullable(entityType).map(EntityTypeValue::getEntityType);

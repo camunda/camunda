@@ -21,7 +21,7 @@ public interface GroupState {
 
   Optional<PersistedGroup> get(String groupId);
 
-  Optional<EntityType> getEntityType(long groupKey, long entityKey);
+  Optional<EntityType> getEntityType(String groupId, long entityKey);
 
   Map<EntityType, List<Long>> getEntitiesByType(long groupKey);
 }
