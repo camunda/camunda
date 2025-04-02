@@ -20,6 +20,10 @@ public interface MutableBatchOperationState extends BatchOperationState {
    */
   void create(final long batchOperationKey, final BatchOperationCreationRecord record);
 
+  void start(final long batchOperationKey);
+
+  void fail(final long batchOperationKey);
+
   void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys);
 
   void removeItemKeys(final long batchOperationKey, final Set<Long> itemKeys);

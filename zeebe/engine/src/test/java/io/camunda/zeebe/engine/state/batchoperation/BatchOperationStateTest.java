@@ -100,14 +100,41 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, batchRecord);
 
     // when
-    state.appendItemKeys(
-        batchOperationKey, LongStream.range(0, 99).boxed().collect(Collectors.toSet()));
+    state.start(batchOperationKey);
 
     // then
     final var pendingKeys = new ArrayList<>();
     state.foreachPendingBatchOperation(bo -> pendingKeys.add(bo.getKey()));
 
     assertThat(pendingKeys).isEmpty();
+
+    // and should have status STARTED
+    final var persistedBatchOperation = state.get(batchOperationKey).get();
+    assertThat(persistedBatchOperation.getStatus()).isEqualTo(BatchOperationStatus.STARTED);
+  }
+
+  @Test
+  void failedBatchShouldNotBePending() {
+    // given
+    final var batchOperationKey = 1L;
+    final var roleRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+    state.create(batchOperationKey, roleRecord);
+
+    // when
+    state.fail(batchOperationKey);
+
+    // then
+    final var pendingKeys = new ArrayList<>();
+    state.foreachPendingBatchOperation(bo -> pendingKeys.add(bo.getKey()));
+
+    assertThat(pendingKeys).isEmpty();
+
+    // and should have status STARTED
+    final var persistedBatchOperation = state.get(batchOperationKey).get();
+    assertThat(persistedBatchOperation.getStatus()).isEqualTo(BatchOperationStatus.FAILED);
   }
 
   @Test

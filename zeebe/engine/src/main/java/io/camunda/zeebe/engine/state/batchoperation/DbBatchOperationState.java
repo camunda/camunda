@@ -75,6 +75,34 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void start(final long batchOperationKey) {
+    LOGGER.debug("Starting batch operation with key {}", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+    final var batchOperation = get(batchOperationKey);
+    if (batchOperation.isPresent()) {
+      batchOperation.get().setStatus(BatchOperationStatus.STARTED);
+      batchOperationColumnFamily.update(batchKey, batchOperation.get());
+      pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
+    } else {
+      LOGGER.error("Batch operation with key {} not found, cannot start it.", batchOperationKey);
+    }
+  }
+
+  @Override
+  public void fail(final long batchOperationKey) {
+    LOGGER.debug("Failing batch operation with key {}", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+    final var batchOperation = get(batchOperationKey);
+    if (batchOperation.isPresent()) {
+      batchOperation.get().setStatus(BatchOperationStatus.FAILED);
+      batchOperationColumnFamily.update(batchKey, batchOperation.get());
+      pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
+    } else {
+      LOGGER.error("Batch operation with key {} not found, cannot fail it.", batchOperationKey);
+    }
+  }
+
+  @Override
   public void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys) {
     LOGGER.trace(
         "Appending {} item keys to batch operation with key {}",
@@ -90,14 +118,10 @@ public class DbBatchOperationState implements MutableBatchOperationState {
       return;
     }
 
-    // Second, delete it from the pendingBatchOperationColumnFamily since we are already working on
-    // it
-    pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
-
-    // Third, get the chunk to append the keys to
+    // Second, get the chunk to append the keys to
     var chunk = getOrCreateChunk(batch.get());
 
-    // Fourth, append the keys to the chunk, if the chunk is full, a new one is returned
+    // Third, append the keys to the chunk, if the chunk is full, a new one is returned
     for (final long key : itemKeys) {
       chunk = appendKeyToChunk(batch.get(), chunk, key);
     }
