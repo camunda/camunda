@@ -1012,6 +1012,8 @@ public class CompactRecordLogger {
     builder
         .append("Key=")
         .append(shortenKey(value.getRoleKey()))
+        .append(", Id=")
+        .append(formatId(value.getRoleId()))
         .append(", Name=")
         .append(formatId(value.getName()))
         .append(", EntityKey=")

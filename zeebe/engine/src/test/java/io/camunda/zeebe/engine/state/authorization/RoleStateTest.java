@@ -32,17 +32,26 @@ public class RoleStateTest {
   @Test
   void shouldCreateRole() {
     // given
-    final long roleKey = 1L;
-    final String roleName = "foo";
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    final var roleKey = 1L;
+    final var roleId = "1";
+    final var roleName = "foo";
+    final var roleDescription = "bar";
+    final var roleRecord =
+        new RoleRecord()
+            .setRoleKey(roleKey)
+            .setRoleId(roleId)
+            .setName(roleName)
+            .setDescription(roleDescription);
 
     // when
     roleState.create(roleRecord);
 
     // then
-    final var persistedRole = roleState.getRole(roleKey).get();
+    final var persistedRole = roleState.getRole(roleId).get();
     assertThat(persistedRole.getRoleKey()).isEqualTo(roleKey);
+    assertThat(persistedRole.getRoleId()).isEqualTo(roleId);
     assertThat(persistedRole.getName()).isEqualTo(roleName);
+    assertThat(persistedRole.getDescription()).isEqualTo(roleDescription);
   }
 
   @Test
@@ -57,13 +66,16 @@ public class RoleStateTest {
   @Test
   void shouldUpdateRole() {
     // given
-    final long roleKey = 1L;
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
+    final var roleKey = 123L;
+    final var roleId = "123";
+    final var roleRecord =
+        new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName("foo").setDescription("bar");
     roleState.create(roleRecord);
 
     // when
     final String updatedName = "updatedName";
-    final var updatedRecord = new RoleRecord().setRoleKey(roleKey).setName(updatedName);
+    final var updatedRecord =
+        new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName(updatedName);
     roleState.update(updatedRecord);
 
     // then
@@ -75,26 +87,30 @@ public class RoleStateTest {
   @Test
   void shouldAddEntity() {
     // given
-    final long roleKey = 1L;
-    final String roleName = "foo";
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    // TODO use a proper id https://github.com/camunda/camunda/issues/30113
+    final var roleKey = 123L;
+    final var roleId = "123";
+    final var roleName = "foo";
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
 
     // when
-    roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
+    roleRecord.setEntityKey(2L).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
 
     // then
-    final var entityType = roleState.getEntityType(roleKey, 1L).get();
+    final var entityType = roleState.getEntityType(roleKey, 2L).get();
     assertThat(entityType).isEqualTo(EntityType.USER);
   }
 
   @Test
   void shouldRemoveEntity() {
     // given
-    final long roleKey = 1L;
-    final String roleName = "foo";
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    // TODO use a proper role id https://github.com/camunda/camunda/issues/30117
+    final var roleKey = 123L;
+    final var roleId = "123";
+    final var roleName = "foo";
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
     roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
@@ -114,9 +130,11 @@ public class RoleStateTest {
   @Test
   void shouldDeleteRole() {
     // given
-    final long roleKey = 1L;
-    final String roleName = "foo";
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    // TODO use a proper role id https://github.com/camunda/camunda/issues/30114
+    final var roleKey = 123L;
+    final var roleId = "123";
+    final var roleName = "foo";
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
     roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
@@ -134,9 +152,11 @@ public class RoleStateTest {
   @Test
   void shouldReturnEntityByType() {
     // given
-    final long roleKey = 1L;
-    final String roleName = "foo";
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    // TODO use a proper role id https://github.com/camunda/camunda/issues/30116
+    final var roleKey = 123L;
+    final var roleId = "123";
+    final var roleName = "foo";
+    final var roleRecord = new RoleRecord().setRoleId(roleId).setRoleKey(roleKey).setName(roleName);
     roleState.create(roleRecord);
     roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
