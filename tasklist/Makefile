@@ -97,7 +97,7 @@ env-down:
 	@DATABASE=opensearch docker compose -f $(COMPOSE_FILE) down -v
 	@DATABASE=elasticsearch docker compose -f $(COMPOSE_FILE) down -v
 	@rm -rf ./data
-	@mvn clean
+	@../mvnw clean
 
 .PHONY: env-status
 env-status:
@@ -127,7 +127,7 @@ start-e2e: elasticsearch setup-maven-context
 
 .PHONY: lint
 lint:
-	@mvn spotless:apply
+	@../mvnw spotless:apply
 
 elasticsearch:
 	$(eval DATABASE := elasticsearch)
@@ -169,8 +169,8 @@ setup-maven-context:
 
 define run-env
 	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d $(SERVICES)
-	@mvn clean install -B -T1C -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
+	@../mvnw clean install -B -T1C -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
 	@set -o allexport && source $(MAVEN_CONTEXT) && set +o allexport && rm -rf $(MAVEN_CONTEXT) && \
-        mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="$(MAIN_CLASS)" -Dspring.profiles.active=$(SPRING_PROFILES_ACTIVE)
+        ../mvnw -f ../dist/pom.xml exec:java -Dexec.mainClass="$(MAIN_CLASS)" -Dspring.profiles.active=$(SPRING_PROFILES_ACTIVE)
 endef
 
