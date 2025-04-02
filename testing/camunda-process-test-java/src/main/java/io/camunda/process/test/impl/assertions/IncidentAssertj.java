@@ -15,14 +15,15 @@
  */
 package io.camunda.process.test.impl.assertions;
 
+import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import com.google.common.collect.Lists;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.Incident;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -33,8 +34,10 @@ import org.awaitility.core.ConditionTimeoutException;
 
 public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
 
+  private static final int MAX_ERROR_MESSAGE_LENGTH = 500;
+
   private static final List<IncidentState> ACTIVE_INCIDENT_STATES =
-      Lists.newArrayList(IncidentState.ACTIVE, IncidentState.PENDING, IncidentState.MIGRATED);
+      Arrays.asList(IncidentState.ACTIVE, IncidentState.PENDING, IncidentState.MIGRATED);
 
   private final CamundaDataSource dataSource;
 
@@ -51,7 +54,7 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
 
           assertThat(activeIncidents)
               .withFailMessage(
-                  "%s should have zero incidents, but the following incidents were active:\n%s",
+                  "%s should have no incidents, but the following incidents were active:\n%s",
                   actual, collectIncidentReports(activeIncidents))
               .isEmpty();
         });
@@ -60,11 +63,14 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
   public void hasActiveIncidents(final long processInstanceKey) {
     awaitIncidentAssertion(
         f -> f.processInstanceKey(processInstanceKey),
-        (incidents) ->
-            assertThat(incidents)
-                .withFailMessage(
-                    "%s should have raised one or more incidents, but none were found", actual)
-                .isNotEmpty());
+        (incidents) -> {
+          final List<Incident> activeIncidents = activeIncidents(incidents);
+
+          assertThat(activeIncidents)
+              .withFailMessage(
+                  "%s should have at least one active incident, but none were found", actual)
+              .isNotEmpty();
+        });
   }
 
   private List<Incident> activeIncidents(final List<Incident> incidents) {
@@ -103,8 +109,10 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
         .map(
             i ->
                 String.format(
-                    "\t- IncidentKey '%s' (%s): %s",
-                    i.getIncidentKey(), i.getErrorType(), i.getErrorMessage()))
+                    "\t- '%s' [type: %s] \"%s\"",
+                    i.getFlowNodeId(),
+                    i.getErrorType(),
+                    abbreviate(i.getErrorMessage(), MAX_ERROR_MESSAGE_LENGTH)))
         .collect(Collectors.joining("\n"));
   }
 }
