@@ -67,9 +67,9 @@
     <commons-lang3.version>3.14.0</commons-lang3.version>
 
     <!-- Library versions not provided by spring boot -->
-    <version.zeebe>8.5.16</version.zeebe>
+    <version.zeebe>8.5.17</version.zeebe>
     <version.camunda>7.20.0</version.camunda>
-    <version.identity>8.5.14</version.identity>
+    <version.identity>8.5.15</version.identity>
     <version.parsson>1.1.7</version.parsson>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
