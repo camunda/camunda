@@ -45,14 +45,10 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
     implements ProcessDefinitionWriter {
 
   private static final Script MARK_AS_DELETED_SCRIPT =
-      Script.of(
-          s -> s.inline(i -> i.lang(ScriptLanguage.Painless).source("ctx._source.deleted = true")));
+      Script.of(i -> i.lang(ScriptLanguage.Painless).source("ctx._source.deleted = true"));
 
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
-      Script.of(
-          s ->
-              s.inline(
-                  i -> i.lang(ScriptLanguage.Painless).source("ctx._source.onboarded = true")));
+      Script.of(i -> i.lang(ScriptLanguage.Painless).source("ctx._source.onboarded = true"));
 
   private final ConfigurationService configurationService;
 
@@ -66,7 +62,7 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
   }
 
   @Override
-  public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) {
+  public void importProcessDefinitions(final List<ProcessDefinitionOptimizeDto> procDefs) {
     log.debug("Writing [{}] process definitions to elasticsearch", procDefs.size());
     writeProcessDefinitionInformation(procDefs);
   }
@@ -83,7 +79,7 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
               .build(),
           Object.class);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           String.format(
               "There was a problem when trying to mark process definition with ID %s as deleted",
@@ -180,8 +176,9 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
         FIELDS_TO_UPDATE, processDefinitionDto, objectMapper);
   }
 
-  private void writeProcessDefinitionInformation(List<ProcessDefinitionOptimizeDto> procDefs) {
-    String importItemName = "process definition information";
+  private void writeProcessDefinitionInformation(
+      final List<ProcessDefinitionOptimizeDto> procDefs) {
+    final String importItemName = "process definition information";
     log.debug("Writing [{}] {} to ES.", procDefs.size(), importItemName);
 
     esClient.doImportBulkRequestWithList(

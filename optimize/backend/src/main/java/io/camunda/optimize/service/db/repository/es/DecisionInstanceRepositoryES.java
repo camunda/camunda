@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInst
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -42,7 +41,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
 
   @Override
   public void importDecisionInstances(
-      final String importItemName, List<DecisionInstanceDto> decisionInstanceDtos) {
+      final String importItemName, final List<DecisionInstanceDto> decisionInstanceDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
         decisionInstanceDtos,
@@ -53,7 +52,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
   @Override
   public void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
       final String decisionDefinitionKey, final OffsetDateTime evaluationDate) {
-    Query query =
+    final Query query =
         Query.of(
             q ->
                 q.bool(
@@ -62,10 +61,12 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
                             f ->
                                 f.range(
                                     r ->
-                                        r.field(DecisionInstanceIndex.EVALUATION_DATE_TIME)
-                                            .lt(
-                                                JsonData.of(
-                                                    dateTimeFormatter.format(evaluationDate)))))));
+                                        r.date(
+                                            d ->
+                                                d.field(DecisionInstanceIndex.EVALUATION_DATE_TIME)
+                                                    .lt(
+                                                        dateTimeFormatter.format(
+                                                            evaluationDate)))))));
 
     taskRepositoryES.tryDeleteByQueryRequest(
         query,

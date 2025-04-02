@@ -15,7 +15,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -47,6 +46,14 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
   }
 
   @Override
+  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
+    if (e instanceof ElasticsearchException) {
+      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
+    }
+    return false;
+  }
+
+  @Override
   protected List<T> fetchZeebeRecordsForPrefixAndPartitionFrom(
       final PositionBasedImportPage positionBasedImportPage) throws Exception {
     final SearchResponse<T> searchResponse =
@@ -73,14 +80,6 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
     }
     return ElasticsearchReaderUtil.mapHits(
         searchResponse.hits(), getRecordDtoClass(), objectMapper);
-  }
-
-  @Override
-  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
-    if (e instanceof ElasticsearchException) {
-      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
-    }
-    return false;
   }
 
   private Query getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
@@ -129,7 +128,7 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
         log.info(
             "There are no newer records to process, so empty pages of records are currently expected");
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isZeebeInstanceIndexNotFoundException(e)) {
         log.warn("No Zeebe index of type {} found to count records from!", getIndexAlias());
       } else {
@@ -157,10 +156,13 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                             u ->
                                 u.range(
                                     r ->
-                                        r.field(ZeebeRecordDto.Fields.position)
-                                            .gt(
-                                                JsonData.of(
-                                                    positionBasedImportPage.getPosition()))))
+                                        r.number(
+                                            n ->
+                                                n.field(ZeebeRecordDto.Fields.position)
+                                                    .gt(
+                                                        Double.valueOf(
+                                                            positionBasedImportPage
+                                                                .getPosition())))))
                         .must(
                             u ->
                                 u.term(
@@ -182,11 +184,15 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                         u ->
                             u.range(
                                 r ->
-                                    r.field(ZeebeRecordDto.Fields.sequence)
-                                        .gt(JsonData.of(positionBasedImportPage.getSequence()))
-                                        .lte(
-                                            JsonData.of(
-                                                positionBasedImportPage.getSequence()
-                                                    + getDynamicBatchSize()))))));
+                                    r.number(
+                                        n ->
+                                            n.field(ZeebeRecordDto.Fields.sequence)
+                                                .gt(
+                                                    Double.valueOf(
+                                                        positionBasedImportPage.getSequence()))
+                                                .lte(
+                                                    (double)
+                                                        (positionBasedImportPage.getSequence()
+                                                            + getDynamicBatchSize())))))));
   }
 }
