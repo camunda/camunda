@@ -19,7 +19,6 @@ import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesSt
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {getProcessInstanceKey} from 'modules/utils/statistics/processInstances';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
-import {useProcessId} from 'modules/hooks/useProcessId';
 
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
@@ -27,7 +26,6 @@ const SourceDiagram: React.FC = observer(() => {
     selectedSourceFlowNodeIds,
     state: {sourceProcessDefinitionKey},
   } = processInstanceMigrationStore;
-  const processId = useProcessId();
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,
@@ -58,7 +56,7 @@ const SourceDiagram: React.FC = observer(() => {
         processInstanceKey: getProcessInstanceKey(),
       },
     },
-    processId,
+    sourceProcessDefinitionKey!,
     processInstancesSelectionStore.selectedProcessInstanceIds.length > 0,
   );
 

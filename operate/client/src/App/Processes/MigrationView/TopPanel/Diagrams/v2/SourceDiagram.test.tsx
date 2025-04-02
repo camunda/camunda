@@ -17,6 +17,7 @@ import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import {MemoryRouter} from 'react-router-dom';
 
 jest.mock('modules/hooks/useFilters');
 jest.mock('modules/hooks/useProcessInstancesFilters');
@@ -41,29 +42,33 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
   return (
     <QueryClientProvider client={getMockQueryClient()}>
-      {children}
-      <button
-        onClick={() => processInstanceMigrationStore.setCurrentStep('summary')}
-      >
-        Summary
-      </button>
-      <button
-        onClick={() =>
-          processInstanceMigrationStore.setCurrentStep('elementMapping')
-        }
-      >
-        Element Mapping
-      </button>
-      <button
-        onClick={() => {
-          processInstanceMigrationStore.updateFlowNodeMapping({
-            sourceId: 'ServiceTask_0kt6c5i',
-            targetId: 'ServiceTask_0kt6c5i',
-          });
-        }}
-      >
-        map elements
-      </button>
+      <MemoryRouter>
+        {children}
+        <button
+          onClick={() =>
+            processInstanceMigrationStore.setCurrentStep('summary')
+          }
+        >
+          Summary
+        </button>
+        <button
+          onClick={() =>
+            processInstanceMigrationStore.setCurrentStep('elementMapping')
+          }
+        >
+          Element Mapping
+        </button>
+        <button
+          onClick={() => {
+            processInstanceMigrationStore.updateFlowNodeMapping({
+              sourceId: 'ServiceTask_0kt6c5i',
+              targetId: 'ServiceTask_0kt6c5i',
+            });
+          }}
+        >
+          map elements
+        </button>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 };

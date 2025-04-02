@@ -15,8 +15,15 @@ import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilter
 import {skipToken, UseQueryOptions} from '@tanstack/react-query';
 import {RequestError} from 'modules/request';
 
-function getQueryKey(payload: GetProcessDefinitionStatisticsRequestBody) {
-  return ['processInstancesStatistics', ...Object.values(payload)];
+function getQueryKey(
+  payload: GetProcessDefinitionStatisticsRequestBody,
+  processDefinitionKey?: string,
+) {
+  return [
+    'processInstancesStatistics',
+    processDefinitionKey,
+    ...Object.values(payload),
+  ];
 }
 
 function useProcessInstancesStatisticsOptions<
@@ -43,7 +50,7 @@ function useProcessInstancesStatisticsOptions<
   };
 
   return {
-    queryKey: getQueryKey(combinedFilters),
+    queryKey: getQueryKey(combinedFilters, processDefinitionKey),
     queryFn: !!processDefinitionKey
       ? async () => {
           const {response, error} = await fetchProcessInstancesStatistics(

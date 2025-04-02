@@ -25,9 +25,11 @@ function getInstancesCount(
 }
 
 const getProcessInstanceKey = () => {
-  return {
-    $in: processInstancesSelectionStore.checkedProcessInstanceIds,
-  };
+  return processInstancesSelectionStore.checkedProcessInstanceIds.length > 0
+    ? {
+        $in: processInstancesSelectionStore.checkedProcessInstanceIds,
+      }
+    : undefined;
 };
 
 export {getInstancesCount, getProcessInstanceKey};

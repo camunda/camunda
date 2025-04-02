@@ -52,9 +52,7 @@ function setSearchParam(
 const DiagramPanel: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {process, version, flowNodeId, tenant} = getProcessInstanceFilters(
-    location.search,
-  );
+  const {version, flowNodeId} = getProcessInstanceFilters(location.search);
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
@@ -70,7 +68,7 @@ const DiagramPanel: React.FC = observer(() => {
       ({type}) => type === OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE,
     );
 
-  const processId = processesStore.getProcessId({process, tenant, version});
+  const processId = processesStore.getProcessIdByLocation(location);
 
   const {selectedTargetFlowNodeId} = batchModificationStore.state;
 

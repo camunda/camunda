@@ -12,7 +12,6 @@ import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {Container, InlineNotification, Button} from '../styled';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
 
 type Props = {
@@ -23,11 +22,7 @@ type Props = {
 
 const BatchModificationNotification: React.FC<Props> = observer(
   ({sourceFlowNodeId, targetFlowNodeId, onUndoClick}) => {
-    const location = useLocation();
-    const {process, version, tenant} = getProcessInstanceFilters(
-      location.search,
-    );
-    const processId = processesStore.getProcessId({process, tenant, version});
+    const processId = processesStore.getProcessIdByLocation(useLocation());
     const {data: instancesCount = 0} = useInstancesCount(
       {},
       processId,

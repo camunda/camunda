@@ -18,7 +18,7 @@ import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 jest.mock('modules/hooks/useProcessInstancesFilters');
 jest.mock('modules/stores/processes/processes.list', () => ({
   processesStore: {
-    getProcessId: () => '123',
+    getProcessIdByLocation: () => '123',
   },
 }));
 

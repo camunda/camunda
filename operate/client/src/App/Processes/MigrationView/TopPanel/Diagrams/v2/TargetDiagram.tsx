@@ -22,7 +22,6 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {useProcessInstancesFlowNodeStates} from 'modules/queries/processInstancesStatistics/useFlowNodeStates';
 import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
 import {getProcessInstanceKey} from 'modules/utils/statistics/processInstances';
-import {useProcessId} from 'modules/hooks/useProcessId';
 
 const OVERLAY_TYPE = 'migrationTargetSummary';
 
@@ -31,9 +30,11 @@ const TargetDiagram: React.FC = observer(() => {
     migrationState: {selectedTargetVersion},
     selectedTargetProcessId,
   } = processesStore;
-  const processId = useProcessId();
   const isVersionSelected = selectedTargetVersion !== null;
-  const {isSummaryStep} = processInstanceMigrationStore;
+  const {
+    isSummaryStep,
+    state: {sourceProcessDefinitionKey},
+  } = processInstanceMigrationStore;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE,
   );
@@ -58,7 +59,7 @@ const TargetDiagram: React.FC = observer(() => {
         processInstanceKey: getProcessInstanceKey(),
       },
     },
-    processId,
+    sourceProcessDefinitionKey!,
     processInstancesSelectionStore.selectedProcessInstanceIds.length > 0,
   );
 
