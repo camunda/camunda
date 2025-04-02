@@ -105,15 +105,15 @@ public class RoleController {
   }
 
   @CamundaPutMapping(
-      path = "/{userKey}/roles/{roleKey}",
+      path = "/{roleId}/users/{username}",
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> addRole(
-      @PathVariable final long userKey, @PathVariable final long roleKey) {
+      @PathVariable final String roleId, @PathVariable final String username) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             roleServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(roleKey, EntityType.USER, userKey));
+                .addMember(roleId, EntityType.USER, username));
   }
 
   private ResponseEntity<RoleSearchQueryResult> search(final RoleQuery query) {
