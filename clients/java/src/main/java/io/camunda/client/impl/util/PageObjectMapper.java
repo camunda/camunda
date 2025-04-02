@@ -55,16 +55,15 @@ public class PageObjectMapper {
     final String rawValue = pageObject.getValue();
     final PageObject.TypeEnum type = pageObject.getType();
 
-    if (type == PageObject.TypeEnum.STRING) {
-      return rawValue.replaceAll("^\"|\"$", "");
-    } else if (type == PageObject.TypeEnum.INT64) {
-      return Long.parseLong(rawValue);
-    } else if (type == PageObject.TypeEnum.FLOAT) {
-      return Double.parseDouble(rawValue);
-    } else if (type == PageObject.TypeEnum.BOOLEAN) {
-      return Boolean.parseBoolean(rawValue);
-    } else {
-      return rawValue;
+    switch (type) {
+      case INT64:
+        return Long.parseLong(rawValue);
+      case FLOAT:
+        return Double.parseDouble(rawValue);
+      case BOOLEAN:
+        return Boolean.parseBoolean(rawValue);
+      default:
+        return rawValue;
     }
   }
 }

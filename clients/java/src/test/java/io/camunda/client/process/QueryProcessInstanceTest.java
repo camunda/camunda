@@ -259,11 +259,11 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchWithFullPagination() {
     // when
     final PageObject pageObjectB = new PageObject();
-    pageObjectB.value("\"a\"");
+    pageObjectB.value("a");
     pageObjectB.type(TypeEnum.STRING);
 
     final PageObject pageObjectA = new PageObject();
-    pageObjectA.value("\"a\"");
+    pageObjectA.value("a");
     pageObjectA.type(TypeEnum.STRING);
 
     client

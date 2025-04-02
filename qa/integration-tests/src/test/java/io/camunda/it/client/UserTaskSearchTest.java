@@ -508,7 +508,7 @@ class UserTaskSearchTest {
     // Assert First and Last Sort Value matches the first and last item
     // We need to make use of toString, such the test work with ES/OS
     final List<String> firstSortValues =
-        result.page().firstSortValues().stream().map(pageObject -> pageObject.toString()).toList();
+        result.page().firstSortValues().stream().map(Object::toString).toList();
     String creationDateMillis = convertDateIfNeeded(firstSortValues.getFirst());
     String userTaskKey = firstSortValues.getLast();
 
@@ -519,7 +519,7 @@ class UserTaskSearchTest {
     assertThat(userTaskKey).isEqualTo(Long.toString(firstItem.getUserTaskKey()));
 
     final List<String> lastSortValues =
-        result.page().lastSortValues().stream().map(pageObject -> pageObject.toString()).toList();
+        result.page().lastSortValues().stream().map(Object::toString).toList();
     creationDateMillis = convertDateIfNeeded(lastSortValues.getFirst());
     userTaskKey = lastSortValues.getLast();
 

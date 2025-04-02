@@ -1409,7 +1409,6 @@ public final class SearchQueryRequestMapper {
     final TypeEnum type = pageObject.getType();
 
     return switch (type) {
-      case STRING -> rawValue.substring(1, rawValue.length() - 1).replace("\\\"", "\"");
       case BOOLEAN -> Boolean.parseBoolean(rawValue);
       case INT64 -> Long.parseLong(rawValue);
       case FLOAT -> Double.parseDouble(rawValue);
