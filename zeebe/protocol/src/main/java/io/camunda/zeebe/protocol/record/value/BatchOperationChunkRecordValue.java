@@ -28,9 +28,4 @@ public interface BatchOperationChunkRecordValue extends BatchOperationRelated, R
    * @return subset of item keys for the batch operation
    */
   Set<Long> getItemKeys();
-
-  /**
-   * @return the key of this chunk of entity keys
-   */
-  Long getChunkKey();
 }

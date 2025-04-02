@@ -19,19 +19,15 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
     implements BatchOperationChunkRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
-  public static final String PROP_CHUNK_KEY = "chunkKey";
   public static final String PROP_ITEM_KEY_LIST = "itemKeys";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final LongProperty chunkKeyProp = new LongProperty(PROP_CHUNK_KEY);
   private final ArrayProperty<LongValue> itemKeysProp =
       new ArrayProperty<>(PROP_ITEM_KEY_LIST, LongValue::new);
 
   public BatchOperationChunkRecord() {
-    super(3);
-    declareProperty(batchOperationKeyProp)
-        .declareProperty(chunkKeyProp)
-        .declareProperty(itemKeysProp);
+    super(2);
+    declareProperty(batchOperationKeyProp).declareProperty(itemKeysProp);
   }
 
   @Override
@@ -56,19 +52,8 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public Long getChunkKey() {
-    return chunkKeyProp.getValue();
-  }
-
-  public BatchOperationChunkRecord setChunkKey(final Long key) {
-    chunkKeyProp.setValue(key);
-    return this;
-  }
-
   public void wrap(final BatchOperationChunkRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setItemKeys(record.getItemKeys());
-    setChunkKey(record.getChunkKey());
   }
 }
