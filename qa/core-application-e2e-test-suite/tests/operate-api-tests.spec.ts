@@ -28,8 +28,10 @@ test.describe('API tests', () => {
   });
 
   test('Search for process definitions', async ({request}) => {
-    const taskList = await request.post('/v1/process-definitions/search');
-    expect(taskList.status()).toBe(200);
+    const processDefinition = await request.post(
+      '/v1/process-definitions/search',
+    );
+    expect(processDefinition.status()).toBe(200);
   });
 
   test('Get a process definition via key', async ({request}) => {
