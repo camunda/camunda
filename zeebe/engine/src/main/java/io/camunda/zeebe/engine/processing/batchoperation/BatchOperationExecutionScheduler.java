@@ -24,7 +24,6 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -41,7 +40,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
   private static final int QUERY_SIZE = 10000;
   private final Duration pollingInterval;
-  private final KeyGenerator keyGenerator;
 
   private final BatchOperationState batchOperationState;
   private ReadonlyStreamProcessorContext processingContext;
@@ -53,10 +51,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final SearchClientsProxy searchClientsProxy,
-      final KeyGenerator keyGenerator,
       final Duration pollingInterval) {
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
-    this.keyGenerator = keyGenerator;
     queryService = searchClientsProxy;
     this.pollingInterval = pollingInterval;
   }
@@ -101,37 +97,34 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     for (int i = 0; i < keys.size(); i += CHUNK_SIZE_IN_RECORD) {
       final Set<Long> chunkKeys =
           keys.stream().skip(i).limit(CHUNK_SIZE_IN_RECORD).collect(Collectors.toSet());
-      appendChunk(batchOperation, taskResultBuilder, chunkKeys);
+      appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
     }
 
-    appendExecution(batchOperation, taskResultBuilder);
+    appendExecution(batchOperation.getKey(), taskResultBuilder);
   }
 
   private void appendChunk(
-      final PersistedBatchOperation batchOperation,
+      final Long batchOperationKey,
       final TaskResultBuilder taskResultBuilder,
       final Set<Long> keys) {
-    final var chunkKey = keyGenerator.nextKey();
     final var command = new BatchOperationChunkRecord();
-    command.setBatchOperationKey(batchOperation.getKey());
+    command.setBatchOperationKey(batchOperationKey);
     command.setItemKeys(keys);
-    command.setChunkKey(chunkKey);
 
     LOG.debug(
-        "Appending batch operation {} subbatch with key {}", batchOperation.getKey(), chunkKey);
-    taskResultBuilder.appendCommandRecord(chunkKey, BatchOperationChunkIntent.CREATE, command);
+        "Appending batch operation {} subbatch with {} items.", batchOperationKey, keys.size());
+    taskResultBuilder.appendCommandRecord(
+        batchOperationKey, BatchOperationChunkIntent.CREATE, command);
   }
 
   private void appendExecution(
-      final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
-    final var executionKey = keyGenerator.nextKey();
-    final var batchOperationKey = batchOperation.getKey();
+      final Long batchOperationKey, final TaskResultBuilder taskResultBuilder) {
     final var command = new BatchOperationExecutionRecord();
     command.setBatchOperationKey(batchOperationKey);
 
     LOG.debug("Appending batch operation execution {}", batchOperationKey);
     taskResultBuilder.appendCommandRecord(
-        executionKey, BatchOperationExecutionIntent.EXECUTE, command, batchOperationKey);
+        batchOperationKey, BatchOperationExecutionIntent.EXECUTE, command, batchOperationKey);
   }
 
   private Set<Long> queryAllKeys(final PersistedBatchOperation batchOperation) {

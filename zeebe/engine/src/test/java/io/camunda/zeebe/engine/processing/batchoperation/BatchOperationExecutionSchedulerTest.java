@@ -27,7 +27,6 @@ import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
@@ -45,7 +44,6 @@ public class BatchOperationExecutionSchedulerTest {
 
   @Mock private Supplier<ScheduledTaskState> scheduledTaskStateFactory;
   @Mock private SearchClientsProxy searchClientsProxy;
-  @Mock private KeyGenerator keyGenerator;
   @Mock private TaskResultBuilder taskResultBuilder;
   @Mock private ReadonlyStreamProcessorContext streamProcessorContext;
   @Mock private ProcessingScheduleService scheduleService;
@@ -76,7 +74,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     scheduler =
         new BatchOperationExecutionScheduler(
-            scheduledTaskStateFactory, searchClientsProxy, keyGenerator, Duration.ofSeconds(1));
+            scheduledTaskStateFactory, searchClientsProxy, Duration.ofSeconds(1));
   }
 
   @Test
