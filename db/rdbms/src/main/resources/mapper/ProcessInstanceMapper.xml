@@ -126,7 +126,7 @@
         AND j.STATE IN ('FAILED', 'ERROR_THROWN') AND j.RETRIES > 0
       </if>
       <if test="filter.hasRetriesLeft == false">
-        AND j.RETRIES = 0
+        AND j.STATE IN ('FAILED', 'ERROR_THROWN') AND j.RETRIES = 0
       </if>
       )
     </if>
