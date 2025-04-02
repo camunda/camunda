@@ -10,6 +10,7 @@ import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {tracking} from 'modules/tracking';
+import {generateUniqueID} from './generateUniqueID';
 
 const finishMovingToken = (
   affectedTokenCount: number,
@@ -60,4 +61,31 @@ const finishMovingToken = (
   modificationsStore.state.sourceFlowNodeInstanceKeyForMoveOperation = null;
 };
 
-export {finishMovingToken};
+const generateParentScopeIds = (
+  targetFlowNodeId: string,
+  totalRunningInstancesByFlowNode?: Record<string, number>,
+) => {
+  const parentFlowNodeIds =
+    processInstanceDetailsDiagramStore.getFlowNodeParents(targetFlowNodeId);
+
+  return parentFlowNodeIds.reduce<{[flowNodeId: string]: string}>(
+    (parentFlowNodeScopes, flowNodeId) => {
+      const hasExistingParentScopeId =
+        modificationsStore.flowNodeModifications.some(
+          (modification) =>
+            (modification.operation === 'ADD_TOKEN' ||
+              modification.operation === 'MOVE_TOKEN') &&
+            Object.keys(modification.parentScopeIds).includes(flowNodeId),
+        ) || totalRunningInstancesByFlowNode?.[flowNodeId] === 1;
+
+      if (!hasExistingParentScopeId) {
+        parentFlowNodeScopes[flowNodeId] = generateUniqueID();
+      }
+
+      return parentFlowNodeScopes;
+    },
+    {},
+  );
+};
+
+export {generateParentScopeIds, finishMovingToken};

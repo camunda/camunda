@@ -9,11 +9,15 @@
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {useTotalRunningInstancesByFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
 const useFlowNodes = () => {
   const {data: statistics} = useFlownodeInstancesStatistics();
+  const {data: totalRunningInstancesByFlowNode} =
+    useTotalRunningInstancesByFlowNode();
   return Object.values(processInstanceDetailsDiagramStore.businessObjects).map(
     (flowNode) => {
       const flowNodeState = statistics?.items.find(
@@ -26,8 +30,9 @@ const useFlowNodes = () => {
           flowNodeState !== undefined &&
           (flowNodeState.active > 0 || flowNodeState.incidents > 0),
         isMoveModificationTarget: isMoveModificationTarget(flowNode),
-        hasMultipleScopes: processInstanceDetailsDiagramStore.hasMultipleScopes(
+        hasMultipleScopes: hasMultipleScopes(
           flowNode.$parent,
+          totalRunningInstancesByFlowNode,
         ),
       };
     },
@@ -69,9 +74,19 @@ const useModifiableFlowNodes = () => {
   }
 };
 
+const useNonModifiableFlowNodes = () => {
+  const flowNodes = useFlowNodes();
+  const modifiableFlowNodes = useModifiableFlowNodes();
+
+  return flowNodes
+    .filter((flowNode) => !modifiableFlowNodes.includes(flowNode.id))
+    .map(({id}) => id);
+};
+
 export {
   useFlowNodes,
   useAppendableFlowNodes,
   useCancellableFlowNodes,
   useModifiableFlowNodes,
+  useNonModifiableFlowNodes,
 };

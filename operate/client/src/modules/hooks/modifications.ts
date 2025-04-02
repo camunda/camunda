@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {isNil} from 'lodash';
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
@@ -13,12 +14,22 @@ import {
   useTotalRunningInstancesForFlowNodes,
   useTotalRunningInstancesVisibleForFlowNodes,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {
+  ModificationOption,
+  modificationRulesStore,
+} from 'modules/stores/modificationRules';
 import {
   EMPTY_MODIFICATION,
   modificationsStore,
 } from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {useMemo} from 'react';
+import {
+  useAppendableFlowNodes,
+  useCancellableFlowNodes,
+  useNonModifiableFlowNodes,
+} from './processInstanceDetailsDiagram';
 
 const useWillAllFlowNodesBeCanceled = () => {
   const {data: statistics} = useFlownodeInstancesStatistics();
@@ -180,4 +191,103 @@ const useModificationsByFlowNode = () => {
   }, {});
 };
 
-export {useModificationsByFlowNode, useWillAllFlowNodesBeCanceled};
+const useCanBeCanceled = (selectedRunningInstanceCount: number) => {
+  const cancellableFlowNodes = useCancellableFlowNodes();
+  const canBeModified = useCanBeModified();
+
+  if (
+    modificationRulesStore.selectedFlowNodeId === undefined ||
+    !canBeModified
+  ) {
+    return false;
+  }
+
+  const {hasPendingCancelOrMoveModification} = flowNodeSelectionStore;
+
+  return (
+    cancellableFlowNodes.includes(modificationRulesStore.selectedFlowNodeId) &&
+    !hasPendingCancelOrMoveModification &&
+    selectedRunningInstanceCount > 0
+  );
+};
+
+const useCanBeModified = () => {
+  const nonModifiableFlowNodes = useNonModifiableFlowNodes();
+
+  if (modificationRulesStore.selectedFlowNodeId === undefined) {
+    return false;
+  }
+
+  return !nonModifiableFlowNodes.includes(
+    modificationRulesStore.selectedFlowNodeId,
+  );
+};
+
+const useAvailableModifications = (selectedRunningInstanceCount: number) => {
+  const options: ModificationOption[] = [];
+  const {
+    state: {selection},
+  } = flowNodeSelectionStore;
+  const appendableFlowNodes = useAppendableFlowNodes();
+  const canBeCanceled = useCanBeCanceled(selectedRunningInstanceCount);
+  const canBeModified = useCanBeModified();
+
+  if (
+    modificationRulesStore.selectedFlowNodeId === undefined ||
+    !canBeModified
+  ) {
+    return options;
+  }
+
+  if (
+    appendableFlowNodes.includes(modificationRulesStore.selectedFlowNodeId) &&
+    !(
+      processInstanceDetailsDiagramStore.isMultiInstance(
+        modificationRulesStore.selectedFlowNodeId,
+      ) && !selection?.isMultiInstance
+    ) &&
+    selection?.flowNodeInstanceId === undefined
+  ) {
+    options.push('add');
+  }
+
+  if (!canBeCanceled) {
+    return options;
+  }
+
+  const isSingleOperationAllowed =
+    !isNil(modificationRulesStore.selectedFlowNodeInstanceId) &&
+    selectedRunningInstanceCount === 1 &&
+    !processInstanceDetailsDiagramStore.isSubProcess(
+      modificationRulesStore.selectedFlowNodeId,
+    );
+
+  if (isSingleOperationAllowed) {
+    options.push('cancel-instance');
+  } else {
+    options.push('cancel-all');
+  }
+
+  if (
+    processInstanceDetailsDiagramStore.isSubProcess(
+      modificationRulesStore.selectedFlowNodeId,
+    )
+  ) {
+    return options;
+  }
+
+  if (isSingleOperationAllowed) {
+    options.push('move-instance');
+  } else {
+    options.push('move-all');
+  }
+
+  return options;
+};
+
+export {
+  useAvailableModifications,
+  useCanBeModified,
+  useModificationsByFlowNode,
+  useWillAllFlowNodesBeCanceled,
+};
