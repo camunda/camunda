@@ -17,12 +17,15 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.zeebe.engine.state.batchoperation.EntityFilterDeserializeException;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState.BatchOperationVisitor;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -63,7 +66,8 @@ public class BatchOperationExecutionSchedulerTest {
     setUpBasicSchedulerBehaviour();
 
     when(batchOperation.getBatchOperationType()).thenReturn(PROCESS_CANCELLATION);
-    when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
+    lenient()
+        .when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
         .thenReturn(mock(ProcessInstanceFilter.class));
     doAnswer(
             invocation -> {
@@ -77,6 +81,27 @@ public class BatchOperationExecutionSchedulerTest {
     scheduler =
         new BatchOperationExecutionScheduler(
             scheduledTaskStateFactory, searchClientsProxy, keyGenerator, Duration.ofSeconds(1));
+  }
+
+  @Test
+  public void shouldAppendFailedEvent() {
+    // given
+    when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
+        .thenThrow(new EntityFilterDeserializeException("error", new RuntimeException()));
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(), eq(BatchOperationIntent.START), any(BatchOperationCreationRecord.class));
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(), eq(BatchOperationIntent.FAIL), any(BatchOperationCreationRecord.class));
+    verify(taskResultBuilder, times(0))
+        .appendCommandRecord(anyLong(), eq(BatchOperationChunkIntent.CREATE), any());
   }
 
   @Test
@@ -98,6 +123,9 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(), eq(BatchOperationIntent.START), any(BatchOperationCreationRecord.class));
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
@@ -136,6 +164,9 @@ public class BatchOperationExecutionSchedulerTest {
     verify(batchOperationState).foreachPendingBatchOperation(any());
     verify(taskResultBuilder)
         .appendCommandRecord(
+            anyLong(), eq(BatchOperationIntent.START), any(BatchOperationCreationRecord.class));
+    verify(taskResultBuilder)
+        .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
     assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(6);
@@ -161,6 +192,9 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(), eq(BatchOperationIntent.START), any(BatchOperationCreationRecord.class));
     verify(taskResultBuilder, times(2))
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
