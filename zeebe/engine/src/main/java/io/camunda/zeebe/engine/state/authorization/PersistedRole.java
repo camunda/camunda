@@ -63,7 +63,7 @@ public class PersistedRole extends UnpackedObject implements DbValue {
 
   /**
    * Wraps the provided RoleRecord into this PersistedRole instance. Copies the properties from the
-   * TenantRecord to the corresponding properties of this persisted tenant, allowing the current
+   * RoleRecord to the corresponding properties of this persisted role, allowing the current
    * instance to reflect the state of the provided record.
    *
    * @param roleRecord the RoleRecord from which to copy the data
