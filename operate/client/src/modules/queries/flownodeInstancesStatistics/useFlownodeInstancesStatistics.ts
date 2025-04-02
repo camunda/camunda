@@ -20,26 +20,26 @@ function useFlownodeInstancesStatisticsOptions<
   T = GetProcessInstanceStatisticsResponseBody,
 >(
   select?: (data: GetProcessInstanceStatisticsResponseBody) => T,
-  enabled?: boolean,
+  enabled: boolean = true,
 ): UseQueryOptions<GetProcessInstanceStatisticsResponseBody, RequestError, T> {
   const {processInstanceId} = useProcessInstancePageParams();
 
   return {
     queryKey: getQueryKey(processInstanceId),
-    queryFn: !!processInstanceId
-      ? async () => {
-          const {response, error} =
-            await fetchFlownodeInstancesStatistics(processInstanceId);
+    queryFn:
+      enabled && !!processInstanceId
+        ? async () => {
+            const {response, error} =
+              await fetchFlownodeInstancesStatistics(processInstanceId);
 
-          if (response !== null) {
-            return response;
+            if (response !== null) {
+              return response;
+            }
+
+            throw error;
           }
-
-          throw error;
-        }
-      : skipToken,
+        : skipToken,
     select,
-    enabled: enabled && !!processInstanceId,
   };
 }
 
