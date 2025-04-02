@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ProcessCache {
 
-  public static final String NAMESPACE = "zeebe.gateway.rest.cache";
+  public static final String NAMESPACE = "camunda.gateway.rest.cache";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
   private final LoadingCache<Long, ProcessCacheItem> cache;
   private final ProcessFlowNodeProvider processFlowNodeProvider;
