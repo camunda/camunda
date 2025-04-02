@@ -14,9 +14,6 @@
   <properties>
     <old.database.port>9250</old.database.port>
     <new.database.port>9200</new.database.port>
-    <!-- In order to allow the build to keep working, we need to specify an already released -->
-    <!-- previous version-->
-    <temporary.previous.version>8.6.0</temporary.previous.version>
   </properties>
 
   <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -188,7 +185,7 @@
           <redirectTestOutputToFile>false</redirectTestOutputToFile>
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
-            <previousVersion>${temporary.previous.version}</previousVersion>
+            <previousVersion>${project.previousVersion}</previousVersion>
             <currentVersion>${project.version}</currentVersion>
             <buildDirectory>${project.build.directory}</buildDirectory>
             <oldDatabasePort>${old.database.port}</oldDatabasePort>
@@ -217,14 +214,14 @@
                 <artifactItem>
                   <groupId>io.camunda.optimize</groupId>
                   <artifactId>camunda-optimize</artifactId>
-                  <version>${temporary.previous.version}</version>
+                  <version>${project.previousVersion}</version>
                   <type>tar.gz</type>
                   <classifier>production</classifier>
                   <!-- we want to use environment variables as present in the internal service-config -->
                   <!-- thus excluding the default environment-config -->
                   <excludes>**/environment-config.yaml</excludes>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/${temporary.previous.version}</outputDirectory>
+                  <outputDirectory>${project.build.directory}/${project.previousVersion}</outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>io.camunda.optimize</groupId>
