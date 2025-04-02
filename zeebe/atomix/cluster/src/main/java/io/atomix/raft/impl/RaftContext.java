@@ -542,15 +542,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     final long previousCommitIndex = this.commitIndex;
     if (commitIndex > previousCommitIndex) {
-      this.commitIndex = commitIndex;
-      raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
       if (isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();
       }
-      final long configurationIndex = cluster.getConfiguration().index();
-      if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
-        cluster.commitCurrentConfiguration();
+      raftLog.setCommitIndex(commitIndex);
+      this.commitIndex = commitIndex;
+      final var clusterConfig = cluster.getConfiguration();
+      if (clusterConfig != null) {
+        final long configurationIndex = clusterConfig.index();
+        if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
+          cluster.commitCurrentConfiguration();
+        }
       }
       replicationMetrics.setCommitIndex(commitIndex);
       notifyCommitListeners(commitIndex);
@@ -901,7 +904,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       }
       this.firstCommitIndex = firstCommitIndex;
       log.info(
-          "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events upto this index",
+          "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events up to this index",
           firstCommitIndex);
     }
   }
@@ -1282,7 +1285,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     COMPLETED
   }
 
-  /** Commit listener is active only until the server is ready * */
+  /** Commit listener is active only until the server is ready */
   final class AwaitingReadyCommitListener implements RaftCommitListener {
     private final Logger throttledLogger = new ThrottledLogger(log, Duration.ofSeconds(30));
 
