@@ -74,9 +74,19 @@ const useModifiableFlowNodes = () => {
   }
 };
 
+const useNonModifiableFlowNodes = () => {
+  const flowNodes = useFlowNodes();
+  const modifiableFlowNodes = useModifiableFlowNodes();
+
+  return flowNodes
+    .filter((flowNode) => !modifiableFlowNodes.includes(flowNode.id))
+    .map(({id}) => id);
+};
+
 export {
   useFlowNodes,
   useAppendableFlowNodes,
   useCancellableFlowNodes,
   useModifiableFlowNodes,
+  useNonModifiableFlowNodes,
 };

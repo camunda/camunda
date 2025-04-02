@@ -15,7 +15,6 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {modificationRulesStore} from 'modules/stores/modificationRules';
 import {tracking} from 'modules/tracking';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {Popover} from 'modules/components/Popover';
@@ -26,6 +25,16 @@ import {
   Button,
   InlineLoading,
 } from '../styled';
+import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
+import {
+  useTotalRunningInstancesByFlowNode,
+  useTotalRunningInstancesForFlowNode,
+} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+import {
+  useAvailableModifications,
+  useCanBeModified,
+} from 'modules/hooks/modifications';
+import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -38,6 +47,17 @@ const ModificationDropdown: React.FC<Props> = observer(
     const flowNodeInstanceId =
       flowNodeSelectionStore.state.selection?.flowNodeInstanceId ??
       flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
+    const {data: totalRunningInstances} =
+      useTotalRunningInstancesForFlowNode(flowNodeId);
+    const {data: totalRunningInstancesByFlowNode} =
+      useTotalRunningInstancesByFlowNode();
+    const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
+      totalRunningInstances || 0,
+    );
+    const availableModifications = useAvailableModifications(
+      selectedRunningInstanceCount,
+    );
+    const canBeModified = useCanBeModified();
 
     if (
       flowNodeId === undefined ||
@@ -45,9 +65,6 @@ const ModificationDropdown: React.FC<Props> = observer(
     ) {
       return null;
     }
-
-    const {selectedRunningInstanceCount} = flowNodeSelectionStore;
-    const {canBeModified, availableModifications} = modificationRulesStore;
 
     return (
       <Popover
@@ -94,10 +111,11 @@ const ModificationDropdown: React.FC<Props> = observer(
                         renderIcon={Add}
                         onClick={() => {
                           if (
-                            processInstanceDetailsDiagramStore.hasMultipleScopes(
+                            hasMultipleScopes(
                               processInstanceDetailsDiagramStore.getParentFlowNode(
                                 flowNodeId,
                               ),
+                              totalRunningInstancesByFlowNode,
                             )
                           ) {
                             modificationsStore.startAddingToken(flowNodeId);

@@ -36,7 +36,7 @@ import {MetadataPopover} from '../MetadataPopover';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {ModificationInfoBanner} from '../ModificationInfoBanner';
-import {ModificationDropdown} from '../ModificationDropdown';
+import {ModificationDropdown} from '../ModificationDropdown/v2';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {useFlownodeStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeStatistics';
@@ -81,19 +81,18 @@ const TopPanel: React.FC = observer(() => {
     currentSelection?.flowNodeId,
   );
   const {data: businessObjects} = useBusinessObjects();
-
-  const affectedTokenCount =
-    (sourceFlowNodeIdForMoveOperation &&
-      useTotalRunningInstancesForFlowNode(sourceFlowNodeIdForMoveOperation)
-        .data) ||
-    1;
-  const visibleAffectedTokenCount =
-    (sourceFlowNodeIdForMoveOperation &&
-      useTotalRunningInstancesVisibleForFlowNode(
-        sourceFlowNodeIdForMoveOperation,
-      ).data) ||
-    1;
+  const {data: totalMoveOperationRunningInstances} =
+    useTotalRunningInstancesForFlowNode(
+      sourceFlowNodeIdForMoveOperation || undefined,
+    );
+  const {data: totalMoveOperationRunningInstancesVisible} =
+    useTotalRunningInstancesVisibleForFlowNode(
+      sourceFlowNodeIdForMoveOperation || undefined,
+    );
   const modificationsByFlowNode = useModificationsByFlowNode();
+  const affectedTokenCount = totalMoveOperationRunningInstances || 1;
+  const visibleAffectedTokenCount =
+    totalMoveOperationRunningInstancesVisible || 1;
 
   useEffect(() => {
     sequenceFlowsStore.init();
