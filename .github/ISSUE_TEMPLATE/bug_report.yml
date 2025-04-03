@@ -76,16 +76,25 @@ body:
       description: A clear and concise description of what you expected to happen. 
     validations:
       required: true
-  - type: textarea
+  - type: dropdown
     id: environment
     attributes:
       label: Environment
-      description: 'The environment on which this error was observed.'
+      description: The environment on which this error was observed.
+      options:
+        - SM
+        - SaaS
+        - SaaS & SM
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Version
+      description: Version of the component where the bug was observed.
       value: |
-             - OS: [e.g. MacOS 10.2, Windows 10]
              - Component Version: [e.g. 2.0.0]
-             - Execution Platform: [e.g. Camunda 8 SaaS or SM]
-             - Database: [ES/OS, relational]
     validations:
       required: true
   - type: textarea
