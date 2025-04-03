@@ -47,7 +47,7 @@ public class GenericExceptionMapper {
 
   @ExceptionHandler(Throwable.class)
   public ResponseEntity<ErrorResponseDto> handleThrowable(
-      final Throwable throwable, HttpServletResponse response) {
+      final Throwable throwable, final HttpServletResponse response) {
     LOG.error("Mapping generic REST error", throwable);
     HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
     if (throwable instanceof final ResponseStatusException responseStatusException) {
@@ -57,7 +57,7 @@ public class GenericExceptionMapper {
     }
 
     if (status == HttpStatus.UNAUTHORIZED) {
-      response.addCookie(cookieService.createDeleteOptimizeAuthNewCookie(true));
+      cookieService.createDeleteOptimizeAuthNewCookie(true).forEach(response::addCookie);
     }
 
     final String errorCode = HTTP_STATUS_TO_ERROR_CODE.getOrDefault(status, GENERIC_ERROR_CODE);

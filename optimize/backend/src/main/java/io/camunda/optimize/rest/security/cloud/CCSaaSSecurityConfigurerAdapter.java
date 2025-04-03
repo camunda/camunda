@@ -286,9 +286,9 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
             .createOptimizeServiceTokenCookies(
                 serviceAccessToken, cookieExpiryDate, request.getScheme())
             .forEach(response::addCookie);
-        response.addCookie(
-            authCookieService.createOptimizeAuthCookie(
-                sessionToken, cookieExpiryDate, request.getScheme()));
+        authCookieService
+            .createOptimizeAuthCookies(sessionToken, cookieExpiryDate, request.getScheme())
+            .forEach(response::addCookie);
 
         // we can't redirect to the previously accesses path or the root of the application as the
         // Optimize Cookie
