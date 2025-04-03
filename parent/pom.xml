@@ -59,7 +59,7 @@
     <version.hamcrest>2.2</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.httpclient5>5.4.2</version.httpclient5>
+    <version.httpclient5>5.4.3</version.httpclient5>
     <version.httpcore5>5.3.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.5.13</version.identity>
