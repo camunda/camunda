@@ -267,8 +267,9 @@ public class MultiDbConfigurator {
         : zeebePrefix;
   }
 
-  public void configureAWSOpenSearchSupport(final String opensearchUrl, final String indexPrefix) {
-    configureOpenSearchSupport(opensearchUrl, indexPrefix, "", "");
+  public void configureAWSOpenSearchSupport(
+      final String opensearchUrl, final String indexPrefix, final boolean retentionEnabled) {
+    configureOpenSearchSupport(opensearchUrl, indexPrefix, "", "", retentionEnabled);
     final Map<String, Object> opensearchProperties = new HashMap<>();
     opensearchProperties.put("camunda.tasklist.opensearch.aws.enabled", true);
     opensearchProperties.put("camunda.operate.opensearch.aws.enabled", true);
