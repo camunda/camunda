@@ -133,16 +133,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-jcl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
       <scope>test</scope>
@@ -201,7 +191,6 @@
             <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
             <dependency>commons-collections:commons-collections</dependency>
             <dependency>ch.qos.logback:logback-classic</dependency>
-            <dependency>commons-logging:commons-logging</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
