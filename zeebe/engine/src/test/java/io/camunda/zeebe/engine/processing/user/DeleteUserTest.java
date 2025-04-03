@@ -74,7 +74,7 @@ public class DeleteUserTest {
     ENGINE
         .role()
         .addEntity(role.getKey())
-        .withEntityKey(userRecord.getKey())
+        .withEntityId(userRecord.getValue().getUsername())
         .withEntityType(EntityType.USER)
         .add();
     ENGINE
@@ -97,7 +97,7 @@ public class DeleteUserTest {
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleKey(role.getKey())
-                .withEntityKey(userRecord.getKey())
+                .withEntityId(userRecord.getValue().getUsername())
                 .exists())
         .isTrue();
     Assertions.assertThat(

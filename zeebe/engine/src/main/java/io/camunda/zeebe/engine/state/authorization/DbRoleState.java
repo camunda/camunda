@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -31,10 +30,10 @@ public class DbRoleState implements MutableRoleState {
   private final ColumnFamily<DbString, PersistedRole> roleColumnFamily;
 
   private final DbForeignKey<DbString> fkRoleId;
-  private final DbLong entityKey;
-  private final DbCompositeKey<DbForeignKey<DbString>, DbLong> fkRoleIdAndEntityKey;
+  private final DbString entityId = new DbString();
+  private final DbCompositeKey<DbForeignKey<DbString>, DbString> fkRoleIdAndEntityKey;
   private final EntityTypeValue entityTypeValue = new EntityTypeValue();
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbString>, DbLong>, EntityTypeValue>
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbString>, DbString>, EntityTypeValue>
       entityTypeByRoleColumnFamily;
 
   public DbRoleState(
@@ -45,8 +44,7 @@ public class DbRoleState implements MutableRoleState {
             ZbColumnFamilies.ROLES, transactionContext, roleId, new PersistedRole());
 
     fkRoleId = new DbForeignKey<>(roleId, ZbColumnFamilies.ROLES);
-    entityKey = new DbLong();
-    fkRoleIdAndEntityKey = new DbCompositeKey<>(fkRoleId, entityKey);
+    fkRoleIdAndEntityKey = new DbCompositeKey<>(fkRoleId, entityId);
     entityTypeByRoleColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ENTITY_BY_ROLE,
@@ -76,15 +74,15 @@ public class DbRoleState implements MutableRoleState {
   @Override
   public void addEntity(final RoleRecord roleRecord) {
     roleId.wrapString(String.valueOf(roleRecord.getRoleKey()));
-    entityKey.wrapLong(roleRecord.getEntityKey());
+    entityId.wrapString(roleRecord.getEntityId());
     entityTypeValue.setEntityType(roleRecord.getEntityType());
     entityTypeByRoleColumnFamily.insert(fkRoleIdAndEntityKey, entityTypeValue);
   }
 
   @Override
-  public void removeEntity(final long roleKey, final long entityKey) {
+  public void removeEntity(final long roleKey, final String entityId) {
     roleId.wrapString(String.valueOf(roleKey));
-    this.entityKey.wrapLong(entityKey);
+    this.entityId.wrapString(entityId);
     entityTypeByRoleColumnFamily.deleteExisting(fkRoleIdAndEntityKey);
   }
 
@@ -115,24 +113,24 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
-  public Optional<EntityType> getEntityType(final long roleKey, final long entityKey) {
+  public Optional<EntityType> getEntityType(final long roleKey, final String entityId) {
     roleId.wrapString(String.valueOf(roleKey));
-    this.entityKey.wrapLong(entityKey);
+    this.entityId.wrapString(entityId);
     final var result = entityTypeByRoleColumnFamily.get(fkRoleIdAndEntityKey);
     return Optional.ofNullable(result).map(EntityTypeValue::getEntityType);
   }
 
   @Override
-  public Map<EntityType, List<Long>> getEntitiesByType(final long roleKey) {
-    final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
+  public Map<EntityType, List<String>> getEntitiesByType(final long roleKey) {
+    final Map<EntityType, List<String>> entitiesMap = new HashMap<>();
     roleId.wrapString(String.valueOf(roleKey));
     entityTypeByRoleColumnFamily.whileEqualPrefix(
         fkRoleId,
         (compositeKey, entityTypeValue) -> {
           final var entityType = entityTypeValue.getEntityType();
-          final var entityKey = compositeKey.second().getValue();
+          final var entityId = compositeKey.second().toString();
           entitiesMap.putIfAbsent(entityType, new ArrayList<>());
-          entitiesMap.get(entityType).add(entityKey);
+          entitiesMap.get(entityType).add(entityId);
         });
     return entitiesMap;
   }

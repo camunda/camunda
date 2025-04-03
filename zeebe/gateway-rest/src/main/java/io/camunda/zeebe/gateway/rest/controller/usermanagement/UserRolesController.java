@@ -7,8 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.UserQuery;
+import io.camunda.search.query.UserQuery.Builder;
 import io.camunda.service.RoleServices;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -27,9 +32,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserRolesController {
 
   private final RoleServices roleServices;
+  private final UserServices userServices;
 
-  public UserRolesController(final RoleServices roleServices) {
+  public UserRolesController(final RoleServices roleServices, final UserServices userServices) {
     this.roleServices = roleServices;
+    this.userServices = userServices;
   }
 
   @CamundaPostMapping(path = "/search")
@@ -43,10 +50,24 @@ public class UserRolesController {
   private ResponseEntity<RoleSearchQueryResult> searchRoles(
       final long userKey, final RoleQuery query) {
     try {
+
+      // todo remove request to userServices after change api from userKey to username
+      final UserQuery userQuery =
+          new Builder().filter(new UserFilter.Builder().key(userKey).build()).build();
+      final String username =
+          userServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(userQuery)
+              .items()
+              .stream()
+              .findFirst()
+              .map(UserEntity::username)
+              .orElseGet(() -> String.valueOf(userKey));
+
       final var result =
           roleServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .getMemberRoles(userKey, query);
+              .getMemberRoles(username, query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);

@@ -82,7 +82,7 @@ public class UserController {
 
   @CamundaDeleteMapping(path = "/{userKey}/roles/{roleKey}")
   public CompletableFuture<ResponseEntity<Object>> removeRole(
-      @PathVariable final long userKey, @PathVariable final long roleKey) {
+      @PathVariable final String userKey, @PathVariable final long roleKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             roleServices

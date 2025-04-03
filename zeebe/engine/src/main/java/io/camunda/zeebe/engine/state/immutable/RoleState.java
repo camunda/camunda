@@ -19,7 +19,7 @@ public interface RoleState {
 
   Optional<PersistedRole> getRole(String roleId);
 
-  Optional<EntityType> getEntityType(long roleKey, long entityKey);
+  Optional<EntityType> getEntityType(long roleKey, String entityId);
 
-  Map<EntityType, List<Long>> getEntitiesByType(long roleKey);
+  Map<EntityType, List<String>> getEntitiesByType(long roleKey);
 }

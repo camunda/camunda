@@ -59,7 +59,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.createRole(request))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new RoleRecord().setEntityKey(100L).setName(roleName)));
+                new RoleRecord().setEntityId("entityId").setName(roleName)));
 
     // when
     webClient

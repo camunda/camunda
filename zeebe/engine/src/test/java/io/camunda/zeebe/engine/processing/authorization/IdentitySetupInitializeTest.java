@@ -104,7 +104,7 @@ public class IdentitySetupInitializeTest {
         .hasTenantKey(tenantKey)
         .hasName(tenantName)
         .hasTenantId(tenantId);
-    assertThatEntityIsAssignedToRole(roleKey, userKey, EntityType.USER);
+    assertThatEntityIsAssignedToRole(roleKey, username, EntityType.USER);
     assertThatAllPermissionsAreAddedToRole(roleKey);
   }
 
@@ -139,7 +139,7 @@ public class IdentitySetupInitializeTest {
     // then
     assertUserIsNotCreated(initializeRecord.getSourceRecordPosition());
     assertThatEntityIsAssignedToRole(
-        initializeRecord.getValue().getDefaultRole().getRoleKey(), userKey, EntityType.USER);
+        initializeRecord.getValue().getDefaultRole().getRoleKey(), username, EntityType.USER);
   }
 
   @Test
@@ -166,7 +166,7 @@ public class IdentitySetupInitializeTest {
     // then
     assertRoleIsNotCreated(initializeRecord.getSourceRecordPosition());
     assertThatEntityIsAssignedToRole(
-        roleKey, initializeRecord.getValue().getUsers().getFirst().getUserKey(), EntityType.USER);
+        roleKey, initializeRecord.getValue().getUsers().getFirst().getUsername(), EntityType.USER);
     Assertions.assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
@@ -232,7 +232,7 @@ public class IdentitySetupInitializeTest {
     // then
     assertRoleIsNotCreated(initializeRecord.getSourceRecordPosition());
     assertUserIsNotCreated(initializeRecord.getSourceRecordPosition());
-    assertThatEntityIsAssignedToRole(roleKey, userKey, EntityType.USER);
+    assertThatEntityIsAssignedToRole(roleKey, username, EntityType.USER);
   }
 
   @Test
@@ -261,7 +261,7 @@ public class IdentitySetupInitializeTest {
             .withEmail(mail)
             .create()
             .getKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.role().addEntity(roleKey).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // when
     final var initializeRecord =
@@ -350,12 +350,12 @@ public class IdentitySetupInitializeTest {
             m1 ->
                 assertThatEntityIsAssignedToRole(
                     initialized.getDefaultRole().getRoleKey(),
-                    m1.getMappingKey(),
+                    m1.getMappingId(),
                     EntityType.MAPPING),
             m2 ->
                 assertThatEntityIsAssignedToRole(
                     initialized.getDefaultRole().getRoleKey(),
-                    m2.getMappingKey(),
+                    m2.getMappingId(),
                     EntityType.MAPPING));
   }
 
@@ -435,13 +435,13 @@ public class IdentitySetupInitializeTest {
   }
 
   private void assertThatEntityIsAssignedToRole(
-      final long roleKey, final long entityKey, final EntityType entityType) {
+      final long roleKey, final String entityId, final EntityType entityType) {
     final var roleRecord =
-        RecordingExporter.roleRecords(RoleIntent.ENTITY_ADDED).withEntityKey(entityKey).getFirst();
+        RecordingExporter.roleRecords(RoleIntent.ENTITY_ADDED).withEntityId(entityId).getFirst();
     Assertions.assertThat(roleRecord.getKey()).isEqualTo(roleKey);
     assertThat(roleRecord.getValue())
         .hasRoleKey(roleKey)
-        .hasEntityKey(entityKey)
+        .hasEntityId(entityId)
         .hasEntityType(entityType);
   }
 }

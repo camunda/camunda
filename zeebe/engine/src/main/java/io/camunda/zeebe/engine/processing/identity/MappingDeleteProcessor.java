@@ -122,6 +122,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
 
   private void deleteMapping(final PersistedMapping mapping) {
     final var mappingKey = mapping.getMappingKey();
+    final var mappingId = mapping.getMappingId();
     deleteAuthorizations(mappingKey);
     for (final var tenantId : mapping.getTenantIdsList()) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
@@ -140,7 +141,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
               .setRoleKey(roleKey)
-              .setEntityKey(mappingKey)
+              .setEntityId(mappingId)
               .setEntityType(EntityType.MAPPING));
     }
     for (final var groupKey : mapping.getGroupKeysList()) {

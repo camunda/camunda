@@ -40,7 +40,7 @@ public class AddEntityRoleMultiPartitionTest {
   @Test
   public void shouldDistributeRoleAddEntityCommand() {
     // when
-    final var userKey =
+    final var userName =
         engine
             .user()
             .newUser("foo")
@@ -48,10 +48,11 @@ public class AddEntityRoleMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.role().addEntity(roleKey).withEntityId(userName).withEntityType(EntityType.USER).add();
 
     assertThat(
             RecordingExporter.records()
@@ -102,7 +103,7 @@ public class AddEntityRoleMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var userKey =
+    final var userName =
         engine
             .user()
             .newUser("foo")
@@ -110,10 +111,11 @@ public class AddEntityRoleMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.role().addEntity(roleKey).withEntityId(userName).withEntityType(EntityType.USER).add();
 
     // then
     assertThat(
@@ -130,7 +132,7 @@ public class AddEntityRoleMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -138,12 +140,13 @@ public class AddEntityRoleMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
 
     // when
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.role().addEntity(roleKey).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));
