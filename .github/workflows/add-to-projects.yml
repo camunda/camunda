@@ -88,8 +88,9 @@ jobs:
       - id: add-to-distribution
         name: Add to Distribution Team project
         uses: actions/add-to-project@v1.0.2
-        if: contains(github.event.issue.labels.*.name, 'component/c8run')
+        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+          labeled: component/c8run
   
