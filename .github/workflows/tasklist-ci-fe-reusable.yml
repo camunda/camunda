@@ -3,6 +3,9 @@ name: Tasklist Frontend Jobs
 on:
   workflow_call: {}
 
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
 jobs:
   fe-type-check:
     name: Type check
