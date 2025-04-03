@@ -16,9 +16,9 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.gateway.protocol.rest.RoleChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -234,44 +234,63 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void updateRoleShouldReturnNoContent() {
+  void shouldUpdateRoleAndReturnResponse() {
     // given
     final var roleKey = 100L;
+    final var roleId = "roleId";
     final var roleName = "Updated Role Name";
-    when(roleServices.updateRole(roleKey, roleName))
+    final var description = "Updated Role Description";
+    final var request = new UpdateRoleRequest(roleId, roleName, description);
+    when(roleServices.updateRole(request))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new RoleRecord().setEntityKey(100L).setName(roleName)));
+                new RoleRecord()
+                    .setRoleKey(roleKey)
+                    .setRoleId(roleId)
+                    .setName(roleName)
+                    .setDescription(description)));
 
     // when
     webClient
-        .patch()
-        .uri("%s/%s".formatted(ROLE_BASE_URL, roleKey))
+        .put()
+        .uri("%s/%s".formatted(ROLE_BASE_URL, roleId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new RoleUpdateRequest().changeset(new RoleChangeset().name(roleName)))
+        .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "roleKey": "%d",
+              "roleId": "%s",
+              "name": "%s",
+              "description": "%s"
+            }
+            """
+                .formatted(roleKey, roleId, roleName, description));
 
     // then
-    verify(roleServices, times(1)).updateRole(roleKey, roleName);
+    verify(roleServices, times(1)).updateRole(request);
   }
 
   @Test
   void updateRoleWithEmptyNameShouldFail() {
     // given
-    final var roleKey = 100L;
+    final var roleId = "roleId";
     final var roleName = "";
-    final var uri = "%s/%s".formatted(ROLE_BASE_URL, roleKey);
+    final var description = "Updated Role Description";
+    final var uri = "%s/%s".formatted(ROLE_BASE_URL, roleId);
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new RoleUpdateRequest().changeset(new RoleChangeset().name(roleName)))
+        .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -293,28 +312,63 @@ public class RoleControllerTest extends RestControllerTest {
   @Test
   void updateNonExistingRoleShouldReturnError() {
     // given
-    final var roleKey = 100L;
+    final var roleId = "roleId";
     final var roleName = "Updated Role Name";
-    final var path = "%s/%s".formatted(ROLE_BASE_URL, roleKey);
-    when(roleServices.updateRole(roleKey, roleName))
+    final var description = "Updated Role Description";
+    final var request = new UpdateRoleRequest(roleId, roleName, description);
+    final var path = "%s/%s".formatted(ROLE_BASE_URL, roleId);
+    when(roleServices.updateRole(request))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
                     new BrokerRejection(
-                        RoleIntent.UPDATE, roleKey, RejectionType.NOT_FOUND, "Role not found"))));
+                        RoleIntent.UPDATE, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new RoleUpdateRequest().changeset(new RoleChangeset().name(roleName)))
+        .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
         .exchange()
         .expectStatus()
         .isNotFound();
 
-    verify(roleServices, times(1)).updateRole(roleKey, roleName);
+    verify(roleServices, times(1)).updateRole(request);
+  }
+
+  @Test
+  void updateRoleWithoutDescriptionShouldFail() {
+    // given
+    final var roleId = "roleId";
+    final var roleName = "roleName";
+    final String description = null;
+    final var uri = "%s/%s".formatted(ROLE_BASE_URL, roleId);
+
+    // when / then
+    webClient
+        .put()
+        .uri(uri)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No description provided.",
+              "instance": "%s"
+            }"""
+                .formatted(uri));
+
+    verifyNoInteractions(roleServices);
   }
 
   @Test

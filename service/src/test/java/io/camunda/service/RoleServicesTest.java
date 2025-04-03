@@ -20,11 +20,13 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -125,19 +127,22 @@ public class RoleServicesTest {
   @Test
   public void shouldUpdateName() {
     // given
-    final var roleKey = 100L;
+    final var roleId = "roleId";
     final var name = "UpdatedName";
+    final var description = "UpdatedDescription";
 
     // when
-    services.updateRole(roleKey, name);
+    services.updateRole(new UpdateRoleRequest(roleId, name, description));
 
     // then
     final BrokerRoleUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.UPDATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
-    assertThat(request.getKey()).isEqualTo(roleKey);
+    assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
     assertThat(brokerRequestValue.getName()).isEqualTo(name);
+    assertThat(brokerRequestValue.getDescription()).isEqualTo(description);
   }
 
   @Test
