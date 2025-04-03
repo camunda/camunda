@@ -45,9 +45,7 @@ public class GroupProcessors {
         ValueType.GROUP,
         GroupIntent.ADD_ENTITY,
         new GroupAddEntityProcessor(
-            processingState.getGroupState(),
-            processingState.getUserState(),
-            processingState.getMappingState(),
+            processingState,
             authCheckBehavior,
             keyGenerator,
             writers,
@@ -56,9 +54,7 @@ public class GroupProcessors {
         ValueType.GROUP,
         GroupIntent.REMOVE_ENTITY,
         new GroupRemoveEntityProcessor(
-            processingState.getGroupState(),
-            processingState.getUserState(),
-            processingState.getMappingState(),
+            processingState,
             authCheckBehavior,
             keyGenerator,
             writers,

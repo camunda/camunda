@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -25,12 +24,10 @@ public class PersistedUser extends UnpackedObject implements DbValue {
       new ObjectProperty<>("user", new UserRecord());
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>("tenantIds", StringValue::new);
-  private final ArrayProperty<LongValue> groupKeysProp =
-      new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedUser() {
-    super(3);
-    declareProperty(userProp).declareProperty(tenantIdsProp).declareProperty(groupKeysProp);
+    super(2);
+    declareProperty(userProp).declareProperty(tenantIdsProp);
   }
 
   public PersistedUser copy() {
@@ -82,23 +79,6 @@ public class PersistedUser extends UnpackedObject implements DbValue {
 
   public PersistedUser addTenantId(final String tenantId) {
     tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId));
-    return this;
-  }
-
-  public List<Long> getGroupKeysList() {
-    return StreamSupport.stream(groupKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
-        .collect(Collectors.toList());
-  }
-
-  public PersistedUser setGroupKeysList(final List<Long> groupKeys) {
-    groupKeysProp.reset();
-    groupKeys.forEach(groupKey -> groupKeysProp.add().setValue(groupKey));
-    return this;
-  }
-
-  public PersistedUser addGroupKey(final long groupKey) {
-    groupKeysProp.add().setValue(groupKey);
     return this;
   }
 }
