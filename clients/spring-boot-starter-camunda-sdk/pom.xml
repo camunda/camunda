@@ -133,16 +133,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-jcl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
       <scope>test</scope>
@@ -183,11 +173,6 @@
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -200,9 +185,11 @@
           <usedDependencies>
             <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
             <dependency>commons-collections:commons-collections</dependency>
-            <dependency>ch.qos.logback:logback-classic</dependency>
-            <dependency>commons-logging:commons-logging</dependency>
           </usedDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <dependency>commons-logging:commons-logging</dependency>
+            <dependency>org.springframework:spring-jcl</dependency>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
 
