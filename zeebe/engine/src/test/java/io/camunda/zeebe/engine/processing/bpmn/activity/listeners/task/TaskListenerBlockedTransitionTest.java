@@ -194,6 +194,41 @@ public class TaskListenerBlockedTransitionTest {
   }
 
   @Test
+  public void shouldCreateUserTaskAfterAllCreatingTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithCreatingTaskListeners(
+                listenerType, listenerType + "_2", listenerType + "_3"));
+
+    // when
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CREATING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `COMPLETING` and `COMPLETED` events
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.CREATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CREATED);
+
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        userTask -> Assertions.assertThat(userTask).hasNoChangedAttributes());
+  }
+
+  @Test
   public void
       shouldTriggerAssigningListenersAfterCreationWithDefinedAssigneeAndCreatingListeners() {
     // given
