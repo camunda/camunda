@@ -21,8 +21,8 @@ import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -72,7 +72,11 @@ public class CamundaProcessTestResultCollector {
 
   private Map<String, String> collectVariables(final long processInstanceKey) {
     return dataSource.findVariablesByProcessInstanceKey(processInstanceKey).stream()
-        .collect(Collectors.toMap(Variable::getName, Variable::getValue));
+        // We're deliberately switching from the Collectors.toMap collector to a custom
+        // implementation because it's allowed to have Camunda Variables with null values
+        // However, the toMap collector does not allow null values and would throw an exception.
+        // See this Stack Overflow issue for more context: https://stackoverflow.com/a/24634007
+        .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
   }
 
   private List<Incident> collectOpenIncidents(final long processInstanceKey) {

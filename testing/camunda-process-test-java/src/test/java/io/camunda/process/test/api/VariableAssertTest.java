@@ -117,6 +117,22 @@ public class VariableAssertTest {
     }
 
     @Test
+    void shouldPassIfHasVariableNamesIncludesNullValues() {
+      // given
+      final Variable variableA = newVariable("a", null);
+      final Variable variableB = newVariable("b", null);
+
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(variableA, variableB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasVariableNames("a", "b");
+    }
+
+    @Test
     void shouldWaitUntilHasVariableNames() {
       // given
       final Variable variableA = newVariable("a", "1");
@@ -208,6 +224,21 @@ public class VariableAssertTest {
       CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", 1);
 
       verify(camundaDataSource, times(2)).findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldPassIfHasVariableContainsNullValues() {
+      // given
+      final Variable variableWithNull = newVariable("a", null);
+
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variableWithNull));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", null);
     }
 
     @Test
@@ -324,6 +355,27 @@ public class VariableAssertTest {
       final Map<String, Object> expectedVariables = new HashMap<>();
       expectedVariables.put("a", expectedValue);
       expectedVariables.put("b", 100);
+      CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
+    }
+
+    @Test
+    void shouldPassIfHasVariablesContainsNullValues() {
+      // given
+      final Variable variableA = newVariable("a", "1");
+      final Variable nullVariableB = newVariable("b", null);
+      final Variable nullVariableC = newVariable("c", null);
+
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(variableA, nullVariableB, nullVariableC));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      final Map<String, Object> expectedVariables = new HashMap<>();
+      expectedVariables.put("a", 1);
+      expectedVariables.put("b", null);
+      expectedVariables.put("c", null);
       CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
     }
 
