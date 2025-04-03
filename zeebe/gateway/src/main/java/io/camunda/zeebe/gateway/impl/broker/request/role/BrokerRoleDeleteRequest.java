@@ -20,12 +20,7 @@ public class BrokerRoleDeleteRequest extends BrokerExecuteCommand<RoleRecord> {
   public BrokerRoleDeleteRequest(final String roleId) {
     super(ValueType.ROLE, RoleIntent.DELETE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
-    setRoleId(roleId);
-  }
-
-  public BrokerRoleDeleteRequest setRoleId(final String roleId) {
     requestDto.setRoleId(roleId);
-    return this;
   }
 
   @Override
