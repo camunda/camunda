@@ -92,11 +92,21 @@ public final class AuthorizationCheckBehavior {
     }
 
     final var username = getUsername(request);
+
+    // TODO: remove this check when username retrieval is supported in JWT modes
     if (username.isPresent()) {
-      return isUserAuthorized(request, username.get());
-    } else {
-      return isMappingAuthorized(request);
+      final var userAuthorized = isUserAuthorized(request, username.get());
+      if (userAuthorized.isRight()) {
+        return userAuthorized;
+      }
     }
+
+    final var mappingAuthorized = isMappingAuthorized(request);
+    if (mappingAuthorized.isLeft()) {
+      return Either.left(mappingAuthorized.getLeft());
+    }
+
+    return Either.right(null);
   }
 
   /**
