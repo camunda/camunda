@@ -342,6 +342,13 @@ public class WebSecurityConfig {
         throws Exception {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
+          .authorizeHttpRequests(
+              (authorizeHttpRequests) ->
+                  authorizeHttpRequests
+                      .requestMatchers(UNPROTECTED_PATHS.toArray(String[]::new))
+                      .permitAll()
+                      .anyRequest()
+                      .authenticated())
           .headers(WebSecurityConfig::setupStrictTransportSecurity)
           .exceptionHandling(
               (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
