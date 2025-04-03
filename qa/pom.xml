@@ -16,7 +16,7 @@
   <name>Camunda QA</name>
 
   <modules>
-    <module>integration-tests</module>
+    <module>acceptance-tests</module>
     <module>util</module>
   </modules>
 
