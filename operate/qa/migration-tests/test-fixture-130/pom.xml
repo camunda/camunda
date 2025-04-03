@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa-migration-tests-parent</artifactId>
-    <version>8.6.11111-SNAPSHOT</version>
+    <version>8.6.11111</version>
   </parent>
   <artifactId>operate-qa-migration-tests-test-fixture-130</artifactId>
 
