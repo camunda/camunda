@@ -8,7 +8,7 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {authAPI, pollAPI} from 'utils/apiHelpers';
+import {authAPI} from 'utils/apiHelpers';
 import {createInstances, deploy} from 'utils/zeebeClient';
 
 const baseURL = process.env.CORE_APPLICATION_OPERATE_URL;
@@ -35,13 +35,16 @@ test.describe('API tests', () => {
   });
 
   test('Get a process definition via key', async ({request}) => {
-    // Use pollAPI to wait until process definitions are available
-    const processDefinitions = await pollAPI<{items: {key: number}[]}>(
-      request,
-      '/v1/process-definitions/search',
-      (response) => response.items.length > 0, // Condition: process definitions are available
-    );
-    // Fetch details of the first process definition
+    let processDefinitions: {items: {key: number}[]} = {items: []};
+    await expect(async () => {
+      const response = await request.post('/v1/process-definitions/search');
+      expect(response.status()).toBe(200);
+      processDefinitions = await response.json();
+      expect(processDefinitions.items.length).toBeGreaterThan(0);
+    }).toPass({
+      intervals: [3_000, 4_000, 5_000],
+      timeout: 30_000,
+    });
     const response = await request.get(
       `/v1/process-definitions/${processDefinitions.items[0].key}`,
     );
