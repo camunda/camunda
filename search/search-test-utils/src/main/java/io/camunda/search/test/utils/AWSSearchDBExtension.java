@@ -15,6 +15,22 @@ import java.util.UUID;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
+/**
+ * {@code AWSSearchDBExtension} is an extension that manages an AWS-based OpenSearch instance,
+ * creates and configures respective client, and provides a client for interaction for usage in
+ * tests.
+ *
+ * <p>To use this extension, preconditions from {@link SearchDBExtension} must be met.
+ *
+ * <p>This extension fetches the AWS URL from the {@link
+ * SearchDBExtension#TEST_INTEGRATION_OPENSEARCH_AWS_URL} argument.
+ *
+ * <p>This extension uses the {@link
+ * software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider} for implicit authentication.
+ *
+ * <p>This extension always returns `null` for all ElasticSearch related methods, meaning test
+ * maintainer has to make sure it won't fail on a CI.
+ */
 public class AWSSearchDBExtension extends SearchDBExtension {
 
   private static OpenSearchClient osClient;
@@ -37,26 +53,31 @@ public class AWSSearchDBExtension extends SearchDBExtension {
     osClient = connector.createClient();
   }
 
+  /** {@inheritDoc} */
   @Override
   public ObjectMapper objectMapper() {
     return objectMapper;
   }
 
+  /** {@inheritDoc} */
   @Override
   public ElasticsearchClient esClient() {
     return null;
   }
 
+  /** {@inheritDoc} */
   @Override
   public OpenSearchClient osClient() {
     return osClient;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String esUrl() {
     return null;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String osUrl() {
     return osUrl;

@@ -17,6 +17,19 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
+/**
+ * {@code @SearchDBExtension} is an extension factory for concrete extensions: {@link
+ * ContainerizedSearchDBExtension} and {@link AWSSearchDBExtension}.
+ *
+ * <p>Which extension will be created is controlled by the property
+ * `test.integration.opensearch.aws.url`. If the mentioned property is defined then tests assume
+ * that URL is correct and points to the AWS OS instance.
+ *
+ * <p>A user can pass property locally via `mvn -D test.integration.opensearch.aws.url=$AWS_OS_URL
+ *
+ * <p>If concrete extension not selected, the {@link ContainerizedSearchDBExtension} as selected by
+ * default.
+ */
 public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCallback {
 
   public static final String ENGINE_CLIENT_TEST_MARKERS =
@@ -60,13 +73,28 @@ public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCa
     }
   }
 
+  /**
+   * @return context {@link ObjectMapper}
+   */
   public abstract ObjectMapper objectMapper();
 
+  /**
+   * @return configured {@link ElasticsearchClient} client
+   */
   public abstract ElasticsearchClient esClient();
 
+  /**
+   * @return configured {@link OpenSearchClient}
+   */
   public abstract OpenSearchClient osClient();
 
+  /**
+   * @return context ElasticSearch URL
+   */
   public abstract String esUrl();
 
+  /**
+   * @return context OpenSearch URL
+   */
   public abstract String osUrl();
 }
