@@ -141,9 +141,12 @@ public class AnnotationUtil {
   public static Optional<VariableValue> getVariableValue(final ParameterInfo parameterInfo) {
     if (isVariable(parameterInfo)) {
       if (!isVariableLegacy(parameterInfo)) {
-        return Optional.of(new VariableValue(getVariableName(parameterInfo), parameterInfo));
+        return Optional.of(
+            new VariableValue(
+                getVariableName(parameterInfo), parameterInfo, getVariableOptional(parameterInfo)));
       } else {
-        return Optional.of(new VariableValue(getVariableNameLegacy(parameterInfo), parameterInfo));
+        return Optional.of(
+            new VariableValue(getVariableNameLegacy(parameterInfo), parameterInfo, true));
       }
     }
     return Optional.empty();
@@ -214,6 +217,17 @@ public class AnnotationUtil {
     }
     LOG.trace("Extracting variable name from parameter name");
     return param.getParameterName();
+  }
+
+  private static boolean getVariableOptional(final ParameterInfo param) {
+    if (param.getParameterInfo().isAnnotationPresent(Variable.class)) {
+      final boolean optional = param.getParameterInfo().getAnnotation(Variable.class).optional();
+      LOG.trace("Extracting optional flag from Variable");
+      return optional;
+    }
+    // this is the default behaviour
+    LOG.trace("No variable annotation found");
+    return true;
   }
 
   private static String getVariableNameLegacy(final ParameterInfo param) {
