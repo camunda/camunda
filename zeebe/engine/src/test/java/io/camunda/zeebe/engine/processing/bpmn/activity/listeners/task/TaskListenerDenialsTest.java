@@ -180,7 +180,8 @@ public class TaskListenerDenialsTest {
     // given
     final long processInstanceKey =
         helper.createProcessInstance(
-            helper.createUserTaskWithTaskListenersAndAssignee(listenerType, "first_assignee"));
+            helper.createUserTaskWithTaskListenersAndAssignee(
+                ZeebeTaskListenerEventType.assigning, "first_assignee", listenerType));
 
     ENGINE
         .job()
