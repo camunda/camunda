@@ -37,6 +37,8 @@ import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
@@ -65,6 +67,9 @@ import org.springframework.test.context.TestExecutionListener;
  * <p>The container runtime is closed once all tests have run.
  */
 public class CamundaProcessTestExecutionListener implements TestExecutionListener, Ordered {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(CamundaProcessTestExecutionListener.class);
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
@@ -136,36 +141,53 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
-    // collect test results
-    final ProcessTestResult testResult = processTestResultCollector.collect();
+    try {
+      // collect test results
+      final ProcessTestResult testResult = processTestResultCollector.collect();
 
-    // reset assertions
-    CamundaAssert.reset();
-
-    // close Zeebe clients
-    testContext.getApplicationContext().publishEvent(new CamundaClientClosingEvent(this, client));
-    testContext
-        .getApplicationContext()
-        .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));
-
-    for (final var createdClient : createdClients) {
-      createdClient.close();
+      // print test results
+      if (isTestFailed(testContext)) {
+        processTestResultPrinter.print(testResult);
+      }
+    } catch (final Throwable t) {
+      LOG.warn("Unable to collect process test results, skipping.", t);
     }
 
-    // clean up proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeClient();
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeClient();
-    testContext
-        .getApplicationContext()
-        .getBean(CamundaProcessTestContextProxy.class)
-        .removeContext();
+    try {
+      // reset assertions
+      CamundaAssert.reset();
 
-    // purge cluster
-    camundaManagementClient.purgeCluster();
+      // close Zeebe clients
+      testContext.getApplicationContext().publishEvent(new CamundaClientClosingEvent(this, client));
+      testContext
+          .getApplicationContext()
+          .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));
 
-    // print test results
-    if (isTestFailed(testContext)) {
-      processTestResultPrinter.print(testResult);
+      for (final var createdClient : createdClients) {
+        createdClient.close();
+      }
+
+      // clean up proxies
+      testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeClient();
+      testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeClient();
+      testContext
+          .getApplicationContext()
+          .getBean(CamundaProcessTestContextProxy.class)
+          .removeContext();
+
+      // purge cluster
+      LOG.info("Purging the cluster in between tests.");
+      camundaManagementClient.purgeCluster();
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Unable to clean up the test environment in between tests."
+              + "\n\tPlease double-check the containerRuntime and make sure that all container "
+              + "instances are running and healthy."
+              + "\n\tThis will not interrupt your tests, but failure to clean up the runtime may "
+              + "leave it in an inconsistent or polluted state which can cause test failures."
+              + "\n\tIf possible, always write tests so that you're not re-using the same process "
+              + "instances in each test.",
+          t);
     }
   }
 

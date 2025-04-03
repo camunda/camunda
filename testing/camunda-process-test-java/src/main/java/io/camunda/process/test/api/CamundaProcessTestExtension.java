@@ -41,6 +41,8 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.junit.platform.commons.util.ReflectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A JUnit extension that provides the runtime for process tests.
@@ -74,6 +76,8 @@ public class CamundaProcessTestExtension
 
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
+
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
 
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
@@ -134,10 +138,22 @@ public class CamundaProcessTestExtension
     final Store store = context.getStore(NAMESPACE);
     store.put(STORE_KEY_RUNTIME, containerRuntime);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
+
+    LOG.info(
+        "The CamundaProcessTestExtension creates a dockerized test environment once per test class "
+            + "and purges the cluster in between tests. This erases all runtime data and "
+            + "creates a clean and reusable testing environment.");
   }
 
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
+    if (containerRuntime == null) {
+      throw new IllegalStateException(
+          "The CamundaProcessTestExtension failed to start because the containerRuntime is null.\n"
+              + "\tThis can happen if you're registering the extension on a non-static field. "
+              + "Please double-check your usage and try again.");
+    }
+
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
@@ -191,19 +207,36 @@ public class CamundaProcessTestExtension
 
   @Override
   public void afterEach(final ExtensionContext extensionContext) throws Exception {
-    // collect test results
-    final ProcessTestResult testResult = processTestResultCollector.collect();
+    try {
+      // collect test results
+      final ProcessTestResult testResult = processTestResultCollector.collect();
 
-    // reset assertions
-    CamundaAssert.reset();
-    // close all created clients
-    closeCreatedClients();
-    // purge cluster
-    camundaManagementClient.purgeCluster();
+      // print test results
+      if (isTestFailed(extensionContext)) {
+        processTestResultPrinter.print(testResult);
+      }
+    } catch (final Throwable t) {
+      LOG.warn("Unable to collect process test results, skipping.", t);
+    }
 
-    // print test results
-    if (isTestFailed(extensionContext)) {
-      processTestResultPrinter.print(testResult);
+    try {
+      // reset assertions
+      CamundaAssert.reset();
+      // close all created clients
+      closeCreatedClients();
+      // purge cluster
+      LOG.info("Purging the cluster in between tests.");
+      camundaManagementClient.purgeCluster();
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Unable to clean up the test environment in between tests.\n"
+              + "\tPlease double-check the containerRuntime and make sure that all container "
+              + "instances are running and healthy.\n"
+              + "\tThis will not interrupt your tests, but failure to clean up the runtime may "
+              + "leave it in an inconsistent or polluted state which can cause test failures.\n"
+              + "\tIf possible, always write tests so that you're not re-using the same process "
+              + "instances in each test.",
+          t);
     }
   }
 

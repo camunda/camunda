@@ -34,13 +34,22 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CamundaManagementClient {
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaManagementClient.class);
+
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
 
   private static final String TOPOLOGY_ENDPOINT = "/v2/topology";
   private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
+
+  private static final String CLUSTER_PURGE_FAILURE_MESSAGE_HINT =
+      "This could indicate that the client"
+          + " is unable to initiate a cluster purge. Please double-check that the containerRuntime"
+          + " has started and the containers are healthy.";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -116,11 +125,13 @@ public class CamundaManagementClient {
           .pollInterval(Duration.ofMillis(250))
           .atMost(timeout)
           .until(() -> isPurgeComplete(startPurgeResponse.getChangeId()));
+
+      LOG.info("The cluster has been purged.");
     } catch (final ConditionTimeoutException e) {
-      throw new RuntimeException(
-          "Failed to purge the cluster, timeout expired. Try increasing the timeout.", e);
+      LOG.warn(
+          "Failed to purge the cluster, timeout expired. " + CLUSTER_PURGE_FAILURE_MESSAGE_HINT);
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to purge the cluster", e);
+      LOG.warn("Failed to purge the cluster. " + CLUSTER_PURGE_FAILURE_MESSAGE_HINT, e);
     }
   }
 
