@@ -38,10 +38,15 @@ public class ClusterTopologyManagerStep
                 final var brokerInfo = brokerStartupContext.getBrokerInfo();
                 final var clusterConfiguration =
                     brokerStartupContext.getBrokerClient().getTopologyManager().getTopology();
-                brokerInfo
-                    .setClusterSize(clusterConfiguration.getClusterSize())
-                    .setPartitionsCount(clusterConfiguration.getPartitionsCount())
-                    .setReplicationFactor(clusterConfiguration.getReplicationFactor());
+                if (clusterConfiguration.getClusterSize() > 0) {
+                  brokerInfo.setClusterSize(clusterConfiguration.getClusterSize());
+                }
+                if (clusterConfiguration.getPartitionsCount() > 0) {
+                  brokerInfo.setPartitionsCount(clusterConfiguration.getPartitionsCount());
+                }
+                if (clusterConfiguration.getReplicationFactor() > 0) {
+                  brokerInfo.setReplicationFactor(clusterConfiguration.getReplicationFactor());
+                }
 
                 started.complete(brokerStartupContext);
               } else {
