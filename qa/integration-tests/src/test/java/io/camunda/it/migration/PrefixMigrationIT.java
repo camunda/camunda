@@ -181,11 +181,11 @@ public class PrefixMigrationIT {
 
     if (currentMultiDbDatabaseType() == DatabaseType.ES) {
       addElasticsearchProperties(tasklistContainer, oldOperatePrefix, oldTasklistPrefix);
-      addElasticsearchProperties(operateContainer, oldOperatePrefix, newPrefix);
+      addElasticsearchProperties(operateContainer, oldOperatePrefix, oldTasklistPrefix);
     } else if (currentMultiDbDatabaseType() == DatabaseType.OS
         || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
       addOpensearchProperties(tasklistContainer, oldOperatePrefix, oldTasklistPrefix);
-      addOpensearchProperties(operateContainer, oldOperatePrefix, newPrefix);
+      addOpensearchProperties(operateContainer, oldOperatePrefix, oldTasklistPrefix);
     }
 
     // creates the 8.7 operate/tasklist indices
