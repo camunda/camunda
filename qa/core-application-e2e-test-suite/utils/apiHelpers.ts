@@ -63,7 +63,7 @@ export async function pollAPI<T>(
         `Request failed: ${response.status()} ${response.statusText()}`,
       );
     }
-    const responseData: T = await response.json();
+    const responseData = await response.json();
     lastResponseData = responseData;
     // Check if the condition is met
     if (condition(responseData)) {
