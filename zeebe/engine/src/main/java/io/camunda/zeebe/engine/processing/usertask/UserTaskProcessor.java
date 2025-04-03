@@ -369,7 +369,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
           case CLAIMING -> UserTaskIntent.CLAIM;
           case UPDATING -> UserTaskIntent.UPDATE;
           case COMPLETING -> UserTaskIntent.COMPLETE;
-          case CREATING, CANCELING ->
+          case CREATING -> UserTaskIntent.CREATE;
+          case CANCELING ->
               throw new UnsupportedOperationException(
                   "Conversion from '%s' user task lifecycle state to a user task command is not yet supported"
                       .formatted(lifecycleState));
