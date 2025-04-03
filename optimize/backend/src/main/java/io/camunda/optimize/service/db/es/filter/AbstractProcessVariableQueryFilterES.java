@@ -204,10 +204,12 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
                                         m ->
                                             m.range(
                                                 r ->
-                                                    r.date(
-                                                        d ->
-                                                            d.field(nestedVariableValueFieldLabel)
-                                                                .lt(String.valueOf(value)))))
+                                                    r.number(
+                                                        nu ->
+                                                            nu.field(nestedVariableValueFieldLabel)
+                                                                .lt(
+                                                                    Double.valueOf(
+                                                                        String.valueOf(value))))))
                                     .build())));
         break;
       case GREATER_THAN:
@@ -222,10 +224,12 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
                                         m ->
                                             m.range(
                                                 r ->
-                                                    r.date(
-                                                        d ->
-                                                            d.field(nestedVariableValueFieldLabel)
-                                                                .gt(String.valueOf(value)))))
+                                                    r.number(
+                                                        nu ->
+                                                            nu.field(nestedVariableValueFieldLabel)
+                                                                .gt(
+                                                                    Double.valueOf(
+                                                                        String.valueOf(value))))))
                                     .build())));
         break;
       case LESS_THAN_EQUALS:
@@ -240,10 +244,12 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
                                         m ->
                                             m.range(
                                                 r ->
-                                                    r.date(
-                                                        d ->
-                                                            d.field(nestedVariableValueFieldLabel)
-                                                                .lte(String.valueOf(value)))))
+                                                    r.number(
+                                                        nu ->
+                                                            nu.field(nestedVariableValueFieldLabel)
+                                                                .lte(
+                                                                    Double.valueOf(
+                                                                        String.valueOf(value))))))
                                     .build())));
         break;
       case GREATER_THAN_EQUALS:
@@ -258,10 +264,12 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
                                         m ->
                                             m.range(
                                                 r ->
-                                                    r.date(
-                                                        d ->
-                                                            d.field(nestedVariableValueFieldLabel)
-                                                                .gte(String.valueOf(value)))))
+                                                    r.number(
+                                                        nu ->
+                                                            nu.field(nestedVariableValueFieldLabel)
+                                                                .gte(
+                                                                    Double.valueOf(
+                                                                        String.valueOf(value))))))
                                     .build())));
         break;
       default:
