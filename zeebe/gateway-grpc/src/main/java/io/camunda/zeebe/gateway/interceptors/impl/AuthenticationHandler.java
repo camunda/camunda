@@ -7,16 +7,16 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
+import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAuth.USERNAME;
+
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.util.Either;
 import io.grpc.Context;
 import io.grpc.Status;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.jwt.JwtException;
 
 /** Used by the {@link AuthenticationInterceptor} to authenticate incoming requests. */
 public sealed interface AuthenticationHandler {
+  Context.Key<String> USERNAME = Context.key("io.camunda.zeebe:username");
 
   /**
    * Applies authentication logic for the given authorization header. Must not throw exceptions, but
@@ -71,17 +72,24 @@ public sealed interface AuthenticationHandler {
                 .withCause(e));
       }
 
-      final Map<String, Object> claims = new HashMap<>(token.getClaims());
-      claims.put(
-          Authorization.AUTHORIZED_USERNAME,
-          claims.get(oidcAuthenticationConfiguration.getUsernameClaim()));
+      final var username =
+          token.getClaims().get(oidcAuthenticationConfiguration.getUsernameClaim());
 
-      return Either.right(Context.current().withValue(USER_CLAIMS, claims));
+      if (username == null) {
+        return Either.left(
+            Status.UNAUTHENTICATED.augmentDescription(
+                "Expected a claim '%s' in the token, but it was not present"
+                    .formatted(oidcAuthenticationConfiguration.getUsernameClaim())));
+      }
+
+      return Either.right(
+          Context.current()
+              .withValue(USER_CLAIMS, token.getClaims())
+              .withValue(USERNAME, username.toString()));
     }
   }
 
   final class BasicAuth implements AuthenticationHandler {
-    public static final Context.Key<String> USERNAME = Context.key("io.camunda.zeebe:username");
     private static final String BASIC_PREFIX = "Basic ";
     private final UserServices userServices;
     private final PasswordEncoder passwordEncoder;
