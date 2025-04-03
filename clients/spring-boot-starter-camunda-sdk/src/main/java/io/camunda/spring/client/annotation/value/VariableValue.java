@@ -20,10 +20,13 @@ import io.camunda.spring.client.bean.ParameterInfo;
 public class VariableValue implements CamundaAnnotationValue<ParameterInfo> {
   private final String name;
   private final ParameterInfo parameterInfo;
+  private final boolean optional;
 
-  public VariableValue(final String name, final ParameterInfo parameterInfo) {
+  public VariableValue(
+      final String name, final ParameterInfo parameterInfo, final boolean optional) {
     this.name = name;
     this.parameterInfo = parameterInfo;
+    this.optional = optional;
   }
 
   public String getName() {
@@ -33,5 +36,9 @@ public class VariableValue implements CamundaAnnotationValue<ParameterInfo> {
   @Override
   public ParameterInfo getBeanInfo() {
     return parameterInfo;
+  }
+
+  public boolean isOptional() {
+    return optional;
   }
 }

@@ -37,7 +37,7 @@ class VariableResolverTest {
 
   @BeforeEach
   void setUp() {
-    resolver = new VariableResolver("testVar", String.class, new CamundaObjectMapper());
+    resolver = new VariableResolver("testVar", String.class, new CamundaObjectMapper(), true);
   }
 
   @Test
