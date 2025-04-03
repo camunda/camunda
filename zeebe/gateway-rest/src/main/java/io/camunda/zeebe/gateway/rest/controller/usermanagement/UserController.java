@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.UserQuery;
-import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -36,11 +35,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/users")
 public class UserController {
   private final UserServices userServices;
-  private final RoleServices roleServices;
 
-  public UserController(final UserServices userServices, final RoleServices roleServices) {
+  public UserController(final UserServices userServices) {
     this.userServices = userServices;
-    this.roleServices = roleServices;
   }
 
   @CamundaPostMapping
