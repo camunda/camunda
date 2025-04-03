@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -32,6 +34,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
   private final TenantState tenantState;
   private final UserState userState;
+  private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -47,6 +50,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
     userState = state.getUserState();
+    groupState = state.getGroupState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -79,7 +83,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       return;
     }
 
-    if (!validateEntityAssignment(command)) {
+    if (!validateEntityAssignment(command, tenantId)) {
       return;
     }
 
@@ -91,7 +95,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    if (validateEntityAssignment(command)) {
+    if (validateEntityAssignment(command, command.getValue().getTenantId())) {
       stateWriter.appendFollowUpEvent(
           command.getKey(), TenantIntent.ENTITY_REMOVED, command.getValue());
     }
@@ -99,37 +103,80 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean validateEntityAssignment(final TypedRecord<TenantRecord> command) {
-    return switch (command.getValue().getEntityType()) {
-      case USER -> validateUserAssignment(command);
+  private boolean validateEntityAssignment(
+      final TypedRecord<TenantRecord> command, final String tenantId) {
+    final var entityType = command.getValue().getEntityType();
+    final var entityId = command.getValue().getEntityId();
+    return switch (entityType) {
+      case USER -> checkUserAssignment(command, tenantId);
+      case GROUP -> checkGroupAssignment(entityId, command, tenantId);
       default ->
-          throw new UnsupportedOperationException(
-              "Removing entities of type '%s' is not supported."
-                  .formatted(command.getValue().getEntityType()));
+          throw new IllegalStateException(
+              formatErrorMessage(EntityType.UNSPECIFIED, entityId, tenantId, "doesn't exist"));
     };
   }
 
-  private boolean validateUserAssignment(final TypedRecord<TenantRecord> command) {
-    final var tenantId = command.getValue().getTenantId();
-    final var entityId = command.getValue().getEntityId();
+  private boolean checkUserAssignment(
+      final TypedRecord<TenantRecord> command, final String tenantId) {
+    final var record = command.getValue();
+    final var entityId = record.getEntityId();
     final var user = userState.getUser(entityId);
     if (user.isEmpty()) {
-      rejectCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to remove user '%s' from tenant, but no user with this id exists."
-              .formatted(entityId));
+      createEntityNotExistRejectCommand(command, entityId, EntityType.USER, tenantId);
       return false;
     }
-    if (!user.get().getTenantIdsList().contains(tenantId)) {
-      rejectCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to remove user '%s' from tenant '%s', but the user is not assigned to this tenant."
-              .formatted(entityId, tenantId));
+    if (user.get().getTenantIdsList().contains(tenantId)) {
+      createAlreadyAssignedRejectCommand(command, entityId, EntityType.USER, tenantId);
       return false;
     }
     return true;
+  }
+
+  private boolean checkGroupAssignment(
+      final String entityId, final TypedRecord<TenantRecord> command, final String tenantId) {
+    final var group = groupState.get(entityId);
+    if (group.isEmpty()) {
+      createEntityNotExistRejectCommand(command, entityId, EntityType.GROUP, tenantId);
+      return false;
+    }
+
+    if (group.get().getTenantIdsList().contains(tenantId)) {
+      createAlreadyAssignedRejectCommand(command, entityId, EntityType.GROUP, tenantId);
+      return false;
+    }
+    return true;
+  }
+
+  private void createEntityNotExistRejectCommand(
+      final TypedRecord<TenantRecord> command,
+      final String entityId,
+      final EntityType entityType,
+      final String tenantId) {
+    rejectCommand(
+        command,
+        RejectionType.NOT_FOUND,
+        formatErrorMessage(entityType, entityId, tenantId, "doesn't exist"));
+  }
+
+  private void createAlreadyAssignedRejectCommand(
+      final TypedRecord<TenantRecord> command,
+      final String entityId,
+      final EntityType entityType,
+      final String tenantId) {
+    rejectCommand(
+        command,
+        RejectionType.ALREADY_EXISTS,
+        formatErrorMessage(entityType, entityId, tenantId, "is already assigned to the tenant"));
+  }
+
+  private String formatErrorMessage(
+      final EntityType entityType,
+      final String entityId,
+      final String tenantId,
+      final String reason) {
+    final var entityName = entityType.name().toLowerCase();
+    return "Expected to remove %s with id '%s' from tenant with id '%s', but the %s %s."
+        .formatted(entityName, entityId, tenantId, entityName, reason);
   }
 
   private void rejectCommandWithUnauthorizedError(

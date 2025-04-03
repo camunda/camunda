@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
@@ -18,10 +19,12 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
 
   private final MutableTenantState tenantState;
   private final MutableUserState userState;
+  private final MutableGroupState groupState;
 
   public TenantEntityRemovedApplier(final MutableProcessingState state) {
     tenantState = state.getTenantState();
     userState = state.getUserState();
+    groupState = state.getGroupState();
   }
 
   @Override
@@ -30,6 +33,10 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
       case USER -> {
         tenantState.removeEntity(tenant);
         userState.removeTenant(tenant.getEntityId(), tenant.getTenantId());
+      }
+      case GROUP -> {
+        tenantState.removeEntity(tenant);
+        groupState.removeTenant(tenant.getEntityId(), tenant.getTenantId());
       }
       default ->
           throw new UnsupportedOperationException(
