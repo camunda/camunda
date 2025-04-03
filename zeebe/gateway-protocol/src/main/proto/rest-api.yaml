@@ -2311,6 +2311,51 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /roles/{roleId}/users/{username}:
+    put:
+      tags:
+        - Role
+      operationId: addUserToRole
+      summary: Assign a user to a role (Work-in-Progress)
+      description: |
+        Assigns a user to a role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          description: The user username.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The user was assigned successfully to the role.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role or user with the given ID or username was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: The user with the given ID is already assigned to the role.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /roles/search:
     post:
       tags:

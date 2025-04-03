@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -19,6 +20,7 @@ public final class BrokerRoleEntityRequest extends BrokerExecuteCommand<RoleReco
 
   private BrokerRoleEntityRequest(final RoleIntent intent) {
     super(ValueType.ROLE, intent);
+    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
   public static BrokerRoleEntityRequest createAddRequest() {
@@ -29,18 +31,18 @@ public final class BrokerRoleEntityRequest extends BrokerExecuteCommand<RoleReco
     return new BrokerRoleEntityRequest(RoleIntent.REMOVE_ENTITY);
   }
 
-  public BrokerRoleEntityRequest setRoleKey(final long roleKey) {
-    roleDto.setRoleKey(roleKey);
+  public BrokerRoleEntityRequest setRoleId(final String roleId) {
+    roleDto.setRoleId(roleId);
     return this;
   }
 
-  public BrokerRoleEntityRequest setEntity(final EntityType entityType, final long entityKey) {
+  public BrokerRoleEntityRequest setEntity(final EntityType entityType, final String entityId) {
     if (entityType != EntityType.USER && entityType != EntityType.MAPPING) {
       throw new IllegalArgumentException(
           "For now, roles can only be granted to users and mappings");
     }
     roleDto.setEntityType(entityType);
-    roleDto.setEntityKey(entityKey);
+    roleDto.setEntityId(entityId);
     return this;
   }
 

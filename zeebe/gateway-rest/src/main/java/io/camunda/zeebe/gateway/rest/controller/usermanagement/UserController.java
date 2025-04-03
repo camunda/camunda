@@ -28,7 +28,6 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -79,18 +78,6 @@ public class UserController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userServices.withAuthentication(RequestMapper.getAuthentication()).updateUser(request));
-  }
-
-  @CamundaPutMapping(
-      path = "/{userKey}/roles/{roleKey}",
-      consumes = MediaType.APPLICATION_JSON_VALUE)
-  public CompletableFuture<ResponseEntity<Object>> addRole(
-      @PathVariable final long userKey, @PathVariable final long roleKey) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            roleServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(roleKey, EntityType.USER, userKey));
   }
 
   @CamundaDeleteMapping(path = "/{userKey}/roles/{roleKey}")
