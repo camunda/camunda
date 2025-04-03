@@ -194,6 +194,69 @@ public class TaskListenerBlockedTransitionTest {
   }
 
   @Test
+  public void
+      shouldTriggerAssigningListenersAfterCreationWithDefinedAssigneeAndCreatingListeners() {
+    // given
+    final var assignee = "initial_assignee";
+    final var action = StringUtils.EMPTY;
+
+    // when: process instance is created with a UT having an `assignee` and `assignment` listeners
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
+                t ->
+                    t.zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.creating().type(listenerType + "_creating"))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning"))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning_2"))
+                        .zeebeTaskListener(
+                            l -> l.assigning().type(listenerType + "_assigning_3"))));
+
+    helper.completeJobs(processInstanceKey, listenerType + "_creating");
+
+    // when
+    helper.completeJobs(
+        processInstanceKey,
+        listenerType + "_assigning",
+        listenerType + "_assigning_2",
+        listenerType + "_assigning_3");
+
+    // then: verify the task listener completion sequence for the assignment event
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNING,
+        listenerType + "_assigning",
+        listenerType + "_assigning_2",
+        listenerType + "_assigning_3");
+
+    // verify that UT records follows the expected intents sequence from `CREATING` to `ASSIGNED`
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+        .as(
+            "Verify the sequence of intents, `assignee`, `action` and `changedAttributes` properties emitted for the user task")
+        .extracting(
+            Record::getIntent,
+            r -> r.getValue().getAssignee(),
+            r -> r.getValue().getAction(),
+            r -> r.getValue().getChangedAttributes())
+        .containsExactly(
+            // assignee should be present in the CREATING
+            tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
+            // creating task listener completion, assignee should NOT be present
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, StringUtils.EMPTY, action, List.of()),
+            // assignee should NOT be present in the CREATED
+            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
+            // assignee should be present in the ASSIGNING
+            tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.ASSIGNED, assignee, action, List.of(UserTaskRecord.ASSIGNEE)));
+  }
+
+  @Test
   public void shouldAssignUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
