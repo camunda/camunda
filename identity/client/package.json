@@ -26,13 +26,13 @@
     "react-router": "6.26.2",
     "react-router-dom": "6.26.2",
     "react-transition-group": "4.4.5",
-    "styled-components": "6.1.16"
+    "styled-components": "6.1.17"
   },
   "devDependencies": {
     "@types/event-source-polyfill": "1.0.5",
     "@types/node": "20.16.15",
     "@types/react": "18.3.20",
-    "@types/react-dom": "18.3.5",
+    "@types/react-dom": "18.3.6",
     "@types/react-transition-group": "4.4.12",
     "@typescript-eslint/eslint-plugin": "8.6.0",
     "@typescript-eslint/parser": "8.6.0",
@@ -47,7 +47,7 @@
     "rollup-plugin-license": "3.5.3",
     "sass": "1.79.6",
     "typescript": "5.6.3",
-    "vite": "6.2.4"
+    "vite": "6.2.5"
   },
   "packageManager": "yarn@4.3.1"
 }
