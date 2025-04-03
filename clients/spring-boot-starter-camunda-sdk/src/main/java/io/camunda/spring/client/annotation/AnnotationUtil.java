@@ -225,8 +225,7 @@ public class AnnotationUtil {
       LOG.trace("Extracting optional flag from Variable");
       return optional;
     }
-    // this is the default behaviour
-    LOG.trace("No variable annotation found");
+    LOG.trace("No variable annotation found, defaulting to true");
     return true;
   }
 
