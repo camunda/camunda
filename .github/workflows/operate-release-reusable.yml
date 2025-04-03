@@ -155,8 +155,7 @@ jobs:
       - name: Push Git changes
         if: ${{ env.CREATE_A_RELEASE == 'true' }}
         run: |
-          git push --tags
-          git push --all
+          git push origin refs/tags/${{ env.TAG_VERSION }}
 
       - name: Perform Maven release
         run: |
