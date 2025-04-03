@@ -17,15 +17,10 @@ import org.agrona.DirectBuffer;
 public class BrokerRoleDeleteRequest extends BrokerExecuteCommand<RoleRecord> {
   private final RoleRecord requestDto = new RoleRecord();
 
-  public BrokerRoleDeleteRequest(final long key) {
+  public BrokerRoleDeleteRequest(final String roleId) {
     super(ValueType.ROLE, RoleIntent.DELETE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
-    setRoleKey(key);
-  }
-
-  public BrokerRoleDeleteRequest setRoleKey(final long roleKey) {
-    requestDto.setRoleKey(roleKey);
-    return this;
+    requestDto.setRoleId(roleId);
   }
 
   @Override
