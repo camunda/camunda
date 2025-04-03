@@ -94,6 +94,7 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+            secret/data/github.com/organizations/camunda CORE_DOMAIN_SLACK_BOT_TOKEN;
 
       - name: Install Playwright Browsers
         shell: bash
@@ -116,6 +117,9 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           ZEEBE_REST_ADDRESS: "http://localhost:8089"
+          INCLUDE_SLACK_REPORTER: true
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.CORE_DOMAIN_SLACK_BOT_TOKEN }}
+          VERSION: ${{ matrix.branch }}
         run: npm run test -- --project=chromium
         working-directory: qa/core-application-e2e-test-suite
 

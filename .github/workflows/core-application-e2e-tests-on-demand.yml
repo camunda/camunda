@@ -140,7 +140,7 @@ jobs:
             --project 'Core Application' \
             --username $TESTRAIL_USERNAME \
             --key $TESTRAIL_KEY \
-            parse_junit --title "On Demand Core Application Test Run Results-  ${{ github.event.inputs.branch }}" \
+            parse_junit --title "On Demand Core Application Test Run Results -  ${{ github.event.inputs.branch }}" \
             --close-run \
             -f $JUNIT_RESULTS_FILE
 
