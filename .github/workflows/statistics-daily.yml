@@ -3,7 +3,7 @@ name: Statistics Daily
 
 on:
   schedule:
-    - cron: '0 8 * * 2-5'  # Tuesdays to Fridays, to keep it actionable
+    - cron: '0 6 * * 2-5'  # Tuesdays to Fridays, to keep it actionable
   pull_request:
     paths:
       - '.github/workflows/statistics-daily.yml'
