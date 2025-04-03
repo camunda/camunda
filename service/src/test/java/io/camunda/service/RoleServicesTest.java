@@ -19,6 +19,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.RoleServices.AddEntityToRoleRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.security.SecurityContextProvider;
@@ -152,7 +153,7 @@ public class RoleServicesTest {
     final var entityId = "entityId";
 
     // when
-    services.addMember(roleId, EntityType.USER, entityId);
+    services.addMember(new AddEntityToRoleRequest(roleId, entityId, EntityType.USER));
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
