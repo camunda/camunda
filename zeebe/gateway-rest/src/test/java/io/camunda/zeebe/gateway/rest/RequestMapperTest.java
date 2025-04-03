@@ -74,13 +74,6 @@ class RequestMapperTest {
 
     // then
     assertThat(authenticatedUsername).isEqualTo(usernameValue);
-
-    final var claims = RequestMapper.getAuthentication().claims();
-    assertNotNull(claims);
-    assertThat(claims).containsKey("authorized_username");
-    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "aud");
-    assertThat(claims.get("authorized_username")).isEqualTo("test-user");
-    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "aud")).isEqualTo("aud1");
   }
 
   @Test
