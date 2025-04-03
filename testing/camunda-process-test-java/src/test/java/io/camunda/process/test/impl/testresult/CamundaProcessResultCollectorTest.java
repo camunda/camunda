@@ -142,7 +142,7 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
-  void shouldReturnProcessInstanceVariablesWithNullValues() {
+  void shouldPassIfProcessInstanceVariablesContainsNullValues() {
     // given
     when(camundaDataSource.findProcessInstances())
         .thenReturn(Collections.singletonList(PROCESS_INSTANCE_1));

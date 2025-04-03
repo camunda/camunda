@@ -117,7 +117,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldPassIfHasVariableHasNullValue() {
+    void shouldPassIfHasVariableNamesIncludesNullValues() {
       // given
       final Variable variableA = newVariable("a", null);
       final Variable variableB = newVariable("b", null);
@@ -227,7 +227,7 @@ public class VariableAssertTest {
     }
 
     @Test
-    void shouldHasVariableWithNullValue() {
+    void shouldPassIfHasVariableContainsNullValues() {
       // given
       final Variable variableWithNull = newVariable("a", null);
 
