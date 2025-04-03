@@ -185,7 +185,6 @@
           <usedDependencies>
             <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
             <dependency>commons-collections:commons-collections</dependency>
-            <dependency>ch.qos.logback:logback-classic</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
