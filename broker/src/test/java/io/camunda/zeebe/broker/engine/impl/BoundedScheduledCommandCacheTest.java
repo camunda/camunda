@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -128,6 +129,19 @@ final class BoundedScheduledCommandCacheTest {
 
   @Nested
   final class StagedTest {
+    @RegressionTest("https://github.com/camunda/camunda/pull/30560")
+    void shouldOnlyStageKeysForConfiguredCachedIntents() {
+      // given
+      final var cache = BoundedScheduledCommandCache.ofIntent(NOOP_METRICS, TimerIntent.TRIGGER);
+      final var staged = cache.stage();
+
+      // when
+      staged.add(JobIntent.TIME_OUT, 1);
+
+      // then
+      assertThat(staged.contains(JobIntent.TIME_OUT, 1)).isFalse();
+    }
+
     @Test
     void shouldNotContainStagedKeys() {
       // given

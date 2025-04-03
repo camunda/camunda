@@ -93,17 +93,25 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
 
     @Override
     public void add(final Intent intent, final long key) {
+      if (!caches.containsKey(intent)) {
+        return;
+      }
       stagedKeys(intent).add(key);
     }
 
     @Override
     public boolean contains(final Intent intent, final long key) {
-      return stagedKeys(intent).contains(key)
-          || (caches.containsKey(intent) && caches.get(intent).contains(key));
+      if (!caches.containsKey(intent)) {
+        return false;
+      }
+      return stagedKeys(intent).contains(key) || caches.get(intent).contains(key);
     }
 
     @Override
     public void remove(final Intent intent, final long key) {
+      if (!caches.containsKey(intent)) {
+        return;
+      }
       stagedKeys(intent).remove(key);
     }
 
