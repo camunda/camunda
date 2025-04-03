@@ -66,11 +66,12 @@ public class RoleController {
 
   public CompletableFuture<ResponseEntity<Object>> updateRole(
       final UpdateRoleRequest updateRoleRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestMapper.executeServiceMethod(
         () ->
             roleServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .updateRole(updateRoleRequest));
+                .updateRole(updateRoleRequest),
+        ResponseMapper::toRoleUpdateResponse);
   }
 
   @CamundaDeleteMapping(path = "/{roleKey}")
