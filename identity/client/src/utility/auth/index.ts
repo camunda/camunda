@@ -43,7 +43,7 @@ export function logout(): Promise<void> {
   })
     .then((response: Response) => {
       if (response.status < 400) {
-        window.location.href = `${LOGIN_PATH}?next=${window.location.pathname}`;
+        window.location.href = `${getBaseUrl()}/`;
       }
     })
     .catch((e) => {
