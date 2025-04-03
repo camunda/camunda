@@ -47,10 +47,25 @@ export async function pollAPI<T>(
   condition: (response: T) => boolean,
   maxRetries = 3,
   retryInterval = 5000,
+  timeout = 30000,
 ): Promise<T> {
+  const startTime = Date.now();
+  let lastResponseData: T | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Check if the timeout has been reached
+    if (Date.now() - startTime > timeout) {
+      throw new Error(`Polling timed out after ${timeout / 1000} seconds`);
+    }
     const response = await request.post(endpoint);
+    // Check if the response is OK
+    if (!response.ok()) {
+      throw new Error(
+        `Request failed: ${response.status()} ${response.statusText()}`,
+      );
+    }
     const responseData: T = await response.json();
+    lastResponseData = responseData;
+    // Check if the condition is met
     if (condition(responseData)) {
       console.log(`Condition met on attempt ${attempt + 1}`);
       return responseData;
@@ -60,5 +75,8 @@ export async function pollAPI<T>(
     );
     await sleep(retryInterval);
   }
-  throw new Error(`Condition not met after ${maxRetries} retries`);
+  // If the condition was not met after maxRetries, throw an error
+  throw new Error(
+    `Condition not met after ${maxRetries} retries.\nLast response data:\n${JSON.stringify(lastResponseData)}`,
+  );
 }
