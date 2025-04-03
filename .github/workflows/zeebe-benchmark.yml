@@ -295,8 +295,8 @@ jobs:
           --reuse-values
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
-          --set camunda-platform.zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set camunda-platform.core.image.repository=gcr.io/zeebe-io/zeebe
+          --set camunda-platform.core.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebe-gateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
