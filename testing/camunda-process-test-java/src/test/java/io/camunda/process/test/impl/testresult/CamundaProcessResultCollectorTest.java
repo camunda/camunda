@@ -142,6 +142,31 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
+  void shouldReturnProcessInstanceVariablesWithNullValues() {
+    // given
+    when(camundaDataSource.findProcessInstances())
+        .thenReturn(Collections.singletonList(PROCESS_INSTANCE_1));
+
+    when(camundaDataSource.findVariablesByProcessInstanceKey(
+            PROCESS_INSTANCE_1.getProcessInstanceKey()))
+        .thenReturn(
+            Arrays.asList(
+                VariableBuilder.newVariable("var-1", "1").build(),
+                VariableBuilder.newVariable("var-2", null).build(),
+                VariableBuilder.newVariable("var-3", null).build()));
+
+    // when
+    final ProcessTestResult result = resultCollector.collect();
+
+    // then
+    assertThat(result.getProcessInstanceTestResults().get(0).getVariables())
+        .hasSize(3)
+        .containsEntry("var-1", "1")
+        .containsEntry("var-2", null)
+        .containsEntry("var-3", null);
+  }
+
+  @Test
   void shouldReturnOpenIncidents() {
     // given
     when(camundaDataSource.findProcessInstances())
