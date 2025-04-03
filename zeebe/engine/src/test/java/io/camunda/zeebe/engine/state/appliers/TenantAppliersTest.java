@@ -9,9 +9,11 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
@@ -44,6 +46,7 @@ public class TenantAppliersTest {
   private TenantDeletedApplier tenantDeletedApplier;
   private TenantEntityAddedApplier tenantEntityAddedApplier;
   private TenantEntityRemovedApplier tenantEntityRemovedApplier;
+  private MutableMembershipState membershipState;
 
   @BeforeEach
   public void setup() {
@@ -52,6 +55,7 @@ public class TenantAppliersTest {
     userState = processingState.getUserState();
     groupState = processingState.getGroupState();
     authorizationState = processingState.getAuthorizationState();
+    membershipState = processingState.getMembershipState();
     tenantDeletedApplier = new TenantDeletedApplier(processingState.getTenantState());
     tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
     tenantEntityRemovedApplier = new TenantEntityRemovedApplier(processingState);
@@ -71,10 +75,9 @@ public class TenantAppliersTest {
     associateUserWithTenant(tenantKey, tenantId, username);
 
     // then
-    assertThat(tenantState.getEntitiesByType(tenantId).get(EntityType.USER))
-        .containsExactly(username);
-    final var persistedUser = userState.getUser(entityKey).get();
-    assertThat(persistedUser.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(membershipState.getMemberships(EntityType.USER, username, RelationType.TENANT))
+        .singleElement()
+        .isEqualTo(tenantId);
   }
 
   @Test
@@ -160,10 +163,9 @@ public class TenantAppliersTest {
     associateUserWithTenant(tenantKey, tenantId, username);
 
     // Ensure the user is associated with the tenant before removal
-    assertThat(tenantState.getEntitiesByType(tenantId).get(EntityType.USER))
-        .containsExactly(username);
-    final var persistedUser = userState.getUser(entityKey).get();
-    assertThat(persistedUser.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(membershipState.getMemberships(EntityType.USER, username, RelationType.TENANT))
+        .singleElement()
+        .isEqualTo(tenantId);
 
     // when
     final var tenantRecord =
@@ -174,9 +176,9 @@ public class TenantAppliersTest {
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntitiesByType(tenantId)).isEmpty();
-    final var updatedUser = userState.getUser(entityKey).get();
-    assertThat(updatedUser.getTenantIdsList()).isEmpty();
+    assertThat(
+            membershipState.hasRelation(EntityType.USER, username, RelationType.TENANT, tenantId))
+        .isFalse();
   }
 
   @Test

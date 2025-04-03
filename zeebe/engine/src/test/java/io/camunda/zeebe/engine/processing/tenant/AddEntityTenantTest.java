@@ -165,30 +165,6 @@ public class AddEntityTenantTest {
   }
 
   @Test
-  public void shouldRejectIfEntityIsNotPresentWhileAddingToTenant() {
-    // given
-    final var tenantId = UUID.randomUUID().toString();
-    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
-
-    // when try adding a non-existent entity to the tenant
-    final var notPresentUpdateRecord =
-        engine
-            .tenant()
-            .addEntity(tenantId)
-            .withEntityId("does-not-exist")
-            .withEntityType(USER)
-            .expectRejection()
-            .add();
-
-    // then assert that the rejection is for entity not found
-    assertThat(notPresentUpdateRecord)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to add user with id 'does-not-exist' to tenant with id '%s', but the user doesn't exist."
-                .formatted(tenantId));
-  }
-
-  @Test
   public void shouldRejectIfEntityIsAlreadyAssignedToTenant() {
     // given
     final var user = createUser();
