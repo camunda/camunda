@@ -93,7 +93,7 @@ public class WebSecurityConfig {
           // swagger-ui endpoint
           "/swagger-ui/**",
           "/v3/api-docs/**",
-          "/camunda-api-docs/**",
+          "/rest-api.yaml",
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
           "/favicon.ico");
