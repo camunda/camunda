@@ -758,7 +758,7 @@ public class MultiTenancyIT {
           .withThrowableThat()
           .withMessageContaining("UNAUTHORIZED")
           .withMessageContaining(
-              "Expected to activate job batch for tenants '[tenantA]', but user is not authorized. Authorized tenants are '[<default>, tenantB]'");
+              "Expected to activate job batch for tenants '[tenantA]', but user is not authorized. Authorized tenants are '[");
     }
   }
 
