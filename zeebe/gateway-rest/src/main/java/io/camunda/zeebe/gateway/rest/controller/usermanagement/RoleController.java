@@ -140,7 +140,7 @@ public class RoleController {
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromRole(
       final RoleMemberRequest request) {
 
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             roleServices
                 .withAuthentication(RequestMapper.getAuthentication())
