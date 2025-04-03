@@ -32,6 +32,7 @@ import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -599,6 +600,33 @@ public final class SearchQueryRequestMapper {
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
       final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
+    final List<String> validationErrors = new ArrayList<>();
+
+    final Either<List<String>, Builder> builder = toProcessInstanceFilterFields(filter);
+    if (builder.isLeft()) {
+      validationErrors.addAll(builder.getLeft());
+    }
+
+    if (filter != null) {
+      if (filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+        for (final ProcessInstanceFilterFields or : filter.get$Or()) {
+          final var orBuilder = toProcessInstanceFilterFields(or);
+          if (orBuilder.isLeft()) {
+            validationErrors.addAll(orBuilder.getLeft());
+          } else {
+            builder.get().addOrOperation(orBuilder.get().build());
+          }
+        }
+      }
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.get().build())
+        : Either.left(validationErrors);
+  }
+
+  public static Either<List<String>, ProcessInstanceFilter.Builder> toProcessInstanceFilterFields(
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterFields filter) {
     final var builder = FilterBuilders.processInstance();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -652,9 +680,7 @@ public final class SearchQueryRequestMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
     }
-    return validationErrors.isEmpty()
-        ? Either.right(builder.build())
-        : Either.left(validationErrors);
+    return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
   private static TenantFilter toTenantFilter(final TenantFilterRequest filter) {

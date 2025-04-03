@@ -49,10 +49,8 @@ public final class ProcessInstanceFilterTransformer
     this.transformers = transformers;
   }
 
-  @Override
-  public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
+  public ArrayList<SearchQuery> toSearchQueryFields(final ProcessInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    ofNullable(getIsProcessInstanceQuery()).ifPresent(queries::add);
     ofNullable(longOperations(KEY, filter.processInstanceKeyOperations()))
         .ifPresent(queries::addAll);
     ofNullable(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()))
@@ -98,6 +96,22 @@ public final class ProcessInstanceFilterTransformer
 
     ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
         .ifPresent(queries::addAll);
+
+    return queries;
+  }
+
+  @Override
+  public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
+
+    final var queries = new ArrayList<SearchQuery>();
+    ofNullable(getIsProcessInstanceQuery()).ifPresent(queries::add);
+    queries.addAll(toSearchQueryFields(filter));
+
+    if (filter.orOperations() != null && !filter.orOperations().isEmpty()) {
+      final var orQueries = new ArrayList<SearchQuery>();
+      filter.orOperations().stream().map(this::toSearchQueryFields).forEach(orQueries::addAll);
+      queries.add(or(orQueries));
+    }
 
     return and(queries);
   }

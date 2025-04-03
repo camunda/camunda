@@ -437,6 +437,30 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
+  void shouldQueryProcessInstancesByOrFilters() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.tenantId("<default>")
+                        .or(
+                            Arrays.asList(
+                                f2 -> f2.hasIncident(true),
+                                f3 ->
+                                    f3.processDefinitionId(
+                                        b -> b.in("manual_process", "child_process_v1")))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrder("manual_process", "child_process_v1", "incident_process_v1");
+  }
+
+  @Test
   void shouldQueryProcessInstancesByStateFilterLike() {
     // when
     final var result =
