@@ -126,12 +126,24 @@ public class ImportPositionHolder {
                 .setCompleted(lastProcessedPosition.getCompleted());
           }
           inflightImportPositions.put(key, importPosition);
+
+          if (importPositionIsNotCompleted(key) && lastProcessedPosition.getCompleted()) {
+            LOGGER.info(
+                "Import position [{}] for partition [{}] completed for operate",
+                aliasName,
+                partition);
+          }
+
           mostRecentProcessedImportPositions.merge(
               key,
               importPosition.getCompleted(),
               (oldCompleted, newCompleted) -> oldCompleted || newCompleted);
         },
         "record last loaded pos");
+  }
+
+  private boolean importPositionIsNotCompleted(final String key) {
+    return !mostRecentProcessedImportPositions.getOrDefault(key, false);
   }
 
   private void registerRecordReaderCompletedGauge(final int partition, final String aliasName) {

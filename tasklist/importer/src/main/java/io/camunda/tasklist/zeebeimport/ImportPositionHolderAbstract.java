@@ -123,6 +123,14 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
                 .setCompleted(lastProcessedPosition.getCompleted());
           }
           inflightProcessedPositions.put(key, importPosition);
+
+          if (importPositionIsNotCompleted(key) && lastProcessedPosition.getCompleted()) {
+            LOGGER.info(
+                "Import position [{}] for partition [{}] completed for tasklist",
+                aliasName,
+                partition);
+          }
+
           mostRecentProcessedImportPositions.merge(
               key,
               importPosition.getCompleted(),
@@ -158,6 +166,10 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
 
     // self scheduling just for the case the interval is set too short
     scheduleImportPositionUpdateTask();
+  }
+
+  private boolean importPositionIsNotCompleted(final String key) {
+    return !mostRecentProcessedImportPositions.getOrDefault(key, false);
   }
 
   private void markPositionCompletedGauge(final int partition, final String aliasName) {
