@@ -24,6 +24,13 @@ on:
         description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
         type: boolean
         default: true
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 
 defaults:
   run:
@@ -47,9 +54,22 @@ jobs:
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
+          token: ${{ steps.github-token.outputs.token }}
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.0.0
