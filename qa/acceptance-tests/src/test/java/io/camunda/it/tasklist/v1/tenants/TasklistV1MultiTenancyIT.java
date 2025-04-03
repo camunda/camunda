@@ -13,7 +13,10 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
@@ -32,11 +35,45 @@ public class TasklistV1MultiTenancyIT {
   public static final String PASSWORD = "password";
   private static final String TENANT_ID_1 = "tenant1";
   private static final String TENANT_ID_2 = "tenant2";
+
+  private static final String ADMIN_USER_NAME = "foo";
+  private static final String ADMIN_USER_PASSWORD = "foo";
   private static final String USERNAME_1 = "user1";
   private static final String USERNAME_2 = "user2";
   private static final String PROCESS_DEFINITION_ID = "process_with_assigned_user_task";
   private static final String PROCESS_DEFINITION_ID_2 = "bpm_variable_test";
+
+  @UserDefinition
+  private static final User ADMIN_USER =
+      new User(
+          ADMIN_USER_NAME,
+          ADMIN_USER_PASSWORD,
+          List.of(
+              new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_PROCESS_DEFINITION,
+                  List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_USER_TASK,
+                  List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_PROCESS_INSTANCE,
+                  List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
+                  List.of("*")),
+              new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*"))));
+
   @UserDefinition private static final User USER1 = new User(USERNAME_1, PASSWORD, List.of());
+
   @UserDefinition private static final User USER2 = new User(USERNAME_2, PASSWORD, List.of());
   private static long processDefinitionKey1;
   private static long processDefinitionKey2;
@@ -49,35 +86,22 @@ public class TasklistV1MultiTenancyIT {
 
   @BeforeAll
   public static void beforeAll(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(USERNAME_1) final CamundaClient userOneClient,
       @Authenticated(USERNAME_2) final CamundaClient userTwoClient) {
 
     // User ONE <-> Tenant ONE
-    userOneClient
-        .newCreateTenantCommand()
-        .tenantId(TENANT_ID_1)
-        .name(TENANT_ID_1)
-        .send()
-        .join()
-        .getTenantKey();
-
-    userOneClient.newAssignUserToTenantCommand(TENANT_ID_1).username("demo").send().join();
+    adminClient.newCreateTenantCommand().tenantId(TENANT_ID_1).name(TENANT_ID_1).send().join();
+    adminClient.newAssignUserToTenantCommand(TENANT_ID_1).username("demo").send().join();
 
     // User TWO <-> Tenant TWO
-    userTwoClient
-        .newCreateTenantCommand()
-        .tenantId(TENANT_ID_2)
-        .name(TENANT_ID_2)
-        .send()
-        .join()
-        .getTenantKey();
-
-    userTwoClient.newAssignUserToTenantCommand(TENANT_ID_2).username(USERNAME_2).send().join();
+    adminClient.newCreateTenantCommand().tenantId(TENANT_ID_2).name(TENANT_ID_2).send().join();
+    adminClient.newAssignUserToTenantCommand(TENANT_ID_2).username(USERNAME_2).send().join();
 
     // deploy
     final var processTenant1 =
         deployResourceForTenant(
-                userOneClient, String.format("process/%s.bpmn", PROCESS_DEFINITION_ID), TENANT_ID_1)
+                adminClient, String.format("process/%s.bpmn", PROCESS_DEFINITION_ID), TENANT_ID_1)
             .getProcesses()
             .getFirst();
     assertThat(processTenant1.getTenantId()).isEqualTo(TENANT_ID_1);
@@ -85,13 +109,10 @@ public class TasklistV1MultiTenancyIT {
 
     final var processTenant2 =
         deployResourceForTenant(
-                userTwoClient,
-                String.format("process/%s.bpmn", PROCESS_DEFINITION_ID_2),
-                TENANT_ID_2)
+                adminClient, String.format("process/%s.bpmn", PROCESS_DEFINITION_ID_2), TENANT_ID_2)
             .getProcesses()
             .getFirst();
     assertThat(processTenant2.getTenantId()).isEqualTo(TENANT_ID_2);
-
     processDefinitionKey2 = processTenant2.getProcessDefinitionKey();
   }
 
