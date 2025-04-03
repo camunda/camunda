@@ -28,6 +28,7 @@ defaults:
 
 env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+  GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
   detect-changes:
