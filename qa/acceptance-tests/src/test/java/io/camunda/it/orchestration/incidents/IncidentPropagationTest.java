@@ -11,6 +11,7 @@ import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilFlowNodeInstanceHasIncidents;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -106,6 +107,7 @@ class IncidentPropagationTest {
             .getKey();
     camundaClient.newFailCommand(jobKey).retries(0).errorMessage(ERROR_MSG_1).send().join();
     waitUntilProcessInstanceHasIncidents(camundaClient, 3);
+    waitUntilFlowNodeInstanceHasIncidents(camundaClient, 4);
     waitUntilIncidentsAreActive(camundaClient, 2);
   }
 
