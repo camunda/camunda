@@ -10,18 +10,21 @@ package io.camunda.zeebe.engine.state.appliers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
+import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -36,6 +39,7 @@ public class TenantAppliersTest {
   private MutableMappingState mappingState;
   private MutableTenantState tenantState;
   private MutableUserState userState;
+  private MutableGroupState groupState;
   private MutableAuthorizationState authorizationState;
   private TenantDeletedApplier tenantDeletedApplier;
   private TenantEntityAddedApplier tenantEntityAddedApplier;
@@ -46,6 +50,7 @@ public class TenantAppliersTest {
     mappingState = processingState.getMappingState();
     tenantState = processingState.getTenantState();
     userState = processingState.getUserState();
+    groupState = processingState.getGroupState();
     authorizationState = processingState.getAuthorizationState();
     tenantDeletedApplier = new TenantDeletedApplier(processingState.getTenantState());
     tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
@@ -94,6 +99,27 @@ public class TenantAppliersTest {
     assertThat(tenantState.getEntityType(tenantId, mappingId).get()).isEqualTo(EntityType.MAPPING);
     final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
+  }
+
+  @Test
+  void shouldAddEntityToTenantWithTypeGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    groupState.create(
+        new GroupRecord().setGroupId(groupId).setName("name").setDescription("description"));
+    final String tenantId = "tenantId";
+    final long tenantKey = 11L;
+    final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
+    tenantState.createTenant(tenantRecord);
+    tenantRecord.setEntityId(groupId).setEntityType(EntityType.GROUP);
+
+    // when
+    tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
+
+    // then
+    assertThat(tenantState.getEntityType(tenantId, groupId).get()).isEqualTo(EntityType.GROUP);
+    final var persistedGroup = groupState.get(groupId).get();
+    assertThat(persistedGroup.getTenantIdsList()).containsExactly(tenantId);
   }
 
   @Test
@@ -183,6 +209,39 @@ public class TenantAppliersTest {
     assertThat(tenantState.getEntityType(tenantId, mappingId)).isEmpty();
     final var updatedMapping = mappingState.get(mappingId).get();
     assertThat(updatedMapping.getTenantIdsList()).isEmpty();
+  }
+
+  @Test
+  void shouldRemoveEntityFromTenantWithTypeGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    groupState.create(
+        new GroupRecord().setGroupId(groupId).setName("name").setDescription("description"));
+    final String tenantId = "tenantId";
+    final long tenantKey = 11L;
+    final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
+    tenantState.createTenant(tenantRecord);
+    tenantRecord.setEntityId(groupId).setEntityType(EntityType.GROUP);
+    tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
+
+    // Ensure the group is associated with the tenant before removal
+    assertThat(tenantState.getEntitiesByType(tenantId).get(EntityType.GROUP))
+        .containsExactly(groupId);
+    final var persistedGroup = groupState.get(groupId).get();
+    assertThat(persistedGroup.getTenantIdsList()).containsExactly(tenantId);
+
+    // when
+    final var tenantRecordToRemove =
+        new TenantRecord()
+            .setTenantId(tenantId)
+            .setEntityId(groupId)
+            .setEntityType(EntityType.GROUP);
+    tenantEntityRemovedApplier.applyState(tenantKey, tenantRecordToRemove);
+
+    // then
+    assertThat(tenantState.getEntitiesByType(tenantId)).isEmpty();
+    final var updatedGroup = groupState.get(groupId).get();
+    assertThat(updatedGroup.getTenantIdsList()).isEmpty();
   }
 
   private TenantRecord createTenant(final long tenantKey, final String tenantId) {
