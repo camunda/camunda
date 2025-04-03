@@ -65,6 +65,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
@@ -313,7 +314,11 @@ public class RequestMapper {
       final RoleCreateRequest roleCreateRequest) {
     return getResult(
         RoleRequestValidator.validateCreateRequest(roleCreateRequest),
-        () -> new CreateRoleRequest(roleCreateRequest.getName()));
+        () ->
+            new CreateRoleRequest(
+                roleCreateRequest.getRoleId(),
+                roleCreateRequest.getName(),
+                roleCreateRequest.getDescription()));
   }
 
   public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
@@ -1019,8 +1024,6 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
-
-  public record CreateRoleRequest(String name) {}
 
   public record UpdateRoleRequest(long roleKey, String name) {}
 

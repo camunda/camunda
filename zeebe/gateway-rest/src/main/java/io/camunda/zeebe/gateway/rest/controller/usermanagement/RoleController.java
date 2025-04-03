@@ -9,12 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.search.query.RoleQuery;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.CreateRoleRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateRoleRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -53,7 +53,7 @@ public class RoleController {
         () ->
             roleServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createRole(createRoleRequest.name()),
+                .createRole(createRoleRequest),
         ResponseMapper::toRoleCreateResponse);
   }
 

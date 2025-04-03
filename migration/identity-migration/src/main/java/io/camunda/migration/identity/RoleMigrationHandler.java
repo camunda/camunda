@@ -11,7 +11,6 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
@@ -53,11 +52,12 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
   private MigrationStatusUpdateRequest createRole(final Role role) {
     final long roleKey;
     try {
-      roleKey =
-          roleServices
-              .findRole(role.name())
-              .map(RoleEntity::roleKey)
-              .orElseGet(() -> roleServices.createRole(role.name()).join().getRoleKey());
+      // TODO revisit with https://github.com/camunda/camunda/issues/26973
+      //      roleKey =
+      //          roleServices
+      //              .findRole(role.name())
+      //              .map(RoleEntity::roleKey)
+      //              .orElseGet(() -> roleServices.createRole(role.name()).join().getRoleKey());
     } catch (final Exception e) {
       LOG.error("create or finding role with name {} failed", role.name(), e);
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(role, e);

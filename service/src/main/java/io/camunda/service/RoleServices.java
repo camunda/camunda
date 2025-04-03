@@ -75,8 +75,12 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         brokerClient, securityContextProvider, roleSearchClient, authentication);
   }
 
-  public CompletableFuture<RoleRecord> createRole(final String name) {
-    return sendBrokerRequest(new BrokerRoleCreateRequest().setName(name));
+  public CompletableFuture<RoleRecord> createRole(final CreateRoleRequest request) {
+    return sendBrokerRequest(
+        new BrokerRoleCreateRequest()
+            .setRoleId(request.roleId())
+            .setName(request.name())
+            .setDescription(request.description()));
   }
 
   public CompletableFuture<RoleRecord> updateRole(final long roleKey, final String name) {
@@ -125,4 +129,6 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             .setRoleKey(roleKey)
             .setEntity(entityType, entityKey));
   }
+
+  public record CreateRoleRequest(String roleId, String name, String description) {}
 }

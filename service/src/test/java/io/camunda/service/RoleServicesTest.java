@@ -19,11 +19,14 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -48,6 +51,27 @@ public class RoleServicesTest {
     services =
         new RoleServices(
             stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
+  }
+
+  @Test
+  public void shouldCreateRole() {
+    // given
+    final var roleId = "roleId";
+    final var roleName = "testRole";
+    final var description = "description";
+
+    // when
+    services.createRole(new CreateRoleRequest(roleId, roleName, description));
+
+    // then
+    final BrokerRoleCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    final RoleRecord record = request.getRequestWriter();
+    Assertions.assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
+    Assertions.assertThat(request.getIntent()).isEqualTo(RoleIntent.CREATE);
+    assertThat(request.getKey()).isEqualTo(-1L);
+    Assertions.assertThat(record).hasRoleId(roleId);
+    Assertions.assertThat(record).hasName(roleName);
+    Assertions.assertThat(record).hasDescription(description);
   }
 
   @Test

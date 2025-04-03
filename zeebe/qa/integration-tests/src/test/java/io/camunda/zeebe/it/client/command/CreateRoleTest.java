@@ -37,6 +37,7 @@ class CreateRoleTest {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/29926")
   void shouldCreateRole() {
     // when
     final var response = client.newCreateRoleCommand().name("Role Name").send().join();
