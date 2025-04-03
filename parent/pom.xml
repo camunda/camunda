@@ -209,7 +209,7 @@
     <plugin.version.exec>3.4.1</plugin.version.exec>
     <plugin.version.failsafe>3.5.3</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
-    <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
+    <plugin.version.jacoco>0.8.13</plugin.version.jacoco>
     <plugin.version.maven-jar>3.4.2</plugin.version.maven-jar>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
