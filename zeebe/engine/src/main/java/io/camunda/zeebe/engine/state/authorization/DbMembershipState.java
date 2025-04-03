@@ -200,5 +200,6 @@ public final class DbMembershipState implements MutableMembershipState {
   public enum RelationType {
     ROLE,
     GROUP,
+    TENANT,
   }
 }
