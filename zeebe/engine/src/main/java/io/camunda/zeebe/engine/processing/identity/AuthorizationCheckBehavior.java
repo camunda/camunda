@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -195,7 +196,8 @@ public final class AuthorizationCheckBehavior {
   private boolean isUserAuthorizedForTenant(
       final AuthorizationRequest request, final PersistedUser user) {
     final var tenantId = request.tenantId;
-    if (user.getTenantIdsList().contains(tenantId)) {
+    if (membershipState.hasRelation(
+        EntityType.USER, user.getUsername(), RelationType.TENANT, tenantId)) {
       return true;
     }
     final var groupIds =
@@ -439,7 +441,10 @@ public final class AuthorizationCheckBehavior {
           .getUser(username.get())
           .map(
               user -> {
-                final var tenantIds = user.getTenantIdsList();
+                final var tenantIds =
+                    new ArrayList<>(
+                        membershipState.getMemberships(
+                            EntityType.USER, user.getUsername(), RelationType.TENANT));
                 final var groupIds =
                     membershipState.getMemberships(
                         EntityType.USER, Long.toString(user.getUserKey()), RelationType.GROUP);

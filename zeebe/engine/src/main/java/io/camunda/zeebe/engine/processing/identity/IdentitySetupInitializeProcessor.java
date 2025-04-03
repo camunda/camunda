@@ -292,10 +292,16 @@ public final class IdentitySetupInitializeProcessor
   private boolean assignEntityToTenant(
       final TenantRecord tenant, final String entityId, final EntityType entityType) {
     final var isAlreadyAssigned =
-        tenantState
-            .getEntitiesByType(tenant.getTenantId())
-            .getOrDefault(entityType, Collections.emptyList())
-            .contains(entityId);
+        switch (entityType) {
+          case USER ->
+              membershipState.hasRelation(
+                  EntityType.USER, entityId, RelationType.TENANT, tenant.getTenantId());
+          default ->
+              tenantState
+                  .getEntitiesByType(tenant.getTenantId())
+                  .getOrDefault(entityType, Collections.emptyList())
+                  .contains(entityId);
+        };
     if (isAlreadyAssigned) {
       return false;
     }
