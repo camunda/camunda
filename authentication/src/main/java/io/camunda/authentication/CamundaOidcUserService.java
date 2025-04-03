@@ -21,6 +21,7 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,7 +42,7 @@ public class CamundaOidcUserService extends OidcUserService {
   private final RoleServices roleServices;
   private final GroupServices groupServices;
   private final AuthorizationServices authorizationServices;
-  private final SecurityConfiguration securityConfiguration;
+  private final String usernameClaim;
 
   public CamundaOidcUserService(
       final MappingServices mappingServices,
@@ -55,7 +56,7 @@ public class CamundaOidcUserService extends OidcUserService {
     this.roleServices = roleServices;
     this.groupServices = groupServices;
     this.authorizationServices = authorizationServices;
-    this.securityConfiguration = securityConfiguration;
+    usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
   }
 
   @Override
@@ -96,9 +97,12 @@ public class CamundaOidcUserService extends OidcUserService {
   }
 
   private String getUsernameFromClaims(final Map<String, Object> claims) {
-    final var usernameClaimName =
-        securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
-
-    return claims.get(usernameClaimName).toString();
+    return Optional.ofNullable(claims.get(usernameClaim))
+        .map(Object::toString)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Configured username claim %s not found in claims. Please check your OIDC configuration."
+                        .formatted(usernameClaim)));
   }
 }
