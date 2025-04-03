@@ -63,6 +63,17 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
+    final var authorizationRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
+            .addResourceId(record.getGroupId());
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var groupId = record.getGroupId();
     final var groupKey = record.getGroupKey();
     final var persistedRecord = groupState.get(groupId);
@@ -72,17 +83,6 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
               .formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
-    final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
-            .addResourceId(record.getName());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
