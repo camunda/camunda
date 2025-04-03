@@ -59,6 +59,11 @@ public class CamundaOidcUserServiceTest {
   @BeforeEach
   public void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
+
+    when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
+    when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+    when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("sub");
+
     camundaOidcUserService =
         new CamundaOidcUserService(
             mappingServices,
@@ -67,10 +72,6 @@ public class CamundaOidcUserServiceTest {
             groupServices,
             authorizationServices,
             securityConfiguration);
-
-    when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
-    when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
-    when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("sub");
   }
 
   @Test
