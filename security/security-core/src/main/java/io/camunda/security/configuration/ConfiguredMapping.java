@@ -11,14 +11,27 @@ import static io.camunda.security.util.ArgumentUtil.ensureNotNullOrEmpty;
 
 public class ConfiguredMapping {
 
+  private String mappingId;
   private String claimName;
   private String claimValue;
 
-  public ConfiguredMapping(final String claimName, final String claimValue) {
+  public ConfiguredMapping(
+      final String mappingId, final String claimName, final String claimValue) {
+    ensureNotNullOrEmpty("mappingId", mappingId);
     ensureNotNullOrEmpty("claimName", claimName);
     ensureNotNullOrEmpty("claimValue", claimValue);
+    this.mappingId = mappingId;
     this.claimName = claimName;
     this.claimValue = claimValue;
+  }
+
+  public String getMappingId() {
+    return mappingId;
+  }
+
+  public void setMappingId(final String mappingId) {
+    ensureNotNullOrEmpty("mappingId", mappingId);
+    this.mappingId = mappingId;
   }
 
   public String getClaimName() {

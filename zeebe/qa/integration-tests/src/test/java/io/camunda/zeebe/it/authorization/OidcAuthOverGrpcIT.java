@@ -46,6 +46,7 @@ public class OidcAuthOverGrpcIT {
 
   private static final String DEFAULT_USER_ID = UUID.randomUUID().toString();
   private static final String RESTRICTED_USER_ID = UUID.randomUUID().toString();
+  private static final String DEFAULT_MAPPING_ID = UUID.randomUUID().toString();
   private static final String KEYCLOAK_REALM = "camunda";
   private static final String DEFAULT_CLIENT_ID = "zeebe";
   private static final String DEFAULT_CLIENT_SECRET = "secret";
@@ -77,7 +78,9 @@ public class OidcAuthOverGrpcIT {
 
                 c.getInitialization()
                     .setMappings(
-                        List.of(new ConfiguredMapping(USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
+                        List.of(
+                            new ConfiguredMapping(
+                                DEFAULT_MAPPING_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
               });
 
   @BeforeAll

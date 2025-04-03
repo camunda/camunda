@@ -232,6 +232,7 @@ public final class IdentitySetupInitializeProcessor
         .map(MappingRecord.class::cast)
         .forEach(
             mapping ->
+//                mappingState.get(mapping.getMappingId())
                 mappingState
                     .get(mapping.getClaimName(), mapping.getClaimValue())
                     .ifPresentOrElse(
@@ -267,17 +268,17 @@ public final class IdentitySetupInitializeProcessor
   }
 
   private boolean assignEntityToRole(
-      final long roleKey, final long entityKey, final EntityType entityType) {
+      final long roleKey, final String entityId, final EntityType entityType) {
 
     final var isAlreadyAssigned =
         switch (entityType) {
           case USER ->
               membershipState.hasRelation(
                   EntityType.USER,
-                  Long.toString(entityKey),
+                  entityId,
                   RelationType.ROLE,
                   Long.toString(roleKey));
-          default -> roleState.getEntityType(roleKey, entityKey).isPresent();
+          default -> roleState.getEntityType(roleKey, entityId).isPresent();
         };
     if (isAlreadyAssigned) {
       return false;

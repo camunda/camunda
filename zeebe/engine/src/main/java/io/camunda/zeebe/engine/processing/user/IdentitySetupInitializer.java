@@ -97,6 +97,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             mapping -> {
               final var mappingrecord =
                   new MappingRecord()
+                      .setMappingId(mapping.getMappingId())
                       .setClaimName(mapping.getClaimName())
                       .setClaimValue(mapping.getClaimValue());
               setupRecord.addMapping(mappingrecord);
