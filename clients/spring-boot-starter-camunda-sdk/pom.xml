@@ -131,10 +131,6 @@
       <artifactId>spring-aop</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-jcl</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.junit.platform</groupId>
@@ -190,6 +186,10 @@
             <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
             <dependency>commons-collections:commons-collections</dependency>
           </usedDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <dependency>commons-logging:commons-logging</dependency>
+            <dependency>org.springframework:spring-jcl</dependency>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
 
