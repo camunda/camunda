@@ -26,7 +26,6 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -78,16 +77,6 @@ public class UserController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userServices.withAuthentication(RequestMapper.getAuthentication()).updateUser(request));
-  }
-
-  @CamundaDeleteMapping(path = "/{userKey}/roles/{roleKey}")
-  public CompletableFuture<ResponseEntity<Object>> removeRole(
-      @PathVariable final long userKey, @PathVariable final long roleKey) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            roleServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(roleKey, EntityType.USER, userKey));
   }
 
   @CamundaPostMapping(path = "/search")
