@@ -46,7 +46,7 @@ public final class RoleRequestValidator {
     validateId(id, "roleId", violations);
   }
 
-  public static void validateEntityId(
+  public static void validateMemberId(
       final String entityId, final EntityType entityType, final List<String> violations) {
     switch (entityType) {
       case USER:
@@ -86,12 +86,12 @@ public final class RoleRequestValidator {
         });
   }
 
-  public static Optional<ProblemDetail> validateAddEntityRequest(
-      final String roleId, final String entityId, final EntityType entityType) {
+  public static Optional<ProblemDetail> validateMemberRequest(
+      final String roleId, final String memberId, final EntityType memberType) {
     return validate(
         violations -> {
           validateRoleId(roleId, violations);
-          validateEntityId(entityId, entityType, violations);
+          validateMemberId(memberId, memberType, violations);
         });
   }
 }

@@ -15,8 +15,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
-import io.camunda.service.RoleServices.AddEntityToRoleRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -401,7 +401,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var roleId = "roleId";
     final var username = "username";
 
-    final var request = new AddEntityToRoleRequest(roleId, username, EntityType.USER);
+    final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
     when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -423,7 +423,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var roleId = "roleId";
     final var username = "username";
     final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
-    final var request = new AddEntityToRoleRequest(roleId, username, EntityType.USER);
+    final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -450,7 +450,7 @@ public class RoleControllerTest extends RestControllerTest {
     final String roleId = "roleId";
     final String username = "username";
     final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
-    final var request = new AddEntityToRoleRequest(roleId, username, EntityType.USER);
+    final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(

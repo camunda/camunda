@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.search.query.RoleQuery;
 import io.camunda.service.RoleServices;
-import io.camunda.service.RoleServices.AddEntityToRoleRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
@@ -119,12 +119,12 @@ public class RoleController {
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> addUserToRole(
       @PathVariable final String roleId, @PathVariable final String username) {
-    return RequestMapper.toRoleAddEntityRequest(roleId, username, EntityType.USER)
+    return RequestMapper.toRoleMemberRequest(roleId, username, EntityType.USER)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addEntityToRole);
   }
 
   private CompletableFuture<ResponseEntity<Object>> addEntityToRole(
-      final AddEntityToRoleRequest request) {
+      final RoleMemberRequest request) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             roleServices.withAuthentication(RequestMapper.getAuthentication()).addMember(request));
