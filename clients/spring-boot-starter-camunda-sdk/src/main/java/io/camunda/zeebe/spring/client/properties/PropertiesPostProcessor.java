@@ -20,10 +20,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.commons.logging.Log;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.boot.env.YamlPropertySourceLoader;
+import org.springframework.boot.logging.DeferredLog;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
@@ -35,10 +35,10 @@ public class PropertiesPostProcessor implements EnvironmentPostProcessor {
   private static final String OVERRIDE_PREFIX = "camunda.client.zeebe.override.";
   private static final List<String> LEGACY_OVERRIDE_PREFIX =
       List.of("zeebe.client.worker.override.");
-  private final Log log;
+  private final DeferredLog log;
 
   public PropertiesPostProcessor(final DeferredLogFactory deferredLogFactory) {
-    log = deferredLogFactory.getLog(getClass());
+    log = (DeferredLog) deferredLogFactory.getLog(getClass());
   }
 
   @Override
