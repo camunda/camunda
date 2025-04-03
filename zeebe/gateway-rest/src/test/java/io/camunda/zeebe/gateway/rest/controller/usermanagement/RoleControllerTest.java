@@ -470,4 +470,64 @@ public class RoleControllerTest extends RestControllerTest {
     // then
     verify(roleServices, times(1)).addMember(request);
   }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidUsername() {
+    // given
+    final String roleId = "roleId";
+    final String username = "username!";
+    final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidRoleId() {
+    // given
+    final String roleId = "roleId!";
+    final String username = "username";
+    final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
 }
