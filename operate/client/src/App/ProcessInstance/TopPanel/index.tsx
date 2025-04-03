@@ -35,11 +35,12 @@ import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -75,6 +76,20 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+
+  const {
+    data: processDefinitionData,
+    isFetching: isXmlFetching,
+    isError: isXmlError,
+  } = useProcessInstanceXml({
+    processDefinitionKey,
+    processInstanceStatistics:
+      processInstanceDetailsStatisticsStore.state.statistics,
+    getTotalRunningInstancesForFlowNode:
+      processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode,
+  });
+
   const allFlowNodeStateOverlays =
     processInstanceDetailsStatisticsStore.flowNodeStatistics.map(
       ({flowNodeState, count, flowNodeId}) => ({
@@ -95,14 +110,14 @@ const TopPanel: React.FC = observer(() => {
     : notCompletedFlowNodeStateOverlays;
 
   const compensationAssociationIds =
-    processInstanceDetailsDiagramStore.compensationAssociations
+    processDefinitionData?.compensationAssociations
       .filter(({targetRef}) => {
         // check if the target element for the association was executed
         return executedFlowNodes.find(({activityId, completed}) => {
           return targetRef?.id === activityId && completed > 0;
         });
       })
-      .map(({id}) => id);
+      .map(({id}) => id) ?? [];
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsStore.modificationsByFlowNode).reduce<
@@ -136,10 +151,6 @@ const TopPanel: React.FC = observer(() => {
   const modificationBadgeOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE,
   );
-  const {
-    state: {status, xml},
-    modifiableFlowNodes,
-  } = processInstanceDetailsDiagramStore;
 
   const {
     setIncidentBarOpen,
@@ -164,10 +175,10 @@ const TopPanel: React.FC = observer(() => {
   }, [flowNodeSelection?.flowNodeId, isModificationModeEnabled]);
 
   const getStatus = () => {
-    if (['initial', 'first-fetch', 'fetching'].includes(status)) {
+    if (isXmlFetching) {
       return 'loading';
     }
-    if (status === 'error') {
+    if (isXmlError) {
       return 'error';
     }
     return 'content';
@@ -217,12 +228,12 @@ const TopPanel: React.FC = observer(() => {
       )}
       <DiagramPanel>
         <DiagramShell status={getStatus()}>
-          {xml !== null && (
+          {processDefinitionData?.xml !== undefined && (
             <Diagram
-              xml={xml}
+              xml={processDefinitionData.xml}
               selectableFlowNodes={
                 isModificationModeEnabled
-                  ? modifiableFlowNodes
+                  ? processDefinitionData?.modifiableFlowNodes
                   : selectableFlowNodes
               }
               selectedFlowNodeIds={
