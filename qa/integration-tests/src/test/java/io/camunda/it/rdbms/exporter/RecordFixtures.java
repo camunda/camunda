@@ -10,8 +10,12 @@ package io.camunda.it.rdbms.exporter;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
@@ -31,6 +35,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
@@ -397,6 +403,99 @@ public class RecordFixtures {
                 .withResourceType(resourceType)
                 .withResourceId(resourceId)
                 .withPermissionTypes(permissionTypes)
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getBatchOperationCreatedRecord(
+      final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.BATCH_OPERATION_CREATION);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(BatchOperationIntent.CREATED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getBatchOperationChunkRecord(
+      final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.BATCH_OPERATION_CHUNK);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(BatchOperationChunkIntent.CREATE)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableBatchOperationChunkRecordValue.builder()
+                .from((ImmutableBatchOperationChunkRecordValue) recordValueRecord.getValue())
+                .withBatchOperationKey(batchOperationKey)
+                .withItemKeys(List.of(1L, 2L, 3L))
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getBatchOperationExecutionCompletedRecord(
+      final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.BATCH_OPERATION_EXECUTION);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(BatchOperationExecutionIntent.COMPLETED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableBatchOperationExecutionRecordValue.builder()
+                .from((ImmutableBatchOperationExecutionRecordValue) recordValueRecord.getValue())
+                .withBatchOperationKey(batchOperationKey)
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getBatchOperationProcessCancelledRecord(
+      final Long processInstanceKey, final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withKey(processInstanceKey)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withOperationReference(batchOperationKey)
+        .withValue(
+            ImmutableProcessInstanceRecordValue.builder()
+                .from((ImmutableProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withBpmnElementType(BpmnElementType.PROCESS)
+                .withParentProcessInstanceKey(-1)
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getFailedBatchOperationProcessCancelledRecord(
+      final Long processInstanceKey, final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceIntent.CANCEL)
+        .withRejectionType(RejectionType.INVALID_STATE)
+        .withKey(processInstanceKey)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withOperationReference(batchOperationKey)
+        .withValue(
+            ImmutableProcessInstanceRecordValue.builder()
+                .from((ImmutableProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withBpmnElementType(BpmnElementType.PROCESS)
+                .withParentProcessInstanceKey(-1)
                 .build())
         .build();
   }

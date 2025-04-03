@@ -14,6 +14,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 
 public interface BatchOperationMapper {
 
@@ -42,7 +43,7 @@ public interface BatchOperationMapper {
 
   record BatchOperationUpdateTotalCountDto(long batchOperationKey, int operationsTotalCount) {}
 
-  record BatchOperationItemsDto(Long batchOperationKey, List<Long> items) {}
+  record BatchOperationItemsDto(Long batchOperationKey, Set<Long> items) {}
 
   record BatchOperationItemDto(
       Long batchOperationKey, Long itemKey, BatchOperationEntity.BatchOperationItemStatus status) {}
