@@ -107,12 +107,17 @@ public class TaskListenerTestHelper {
   }
 
   BpmnModelInstance createUserTaskWithTaskListenersAndAssignee(
-      final String listenerType, final String assignee) {
+      final ZeebeTaskListenerEventType listenerType,
+      String assignee,
+      final String... listenerTypes) {
     return createProcessWithZeebeUserTask(
-        taskBuilder ->
-            taskBuilder
-                .zeebeAssignee(assignee)
-                .zeebeTaskListener(l -> l.assigning().type(listenerType)));
+        taskBuilder -> {
+          taskBuilder.zeebeAssignee(assignee);
+          Stream.of(listenerTypes)
+              .forEach(
+                  type -> taskBuilder.zeebeTaskListener(l -> l.eventType(listenerType).type(type)));
+          return taskBuilder;
+        });
   }
 
   BpmnModelInstance createProcessWithCompletingTaskListeners(final String... listenerTypes) {
