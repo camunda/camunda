@@ -17,15 +17,6 @@ jobs:
         with:
           ref: ${{ matrix.branch }}
 
-      - name: Set Slack Reporter Flag
-        id: set-slack-reporter
-        run: |
-          if [[ "${{ matrix.branch }}" == "stable/8.7" || "${{ matrix.branch }}" == "main" ]]; then
-            echo "INCLUDE_SLACK_REPORTER=true" >> $GITHUB_ENV
-          else
-            echo "INCLUDE_SLACK_REPORTER=false" >> $GITHUB_ENV
-          fi
-
       - name: Start Tasklist and Operate
         run: |
           DATABASE=elasticsearch docker compose up -d tasklist operate
@@ -126,7 +117,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           ZEEBE_REST_ADDRESS: "http://localhost:8089"
-          INCLUDE_SLACK_REPORTER: ${{ env.INCLUDE_SLACK_REPORTER }}
+          INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.CORE_DOMAIN_SLACK_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
         run: npm run test -- --project=chromium
