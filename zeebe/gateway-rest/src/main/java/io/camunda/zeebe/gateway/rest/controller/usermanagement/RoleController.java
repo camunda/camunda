@@ -120,13 +120,30 @@ public class RoleController {
   public CompletableFuture<ResponseEntity<Object>> addUserToRole(
       @PathVariable final String roleId, @PathVariable final String username) {
     return RequestMapper.toRoleMemberRequest(roleId, username, EntityType.USER)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addEntityToRole);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> addEntityToRole(
+  private CompletableFuture<ResponseEntity<Object>> addMemberToRole(
       final RoleMemberRequest request) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             roleServices.withAuthentication(RequestMapper.getAuthentication()).addMember(request));
+  }
+
+  @CamundaDeleteMapping(path = "/{roleId}/users/{username}")
+  public CompletableFuture<ResponseEntity<Object>> removeUserFromRole(
+      @PathVariable final String roleId, @PathVariable final String username) {
+    return RequestMapper.toRoleMemberRequest(roleId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> removeMemberFromRole(
+      final RoleMemberRequest request) {
+
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            roleServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(request));
   }
 }

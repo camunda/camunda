@@ -168,19 +168,19 @@ public class RoleServicesTest {
   @Test
   public void shouldRemoveUserFromRole() {
     // given
-    final var roleKey = 100L;
-    final var entityKey = 42;
+    final var roleId = "100";
+    final var username = "42";
 
     // when
-    services.removeMember(roleKey, EntityType.USER, entityKey);
+    services.removeMember(new RoleMemberRequest(roleId, username, EntityType.USER));
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.REMOVE_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getRoleId()).isEqualTo(String.valueOf(roleKey));
-    assertThat(brokerRequestValue.getEntityId()).isEqualTo(String.valueOf(entityKey));
+    assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(username);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 
