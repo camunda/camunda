@@ -117,12 +117,11 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return sendBrokerRequest(new BrokerRoleDeleteRequest(roleId));
   }
 
-  public CompletableFuture<?> addMember(
-      final String roleId, final EntityType entityType, final String entityId) {
+  public CompletableFuture<?> addMember(final AddEntityToRoleRequest request) {
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createAddRequest()
-            .setRoleId(roleId)
-            .setEntity(entityType, entityId));
+            .setRoleId(request.roleId())
+            .setEntity(request.entityType(), request.entityId()));
   }
 
   public CompletableFuture<?> removeMember(
@@ -136,4 +135,6 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   public record CreateRoleRequest(String roleId, String name, String description) {}
 
   public record UpdateRoleRequest(String roleId, String name, String description) {}
+
+  public record AddEntityToRoleRequest(String roleId, String entityId, EntityType entityType) {}
 }
