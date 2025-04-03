@@ -47,9 +47,6 @@ public final class BatchOperationSetupProcessors {
             new BatchOperationExecuteProcessor(writers, processingState, partitionId))
         .withListener(
             new BatchOperationExecutionScheduler(
-                scheduledTaskStateFactory,
-                searchClientsProxy,
-                keyGenerator,
-                Duration.ofMillis(1000)));
+                scheduledTaskStateFactory, searchClientsProxy, Duration.ofMillis(1000)));
   }
 }
