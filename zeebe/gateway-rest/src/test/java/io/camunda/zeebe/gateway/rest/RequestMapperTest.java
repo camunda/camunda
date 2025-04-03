@@ -67,13 +67,20 @@ class RequestMapperTest {
     // given
     final String usernameClaim = "sub";
     final String usernameValue = "test-user";
-    setOidcAuthenticationInContext(usernameClaim, usernameValue);
+    setOidcAuthenticationInContext(usernameClaim, usernameValue, "aud1");
 
     // when
     final var authenticatedUsername = RequestMapper.getAuthentication().authenticatedUsername();
 
     // then
     assertThat(authenticatedUsername).isEqualTo(usernameValue);
+
+    final var claims = RequestMapper.getAuthentication().claims();
+    assertNotNull(claims);
+    assertThat(claims).containsKey("authorized_username");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "aud");
+    assertThat(claims.get("authorized_username")).isEqualTo("test-user");
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "aud")).isEqualTo("aud1");
   }
 
   @Test
@@ -114,7 +121,7 @@ class RequestMapperTest {
   }
 
   private void setOidcAuthenticationInContext(
-      final String usernameClaim, final String usernameValue) {
+      final String usernameClaim, final String usernameValue, final String aud) {
     final String tokenValue = "{}";
     final Instant tokenIssuedAt = Instant.now().truncatedTo(ChronoUnit.SECONDS);
     final Instant tokenExpiresAt = tokenIssuedAt.plus(1, ChronoUnit.DAYS);
@@ -128,7 +135,7 @@ class RequestMapperTest {
                         tokenValue,
                         tokenIssuedAt,
                         tokenExpiresAt,
-                        Map.of(usernameClaim, usernameValue))),
+                        Map.of("aud", aud, usernameClaim, usernameValue))),
                 Collections.emptySet(),
                 Collections.emptySet(),
                 new AuthenticationContext(
