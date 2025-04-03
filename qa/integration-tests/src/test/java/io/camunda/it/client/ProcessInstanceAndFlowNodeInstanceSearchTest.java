@@ -16,8 +16,10 @@ import static io.camunda.it.util.TestHelper.waitForFlowNodeInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilFlowNodeInstanceHasIncidents;
+import static io.camunda.it.util.TestHelper.waitUntilJobWorkerHasFailedJob;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
@@ -31,12 +33,12 @@ import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.worker.JobWorker;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -470,7 +472,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
 
   @Test
   void shouldQueryProcessInstancesByStateCompleted() {
-    Awaitility.await("process is completed")
+    await("process is completed")
         .untilAsserted(
             () -> {
 
@@ -1348,5 +1350,33 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
 
     // then:
     assertThat(result.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByHasRetriesLeft() {
+    // given
+    try (final JobWorker ignored =
+        camundaClient
+            .newWorker()
+            .jobType("taskA")
+            .handler((client, job) -> client.newFailCommand(job).retries(1).send().join())
+            .open()) {
+
+      waitUntilJobWorkerHasFailedJob(camundaClient);
+
+      // when
+      final var result =
+          camundaClient
+              .newProcessInstanceSearchRequest()
+              .filter(f -> f.hasRetriesLeft(true))
+              .send()
+              .join();
+
+      // then
+      assertThat(result.items().size()).isEqualTo(2);
+      assertThat(result.items())
+          .extracting("processDefinitionId")
+          .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v1");
+    }
   }
 }

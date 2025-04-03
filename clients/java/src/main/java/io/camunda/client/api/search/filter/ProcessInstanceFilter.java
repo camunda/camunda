@@ -122,4 +122,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by error message using {@link StringProperty} consumer */
   ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn);
+
+  /** Filter by hasRetriesLeft */
+  ProcessInstanceFilter hasRetriesLeft(final Boolean hasRetriesLeft);
 }

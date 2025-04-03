@@ -529,4 +529,22 @@
     <addPrimaryKey tableName="${prefix}MAPPINGS" columnNames="MAPPING_ID" constraintName="${prefix}PK_MAPPINGS_ID"/>
   </changeSet>
 
+  <changeSet id="create_job_table" author="tsedekey">
+  <createTable tableName="${prefix}JOB">
+    <column name="JOB_KEY" type="BIGINT">
+      <constraints primaryKey="true"/>
+    </column>
+    <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+    <column name="RETRIES" type="SMALLINT"/>
+    <column name="STATE" type="VARCHAR(20)"/>
+    <column name="PARTITION_ID" type="NUMBER"/>
+    <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
+  </createTable>
+
+    <modifySql dbms="mariadb">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+  </changeSet>
+
 </databaseChangeLog>

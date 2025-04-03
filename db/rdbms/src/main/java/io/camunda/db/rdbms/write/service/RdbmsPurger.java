@@ -40,7 +40,8 @@ public class RdbmsPurger {
           "GROUP_MEMBER",
           "GROUPS",
           "BATCH_OPERATION_ITEM",
-          "BATCH_OPERATION");
+          "BATCH_OPERATION",
+          "JOB");
 
   private final PurgeMapper purgeMapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;

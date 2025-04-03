@@ -4615,6 +4615,9 @@ components:
           description: The error message related to the process.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+        hasRetriesLeft:
+          description: Whether the process has failed jobs with retries left.
+          type: boolean
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
