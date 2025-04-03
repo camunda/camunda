@@ -136,7 +136,8 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     final var userKey = user.getUserKey();
     final var username = user.getUsername();
     deleteAuthorizations(username);
-    for (final var tenantId : user.getTenantIdsList()) {
+    for (final var tenantId :
+        membershipState.getMemberships(EntityType.USER, username, RelationType.TENANT)) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           tenant.getTenantKey(),
