@@ -104,11 +104,11 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public void addTenant(final long groupKey, final String tenantId) {
-    groupId.wrapString(String.valueOf(groupKey));
-    final PersistedGroup persistedGroup = groupColumnFamily.get(groupId);
+  public void addTenant(final String groupId, final String tenantId) {
+    this.groupId.wrapString(groupId);
+    final PersistedGroup persistedGroup = groupColumnFamily.get(this.groupId);
     persistedGroup.addTenantId(tenantId);
-    groupColumnFamily.update(groupId, persistedGroup);
+    groupColumnFamily.update(this.groupId, persistedGroup);
   }
 
   @Override
