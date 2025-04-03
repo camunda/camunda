@@ -12,6 +12,8 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {Container, AddIcon, CancelIcon, WarningIcon} from '../styled';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {Stack} from '@carbon/react';
+import {useModificationsByFlowNode} from 'modules/hooks/modifications';
+import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
 
 type Props = {
   flowNodeInstance: Pick<
@@ -21,15 +23,17 @@ type Props = {
 };
 
 const ModificationIcons: React.FC<Props> = observer(({flowNodeInstance}) => {
+  const modificationsByFlowNode = useModificationsByFlowNode();
   const instanceKeyHierarchy = flowNodeInstance.treePath.split('/');
 
   const hasCancelModification =
     modificationsStore.modificationsByFlowNode[flowNodeInstance.flowNodeId]
       ?.areAllTokensCanceled ||
     instanceKeyHierarchy.some((instanceKey) =>
-      modificationsStore.hasPendingCancelOrMoveModification(
+      hasPendingCancelOrMoveModification(
         flowNodeInstance.flowNodeId,
         instanceKey,
+        modificationsByFlowNode,
       ),
     );
 
