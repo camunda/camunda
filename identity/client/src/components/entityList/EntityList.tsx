@@ -104,7 +104,7 @@ type EntityListProps<D extends EntityData> = {
 };
 
 const MAX_ICON_ACTIONS = 2;
-const PAGINATION_HIDE_LIMIT = 25;
+const PAGINATION_HIDE_LIMIT = 15;
 const PAGINATION_MAX_PAGE_SIZE = 15;
 const MAX_DISPLAY_CELL_LENGTH = 20;
 
