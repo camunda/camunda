@@ -234,8 +234,9 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void updateRoleShouldReturnNoContent() {
+  void shouldUpdateRoleAndReturnResponse() {
     // given
+    final var roleKey = 100L;
     final var roleId = "roleId";
     final var roleName = "Updated Role Name";
     final var description = "Updated Role Description";
@@ -243,7 +244,11 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.updateRole(request))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new RoleRecord().setEntityKey(100L).setName(roleName)));
+                new RoleRecord()
+                    .setRoleKey(roleKey)
+                    .setRoleId(roleId)
+                    .setName(roleName)
+                    .setDescription(description)));
 
     // when
     webClient
@@ -254,7 +259,18 @@ public class RoleControllerTest extends RestControllerTest {
         .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "roleKey": "%d",
+              "roleId": "%s",
+              "name": "%s",
+              "description": "%s"
+            }
+            """
+                .formatted(roleKey, roleId, roleName, description));
 
     // then
     verify(roleServices, times(1)).updateRole(request);
