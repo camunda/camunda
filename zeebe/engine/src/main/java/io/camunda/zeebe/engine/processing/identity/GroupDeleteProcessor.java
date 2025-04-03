@@ -70,9 +70,10 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
+    final var persistedGroup = persistedRecord.get();
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.DELETE)
-            .addResourceId(persistedRecord.get().getName());
+            .addResourceId(persistedGroup.getGroupId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
@@ -80,8 +81,6 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
-    final var persistedGroup = persistedRecord.get();
-    record.setName(persistedGroup.getName());
     final var groupKey = persistedGroup.getGroupKey();
 
     removeAssignedEntities(record);
