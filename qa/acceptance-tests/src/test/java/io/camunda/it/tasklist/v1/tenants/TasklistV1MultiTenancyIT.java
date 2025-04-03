@@ -23,7 +23,9 @@ import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.entity.AuthenticationMethod;
+import java.time.Duration;
 import java.util.List;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -114,6 +116,7 @@ public class TasklistV1MultiTenancyIT {
             .getFirst();
     assertThat(processTenant2.getTenantId()).isEqualTo(TENANT_ID_2);
     processDefinitionKey2 = processTenant2.getProcessDefinitionKey();
+    waitForProcessesToBeDeployed(adminClient, 2);
   }
 
   // This test is disable for now because of the class TasklistSecurityStubsConfiguration
@@ -145,5 +148,16 @@ public class TasklistV1MultiTenancyIT {
       assertThat(tasklistClient2.getProcessDefinition(processDefinitionKey2).statusCode())
           .isEqualTo(NOT_FOUND.value());
     }
+  }
+
+  private static void waitForProcessesToBeDeployed(
+      final CamundaClient camundaClient, final int expectedProcessDefinitions) {
+    Awaitility.await("Should processes be exported to Elasticsearch")
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () ->
+                assertThat(camundaClient.newProcessDefinitionSearchRequest().send().join().items())
+                    .hasSize(expectedProcessDefinitions));
   }
 }
