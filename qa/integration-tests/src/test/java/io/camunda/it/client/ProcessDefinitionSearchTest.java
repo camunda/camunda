@@ -16,6 +16,8 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.protocol.rest.PageObject;
+import io.camunda.client.protocol.rest.PageObject.TypeEnum;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -92,6 +94,7 @@ public class ProcessDefinitionSearchTest {
             .page(p -> p.limit(1))
             .send()
             .join();
+
     final var secondPage =
         camundaClient
             .newProcessDefinitionSearchRequest()
@@ -127,6 +130,7 @@ public class ProcessDefinitionSearchTest {
             .page(p -> p.limit(2))
             .send()
             .join();
+
     final var secondPage =
         camundaClient
             .newProcessDefinitionSearchRequest()
@@ -156,6 +160,7 @@ public class ProcessDefinitionSearchTest {
             .page(p -> p.limit(2))
             .send()
             .join();
+
     final var secondPage =
         camundaClient
             .newProcessDefinitionSearchRequest()
@@ -163,6 +168,7 @@ public class ProcessDefinitionSearchTest {
             .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
             .send()
             .join();
+
     // when
     final var firstPageAgain =
         camundaClient
@@ -550,7 +556,11 @@ public class ProcessDefinitionSearchTest {
     final var resultAfter =
         camundaClient
             .newProcessDefinitionSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(
+                p ->
+                    p.searchAfter(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(key)))))
             .send()
             .join();
 
@@ -560,7 +570,11 @@ public class ProcessDefinitionSearchTest {
     final var resultBefore =
         camundaClient
             .newProcessDefinitionSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(
+                p ->
+                    p.searchBefore(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(keyAfter)))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);

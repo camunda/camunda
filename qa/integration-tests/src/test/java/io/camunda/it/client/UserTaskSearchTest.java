@@ -16,6 +16,8 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.impl.ResponseMapper;
+import io.camunda.client.protocol.rest.PageObject;
+import io.camunda.client.protocol.rest.PageObject.TypeEnum;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -41,7 +43,6 @@ class UserTaskSearchTest {
 
   @BeforeAll
   static void beforeAll() {
-
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
     deployProcess("process-3", "simple-3.bpmn", "test-3", "", "", "30");
@@ -460,11 +461,16 @@ class UserTaskSearchTest {
     final var result = camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
     assertThat(result.items().size()).isEqualTo(1);
     final var key = result.items().getFirst().getUserTaskKey();
+
     // apply searchAfter
     final var resultAfter =
         camundaClient
             .newUserTaskSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(
+                p ->
+                    p.searchAfter(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(key.toString()))))
             .send()
             .join();
 
@@ -474,7 +480,11 @@ class UserTaskSearchTest {
     final var resultBefore =
         camundaClient
             .newUserTaskSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(
+                p ->
+                    p.searchBefore(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(keyAfter)))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);

@@ -16,18 +16,20 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.SearchResponsePage;
+import io.camunda.client.impl.util.PageObjectMapper;
+import io.camunda.client.protocol.rest.PageObject;
 import java.util.List;
 
 public class SearchResponsePageImpl implements SearchResponsePage {
 
   private final long totalItems;
-  private final List<Object> firstSortValues;
-  private final List<Object> lastSortValues;
+  private final List<PageObject> firstSortValues;
+  private final List<PageObject> lastSortValues;
 
   public SearchResponsePageImpl(
       final long totalItems,
-      final List<Object> firstSortValues,
-      final List<Object> lastSortValues) {
+      final List<PageObject> firstSortValues,
+      final List<PageObject> lastSortValues) {
     this.totalItems = totalItems;
     this.firstSortValues = firstSortValues;
     this.lastSortValues = lastSortValues;
@@ -40,11 +42,11 @@ public class SearchResponsePageImpl implements SearchResponsePage {
 
   @Override
   public List<Object> firstSortValues() {
-    return firstSortValues;
+    return PageObjectMapper.toObjectList(firstSortValues);
   }
 
   @Override
   public List<Object> lastSortValues() {
-    return lastSortValues;
+    return PageObjectMapper.toObjectList(lastSortValues);
   }
 }

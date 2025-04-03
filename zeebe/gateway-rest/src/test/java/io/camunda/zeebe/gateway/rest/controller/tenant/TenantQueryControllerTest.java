@@ -71,8 +71,12 @@ public class TenantQueryControllerTest extends RestControllerTest {
          ],
          "page": {
            "totalItems": %s,
-           "firstSortValues": ["f"],
-           "lastSortValues": ["v"]
+              "firstSortValues": [
+                { "value": "f", "type": "string" }
+              ],
+              "lastSortValues": [
+                { "value": "v", "type": "string" }
+              ]
          }
        }
       """;
@@ -337,8 +341,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             """
                 {
                     "page": {
-                        "searchAfter": ["a"],
-                        "searchBefore": ["b"]
+                        "searchAfter": [{"value": "\\"a\\"", "type": "string"}],
+                        "searchBefore": [{"value": "\\"b\\"", "type": "string"}]
                     }
                 }""",
             String.format(
