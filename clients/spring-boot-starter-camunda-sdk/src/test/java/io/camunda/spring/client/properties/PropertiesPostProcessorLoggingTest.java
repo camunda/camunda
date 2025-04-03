@@ -27,7 +27,6 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 @SpringBootTest(
     properties = "zeebe.client.broker.grpc-address=http://legacy:26500",
     classes = CamundaClientPropertiesTestConfig.class)
-@Nested
 @ExtendWith(OutputCaptureExtension.class)
 public class PropertiesPostProcessorLoggingTest {
   @Test
