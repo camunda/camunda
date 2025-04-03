@@ -21,4 +21,15 @@ export const endpoints = {
     }) =>
       `/v2/process-definitions/${processDefinitionKey}/statistics/${statisticName}`,
   },
+  getProcessInstanceStatistics: {
+    method: 'GET',
+    getUrl: ({
+      processInstanceKey,
+      statisticName,
+    }: {
+      processInstanceKey: string;
+      statisticName: string;
+    }) =>
+      `/v2/process-instances/${processInstanceKey}/statistics/${statisticName}`,
+  },
 };
