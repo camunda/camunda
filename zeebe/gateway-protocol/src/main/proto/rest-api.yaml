@@ -2263,8 +2263,12 @@ paths:
             schema:
               $ref: "#/components/schemas/RoleUpdateRequest"
       responses:
-        "204":
+        "200":
           description: The role was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleUpdateResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -5740,6 +5744,21 @@ components:
       required:
         - name
         - description
+    RoleUpdateResult:
+      type: object
+      properties:
+        roleKey:
+          type: string
+          description: The key of the updated role.
+        name:
+          type: string
+          description: The display name of the updated role.
+        description:
+          type: string
+          description: The description of the updated role.
+        roleId:
+          type: string
+          description: The ID of the updated role.
     RoleResult:
       description: Role search response item.
       type: object
