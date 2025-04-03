@@ -12,7 +12,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.6.11-test2-SNAPSHOT</version>
+    <version>8.6.11-test2</version>
     <relativePath>../../../parent/pom.xml</relativePath>
   </parent>
 

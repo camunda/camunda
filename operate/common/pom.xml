@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.6.11-test2-SNAPSHOT</version>
+    <version>8.6.11-test2</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>operate-common</artifactId>

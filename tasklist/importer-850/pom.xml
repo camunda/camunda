@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-parent</artifactId>
-    <version>8.6.11-test2-SNAPSHOT</version>
+    <version>8.6.11-test2</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>tasklist-importer-850</artifactId>
