@@ -11,9 +11,11 @@ import {ModificationIcons} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {useEffect} from 'react';
 import {open} from 'modules/mocks/diagrams';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 type Props = {
   children?: React.ReactNode;
@@ -24,34 +26,40 @@ const Wrapper = ({children}: Props) => {
     return modificationsStore.reset;
   }, []);
 
-  return <>{children}</>;
+  return (
+    <QueryClientProvider client={getMockQueryClient()}>
+      {children}
+    </QueryClientProvider>
+  );
 };
 
 describe('<ModificationIcons />', () => {
   beforeEach(() => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'parent_sub_process',
-        active: 3,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'inner_sub_process',
-        active: 3,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'user_task',
-        active: 3,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          flowNodeId: 'parent_sub_process',
+          active: 3,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          flowNodeId: 'inner_sub_process',
+          active: 3,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          flowNodeId: 'user_task',
+          active: 3,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
 
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
   });
