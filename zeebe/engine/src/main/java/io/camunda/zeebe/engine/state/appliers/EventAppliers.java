@@ -177,7 +177,7 @@ public final class EventAppliers implements EventApplier {
     register(
         DeploymentIntent.FULLY_DISTRIBUTED,
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
-    register(DeploymentIntent.RECONSTRUCTED, NOOP_EVENT_APPLIER);
+    register(DeploymentIntent.RECONSTRUCTED, new DeploymentReconstructedApplier(state));
     register(
         DeploymentIntent.RECONSTRUCTED_ALL,
         new DeploymentReconstructedAllApplier(state.getDeploymentState()));

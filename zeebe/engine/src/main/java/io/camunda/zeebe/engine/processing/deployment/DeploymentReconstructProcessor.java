@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProces
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.ProcessResource;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeploymentResourceUtil;
@@ -41,6 +42,11 @@ import java.util.Set;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 
+/**
+ * NOTE: DeploymentRecord is not actually used in the reconstruction, but there is a 1 <-> 1 mapping
+ * between ValueType and RecordValue. The record is mutable so it's better to not reuse a
+ * pre-allocated static instance.
+ */
 @ExcludeAuthorizationCheck
 public class DeploymentReconstructProcessor implements TypedRecordProcessor<DeploymentRecord> {
   private static final long NO_DEPLOYMENT_KEY = -1;
@@ -52,6 +58,8 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   private final DecisionState decisionState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final TypedCommandWriter commandWriter;
+  private final DeploymentRecord cachedDeploymentRecordCommand = new DeploymentRecord();
 
   public DeploymentReconstructProcessor(
       final KeyGenerator keyGenerator,
@@ -63,6 +71,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     formState = processingState.getFormState();
     decisionState = processingState.getDecisionState();
     stateWriter = writers.state();
+    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
   }
 
@@ -95,6 +104,8 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     }
     stateWriter.appendFollowUpEvent(
         deploymentRecord.getDeploymentKey(), DeploymentIntent.RECONSTRUCTED, deploymentRecord);
+    // trigger reconstruction of another deployment reconstruction
+    commandWriter.appendNewCommand(DeploymentIntent.RECONSTRUCT, cachedDeploymentRecordCommand);
   }
 
   private Resource findNextResource() {
