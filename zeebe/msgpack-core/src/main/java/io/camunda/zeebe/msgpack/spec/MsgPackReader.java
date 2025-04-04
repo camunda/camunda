@@ -333,8 +333,6 @@ public final class MsgPackReader {
             String.format("Unknown token format '%s'", format.getType().name()));
     }
 
-    token.setTotalLength(offset - currentOffset);
-
     return token;
   }
 
