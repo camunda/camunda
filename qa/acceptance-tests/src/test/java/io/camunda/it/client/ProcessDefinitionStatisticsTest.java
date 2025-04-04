@@ -18,7 +18,7 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.api.statistics.response.ProcessDefinitionFlowNodeStatistics;
+import io.camunda.client.api.statistics.response.ProcessFlowNodeStatistics;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -462,7 +462,7 @@ public class ProcessDefinitionStatisticsTest {
   }
 
   private static void assertStatistics(
-      final ProcessDefinitionFlowNodeStatistics statistics,
+      final ProcessFlowNodeStatistics statistics,
       final String flowNodeId,
       final long active,
       final long canceled,
