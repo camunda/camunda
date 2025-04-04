@@ -73,7 +73,7 @@ const List: FC = () => {
       <EntityList
         data={mappingSearchResults == null ? [] : mappingSearchResults.items}
         headers={[
-          { header: t("mappingId"), key: "mappingKey" },
+          { header: t("mappingId"), key: "mappingId" },
           { header: t("mappingName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },

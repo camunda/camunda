@@ -12,12 +12,10 @@ import {
   apiPost,
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
-import { EntityData } from "src/components/entityList/EntityList";
 
 export const MAPPINGS_ENDPOINT = "/mapping-rules";
 
-export type Mapping = EntityData & {
-  mappingKey: string;
+export type Mapping = {
   mappingId: string;
   name: string;
   claimName: string;
@@ -27,14 +25,10 @@ export type Mapping = EntityData & {
 export const searchMapping: ApiDefinition<SearchResponse<Mapping>> = () =>
   apiPost(`${MAPPINGS_ENDPOINT}/search`);
 
-type CreateMappingParams = Omit<Mapping, "mappingKey">;
-
-export const createMapping: ApiDefinition<undefined, CreateMappingParams> = (
-  mapping,
-) => apiPost(MAPPINGS_ENDPOINT, mapping);
+export const createMapping: ApiDefinition<undefined, Mapping> = (mapping) =>
+  apiPost(MAPPINGS_ENDPOINT, mapping);
 
 export type UpdateMappingParams = {
-  mappingKey: string;
   mappingId: string;
   name: string;
   claimName: string;
@@ -42,19 +36,18 @@ export type UpdateMappingParams = {
 };
 
 export const updateMapping: ApiDefinition<undefined, UpdateMappingParams> = ({
-  mappingKey,
+  mappingId,
   claimName,
   claimValue,
   name,
 }) =>
-  apiPatch(`${MAPPINGS_ENDPOINT}/${mappingKey}`, {
+  apiPatch(`${MAPPINGS_ENDPOINT}/${mappingId}`, {
     name,
     claimName,
     claimValue,
   });
 
 export type DeleteMappingParams = UpdateMappingParams;
-export const deleteMapping: ApiDefinition<
-  undefined,
-  { mappingKey: string }
-> = ({ mappingKey }) => apiDelete(`${MAPPINGS_ENDPOINT}/${mappingKey}`);
+export const deleteMapping: ApiDefinition<undefined, { mappingId: string }> = ({
+  mappingId,
+}) => apiDelete(`${MAPPINGS_ENDPOINT}/${mappingId}`);
