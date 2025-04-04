@@ -34,6 +34,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord.ReconstructionProgress;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -78,7 +79,6 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
-    progressState = ProgressState.initial();
   }
 
   @Override
@@ -90,28 +90,41 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           "Deployments are already stored and don't need to be reconstructed");
       return;
     }
+    progressState = ProgressState.fromDeploymentRecord(record.getValue());
 
-    final var key = keyGenerator.nextKey();
-    final var resource = findNextResource();
-    if (resource == null) {
-      stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED_ALL, record.getValue());
-      return;
-    }
+    try {
+      final var key = keyGenerator.nextKey();
 
-    final DeploymentRecord deploymentRecord;
-    if (resource.deploymentKey() != NO_DEPLOYMENT_KEY) {
-      final var allResourcesOfDeployment =
-          findResourcesWithDeploymentKey(resource.tenantId(), resource.deploymentKey());
-      deploymentRecord =
-          recreateDeploymentForResources(
-              resource.deploymentKey(), resource.tenantId(), allResourcesOfDeployment);
-    } else {
-      deploymentRecord = createNewDeploymentForResource(resource);
+      final var resource = findNextResource();
+      if (resource == null) {
+        stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED_ALL, record.getValue());
+        return;
+      }
+
+      final DeploymentRecord deploymentRecord;
+      if (resource.deploymentKey() != NO_DEPLOYMENT_KEY) {
+        final var allResourcesOfDeployment =
+            findResourcesWithDeploymentKey(resource.tenantId(), resource.deploymentKey());
+        deploymentRecord =
+            recreateDeploymentForResources(
+                resource.deploymentKey(), resource.tenantId(), allResourcesOfDeployment);
+      } else {
+        deploymentRecord = createNewDeploymentForResource(resource);
+      }
+      stateWriter.appendFollowUpEvent(
+          deploymentRecord.getDeploymentKey(), DeploymentIntent.RECONSTRUCTED, deploymentRecord);
+      // trigger reconstruction of another deployment reconstruction
+      cachedDeploymentRecordCommand.reset();
+      cachedDeploymentRecordCommand
+          .setTenantId(deploymentRecord.getTenantId())
+          .setReconstructionKey(deploymentRecord.getDeploymentKey())
+          .setReconstructionProgress(progressState.progress());
+      commandWriter.appendNewCommand(DeploymentIntent.RECONSTRUCT, cachedDeploymentRecordCommand);
+
+    } finally {
+      // progressState contains a reference to a resource, so no need to keep it
+      progressState = null;
     }
-    stateWriter.appendFollowUpEvent(
-        deploymentRecord.getDeploymentKey(), DeploymentIntent.RECONSTRUCTED, deploymentRecord);
-    // trigger reconstruction of another deployment reconstruction
-    commandWriter.appendNewCommand(DeploymentIntent.RECONSTRUCT, cachedDeploymentRecordCommand);
   }
 
   @VisibleForTesting
@@ -193,7 +206,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
           // DRGs are not associated with a deployment key, so we need to check if any of the
           // decisions are associated with a deployment key instead.
-          final var deploymentKey =
+          final long deploymentKey =
               decisions.stream()
                   .map(PersistedDecision::getDeploymentKey)
                   .filter(key -> key != NO_DEPLOYMENT_KEY)
@@ -417,8 +430,33 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   sealed interface ProgressState {
     Resource resource();
 
+    default ReconstructionProgress progress() {
+      return switch (this) {
+        case final DecisionRequirements ignored -> ReconstructionProgress.DECISION_REQUIREMENTS;
+        case final Done ignored -> ReconstructionProgress.DONE;
+        case final Form ignored -> ReconstructionProgress.FORM;
+        case final Process ignored -> ReconstructionProgress.PROCESS;
+      };
+    }
+
     static ProgressState initial() {
       return new Process(null, null);
+    }
+
+    static ProgressState fromDeploymentRecord(final DeploymentRecord record) {
+      return switch (record.getReconstructionProgress()) {
+        case PROCESS ->
+            new Process(
+                new ProcessIdentifier(record.getTenantId(), record.getReconstructionKey()), null);
+        case FORM ->
+            new Form(new FormIdentifier(record.getTenantId(), record.getReconstructionKey()), null);
+        case DECISION_REQUIREMENTS ->
+            new DecisionRequirements(
+                new DecisionRequirementsIdentifier(
+                    record.getTenantId(), record.getReconstructionKey()),
+                null);
+        case DONE -> Done.done();
+      };
     }
 
     record Process(ProcessIdentifier identifier, Resource resource) implements ProgressState {
@@ -457,9 +495,15 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
     record Done() implements ProgressState {
 
+      private static final Done DONE = new Done();
+
       @Override
       public Resource resource() {
         return null;
+      }
+
+      public static ProgressState done() {
+        return DONE;
       }
     }
   }
