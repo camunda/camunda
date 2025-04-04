@@ -7,56 +7,60 @@
  */
 
 import {InputOutputMappings} from './index';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {useEffect} from 'react';
+import {act, useEffect} from 'react';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
     return () => {
       flowNodeSelectionStore.reset();
-      processInstanceDetailsDiagramStore.reset();
     };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <QueryClientProvider client={getMockQueryClient()}>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        {children}
+      </ProcessDefinitionKeyContext.Provider>
+    </QueryClientProvider>
+  );
 };
 
 describe('Input Mappings', () => {
   beforeEach(() =>
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML),
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    ),
   );
 
-  it('should display empty message', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'Event_0bonl61',
+  it('should display input mappings', async () => {
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'Event_0bonl61',
+      });
     });
+
     const {rerender} = render(<InputOutputMappings type="Input" />, {
       wrapper: Wrapper,
     });
 
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
-    rerender(<InputOutputMappings type="Output" />);
-    expect(screen.getByText('No Output Mappings defined')).toBeInTheDocument();
-  });
-
-  it('should display input mappings', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'Activity_0qtp1k6',
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'Activity_0qtp1k6',
+      });
     });
 
-    render(<InputOutputMappings type="Input" />, {wrapper: Wrapper});
-    await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched'),
-    );
+    rerender(<InputOutputMappings type="Input" />);
 
-    expect(screen.getByText(/local variable name/i)).toBeInTheDocument();
+    expect(await screen.findByText(/local variable name/i)).toBeInTheDocument();
     expect(screen.getByText(/variable assignment value/i)).toBeInTheDocument();
     expect(screen.getByText(/localVariable1/i)).toBeInTheDocument();
     expect(screen.getByText(/= "test1"/i)).toBeInTheDocument();
@@ -65,17 +69,28 @@ describe('Input Mappings', () => {
   });
 
   it('should display output mappings', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'Activity_0qtp1k6',
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'Event_0bonl61',
+      });
     });
 
-    render(<InputOutputMappings type="Output" />, {wrapper: Wrapper});
-    await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched'),
-    );
+    const {rerender} = render(<InputOutputMappings type="Input" />, {
+      wrapper: Wrapper,
+    });
 
-    expect(screen.getByText(/process variable name/i)).toBeInTheDocument();
+    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'Activity_0qtp1k6',
+      });
+    });
+
+    rerender(<InputOutputMappings type="Output" />);
+    expect(
+      await screen.findByText(/process variable name/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/variable assignment value/i)).toBeInTheDocument();
     expect(screen.getByText(/outputTest/i)).toBeInTheDocument();
     expect(screen.getByText(/= 2/i)).toBeInTheDocument();
@@ -95,7 +110,6 @@ describe('Input Mappings', () => {
   ])(
     'should display/hide information banner for input/output mappings',
     async ({type, message}) => {
-      await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'Activity_0qtp1k6',
       });
@@ -112,6 +126,9 @@ describe('Input Mappings', () => {
 
       expect(screen.queryByText(message)).not.toBeInTheDocument();
 
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
       rerender(<InputOutputMappings type={type as 'Input' | 'Output'} />);
       expect(screen.queryByText(message)).not.toBeInTheDocument();
     },

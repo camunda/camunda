@@ -44,6 +44,14 @@ jest.mock('modules/utils/bpmn');
 jest.mock('modules/stores/process', () => ({
   processStore: {state: {process: {}}, fetchProcess: jest.fn()},
 }));
+jest.mock(
+  'modules/queries/processDefinitions/useProcessInstanceXml.ts',
+  () => ({
+    useProcessInstanceXml: jest.fn(() => ({
+      data: undefined,
+    })),
+  }),
+);
 
 describe('ProcessInstance - modification mode', () => {
   beforeEach(() => {

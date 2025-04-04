@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {getMappings} from 'modules/bpmn-js/utils/getInputOutputMappings';
@@ -15,6 +14,8 @@ import {IOMappingInfoBanner} from './IOMappingInfoBanner';
 import {useState} from 'react';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {StructuredList} from 'modules/components/StructuredList';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const INFORMATION_TEXT = {
   Input:
@@ -37,8 +38,9 @@ const InputOutputMappings: React.FC<Props> = observer(({type}) => {
     return null;
   }
 
-  const businessObject =
-    processInstanceDetailsDiagramStore.businessObjects[flowNodeId];
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {data} = useProcessInstanceXml({processDefinitionKey});
+  const businessObject = data?.businessObjects[flowNodeId];
 
   const mappings =
     businessObject === undefined ? [] : getMappings(businessObject, type);
