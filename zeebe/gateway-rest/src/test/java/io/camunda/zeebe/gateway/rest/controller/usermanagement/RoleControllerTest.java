@@ -15,8 +15,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
-import io.camunda.service.RoleServices.AddEntityToRoleRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -401,7 +401,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var roleId = "roleId";
     final var username = "username";
 
-    final var request = new AddEntityToRoleRequest(roleId, username, EntityType.USER);
+    final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
     when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -423,7 +423,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var roleId = "roleId";
     final var username = "username";
     final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
-    final var request = new AddEntityToRoleRequest(roleId, username, EntityType.USER);
+    final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -450,7 +450,7 @@ public class RoleControllerTest extends RestControllerTest {
     final String roleId = "roleId";
     final String username = "username";
     final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
-    final var request = new AddEntityToRoleRequest(roleId, username, EntityType.USER);
+    final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -472,7 +472,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidUsername() {
+  void shouldReturnErrorForProvidingInvalidUsernameWhenAddingToRole() {
     // given
     final String roleId = "roleId";
     final String username = "username!";
@@ -502,7 +502,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidRoleId() {
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingToRole() {
     // given
     final String roleId = "roleId!";
     final String username = "username";
@@ -527,6 +527,140 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldUnassignUserFromRoleAndReturnAccepted() {
+    // given
+    final var roleId = "roleId";
+    final var username = "username";
+
+    final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
+    when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingMissingUserFromRole() {
+    // given
+    final var roleId = "roleId";
+    final var username = "username";
+    final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
+    final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
+    when(roleServices.removeMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "User not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingUserFromMissingRole() {
+    // given
+    final String roleId = "roleId";
+    final String username = "username";
+    final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
+    final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
+    when(roleServices.removeMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidUsernameWhenRemovingFromRole() {
+    // given
+    final String roleId = "roleId";
+    final String username = "username!";
+    final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
+                  "instance": "%s"
+                }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenRemovingFromRole() {
+    // given
+    final String roleId = "roleId!";
+    final String username = "username";
+    final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
+                  "instance": "%s"
+                }"""
                 .formatted(IdentifierPatterns.ID_PATTERN, path));
     verifyNoInteractions(roleServices);
   }

@@ -19,8 +19,8 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.RoleServices.AddEntityToRoleRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
@@ -153,7 +153,7 @@ public class RoleServicesTest {
     final var entityId = "entityId";
 
     // when
-    services.addMember(new AddEntityToRoleRequest(roleId, entityId, EntityType.USER));
+    services.addMember(new RoleMemberRequest(roleId, entityId, EntityType.USER));
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -168,19 +168,19 @@ public class RoleServicesTest {
   @Test
   public void shouldRemoveUserFromRole() {
     // given
-    final var roleKey = 100L;
-    final var entityKey = 42;
+    final var roleId = "100";
+    final var username = "42";
 
     // when
-    services.removeMember(roleKey, EntityType.USER, entityKey);
+    services.removeMember(new RoleMemberRequest(roleId, username, EntityType.USER));
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.REMOVE_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getRoleId()).isEqualTo(String.valueOf(roleKey));
-    assertThat(brokerRequestValue.getEntityId()).isEqualTo(String.valueOf(entityKey));
+    assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(username);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 

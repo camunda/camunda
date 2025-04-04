@@ -2356,6 +2356,44 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Role
+      operationId: removeUserFromRole
+      summary: Unassign a user from a role (Work-in-Progress)
+      description: |
+        Unassigns a user from a role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          description: The user username.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The user was unassigned successfully from the role.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role or user with the given ID or username was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /roles/search:
     post:
       tags:
