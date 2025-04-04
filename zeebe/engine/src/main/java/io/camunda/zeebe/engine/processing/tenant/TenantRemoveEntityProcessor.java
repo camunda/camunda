@@ -125,8 +125,8 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       createEntityNotExistRejectCommand(command, entityId, EntityType.USER, tenantId);
       return false;
     }
-    if (user.get().getTenantIdsList().contains(tenantId)) {
-      createAlreadyAssignedRejectCommand(command, entityId, EntityType.USER, tenantId);
+    if (!user.get().getTenantIdsList().contains(tenantId)) {
+      createNotAssignedRejectCommand(command, entityId, EntityType.USER, tenantId);
       return false;
     }
     return true;
@@ -140,8 +140,8 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       return false;
     }
 
-    if (group.get().getTenantIdsList().contains(tenantId)) {
-      createAlreadyAssignedRejectCommand(command, entityId, EntityType.GROUP, tenantId);
+    if (!group.get().getTenantIdsList().contains(tenantId)) {
+      createNotAssignedRejectCommand(command, entityId, EntityType.GROUP, tenantId);
       return false;
     }
     return true;
@@ -158,15 +158,15 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
         formatErrorMessage(entityType, entityId, tenantId, "doesn't exist"));
   }
 
-  private void createAlreadyAssignedRejectCommand(
+  private void createNotAssignedRejectCommand(
       final TypedRecord<TenantRecord> command,
       final String entityId,
       final EntityType entityType,
       final String tenantId) {
     rejectCommand(
         command,
-        RejectionType.ALREADY_EXISTS,
-        formatErrorMessage(entityType, entityId, tenantId, "is already assigned to the tenant"));
+        RejectionType.NOT_FOUND,
+        formatErrorMessage(entityType, entityId, tenantId, "is not assigned to this tenant"));
   }
 
   private String formatErrorMessage(
@@ -175,7 +175,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final String tenantId,
       final String reason) {
     final var entityName = entityType.name().toLowerCase();
-    return "Expected to remove %s with id '%s' from tenant with id '%s', but the %s %s."
+    return "Expected to remove %s with ID '%s' from tenant with ID '%s', but the %s %s."
         .formatted(entityName, entityId, tenantId, entityName, reason);
   }
 
