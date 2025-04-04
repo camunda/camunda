@@ -21,11 +21,13 @@ const useReportersWithSlack: any[] = [
   [
     './node_modules/playwright-slack-report/dist/src/SlackReporter.js',
     {
-      slackWebHookUrl: process.env.SLACK_WEBHOOK_URL!,
+      slackOAuthToken: process.env.SLACK_BOT_USER_OAUTH_TOKEN!,
+      channels: ['core-application-e2e-test-results'],
       sendResults: 'always',
+      showInThread: true,
       meta: [
         {
-          key: 'Nightly Test Results for Mono Repo - 8.7',
+          key: `Nightly Test Results for Mono Repo - ${process.env.VERSION}`,
           value: `<https://github.com/camunda/camunda/actions/runs/${process.env.GITHUB_RUN_ID}%7C📊>`,
         },
       ],
