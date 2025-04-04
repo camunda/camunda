@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.security;
 
-import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION_PREFIX;
 import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_SERVICE_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -46,18 +46,18 @@ public class AuthCookieServiceTest {
   @Test
   public void getTokenFromContainerRequestContext() {
     // given
-    String authorizationHeader = String.format("Bearer %s", "test");
-    jakarta.ws.rs.core.Cookie cookie =
-        new jakarta.ws.rs.core.Cookie.Builder(OPTIMIZE_AUTHORIZATION)
+    final String authorizationHeader = String.format("Bearer %s", "test");
+    final jakarta.ws.rs.core.Cookie cookie =
+        new jakarta.ws.rs.core.Cookie.Builder(OPTIMIZE_AUTHORIZATION_PREFIX + 0)
             .value(authorizationHeader)
             .build();
-    Map<String, jakarta.ws.rs.core.Cookie> cookies =
-        Collections.singletonMap(OPTIMIZE_AUTHORIZATION, cookie);
-    ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
+    final Map<String, jakarta.ws.rs.core.Cookie> cookies =
+        Collections.singletonMap(OPTIMIZE_AUTHORIZATION_PREFIX + 0, cookie);
+    final ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
     when(requestMock.getCookies()).thenReturn(cookies);
 
     // when
-    Optional<String> token = AuthCookieService.getAuthCookieToken(requestMock);
+    final Optional<String> token = AuthCookieService.getAuthCookieToken(requestMock);
 
     // then
     assertThat(token).isPresent().get().isEqualTo("test");
@@ -65,20 +65,22 @@ public class AuthCookieServiceTest {
 
   @Test
   public void getTokenExceptionFromContainerRequestContext() {
-    ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
+    final ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
     assertThat(AuthCookieService.getAuthCookieToken(requestMock)).isEmpty();
   }
 
   @Test
   public void getTokenFromHttpServletRequest() {
     // given
-    String authorizationHeader = String.format("Bearer %s", "test");
-    Cookie[] cookies = new Cookie[] {new Cookie(OPTIMIZE_AUTHORIZATION, authorizationHeader)};
-    HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
+    final String authorizationHeader = String.format("Bearer %s", "test");
+    final Cookie[] cookies =
+        new Cookie[] {new Cookie(OPTIMIZE_AUTHORIZATION_PREFIX + 0, authorizationHeader)};
+    final HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
+    when(servletRequestMock.getAttributeNames()).thenReturn(Collections.emptyEnumeration());
     when(servletRequestMock.getCookies()).thenReturn(cookies);
 
     // when
-    Optional<String> token = AuthCookieService.getAuthCookieToken(servletRequestMock);
+    final Optional<String> token = AuthCookieService.getAuthCookieToken(servletRequestMock);
 
     // then
     assertThat(token).isPresent().get().isEqualTo("test");
@@ -86,18 +88,20 @@ public class AuthCookieServiceTest {
 
   @Test
   public void getTokenExceptionFromHttpServletRequest() {
-    HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
+    final HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
+    when(servletRequestMock.getAttributeNames()).thenReturn(Collections.emptyEnumeration());
+    when(servletRequestMock.getCookies()).thenReturn(new Cookie[0]);
     assertThat(AuthCookieService.getAuthCookieToken(servletRequestMock)).isEmpty();
   }
 
   @ParameterizedTest
   @MethodSource("tokenAndExpectedCookieValues")
   public void createServiceTokenCookies(
-      final String serviceTokenValue, List<String> expectedCookieValues) {
+      final String serviceTokenValue, final List<String> expectedCookieValues) {
     // given
-    CookieConfiguration cookieConfig = new CookieConfiguration();
+    final CookieConfiguration cookieConfig = new CookieConfiguration();
     cookieConfig.setMaxSize(2);
-    CloudAuthConfiguration cloudAuthConfig = new CloudAuthConfiguration();
+    final CloudAuthConfiguration cloudAuthConfig = new CloudAuthConfiguration();
     cloudAuthConfig.setClientId("clusterId");
     final AuthConfiguration authConfig = new AuthConfiguration();
     authConfig.setCookieConfiguration(cookieConfig);
@@ -120,14 +124,14 @@ public class AuthCookieServiceTest {
   @ParameterizedTest
   @MethodSource("tokenAndExpectedCookieValues")
   public void extractServiceTokenFromCookies(
-      final String expectedServiceTokenValue, List<String> cookieValues) {
+      final String expectedServiceTokenValue, final List<String> cookieValues) {
     // given
-    List<jakarta.servlet.http.Cookie> cookies = new ArrayList<>();
+    final List<jakarta.servlet.http.Cookie> cookies = new ArrayList<>();
     for (int i = 0; i < cookieValues.size(); i++) {
       cookies.add(
           new jakarta.servlet.http.Cookie(OPTIMIZE_SERVICE_TOKEN + "_" + i, cookieValues.get(i)));
     }
-    HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
+    final HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
     when(servletRequestMock.getCookies())
         .thenReturn(cookies.toArray(jakarta.servlet.http.Cookie[]::new));
 
@@ -137,6 +141,57 @@ public class AuthCookieServiceTest {
 
     // then the correct service token value can be extracted
     assertThat(serviceAccessToken).isPresent().get().isEqualTo(expectedServiceTokenValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("tokenAndExpectedCookieValues")
+  public void createAuthorizationTokenCookies(
+      final String tokenValue, final List<String> expectedCookieValues) {
+    // given
+    final CookieConfiguration cookieConfig = new CookieConfiguration();
+    cookieConfig.setMaxSize(2);
+    final CloudAuthConfiguration cloudAuthConfig = new CloudAuthConfiguration();
+    cloudAuthConfig.setClientId("clusterId");
+    final AuthConfiguration authConfig = new AuthConfiguration();
+    authConfig.setCookieConfiguration(cookieConfig);
+    when(configurationService.getAuthConfiguration()).thenReturn(authConfig);
+    authConfig.setCloudAuthConfiguration(cloudAuthConfig);
+    when(configurationService.getAuthConfiguration()).thenReturn(authConfig);
+    final AuthCookieService authCookieService = new AuthCookieService(configurationService);
+
+    // when
+    final List<Cookie> cookies =
+        authCookieService.createOptimizeAuthCookies(tokenValue, Instant.now(), "http");
+
+    // then the correct cookies are created
+    assertThat(cookies)
+        .extracting(Cookie::getValue)
+        .containsExactlyElementsOf(expectedCookieValues);
+  }
+
+  @ParameterizedTest
+  @MethodSource("tokenAndExpectedCookieValues")
+  public void extractAuthorizationTokenFromCookies(
+      final String expectedTokenValue, final List<String> cookieValues) {
+    // given
+    final int numberOfCookies = cookieValues.size();
+    final HttpServletRequest servletRequestMock = Mockito.mock(HttpServletRequest.class);
+
+    final List<String> attributeList = new ArrayList<>();
+    for (int i = 0; i < numberOfCookies; i++) {
+      attributeList.add(AuthCookieService.getAuthorizationCookieNameWithSuffix(i));
+      when(servletRequestMock.getAttribute(
+              AuthCookieService.getAuthorizationCookieNameWithSuffix(i)))
+          .thenReturn(cookieValues.get(i));
+    }
+    when(servletRequestMock.getAttributeNames()).thenReturn(Collections.enumeration(attributeList));
+
+    // when
+    final Optional<String> serviceAccessToken =
+        AuthCookieService.getAuthCookieToken(servletRequestMock);
+
+    // then the correct authorization token value can be extracted
+    assertThat(serviceAccessToken).isPresent().get().isEqualTo(expectedTokenValue);
   }
 
   private static Stream<Arguments> tokenAndExpectedCookieValues() {
