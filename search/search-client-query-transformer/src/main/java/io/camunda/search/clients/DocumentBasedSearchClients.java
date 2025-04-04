@@ -10,6 +10,7 @@ package io.camunda.search.clients;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -38,6 +39,7 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -51,6 +53,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -242,6 +245,17 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                     .resultConfig(filter.resultConfig()));
 
     return getSearchExecutor().search(updatedQuery, ProcessInstanceForListViewEntity.class);
+  }
+
+  @Override
+  public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
+      final long processInstanceKey) {
+    return getSearchExecutor()
+        .aggregate(
+            new ProcessInstanceFlowNodeStatisticsQuery(
+                new ProcessInstanceStatisticsFilter(processInstanceKey)),
+            ProcessInstanceFlowNodeStatisticsAggregationResult.class)
+        .items();
   }
 
   @Override
