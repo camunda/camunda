@@ -669,7 +669,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public int getNestedDocumentsLimit(final ConfigurationService configurationService) {
-    return configurationService.getElasticSearchConfiguration().getNestedDocumentsLimit();
+    return configurationService
+        .getElasticSearchConfiguration()
+        .getNestedDocumentsLimit()
+        .intValue();
   }
 
   @Override
