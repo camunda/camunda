@@ -22,7 +22,7 @@ body:
     id: severity
     attributes:
       label: Severity
-      description: What is the severity of the bug?
+      description: <a href="https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#starting-on-an-issue"> What is the severity of the bug?
       options:
         - Low-
         - Medium-
@@ -35,7 +35,7 @@ body:
     id: likelihood
     attributes:
       label: Likelihood
-      description: How likely is it to occur?
+      description: <a href="https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#starting-on-an-issue"> How likely is it to occur?
       options:
         - Unknown_
         - Low_
