@@ -24,19 +24,20 @@ import {
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {notificationsStore} from 'modules/stores/notifications';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.mock('modules/utils/bpmn');
 const handleRefetchSpy = jest.spyOn(processesStore, 'handleRefetch');
@@ -52,25 +53,26 @@ function getWrapper(initialPath: string = Paths.processes()) {
       return () => {
         processInstancesSelectionStore.reset();
         processInstancesStore.reset();
-        processXmlStore.reset();
         processStatisticsStore.reset();
         processesStore.reset();
       };
     }, []);
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path={Paths.processes()} element={children} />
-        </Routes>
-        <Link to={`${Paths.processes()}?active=true`}>go to active</Link>
-        <Link
-          to={`${Paths.processes()}?process=eventBasedGatewayProcess&version=1`}
-        >
-          go to event based
-        </Link>
-        <Link to={Paths.processes()}>go to no filters</Link>
-        <LocationLog />
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path={Paths.processes()} element={children} />
+          </Routes>
+          <Link to={`${Paths.processes()}?active=true`}>go to active</Link>
+          <Link
+            to={`${Paths.processes()}?process=eventBasedGatewayProcess&version=1`}
+          >
+            go to event based
+          </Link>
+          <Link to={Paths.processes()}>go to no filters</Link>
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -82,7 +84,7 @@ describe('Instances', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchBatchOperations().withSuccess([]);
   });
 
@@ -214,7 +216,7 @@ describe('Instances', () => {
     ];
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(
       firstProcessStatisticsResponse,
     );
@@ -224,10 +226,6 @@ describe('Instances', () => {
         `${Paths.processes()}?process=bigVarProcess&version=1`,
       ),
     });
-
-    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
-    expect(processXmlStore.state.xml).toBe(mockProcessXML);
-    expect(processXmlStore.state.diagramModel).not.toBe(null);
 
     await waitFor(() =>
       expect(processStatisticsStore.state.statistics).toEqual(

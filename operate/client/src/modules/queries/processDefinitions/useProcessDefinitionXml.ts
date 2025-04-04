@@ -33,18 +33,18 @@ async function processDefinitionParser(data: string): Promise<ParsedXmlData> {
   return {xml: data, diagramModel, selectableFlowNodes};
 }
 
-function useProcessDefinitionXml({
+function useProcessDefinitionXml<T extends ParsedXmlData = ParsedXmlData>({
   processDefinitionKey,
   select,
   enabled = true,
 }: {
   processDefinitionKey?: ProcessDefinitionKey;
-  select?: (data: ParsedXmlData) => ParsedXmlData;
+  select?: (data: ParsedXmlData) => T;
   enabled?: boolean;
 }) {
   const queryKey = getQueryKey(processDefinitionKey);
 
-  return useQuery<ParsedXmlData, Error>({
+  return useQuery<ParsedXmlData, Error, T>({
     queryKey,
     queryFn:
       enabled && !!processDefinitionKey

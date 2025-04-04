@@ -13,26 +13,24 @@ import {Filters} from '../index';
 
 import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {
   selectFlowNode,
   selectProcess,
   selectProcessVersion,
 } from 'modules/testUtils/selectComboBoxOption';
 import {ERRORS} from 'modules/validators';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.unmock('modules/utils/date/formatDate');
 
 describe('Interaction with other fields during validation', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     processesStore.fetchProcesses();
 
-    await processXmlStore.fetchProcessXml('bigVarProcess');
     jest.useFakeTimers();
   });
 

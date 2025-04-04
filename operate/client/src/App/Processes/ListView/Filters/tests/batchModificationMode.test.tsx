@@ -8,7 +8,6 @@
 
 import {render, screen, waitFor} from 'modules/testing-library';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {
   groupedProcessesMock,
   mockProcessStatistics,
@@ -17,7 +16,7 @@ import {
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+
 import {
   selectFlowNode,
   selectProcess,
@@ -26,6 +25,9 @@ import {Paths} from 'modules/Routes';
 import {useEffect} from 'react';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {MemoryRouter} from 'react-router-dom';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 
 function getWrapper(
   initialPath: string = `${Paths.processes()}?active=true&incidents=true`,
@@ -34,18 +36,21 @@ function getWrapper(
     useEffect(() => {
       return () => {
         processesStore.reset();
-        processXmlStore.reset();
         batchModificationStore.reset();
       };
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        {children}
-        <button onClick={batchModificationStore.enable}>
-          Enter Batch Modification Mode
-        </button>
-      </MemoryRouter>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter initialEntries={[initialPath]}>
+            {children}
+            <button onClick={batchModificationStore.enable}>
+              Enter Batch Modification Mode
+            </button>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
@@ -58,9 +63,8 @@ describe('Filters', () => {
       groupedProcessesMock.filter(({tenantId}) => tenantId === '<default>'),
     );
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     processesStore.fetchProcesses();
-    await processXmlStore.fetchProcessXml('bigVarProcess');
   });
 
   it('should disable fields in batch modification mode', async () => {

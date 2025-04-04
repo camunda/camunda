@@ -9,13 +9,18 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {Field} from 'react-final-form';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {ComboBox} from 'modules/components/ComboBox';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {useProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
+import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 
 const FlowNodeField: React.FC = observer(() => {
-  const {flowNodeFilterOptions} = processXmlStore;
-  const isDisabled = batchModificationStore.state.isEnabled;
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {data: processDefinitionData, isFetching} = useListViewXml({
+    processDefinitionKey,
+  });
+
+  const isDisabled = batchModificationStore.state.isEnabled && !isFetching;
 
   return (
     <Field name="flowNodeId">
@@ -27,12 +32,7 @@ const FlowNodeField: React.FC = observer(() => {
           onChange={({selectedItem}) => {
             input.onChange(selectedItem?.id);
           }}
-          items={flowNodeFilterOptions.map((option) => {
-            return {
-              label: option.label,
-              id: option.value,
-            };
-          })}
+          items={processDefinitionData?.flowNodeFilterOptions ?? []}
           value={input.value}
           placeholder="Search by Process Flow Node"
           disabled={isDisabled}

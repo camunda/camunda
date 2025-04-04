@@ -17,8 +17,9 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {UserEvent} from '@testing-library/user-event';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 
 const fetchProcessInstances = async (screen: Screen, user: UserEvent) => {
   await user.click(
@@ -26,13 +27,6 @@ const fetchProcessInstances = async (screen: Screen, user: UserEvent) => {
   );
   await waitFor(() =>
     expect(processInstancesStore.state.status).toBe('fetched'),
-  );
-};
-
-const fetchProcessXml = async (screen: Screen, user: UserEvent) => {
-  await user.click(screen.getByRole('button', {name: /fetch process xml/i}));
-  await waitFor(() =>
-    expect(processXmlStore.state.diagramModel).not.toBeNull(),
   );
 };
 
@@ -60,42 +54,40 @@ function getWrapper(initialPath: string = Paths.processes()) {
           processInstancesStore.reset();
           processInstanceMigrationStore.reset();
           processStatisticsStore.reset();
-          processXmlStore.reset();
           batchModificationStore.reset();
         };
       }, []);
       return (
-        <MemoryRouter initialEntries={[initialPath]}>
-          {children}
-          <button
-            onClick={processInstancesSelectionStore.selectAllProcessInstances}
-          >
-            Select all instances
-          </button>
-          <button
-            onClick={() =>
-              processInstancesStore.fetchInstances({
-                fetchType: 'initial',
-                payload: {query: {}},
-              })
-            }
-          >
-            Fetch process instances
-          </button>
-          <button
-            onClick={() => {
-              processXmlStore.fetchProcessXml('1');
-            }}
-          >
-            Fetch process xml
-          </button>
-          <button onClick={batchModificationStore.enable}>
-            Enter batch modification mode
-          </button>
-          <button onClick={batchModificationStore.reset}>
-            Exit batch modification mode
-          </button>
-        </MemoryRouter>
+        <ProcessDefinitionKeyContext.Provider value="123">
+          <QueryClientProvider client={new QueryClient()}>
+            <MemoryRouter initialEntries={[initialPath]}>
+              {children}
+              <button
+                onClick={
+                  processInstancesSelectionStore.selectAllProcessInstances
+                }
+              >
+                Select all instances
+              </button>
+              <button
+                onClick={() =>
+                  processInstancesStore.fetchInstances({
+                    fetchType: 'initial',
+                    payload: {query: {}},
+                  })
+                }
+              >
+                Fetch process instances
+              </button>
+              <button onClick={batchModificationStore.enable}>
+                Enter batch modification mode
+              </button>
+              <button onClick={batchModificationStore.reset}>
+                Exit batch modification mode
+              </button>
+            </MemoryRouter>
+          </QueryClientProvider>
+        </ProcessDefinitionKeyContext.Provider>
       );
     },
   );
@@ -103,4 +95,4 @@ function getWrapper(initialPath: string = Paths.processes()) {
   return Wrapper;
 }
 
-export {getWrapper, getProcessInstance, fetchProcessInstances, fetchProcessXml};
+export {getWrapper, getProcessInstance, fetchProcessInstances};

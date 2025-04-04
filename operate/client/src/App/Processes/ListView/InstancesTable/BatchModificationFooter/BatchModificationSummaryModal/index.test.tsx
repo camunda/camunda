@@ -10,7 +10,6 @@ import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
 import {BatchModificationSummaryModal} from '.';
@@ -21,10 +20,13 @@ import {
   mockProcessStatistics,
   mockProcessXML,
 } from 'modules/testUtils';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import * as hooks from 'App/Processes/ListView/InstancesTable/useOperationApply';
 import {tracking} from 'modules/tracking';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 jest.mock('App/Processes/ListView/InstancesTable/useOperationApply');
 
@@ -33,33 +35,35 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
     useEffect(() => {
       return () => {
         processesStore.reset();
-        processXmlStore.reset();
         batchModificationStore.reset();
         processStatisticsBatchModificationStore.reset();
       };
     });
 
     return (
-      <MemoryRouter
-        initialEntries={[
-          `${Paths.processes()}?process=bigVarProcess&version=1&flowNodeId=ServiceTask_0kt6c5i`,
-        ]}
-      >
-        {children}
-        <button
-          onClick={async () => {
-            await processesStore.fetchProcesses();
-            await processXmlStore.fetchProcessXml();
-            processStatisticsBatchModificationStore.setStatistics(
-              mockProcessStatistics,
-            );
-            batchModificationStore.enable();
-            batchModificationStore.selectTargetFlowNode('StartEvent_1');
-          }}
-        >
-          init
-        </button>
-      </MemoryRouter>
+      <ProcessDefinitionKeyContext.Provider value={'123'}>
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter
+            initialEntries={[
+              `${Paths.processes()}?process=bigVarProcess&version=1&flowNodeId=ServiceTask_0kt6c5i`,
+            ]}
+          >
+            {children}
+            <button
+              onClick={async () => {
+                await processesStore.fetchProcesses();
+                processStatisticsBatchModificationStore.setStatistics(
+                  mockProcessStatistics,
+                );
+                batchModificationStore.enable();
+                batchModificationStore.selectTargetFlowNode('StartEvent_1');
+              }}
+            >
+              init
+            </button>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   },
 );
@@ -67,7 +71,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
 describe('BatchModificationSummaryModal', () => {
   it('should render batch modification summary', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const applyBatchOperationMock = jest.fn();
     jest.spyOn(hooks, 'default').mockImplementation(() => ({
@@ -99,7 +103,7 @@ describe('BatchModificationSummaryModal', () => {
 
   it('should apply batch operation', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const trackSpy = jest.spyOn(tracking, 'track');
     const applyBatchOperationMock = jest.fn();

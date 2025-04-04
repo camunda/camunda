@@ -13,6 +13,26 @@ export function isFlowNode(businessObject: BusinessObject) {
   return businessObject.$instanceOf?.('bpmn:FlowNode') ?? false;
 }
 
+export function getFlowNode({
+  diagramModel,
+  flowNodeId,
+}: {
+  diagramModel?: DiagramModel;
+  flowNodeId?: string;
+}) {
+  return flowNodeId ? diagramModel?.elementsById[flowNodeId] : undefined;
+}
+
+export function getFlowNodeName({
+  diagramModel,
+  flowNodeId,
+}: {
+  diagramModel?: DiagramModel;
+  flowNodeId?: string;
+}) {
+  return getFlowNode({diagramModel, flowNodeId})?.name ?? flowNodeId;
+}
+
 export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
   if (elementsById === undefined) {
     return [];

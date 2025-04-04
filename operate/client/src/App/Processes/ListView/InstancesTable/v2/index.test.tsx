@@ -20,7 +20,6 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
 
 jest.mock('modules/utils/bpmn');
@@ -61,7 +60,6 @@ describe('<InstancesTable />', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withSuccess('');
 
     processesStore.fetchProcesses();
   });

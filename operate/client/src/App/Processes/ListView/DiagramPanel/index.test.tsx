@@ -20,15 +20,17 @@ import {
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {ProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 
 jest.mock('modules/utils/bpmn');
 
@@ -36,7 +38,6 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        processXmlStore.reset();
         processStatisticsStore.reset();
         processesStore.reset();
         batchModificationStore.reset();
@@ -44,12 +45,16 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        {children}
-        <button onClick={batchModificationStore.enable}>
-          Enable batch modification mode
-        </button>
-      </MemoryRouter>
+      <ProcessDefinitionKeyContext.Provider value={'123'}>
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[initialPath]}>
+            {children}
+            <button onClick={batchModificationStore.enable}>
+              Enable batch modification mode
+            </button>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
@@ -64,7 +69,7 @@ describe('DiagramPanel', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     processesStore.fetchProcesses();
   });
@@ -186,43 +191,15 @@ describe('DiagramPanel', () => {
       .mockImplementation();
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withServerError();
+    mockFetchProcessDefinitionXml().withServerError();
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(),
     });
 
-    await act(async () => {
-      await processXmlStore.fetchProcessXml('1');
-      await processStatisticsStore.fetchProcessStatistics();
-    });
-
-    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(
-      screen.queryByText(/There is no Process selected/),
-    ).not.toBeInTheDocument();
-
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess('');
-
-    await act(async () => {
-      await processXmlStore.fetchProcessXml('2');
-      await processStatisticsStore.fetchProcessStatistics();
-    });
-
-    expect(
-      screen.queryByText('Data could not be fetched'),
-    ).not.toBeInTheDocument();
-
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withServerError();
-
-    await act(async () => {
-      await processXmlStore.fetchProcessXml('3');
-      await processStatisticsStore.fetchProcessStatistics();
-    });
-
-    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
+      await screen.findByText('Data could not be fetched'),
+    ).toBeInTheDocument();
     expect(
       screen.queryByText(/There is no Process selected/),
     ).not.toBeInTheDocument();
@@ -244,7 +221,7 @@ describe('DiagramPanel', () => {
     );
 
     mockFetchProcessInstancesStatistics().withServerError();
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -264,7 +241,7 @@ describe('DiagramPanel', () => {
     }));
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -283,7 +260,7 @@ describe('DiagramPanel', () => {
     }));
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),

@@ -12,7 +12,6 @@ import {TableBatchAction, Stack} from '@carbon/react';
 import {Move} from '@carbon/react/icons';
 import {Restricted} from 'modules/components/Restricted';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
@@ -30,6 +29,9 @@ import {getStateLocally} from 'modules/utils/localStorage';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {tracking} from 'modules/tracking';
 import {HelperModal} from 'modules/components/HelperModal';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
+import {getFlowNode} from 'modules/utils/flowNodes';
 
 const localStorageKey = 'hideMoveModificationHelperModal';
 
@@ -41,8 +43,16 @@ const MoveAction: React.FC = observer(() => {
 
   const {hasSelectedRunningInstances} = processInstancesSelectionStore;
 
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {data: processDefinitionData} = useListViewXml({
+    processDefinitionKey,
+  });
+
   const businessObject: BusinessObject | null = flowNodeId
-    ? (processXmlStore.getFlowNode(flowNodeId) ?? null)
+    ? (getFlowNode({
+        diagramModel: processDefinitionData?.diagramModel,
+        flowNodeId,
+      }) ?? null)
     : null;
 
   const isTypeSupported = (businessObject: BusinessObject) => {

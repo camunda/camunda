@@ -105,6 +105,7 @@ test.describe('processes page', () => {
         },
       });
 
+      await expect(processesPage.diagram.diagramSpinner).not.toBeVisible();
       await expect(page).toHaveScreenshot();
     });
 

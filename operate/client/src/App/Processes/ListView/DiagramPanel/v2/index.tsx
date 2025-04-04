@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect, useRef} from 'react';
+import React, {useRef} from 'react';
 import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
@@ -19,7 +19,6 @@ import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
@@ -27,6 +26,9 @@ import {BatchModificationNotification} from '../BatchModificationNotification/v2
 import {DiagramHeader} from '../DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
+import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
+import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
+import {getFlowNode} from 'modules/utils/flowNodes';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -72,26 +74,14 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {selectedTargetFlowNodeId} = batchModificationStore.state;
 
-  useEffect(() => {
-    return () => {
-      processXmlStore.reset();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (processId === undefined) {
-      processXmlStore.reset();
-      return;
-    }
-
-    const fetchDiagram = async () => {
-      await processXmlStore.fetchProcessXml(processId);
-    };
-
-    fetchDiagram();
-  }, [processId, location.search]);
-
-  const {xml} = processXmlStore.state;
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const processDefinition = useListViewXml({
+    processDefinitionKey,
+  });
+  const xml = processDefinition?.data?.xml;
+  const selectableIds = processDefinition?.data?.selectableFlowNodes.map(
+    (flowNode) => flowNode.id,
+  );
 
   const panelHeaderRef = useRef<HTMLDivElement>(null);
 
@@ -113,7 +103,7 @@ const DiagramPanel: React.FC = observer(() => {
   );
 
   const isDiagramLoading =
-    processXmlStore.state.status === 'fetching' ||
+    processDefinition?.isFetching ||
     !processesStore.isInitialLoadComplete ||
     (processesStore.state.status === 'fetching' &&
       location.state?.refreshContent);
@@ -122,7 +112,7 @@ const DiagramPanel: React.FC = observer(() => {
     if (isDiagramLoading) {
       return 'loading';
     }
-    if (processXmlStore.state.status === 'error') {
+    if (processDefinition?.isError) {
       return 'error';
     }
     if (!isVersionSelected) {
@@ -154,7 +144,7 @@ const DiagramPanel: React.FC = observer(() => {
               }
         }
       >
-        {xml !== null && (
+        {xml !== undefined && (
           <Diagram
             xml={xml}
             {...(batchModificationStore.state.isEnabled
@@ -178,12 +168,15 @@ const DiagramPanel: React.FC = observer(() => {
                   ],
                   // All flow nodes that can be a move modification target,
                   // except the source flow node
-                  selectableFlowNodes: processXmlStore.selectableIds.filter(
+                  selectableFlowNodes: selectableIds?.filter(
                     (selectedFlowNodeId) =>
                       selectedFlowNodeId !== flowNodeId &&
                       selectedFlowNodeId !== undefined &&
                       isMoveModificationTarget(
-                        processXmlStore.getFlowNode(selectedFlowNodeId),
+                        getFlowNode({
+                          diagramModel: processDefinition.data?.diagramModel,
+                          flowNodeId: selectedFlowNodeId,
+                        }),
                       ),
                   ),
                 }
@@ -200,7 +193,7 @@ const DiagramPanel: React.FC = observer(() => {
                     }
                   },
                   overlaysData: overlayData,
-                  selectableFlowNodes: processXmlStore.selectableIds,
+                  selectableFlowNodes: selectableIds,
                 })}
           >
             {statisticsOverlays?.map((overlay) => {

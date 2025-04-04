@@ -14,13 +14,12 @@ import {
   mockProcessXML,
 } from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {ERRORS} from 'modules/validators';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -28,11 +27,10 @@ describe('Validations', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     processesStore.fetchProcesses();
 
-    await processXmlStore.fetchProcessXml('bigVarProcess');
     jest.useFakeTimers();
   });
 

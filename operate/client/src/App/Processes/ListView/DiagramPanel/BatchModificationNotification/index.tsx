@@ -9,9 +9,11 @@
 import {observer} from 'mobx-react';
 
 import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {Container, InlineNotification, Button} from './styled';
+import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
+import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
+import {getFlowNodeName} from 'modules/utils/flowNodes';
 
 type Props = {
   sourceFlowNodeId?: string;
@@ -21,16 +23,22 @@ type Props = {
 
 const BatchModificationNotification: React.FC<Props> = observer(
   ({sourceFlowNodeId, targetFlowNodeId, onUndoClick}) => {
+    const processDefinitionKey = useProcessDefinitionKeyContext();
+    const {data: processDefinitionData} = useListViewXml({
+      processDefinitionKey,
+    });
     const instancesCount =
       processStatisticsBatchModificationStore.getInstancesCount(
         sourceFlowNodeId,
       );
-    const sourceFlowNodeName = sourceFlowNodeId
-      ? processXmlStore.getFlowNodeName(sourceFlowNodeId)
-      : undefined;
-    const targetFlowNodeName = targetFlowNodeId
-      ? processXmlStore.getFlowNodeName(targetFlowNodeId)
-      : undefined;
+    const sourceFlowNodeName = getFlowNodeName({
+      diagramModel: processDefinitionData?.diagramModel,
+      flowNodeId: sourceFlowNodeId,
+    });
+    const targetFlowNodeName = getFlowNodeName({
+      diagramModel: processDefinitionData?.diagramModel,
+      flowNodeId: targetFlowNodeId,
+    });
 
     return (
       <Container>

@@ -17,6 +17,8 @@ import {Paths} from 'modules/Routes';
 import {BatchModificationNotification} from '.';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockProcessStatisticsWithActiveAndIncidents} from 'modules/mocks/mockProcessStatistics';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 jest.mock('modules/utils/bpmn');
 
@@ -36,16 +38,18 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        {children}
-        <button
-          onClick={() => {
-            processStatisticsBatchModificationStore.fetchProcessStatistics();
-          }}
-        >
-          Fetch modification statistics
-        </button>
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          {children}
+          <button
+            onClick={() => {
+              processStatisticsBatchModificationStore.fetchProcessStatistics();
+            }}
+          >
+            Fetch modification statistics
+          </button>
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -58,14 +62,6 @@ describe('DiagramPanel', () => {
     mockFetchProcessInstancesStatistics().withSuccess(
       mockProcessStatisticsWithActiveAndIncidents,
     );
-  });
-
-  it('should initially render batch modification notification', async () => {
-    render(<BatchModificationNotification />, {
-      wrapper: getWrapper(),
-    });
-
-    expect(screen.getByText(notificationText1)).toBeInTheDocument();
   });
 
   it('should initially render batch modification notification', async () => {
