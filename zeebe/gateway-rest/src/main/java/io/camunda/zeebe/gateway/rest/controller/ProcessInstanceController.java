@@ -105,6 +105,21 @@ public class ProcessInstanceController {
     }
   }
 
+  @CamundaGetMapping(path = "/{processInstanceKey}/statistics/flownode-instances")
+  public ResponseEntity<Object> flowNodeStatistics(
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toProcessFlowNodeStatisticsResult(
+                  processInstanceServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .flowNodeStatistics(processInstanceKey)));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   @CamundaPostMapping(path = "/batch-operations/cancellation")
   public CompletableFuture<ResponseEntity<Object>> cancelProcessInstanceBatchOperation(
       @RequestBody(required = false) final ProcessInstanceFilter filter) {

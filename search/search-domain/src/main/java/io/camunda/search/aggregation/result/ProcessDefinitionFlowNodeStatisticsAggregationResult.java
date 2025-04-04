@@ -7,8 +7,8 @@
  */
 package io.camunda.search.aggregation.result;
 
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import java.util.List;
 
 public record ProcessDefinitionFlowNodeStatisticsAggregationResult(
-    List<ProcessDefinitionFlowNodeStatisticsEntity> items) implements AggregationResultBase {}
+    List<ProcessFlowNodeStatisticsEntity> items) implements AggregationResultBase {}

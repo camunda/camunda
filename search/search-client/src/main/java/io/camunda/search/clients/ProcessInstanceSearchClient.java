@@ -7,14 +7,22 @@
  */
 package io.camunda.search.clients;
 
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
+import java.util.List;
 
 public interface ProcessInstanceSearchClient {
 
   SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(ProcessInstanceQuery query);
+
+  default List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
+      final long processInstanceKey) {
+    // TODO not implemented yet
+    return null;
+  }
 
   ProcessInstanceSearchClient withSecurityContext(SecurityContext securityContext);
 }
