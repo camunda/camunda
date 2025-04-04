@@ -54,6 +54,18 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
     final var record = command.getValue();
     final var groupId = record.getGroupId();
     final var groupKey = record.getGroupKey();
+
+    final var authorizationRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
+            .addResourceId(groupId);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var persistedRecord = groupState.get(groupId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
@@ -61,17 +73,6 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
               .formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
-    final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
-            .addResourceId(persistedRecord.get().getGroupId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
