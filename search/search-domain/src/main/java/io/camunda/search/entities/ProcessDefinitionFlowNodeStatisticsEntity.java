@@ -18,32 +18,32 @@ public record ProcessDefinitionFlowNodeStatisticsEntity(
   public static class Builder implements ObjectBuilder<ProcessDefinitionFlowNodeStatisticsEntity> {
 
     private String flowNodeId;
-    private Long active;
-    private Long canceled;
-    private Long incidents;
-    private Long completed;
+    private long active;
+    private long canceled;
+    private long incidents;
+    private long completed;
 
     public Builder flowNodeId(final String flowNodeId) {
       this.flowNodeId = flowNodeId;
       return this;
     }
 
-    public Builder active(final Long active) {
+    public Builder active(final long active) {
       this.active = active;
       return this;
     }
 
-    public Builder canceled(final Long canceled) {
+    public Builder canceled(final long canceled) {
       this.canceled = canceled;
       return this;
     }
 
-    public Builder incidents(final Long incidents) {
+    public Builder incidents(final long incidents) {
       this.incidents = incidents;
       return this;
     }
 
-    public Builder completed(final Long completed) {
+    public Builder completed(final long completed) {
       this.completed = completed;
       return this;
     }
