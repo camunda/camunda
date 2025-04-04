@@ -24,13 +24,6 @@ on:
         description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
         type: boolean
         default: true
-    secrets:
-      VAULT_ADDR:
-        required: true
-      VAULT_ROLE_ID:
-        required: true
-      VAULT_SECRET_ID:
-        required: true
 
 defaults:
   run:
