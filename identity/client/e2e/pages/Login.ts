@@ -7,6 +7,7 @@
  */
 
 import { Page, Locator } from "@playwright/test";
+import { Paths } from "../../src/components/global/routePaths";
 
 export class Login {
   private page: Page;
@@ -42,6 +43,6 @@ export class Login {
   }
 
   async navigateToLogin() {
-    await this.page.goto("/login");
+    await this.page.goto(Paths.login());
   }
 }

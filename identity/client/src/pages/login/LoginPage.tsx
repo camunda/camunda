@@ -16,6 +16,7 @@ import { useLocation } from "react-router-dom";
 import { getCopyrightNoticeText } from "src/utility/copyright.ts";
 import CamundaLogo from "src/assets/images/camunda.svg";
 import { useLicense } from "src/utility/license.ts";
+import { Paths } from "src/components/global/routePaths";
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -88,7 +89,7 @@ export const LoginPage: React.FC = () => {
   const license = useLicense();
   const redirectUrl = getRedirectUrl(location.search);
   const onSuccess = useCallback(() => {
-    window.location.href = redirectUrl ?? "/identity/users";
+    window.location.href = redirectUrl ?? `/identity${Paths.users()}`;
   }, [redirectUrl]);
   const hasProductionLicense = license?.isCommercial;
 
