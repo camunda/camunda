@@ -182,16 +182,14 @@ public class GroupStateTest {
   @Test
   void shouldAddTenant() {
     // given
-    final var groupId = "1";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "group";
     final var tenantId = "tenant1";
-    final var groupRecord =
-        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
 
     // when
-    groupState.addTenant(groupKey, tenantId);
+    groupState.addTenant(groupId, tenantId);
 
     // then
     final var group = groupState.get(groupId);
@@ -212,8 +210,8 @@ public class GroupStateTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupState.addTenant(groupKey, tenantId1);
-    groupState.addTenant(groupKey, tenantId2);
+    groupState.addTenant(groupId, tenantId1);
+    groupState.addTenant(groupId, tenantId2);
 
     // Ensure tenants are added correctly
     final var groupBeforeRemove = groupState.get(groupId);
