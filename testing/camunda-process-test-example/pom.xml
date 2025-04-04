@@ -15,10 +15,6 @@
 
   <properties>
     <version.java>17</version.java>
-
-    <!-- Skip test execution for Camunda CI -->
-    <skipITs>true</skipITs>
-    <skipTests>true</skipTests>
   </properties>
 
   <dependencies>
@@ -76,8 +72,34 @@
           </configuration>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <excludes>
+              <!-- Run tests with failsafe as integration tests -->
+              <exclude>**/*Test.java</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+
       </plugins>
     </pluginManagement>
+
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <!-- Run all tests as integration tests -->
+            <include>**/*Test.java</include>
+          </includes>
+        </configuration>
+      </plugin>
+
+    </plugins>
 
   </build>
 

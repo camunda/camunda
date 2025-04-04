@@ -15,6 +15,9 @@
 
   <properties>
     <version.java>8</version.java>
+    <!-- Camunda Docker image properties. CI overrides the properties to use the current image. -->
+    <io.camunda.process.test.camundaDockerImageName>camunda/camunda</io.camunda.process.test.camundaDockerImageName>
+    <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
   </properties>
 
   <dependencies>

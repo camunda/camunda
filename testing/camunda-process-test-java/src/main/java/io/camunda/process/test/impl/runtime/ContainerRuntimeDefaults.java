@@ -17,20 +17,33 @@ package io.camunda.process.test.impl.runtime;
 
 public class ContainerRuntimeDefaults {
 
+  public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME = "camunda/camunda";
+  public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION = "SNAPSHOT";
+  public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME = "camunda/connectors-bundle";
+  public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION = "SNAPSHOT";
+  public static final String DEFAULT_ELASTICSEARCH_VERSION = "8.13.0";
+
   public static final String ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
-  public static final String CAMUNDA_DOCKER_IMAGE_NAME = "camunda/camunda";
-  public static final String CONNECTORS_DOCKER_IMAGE_NAME = "camunda/connectors-bundle";
 
   public static final String ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
   public static final String CAMUNDA_LOGGER_NAME = "tc.camunda";
   public static final String CONNECTORS_LOGGER_NAME = "tc.connectors";
 
-  private static final ContainerRuntimeVersionUtil VERSION_UTIL =
-      ContainerRuntimeVersionUtil.readVersions();
+  private static final ContainerRuntimePropertiesUtil PROPERTIES_UTIL =
+      ContainerRuntimePropertiesUtil.readProperties();
 
   public static final String ELASTICSEARCH_DOCKER_IMAGE_VERSION =
-      VERSION_UTIL.getElasticsearchVersion();
-  public static final String CAMUNDA_VERSION = VERSION_UTIL.getCamundaVersion();
-  public static final String CAMUNDA_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
-  public static final String CONNECTORS_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
+      PROPERTIES_UTIL.getElasticsearchVersion();
+
+  public static final String CAMUNDA_VERSION = PROPERTIES_UTIL.getCamundaVersion();
+
+  public static final String CAMUNDA_DOCKER_IMAGE_NAME =
+      PROPERTIES_UTIL.getCamundaDockerImageName();
+  public static final String CAMUNDA_DOCKER_IMAGE_VERSION =
+      PROPERTIES_UTIL.getCamundaDockerImageVersion();
+
+  public static final String CONNECTORS_DOCKER_IMAGE_NAME =
+      PROPERTIES_UTIL.getConnectorsDockerImageName();
+  public static final String CONNECTORS_DOCKER_IMAGE_VERSION =
+      PROPERTIES_UTIL.getConnectorsDockerImageVersion();
 }
