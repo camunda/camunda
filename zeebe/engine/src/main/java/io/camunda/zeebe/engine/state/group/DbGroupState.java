@@ -112,13 +112,13 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public void removeTenant(final long groupKey, final String tenantId) {
-    groupId.wrapString(String.valueOf(groupKey));
-    final var persistedGroup = groupColumnFamily.get(groupId);
+  public void removeTenant(final String groupId, final String tenantId) {
+    this.groupId.wrapString(groupId);
+    final var persistedGroup = groupColumnFamily.get(this.groupId);
     final List<String> tenantIdsList = persistedGroup.getTenantIdsList();
     tenantIdsList.remove(tenantId);
     persistedGroup.setTenantIdsList(tenantIdsList);
-    groupColumnFamily.update(groupId, persistedGroup);
+    groupColumnFamily.update(this.groupId, persistedGroup);
   }
 
   @Override

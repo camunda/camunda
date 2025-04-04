@@ -102,8 +102,8 @@ class RemoveUserFromTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove user '%s' from tenant, but no user with this id exists."
-                .formatted(invalidUsername));
+            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove user with ID '%s' from tenant with ID '%s', but the user doesn't exist."
+                .formatted(invalidUsername, TENANT_ID));
   }
 
   @Test
@@ -130,7 +130,7 @@ class RemoveUserFromTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove user '%s' from tenant '%s', but the user is not assigned to this tenant."
+            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove user with ID '%s' from tenant with ID '%s', but the user is not assigned to this tenant."
                 .formatted(unassignedUsername, TENANT_ID));
   }
 }

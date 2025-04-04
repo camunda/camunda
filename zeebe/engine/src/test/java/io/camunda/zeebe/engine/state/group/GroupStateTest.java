@@ -198,15 +198,13 @@ public class GroupStateTest {
   @Test
   void shouldRemoveTenant() {
     // given
-    final var groupId = "1";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "group";
     final var tenantId1 = "tenant1";
     final var tenantId2 = "tenant2";
 
     // Create a group and add tenants
-    final var groupRecord =
-        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
     groupState.addTenant(groupId, tenantId1);
     groupState.addTenant(groupId, tenantId2);
@@ -217,7 +215,7 @@ public class GroupStateTest {
     assertThat(groupBeforeRemove.get().getTenantIdsList()).containsExactly(tenantId1, tenantId2);
 
     // when
-    groupState.removeTenant(groupKey, tenantId1);
+    groupState.removeTenant(groupId, tenantId1);
 
     // then
     final var groupAfterRemove = groupState.get(groupId);
