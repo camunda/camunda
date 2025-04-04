@@ -28,8 +28,4 @@ public interface ImportStore {
 
   Either<Throwable, Boolean> updateImportPositions(
       List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositionUpdates);
-
-  void setConcurrencyMode(boolean concurrencyMode);
-
-  boolean getConcurrencyMode();
 }
