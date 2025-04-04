@@ -156,12 +156,12 @@ public class MappingAppliersTest {
     // create group
     final var groupId = "1";
     final var groupKey = Long.parseLong(groupId);
-    mappingState.addGroup(mappingKey, groupKey);
+    mappingState.addGroup(mappingId, groupKey);
     final var group =
         new GroupRecord()
             .setGroupKey(groupKey)
             .setGroupId(groupId)
-            .setEntityId(mappingKey)
+            .setEntityId(mappingId)
             .setEntityType(EntityType.MAPPING);
     groupState.create(group);
     groupState.addEntity(group);

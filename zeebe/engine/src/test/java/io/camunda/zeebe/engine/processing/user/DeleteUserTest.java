@@ -67,7 +67,7 @@ public class DeleteUserTest {
     ENGINE
         .group()
         .addEntity(groupId)
-        .withEntityKey(userRecord.getKey())
+        .withEntityId(userRecord.getValue().getUsername())
         .withEntityType(EntityType.USER)
         .add();
     ENGINE
@@ -91,7 +91,7 @@ public class DeleteUserTest {
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 // TODO: refactor this with https://github.com/camunda/camunda/issues/30029
                 .withGroupKey(Long.parseLong(groupId))
-                .withEntityKey(userRecord.getKey())
+                .withEntityId(userRecord.getValue().getUsername())
                 .exists())
         .isTrue();
     Assertions.assertThat(

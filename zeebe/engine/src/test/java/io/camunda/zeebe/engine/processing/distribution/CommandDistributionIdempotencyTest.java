@@ -303,7 +303,7 @@ public class CommandDistributionIdempotencyTest {
                   return ENGINE
                       .group()
                       .addEntity(groupId)
-                      .withEntityKey(user.getKey())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
                 }),
@@ -323,14 +323,14 @@ public class CommandDistributionIdempotencyTest {
                   ENGINE
                       .group()
                       .addEntity(groupId)
-                      .withEntityKey(user.getKey())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
                   return ENGINE
                       .group()
                       .removeEntity(groupKey)
                       .withGroupId(groupId)
-                      .withEntityKey(user.getKey())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .remove();
                 }),

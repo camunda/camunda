@@ -41,24 +41,28 @@ public class RemoveEntityGroupMultiPartitionTest {
   @Test
   public void shouldDistributeGroupRemoveEntityCommand() {
     // when
-    final var userKey =
+    final var user =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
     final var name = UUID.randomUUID().toString();
     final var groupId = "123";
     final var groupKey = Long.parseLong(groupId);
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine
+        .group()
+        .addEntity(groupId)
+        .withEntityId(user.getValue().getUsername())
+        .withEntityType(EntityType.USER)
+        .add();
     engine
         .group()
         .removeEntity(groupKey)
-        .withEntityKey(userKey)
+        .withEntityId(user.getValue().getUsername())
         .withEntityType(EntityType.USER)
         .remove();
 
@@ -111,24 +115,28 @@ public class RemoveEntityGroupMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var userKey =
+    final var user =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
     final var name = UUID.randomUUID().toString();
     final var groupId = "123";
     final var groupKey = Long.parseLong(groupId);
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine
+        .group()
+        .addEntity(groupId)
+        .withEntityId(user.getValue().getUsername())
+        .withEntityType(EntityType.USER)
+        .add();
     engine
         .group()
         .removeEntity(groupKey)
-        .withEntityKey(userKey)
+        .withEntityId(user.getValue().getUsername())
         .withEntityType(EntityType.USER)
         .remove();
 
@@ -147,26 +155,30 @@ public class RemoveEntityGroupMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
-    final var userKey =
+    final var user =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
 
     // when
     final var name = UUID.randomUUID().toString();
     final var groupId = "123";
     final var groupKey = Long.parseLong(groupId);
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine
+        .group()
+        .addEntity(groupId)
+        .withEntityId(user.getValue().getUsername())
+        .withEntityType(EntityType.USER)
+        .add();
     engine
         .group()
         .removeEntity(groupKey)
-        .withEntityKey(userKey)
+        .withEntityId(user.getValue().getUsername())
         .withEntityType(EntityType.USER)
         .remove();
 

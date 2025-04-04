@@ -100,6 +100,7 @@ public class GroupAppliersTest {
   void shouldAddUserEntityToGroup() {
     // given
     final var entityKey = 1L;
+    final var entityId = "entityId";
     final var userRecord =
         new UserRecord()
             .setUserKey(entityKey)
@@ -115,15 +116,15 @@ public class GroupAppliersTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityId(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(entityId).setEntityType(entityType);
 
     // when
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // then
     final var entitiesByType = groupState.getEntitiesByType(groupKey);
-    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityKey)));
-    final var persistedUser = userState.getUser(entityKey).get();
+    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityId)));
+    final var persistedUser = userState.getUser(entityId).get();
     assertThat(persistedUser.getGroupKeysList()).containsExactly(groupKey);
   }
 
@@ -131,6 +132,7 @@ public class GroupAppliersTest {
   void shouldAddMappingEntityToGroup() {
     // given
     final var entityKey = 1L;
+    final var entityId = "entityId";
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(entityKey)
@@ -144,15 +146,15 @@ public class GroupAppliersTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityId(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(entityId).setEntityType(entityType);
 
     // when
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // then
     final var entitiesByType = groupState.getEntitiesByType(groupKey);
-    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityKey)));
-    final var persistedMapping = mappingState.get(entityKey).get();
+    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityId)));
+    final var persistedMapping = mappingState.get(entityId).get();
     assertThat(persistedMapping.getGroupKeysList()).containsExactly(groupKey);
   }
 
@@ -175,7 +177,7 @@ public class GroupAppliersTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityId(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId("username").setEntityType(entityType);
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // when
@@ -192,6 +194,7 @@ public class GroupAppliersTest {
   void shouldRemoveMappingEntityFromGroup() {
     // given
     final var entityKey = 1L;
+    final var entityId = "entityId";
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(entityKey)
@@ -205,7 +208,7 @@ public class GroupAppliersTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityId(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(entityId).setEntityType(entityType);
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // when
@@ -214,7 +217,7 @@ public class GroupAppliersTest {
     // then
     final var entitiesByType = groupState.getEntitiesByType(groupKey);
     assertThat(entitiesByType).isEmpty();
-    final var persistedMapping = mappingState.get(entityKey).get();
+    final var persistedMapping = mappingState.get(entityId).get();
     assertThat(persistedMapping.getGroupKeysList()).isEmpty();
   }
 

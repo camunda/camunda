@@ -98,15 +98,14 @@ public class GroupTest {
     // given
     // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
     final var groupId = "123";
-    final var userKey =
+    final var createdUser =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create().getValue().getGroupKey();
 
@@ -115,13 +114,15 @@ public class GroupTest {
         engine
             .group()
             .addEntity(groupId)
-            .withEntityKey(userKey)
+            .withEntityId(createdUser.getValue().getUsername())
             .withEntityType(EntityType.USER)
             .add()
             .getValue();
 
     // then
-    assertThat(updatedGroup).hasEntityKey(userKey).hasEntityType(EntityType.USER);
+    assertThat(updatedGroup)
+        .hasEntityId(createdUser.getValue().getUsername())
+        .hasEntityType(EntityType.USER);
   }
 
   @Test
@@ -152,7 +153,7 @@ public class GroupTest {
         engine
             .group()
             .addEntity(groupId)
-            .withEntityKey(1L)
+            .withEntityId("entityId")
             .withEntityType(EntityType.USER)
             .expectRejection()
             .add();
@@ -162,8 +163,8 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add an entity with key '%s' and type '%s' to group with ID '%s', but the entity does not exist."
-                .formatted(1L, EntityType.USER, groupId));
+            "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
+                .formatted("entityId", EntityType.USER, groupId));
   }
 
   @Test
@@ -173,23 +174,27 @@ public class GroupTest {
     final var groupId = "123";
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create();
-    final var userKey =
+    final var createdUser =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+            .create();
+    engine
+        .group()
+        .addEntity(groupId)
+        .withEntityId(createdUser.getValue().getUsername())
+        .withEntityType(EntityType.USER)
+        .add();
 
     // when
     final var notPresentUpdateRecord =
         engine
             .group()
             .addEntity(groupId)
-            .withEntityKey(userKey)
+            .withEntityId(createdUser.getValue().getUsername())
             .withEntityType(EntityType.USER)
             .expectRejection()
             .add();
@@ -198,8 +203,8 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to add entity with key '%d' to group with ID '%s', but the entity is already assigned to this group."
-                .formatted(userKey, groupId));
+            "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group."
+                .formatted(createdUser.getValue().getUsername(), groupId));
   }
 
   @Test
@@ -208,25 +213,29 @@ public class GroupTest {
     // given
     final var groupId = "123";
     final var groupKey = Long.parseLong(groupId);
-    final var userKey =
+    final var user =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine
+        .group()
+        .addEntity(groupId)
+        .withEntityId(user.getValue().getUsername())
+        .withEntityType(EntityType.USER)
+        .add();
 
     // when
     final var groupWithRemovedEntity =
         engine
             .group()
             .removeEntity(groupKey)
-            .withEntityKey(userKey)
+            .withEntityId(user.getValue().getUsername())
             .withEntityType(EntityType.USER)
             .remove()
             .getValue();
@@ -234,7 +243,7 @@ public class GroupTest {
     // then
     assertThat(groupWithRemovedEntity)
         .hasGroupKey(groupKey)
-        .hasEntityKey(userKey)
+        .hasEntityId(user.getValue().getUsername())
         .hasEntityType(EntityType.USER);
   }
 
@@ -269,7 +278,7 @@ public class GroupTest {
         engine
             .group()
             .removeEntity(groupKey)
-            .withEntityKey(1L)
+            .withEntityId("entityId")
             .withEntityType(EntityType.USER)
             .expectRejection()
             .remove();
@@ -279,8 +288,8 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove an entity with key '%s' and type '%s' from group with key '%s', but the entity does not exist."
-                .formatted(1L, EntityType.USER, groupKey));
+            "Expected to remove an entity with ID '%s' and type '%s' from group with key '%s', but the entity does not exist."
+                .formatted("entityId", EntityType.USER, groupKey));
   }
 
   @Test
@@ -302,18 +311,22 @@ public class GroupTest {
     // given
     final var groupId = "123";
     final var groupKey = Long.parseLong(groupId);
-    final var userKey =
+    final var user =
         engine
             .user()
             .newUser("foo")
             .withEmail("foo@bar")
             .withName("Foo Bar")
             .withPassword("zabraboof")
-            .create()
-            .getKey();
+            .create();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create().getValue().getGroupKey();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine
+        .group()
+        .addEntity(groupId)
+        .withEntityId(user.getValue().getUsername())
+        .withEntityType(EntityType.USER)
+        .add();
 
     // when
     final var deletedGroup =

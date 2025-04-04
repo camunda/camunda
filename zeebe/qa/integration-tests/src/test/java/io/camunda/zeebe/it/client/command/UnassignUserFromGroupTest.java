@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -34,35 +35,34 @@ public class UnassignUserFromGroupTest {
   @AutoClose private CamundaClient client;
 
   private long groupKey;
-  private long userKey;
+  private CreateUserResponse createdUser;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    userKey =
-        client
-            .newUserCreateCommand()
-            .name("User Name")
-            .username("user")
-            .email("foo@example.com")
-            .password("******")
-            .send()
-            .join()
-            .getUserKey();
+
+    createdUser = client
+        .newUserCreateCommand()
+        .name("User Name")
+        .username("user")
+        .email("foo@example.com")
+        .password("******")
+        .send()
+        .join();
 
     groupKey = client.newCreateGroupCommand().name("groupName").send().join().getGroupKey();
-    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
+    client.newAssignUserToGroupCommand(groupKey).userKey(createdUser.getUserKey()).send().join();
   }
 
   @Test
   void shouldUnassignUserFromGroup() {
     // when
-    client.newUnassignUserFromGroupCommand(groupKey).userKey(userKey).send().join();
+    client.newUnassignUserFromGroupCommand(groupKey).userKey(createdUser.getUserKey()).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityUnassignedFromGroup(
         groupKey,
-        userKey,
+        createdUser.getUsername(),
         group -> {
           assertThat(group).hasEntityType(EntityType.USER);
         });
@@ -84,7 +84,7 @@ public class UnassignUserFromGroupTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to remove an entity with key '%d' and type '%s' from group with key '%d', but the entity does not exist."
+            "Expected to remove an entity with ID '%d' and type '%s' from group with key '%d', but the entity does not exist."
                 .formatted(nonExistentUserKey, EntityType.USER, groupKey));
   }
 

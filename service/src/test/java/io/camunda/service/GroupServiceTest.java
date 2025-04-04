@@ -202,7 +202,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
-    assertThat(record).hasEntityKey(Long.parseLong(memberId));
+    assertThat(record).hasEntityId(memberId);
     assertThat(record).hasEntityType(EntityType.USER);
   }
 
@@ -226,7 +226,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
-    assertThat(record).hasEntityKey(memberKey);
+    assertThat(record).hasEntityId(username);
     assertThat(record).hasEntityType(EntityType.USER);
   }
 

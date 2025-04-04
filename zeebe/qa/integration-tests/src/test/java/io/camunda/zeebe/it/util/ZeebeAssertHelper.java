@@ -441,7 +441,7 @@ public final class ZeebeAssertHelper {
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.ENTITY_ADDED)
             .withGroupKey(groupKey)
-            .withEntityKey(userKey)
+            .withEntityId(userKey)
             .getFirst()
             .getValue();
 
@@ -450,12 +450,12 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertEntityUnassignedFromGroup(
-      final long groupKey, final long userKey, final Consumer<GroupRecordValue> consumer) {
+      final long groupKey, final String username, final Consumer<GroupRecordValue> consumer) {
     final GroupRecordValue groupRecordValue =
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.ENTITY_REMOVED)
             .withGroupKey(groupKey)
-            .withEntityKey(userKey)
+            .withEntityId(username)
             .getFirst()
             .getValue();
 
