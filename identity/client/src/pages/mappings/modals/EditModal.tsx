@@ -48,8 +48,10 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
     >
       <TextField
         label={t("mappingId")}
-        onChange={(id) => setMapping((mapping) => ({ ...mapping, id }))}
-        value={mapping.mappingKey}
+        onChange={(mappingId) =>
+          setMapping((mapping) => ({ ...mapping, mappingId }))
+        }
+        value={mapping.mappingId}
         readOnly
       />
       <TextField

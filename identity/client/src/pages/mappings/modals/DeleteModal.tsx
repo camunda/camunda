@@ -18,14 +18,14 @@ const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { mappingKey, name },
+  entity: { mappingId, name },
 }) => {
   const { t, Translate } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteMapping);
 
   const handleSubmit = async () => {
-    const { success } = await apiCall({ mappingKey });
+    const { success } = await apiCall({ mappingId });
 
     if (success) {
       enqueueNotification({
@@ -52,9 +52,9 @@ const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
       <p>
         <Translate
           i18nKey="deleteMappingConfirmation"
-          values={{ mappingName: name || mappingKey }}
+          values={{ mappingName: name || mappingId }}
         >
-          Are you sure you want to delete <strong>{name || mappingKey}</strong>?
+          Are you sure you want to delete <strong>{name || mappingId}</strong>?
           This action cannot be undone.
         </Translate>
       </p>
