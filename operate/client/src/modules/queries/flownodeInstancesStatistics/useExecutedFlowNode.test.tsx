@@ -8,7 +8,7 @@
 
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
+import {useExecutedFlowNodes} from './useExecutedFlowNodes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import * as pageParamsModule from 'App/ProcessInstance/useProcessInstancePageParams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
@@ -18,7 +18,7 @@ import {useEffect} from 'react';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 
-describe('useFlownodeInstancesStatistics', () => {
+describe('useExecutedFlowNodes', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
     useEffect(() => {
       return () => {
@@ -46,20 +46,27 @@ describe('useFlownodeInstancesStatistics', () => {
     jest.clearAllMocks();
   });
 
-  it('should fetch flownode instances statistics successfully', async () => {
+  it('should fetch executed flow nodes successfully', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'node1',
-          active: 5,
+          flowNodeId: 'StartEvent_1',
+          active: 0,
           completed: 10,
           canceled: 0,
           incidents: 0,
         },
         {
-          flowNodeId: 'node2',
-          active: 3,
+          flowNodeId: 'Activity_0qtp1k6',
+          active: 0,
           completed: 7,
+          canceled: 0,
+          incidents: 0,
+        },
+        {
+          flowNodeId: 'Gateway_1',
+          active: 0,
+          completed: 0,
           canceled: 0,
           incidents: 0,
         },
@@ -68,7 +75,7 @@ describe('useFlownodeInstancesStatistics', () => {
 
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
 
-    const {result} = renderHook(() => useFlownodeInstancesStatistics(), {
+    const {result} = renderHook(() => useExecutedFlowNodes(), {
       wrapper: Wrapper,
     });
 
@@ -76,49 +83,28 @@ describe('useFlownodeInstancesStatistics', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual(mockData);
-  });
-
-  it('should handle select', async () => {
-    const mockData: GetProcessInstanceStatisticsResponseBody = {
-      items: [
-        {
-          flowNodeId: 'node1',
-          active: 5,
-          completed: 10,
-          canceled: 0,
-          incidents: 0,
-        },
-        {
-          flowNodeId: 'node2',
-          active: 3,
-          completed: 7,
-          canceled: 0,
-          incidents: 0,
-        },
-      ],
-    };
-
-    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
-
-    const {result} = renderHook(
-      () => useFlownodeInstancesStatistics((data) => data.items.length),
+    expect(result.current.data).toEqual([
       {
-        wrapper: Wrapper,
+        flowNodeId: 'StartEvent_1',
+        active: 0,
+        completed: 10,
+        canceled: 0,
+        incidents: 0,
       },
-    );
-
-    expect(result.current.isLoading).toBe(true);
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(result.current.data).toEqual(mockData.items.length);
+      {
+        flowNodeId: 'Activity_0qtp1k6',
+        active: 0,
+        completed: 7,
+        canceled: 0,
+        incidents: 0,
+      },
+    ]);
   });
 
-  it('should handle server error while fetching flownode instances overlay statistics', async () => {
+  it('should handle server error while fetching executed flow nodes', async () => {
     mockFetchFlownodeInstancesStatistics().withServerError();
 
-    const {result} = renderHook(() => useFlownodeInstancesStatistics(), {
+    const {result} = renderHook(() => useExecutedFlowNodes(), {
       wrapper: Wrapper,
     });
 
@@ -129,10 +115,10 @@ describe('useFlownodeInstancesStatistics', () => {
     expect(result.current.error?.response).toBeDefined();
   });
 
-  it('should handle network error while fetching flownode instances overlay statistics', async () => {
+  it('should handle network error while fetching executed flow nodes', async () => {
     mockFetchFlownodeInstancesStatistics().withNetworkError();
 
-    const {result} = renderHook(() => useFlownodeInstancesStatistics(), {
+    const {result} = renderHook(() => useExecutedFlowNodes(), {
       wrapper: Wrapper,
     });
 
@@ -146,33 +132,20 @@ describe('useFlownodeInstancesStatistics', () => {
   it('should handle empty data', async () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
 
-    const {result} = renderHook(() => useFlownodeInstancesStatistics(), {
+    const {result} = renderHook(() => useExecutedFlowNodes(), {
       wrapper: Wrapper,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual({items: []});
+    expect(result.current.data).toEqual([]);
   });
 
   it('should handle loading state', async () => {
-    const {result} = renderHook(() => useFlownodeInstancesStatistics(), {
+    const {result} = renderHook(() => useExecutedFlowNodes(), {
       wrapper: Wrapper,
     });
 
     expect(result.current.isLoading).toBe(true);
-  });
-
-  it('should not fetch data when enabled is false', async () => {
-    const {result} = renderHook(
-      () => useFlownodeInstancesStatistics((data) => data, false),
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.isFetched).toBe(false);
-    expect(result.current.data).toBeUndefined();
   });
 });
