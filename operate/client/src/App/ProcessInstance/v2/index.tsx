@@ -32,7 +32,7 @@ import {FlowNodeInstanceLog} from '../FlowNodeInstanceLog';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import {ModificationSummaryModal} from '../ModificationSummaryModal';
+import {ModificationSummaryModal} from '../ModificationSummaryModal/v2';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from '../LastModification';
 import {VariablePanel} from '../BottomPanel/VariablePanel';
