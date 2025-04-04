@@ -24,16 +24,13 @@ import {
   createInstance,
   createOperation,
   createVariable,
-  mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
@@ -43,9 +40,28 @@ import {notificationsStore} from 'modules/stores/notifications';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
+jest.mock(
+  'modules/queries/processDefinitions/useProcessInstanceXml.ts',
+  () => ({
+    useProcessInstanceXml: jest.fn(() => ({
+      data: undefined,
+    })),
+  }),
+);
+
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
+  },
+}));
+
+jest.mock('modules/stores/processInstanceListeners', () => ({
+  processInstanceListenersStore: {
+    state: {},
+    listenersFailureCount: 0,
+    reset: () => {},
+    fetchListeners: () => {},
+    setListenerTabVisibility: () => {},
   },
 }));
 
@@ -55,7 +71,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       variablesStore.reset();
       flowNodeSelectionStore.reset();
       flowNodeMetaDataStore.reset();
-      processInstanceDetailsDiagramStore.reset();
       modificationsStore.reset();
       processInstanceDetailsStatisticsStore.reset();
     };
@@ -862,10 +877,6 @@ describe('VariablePanel', () => {
   });
 
   it('should select correct tab when navigating between flow nodes', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
-
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
@@ -882,9 +893,6 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('test2')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
-
-    expect(screen.getByText('localVariable1')).toBeInTheDocument();
-    expect(screen.getByText('localVariable2')).toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);

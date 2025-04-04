@@ -44,6 +44,25 @@ jest.mock('modules/stores/notifications', () => ({
 
 jest.mock('modules/utils/bpmn');
 
+jest.mock('modules/stores/processInstanceListeners', () => ({
+  processInstanceListenersStore: {
+    state: {},
+    listenersFailureCount: 0,
+    reset: () => {},
+    fetchListeners: () => {},
+    setListenerTabVisibility: () => {},
+  },
+}));
+
+jest.mock(
+  'modules/queries/processDefinitions/useProcessInstanceXml.ts',
+  () => ({
+    useProcessInstanceXml: jest.fn(() => ({
+      data: undefined,
+    })),
+  }),
+);
+
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
   sequenceFlowsStore.isPollRequestRunning = false;

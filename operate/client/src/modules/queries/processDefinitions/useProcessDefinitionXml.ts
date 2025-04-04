@@ -60,6 +60,7 @@ function useProcessDefinitionXml<T extends ParsedXmlData = ParsedXmlData>({
           }
         : skipToken,
     select,
+    staleTime: Infinity,
   });
 }
 
