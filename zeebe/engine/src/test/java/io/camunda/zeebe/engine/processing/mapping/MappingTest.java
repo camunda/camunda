@@ -18,6 +18,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -231,6 +232,7 @@ public class MappingTest {
         .hasFieldOrPropertyWithValue("mappingId", mappingId);
   }
 
+  @Ignore("https://github.com/camunda/camunda/issues/30092")
   @Test
   public void shouldCleanupGroupAndRoleMembership() {
     final var claimName = UUID.randomUUID().toString();

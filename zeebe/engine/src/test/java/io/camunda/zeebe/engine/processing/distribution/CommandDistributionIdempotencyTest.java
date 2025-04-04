@@ -298,7 +298,7 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.ADD_ENTITY,
                 () -> {
-                  // TODO: refactor with https://github.com/camunda/camunda/issues/30476
+                  // TODO: refactor with https://github.com/camunda/camunda/issues/30091
                   final var groupId = "321";
                   createGroup(groupId);
                   final var user = createUser();
@@ -317,9 +317,8 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.REMOVE_ENTITY,
                 () -> {
-                  // TODO: refactor with https://github.com/camunda/camunda/issues/30029
+                  // TODO: refactor with https://github.com/camunda/camunda/issues/30091
                   final var groupId = "654";
-                  final var groupKey = Long.parseLong(groupId);
                   createGroup(groupId);
                   final var user = createUser();
                   ENGINE
@@ -330,8 +329,7 @@ public class CommandDistributionIdempotencyTest {
                       .add();
                   return ENGINE
                       .group()
-                      .removeEntity(groupKey)
-                      .withGroupId(groupId)
+                      .removeEntity(groupId)
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .remove();
