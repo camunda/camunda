@@ -111,7 +111,7 @@ public class RemoveEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove user '%s' from tenant '%s', but the user is not assigned to this tenant."
+            "Expected to remove user with ID '%s' from tenant with ID '%s', but the user is not assigned to this tenant."
                 .formatted(username, tenantId));
   }
 
@@ -142,7 +142,7 @@ public class RemoveEntityTenantTest {
     assertThat(notAssignedUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove user '%s' from tenant '%s', but the user is not assigned to this tenant."
+            "Expected to remove user with ID '%s' from tenant with ID '%s', but the user is not assigned to this tenant."
                 .formatted(username, tenantId));
   }
 }
