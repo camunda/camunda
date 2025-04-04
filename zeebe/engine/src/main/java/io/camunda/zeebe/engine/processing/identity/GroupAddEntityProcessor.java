@@ -75,7 +75,6 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     }
 
     final var groupId = record.getGroupId();
-    final var groupKey = record.getGroupKey();
     final var persistedRecord = groupState.get(groupId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
@@ -86,6 +85,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       return;
     }
 
+    final var groupKey = persistedRecord.get().getGroupKey();
     final var entityKey = record.getEntityKey();
     final var entityType = record.getEntityType();
     if (!isEntityPresent(entityKey, entityType)) {
