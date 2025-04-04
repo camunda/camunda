@@ -16,11 +16,8 @@
 package io.camunda.client.api.statistics.request;
 
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.api.statistics.response.ProcessFlowNodeStatistics;
 import java.util.List;
 
-public interface ProcessDefinitionFlowNodeStatisticsRequest
-    extends StatisticsRequest<
-            ProcessDefinitionStatisticsFilter, ProcessDefinitionFlowNodeStatisticsRequest>,
-        FinalCommandStep<List<ProcessFlowNodeStatistics>> {}
+public interface ProcessInstanceFlowNodeStatisticsRequest
+    extends FinalCommandStep<List<ProcessFlowNodeStatistics>> {}
