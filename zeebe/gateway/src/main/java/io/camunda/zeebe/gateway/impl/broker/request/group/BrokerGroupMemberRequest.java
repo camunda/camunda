@@ -33,9 +33,8 @@ public class BrokerGroupMemberRequest extends BrokerExecuteCommand<GroupRecord> 
     return new BrokerGroupMemberRequest(groupId, GroupIntent.REMOVE_ENTITY);
   }
 
-  public BrokerGroupMemberRequest setMemberId(final String memberKey) {
-    // TODO: remove this after https://github.com/camunda/camunda/issues/29902 is implemented
-    requestDto.setEntityId(Long.parseLong(memberKey));
+  public BrokerGroupMemberRequest setMemberId(final String memberId) {
+    requestDto.setEntityId(memberId);
     return this;
   }
 

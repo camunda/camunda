@@ -1052,8 +1052,8 @@ public class CompactRecordLogger {
         .append(formatId(value.getGroupId()))
         .append(", Name=")
         .append(formatId(value.getName()))
-        .append(", EntityKey=")
-        .append(shortenKey(value.getEntityKey()))
+        .append(", EntityId=")
+        .append(formatId(value.getEntityId()))
         .append(", EntityType=")
         .append(value.getEntityType())
         .append("]");
