@@ -9,7 +9,7 @@
 To build the backend you can use maven:
 
 ```
-mvn clean install
+../../mvnw clean install
 ```
 
 This command runs also all the test suite, that you can skip using the
@@ -77,7 +77,7 @@ Ways to activated profiles:
 
 ```text
 JAVA_OPTS=-Dspring.profiles.active=dev-data ./tasklist
-or 
+or
 JAVA_OPTS=-Dspring.profiles.active=dev-data ./tasklist.bat
 ```
 
