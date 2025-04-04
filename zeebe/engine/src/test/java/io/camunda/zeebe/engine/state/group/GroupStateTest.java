@@ -94,7 +94,7 @@ public class GroupStateTest {
     // when
     final var userKey = 2L;
     final var userEntityType = EntityType.USER;
-    groupRecord.setEntityKey(userKey).setEntityType(userEntityType);
+    groupRecord.setEntityId(userKey).setEntityType(userEntityType);
     groupState.addEntity(groupRecord);
 
     // then
@@ -113,10 +113,10 @@ public class GroupStateTest {
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
     final var userKey = 2L;
-    groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
+    groupRecord.setEntityId(2L).setEntityType(EntityType.USER);
     groupState.addEntity(groupRecord);
     final var mappingKey = 3L;
-    groupRecord.setEntityKey(mappingKey).setEntityType(EntityType.MAPPING);
+    groupRecord.setEntityId(mappingKey).setEntityType(EntityType.MAPPING);
     groupState.addEntity(groupRecord);
 
     // when
@@ -138,10 +138,10 @@ public class GroupStateTest {
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
     final var userKey = 2L;
-    groupRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
+    groupRecord.setEntityId(userKey).setEntityType(EntityType.USER);
     groupState.addEntity(groupRecord);
     final var mappingKey = 3L;
-    groupRecord.setEntityKey(mappingKey).setEntityType(EntityType.MAPPING);
+    groupRecord.setEntityId(mappingKey).setEntityType(EntityType.MAPPING);
     groupState.addEntity(groupRecord);
 
     // when
@@ -161,9 +161,9 @@ public class GroupStateTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
+    groupRecord.setEntityId(2L).setEntityType(EntityType.USER);
     groupState.addEntity(groupRecord);
-    groupRecord.setEntityKey(3L).setEntityType(EntityType.MAPPING);
+    groupRecord.setEntityId(3L).setEntityType(EntityType.MAPPING);
     groupState.addEntity(groupRecord);
 
     // when

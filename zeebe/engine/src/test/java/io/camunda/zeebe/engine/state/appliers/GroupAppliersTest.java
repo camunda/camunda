@@ -115,7 +115,7 @@ public class GroupAppliersTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(entityKey).setEntityType(entityType);
 
     // when
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
@@ -144,7 +144,7 @@ public class GroupAppliersTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(entityKey).setEntityType(entityType);
 
     // when
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
@@ -175,7 +175,7 @@ public class GroupAppliersTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(entityKey).setEntityType(entityType);
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // when
@@ -205,7 +205,7 @@ public class GroupAppliersTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(entityKey).setEntityType(entityType);
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // when

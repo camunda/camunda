@@ -58,7 +58,7 @@ public class GroupControllerTest extends RestControllerTest {
     when(groupServices.createGroup(createGroupRequest))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new GroupRecord().setEntityKey(1L).setName(groupName)));
+                new GroupRecord().setEntityId(1L).setName(groupName)));
 
     // when
     webClient

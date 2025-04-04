@@ -2972,7 +2972,7 @@ final class JsonSerializableToJsonTest {
                     .setGroupId("groupId")
                     .setName("group")
                     .setDescription("description")
-                    .setEntityKey(2L)
+                    .setEntityId(2L)
                     .setEntityType(EntityType.USER),
         """
       {

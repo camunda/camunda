@@ -35,7 +35,7 @@ public class BrokerGroupMemberRequest extends BrokerExecuteCommand<GroupRecord> 
 
   public BrokerGroupMemberRequest setMemberId(final String memberKey) {
     // TODO: remove this after https://github.com/camunda/camunda/issues/29902 is implemented
-    requestDto.setEntityKey(Long.parseLong(memberKey));
+    requestDto.setEntityId(Long.parseLong(memberKey));
     return this;
   }
 

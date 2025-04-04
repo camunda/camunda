@@ -24,7 +24,7 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   private final StringProperty groupId = new StringProperty("groupId", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty descriptionProp = new StringProperty("description", "");
-  private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
+  private final StringProperty entityIdProp = new StringProperty("entityId", "");
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
@@ -34,7 +34,7 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
         .declareProperty(groupId)
         .declareProperty(nameProp)
         .declareProperty(descriptionProp)
-        .declareProperty(entityKeyProp)
+        .declareProperty(entityIdProp)
         .declareProperty(entityTypeProp);
   }
 
@@ -79,13 +79,8 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   }
 
   @Override
-  public long getEntityKey() {
-    return entityKeyProp.getValue();
-  }
-
-  public GroupRecord setEntityKey(final long entityKey) {
-    entityKeyProp.setValue(entityKey);
-    return this;
+  public String getEntityId() {
+    return BufferUtil.bufferAsString(entityIdProp.getValue());
   }
 
   @Override
@@ -95,6 +90,11 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
 
   public GroupRecord setEntityType(final EntityType entityType) {
     entityTypeProp.setValue(entityType);
+    return this;
+  }
+
+  public GroupRecord setEntityId(final String entityId) {
+    entityIdProp.setValue(entityId);
     return this;
   }
 
