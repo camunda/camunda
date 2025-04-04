@@ -110,7 +110,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     final var record = command.getValue();
 
     groupState
-        .getEntityType(record.getGroupKey(), record.getEntityKey())
+        .getEntityType(record.getGroupId(), record.getEntityKey())
         .ifPresentOrElse(
             entityType ->
                 stateWriter.appendFollowUpEvent(

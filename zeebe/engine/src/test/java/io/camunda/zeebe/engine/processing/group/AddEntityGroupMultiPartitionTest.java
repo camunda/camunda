@@ -51,10 +51,10 @@ public class AddEntityGroupMultiPartitionTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
     final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     assertThat(
             RecordingExporter.records()
@@ -115,10 +115,10 @@ public class AddEntityGroupMultiPartitionTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
     final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // then
     assertThat(
@@ -147,10 +147,10 @@ public class AddEntityGroupMultiPartitionTest {
 
     // when
     final var name = UUID.randomUUID().toString();
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
     final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

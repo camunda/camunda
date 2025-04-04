@@ -243,7 +243,7 @@ public class MappingTest {
     final var role = engine.role().newRole("role").create();
     engine
         .group()
-        .addEntity(groupKey)
+        .addEntity(groupId)
         .withEntityKey(mappingRecord.getKey())
         .withEntityType(EntityType.MAPPING)
         .add();
