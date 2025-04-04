@@ -128,6 +128,7 @@ public class FormStateTest {
     final var someDeploymentKey = 1L;
     final var form1 = createFormRecord(1).setDeploymentKey(noDeploymentKey);
     formState.storeFormInFormColumnFamily(form1);
+    formState.storeFormInFormByIdAndVersionColumnFamily(form1);
     final var initialDeploymentKey =
         formState.findFormByKey(form1.getFormKey(), tenantId).get().getDeploymentKey();
 
@@ -149,6 +150,7 @@ public class FormStateTest {
     final var someDeploymentKey = 1L;
     final var form = createFormRecord(1).setDeploymentKey(noDeploymentKey);
     formState.storeFormInFormColumnFamily(form);
+    formState.storeFormInFormByIdAndVersionColumnFamily(form);
     final var initialDeploymentKey =
         formState.findFormByKey(form.getFormKey(), tenantId).get().getDeploymentKey();
     formState.setMissingDeploymentKey(tenantId, form.getFormKey(), 1L);
@@ -171,7 +173,7 @@ public class FormStateTest {
     final var someDeploymentKey = 1L;
     final var form = createFormRecord(1).setDeploymentKey(noDeploymentKey);
     formState.storeFormInFormColumnFamily(form);
-
+    formState.storeFormInFormByIdAndVersionColumnFamily(form);
     final var initialLookupByDeploymentKey =
         formState.findFormByIdAndDeploymentKey(form.getFormId(), someDeploymentKey, tenantId);
 

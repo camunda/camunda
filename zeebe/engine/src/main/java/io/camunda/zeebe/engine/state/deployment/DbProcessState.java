@@ -279,7 +279,12 @@ public final class DbProcessState implements MutableProcessState {
     processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
     processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.upsert(
         tenantAwareProcessIdAndDeploymentKey, fkProcessDefinitionKey);
-    updateInMemoryState(process);
+    invalidateCaches(
+        tenantId,
+        process.getBpmnProcessId(),
+        processDefinitionKey,
+        deploymentKey,
+        process.getVersion());
   }
 
   @Override
@@ -302,25 +307,12 @@ public final class DbProcessState implements MutableProcessState {
     processDefinitionKeyByProcessIdAndVersionTagColumnFamily.deleteIfExists(
         tenantAwareProcessIdAndVersionTagKey);
 
-    final var tenantIdAndProcessIdAndVersion =
-        new TenantIdAndProcessIdAndVersion(
-            processRecord.getTenantId(),
-            processRecord.getBpmnProcessIdBuffer(),
-            processRecord.getVersion());
-    processesByTenantAndProcessIdAndVersionCache.invalidate(tenantIdAndProcessIdAndVersion);
-
-    final var key =
-        new TenantIdAndProcessDefinitionKey(
-            processRecord.getTenantId(), processRecord.getProcessDefinitionKey());
-    processByTenantAndKeyCache.invalidate(key);
-
-    final var tenantIdAndProcessIdAndDeploymentKey =
-        new TenantIdAndProcessIdAndDeploymentKey(
-            processRecord.getTenantId(),
-            processRecord.getBpmnProcessIdBuffer(),
-            processRecord.getDeploymentKey());
-    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.invalidate(
-        tenantIdAndProcessIdAndDeploymentKey);
+    invalidateCaches(
+        processRecord.getTenantId(),
+        processRecord.getBpmnProcessIdBuffer(),
+        processRecord.getProcessDefinitionKey(),
+        processRecord.getDeploymentKey(),
+        processRecord.getVersion());
 
     final long latestVersion =
         versionManager.getLatestResourceVersion(
@@ -334,6 +326,30 @@ public final class DbProcessState implements MutableProcessState {
 
     versionManager.deleteResourceVersion(
         processRecord.getBpmnProcessId(), processRecord.getVersion(), processRecord.getTenantId());
+  }
+
+  private void invalidateCaches(
+      final String tenantId,
+      final DirectBuffer bpmnProcessId,
+      final long processDefinitionKey,
+      final long deploymentKey,
+      final int version) {
+    final var tenantIdAndProcessIdAndVersion =
+        new TenantIdAndProcessIdAndVersion(tenantId, bpmnProcessId, version);
+    processesByTenantAndProcessIdAndVersionCache.invalidate(tenantIdAndProcessIdAndVersion);
+
+    {
+      final var key = new TenantIdAndProcessDefinitionKey(tenantId, processDefinitionKey);
+      final var cached = processByTenantAndKeyCache.getIfPresent(key);
+      if (cached != null && cached.getVersion() <= version) {
+        processByTenantAndKeyCache.invalidate(key);
+      }
+    }
+
+    final var tenantIdAndProcessIdAndDeploymentKey =
+        new TenantIdAndProcessIdAndDeploymentKey(tenantId, bpmnProcessId, deploymentKey);
+    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.invalidate(
+        tenantIdAndProcessIdAndDeploymentKey);
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {

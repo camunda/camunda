@@ -223,14 +223,14 @@ final class DeploymentReconstructProcessorTest {
     final var command = mockedCommand();
 
     final var formKey = Protocol.encodePartitionId(1, 2);
-    state
-        .getFormState()
-        .storeFormInFormColumnFamily(
-            new FormRecord()
-                .setFormKey(formKey)
-                .setFormId("form")
-                .setResourceName("form.form")
-                .setVersion(1));
+    final var form =
+        new FormRecord()
+            .setFormKey(formKey)
+            .setFormId("form")
+            .setResourceName("form.form")
+            .setVersion(1);
+    state.getFormState().storeFormInFormColumnFamily(form);
+    state.getFormState().storeFormInFormByIdAndVersionColumnFamily(form);
 
     // when
     processor.processRecord(command);
