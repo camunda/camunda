@@ -19,11 +19,11 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.FlowNodeInstanceState;
 import io.camunda.process.test.impl.client.IncidentDto;
-import io.camunda.process.test.impl.client.VariableDto;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -75,7 +75,11 @@ public class CamundaProcessTestResultCollector {
   private Map<String, String> collectVariables(final long processInstanceKey) {
     try {
       return dataSource.getVariablesByProcessInstanceKey(processInstanceKey).stream()
-          .collect(Collectors.toMap(VariableDto::getName, VariableDto::getValue));
+          // We're deliberately switching from the Collectors.toMap collector to a custom
+          // implementation because it's allowed to have Camunda Variables with null values
+          // However, the toMap collector does not allow null values and would throw an exception.
+          // See this Stack Overflow issue for more context: https://stackoverflow.com/a/24634007
+          .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
     } catch (final IOException e) {
       LOG.warn("Failed to collect process instance variables for key '{}'", processInstanceKey, e);
     }

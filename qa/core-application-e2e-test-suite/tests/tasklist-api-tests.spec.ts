@@ -10,6 +10,7 @@ import {test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {authAPI} from 'utils/apiHelpers';
 import {createInstances, deploy} from 'utils/zeebeClient';
+
 const baseURL = process.env.CORE_APPLICATION_TASKLIST_URL;
 
 test.beforeAll(async () => {
@@ -25,7 +26,7 @@ test.beforeAll(async () => {
 
 test.describe('API tests', () => {
   test.use({
-    storageState: 'utils/.auth',
+    storageState: 'utils/.auth_tasklist',
     baseURL: baseURL,
   });
 
@@ -35,9 +36,17 @@ test.describe('API tests', () => {
   });
 
   test('Get a task via ID', async ({request}) => {
-    const searchTasks = await request.post('/v1/tasks/search');
-    const taskID = await searchTasks.json();
-    const response = await request.get('/v1/tasks/' + taskID[1].id);
+    let taskData: {id: string}[] = [];
+    await expect(async () => {
+      const response = await request.post('/v1/tasks/search');
+      expect(response.status()).toBe(200);
+      taskData = await response.json();
+      expect(taskData.length).toBeGreaterThan(0);
+    }).toPass({
+      intervals: [3_000, 4_000, 5_000],
+      timeout: 30_000,
+    });
+    const response = await request.get(`/v1/tasks/${taskData[0].id}`);
     expect(response.status()).toBe(200);
   });
 });
