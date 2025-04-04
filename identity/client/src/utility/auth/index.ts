@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import { Paths } from "src/components/global/routePaths";
 import { getBaseUrl } from "src/configuration";
 
-export const LOGIN_PATH = `${getBaseUrl()}/login`;
+export const LOGIN_PATH = `${getBaseUrl()}${Paths.login()}`;
 
 export function getLoginPath(next?: string) {
   return next ? `${LOGIN_PATH}?next=${next}` : LOGIN_PATH;
