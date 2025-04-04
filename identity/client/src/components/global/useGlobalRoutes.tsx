@@ -7,6 +7,7 @@ import Tenants from "src/pages/tenants";
 import Mappings from "src/pages/mappings";
 import Authorizations from "src/pages/authorizations";
 import { isOIDC } from "src/configuration";
+import { Paths } from "src/components/global/routePaths";
 
 export const useGlobalRoutes = () => {
   const { t } = useTranslate();
@@ -15,16 +16,16 @@ export const useGlobalRoutes = () => {
   const authTypeDependentRoutes = isOIDC
     ? [
         {
-          path: "/mappings/*",
-          key: "/mappings",
+          path: `${Paths.mappings()}/*`,
+          key: Paths.mappings(),
           label: t("mappings"),
           element: <Mappings />,
         },
       ]
     : [
         {
-          path: "/users/*",
-          key: "/users",
+          path: `${Paths.users()}/*`,
+          key: Paths.users(),
           label: t("users"),
           element: <Users />,
         },
@@ -33,26 +34,26 @@ export const useGlobalRoutes = () => {
   const routes = [
     ...authTypeDependentRoutes,
     {
-      path: "/groups/*",
-      key: "/groups",
+      path: `${Paths.groups()}/*`,
+      key: Paths.groups(),
       label: t("groups"),
       element: <Groups />,
     },
     {
-      path: "/roles/*",
-      key: "/roles",
+      path: `${Paths.roles()}/*`,
+      key: Paths.roles(),
       label: t("roles"),
       element: <Roles />,
     },
     {
-      path: "/tenants/*",
-      key: "/tenants",
+      path: `${Paths.tenants()}/*`,
+      key: Paths.tenants(),
       label: t("tenants"),
       element: <Tenants />,
     },
     {
-      path: "/authorizations/*",
-      key: "/authorizations",
+      path: `${Paths.authorizations()}/*`,
+      key: Paths.authorizations(),
       label: t("authorizations"),
       element: <Authorizations />,
     },
