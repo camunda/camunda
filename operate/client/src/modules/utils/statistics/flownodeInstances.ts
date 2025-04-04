@@ -20,6 +20,9 @@ const getStatisticsByFlowNode = (data: ProcessDefinitionStatistic[]) => {
   return data.reduce<{
     [key: string]: Omit<Statistic, 'flowNodeId'>;
   }>((statistics, {flowNodeId: id, active, incidents, completed, canceled}) => {
+    // TODO: [OPERATE-V2-MIGRATION] After migrating processInstanceDetailsDiagramStore to a query,
+    // consider passing the resolved flowNode as a parameter to getStatisticsByFlowNode
+    // instead of accessing it directly from processInstanceDetailsDiagramStore.businessObjects.
     const businessObject =
       processInstanceDetailsDiagramStore.businessObjects[id];
 

@@ -32,6 +32,9 @@ const finishMovingToken = (
     sourceFlowNodeIdForMoveOperation !== null
   ) {
     if (sourceFlowNodeInstanceKeyForMoveOperation === null) {
+      // TODO: [OPERATE-V2-MIGRATION] After migrating processInstanceDetailsDiagramStore to a query,
+      // consider passing the resolved sourceFlowNode as a parameter to finishMovingToken
+      // instead of accessing it directly from processInstanceDetailsDiagramStore.businessObjects.
       newScopeCount = isMultiInstance(
         processInstanceDetailsDiagramStore.businessObjects[
           sourceFlowNodeIdForMoveOperation
