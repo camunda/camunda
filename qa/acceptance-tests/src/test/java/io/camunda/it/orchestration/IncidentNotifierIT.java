@@ -46,7 +46,7 @@ public class IncidentNotifierIT {
   private static final String JWT_TOKEN = JWT.create().sign(Algorithm.HMAC256("secretkey"));
   private static final String WEBHOOK_PATH = "/webhook";
   private static final String OAUTH_TOKEN_PATH = "/oauth/token";
-  private final HttpClient HTTP_CLIENT = spy(HttpClient.newHttpClient());
+  private static final HttpClient HTTP_CLIENT = spy(HttpClient.newHttpClient());
 
   @Test
   public void shouldNotifyWebhookAboutIncident() throws IOException, InterruptedException {
