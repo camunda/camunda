@@ -42,6 +42,9 @@ public final class MsgPackReadingBoundaryCheckingExceptionTest {
   public Consumer<MsgPackReader> codeUnderTest;
 
   @Parameter(2)
+  public Class<? extends Throwable> exceptionClass;
+
+  @Parameter(3)
   public String exceptionMessage;
 
   protected MsgPackReader reader;
@@ -52,22 +55,26 @@ public final class MsgPackReadingBoundaryCheckingExceptionTest {
         new Object[][] {
           {
             new byte[] {(byte) ARRAY32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-            codeUnderTest((r) -> r.readArrayHeader()),
+            codeUnderTest(MsgPackReader::readArrayHeader),
+            MsgpackReaderException.class,
             NEGATIVE_BUF_SIZE_EXCEPTION_MSG
           },
           {
             new byte[] {(byte) BIN32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-            codeUnderTest((r) -> r.readBinaryLength()),
+            codeUnderTest(MsgPackReader::readBinaryLength),
+            MsgpackReaderException.class,
             NEGATIVE_BUF_SIZE_EXCEPTION_MSG
           },
           {
             new byte[] {(byte) MAP32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-            codeUnderTest((r) -> r.readMapHeader()),
+            codeUnderTest(MsgPackReader::readMapHeader),
+            MsgpackReaderException.class,
             NEGATIVE_BUF_SIZE_EXCEPTION_MSG
           },
           {
             new byte[] {(byte) STR32, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff},
-            codeUnderTest((r) -> r.readStringLength()),
+            codeUnderTest(MsgPackReader::readStringLength),
+            MsgpackReaderException.class,
             NEGATIVE_BUF_SIZE_EXCEPTION_MSG
           },
           {
@@ -82,13 +89,15 @@ public final class MsgPackReadingBoundaryCheckingExceptionTest {
               (byte) 0xff,
               (byte) 0xff
             },
-            codeUnderTest((r) -> r.readInteger()),
+            codeUnderTest(MsgPackReader::readInteger),
+            MsgpackReaderException.class,
             NEGATIVE_BUF_SIZE_EXCEPTION_MSG
           },
           {
             new byte[] {(byte) FIXSTR_PREFIX | (byte) 0x01},
-            codeUnderTest((r) -> r.readToken()),
-            "Reading 1 bytes past buffer capacity(1) in range [1:2]"
+            codeUnderTest(MsgPackReader::readToken),
+            IllegalArgumentException.class,
+            "offset=1 length=1 not valid for capacity=1"
           },
         });
   }
@@ -105,7 +114,7 @@ public final class MsgPackReadingBoundaryCheckingExceptionTest {
     reader.wrap(negativeTestingBuf, 0, negativeTestingBuf.capacity());
 
     // then
-    exception.expect(MsgpackReaderException.class);
+    exception.expect(exceptionClass);
     exception.expectMessage(exceptionMessage);
 
     // when
