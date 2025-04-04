@@ -9,19 +9,18 @@ package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import java.nio.charset.StandardCharsets;
+import io.camunda.zeebe.util.CachedBytesEnum;
 import java.util.Objects;
 
 public final class EnumValue<E extends Enum<E>> extends BaseValue {
   private final StringValue decodedValue = new StringValue();
   private E value;
-  private final Class<E> klass;
+  private final CachedBytesEnum<E> cachedValue;
 
   public EnumValue(final Class<E> e, final E defaultValue) {
-    klass = e;
-    value = defaultValue;
-    if (value != null) {
-      decodedValue.wrap(value.toString().getBytes(StandardCharsets.UTF_8));
+    cachedValue = CachedBytesEnum.get(e);
+    if (defaultValue != null) {
+      setValue(defaultValue);
     }
   }
 
@@ -34,7 +33,7 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
   }
 
   public void setValue(final E val) {
-    decodedValue.wrap(val.toString().getBytes(StandardCharsets.UTF_8));
+    decodedValue.wrap(cachedValue.byteRepr(val));
     value = val;
   }
 
@@ -57,7 +56,7 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
   @Override
   public void read(final MsgPackReader reader) {
     decodedValue.read(reader);
-    value = Enum.valueOf(klass, decodedValue.toString());
+    value = cachedValue.getValue(decodedValue.getValue());
   }
 
   @Override
