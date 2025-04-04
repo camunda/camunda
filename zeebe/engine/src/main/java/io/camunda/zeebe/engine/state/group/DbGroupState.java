@@ -144,8 +144,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public Map<EntityType, List<Long>> getEntitiesByType(final long groupKey) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public Map<EntityType, List<Long>> getEntitiesByType(final String groupId) {
+    this.groupId.wrapString(groupId);
     final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
     entityTypeByGroupColumnFamily.whileEqualPrefix(
         fkGroupId,
