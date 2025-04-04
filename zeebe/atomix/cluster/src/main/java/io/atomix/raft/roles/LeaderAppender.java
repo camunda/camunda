@@ -215,11 +215,7 @@ final class LeaderAppender {
                 // Complete the append to the member.
                 final long appendLatency = System.currentTimeMillis() - timestamp;
                 metrics.appendComplete(appendLatency, member.getMember().memberId().id());
-                if (!request.entries().isEmpty()) {
-                  member.completeAppend(appendLatency);
-                } else {
-                  member.completeAppend();
-                }
+                member.completeAppend();
 
                 if (error == null) {
                   LOGGER.trace("Received {} from {}", response, member.getMember().memberId());
