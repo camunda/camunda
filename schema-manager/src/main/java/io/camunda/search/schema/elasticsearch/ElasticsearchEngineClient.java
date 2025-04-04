@@ -524,4 +524,15 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           e);
     }
   }
+
+  @Override
+  public void close() {
+    if (client != null) {
+      try {
+        client.close();
+      } catch (final IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
 }

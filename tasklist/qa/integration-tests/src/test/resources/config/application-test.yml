@@ -19,6 +19,8 @@ camunda.tasklist:
 camunda.webapps:
   enabled: true
   default-app: operate
+camunda.database:
+  schema-manager.create-schema: false # disable schema creation in springboot tests as we should use a different prefix per test. The springboot app is started per test class
 logging:
   level:
     ROOT: INFO

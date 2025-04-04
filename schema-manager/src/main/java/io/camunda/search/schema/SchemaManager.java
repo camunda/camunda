@@ -378,4 +378,8 @@ public class SchemaManager {
         && validateIndices(schemaValidator).isEmpty()
         && validateIndexTemplates(schemaValidator).isEmpty();
   }
+
+  public boolean isAllIndicesExist() {
+    return getMissingIndices().isEmpty();
+  }
 }

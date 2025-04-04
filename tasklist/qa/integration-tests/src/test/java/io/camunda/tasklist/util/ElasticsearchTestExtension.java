@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -18,28 +17,16 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
+import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.manager.SchemaManager;
-import io.camunda.tasklist.zeebe.ImportValueType;
-import io.camunda.tasklist.zeebeimport.RecordsReader;
-import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
-import io.camunda.tasklist.zeebeimport.ZeebeImporter;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -83,14 +70,8 @@ public class ElasticsearchTestExtension
 
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private SearchEngineConfiguration searchEngineConfiguration;
-  @Autowired private ZeebeImporter zeebeImporter;
-  @Autowired private RecordsReaderHolder recordsReaderHolder;
   private boolean failed = false;
-  @Autowired private SchemaManager elasticsearchSchemaManager;
-
-  @Autowired private ObjectMapper objectMapper;
-
-  @Autowired private TestImportListener testImportListener;
+  @Autowired private TestSchemaManager schemaManager;
   @Autowired private TasklistIndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
@@ -104,8 +85,7 @@ public class ElasticsearchTestExtension
       tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
       searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
-    /* Needed for the tasklist-user index */
-    elasticsearchSchemaManager.createSchema();
+    schemaManager.createSchema();
   }
 
   @Override
@@ -213,68 +193,12 @@ public class ElasticsearchTestExtension
   }
 
   @Override
-  public boolean areIndicesCreatedAfterChecks(
-      final String indexPrefix, final int minCountOfIndices, final int maxChecks) {
-    boolean areCreated = false;
-    int checks = 0;
-    while (!areCreated && checks <= maxChecks) {
-      checks++;
-      try {
-        areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
-      } catch (final Exception t) {
-        LOGGER.error(
-            "Elasticsearch {} indices (min {}) are not created yet. Waiting {}/{}",
-            indexPrefix,
-            minCountOfIndices,
-            checks,
-            maxChecks);
-        sleepFor(200);
-      }
-    }
-    LOGGER.debug("Elasticsearch indices are created after {} checks", checks);
-    return areCreated;
-  }
-
-  @Override
-  public List<RecordsReader> getRecordsReaders(final ImportValueType importValueType) {
-    return recordsReaderHolder.getAllRecordsReaders().stream()
-        .filter(rr -> rr.getImportValueType().equals(importValueType))
-        .collect(Collectors.toList());
-  }
-
-  @Override
   public int getOpenScrollcontextSize() {
     return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
   }
 
-  @Override
-  public <T> long deleteByTermsQuery(
-      final String index,
-      final String fieldName,
-      final Collection<T> values,
-      final Class<T> valueType)
-      throws IOException {
-    return zeebeEsClient
-        .deleteByQuery(
-            new DeleteByQueryRequest(index).setQuery(QueryBuilders.termsQuery(fieldName, values)),
-            RequestOptions.DEFAULT)
-        .getDeleted();
-  }
-
-  private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)
-      throws IOException {
-    final GetIndexResponse response =
-        esClient
-            .indices()
-            .get(
-                new GetIndexRequest(indexPrefix + "*")
-                    .indicesOptions(LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED),
-                RequestOptions.DEFAULT);
-    final String[] indices = response.getIndices();
-    return indices != null && indices.length >= minCountOfIndices;
-  }
-
-  public int getIntValueForJSON(final String path, final String fieldname, final int defaultValue) {
+  private int getIntValueForJSON(
+      final String path, final String fieldname, final int defaultValue) {
     final Optional<JsonNode> jsonNode = getJsonFor(path);
     if (jsonNode.isPresent()) {
       final JsonNode field = jsonNode.get().findValue(fieldname);
@@ -285,7 +209,7 @@ public class ElasticsearchTestExtension
     return defaultValue;
   }
 
-  public Optional<JsonNode> getJsonFor(final String path) {
+  private Optional<JsonNode> getJsonFor(final String path) {
     try {
       final ObjectMapper objectMapper = new ObjectMapper();
       final Response response =

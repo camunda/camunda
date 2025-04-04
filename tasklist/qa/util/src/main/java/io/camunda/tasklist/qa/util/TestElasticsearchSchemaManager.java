@@ -7,8 +7,16 @@
  */
 package io.camunda.tasklist.qa.util;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.config.SchemaManagerConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -18,24 +26,68 @@ import org.springframework.stereotype.Component;
 @Component("tasklistSchemaManager")
 @Profile({"test"})
 @Conditional(ElasticSearchCondition.class)
-public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
-    implements TestSchemaManager {
+public class TestElasticsearchSchemaManager implements TestSchemaManager, AutoCloseable {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
-  public void deleteSchema() {
-    final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
-    LOGGER.info("Removing indices " + prefix + "*");
-    retryElasticsearchClient.deleteIndicesFor(prefix + "*");
-    retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
+  private final ElasticsearchClient client;
+
+  private final SearchEngineConfiguration configuration;
+
+  private final ObjectMapper objectMapper;
+
+  public TestElasticsearchSchemaManager(final SearchEngineConfiguration configuration) {
+    final var connector = new ElasticsearchConnector(configuration.connect());
+    client = connector.createClient();
+    this.configuration = configuration;
+    objectMapper = connector.objectMapper();
   }
 
+  @Override
+  public void createSchema() {
+    final IndexDescriptors indexDescriptors =
+        new IndexDescriptors(configuration.connect().getIndexPrefix(), true);
+    final var searchEngineClient = new ElasticsearchEngineClient(client, objectMapper);
+    // enable schema creation
+    final var schemaManagerConfiguration = new SchemaManagerConfiguration();
+    schemaManagerConfiguration.setCreateSchema(true);
+    schemaManagerConfiguration.setRetry(configuration.schemaManager().getRetry());
+    final SearchEngineConfiguration searchEngineConfiguration =
+        SearchEngineConfiguration.of(
+            b ->
+                b.connect(configuration.connect())
+                    .retention(configuration.retention())
+                    .index(configuration.index())
+                    .schemaManager(schemaManagerConfiguration));
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            indexDescriptors.indices(),
+            indexDescriptors.templates(),
+            searchEngineConfiguration,
+            objectMapper);
+    schemaManager.startup();
+  }
+
+  @Override
   public void deleteSchemaQuietly() {
     try {
       deleteSchema();
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.debug(t.getMessage());
     }
+  }
+
+  private void deleteSchema() throws IOException {
+    final String prefix = configuration.connect().getIndexPrefix();
+    LOGGER.info("Removing indices " + prefix + "*");
+    client.indices().delete(r -> r.index(prefix + "*"));
+    client.indices().deleteTemplate(r -> r.name(prefix + "*"));
+  }
+
+  @Override
+  public void close() throws Exception {
+    client.close();
   }
 }

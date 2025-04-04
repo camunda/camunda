@@ -16,8 +16,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.es.ElasticsearchConnector;
-import io.camunda.tasklist.es.ElasticsearchInternalTask;
-import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
@@ -43,8 +41,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TestApplicationWithNoBeans.class,
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
-      RetryElasticsearchClient.class,
-      ElasticsearchInternalTask.class,
       TasklistProperties.class,
       ElasticsearchConnector.class,
       JacksonConfig.class
