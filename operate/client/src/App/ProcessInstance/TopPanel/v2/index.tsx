@@ -115,6 +115,12 @@ const TopPanel: React.FC = observer(() => {
   });
 
   useEffect(() => {
+    if (flowNodeInstancesStatistics?.items) {
+      init(flowNodeInstancesStatistics.items);
+    }
+  });
+
+  useEffect(() => {
     sequenceFlowsStore.init();
 
     return () => {
