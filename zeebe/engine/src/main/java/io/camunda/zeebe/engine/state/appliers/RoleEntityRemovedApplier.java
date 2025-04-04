@@ -35,20 +35,19 @@ public class RoleEntityRemovedApplier implements TypedEventApplier<RoleIntent, R
       case USER ->
           membershipState.deleteRelation(
               EntityType.USER,
-              // TODO: Use entity id instead of key
-              Long.toString(value.getEntityKey()),
+              value.getEntityId(),
               RelationType.ROLE,
               // TODO: Use role id instead of key
               Long.toString(value.getRoleKey()));
       case MAPPING -> {
-        roleState.removeEntity(value.getRoleKey(), value.getEntityKey());
-        mappingState.removeRole(value.getEntityKey(), value.getRoleKey());
+        roleState.removeEntity(value.getRoleKey(), value.getEntityId());
+        mappingState.removeRole(value.getEntityId(), value.getRoleKey());
       }
       default ->
           throw new IllegalStateException(
               String.format(
-                  "Expected to remove entity '%d' from role '%d', but entities of type '%s' cannot be removed from roles",
-                  value.getEntityKey(), value.getRoleKey(), value.getEntityType()));
+                  "Expected to remove entity '%s' from role '%d', but entities of type '%s' cannot be removed from roles",
+                  value.getEntityId(), value.getRoleKey(), value.getEntityType()));
     }
   }
 }

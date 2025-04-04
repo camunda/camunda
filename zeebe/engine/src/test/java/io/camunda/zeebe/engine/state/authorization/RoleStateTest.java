@@ -95,11 +95,11 @@ public class RoleStateTest {
     roleState.create(roleRecord);
 
     // when
-    roleRecord.setEntityKey(2L).setEntityType(EntityType.USER);
+    roleRecord.setEntityId("roleEntityId").setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
 
     // then
-    final var entityType = roleState.getEntityType(roleKey, 2L).get();
+    final var entityType = roleState.getEntityType(roleKey, "roleEntityId").get();
     assertThat(entityType).isEqualTo(EntityType.USER);
   }
 
@@ -110,20 +110,25 @@ public class RoleStateTest {
     final var roleKey = 123L;
     final var roleId = "123";
     final var roleName = "foo";
+    final var firstEntityId = "firstEntityId";
+    final var secondEntityId = "secondEntityId";
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
+    roleRecord.setEntityId(firstEntityId).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
     roleState.addEntity(
-        new RoleRecord().setRoleKey(roleKey).setEntityKey(2L).setEntityType(EntityType.USER));
+        new RoleRecord()
+            .setRoleKey(roleKey)
+            .setEntityId(secondEntityId)
+            .setEntityType(EntityType.USER));
 
     // when
-    roleState.removeEntity(roleKey, 1L);
+    roleState.removeEntity(roleKey, firstEntityId);
 
     // then
-    final var deletedEntity = roleState.getEntityType(roleKey, 1L);
+    final var deletedEntity = roleState.getEntityType(roleKey, firstEntityId);
     assertThat(deletedEntity).isEmpty();
-    final var entityType = roleState.getEntityType(roleKey, 2L).get();
+    final var entityType = roleState.getEntityType(roleKey, secondEntityId).get();
     assertThat(entityType).isEqualTo(EntityType.USER);
   }
 
@@ -134,9 +139,10 @@ public class RoleStateTest {
     final var roleKey = 123L;
     final var roleId = "123";
     final var roleName = "foo";
+    final var entityId = "entityId";
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
+    roleRecord.setEntityId(entityId).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
 
     // when
@@ -145,7 +151,7 @@ public class RoleStateTest {
     // then
     final var deletedRole = roleState.getRole(roleKey);
     assertThat(deletedRole).isEmpty();
-    final var deletedEntity = roleState.getEntityType(roleKey, 1L);
+    final var deletedEntity = roleState.getEntityType(roleKey, entityId);
     assertThat(deletedEntity).isEmpty();
   }
 
@@ -156,18 +162,20 @@ public class RoleStateTest {
     final var roleKey = 123L;
     final var roleId = "123";
     final var roleName = "foo";
+    final var firstEntityId = "firstEntityId";
+    final var secondEntityId = "secondEntityId";
     final var roleRecord = new RoleRecord().setRoleId(roleId).setRoleKey(roleKey).setName(roleName);
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
+    roleRecord.setEntityId(firstEntityId).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
-    roleRecord.setEntityKey(2L).setEntityType(EntityType.UNSPECIFIED);
+    roleRecord.setEntityId(secondEntityId).setEntityType(EntityType.UNSPECIFIED);
     roleState.addEntity(roleRecord);
 
     // when
     final var entities = roleState.getEntitiesByType(roleKey);
 
     // then
-    assertThat(entities.get(EntityType.USER)).containsExactly(1L);
-    assertThat(entities.get(EntityType.UNSPECIFIED)).containsExactly(2L);
+    assertThat(entities.get(EntityType.USER)).containsExactly(firstEntityId);
+    assertThat(entities.get(EntityType.UNSPECIFIED)).containsExactly(secondEntityId);
   }
 }

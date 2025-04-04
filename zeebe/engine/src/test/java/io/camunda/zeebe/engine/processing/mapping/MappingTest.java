@@ -250,7 +250,7 @@ public class MappingTest {
     engine
         .role()
         .addEntity(role.getKey())
-        .withEntityKey(mappingRecord.getKey())
+        .withEntityId(mappingRecord.getValue().getMappingId())
         .withEntityType(EntityType.MAPPING)
         .add();
 
@@ -267,7 +267,7 @@ public class MappingTest {
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleKey(role.getKey())
-                .withEntityKey(mappingRecord.getKey())
+                .withEntityId(mappingRecord.getValue().getMappingId())
                 .exists())
         .isTrue();
   }

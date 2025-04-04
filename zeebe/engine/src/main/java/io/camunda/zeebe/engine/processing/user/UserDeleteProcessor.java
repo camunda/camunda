@@ -157,7 +157,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
           new RoleRecord()
               .setRoleKey(role.getRoleKey())
               .setRoleId(roleId)
-              .setEntityKey(userKey)
+              .setEntityId(username)
               .setEntityType(EntityType.USER));
     }
 

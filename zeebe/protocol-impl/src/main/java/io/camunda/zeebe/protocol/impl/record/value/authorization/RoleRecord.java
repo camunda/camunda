@@ -22,19 +22,16 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   private final StringProperty roleIdProp = new StringProperty("roleId", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty descriptionProp = new StringProperty("description", "");
-  // TODO remove entityKeyProp https://github.com/camunda/camunda/issues/30116
-  private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
   private final StringProperty entityIdProp = new StringProperty("entityId", "");
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
   public RoleRecord() {
-    super(7);
+    super(6);
     declareProperty(roleKeyProp)
         .declareProperty(roleIdProp)
         .declareProperty(nameProp)
         .declareProperty(descriptionProp)
-        .declareProperty(entityKeyProp)
         .declareProperty(entityIdProp)
         .declareProperty(entityTypeProp);
   }
@@ -80,11 +77,6 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   }
 
   @Override
-  public long getEntityKey() {
-    return entityKeyProp.getValue();
-  }
-
-  @Override
   public String getEntityId() {
     return BufferUtil.bufferAsString(entityIdProp.getValue());
   }
@@ -101,11 +93,6 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
 
   public RoleRecord setEntityType(final EntityType entityType) {
     entityTypeProp.setValue(entityType);
-    return this;
-  }
-
-  public RoleRecord setEntityKey(final long entityKey) {
-    entityKeyProp.setValue(entityKey);
     return this;
   }
 }

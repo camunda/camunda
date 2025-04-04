@@ -428,7 +428,7 @@ public class CommandDistributionIdempotencyTest {
                   return ENGINE
                       .role()
                       .addEntity(role.getKey())
-                      .withEntityKey(user.getKey())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
                 }),
@@ -445,13 +445,13 @@ public class CommandDistributionIdempotencyTest {
                   ENGINE
                       .role()
                       .addEntity(role.getKey())
-                      .withEntityKey(user.getKey())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
                   return ENGINE
                       .role()
                       .removeEntity(role.getKey())
-                      .withEntityKey(user.getKey())
+                      .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .remove();
                 }),

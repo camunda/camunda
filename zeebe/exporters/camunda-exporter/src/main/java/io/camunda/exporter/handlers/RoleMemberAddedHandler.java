@@ -44,7 +44,7 @@ public class RoleMemberAddedHandler implements ExportHandler<RoleEntity, RoleRec
   @Override
   public List<String> generateIds(final Record<RoleRecordValue> record) {
     final RoleRecordValue value = record.getValue();
-    return List.of(RoleEntity.getChildKey(value.getRoleKey(), value.getEntityKey()));
+    return List.of(RoleEntity.getChildKey(value.getRoleKey(), value.getEntityId()));
   }
 
   @Override
@@ -55,7 +55,7 @@ public class RoleMemberAddedHandler implements ExportHandler<RoleEntity, RoleRec
   @Override
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     entity
-        .setMemberKey(record.getValue().getEntityKey())
+        .setMemberId(record.getValue().getEntityId())
         .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createChild(record.getValue().getRoleKey()));
   }
 

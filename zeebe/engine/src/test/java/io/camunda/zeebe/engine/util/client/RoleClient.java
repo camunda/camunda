@@ -163,8 +163,8 @@ public class RoleClient {
       roleRecord.setRoleKey(key);
     }
 
-    public RoleAddEntityClient withEntityKey(final long entityKey) {
-      roleRecord.setEntityKey(entityKey);
+    public RoleAddEntityClient withEntityId(final String entityId) {
+      roleRecord.setEntityId(entityId);
       return this;
     }
 
@@ -210,8 +210,8 @@ public class RoleClient {
       roleRecord.setRoleKey(key);
     }
 
-    public RoleRemoveEntityClient withEntityKey(final long entityKey) {
-      roleRecord.setEntityKey(entityKey);
+    public RoleRemoveEntityClient withEntityId(final String entityId) {
+      roleRecord.setEntityId(entityId);
       return this;
     }
 
