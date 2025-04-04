@@ -52,25 +52,27 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
+    final var groupId = record.getGroupId();
     final var groupKey = record.getGroupKey();
-    final var persistedRecord = groupState.get(groupKey);
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to update group with key '%s', but a group with this key does not exist."
-              .formatted(groupKey);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
-            .addResourceId(persistedRecord.get().getName());
+            .addResourceId(groupId);
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    final var persistedRecord = groupState.get(groupId);
+    if (persistedRecord.isEmpty()) {
+      final var errorMessage =
+          "Expected to update group with ID '%s', but a group with this ID does not exist."
+              .formatted(groupId);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 

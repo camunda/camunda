@@ -63,17 +63,15 @@ public class GroupTest {
 
   @Test
   public void shouldUpdateGroup() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30024
     // given
     final var name = UUID.randomUUID().toString();
-    final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when
     final var updatedName = name + "-updated";
     final var updatedGroupRecord =
-        engine.group().updateGroup(groupKey).withName(updatedName).update();
+        engine.group().updateGroup(groupId).withName(updatedName).update();
 
     final var updatedGroup = updatedGroupRecord.getValue();
     assertThat(updatedGroup).hasName(updatedName);
@@ -81,19 +79,18 @@ public class GroupTest {
 
   @Test
   public void shouldRejectUpdatedIfNoGroupExists() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30024
     // when
-    final var groupKey = 1L;
+    final var groupId = UUID.randomUUID().toString();
     final var updatedName = "yolo";
     final var updatedGroupRecord =
-        engine.group().updateGroup(groupKey).withName(updatedName).expectRejection().update();
+        engine.group().updateGroup(groupId).withName(updatedName).expectRejection().update();
 
     // then
     assertThat(updatedGroupRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update group with key '%d', but a group with this key does not exist."
-                .formatted(groupKey));
+            "Expected to update group with ID '%s', but a group with this ID does not exist."
+                .formatted(groupId));
   }
 
   @Test

@@ -22,6 +22,6 @@ public class GroupUpdatedApplier implements TypedEventApplier<GroupIntent, Group
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
-    groupState.update(key, value);
+    groupState.update(value);
   }
 }
