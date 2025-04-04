@@ -35,7 +35,6 @@ public record ProcessInstanceFilter(
     List<VariableValueFilter> variableFilters,
     List<Operation<String>> errorMessageOperations,
     List<Operation<String>> batchOperationIdOperations,
-    List<Operation<String>> errorMessageOperations,
     Boolean hasRetriesLeft,
     List<Operation<String>> flowNodeIdOperations,
     Boolean hasFlowNodeInstanceIncident,
@@ -79,6 +78,7 @@ public record ProcessInstanceFilter(
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
     private List<Operation<String>> errorMessageOperations;
+    private List<Operation<String>> batchOperationIdOperations;
     private Boolean hasRetriesLeft;
     private List<Operation<String>> flowNodeIdOperations;
     private Boolean hasFlowNodeInstanceIncident;
@@ -378,7 +378,6 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
           Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
           hasRetriesLeft,
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
           hasFlowNodeInstanceIncident,

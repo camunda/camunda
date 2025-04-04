@@ -1476,7 +1476,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(2);
   }
 
   @Test
