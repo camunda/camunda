@@ -338,13 +338,10 @@ public final class DbProcessState implements MutableProcessState {
         new TenantIdAndProcessIdAndVersion(tenantId, bpmnProcessId, version);
     processesByTenantAndProcessIdAndVersionCache.invalidate(tenantIdAndProcessIdAndVersion);
 
-    {
-      final var key = new TenantIdAndProcessDefinitionKey(tenantId, processDefinitionKey);
-      final var cached = processByTenantAndKeyCache.getIfPresent(key);
-      if (cached != null && cached.getVersion() <= version) {
-        processByTenantAndKeyCache.invalidate(key);
-      }
-    }
+    final var tenantIdAndProcessDefinitionKey =
+        new TenantIdAndProcessDefinitionKey(tenantId, processDefinitionKey);
+    final var cached = processByTenantAndKeyCache.getIfPresent(tenantIdAndProcessDefinitionKey);
+    processByTenantAndKeyCache.invalidate(tenantIdAndProcessDefinitionKey);
 
     final var tenantIdAndProcessIdAndDeploymentKey =
         new TenantIdAndProcessIdAndDeploymentKey(tenantId, bpmnProcessId, deploymentKey);

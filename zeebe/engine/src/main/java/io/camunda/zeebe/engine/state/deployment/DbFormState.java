@@ -239,12 +239,12 @@ public class DbFormState implements MutableFormState {
     formKeyByFormIdAndDeploymentKeyColumnFamily.insert(
         tenantAwareFormIdAndDeploymentKey, fkFormKey);
 
-    final var dbKey = new TenantIdAndFormId(tenantId, BufferUtil.bufferAsString(form.getFormId()));
-    final var formInCache = formsByTenantIdAndIdCache.getIfPresent(dbKey);
-    if (formInCache == null || formInCache.getVersion() <= form.getVersion()) {
-      final var copyForCache = form.copy();
-      formsByTenantIdAndIdCache.put(dbKey, copyForCache);
-    }
+    final var formId = BufferUtil.bufferAsString(form.getFormId());
+    getFormFromCache(tenantId, formId)
+        .filter(cachedForm -> cachedForm.getVersion() == form.getVersion())
+        .ifPresent(
+            cachedForm ->
+                formsByTenantIdAndIdCache.put(new TenantIdAndFormId(tenantId, formId), form));
   }
 
   @Override
