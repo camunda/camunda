@@ -9,9 +9,9 @@ package io.camunda.zeebe.protocol.impl;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.protocol.record.BrokerInfoEncoder;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import java.util.HashMap;
@@ -53,17 +53,16 @@ final class BrokerInfoTest {
     partitionHealthStatuses.forEach(brokerInfo::addPartitionHealth);
 
     // when
-    encodeDecode(brokerInfo);
+    final var decoded = encodeDecode(brokerInfo);
 
     // then
-    assertThat(brokerInfo.getNodeId()).isEqualTo(nodeId);
-    assertThat(brokerInfo.getPartitionsCount()).isEqualTo(partitionsCount);
-    assertThat(brokerInfo.getClusterSize()).isEqualTo(clusterSize);
-    assertThat(brokerInfo.getReplicationFactor()).isEqualTo(replicationFactor);
-    assertThat(brokerInfo.getAddresses()).containsAllEntriesOf(addresses);
-    assertThat(brokerInfo.getPartitionRoles()).containsAllEntriesOf(partitionRoles);
-    assertThat(brokerInfo.getPartitionHealthStatuses())
-        .containsAllEntriesOf(partitionHealthStatuses);
+    assertThat(decoded.getNodeId()).isEqualTo(nodeId);
+    assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
+    assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
+    assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
+    assertThat(decoded.getAddresses()).containsAllEntriesOf(addresses);
+    assertThat(decoded.getPartitionRoles()).containsAllEntriesOf(partitionRoles);
+    assertThat(decoded.getPartitionHealthStatuses()).containsAllEntriesOf(partitionHealthStatuses);
   }
 
   @Test
@@ -82,16 +81,16 @@ final class BrokerInfoTest {
             .setReplicationFactor(replicationFactor);
 
     // when
-    encodeDecode(brokerInfo);
+    final var decoded = encodeDecode(brokerInfo);
 
     // then
-    assertThat(brokerInfo.getNodeId()).isEqualTo(nodeId);
-    assertThat(brokerInfo.getPartitionsCount()).isEqualTo(partitionsCount);
-    assertThat(brokerInfo.getClusterSize()).isEqualTo(clusterSize);
-    assertThat(brokerInfo.getReplicationFactor()).isEqualTo(replicationFactor);
-    assertThat(brokerInfo.getAddresses()).isEmpty();
-    assertThat(brokerInfo.getPartitionRoles()).isEmpty();
-    assertThat(brokerInfo.getPartitionHealthStatuses()).isEmpty();
+    assertThat(decoded.getNodeId()).isEqualTo(nodeId);
+    assertThat(decoded.getPartitionsCount()).isEqualTo(partitionsCount);
+    assertThat(decoded.getClusterSize()).isEqualTo(clusterSize);
+    assertThat(decoded.getReplicationFactor()).isEqualTo(replicationFactor);
+    assertThat(decoded.getAddresses()).isEmpty();
+    assertThat(decoded.getPartitionRoles()).isEmpty();
+    assertThat(decoded.getPartitionHealthStatuses()).isEmpty();
   }
 
   @Test
@@ -100,27 +99,34 @@ final class BrokerInfoTest {
     final BrokerInfo brokerInfo = new BrokerInfo();
 
     // when
-    encodeDecode(brokerInfo);
+    final var decoded = encodeDecode(brokerInfo);
 
     // then
-    assertThat(brokerInfo.getNodeId()).isEqualTo(BrokerInfoEncoder.nodeIdNullValue());
-    assertThat(brokerInfo.getPartitionsCount())
-        .isEqualTo(BrokerInfoEncoder.partitionsCountNullValue());
-    assertThat(brokerInfo.getClusterSize()).isEqualTo(BrokerInfoEncoder.clusterSizeNullValue());
-    assertThat(brokerInfo.getReplicationFactor())
-        .isEqualTo(BrokerInfoEncoder.replicationFactorNullValue());
-    assertThat(brokerInfo.getAddresses()).isEmpty();
-    assertThat(brokerInfo.getPartitionRoles()).isEmpty();
-    assertThat(brokerInfo.getPartitionHealthStatuses()).isEmpty();
+    assertThatIllegalStateException()
+        .isThrownBy(decoded::getNodeId)
+        .withMessageContaining("nodeId");
+    assertThatIllegalStateException()
+        .isThrownBy(decoded::getPartitionsCount)
+        .withMessageContaining("partitionsCount");
+    assertThatIllegalStateException()
+        .isThrownBy(decoded::getClusterSize)
+        .withMessageContaining("clusterSize");
+    assertThatIllegalStateException()
+        .isThrownBy(decoded::getReplicationFactor)
+        .withMessageContaining("replicationFactor");
+    assertThat(decoded.getAddresses()).isEmpty();
+    assertThat(decoded.getPartitionRoles()).isEmpty();
+    assertThat(decoded.getPartitionHealthStatuses()).isEmpty();
   }
 
-  private void encodeDecode(final BrokerInfo brokerInfo) {
+  private BrokerInfo encodeDecode(final BrokerInfo brokerInfo) {
     // encode
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[brokerInfo.getLength()]);
     brokerInfo.write(buffer, 0);
 
+    final var decoded = new BrokerInfo();
     // decode
-    brokerInfo.reset();
-    brokerInfo.wrap(buffer, 0, buffer.capacity());
+    decoded.wrap(buffer, 0, buffer.capacity());
+    return decoded;
   }
 }
