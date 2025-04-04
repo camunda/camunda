@@ -4799,7 +4799,7 @@ components:
         - COMPLETED
         - TERMINATED
     FlowNodeInstanceStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      description: Flow node states, one of ACTIVE, COMPLETED, TERMINATED.
       enum:
         - ACTIVE
         - COMPLETED
