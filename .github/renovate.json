@@ -114,39 +114,6 @@
       "additionalBranchPrefix": "fe-"
     },
     {
-      "description": "Exclude frontend deps until Optimize migrates to react-router v6 and react v18",
-      "matchManagers": ["npm", "nvm"],
-      "matchFileNames": ["optimize/**"],
-      "matchPackagePatterns": [
-        "@carbon/react",
-        "old-bpmn-js",
-        "react",
-        "react-dom",
-        "react-router",
-        "react-router-dom",
-        "@types/react",
-        "@types/react-dom",
-        "@types/react-router-dom"
-      ],
-      "enabled": false
-    },
-    {
-      "description": "Exclude Optimize backend dependencies",
-      "matchManagers": ["maven"],
-      "matchFileNames": ["optimize/**"],
-      "matchPackagePatterns": [
-        "io.camunda.optimize:optimize-data-generator",
-        "io.camunda.optimize:camunda-optimize",
-        "io.camunda.optimize:util",
-        "io.camunda:identity-sdk",
-        "io.camunda:identity-spring-boot-starter",
-        "io.camunda:zeebe-client-java",
-        "io.camunda:zeebe-protocol",
-        "ant-contrib:ant-contrib"
-      ],
-      "enabled": false
-    },
-    {
       "matchPackageNames": ["mcr.microsoft.com/playwright"],
       "additionalBranchPrefix": "fe-"
     },

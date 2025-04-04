@@ -1,3 +1,0 @@
-# Environment Post Processor
-org.springframework.boot.env.EnvironmentPostProcessor=\
-io.camunda.optimize.SpringPropertiesPostProcessor
