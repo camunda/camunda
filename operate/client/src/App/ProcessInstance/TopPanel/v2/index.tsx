@@ -11,7 +11,6 @@ import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {incidentsStore} from 'modules/stores/incidents';
 import {IncidentsBanner} from '../IncidentsBanner';
@@ -51,6 +50,8 @@ import {
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
 import {finishMovingToken} from 'modules/utils/modifications';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {init} from 'modules/utils/flowNodeMetadata';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -74,6 +75,7 @@ const TopPanel: React.FC = observer(() => {
   const currentSelection = flowNodeSelectionStore.state.selection;
   const {sourceFlowNodeIdForMoveOperation} = modificationsStore.state;
   const [isInTransition, setIsInTransition] = useState(false);
+  const {data: flowNodeInstancesStatistics} = useFlownodeInstancesStatistics();
   const {data: statistics} = useFlownodeStatistics();
   const {data: selectableFlowNodes} = useSelectableFlowNodes();
   const {data: executedFlowNodes} = useExecutedFlowNodes();
@@ -95,15 +97,20 @@ const TopPanel: React.FC = observer(() => {
     totalMoveOperationRunningInstancesVisible || 1;
 
   useEffect(() => {
+    if (flowNodeInstancesStatistics?.items) {
+      init(flowNodeInstancesStatistics.items);
+    }
+  });
+
+  useEffect(() => {
     sequenceFlowsStore.init();
-    flowNodeMetaDataStore.init();
 
     return () => {
       sequenceFlowsStore.reset();
-      flowNodeMetaDataStore.reset();
       diagramOverlaysStore.reset();
     };
   }, [processInstanceId]);
+
   const allFlowNodeStateOverlays = statistics?.map(
     ({flowNodeState, count, id: flowNodeId}) => ({
       payload: {flowNodeState, count},

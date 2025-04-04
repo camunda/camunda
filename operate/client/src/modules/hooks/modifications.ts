@@ -32,9 +32,11 @@ import {
   useNonModifiableFlowNodes,
 } from './processInstanceDetailsDiagram';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
+import {useHasPendingCancelOrMoveModification} from './flowNodeSelection';
 
 const useWillAllFlowNodesBeCanceled = () => {
   const {data: statistics} = useFlownodeInstancesStatistics();
+  const modificationsByFlowNode = useModificationsByFlowNode();
 
   if (
     modificationsStore.flowNodeModifications.some(
@@ -50,8 +52,7 @@ const useWillAllFlowNodesBeCanceled = () => {
     statistics?.items.every(
       ({flowNodeId, active, incidents}) =>
         (active === 0 && incidents === 0) ||
-        modificationsStore.modificationsByFlowNode[flowNodeId]
-          ?.areAllTokensCanceled,
+        modificationsByFlowNode[flowNodeId]?.areAllTokensCanceled,
     ) || false
   );
 };
@@ -66,8 +67,8 @@ const useModificationsByFlowNode = () => {
     useTotalRunningInstancesForFlowNodes(flowNodeIds);
   const flowNodeData = useMemo(() => {
     return flowNodeIds.reduce(
-      (acc, id, index) => {
-        acc[id] = flowNodeDataArray?.[index] ?? 0;
+      (acc, id) => {
+        acc[id] = flowNodeDataArray?.[id] ?? 0;
         return acc;
       },
       {} as Record<string, number>,
@@ -194,6 +195,8 @@ const useModificationsByFlowNode = () => {
 const useCanBeCanceled = (selectedRunningInstanceCount: number) => {
   const cancellableFlowNodes = useCancellableFlowNodes();
   const canBeModified = useCanBeModified();
+  const hasPendingCancelOrMoveModification =
+    useHasPendingCancelOrMoveModification();
 
   if (
     modificationRulesStore.selectedFlowNodeId === undefined ||
@@ -201,8 +204,6 @@ const useCanBeCanceled = (selectedRunningInstanceCount: number) => {
   ) {
     return false;
   }
-
-  const {hasPendingCancelOrMoveModification} = flowNodeSelectionStore;
 
   return (
     cancellableFlowNodes.includes(modificationRulesStore.selectedFlowNodeId) &&
