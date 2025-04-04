@@ -11,6 +11,7 @@ import { isOIDC } from "src/configuration";
 export const useGlobalRoutes = () => {
   const { t } = useTranslate();
   const { pathname } = useLocation();
+
   const authTypeDependentRoutes = isOIDC
     ? [
         {
