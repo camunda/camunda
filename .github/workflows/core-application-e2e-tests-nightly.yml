@@ -141,9 +141,3 @@ jobs:
             parse_junit --title "Nightly Core Application Run Test Results - $BRANCH_NAME - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f $JUNIT_RESULTS_FILE
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Core Application E2E Test Result
-          path: qa/core-application-e2e-test-suite/html-report
-          retention-days: 10
