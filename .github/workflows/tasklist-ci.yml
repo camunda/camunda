@@ -40,6 +40,10 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
+<<<<<<< HEAD
+=======
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
+>>>>>>> 8aeeb344 (ci: always trigger Tasklist CI on workflow_dispatch)
 
   run-tests:
     name: run-tests
@@ -47,3 +51,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
+<<<<<<< HEAD
+=======
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
+>>>>>>> 8aeeb344 (ci: always trigger Tasklist CI on workflow_dispatch)
