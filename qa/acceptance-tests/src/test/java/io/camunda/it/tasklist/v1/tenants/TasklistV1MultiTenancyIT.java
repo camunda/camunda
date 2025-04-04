@@ -13,68 +13,110 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.time.Duration;
+import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
+@Disabled
 public class TasklistV1MultiTenancyIT {
 
   public static final String PASSWORD = "password";
   private static final String TENANT_ID_1 = "tenant1";
   private static final String TENANT_ID_2 = "tenant2";
+
+  private static final String ADMIN_USER_NAME = "foo";
+  private static final String ADMIN_USER_PASSWORD = "foo";
   private static final String USERNAME_1 = "user1";
   private static final String USERNAME_2 = "user2";
   private static final String PROCESS_DEFINITION_ID = "process_with_assigned_user_task";
   private static final String PROCESS_DEFINITION_ID_2 = "bpm_variable_test";
-  private long processDefinitionKey1;
-  private long processDefinitionKey2;
 
-  @ZeebeIntegration.TestZeebe
-  private final TestStandaloneCamunda testInstance =
-      new TestStandaloneCamunda()
-          .withCamundaExporter()
+  @UserDefinition
+  private static final User ADMIN_USER =
+      new User(
+          ADMIN_USER_NAME,
+          ADMIN_USER_PASSWORD,
+          List.of(
+              new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_PROCESS_DEFINITION,
+                  List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_USER_TASK,
+                  List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_PROCESS_INSTANCE,
+                  List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
+                  List.of("*")),
+              new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*"))));
+
+  @UserDefinition private static final User USER1 = new User(USERNAME_1, PASSWORD, List.of());
+
+  @UserDefinition private static final User USER2 = new User(USERNAME_2, PASSWORD, List.of());
+  private static long processDefinitionKey1;
+  private static long processDefinitionKey2;
+
+  @MultiDbTestApplication
+  private static final TestSimpleCamundaApplication CAMUNDA_APPLICATION =
+      new TestSimpleCamundaApplication()
           .withAuthenticationMethod(AuthenticationMethod.BASIC)
           .withMultiTenancyEnabled();
 
-  @BeforeEach
-  public void beforeEach() {
-    try (final var authorizationsUtil =
-        AuthorizationsUtil.create(testInstance, testInstance.getElasticSearchHostAddress())) {
-      authorizationsUtil.createUser(USERNAME_1, PASSWORD);
-      authorizationsUtil.createUser(USERNAME_2, PASSWORD);
-      authorizationsUtil.createTenant(TENANT_ID_1, TENANT_ID_1, "demo");
-      authorizationsUtil.createTenant(TENANT_ID_2, TENANT_ID_2, USERNAME_2);
+  @BeforeAll
+  public static void beforeAll(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(USERNAME_1) final CamundaClient userOneClient,
+      @Authenticated(USERNAME_2) final CamundaClient userTwoClient) {
 
-      final var processTenant1 =
-          deployResourceForTenant(
-                  authorizationsUtil.getDefaultClient(),
-                  String.format("process/%s.bpmn", PROCESS_DEFINITION_ID),
-                  TENANT_ID_1)
-              .getProcesses()
-              .getFirst();
-      assertThat(processTenant1.getTenantId()).isEqualTo(TENANT_ID_1);
-      processDefinitionKey1 = processTenant1.getProcessDefinitionKey();
+    // User ONE <-> Tenant ONE
+    adminClient.newCreateTenantCommand().tenantId(TENANT_ID_1).name(TENANT_ID_1).send().join();
+    adminClient.newAssignUserToTenantCommand(TENANT_ID_1).username("demo").send().join();
 
-      final var processTenant2 =
-          deployResourceForTenant(
-                  authorizationsUtil.getDefaultClient(),
-                  String.format("process/%s.bpmn", PROCESS_DEFINITION_ID_2),
-                  TENANT_ID_2)
-              .getProcesses()
-              .getFirst();
-      assertThat(processTenant2.getTenantId()).isEqualTo(TENANT_ID_2);
+    // User TWO <-> Tenant TWO
+    adminClient.newCreateTenantCommand().tenantId(TENANT_ID_2).name(TENANT_ID_2).send().join();
+    adminClient.newAssignUserToTenantCommand(TENANT_ID_2).username(USERNAME_2).send().join();
 
-      processDefinitionKey2 = processTenant2.getProcessDefinitionKey();
+    // deploy
+    final var processTenant1 =
+        deployResourceForTenant(
+                adminClient, String.format("process/%s.bpmn", PROCESS_DEFINITION_ID), TENANT_ID_1)
+            .getProcesses()
+            .getFirst();
+    assertThat(processTenant1.getTenantId()).isEqualTo(TENANT_ID_1);
+    processDefinitionKey1 = processTenant1.getProcessDefinitionKey();
 
-      waitForProcessesToBeDeployed(authorizationsUtil.getDefaultClient(), 2);
-    }
+    final var processTenant2 =
+        deployResourceForTenant(
+                adminClient, String.format("process/%s.bpmn", PROCESS_DEFINITION_ID_2), TENANT_ID_2)
+            .getProcesses()
+            .getFirst();
+    assertThat(processTenant2.getTenantId()).isEqualTo(TENANT_ID_2);
+    processDefinitionKey2 = processTenant2.getProcessDefinitionKey();
+    waitForProcessesToBeDeployed(adminClient, 2);
   }
 
   // This test is disable for now because of the class TasklistSecurityStubsConfiguration
@@ -86,9 +128,9 @@ public class TasklistV1MultiTenancyIT {
   @Disabled
   public void shouldGetProcessByKeyOnlyForProcessesInAuthenticatedTenants() {
     try (final var tasklistClient1 =
-            testInstance.newTasklistClient().withAuthentication(USERNAME_1, PASSWORD);
+            CAMUNDA_APPLICATION.newTasklistClient().withAuthentication(USERNAME_1, PASSWORD);
         final var tasklistClient2 =
-            testInstance.newTasklistClient().withAuthentication(USERNAME_2, PASSWORD)) {
+            CAMUNDA_APPLICATION.newTasklistClient().withAuthentication(USERNAME_2, PASSWORD)) {
 
       // user 1 can read process definition 1
       assertThat(tasklistClient1.getProcessDefinition(processDefinitionKey1).statusCode())
