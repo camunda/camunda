@@ -9,7 +9,7 @@ package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import io.camunda.zeebe.util.CachedBytesEnum;
+import io.camunda.zeebe.msgpack.util.CachedBytesEnum;
 import java.util.Objects;
 
 public final class EnumValue<E extends Enum<E>> extends BaseValue {

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.util;
+package io.camunda.zeebe.msgpack.util;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -28,6 +28,12 @@ public class CachedBytesEnumTest {
   public void shouldGetEnumValue(final TestEnum testEnum) {
     final var buffer = BufferUtil.wrapString(testEnum.toString());
     assertThat(cachedEnum.getValue(buffer)).isEqualTo(testEnum);
+  }
+
+  @EnumSource(TestEnum.class)
+  @ParameterizedTest
+  public void shouldReturnAlwaysTheSameBuffer(final TestEnum testEnum) {
+    assertThat(cachedEnum.byteRepr(testEnum)).isSameAs(cachedEnum.byteRepr(testEnum));
   }
 
   private enum TestEnum {
