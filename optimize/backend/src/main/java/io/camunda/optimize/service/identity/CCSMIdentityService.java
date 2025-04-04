@@ -7,19 +7,16 @@
  */
 package io.camunda.optimize.service.identity;
 
-import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
-
 import io.camunda.optimize.dto.optimize.GroupDto;
 import io.camunda.optimize.dto.optimize.IdentityDto;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -55,18 +52,9 @@ public class CCSMIdentityService extends AbstractIdentityService {
       final String userId, final HttpServletRequest request) {
     return Optional.ofNullable(request.getCookies())
         .flatMap(
-            cookies -> {
-              final Cookie authorizationCookie =
-                  Arrays.stream(request.getCookies())
-                      .filter(cookie -> OPTIMIZE_AUTHORIZATION.equals(cookie.getName()))
-                      .findAny()
-                      .orElse(null);
-              return Optional.ofNullable(authorizationCookie)
-                  .map(
-                      cookie ->
-                          ccsmTokenService.getUserInfoFromToken(
-                              userId, authorizationCookie.getValue()));
-            });
+            cookies ->
+                AuthCookieService.extractJoinedCookieValueFromCookies(List.of(request.getCookies()))
+                    .map(cookie -> ccsmTokenService.getUserInfoFromToken(userId, cookie)));
   }
 
   @Override

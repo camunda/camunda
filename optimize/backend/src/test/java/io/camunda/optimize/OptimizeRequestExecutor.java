@@ -11,7 +11,6 @@ import static io.camunda.optimize.MetricEnum.INDEXING_DURATION_METRIC;
 import static io.camunda.optimize.MetricEnum.NEW_PAGE_FETCH_TIME_METRIC;
 import static io.camunda.optimize.MetricEnum.OVERALL_IMPORT_TIME_METRIC;
 import static io.camunda.optimize.OptimizeMetrics.METRICS_ENDPOINT;
-import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static jakarta.ws.rs.HttpMethod.DELETE;
 import static jakarta.ws.rs.HttpMethod.GET;
@@ -163,7 +162,8 @@ public class OptimizeRequestExecutor {
       initAuthCookie();
     }
     if (authCookie != null) {
-      builder = builder.cookie(OPTIMIZE_AUTHORIZATION, authCookie);
+      builder =
+          builder.cookie(AuthCookieService.getAuthorizationCookieNameWithSuffix(0), authCookie);
     }
 
     for (final Map.Entry<String, String> headerEntry : requestHeaders.entrySet()) {

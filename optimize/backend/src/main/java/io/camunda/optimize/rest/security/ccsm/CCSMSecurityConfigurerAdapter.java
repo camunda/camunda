@@ -90,6 +90,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter(final HttpSecurity http)
       throws Exception {
     return new CCSMAuthenticationCookieFilter(
+        configurationService,
         ccsmTokenService,
         http.getSharedObject(AuthenticationManagerBuilder.class)
             .authenticationProvider(preAuthenticatedAuthenticationProvider)
