@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>8.4.18-SNAPSHOT</version>
+    <version>8.4.19-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
