@@ -704,7 +704,7 @@ public class TaskListenerBlockedTransitionTest {
             r -> r.getValue().getAction(),
             r -> r.getValue().getChangedAttributes())
         .containsExactly(
-            tuple(UserTaskIntent.CREATING, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
             tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
             tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
