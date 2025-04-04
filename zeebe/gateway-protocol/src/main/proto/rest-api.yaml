@@ -4467,6 +4467,11 @@ components:
           type: array
           items:
             type: string
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            type: string
     AdvancedStringFilter:
       title: Advanced filter
       description: Advanced string filter.
