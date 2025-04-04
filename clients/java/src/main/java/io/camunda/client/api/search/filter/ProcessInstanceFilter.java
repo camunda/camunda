@@ -142,4 +142,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by hasFlowNodeInstanceIncident */
   ProcessInstanceFilter hasFlowNodeInstanceIncident(final Boolean hasFlowNodeInstanceIncident);
+
+  /** Filter by incidentErrorHashCode */
+  ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode);
 }

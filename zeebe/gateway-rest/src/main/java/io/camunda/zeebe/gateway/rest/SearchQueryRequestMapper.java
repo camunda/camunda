@@ -638,6 +638,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
       ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
       ofNullable(filter.getFlowNodeId())
           .map(mapToOperations(String.class))
@@ -647,6 +650,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getFlowNodeInstanceState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeInstanceStateOperations);
+      ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFiltersForProcessInstance(filter.getVariables());
@@ -656,9 +660,6 @@ public final class SearchQueryRequestMapper {
           builder.variables(either.get());
         }
       }
-      ofNullable(filter.getErrorMessage())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::errorMessageOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

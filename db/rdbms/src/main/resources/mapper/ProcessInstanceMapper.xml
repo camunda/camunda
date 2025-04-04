@@ -219,6 +219,14 @@
         )
       </foreach>
     </if>
+    <if test="filter.incidentErrorHashCodes != null and !filter.incidentErrorHashCodes.isEmpty()">
+        AND EXISTS (
+        SELECT 1
+        FROM INCIDENT i
+        WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+        AND i.ERROR_MESSAGE_HASH IN <foreach collection="filter.incidentErrorHashCodes" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      )
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">

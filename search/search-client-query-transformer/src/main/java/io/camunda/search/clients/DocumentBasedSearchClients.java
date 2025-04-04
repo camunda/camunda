@@ -22,6 +22,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
@@ -33,6 +34,9 @@ import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
@@ -61,7 +65,9 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DocumentBasedSearchClients implements SearchClientsProxy, CloseableSilently {
@@ -182,7 +188,60 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery filter) {
+    if (!filter.filter().incidentErrorHashCodes().isEmpty()) {
+      return searchProcessInstancesByIncidentErrorHash(filter);
+    }
     return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
+  }
+
+  private SearchQueryResult<ProcessInstanceEntity> searchProcessInstancesByIncidentErrorHash(
+      final ProcessInstanceQuery filter) {
+
+    final var originalFilter = filter.filter();
+
+    // Search for active incidents that match the given error message hash codes
+    final var incidentFilter =
+        FilterBuilders.incident(
+            f ->
+                f.errorMessageHashes(originalFilter.incidentErrorHashCodes())
+                    .states(IncidentState.ACTIVE));
+
+    final var incidentResult = searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
+
+    if (incidentResult.items().isEmpty()) {
+      return new SearchQueryResult.Builder<ProcessInstanceEntity>().build();
+    }
+
+    // Collect all relevant process instance keys (from both incidents and existing filter)
+    final Set<Long> processInstanceKeys = new HashSet<>();
+    incidentResult.items().forEach(i -> processInstanceKeys.add(i.processInstanceKey()));
+
+    for (final var op : originalFilter.processInstanceKeyOperations()) {
+      if (op.operator().equals(Operator.EQUALS)) {
+        processInstanceKeys.add(op.value());
+      } else if (op.operator().equals(Operator.IN)) {
+        processInstanceKeys.addAll(op.values());
+      }
+    }
+
+    // Create a new filter that narrows the results to only process instances with
+    // matching incident error hashes and existing key filters
+    final var updatedFilter =
+        originalFilter.toBuilder()
+            .replaceProcessInstanceKeyOperations(
+                List.of(Operation.in(List.copyOf(processInstanceKeys))))
+            .hasIncident(true)
+            .build();
+
+    final var updatedQuery =
+        ProcessInstanceQuery.of(
+            q ->
+                q.filter(updatedFilter)
+                    .sort(filter.sort())
+                    .page(filter.page())
+                    .resultConfig(filter.resultConfig()));
+
+    return getSearchExecutor().search(updatedQuery, ProcessInstanceForListViewEntity.class);
   }
 
   @Override

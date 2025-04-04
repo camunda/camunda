@@ -8,12 +8,14 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.CREATION_TIME;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ERROR_MSG_HASH;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ERROR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.FLOW_NODE_INSTANCE_KEY;
@@ -57,6 +59,7 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
     final var stateQuery = getStateQuery(filter.states());
     final var jobKeyQuery = getJobKeyQuery(filter.jobKeys());
     final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
+    final var errorMessageHashesQuery = getErrorMessageHashesQuery(filter.errorMessageHashes());
 
     return and(
         keyQuery,
@@ -70,7 +73,8 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
         creationTimeQuery,
         stateQuery,
         jobKeyQuery,
-        tenantIdQuery);
+        tenantIdQuery,
+        errorMessageHashesQuery);
   }
 
   private SearchQuery getTenantIdQuery(final List<String> tenantIds) {
@@ -124,5 +128,9 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
 
   private SearchQuery getKeyQuery(final List<Long> keys) {
     return longTerms(KEY, keys);
+  }
+
+  private SearchQuery getErrorMessageHashesQuery(final List<Integer> errorMessageHashes) {
+    return intTerms(ERROR_MSG_HASH, errorMessageHashes);
   }
 }

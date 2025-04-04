@@ -315,6 +315,12 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode) {
+    filter.setIncidentErrorHashCode(incidentErrorHashCode);
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ProcessInstanceFilter getSearchRequestProperty() {
     return filter;
   }

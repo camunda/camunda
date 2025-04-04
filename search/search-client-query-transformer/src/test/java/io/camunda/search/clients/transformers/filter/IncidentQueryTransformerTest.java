@@ -259,4 +259,22 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
               assertThat(t.value().stringValue()).isEqualTo("Homer");
             });
   }
+
+  @Test
+  public void shouldQueryByIncidentErrorHashCode() {
+    final var filter = FilterBuilders.incident(f -> f.errorMessageHashes(123456780));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("errorMessageHash");
+              assertThat(t.value().intValue()).isEqualTo(123456780);
+            });
+  }
 }

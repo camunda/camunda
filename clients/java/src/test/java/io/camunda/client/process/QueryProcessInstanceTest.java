@@ -93,7 +93,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .hasRetriesLeft(true)
                     .flowNodeId("flowNodeId")
                     .flowNodeInstanceState(FlowNodeInstanceState.ACTIVE)
-                    .hasFlowNodeInstanceIncident(true))
+                    .hasFlowNodeInstanceIncident(true)
+                    .incidentErrorHashCode(123456789))
         .send()
         .join();
     // then
@@ -122,6 +123,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getFlowNodeInstanceState().get$Eq())
         .isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasFlowNodeInstanceIncident()).isEqualTo(true);
+    assertThat(filter.getIncidentErrorHashCode()).isEqualTo(123456789);
   }
 
   @Test
