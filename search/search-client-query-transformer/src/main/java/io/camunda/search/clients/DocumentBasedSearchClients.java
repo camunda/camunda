@@ -38,8 +38,6 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
-import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -225,8 +223,9 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     }
 
     final var updatedFilter =
-        builderFrom(originalFilter)
-            .processInstanceKeyOperations(Operation.in(List.copyOf(processInstanceKeys)))
+        originalFilter.toBuilder()
+            .replaceProcessInstanceKeyOperations(
+                List.of(Operation.in(List.copyOf(processInstanceKeys))))
             .hasIncident(true)
             .build();
 
@@ -239,26 +238,6 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                     .resultConfig(filter.resultConfig()));
 
     return getSearchExecutor().search(updatedQuery, ProcessInstanceForListViewEntity.class);
-  }
-
-  private static Builder builderFrom(final ProcessInstanceFilter original) {
-    return new Builder()
-        .processDefinitionIdOperations(original.processDefinitionIdOperations())
-        .processDefinitionNameOperations(original.processDefinitionNameOperations())
-        .processDefinitionVersionOperations(original.processDefinitionVersionOperations())
-        .processDefinitionVersionTagOperations(original.processDefinitionVersionTagOperations())
-        .processDefinitionKeyOperations(original.processDefinitionKeyOperations())
-        .parentProcessInstanceKeyOperations(original.parentProcessInstanceKeyOperations())
-        .parentFlowNodeInstanceKeyOperations(original.parentFlowNodeInstanceKeyOperations())
-        .startDateOperations(original.startDateOperations())
-        .endDateOperations(original.endDateOperations())
-        .stateOperations(original.stateOperations())
-        .hasIncident(original.hasIncident())
-        .variables(original.variableFilters())
-        .tenantIdOperations(original.tenantIdOperations())
-        .batchOperationIdOperations(original.batchOperationIdOperations())
-        .errorMessageOperations(original.errorMessageOperations())
-        .incidentErrorHashCodes(original.incidentErrorHashCodes());
   }
 
   @Override

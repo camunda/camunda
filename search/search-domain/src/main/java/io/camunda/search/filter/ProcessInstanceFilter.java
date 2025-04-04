@@ -13,6 +13,7 @@ import static io.camunda.util.CollectionUtil.collectValues;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -91,6 +92,11 @@ public record ProcessInstanceFilter(
 
     public Builder processInstanceKeys(final Long value, final Long... values) {
       return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder replaceProcessInstanceKeyOperations(final List<Operation<Long>> operations) {
+      processInstanceKeyOperations = new ArrayList<>(operations);
+      return this;
     }
 
     @SafeVarargs
