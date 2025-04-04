@@ -704,7 +704,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       return;
     }
 
-    LOGGER.info("Transitioning to {}", role);
+    LOGGER.info(
+        "Transitioning to {}: term={}, lastFlushedIdx={}, commitIdx={}",
+        role,
+        term,
+        raftLog.getLastIndex(),
+        raftLog.getCommitIndex());
 
     startTransition();
 
@@ -849,6 +854,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   @Override
   public void close() {
+    LOGGER.debug(
+        "Closing RaftContext: term={}, commitIdx={}, lastFlushedIdx={}",
+        term,
+        raftLog.getCommitIndex(),
+        raftLog.getLastIndex());
     raftRoleMetrics.becomingInactive();
     started = false;
     // Unregister protocol listeners.
@@ -868,6 +878,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       LOGGER.error("Failed to close metastore", e);
     }
 
+    LOGGER.debug("Raft context closed");
     // close thread contexts
     threadContext.close();
   }
@@ -923,10 +934,31 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @param firstCommitIndex The first commit index.
    */
-  public void setFirstCommitIndex(final long firstCommitIndex) {
+  public void setFirstCommitIndex(final long firstCommitIndex, final long lastFlushedIndex) {
     if (this.firstCommitIndex == 0) {
       if (firstCommitIndex == 0) {
         return;
+      }
+
+      // To detect if the current leader has experienced data loss we need to check both its
+      // commitIndex and the lastFlushedIndex:
+      // the previous leader may have already committed lastFlushedIndex before crashing,
+      // but failed to replicate the commit to the new leader.
+      // In this situation, the commitIndex of the leader may be smaller than the one in this node,
+      // but both nodes agree that events <= lastFlushedIndex have been persisted.
+      if (firstCommitIndex < commitIndex && lastFlushedIndex < commitIndex) {
+        final var errorMessage =
+            String.format(
+                """
+                   Expected to set first commit position to after restart, but firstCommitIndex(%d), lastflushedIndex(%d) < commitIndex(%d). \
+                   While commitIndex is the last committed index, persisted in the metadata file. \
+                   This means a majority of nodes has lost committed data: \
+                   This node will become inactive to avoid overwriting previously committed data, \
+                   but the leader have formed a quorum and will continue to commit new events, \
+                   creating an inconsistent timeline of events: \
+                   THE CLUSTER SHOULD BE STOPPED IMMEDIATELY to further prevent inconsistencies.""",
+                firstCommitIndex, lastFlushedIndex, commitIndex);
+        throw new IllegalStateException(errorMessage);
       }
       this.firstCommitIndex = firstCommitIndex;
       LOGGER.info(
