@@ -9,6 +9,8 @@ package io.camunda.search.clients.transformers.query;
 
 import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 
+import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.source.SearchSourceConfig;
@@ -25,6 +27,7 @@ import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Optional;
 
 public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOption>
     implements ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> {
@@ -66,6 +69,9 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
       builder.source(searchQuerySourceConfig);
     }
 
+    Optional.ofNullable(query.aggregation())
+        .ifPresent(aggregation -> builder.aggregations(toAggregations(aggregation)));
+
     return builder.build();
   }
 
@@ -84,6 +90,10 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
 
   private List<String> toIndices(final F filter) {
     return List.of(getFilterTransformer(filter).getIndex().getAlias());
+  }
+
+  protected List<SearchAggregator> toAggregations(final AggregationBase aggregation) {
+    return transformers.getAggregationTransformer(aggregation.getClass()).apply(aggregation);
   }
 
   private List<SearchSortOptions> toSearchSortOptions(final S sort, final boolean reverse) {

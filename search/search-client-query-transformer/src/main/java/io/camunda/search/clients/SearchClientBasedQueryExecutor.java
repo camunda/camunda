@@ -9,6 +9,8 @@ package io.camunda.search.clients;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
+import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
@@ -69,9 +71,13 @@ public final class SearchClientBasedQueryExecutor {
                 .toList());
   }
 
-  public <T extends FilterBase, R> R aggregate(
-      final TypedSearchAggregationQuery<T> query, final Class<R> documentClass) {
-    return executeSearch(query, q -> searchClient.aggregate(q, documentClass));
+  public <F extends FilterBase, A extends AggregationBase, R extends AggregationResultBase>
+      R aggregate(final TypedSearchAggregationQuery<F, A> query, final Class<R> resultClass) {
+    final var searchQueryResponse =
+        executeSearch(query, searchRequest -> searchClient.search(searchRequest, Object.class));
+    return transformers
+        .getSearchAggregationResultTransformer(resultClass)
+        .apply(searchQueryResponse.aggregations());
   }
 
   @VisibleForTesting

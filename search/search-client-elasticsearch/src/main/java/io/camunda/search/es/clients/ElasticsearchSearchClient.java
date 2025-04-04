@@ -131,20 +131,6 @@ public class ElasticsearchSearchClient
   }
 
   @Override
-  public <T> T aggregate(final SearchQueryRequest searchRequest, final Class<T> aggregationClass) {
-    try {
-      final var requestTransformer = getSearchRequestTransformer();
-      final var request = requestTransformer.apply(searchRequest);
-      final SearchResponse<?> rawSearchResponse = client.search(request, Object.class);
-      final SearchTransfomer<SearchResponse<?>, T> resultTransformer =
-          transformers.getTransformer(aggregationClass);
-      return resultTransformer.apply(rawSearchResponse);
-    } catch (final IOException | ElasticsearchException e) {
-      throw new CamundaSearchException(ErrorMessages.ERROR_FAILED_AGGREGATE_QUERY, e);
-    }
-  }
-
-  @Override
   public <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest) {
     try {
       final SearchIndexRequestTransformer<T> requestTransformer =

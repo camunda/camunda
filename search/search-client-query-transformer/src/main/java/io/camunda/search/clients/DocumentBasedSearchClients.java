@@ -9,7 +9,7 @@ package io.camunda.search.clients;
 
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
-import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
+import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -175,7 +175,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return getSearchExecutor()
         .aggregate(
             new ProcessDefinitionFlowNodeStatisticsQuery(filter),
-            ProcessDefinitionFlowNodeStatisticsAggregation.class)
+            ProcessDefinitionFlowNodeStatisticsAggregationResult.class)
         .items();
   }
 

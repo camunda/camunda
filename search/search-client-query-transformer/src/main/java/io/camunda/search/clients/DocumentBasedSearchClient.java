@@ -32,6 +32,4 @@ public interface DocumentBasedSearchClient extends CloseableSilently {
   <T> List<T> findAll(final SearchQueryRequest searchRequest, final Class<T> documentClass);
 
   <T> SearchGetResponse<T> get(final SearchGetRequest getRequest, final Class<T> documentClass);
-
-  <T> T aggregate(final SearchQueryRequest searchRequest, final Class<T> documentClass);
 }

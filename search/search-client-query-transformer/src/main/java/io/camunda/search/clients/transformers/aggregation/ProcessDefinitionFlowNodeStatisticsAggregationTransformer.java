@@ -5,8 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.transformers.query;
+package io.camunda.search.clients.transformers.aggregation;
 
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_ACTIVE;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_CANCELED;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_COMPLETED;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_FLOW_NODES;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FILTERS;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODES;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_INCIDENTS;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.children;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filter;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filters;
@@ -15,28 +24,19 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery.*;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
-import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
-import io.camunda.search.query.TypedSearchQuery;
-import io.camunda.search.sort.NoSort;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import java.util.List;
 
-public class ProcessDefinitionFlowNodeStatisticsQueryTransformer
-    extends TypedSearchQueryTransformer<ProcessDefinitionStatisticsFilter, NoSort> {
-
-  public ProcessDefinitionFlowNodeStatisticsQueryTransformer(
-      final ServiceTransformers transformers) {
-    super(transformers);
-  }
+public class ProcessDefinitionFlowNodeStatisticsAggregationTransformer
+    implements AggregationTransformer<ProcessDefinitionFlowNodeStatisticsAggregation> {
 
   @Override
-  public SearchQueryRequest apply(
-      final TypedSearchQuery<ProcessDefinitionStatisticsFilter, NoSort> query) {
+  public List<SearchAggregator> apply(final ProcessDefinitionFlowNodeStatisticsAggregation value) {
 
     // aggregate filters for active, completed, canceled, incidents
     final var filtersAgg =
@@ -90,6 +90,6 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformer
             .aggregations(filterFlowNodesAgg)
             .build();
 
-    return super.apply(query).toBuilder().aggregations(toFlowNodesAgg).build();
+    return List.of(toFlowNodesAgg);
   }
 }

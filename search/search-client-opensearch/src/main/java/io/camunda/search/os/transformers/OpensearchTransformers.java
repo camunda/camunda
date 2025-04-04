@@ -7,7 +7,6 @@
  */
 package io.camunda.search.os.transformers;
 
-import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchChildrenAggregator;
 import io.camunda.search.clients.aggregator.SearchFilterAggregator;
 import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
@@ -39,7 +38,6 @@ import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.clients.types.TypedValue;
-import io.camunda.search.os.transformers.aggregator.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
 import io.camunda.search.os.transformers.aggregator.SearchChildrenAggregatorTransformer;
 import io.camunda.search.os.transformers.aggregator.SearchFilterAggregatorTransformer;
 import io.camunda.search.os.transformers.aggregator.SearchFiltersAggregatorTransformer;
@@ -137,9 +135,6 @@ public final class OpensearchTransformers {
     mappers.put(SearchFiltersAggregator.class, new SearchFiltersAggregatorTransformer(mappers));
     mappers.put(SearchTermsAggregator.class, new SearchTermsAggregatorTransformer(mappers));
     mappers.put(SearchChildrenAggregator.class, new SearchChildrenAggregatorTransformer(mappers));
-    mappers.put(
-        ProcessDefinitionFlowNodeStatisticsAggregation.class,
-        new ProcessDefinitionFlowNodeStatisticsAggregationTransformer());
 
     // sort
     mappers.put(SearchSortOptions.class, new SortOptionsTransformer(mappers));
