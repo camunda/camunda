@@ -1,5 +1,17 @@
 # Additional values file to run Zeebe on stable VMs
 camunda-platform:
+  core:
+    # Require n2-standard-2 to ensure the broker is the only application running on its node
+    nodeSelector:
+      cloud.google.com/gke-nodepool: n2-standard-2-stable
+
+    # Ignore the stable VM node taints
+    tolerations:
+      - key: cloud.google.com/gke-spot
+        operator: Equal
+        effect: NoSchedule
+        value: 'false'
+
   zeebe:
     # Require n2-standard-2 to ensure the broker is the only application running on its node
     nodeSelector:
@@ -23,8 +35,8 @@ camunda-platform:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - matchExpressions:
-              - key: cloud.google.com/gke-spot
-                operator: DoesNotExist
+                - key: cloud.google.com/gke-spot
+                  operator: DoesNotExist
 
     # Ignore the stable VM node taints
     tolerations:
