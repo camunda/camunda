@@ -147,6 +147,14 @@
       "enabled": false
     },
     {
+      "description": "Exclude Maven packages detected as parent root",
+      "matchManagers": ["maven"],
+      "matchDepTypes": [
+        "parent-root"
+      ],
+      "enabled": false
+    }
+    {
       "matchPackageNames": ["mcr.microsoft.com/playwright"],
       "additionalBranchPrefix": "fe-"
     },
