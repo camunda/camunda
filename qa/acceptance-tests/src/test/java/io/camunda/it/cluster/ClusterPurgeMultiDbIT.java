@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -175,6 +176,7 @@ public class ClusterPurgeMultiDbIT {
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/29733")
+  @Disabled("Test is flaky, will be fixed in https://github.com/camunda/camunda/pull/30617")
   void shouldPurgeProcessCache() {
     // GIVEN
     final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
