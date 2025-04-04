@@ -14,7 +14,6 @@ public final class MsgPackToken {
   public static final MsgPackToken NIL = new MsgPackToken();
 
   private MsgPackType type = MsgPackType.NIL;
-  private int totalLength;
 
   // string
   private final UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
@@ -30,14 +29,6 @@ public final class MsgPackToken {
 
   // float32/float64
   private double floatValue;
-
-  public int getTotalLength() {
-    return totalLength;
-  }
-
-  public void setTotalLength(final int totalLength) {
-    this.totalLength = totalLength;
-  }
 
   public int getSize() {
     return size;
