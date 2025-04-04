@@ -16,7 +16,6 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -640,6 +639,14 @@ public final class SearchQueryRequestMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
       ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
+      ofNullable(filter.getFlowNodeId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getHasFlowNodeInstanceIncident())
+          .ifPresent(builder::hasFlowNodeInstanceIncident);
+      ofNullable(filter.getFlowNodeInstanceState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeInstanceStateOperations);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFiltersForProcessInstance(filter.getVariables());
@@ -737,7 +744,8 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessDefinitionId())
                   .ifPresent(builder::processDefinitionIds);
               Optional.ofNullable(f.getState())
-                  .ifPresent(s -> builder.states(FlowNodeState.valueOf(s.getValue())));
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::stateOperations);
               Optional.ofNullable(f.getType())
                   .ifPresent(
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));

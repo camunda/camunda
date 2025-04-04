@@ -18,13 +18,17 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.FlowNodeInstanceType;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
+import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
+import io.camunda.client.impl.RequestMapper;
+import io.camunda.client.impl.search.filter.builder.FlowNodeInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.FlowNodeInstanceFilter;
+import java.util.function.Consumer;
 
 public class FlownodeInstanceFilterImpl
-    extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.FlowNodeInstanceFilter>
+    extends TypedSearchRequestPropertyProvider<FlowNodeInstanceFilter>
     implements FlownodeInstanceFilter {
 
   private final io.camunda.client.protocol.rest.FlowNodeInstanceFilter filter;
@@ -65,9 +69,14 @@ public class FlownodeInstanceFilterImpl
 
   @Override
   public FlownodeInstanceFilter state(final FlowNodeInstanceState value) {
-    filter.setState(
-        EnumUtil.convert(
-            value, io.camunda.client.protocol.rest.FlowNodeInstanceFilter.StateEnum.class));
+    return state(b -> b.eq(value));
+  }
+
+  @Override
+  public FlownodeInstanceFilter state(final Consumer<FlowNodeInstanceStateProperty> fn) {
+    final FlowNodeInstanceStateProperty property = new FlowNodeInstanceStatePropertyImpl();
+    fn.accept(property);
+    filter.setState(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 

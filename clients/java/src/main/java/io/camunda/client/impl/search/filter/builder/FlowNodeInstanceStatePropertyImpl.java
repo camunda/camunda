@@ -15,52 +15,52 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
-import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.filter.ProcessInstanceStateFilterProperty;
-import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.filter.FlowNodeInstanceStateFilterProperty;
+import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
 import io.camunda.client.impl.util.CollectionUtil;
 import java.util.List;
 
-public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStateProperty {
-  private final ProcessInstanceStateFilterProperty filterProperty =
-      new ProcessInstanceStateFilterProperty();
+public class FlowNodeInstanceStatePropertyImpl implements FlowNodeInstanceStateProperty {
+  private final FlowNodeInstanceStateFilterProperty filterProperty =
+      new FlowNodeInstanceStateFilterProperty();
 
   @Override
-  public ProcessInstanceStateProperty eq(final ProcessInstanceState value) {
+  public FlowNodeInstanceStateProperty eq(final FlowNodeInstanceState value) {
     filterProperty.setEq(value);
     return this;
   }
 
   @Override
-  public ProcessInstanceStateProperty neq(final ProcessInstanceState value) {
+  public FlowNodeInstanceStateProperty neq(final FlowNodeInstanceState value) {
     filterProperty.setNeq(value);
     return this;
   }
 
   @Override
-  public ProcessInstanceStateProperty exists(final boolean value) {
+  public FlowNodeInstanceStateProperty exists(final boolean value) {
     filterProperty.setExists(value);
     return this;
   }
 
   @Override
-  public ProcessInstanceStateProperty in(final List<ProcessInstanceState> values) {
+  public FlowNodeInstanceStateProperty in(final List<FlowNodeInstanceState> values) {
     filterProperty.setIn(values);
     return this;
   }
 
   @Override
-  public ProcessInstanceStateProperty in(final ProcessInstanceState... values) {
+  public FlowNodeInstanceStateProperty in(final FlowNodeInstanceState... values) {
     return in(CollectionUtil.toList(values));
   }
 
   @Override
-  public ProcessInstanceStateFilterProperty build() {
+  public FlowNodeInstanceStateFilterProperty build() {
     return filterProperty;
   }
 
   @Override
-  public ProcessInstanceStateProperty like(final String value) {
+  public FlowNodeInstanceStateProperty like(final String value) {
     filterProperty.setLike(value);
     return this;
   }

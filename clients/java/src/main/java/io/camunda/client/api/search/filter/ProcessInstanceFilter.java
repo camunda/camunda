@@ -15,9 +15,11 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
@@ -125,4 +127,19 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by hasRetriesLeft */
   ProcessInstanceFilter hasRetriesLeft(final Boolean hasRetriesLeft);
+
+  /** Filter by flowNodeId */
+  ProcessInstanceFilter flowNodeId(final String flowNodeId);
+
+  /** Filter by flowNodeId using {@link StringProperty} */
+  ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn);
+
+  /** Filter by state */
+  ProcessInstanceFilter flowNodeInstanceState(final FlowNodeInstanceState state);
+
+  /** Filter by flowNodeInstanceState using {@link FlowNodeInstanceStateProperty} */
+  ProcessInstanceFilter flowNodeInstanceState(final Consumer<FlowNodeInstanceStateProperty> fn);
+
+  /** Filter by hasFlowNodeInstanceIncident */
+  ProcessInstanceFilter hasFlowNodeInstanceIncident(final Boolean hasFlowNodeInstanceIncident);
 }

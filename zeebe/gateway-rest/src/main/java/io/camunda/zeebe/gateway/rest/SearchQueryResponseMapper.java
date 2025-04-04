@@ -57,6 +57,7 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
@@ -449,7 +450,7 @@ public final class SearchQueryResponseMapper {
         .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
-        .state(FlowNodeInstanceResult.StateEnum.fromValue(instance.state().name()))
+        .state(FlowNodeInstanceStateEnum.fromValue(instance.state().name()))
         .type(FlowNodeInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }

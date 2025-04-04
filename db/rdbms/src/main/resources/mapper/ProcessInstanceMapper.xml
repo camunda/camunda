@@ -155,6 +155,33 @@
         AND pd.VERSION <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+
+    <!-- Flow node instance filters -->
+    <if test="filter.flowNodeIdOperations != null and !filter.flowNodeIdOperations.isEmpty()">
+      AND EXISTS (
+      SELECT 1
+      FROM ${prefix}FLOW_NODE_INSTANCE fni
+      WHERE fni.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+      <foreach collection="filter.flowNodeIdOperations" item="operation">
+        AND fni.FLOW_NODE_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    <if test="filter.flowNodeInstanceStateOperations != null and !filter.flowNodeInstanceStateOperations.isEmpty()">
+      <foreach collection="filter.flowNodeInstanceStateOperations" item="operation">
+        AND fni.STATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+      <if test="filter.hasFlowNodeInstanceIncident != null">
+        <if test="filter.hasFlowNodeInstanceIncident == true">
+          AND fni.INCIDENT_KEY IS NOT NULL
+        </if>
+        <if test="filter.hasFlowNodeInstanceIncident == false">
+          AND fni.INCIDENT_KEY IS NULL
+        </if>
+      </if>
+      )
+    </if>
+
+    <!-- Variable filters -->
     <if test="filter.processDefinitionVersionTagOperations != null and !filter.processDefinitionVersionTagOperations.isEmpty()">
       <foreach collection="filter.processDefinitionVersionTagOperations" item="operation">
         AND pd.VERSION_TAG <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>

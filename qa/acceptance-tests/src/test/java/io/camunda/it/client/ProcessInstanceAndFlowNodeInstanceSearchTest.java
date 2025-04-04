@@ -38,6 +38,7 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,6 +54,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   private static long processInstanceWithIncidentKey;
   private static FlowNodeInstance flowNodeInstance;
   private static FlowNodeInstance flowNodeInstanceWithIncident;
+  private static List<FlowNodeInstance> allFlowNodeInstances;
   private static CamundaClient camundaClient;
 
   @BeforeAll
@@ -93,7 +95,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     waitUntilFlowNodeInstanceHasIncidents(camundaClient, 1);
     waitUntilProcessInstanceHasIncidents(camundaClient, 1);
     // store flow node instances for querying
-    final var allFlowNodeInstances =
+    allFlowNodeInstances =
         camundaClient
             .newFlownodeInstanceSearchRequest()
             .page(p -> p.limit(100))
@@ -1402,5 +1404,62 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
           .extracting("processDefinitionId")
           .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v1");
     }
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByFlowNodeIdFilter() {
+    // given
+    final var random = RandomGenerator.getDefault();
+    final var flowNodeInstance =
+        allFlowNodeInstances.get(random.nextInt(allFlowNodeInstances.size()));
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.processInstanceKey(flowNodeInstance.getProcessInstanceKey())
+                        .flowNodeId(flowNodeInstance.getFlowNodeId()))
+            .send()
+            .join();
+
+    assertThat(result.items())
+        .extracting("processInstanceKey")
+        .containsExactly(flowNodeInstance.getProcessInstanceKey());
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByFlowNodeIdAndFlowNodeInstanceStateFilter() {
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.flowNodeId("taskA").flowNodeInstanceState(FlowNodeInstanceState.ACTIVE))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByFlowNodeIdAndFlowNodeInstanceIncidentFilter() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.flowNodeId(flowNodeInstanceWithIncident.getFlowNodeId())
+                        .hasFlowNodeInstanceIncident(true))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
   }
 }

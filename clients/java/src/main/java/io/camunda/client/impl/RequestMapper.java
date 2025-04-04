@@ -23,6 +23,7 @@ import io.camunda.client.api.search.filter.AdHocSubprocessActivityRequestFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import java.util.ArrayList;
 import java.util.List;
@@ -279,5 +280,32 @@ public class RequestMapper {
               return request;
             })
         .collect(Collectors.toList());
+  }
+
+  public static io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty
+      toProtocolObject(final FlowNodeInstanceStateFilterProperty object) {
+    if (object == null) {
+      return null;
+    }
+
+    final io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty protocolObject =
+        new io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty();
+    protocolObject.set$Eq(EnumUtil.convert(object.getEq(), FlowNodeInstanceStateEnum.class));
+    protocolObject.set$Exists(object.getExists());
+    if (object.getIn() == null) {
+      protocolObject.set$In(null);
+    } else {
+      protocolObject.set$In(new ArrayList<>());
+      object
+          .getIn()
+          .forEach(
+              item ->
+                  protocolObject.add$InItem(
+                      EnumUtil.convert(item, FlowNodeInstanceStateEnum.class)));
+    }
+    protocolObject.set$Like(object.getLike());
+    protocolObject.set$Neq(EnumUtil.convert(object.getNeq(), FlowNodeInstanceStateEnum.class));
+
+    return protocolObject;
   }
 }

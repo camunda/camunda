@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
@@ -89,7 +90,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .tenantId("tenant")
                     .variables(variablesMap)
                     .errorMessage("Error message")
-                    .hasRetriesLeft(true))
+                    .hasRetriesLeft(true)
+                    .flowNodeId("flowNodeId")
+                    .flowNodeInstanceState(FlowNodeInstanceState.ACTIVE)
+                    .hasFlowNodeInstanceIncident(true))
         .send()
         .join();
     // then
@@ -114,6 +118,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getVariables()).isEqualTo(variables);
     assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
     assertThat(filter.getHasRetriesLeft()).isEqualTo(true);
+    assertThat(filter.getFlowNodeId().get$Eq()).isEqualTo("flowNodeId");
+    assertThat(filter.getFlowNodeInstanceState().get$Eq())
+        .isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
+    assertThat(filter.getHasFlowNodeInstanceIncident()).isEqualTo(true);
   }
 
   @Test
