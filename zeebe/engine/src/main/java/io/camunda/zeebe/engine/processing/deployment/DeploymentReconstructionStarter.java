@@ -46,7 +46,11 @@ public final class DeploymentReconstructionStarter implements StreamProcessorLif
     // This is fine as long as the command is idempotent and does not contain any state. Do not
     // start to add more state to the command or make the command non-idempotent unless you also
     // find a way to prevent that this initial command is written more than once.
-    taskResultBuilder.appendCommandRecord(DeploymentIntent.RECONSTRUCT, new DeploymentRecord());
+
+    // We need to set the tenantId to "", otherwise its default is "<default>" which breaks
+    // searching iteratively in RocksDB
+    taskResultBuilder.appendCommandRecord(
+        DeploymentIntent.RECONSTRUCT, DeploymentRecord.emptyCommandForReconstruction());
     return taskResultBuilder.build();
   }
 }

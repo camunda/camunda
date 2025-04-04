@@ -13,12 +13,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.ProgressState;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
-import io.camunda.zeebe.engine.state.immutable.DecisionState.DecisionRequirementsIdentifier;
-import io.camunda.zeebe.engine.state.immutable.FormState.FormIdentifier;
-import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
@@ -38,7 +34,6 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
-import java.util.function.BiConsumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -475,7 +470,7 @@ final class DeploymentReconstructProcessorTest {
 
   private TypedRecord<DeploymentRecord> mockedCommand() {
     final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    when(command.getValue()).thenReturn(DeploymentRecord.emptyCommandForReconstruction());
     when(command.getIntent()).thenReturn(DeploymentIntent.RECONSTRUCT);
     return command;
   }
@@ -559,73 +554,71 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertProgressStateMatchRecord(
-        eventIndex++,
-        (record, progressState) -> {
-          final var key = record.processesMetadata().stream().findFirst().get().getKey();
-          assertThat(progressState).isInstanceOf(ProgressState.Process.class);
-          assertThat(((ProgressState.Process) progressState).identifier())
-              .isEqualTo(new ProcessIdentifier("tenant-id", key));
-        });
+    assertThat(getCommandAt(eventIndex++).getValue())
+        .satisfies(
+            record -> {
+              assertThat(record.processesMetadata())
+                  .singleElement()
+                  .satisfies(el -> assertThat(el.getBpmnProcessId()).isEqualTo("process"));
+              assertThat(record.decisionsMetadata()).isEmpty();
+              assertThat(record.formMetadata()).isEmpty();
+            });
 
     // when
-    processor.processRecord(command);
+    processor.processRecord(getCommandAt(eventIndex++));
 
     // then
-    assertProgressStateMatchRecord(
-        eventIndex++,
-        (record, progressState) -> {
-          final var processDefinitionKey =
-              record.processesMetadata().stream().findFirst().get().getProcessDefinitionKey();
-          assertThat(progressState).isInstanceOf(ProgressState.Process.class);
-          assertThat(((ProgressState.Process) progressState).identifier())
-              .isEqualTo(new ProcessIdentifier("tenant-id", processDefinitionKey));
-        });
+    assertThat(getCommandAt(eventIndex++).getValue())
+        .satisfies(
+            record -> {
+              assertThat(record.processesMetadata())
+                  .singleElement()
+                  .satisfies(el -> assertThat(el.getBpmnProcessId()).isEqualTo("process2"));
+              assertThat(record.decisionsMetadata()).isEmpty();
+              assertThat(record.formMetadata()).isEmpty();
+            });
 
     // when
-    processor.processRecord(command);
+    processor.processRecord(getCommandAt(eventIndex++));
 
     // then
-    assertProgressStateMatchRecord(
-        eventIndex++,
-        (record, progressState) -> {
-          final var keyInRecord = record.formMetadata().stream().findFirst().get().getFormKey();
-          assertThat(progressState).isInstanceOf(ProgressState.Form.class);
-          assertThat(((ProgressState.Form) progressState).identifier())
-              .isEqualTo(new FormIdentifier("form-tenant", keyInRecord));
-        });
+    assertThat(getCommandAt(eventIndex++).getValue())
+        .satisfies(
+            record -> {
+              assertThat(record.processesMetadata()).isEmpty();
+              assertThat(record.decisionsMetadata()).isEmpty();
+              assertThat(record.formMetadata())
+                  .singleElement()
+                  .satisfies(el -> assertThat(el.getFormKey()).isEqualTo(formKey));
+            });
 
     // when
-    processor.processRecord(command);
+    processor.processRecord(getCommandAt(eventIndex++));
 
     // then
-    assertProgressStateMatchRecord(
-        eventIndex++,
-        (record, progressState) -> {
-          final var key =
-              record.decisionRequirementsMetadata().stream()
-                  .findFirst()
-                  .get()
-                  .getDecisionRequirementsKey();
-          assertThat(progressState).isInstanceOf(ProgressState.DecisionRequirements.class);
-          assertThat(((ProgressState.DecisionRequirements) progressState).identifier())
-              .isEqualTo(new DecisionRequirementsIdentifier("decision-tenant", key));
-        });
+    assertThat(getCommandAt(eventIndex++).getValue())
+        .satisfies(
+            record -> {
+              assertThat(record.processesMetadata()).isEmpty();
+              assertThat(record.formMetadata()).isEmpty();
+              assertThat(record.decisionsMetadata())
+                  .singleElement()
+                  .satisfies(el -> assertThat(el.getDecisionKey()).isEqualTo(decisionKey));
+            });
 
     // when
     // let's run again the processor to make it reach progressState = Done
-    processor.processRecord(command);
-
-    // then
-    assertThat(processor.getProgressState()).isEqualTo(new ProgressState.Done());
+    processor.processRecord(getCommandAt(eventIndex++));
   }
 
-  private void assertProgressStateMatchRecord(
-      final int index, final BiConsumer<DeploymentRecord, ProgressState> assertion) {
-    final var record = resultBuilder.getFollowupRecords().get(index).getValue();
-    assertThat(record).isInstanceOf(DeploymentRecord.class);
-
-    assertThat(processor.getProgressState())
-        .satisfies(state -> assertion.accept((DeploymentRecord) record, state));
+  private TypedRecord<DeploymentRecord> getCommandAt(final int index) {
+    assertThat(resultBuilder.getFollowupRecords()).hasSizeGreaterThanOrEqualTo(index + 1);
+    final var record = resultBuilder.getFollowupRecords().get(index);
+    assertThat(record.getValue()).isInstanceOf(DeploymentRecord.class);
+    final var command = mockedCommand();
+    when(command.getValue()).thenReturn((DeploymentRecord) record.getValue());
+    when(command.getIntent()).thenReturn(record.getIntent());
+    when(command.getRecordType()).thenReturn(record.getRecordType());
+    return command;
   }
 }
