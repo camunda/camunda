@@ -8,13 +8,18 @@
 
 import { test as base } from "@playwright/test";
 import { Login } from "./pages/Login";
+import { Common } from "./pages/CommonPage";
 
 type Fixture = {
   resetData: () => Promise<void>;
   loginPage: Login;
+  commonPage: Common;
 };
 
 export const loginTest = base.extend<Fixture>({
+  commonPage: async ({ page }, use) => {
+    await use(new Common(page));
+  },
   loginPage: async ({ page }, use) => {
     await use(new Login(page));
   },
