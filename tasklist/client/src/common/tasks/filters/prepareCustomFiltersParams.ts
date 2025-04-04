@@ -8,6 +8,7 @@
 
 import {formatRFC3339} from 'date-fns';
 import type {CustomFilters} from './customFiltersSchema';
+import {getClientConfig} from 'common/config/getClientConfig';
 
 function prepareCustomFiltersParams(
   body: CustomFilters,
@@ -82,7 +83,11 @@ function prepareCustomFiltersParams(
   }
 
   if (taskId !== undefined) {
-    params.taskDefinitionId = taskId;
+    if (getClientConfig().clientMode === 'v1') {
+      params.taskDefinitionId = taskId;
+    } else {
+      params.elementId = taskId;
+    }
   }
 
   return params;
