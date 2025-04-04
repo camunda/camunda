@@ -193,4 +193,15 @@
                    LIMIT #{limit})
   </sql>
 
+  <resultMap id="flowNodeStatisticsResultMap"
+    type="io.camunda.search.entities.ProcessFlowNodeStatisticsEntity">
+    <constructor>
+      <idArg column="FLOW_NODE_ID" javaType="java.lang.String"/>
+      <arg column="COUNT_ACTIVE" javaType="java.lang.Long"/>
+      <arg column="COUNT_CANCELED" javaType="java.lang.Long"/>
+      <arg column="COUNT_INCIDENTS" javaType="java.lang.Long"/>
+      <arg column="COUNT_COMPLETED" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
 </mapper>
