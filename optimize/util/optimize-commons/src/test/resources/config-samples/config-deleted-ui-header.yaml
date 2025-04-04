@@ -1,5 +1,0 @@
-ui:
-  header:
-    textColor: 'dark'
-    pathToLogoIcon: 'logo/camunda_icon.svg'
-    backgroundColor: '#FFFFFF'

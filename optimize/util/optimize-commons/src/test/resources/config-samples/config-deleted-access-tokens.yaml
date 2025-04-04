@@ -1,7 +1,0 @@
-eventBasedProcess:
-  eventIngestion:
-    accessToken: test
-
-externalVariable:
-  variableIngestion:
-    accessToken: test

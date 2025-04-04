@@ -1,9 +1,0 @@
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license
- * agreements and licensed to you under a proprietary license.  You may not use this file except in compliance with the
- * proprietary license. The proprietary license can be either the Camunda Platform Self-Managed Free Edition license
- * (available on Camunda's website) or the Camunda Platform Self-Managed Enterprise Edition license
- * (a copy you obtain when you contact Camunda). The Camunda Platform Self-Managed Free Edition comes for free but
- * only allows for usage of the software (file) in non-production environments. If you want to use the software (file)
- * in production, you need to purchase the Camunda Platform Self-Managed Enterprise Edition.
- */

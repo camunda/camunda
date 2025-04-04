@@ -110,7 +110,7 @@ jobs:
       - name: Build backend
         # Currently, the e2e environment of operate conflicts with the optimize build. For the moment,
         # we're excluding optimize from the build, not to impact this operate's workflow.
-        run: ./mvnw clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -P!include-optimize -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: ./mvnw clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
         run: ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.application.StandaloneOperate
         env:

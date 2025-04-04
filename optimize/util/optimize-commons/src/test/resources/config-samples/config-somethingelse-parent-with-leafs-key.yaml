@@ -1,4 +1,0 @@
-somethingelse:
-  email:
-    password: 'plaintext'
-    username: 'test@camunda.com'

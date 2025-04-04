@@ -1,6 +1,0 @@
-{
-  "numberOfProcessInstances": 5000,
-  "processDefinitions": "InvoiceWithAlternativeCorrelationVariable:5,InvoiceDataFor2Tenants:2,LeadQualificationWithIncident:2,BranchAnalysis:2,BookRequestNoBusinessKey:1,BookRequestForOneTenant:4,BookRequestWithSuspendedInstances:1,MultiInstanceSubprocessRequest:3,EmbeddedSubprocessRequest:2,HiringProcessWithUniqueCorrelationValues:4,HiringProcessFor5Tenants:3,ProcessRequest:12,AnalysisTesting:6,IncidentProcess:4,DRIProcessWithLoadsOfVariables:7",
-  "numberOfDecisionInstances": 5000,
-  "decisionDefinitions": "DecideDish:5,InvoiceBusinessDecisions:5,ExampleDmn11:1,ExampleDmn12:2,ExampleDmn13:3,InvoiceBusinessDecisionsFor2TenantsAndShared:3"
-}

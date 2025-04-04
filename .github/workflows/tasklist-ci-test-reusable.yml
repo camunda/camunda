@@ -72,7 +72,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Build backend
-        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild -P!include-optimize clean install
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
 
       # Run integration tests in parallel
       - name: Run Integration Tests
