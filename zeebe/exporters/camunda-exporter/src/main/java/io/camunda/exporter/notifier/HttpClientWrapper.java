@@ -10,11 +10,17 @@ package io.camunda.exporter.notifier;
 import java.net.http.HttpClient;
 
 public class HttpClientWrapper {
-  private static HttpClient httpClient;
+  private static volatile HttpClient httpClient;
+  private static final Object LOCK = new Object();
 
+  // double lock to avoid threading issues
   public static HttpClient newHttpClient() {
     if (httpClient == null) {
-      httpClient = HttpClient.newBuilder().build();
+      synchronized (LOCK) {
+        if (httpClient == null) {
+          httpClient = HttpClient.newBuilder().build();
+        }
+      }
     }
 
     return httpClient;
