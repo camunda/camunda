@@ -10,8 +10,8 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Outlet, useLocation} from 'react-router-dom';
 import {Stack} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
-import {useTasks} from 'v1/api/useTasks.query';
-import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
+import {useTasks} from 'v2/api/useTasks.query';
+import {useTaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
 import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTask';
 import {useTranslation} from 'react-i18next';
 import {autoSelectNextTaskStore} from 'common/tasks/next-task/autoSelectFirstTask';
@@ -42,9 +42,9 @@ function useAutoSelectNextTaskSideEffects() {
       if (
         enabled &&
         tasks.length > 0 &&
-        location.pathname !== pages.taskDetails(tasks[0].id)
+        location.pathname !== pages.taskDetails(tasks[0].userTaskKey.toString())
       ) {
-        goToTask(tasks[0].id);
+        goToTask(tasks[0].userTaskKey.toString());
       }
     }
   }, [
@@ -64,7 +64,7 @@ function useAutoSelectNextTaskSideEffects() {
     if (!isFinishedLoading && !isLoading) {
       setIsFinishedLoading(true);
       if (enabled && tasks.length > 0 && location.pathname === pages.initial) {
-        goToTask(tasks[0].id);
+        goToTask(tasks[0].userTaskKey.toString());
       }
     }
   }, [
@@ -80,8 +80,15 @@ function useAutoSelectNextTaskSideEffects() {
 const Tasks: React.FC = observer(() => {
   const filters = useTaskFilters();
   const {t} = useTranslation();
-  const {fetchPreviousTasks, fetchNextTasks, isLoading, isPending, data} =
-    useTasks(filters);
+  const {
+    fetchPreviousPage,
+    fetchNextPage,
+    isLoading,
+    isPending,
+    data,
+    hasNextPage,
+    hasPreviousPage,
+  } = useTasks(filters);
   const tasks = useMemo(() => data?.pages.flat() ?? [], [data]);
 
   useAutoSelectNextTaskSideEffects();
@@ -91,16 +98,24 @@ const Tasks: React.FC = observer(() => {
   const onAutoSelectToggle = useCallback(
     (state: boolean) => {
       if (state && location.pathname === pages.initial) {
-        const openTasks = tasks.filter(
-          ({taskState}) => taskState === 'CREATED',
-        );
+        const openTasks = tasks.filter(({state}) => state === 'CREATED');
         if (openTasks.length > 0) {
-          autoSelectGoToTask(openTasks[0].id);
+          autoSelectGoToTask(openTasks[0].userTaskKey.toString());
         }
       }
     },
     [autoSelectGoToTask, tasks],
   );
+
+  const handleScrollDown = useCallback(async () => {
+    const result = await fetchNextPage();
+    return result.data?.pages[result.data.pages.length - 1] ?? [];
+  }, [fetchNextPage]);
+
+  const handleScrollUp = useCallback(async () => {
+    const result = await fetchPreviousPage();
+    return result.data?.pages[0] ?? [];
+  }, [fetchPreviousPage]);
 
   return (
     <main className={styles.container}>
@@ -113,8 +128,10 @@ const Tasks: React.FC = observer(() => {
         <Filters disabled={isPending} />
         <AvailableTasks
           loading={isLoading}
-          onScrollDown={fetchNextTasks}
-          onScrollUp={fetchPreviousTasks}
+          onScrollDown={handleScrollDown}
+          onScrollUp={handleScrollUp}
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
           tasks={tasks}
         />
         <Options onAutoSelectToggle={onAutoSelectToggle} />

@@ -10,8 +10,8 @@ import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {Search} from '@carbon/react/icons';
-import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
-import type {Task as TaskType} from 'v1/api/types';
+import {useTaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {AvailableTaskItem} from 'common/tasks/available-tasks/AvailableTaskItem';
 import {AvailableTasksSkeleton} from 'common/tasks/available-tasks/AvailableTasksSkeleton';
@@ -19,9 +19,11 @@ import styles from 'common/tasks/available-tasks/styles.module.scss';
 import cn from 'classnames';
 
 type Props = {
-  onScrollUp: () => Promise<TaskType[]>;
-  onScrollDown: () => Promise<TaskType[]>;
-  tasks: TaskType[];
+  onScrollUp: () => Promise<UserTask[]>;
+  onScrollDown: () => Promise<UserTask[]>;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  tasks: UserTask[];
   loading: boolean;
 };
 
@@ -29,6 +31,8 @@ const AvailableTasks: React.FC<Props> = ({
   loading,
   onScrollDown,
   onScrollUp,
+  hasNextPage,
+  hasPreviousPage,
   tasks,
 }) => {
   const taskRef = useRef<HTMLDivElement | null>(null);
@@ -67,10 +71,11 @@ const AvailableTasks: React.FC<Props> = ({
                     target.scrollHeight -
                       target.clientHeight -
                       target.scrollTop,
-                  ) <= 0
+                  ) <= 0 &&
+                  hasNextPage
                 ) {
                   await onScrollDown();
-                } else if (target.scrollTop === 0) {
+                } else if (target.scrollTop === 0 && hasPreviousPage) {
                   const previousTasks = await onScrollUp();
 
                   target.scrollTop =
@@ -84,11 +89,12 @@ const AvailableTasks: React.FC<Props> = ({
                 return (
                   <AvailableTaskItem
                     ref={taskRef}
-                    key={task.id}
-                    taskId={task.id}
-                    displayName={task.name}
-                    processDisplayName={task.processName}
-                    context={task.context}
+                    key={task.userTaskKey}
+                    taskId={task.userTaskKey.toString()}
+                    displayName={task.name ?? task.elementId}
+                    processDisplayName={
+                      task.processName ?? task.processDefinitionId
+                    }
                     assignee={task.assignee}
                     creationDate={task.creationDate}
                     followUpDate={task.followUpDate}

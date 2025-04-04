@@ -9,10 +9,10 @@
 import {useNavigate, useLocation} from 'react-router-dom';
 import {pages} from 'common/routing';
 import {encodeTaskOpenedRef} from 'common/tracking/reftags';
-import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
+import {useMultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';
 
 function useAutoSelectNextTask() {
-  const {filter, sortBy} = useTaskFilters();
+  const {filter, sortBy} = useMultiModeTaskFilters();
   const navigate = useNavigate();
   const location = useLocation();
 

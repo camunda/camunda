@@ -13,7 +13,6 @@ import {
   waitFor,
 } from 'common/testing/testing-library';
 import {MemoryRouter} from 'react-router-dom';
-import {generateTask} from 'v1/mocks/tasks';
 import {Component} from './index';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
@@ -21,7 +20,12 @@ import * as userMocks from 'common/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {LocationLog} from 'common/testing/LocationLog';
-import type {Task} from 'v1/api/types';
+import {unassignedTask} from 'v2/mocks/task';
+import {getQueryTasksResponseMock} from 'v2/mocks/tasks';
+import {
+  endpoints,
+  type QueryUserTasksRequestBody,
+} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
 vi.mock('modules/stores/autoSelectFirstTask', () => ({
   autoSelectNextTaskStore: {
@@ -31,12 +35,17 @@ vi.mock('modules/stores/autoSelectFirstTask', () => ({
   },
 }));
 
-const FIRST_PAGE = Array.from({length: 50}).map((_, index) =>
-  generateTask(`${index}`),
+const FIRST_PAGE = Array.from({length: 50}).map((_, userTaskKey) =>
+  unassignedTask({userTaskKey, name: `TASK ${userTaskKey}`}),
 );
-const SECOND_PAGE = Array.from({length: 50}).map((_, index) =>
-  generateTask(`${index + 50}`),
-);
+const SECOND_PAGE = Array.from({length: 50}).map((_, index) => {
+  const userTaskKey = index + 50;
+
+  return unassignedTask({
+    userTaskKey: userTaskKey,
+    name: `TASK ${userTaskKey}`,
+  });
+});
 
 function getWrapper(
   initialEntries: React.ComponentProps<
@@ -73,15 +82,23 @@ describe('<Tasks />', () => {
         },
         {once: true},
       ),
-      http.post<never, {searchAfter: [string, string]}>(
-        '/v1/tasks/search',
+      http.post<never, QueryUserTasksRequestBody>(
+        endpoints.queryUserTasks.getUrl(),
         async ({request}) => {
-          const {searchAfter} = await request.json();
-          if (searchAfter === undefined) {
-            return HttpResponse.json(FIRST_PAGE);
-          }
+          const {page} = await request.json();
 
-          return HttpResponse.json(SECOND_PAGE);
+          switch (page?.from) {
+            case 0:
+              return HttpResponse.json(
+                getQueryTasksResponseMock(FIRST_PAGE, 100),
+              );
+            case 50:
+              return HttpResponse.json(
+                getQueryTasksResponseMock(SECOND_PAGE, 100),
+              );
+            default:
+              return HttpResponse.json(getQueryTasksResponseMock([], 0));
+          }
         },
       ),
     );
@@ -114,13 +131,13 @@ describe('<Tasks />', () => {
       http.get('/v2/authentication/me', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
-      http.post<never, {candidateUser: string; foo: unknown}>(
-        '/v1/tasks/search',
+      http.post<never, QueryUserTasksRequestBody & {foo: unknown}>(
+        endpoints.queryUserTasks.getUrl(),
         async ({request}) => {
-          const {candidateUser, foo} = await request.json();
+          const {filter, foo} = await request.json();
 
-          if (candidateUser === 'demo' && foo === undefined) {
-            return HttpResponse.json(FIRST_PAGE);
+          if (filter?.candidateUser === 'demo' && foo === undefined) {
+            return HttpResponse.json(getQueryTasksResponseMock(FIRST_PAGE, 50));
           }
 
           return HttpResponse.error();
@@ -141,11 +158,19 @@ describe('<Tasks />', () => {
       http.get('/v2/authentication/me', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
-      http.post<never, never>('/v1/tasks/search', async () => {
-        return HttpResponse.json([
-          {...FIRST_PAGE[0], taskState: 'COMPLETED'},
-          ...FIRST_PAGE.splice(1),
-        ] satisfies Task[]);
+      http.post(endpoints.queryUserTasks.getUrl(), async () => {
+        return HttpResponse.json(
+          getQueryTasksResponseMock(
+            [
+              {
+                ...FIRST_PAGE[0],
+                state: 'COMPLETED',
+              },
+              ...FIRST_PAGE.splice(1),
+            ],
+            100,
+          ),
+        );
       }),
     );
 
@@ -170,12 +195,9 @@ describe('<Tasks />', () => {
       http.get('/v2/authentication/me', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
-      http.post<never, {candidateUser: string; foo: unknown}>(
-        '/v1/tasks/search',
-        async () => {
-          return HttpResponse.json([]);
-        },
-      ),
+      http.post(endpoints.queryUserTasks.getUrl(), async () => {
+        return HttpResponse.json(getQueryTasksResponseMock([], 0));
+      }),
     );
 
     const {user} = render(<Component />, {

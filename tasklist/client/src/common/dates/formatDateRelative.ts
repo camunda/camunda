@@ -206,8 +206,8 @@ function formatDate(time: Date, now?: Date) {
   };
 }
 
-function formatISODate(dateString: string | null) {
-  if (dateString === null) {
+function formatISODate(dateString: string | null | undefined) {
+  if (typeof dateString !== 'string') {
     return null;
   }
   try {
