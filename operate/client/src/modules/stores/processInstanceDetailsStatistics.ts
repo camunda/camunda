@@ -15,15 +15,15 @@ import {
   observable,
   computed,
 } from 'mobx';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import { processInstanceDetailsStore } from 'modules/stores/processInstanceDetails';
+import { NetworkReconnectionHandler } from './networkReconnectionHandler';
 import {
   fetchProcessInstanceDetailStatistics,
   ProcessInstanceDetailStatisticsDto,
 } from 'modules/api/processInstances/fetchProcessInstanceDetailStatistics';
-import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {modificationsStore} from './modifications';
-import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
+import { processInstanceDetailsDiagramStore } from './processInstanceDetailsDiagram';
+import { modificationsStore } from './modifications';
+import { isProcessEndEvent } from 'modules/bpmn-js/utils/isProcessEndEvent';
 import isEqual from 'lodash/isEqual';
 
 type Statistic = ProcessInstanceDetailStatisticsDto & {
@@ -41,7 +41,7 @@ const DEFAULT_STATE: State = {
 };
 
 class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
-  state: State = {...DEFAULT_STATE};
+  state: State = { ...DEFAULT_STATE };
   isPollRequestRunning: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
   processInstanceDetailsStatisticsDisposer: null | IReactionDisposer = null;
@@ -73,7 +73,9 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
     this.completedFlowNodesDisposer = when(
       () =>
         processInstanceDetailsStore.state.processInstance !== null &&
-        !processInstanceDetailsStore.isRunning,
+        !processInstanceDetailsStore.isRunning &&
+        // when there is no active flow node, then cancel the polling;
+        this.state.statistics.filter((v) => v.active).length === 0,
       () => {
         this.stopPolling();
       },
@@ -97,7 +99,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
     this.isPollRequestRunning = true;
     const response = await fetchProcessInstanceDetailStatistics(
       processInstanceId,
-      {isPolling: true},
+      { isPolling: true },
     );
 
     if (this.intervalId !== null) {
@@ -124,7 +126,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
   startPolling = (
     processInstanceId: string,
-    options: {runImmediately?: boolean} = {runImmediately: false},
+    options: { runImmediately?: boolean } = { runImmediately: false },
   ) => {
     if (
       document.visibilityState === 'hidden' ||
@@ -145,7 +147,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   };
 
   stopPolling = () => {
-    const {intervalId} = this;
+    const { intervalId } = this;
 
     if (intervalId !== null) {
       clearInterval(intervalId);
@@ -195,7 +197,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   get statisticsByFlowNode() {
     return this.state.statistics.reduce<{
       [key: string]: Omit<Statistic, 'activityId'>;
-    }>((statistics, {activityId, active, incidents, completed, canceled}) => {
+    }>((statistics, { activityId, active, incidents, completed, canceled }) => {
       const businessObject =
         processInstanceDetailsDiagramStore.businessObjects[activityId];
 
@@ -213,10 +215,10 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
         canceled,
         ...(modificationsStore.isModificationModeEnabled
           ? {
-              completed: 0,
-              completedEndEvents: 0,
-              canceled: 0,
-            }
+            completed: 0,
+            completedEndEvents: 0,
+            canceled: 0,
+          }
           : {}),
       };
 
@@ -225,7 +227,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   }
 
   get executedFlowNodes() {
-    return this.state.statistics.filter(({completed}) => {
+    return this.state.statistics.filter(({ completed }) => {
       return completed > 0;
     });
   }
@@ -245,12 +247,12 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   };
 
   get selectableFlowNodes() {
-    return this.state.statistics.map(({activityId}) => activityId);
+    return this.state.statistics.map(({ activityId }) => activityId);
   }
 
   get willAllFlowNodesBeCanceled() {
     if (
-      modificationsStore.flowNodeModifications.filter(({operation}) =>
+      modificationsStore.flowNodeModifications.filter(({ operation }) =>
         ['ADD_TOKEN', 'MOVE_TOKEN'].includes(operation),
       ).length > 0
     ) {
@@ -258,7 +260,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
     }
 
     return this.state.statistics.every(
-      ({activityId, active, incidents}) =>
+      ({ activityId, active, incidents }) =>
         (active === 0 && incidents === 0) ||
         modificationsStore.modificationsByFlowNode[activityId]
           ?.areAllTokensCanceled,
@@ -268,7 +270,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   reset() {
     super.reset();
     this.stopPolling();
-    this.state = {...DEFAULT_STATE};
+    this.state = { ...DEFAULT_STATE };
     this.processInstanceDetailsStatisticsDisposer?.();
     this.completedFlowNodesDisposer?.();
   }
