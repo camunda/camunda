@@ -39,8 +39,8 @@ public class GroupClient {
     return new GroupRemoveEntityClient(writer, groupKey);
   }
 
-  public GroupDeleteClient deleteGroup(final long groupKey) {
-    return new GroupDeleteClient(writer, groupKey);
+  public GroupDeleteClient deleteGroup(final String groupId) {
+    return new GroupDeleteClient(writer, groupId);
   }
 
   public static class GroupCreateClient {
@@ -253,10 +253,15 @@ public class GroupClient {
 
     private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public GroupDeleteClient(final CommandWriter writer, final long key) {
+    public GroupDeleteClient(final CommandWriter writer, final String groupId) {
       this.writer = writer;
       groupRecord = new GroupRecord();
-      groupRecord.setGroupKey(key);
+      groupRecord.setGroupId(groupId);
+    }
+
+    public GroupDeleteClient withGroupKey(final long groupKey) {
+      groupRecord.setGroupKey(groupKey);
+      return this;
     }
 
     public Record<GroupRecordValue> delete() {

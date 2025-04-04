@@ -169,7 +169,7 @@ public class GroupStateTest {
     groupState.addEntity(groupRecord);
 
     // when
-    groupState.delete(groupKey);
+    groupState.delete(groupId);
 
     // then
     final var group = groupState.get(groupId);

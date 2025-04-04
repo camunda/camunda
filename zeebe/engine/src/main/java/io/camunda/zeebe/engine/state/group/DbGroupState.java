@@ -90,8 +90,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public void delete(final long groupKey) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public void delete(final String groupId) {
+    this.groupId.wrapString(groupId);
 
     // remove entries from ENTITY_BY_GROUP cf
     entityTypeByGroupColumnFamily.whileEqualPrefix(
@@ -100,7 +100,7 @@ public class DbGroupState implements MutableGroupState {
           entityTypeByGroupColumnFamily.deleteExisting(compositeKey);
         });
 
-    groupColumnFamily.deleteExisting(groupId);
+    groupColumnFamily.deleteExisting(this.groupId);
   }
 
   @Override
