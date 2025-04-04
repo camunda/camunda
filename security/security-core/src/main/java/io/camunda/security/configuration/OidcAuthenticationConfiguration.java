@@ -21,6 +21,7 @@ public class OidcAuthenticationConfiguration {
   private String jwkSetUri;
   private String authorizationUri;
   private Set<String> audiences;
+  private String usernameClaim = "sub";
 
   public String getIssuerUri() {
     return issuerUri;
@@ -92,5 +93,13 @@ public class OidcAuthenticationConfiguration {
 
   public void setAudiences(final Set<String> audiences) {
     this.audiences = audiences;
+  }
+
+  public String getUsernameClaim() {
+    return usernameClaim;
+  }
+
+  public void setUsernameClaim(final String usernameClaim) {
+    this.usernameClaim = usernameClaim;
   }
 }

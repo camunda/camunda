@@ -499,7 +499,7 @@ public final class EndpointManager {
     }
 
     // retrieve the username from the context and add it to the authorization if present
-    final String username = Context.current().call(AuthenticationHandler.BasicAuth.USERNAME::get);
+    final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
     if (username != null) {
       claims.put(Authorization.AUTHORIZED_USERNAME, username);
     }

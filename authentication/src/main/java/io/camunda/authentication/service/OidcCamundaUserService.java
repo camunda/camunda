@@ -43,10 +43,10 @@ public class OidcCamundaUserService implements CamundaUserService {
             user -> {
               final AuthenticationContext auth = user.getAuthenticationContext();
               return new CamundaUserDTO(
-                  user.getUserInfo().getSubject(),
+                  auth.username(),
                   null,
                   user.getDisplayName(),
-                  user.getName(),
+                  auth.username(),
                   user.getEmail(),
                   auth.authorizedApplications(),
                   auth.tenants(),

@@ -13,9 +13,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import io.camunda.authentication.entity.AuthenticationContext;
+import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.zeebe.auth.Authorization;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +28,9 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.oidc.OidcIdToken;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.context.request.RequestAttributes;
@@ -57,6 +64,20 @@ class RequestMapperTest {
 
   @Test
   void tokenContainsExtraClaimsWithOidcAuth() {
+    // given
+    final String usernameClaim = "sub";
+    final String usernameValue = "test-user";
+    setOidcAuthenticationInContext(usernameClaim, usernameValue, "aud1");
+
+    // when
+    final var authenticatedUsername = RequestMapper.getAuthentication().authenticatedUsername();
+
+    // then
+    assertThat(authenticatedUsername).isEqualTo(usernameValue);
+  }
+
+  @Test
+  void tokenContainsExtraClaimsWithJwtAuth() {
 
     // given
     final String sub1 = "sub1";
@@ -90,6 +111,32 @@ class RequestMapperTest {
             Map.of("sub", sub, "aud", aud, "groups", List.of("g1", "g2")));
     final JwtAuthenticationToken jwtAuthenticationToken = new JwtAuthenticationToken(jwt);
     SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationToken);
+  }
+
+  private void setOidcAuthenticationInContext(
+      final String usernameClaim, final String usernameValue, final String aud) {
+    final String tokenValue = "{}";
+    final Instant tokenIssuedAt = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    final Instant tokenExpiresAt = tokenIssuedAt.plus(1, ChronoUnit.DAYS);
+
+    final var oauth2Authentication =
+        new OAuth2AuthenticationToken(
+            new CamundaOidcUser(
+                new DefaultOidcUser(
+                    Collections.emptyList(),
+                    new OidcIdToken(
+                        tokenValue,
+                        tokenIssuedAt,
+                        tokenExpiresAt,
+                        Map.of("aud", aud, usernameClaim, usernameValue))),
+                Collections.emptySet(),
+                Collections.emptySet(),
+                new AuthenticationContext(
+                    usernameValue, List.of(), List.of(), List.of(), List.of())),
+            List.of(),
+            "oidc");
+
+    SecurityContextHolder.getContext().setAuthentication(oauth2Authentication);
   }
 
   private void setUsernamePasswordAuthenticationInContext(final String username) {

@@ -59,6 +59,7 @@ public class PermissionsServiceTest {
     when(camundaUser.getAuthenticationContext())
         .thenReturn(
             new AuthenticationContext(
+                "test",
                 List.of(new RoleEntity(roleKey, "roleName")),
                 List.of(),
                 List.of(new TenantDTO(123L, tenantId, "tenantName", "")),
