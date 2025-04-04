@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +33,8 @@ import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
+import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.spring.client.event.CamundaClientClosingEvent;
 import io.camunda.spring.client.event.CamundaClientCreatedEvent;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -73,6 +76,7 @@ public class ExecutionListenerTest {
   @Mock private ZeebeClientProxy zeebeClientProxy;
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
   @Mock private CamundaManagementClient camundaManagementClient;
+  @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
 
   @Mock private TestContext testContext;
 
@@ -359,6 +363,8 @@ public class ExecutionListenerTest {
         new CamundaProcessTestExecutionListener(
             camundaContainerRuntimeBuilder, outputBuilder::append);
 
+    when(camundaProcessTestResultCollector.collect()).thenReturn(new ProcessTestResult());
+
     // when
     listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
@@ -366,11 +372,13 @@ public class ExecutionListenerTest {
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(listener);
+    setTestResultCollectorMock(listener);
     when(testContext.getTestException()).thenReturn(new AssertionError("test failure (expected)"));
     listener.afterTestMethod(testContext);
 
     // then
     assertThat(outputBuilder.toString()).startsWith("Process test results");
+    verify(camundaProcessTestResultCollector).collect();
   }
 
   @Test
@@ -388,11 +396,13 @@ public class ExecutionListenerTest {
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(listener);
+    setTestResultCollectorMock(listener);
     when(testContext.getTestException()).thenReturn(null);
     listener.afterTestMethod(testContext);
 
     // then
     assertThat(outputBuilder.toString()).isEmpty();
+    verify(camundaProcessTestResultCollector, never()).collect();
   }
 
   @Test
@@ -419,6 +429,16 @@ public class ExecutionListenerTest {
       final Field cmcField = listener.getClass().getDeclaredField("camundaManagementClient");
       cmcField.setAccessible(true);
       cmcField.set(listener, camundaManagementClient);
+    } catch (final Throwable t) {
+      throw new RuntimeException(t);
+    }
+  }
+
+  private void setTestResultCollectorMock(final CamundaProcessTestExecutionListener listener) {
+    try {
+      final Field cmcField = listener.getClass().getDeclaredField("processTestResultCollector");
+      cmcField.setAccessible(true);
+      cmcField.set(listener, camundaProcessTestResultCollector);
     } catch (final Throwable t) {
       throw new RuntimeException(t);
     }

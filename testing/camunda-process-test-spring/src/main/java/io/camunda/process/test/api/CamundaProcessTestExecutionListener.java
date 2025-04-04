@@ -34,6 +34,8 @@ import io.camunda.spring.client.event.CamundaClientCreatedEvent;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -141,60 +143,82 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
-    try {
-      // collect test results
-      final ProcessTestResult testResult = processTestResultCollector.collect();
-
-      // print test results
-      if (isTestFailed(testContext)) {
-        processTestResultPrinter.print(testResult);
-      }
-    } catch (final Throwable t) {
-      LOG.warn("Unable to collect process test results, skipping.", t);
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
     }
 
-    try {
-      // reset assertions
-      CamundaAssert.reset();
-
-      // close Zeebe clients
-      testContext.getApplicationContext().publishEvent(new CamundaClientClosingEvent(this, client));
-      testContext
-          .getApplicationContext()
-          .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));
-
-      for (final var createdClient : createdClients) {
-        createdClient.close();
-      }
-
-      // clean up proxies
-      testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeClient();
-      testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeClient();
-      testContext
-          .getApplicationContext()
-          .getBean(CamundaProcessTestContextProxy.class)
-          .removeContext();
-
-      // purge cluster
-      LOG.info("Purging the cluster in between tests.");
-      camundaManagementClient.purgeCluster();
-    } catch (final Throwable t) {
-      LOG.warn(
-          "Unable to clean up the test environment in between tests."
-              + "\n\tPlease double-check the containerRuntime and make sure that all container "
-              + "instances are running and healthy."
-              + "\n\tThis will not interrupt your tests, but failure to clean up the runtime may "
-              + "leave it in an inconsistent or polluted state which can cause test failures."
-              + "\n\tIf possible, always write tests so that you're not re-using the same process "
-              + "instances in each test.",
-          t);
+    if (isTestFailed(testContext)) {
+      printTestResults();
     }
+    // reset assertions
+    CamundaAssert.reset();
+    // close Zeebe clients
+    testContext.getApplicationContext().publishEvent(new CamundaClientClosingEvent(this, client));
+    testContext
+        .getApplicationContext()
+        .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));
+
+    closeCreatedClients();
+
+    // clean up proxies
+    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeClient();
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeClient();
+    testContext
+        .getApplicationContext()
+        .getBean(CamundaProcessTestContextProxy.class)
+        .removeContext();
+
+    // final step: delete data
+    deleteRuntimeData();
   }
 
   @Override
   public void afterTestClass(final TestContext testContext) throws Exception {
-    // close runtime
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
+    }
     containerRuntime.close();
+  }
+
+  private void printTestResults() {
+    try {
+      // collect test results
+      final ProcessTestResult testResult = processTestResultCollector.collect();
+      // print test results
+      processTestResultPrinter.print(testResult);
+    } catch (final Throwable t) {
+      LOG.warn("Failed to collect test results, skipping.", t);
+    }
+  }
+
+  private void deleteRuntimeData() {
+    try {
+      LOG.debug("Deleting the runtime data");
+      final Instant startTime = Instant.now();
+
+      camundaManagementClient.purgeCluster();
+      final Instant endTime = Instant.now();
+      final Duration duration = Duration.between(startTime, endTime);
+      LOG.debug("Runtime data deleted in {}", duration);
+
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Failed to delete the runtime data, skipping. Check the runtime for details. "
+              + "Note that a dirty runtime may cause failures in other test cases.",
+          t);
+    }
+  }
+
+  private void closeCreatedClients() {
+    for (final AutoCloseable client : createdClients) {
+      try {
+        client.close();
+      } catch (final Exception e) {
+        LOG.debug("Failed to close client, continue.", e);
+      }
+    }
   }
 
   private CamundaContainerRuntime buildRuntime(final TestContext testContext) {

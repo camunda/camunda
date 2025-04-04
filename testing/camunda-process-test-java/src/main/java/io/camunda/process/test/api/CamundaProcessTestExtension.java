@@ -27,6 +27,8 @@ import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -138,20 +140,14 @@ public class CamundaProcessTestExtension
     final Store store = context.getStore(NAMESPACE);
     store.put(STORE_KEY_RUNTIME, containerRuntime);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
-
-    LOG.info(
-        "The CamundaProcessTestExtension creates a dockerized test environment once per test class "
-            + "and purges the cluster in between tests. This erases all runtime data and "
-            + "creates a clean and reusable testing environment.");
   }
 
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
     if (containerRuntime == null) {
       throw new IllegalStateException(
-          "The CamundaProcessTestExtension failed to start because the containerRuntime is null.\n"
-              + "\tThis can happen if you're registering the extension on a non-static field. "
-              + "Please double-check your usage and try again.");
+          "The CamundaProcessTestExtension failed to start because the runtime is not created. "
+              + "Make sure that you registering the extension on a static field.");
     }
 
     // inject fields
@@ -206,43 +202,56 @@ public class CamundaProcessTestExtension
   }
 
   @Override
-  public void afterEach(final ExtensionContext extensionContext) throws Exception {
+  public void afterEach(final ExtensionContext extensionContext) {
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
+    }
+
+    if (isTestFailed(extensionContext)) {
+      printTestResults();
+    }
+    CamundaAssert.reset();
+    closeCreatedClients();
+    // final step: delete data
+    deleteRuntimeData();
+  }
+
+  private void printTestResults() {
     try {
       // collect test results
       final ProcessTestResult testResult = processTestResultCollector.collect();
-
       // print test results
-      if (isTestFailed(extensionContext)) {
-        processTestResultPrinter.print(testResult);
-      }
+      processTestResultPrinter.print(testResult);
     } catch (final Throwable t) {
-      LOG.warn("Unable to collect process test results, skipping.", t);
+      LOG.warn("Failed to collect test results, skipping.", t);
     }
+  }
 
+  private void deleteRuntimeData() {
     try {
-      // reset assertions
-      CamundaAssert.reset();
-      // close all created clients
-      closeCreatedClients();
-      // purge cluster
-      LOG.info("Purging the cluster in between tests.");
+      LOG.debug("Deleting the runtime data");
+      final Instant startTime = Instant.now();
+
       camundaManagementClient.purgeCluster();
+      final Instant endTime = Instant.now();
+      final Duration duration = Duration.between(startTime, endTime);
+      LOG.debug("Runtime data deleted in {}", duration);
+
     } catch (final Throwable t) {
       LOG.warn(
-          "Unable to clean up the test environment in between tests.\n"
-              + "\tPlease double-check the containerRuntime and make sure that all container "
-              + "instances are running and healthy.\n"
-              + "\tThis will not interrupt your tests, but failure to clean up the runtime may "
-              + "leave it in an inconsistent or polluted state which can cause test failures.\n"
-              + "\tIf possible, always write tests so that you're not re-using the same process "
-              + "instances in each test.",
+          "Failed to delete the runtime data, skipping. Check the runtime for details. "
+              + "Note that a dirty runtime may cause failures in other test cases.",
           t);
     }
   }
 
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
-    // close the runtime
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
+    }
     containerRuntime.close();
   }
 
@@ -379,9 +388,13 @@ public class CamundaProcessTestExtension
     return this;
   }
 
-  private void closeCreatedClients() throws Exception {
+  private void closeCreatedClients() {
     for (final AutoCloseable client : createdClients) {
-      client.close();
+      try {
+        client.close();
+      } catch (final Exception e) {
+        LOG.debug("Failed to close client, continue.", e);
+      }
     }
   }
 }

@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +28,8 @@ import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
+import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.lang.reflect.Field;
@@ -62,6 +65,7 @@ public class JunitExtensionTest {
   @Mock private CamundaContainer camundaContainer;
   @Mock private ConnectorsContainer connectorsContainer;
   @Mock private CamundaManagementClient camundaManagementClient;
+  @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
 
   @Mock private ExtensionContext extensionContext;
   @Mock private TestInstances testInstances;
@@ -319,6 +323,8 @@ public class JunitExtensionTest {
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, outputBuilder::append);
 
+    when(camundaProcessTestResultCollector.collect()).thenReturn(new ProcessTestResult());
+
     // when
     extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
@@ -329,10 +335,12 @@ public class JunitExtensionTest {
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(extension);
+    setTestResultCollectorMock(extension);
     extension.afterEach(extensionContext);
 
     // then
     assertThat(outputBuilder.toString()).startsWith("Process test results");
+    verify(camundaProcessTestResultCollector).collect();
   }
 
   @Test
@@ -351,10 +359,12 @@ public class JunitExtensionTest {
     // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
     // it from trying to execute real code (the HTTP call will fail).
     setManagementClientDummy(extension);
+    setTestResultCollectorMock(extension);
     extension.afterEach(extensionContext);
 
     // then
     assertThat(outputBuilder.toString()).isEmpty();
+    verify(camundaProcessTestResultCollector, never()).collect();
   }
 
   @Test
@@ -381,6 +391,16 @@ public class JunitExtensionTest {
       final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");
       cmcField.setAccessible(true);
       cmcField.set(extension, camundaManagementClient);
+    } catch (final Throwable t) {
+      ExceptionUtils.throwAsUncheckedException(t);
+    }
+  }
+
+  private void setTestResultCollectorMock(final CamundaProcessTestExtension extension) {
+    try {
+      final Field cmcField = extension.getClass().getDeclaredField("processTestResultCollector");
+      cmcField.setAccessible(true);
+      cmcField.set(extension, camundaProcessTestResultCollector);
     } catch (final Throwable t) {
       ExceptionUtils.throwAsUncheckedException(t);
     }

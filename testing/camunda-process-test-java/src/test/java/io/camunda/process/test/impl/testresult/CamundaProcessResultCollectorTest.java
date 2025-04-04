@@ -18,10 +18,8 @@ package io.camunda.process.test.impl.testresult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
@@ -65,19 +63,6 @@ public class CamundaProcessResultCollectorTest {
   void shouldReturnEmptyResult() {
     // given
     when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
-
-    // when
-    final ProcessTestResult result = resultCollector.collect();
-
-    // then
-    assertThat(result).isNotNull();
-    assertThat(result.getProcessInstanceTestResults()).isEmpty();
-  }
-
-  @Test
-  void shouldReturnEmptyResultIfDataSourceThrowsException() {
-    // given
-    doThrow(new ClientException("expected failure")).when(camundaDataSource).findProcessInstances();
 
     // when
     final ProcessTestResult result = resultCollector.collect();
