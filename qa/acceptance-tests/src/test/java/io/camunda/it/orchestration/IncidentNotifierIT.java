@@ -23,7 +23,6 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.exporter.notifier.HttpClientWrapper;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
-import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import java.io.IOException;
@@ -31,10 +30,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -50,13 +47,6 @@ public class IncidentNotifierIT {
   private static final String WEBHOOK_PATH = "/webhook";
   private static final String OAUTH_TOKEN_PATH = "/oauth/token";
   private final HttpClient HTTP_CLIENT = spy(HttpClient.newHttpClient());
-
-  @AfterAll
-  public static void cleanup() {
-    final var setupHelper =
-        new ElasticOpenSearchSetupHelper("http://localhost:9200", Collections.emptyList());
-    setupHelper.cleanup(IncidentNotifierIT.class.getSimpleName().toLowerCase());
-  }
 
   @Test
   public void shouldNotifyWebhookAboutIncident() throws IOException, InterruptedException {
