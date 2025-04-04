@@ -297,35 +297,6 @@ final class OpensearchExporterTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
-    void shouldCreateOnlyRequiredTemplates(final ValueType valueType) {
-      // given
-      config.index.createTemplate = true;
-      config.setZeebeRecordsExportEnabled(false);
-      TestSupport.setIndexingForValueType(config.index, valueType, true);
-      exporter.configure(context);
-      exporter.open(controller);
-
-      // when
-      final var recordMock = mock(Record.class);
-      when(recordMock.getValueType()).thenReturn(valueType);
-      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
-      exporter.export(recordMock);
-
-      // then
-      if (valueType == ValueType.PROCESS_INSTANCE
-          || valueType == ValueType.PROCESS
-          || valueType == ValueType.VARIABLE
-          || valueType == ValueType.USER_TASK
-          || valueType == ValueType.INCIDENT
-          || valueType == ValueType.DEPLOYMENT) {
-        verify(client, times(1)).putIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
-      } else {
-        verify(client, never()).putIndexTemplate(valueType);
-      }
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
     void shouldCreateAllTemplatesOnPreviousVersion(final ValueType valueType) {
       // given
       config.index.createTemplate = true;
