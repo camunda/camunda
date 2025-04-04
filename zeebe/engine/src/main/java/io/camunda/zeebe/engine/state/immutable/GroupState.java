@@ -23,5 +23,5 @@ public interface GroupState {
 
   Optional<EntityType> getEntityType(String groupId, long entityKey);
 
-  Map<EntityType, List<Long>> getEntitiesByType(long groupKey);
+  Map<EntityType, List<Long>> getEntitiesByType(String groupId);
 }

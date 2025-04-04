@@ -62,20 +62,11 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var groupKey = record.getGroupKey();
-    final var persistedRecord = groupState.get(groupKey);
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to update group with key '%s', but a group with this key does not exist."
-              .formatted(groupKey);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
+    final var groupId = record.getGroupId();
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
-            .addResourceId(persistedRecord.get().getName());
+            .addResourceId(groupId);
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
@@ -84,17 +75,28 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       return;
     }
 
-    final var entityKey = record.getEntityKey();
-    final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
+    final var persistedRecord = groupState.get(groupId);
+    if (persistedRecord.isEmpty()) {
       final var errorMessage =
-          "Expected to remove an entity with key '%s' and type '%s' from group with key '%s', but the entity does not exist."
-              .formatted(entityKey, entityType, groupKey);
+          "Expected to update group with ID '%s', but a group with this ID does not exist."
+              .formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
+    final var entityKey = record.getEntityKey();
+    final var entityType = record.getEntityType();
+    if (!isEntityPresent(entityKey, entityType)) {
+      final var errorMessage =
+          "Expected to remove an entity with key '%s' and type '%s' from group with ID '%s', but the entity does not exist."
+              .formatted(entityKey, entityType, groupId);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
+    final var groupKey = persistedRecord.get().getGroupKey();
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_REMOVED, record);
     responseWriter.writeEventOnCommand(groupKey, GroupIntent.ENTITY_REMOVED, record, command);
 

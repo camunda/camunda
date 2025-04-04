@@ -83,8 +83,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public void removeEntity(final long groupKey, final long entityKey) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public void removeEntity(final String groupId, final long entityKey) {
+    this.groupId.wrapString(groupId);
     this.entityKey.wrapLong(entityKey);
     entityTypeByGroupColumnFamily.deleteExisting(fkGroupIdAndEntityKey);
   }
@@ -144,8 +144,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public Map<EntityType, List<Long>> getEntitiesByType(final long groupKey) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public Map<EntityType, List<Long>> getEntitiesByType(final String groupId) {
+    this.groupId.wrapString(groupId);
     final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
     entityTypeByGroupColumnFamily.whileEqualPrefix(
         fkGroupId,
