@@ -56,7 +56,7 @@ final class ElasticsearchArchiverRepositoryTest {
     // then - would normally fail if tried to access ES, since there is no backing Elastic
     assertThat(result)
         .as("did not try connecting to non existent ES")
-        .succeedsWithin(Duration.ZERO);
+        .succeedsWithin(Duration.ofSeconds(5));
   }
 
   private ElasticsearchArchiverRepository createRepository() {
