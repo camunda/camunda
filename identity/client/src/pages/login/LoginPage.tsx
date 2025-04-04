@@ -7,32 +7,60 @@
  */
 
 import React, { useCallback, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { Button, Link, PasswordInput, TextInput } from "@carbon/react";
+import { useNotifications } from "src/components/notifications";
 import Page from "src/components/layout/Page.tsx";
 import useTranslate from "src/utility/localization";
-import { Button, Link, PasswordInput, TextInput } from "@carbon/react";
-import "./LoginPage.scss";
 import { login } from "src/utility/auth";
-import { useLocation } from "react-router-dom";
 import { getCopyrightNoticeText } from "src/utility/copyright.ts";
 import CamundaLogo from "src/assets/images/camunda.svg";
 import { useLicense } from "src/utility/license.ts";
+import "src/pages/login/LoginPage.scss";
 
 interface LoginFormProps {
   onSuccess: () => void;
+  onFail: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
   const { t } = useTranslate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [usernameError, setUsernameError] = useState({
+    hasError: false,
+    errorText: "",
+  });
+  const [passwordError, setPasswordError] = useState({
+    hasError: false,
+    errorText: "",
+  });
 
   const submit = useCallback(() => {
-    login(username, password).then((success) => {
-      if (success) {
-        onSuccess();
-      }
-    });
-  }, [onSuccess, username, password]);
+    if (!username) {
+      setUsernameError({
+        hasError: true,
+        errorText: "Username field is required",
+      });
+    }
+
+    if (!password) {
+      setPasswordError({
+        hasError: true,
+        errorText: "Password field is required",
+      });
+    }
+
+    if (username && password) {
+      login(username, password).then((success) => {
+        if (success) {
+          onSuccess();
+        } else {
+          onFail();
+        }
+      });
+    }
+  }, [onSuccess, onFail, username, password]);
 
   return (
     <div className="LoginForm">
@@ -41,18 +69,31 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         name="username"
         value={username}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setUsername(e.target.value)
+          setUsername(e.target.value.trim())
         }
         labelText={t("username")}
-        invalid={false}
-        invalidText={undefined}
+        invalid={usernameError.hasError}
+        invalidText={usernameError.errorText}
         placeholder={t("username")}
+        onBlur={({ target }) => {
+          if (target.value.trim().length < 1) {
+            setUsernameError({
+              hasError: true,
+              errorText: "Username field is required",
+            });
+          } else {
+            setUsernameError({
+              hasError: false,
+              errorText: "",
+            });
+          }
+        }}
       />
       <PasswordInput
         id="password"
         name="password"
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setPassword(e.target.value)
+          setPassword(e.target.value.trim())
         }
         value={password}
         type="password"
@@ -64,9 +105,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           }
         }}
         labelText={t("password")}
-        invalid={false}
-        invalidText={undefined}
+        invalid={passwordError.hasError}
+        invalidText={passwordError.errorText}
         placeholder={t("password")}
+        onBlur={({ target }) => {
+          if (target.value.trim().length < 1) {
+            setPasswordError({
+              hasError: true,
+              errorText: "Password field is required",
+            });
+          } else {
+            setPasswordError({
+              hasError: false,
+              errorText: "",
+            });
+          }
+        }}
       />
       <Button onClick={submit}>{t("login")}</Button>
     </div>
@@ -86,10 +140,19 @@ export const LoginPage: React.FC = () => {
   const { t, Translate } = useTranslate();
   const location = useLocation();
   const license = useLicense();
+  const { enqueueNotification } = useNotifications();
+
   const redirectUrl = getRedirectUrl(location.search);
   const onSuccess = useCallback(() => {
     window.location.href = redirectUrl ?? "/identity/users";
   }, [redirectUrl]);
+  const onFail = useCallback(() => {
+    enqueueNotification({
+      kind: "error",
+      title: "Login failed",
+      subtitle: "That username and password combination is incorrect.",
+    });
+  }, [enqueueNotification]);
   const hasProductionLicense = license?.isCommercial;
 
   return (
@@ -99,7 +162,7 @@ export const LoginPage: React.FC = () => {
           <CamundaLogo />
           <h1>{t("identity")}</h1>
         </div>
-        <LoginForm onSuccess={onSuccess} />
+        <LoginForm onSuccess={onSuccess} onFail={onFail} />
         {!hasProductionLicense && (
           <div className="license-info">
             <Translate i18nKey="licenseInfo">
