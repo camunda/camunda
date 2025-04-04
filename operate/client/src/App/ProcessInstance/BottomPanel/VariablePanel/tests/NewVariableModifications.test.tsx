@@ -35,6 +35,16 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 
+jest.mock('modules/stores/processInstanceListeners', () => ({
+  processInstanceListenersStore: {
+    state: {},
+    listenersFailureCount: 0,
+    reset: () => {},
+    fetchListeners: () => {},
+    setListenerTabVisibility: () => {},
+  },
+}));
+
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
 
