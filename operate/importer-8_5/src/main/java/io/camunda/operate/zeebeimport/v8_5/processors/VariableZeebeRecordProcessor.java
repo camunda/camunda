@@ -8,10 +8,7 @@
 package io.camunda.operate.zeebeimport.v8_5.processors;
 
 import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
-import static io.camunda.operate.schema.templates.VariableTemplate.BPMN_PROCESS_ID;
-import static io.camunda.operate.schema.templates.VariableTemplate.FULL_VALUE;
-import static io.camunda.operate.schema.templates.VariableTemplate.IS_PREVIEW;
-import static io.camunda.operate.schema.templates.VariableTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.operate.schema.templates.VariableTemplate.*;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.VariableEntity;
@@ -22,7 +19,6 @@ import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.Tuple;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.*;
@@ -45,40 +41,48 @@ public class VariableZeebeRecordProcessor {
       final BatchRequest batchRequest)
       throws PersistenceException {
     for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
-      final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableEntity>>();
-      final var scopedVariables = variableRecords.getValue();
 
-      for (final var scopedVariable : scopedVariables) {
-        final var intent = scopedVariable.getIntent();
-        final var variableValue = scopedVariable.getValue();
-        final var variableName = variableValue.getName();
-        final var cachedVariable =
+      final List<Record<VariableRecordValue>> records = variableRecords.getValue();
+
+      // map: variable id => { shouldUpdateValue, variable entity }
+      final var temporaryVariableCache = new HashMap<String, Tuple<Boolean, VariableEntity>>();
+
+      for (final var scopedVariable : records) {
+        final var recordValue = scopedVariable.getValue();
+        final var varId =
+            VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName());
+
+        final var variableCacheElement =
             temporaryVariableCache.computeIfAbsent(
-                variableName,
-                (k) -> {
-                  return Tuple.of(intent, new VariableEntity());
-                });
-        final var variableEntity = cachedVariable.getRight();
-        processVariableRecord(scopedVariable, variableEntity);
+                varId, key -> new Tuple<Boolean, VariableEntity>(false, new VariableEntity()));
+
+        final boolean shouldUpdateValue =
+            !VariableIntent.MIGRATED.equals(scopedVariable.getIntent());
+
+        if (shouldUpdateValue) {
+          // as soon as there is one non-MIGRATED record in this batch we want to update the value
+          variableCacheElement.setLeft(true);
+        }
+
+        processVariableRecord(scopedVariable, variableCacheElement.getRight(), shouldUpdateValue);
       }
 
-      for (final var cachedVariable : temporaryVariableCache.values()) {
-        final var initialIntent = cachedVariable.getLeft();
-        final var variableEntity = cachedVariable.getRight();
+      for (final var variableCacheElement : temporaryVariableCache.values()) {
+
+        final var shouldUpdateValue = variableCacheElement.getLeft();
+        final var variableEntity = variableCacheElement.getRight();
 
         LOGGER.debug("Variable instance: id {}", variableEntity.getId());
 
         final Map<String, Object> updateFields = new HashMap<>();
         updateFields.put(POSITION, variableEntity.getPosition());
-        if (initialIntent == VariableIntent.MIGRATED) {
-          updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
-          updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
-        } else {
-          updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
+
+        updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
+        updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
+        if (shouldUpdateValue) {
+          updateFields.put(VALUE, variableEntity.getValue());
           updateFields.put(FULL_VALUE, variableEntity.getFullValue());
           updateFields.put(IS_PREVIEW, variableEntity.getIsPreview());
-          updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
-          updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
         }
 
         batchRequest.upsert(
@@ -91,7 +95,9 @@ public class VariableZeebeRecordProcessor {
   }
 
   private void processVariableRecord(
-      final Record<VariableRecordValue> record, final VariableEntity entity) {
+      final Record<VariableRecordValue> record,
+      final VariableEntity entity,
+      final boolean shouldUpdateValue) {
     final var recordValue = record.getValue();
 
     entity
@@ -105,19 +111,23 @@ public class VariableZeebeRecordProcessor {
         .setName(recordValue.getName())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPosition(record.getPosition());
-    if (recordValue.getValue().length()
-        > operateProperties.getImporter().getVariableSizeThreshold()) {
-      // store preview
-      entity.setValue(
-          recordValue
-              .getValue()
-              .substring(0, operateProperties.getImporter().getVariableSizeThreshold()));
-      entity.setFullValue(recordValue.getValue());
-      entity.setIsPreview(true);
-    } else {
-      entity.setValue(recordValue.getValue());
-      entity.setFullValue(null);
-      entity.setIsPreview(false);
+
+    if (shouldUpdateValue) {
+
+      if (recordValue.getValue().length()
+          > operateProperties.getImporter().getVariableSizeThreshold()) {
+        // store preview
+        entity.setValue(
+            recordValue
+                .getValue()
+                .substring(0, operateProperties.getImporter().getVariableSizeThreshold()));
+        entity.setFullValue(recordValue.getValue());
+        entity.setIsPreview(true);
+      } else {
+        entity.setValue(recordValue.getValue());
+        entity.setFullValue(null);
+        entity.setIsPreview(false);
+      }
     }
   }
 }
