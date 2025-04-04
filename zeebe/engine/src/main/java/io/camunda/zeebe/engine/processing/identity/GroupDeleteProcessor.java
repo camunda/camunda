@@ -62,6 +62,17 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
     final var groupId = record.getGroupId();
+    final var authorizationRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.DELETE)
+            .addResourceId(groupId);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var persistedRecord = groupState.get(groupId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupId);
@@ -71,16 +82,6 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     }
 
     final var persistedGroup = persistedRecord.get();
-    final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.DELETE)
-            .addResourceId(persistedGroup.getGroupId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
-      return;
-    }
     final var groupKey = persistedGroup.getGroupKey();
 
     removeAssignedEntities(record);
