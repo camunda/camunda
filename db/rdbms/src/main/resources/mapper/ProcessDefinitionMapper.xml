@@ -98,7 +98,7 @@
 
   <select id="flowNodeStatistics"
     parameterType="io.camunda.search.filter.ProcessDefinitionStatisticsFilter"
-    resultMap="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.flowNodeStatisticsResultMap">
+    resultMap="io.camunda.db.rdbms.sql.Commons.flowNodeStatisticsResultMap">
     SELECT
       fni.FLOW_NODE_ID,
       SUM(CASE WHEN fni.STATE = 'ACTIVE' AND
@@ -189,17 +189,6 @@
 
     GROUP BY fni.FLOW_NODE_ID
   </select>
-
-  <resultMap id="flowNodeStatisticsResultMap"
-    type="io.camunda.search.entities.ProcessFlowNodeStatisticsEntity">
-    <constructor>
-      <idArg column="FLOW_NODE_ID" javaType="java.lang.String"/>
-      <arg column="COUNT_ACTIVE" javaType="java.lang.Long"/>
-      <arg column="COUNT_CANCELED" javaType="java.lang.Long"/>
-      <arg column="COUNT_INCIDENTS" javaType="java.lang.Long"/>
-      <arg column="COUNT_COMPLETED" javaType="java.lang.Long"/>
-    </constructor>
-  </resultMap>
 
   <insert
     id="insert"

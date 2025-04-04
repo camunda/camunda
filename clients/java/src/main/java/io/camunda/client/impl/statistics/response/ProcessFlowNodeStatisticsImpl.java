@@ -15,12 +15,11 @@
  */
 package io.camunda.client.impl.statistics.response;
 
-import io.camunda.client.api.statistics.response.ProcessDefinitionFlowNodeStatistics;
+import io.camunda.client.api.statistics.response.ProcessFlowNodeStatistics;
 import io.camunda.client.protocol.rest.ProcessFlowNodeStatisticsResult;
 import java.util.Objects;
 
-public class ProcessDefinitionFlowNodeStatisticsImpl
-    implements ProcessDefinitionFlowNodeStatistics {
+public class ProcessFlowNodeStatisticsImpl implements ProcessFlowNodeStatistics {
 
   private final String flowNodeId;
   private final Long active;
@@ -28,12 +27,25 @@ public class ProcessDefinitionFlowNodeStatisticsImpl
   private final Long incidents;
   private final Long completed;
 
-  public ProcessDefinitionFlowNodeStatisticsImpl(final ProcessFlowNodeStatisticsResult statistics) {
+  public ProcessFlowNodeStatisticsImpl(final ProcessFlowNodeStatisticsResult statistics) {
     flowNodeId = statistics.getFlowNodeId();
     active = statistics.getActive();
     canceled = statistics.getCanceled();
     incidents = statistics.getIncidents();
     completed = statistics.getCompleted();
+  }
+
+  public ProcessFlowNodeStatisticsImpl(
+      final String flowNodeId,
+      final Long active,
+      final Long canceled,
+      final Long incidents,
+      final Long completed) {
+    this.flowNodeId = flowNodeId;
+    this.active = active;
+    this.canceled = canceled;
+    this.incidents = incidents;
+    this.completed = completed;
   }
 
   @Override
@@ -71,8 +83,7 @@ public class ProcessDefinitionFlowNodeStatisticsImpl
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final ProcessDefinitionFlowNodeStatisticsImpl that =
-        (ProcessDefinitionFlowNodeStatisticsImpl) o;
+    final ProcessFlowNodeStatisticsImpl that = (ProcessFlowNodeStatisticsImpl) o;
     return Objects.equals(flowNodeId, that.flowNodeId)
         && Objects.equals(active, that.active)
         && Objects.equals(canceled, that.canceled)

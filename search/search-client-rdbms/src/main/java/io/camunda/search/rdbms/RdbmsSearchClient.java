@@ -72,6 +72,13 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
+  public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
+      final long processInstanceKey) {
+    LOG.debug("[RDBMS Search Client] Query processInstance statistics: {}", processInstanceKey);
+    return rdbmsService.getProcessInstanceReader().flowNodeStatistics(processInstanceKey);
+  }
+
+  @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery query) {
     LOG.debug("[RDBMS Search Client] Search for authorizations: {}", query);
