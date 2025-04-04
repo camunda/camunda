@@ -88,7 +88,7 @@ jobs:
       # Build backend
       - name: Build backend
         run: |
-          ./mvnw -T1C clean deploy -B -PskipFrontendBuild -DskipTests -DskipChecks -P!include-optimize -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw -T1C clean deploy -B -PskipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Build Docker image
