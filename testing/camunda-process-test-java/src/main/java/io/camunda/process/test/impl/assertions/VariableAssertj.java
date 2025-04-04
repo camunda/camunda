@@ -21,10 +21,11 @@ import static org.assertj.core.api.Assertions.fail;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.process.test.impl.client.VariableDto;
+import com.fasterxml.jackson.databind.node.NullNode;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -175,10 +176,18 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private Map<String, String> getProcessInstanceVariables(final long processInstanceKey)
       throws IOException {
     return dataSource.getVariablesByProcessInstanceKey(processInstanceKey).stream()
-        .collect(Collectors.toMap(VariableDto::getName, VariableDto::getValue));
+        // We're deliberately switching from the Collectors.toMap collector to a custom
+        // implementation because it's allowed to have Camunda Variables with null values
+        // However, the toMap collector does not allow null values and would throw an exception.
+        // See this Stack Overflow issue for more context: https://stackoverflow.com/a/24634007
+        .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
   }
 
   private JsonNode readJson(final String value) {
+    if (value == null) {
+      return NullNode.getInstance();
+    }
+
     try {
       return jsonMapper.readValue(value, JsonNode.class);
     } catch (final JsonProcessingException e) {
