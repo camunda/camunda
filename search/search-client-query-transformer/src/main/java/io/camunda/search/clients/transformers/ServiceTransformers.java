@@ -9,16 +9,20 @@ package io.camunda.search.clients.transformers;
 
 import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
+import io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation;
 import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.aggregation.AggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.ProcessInstanceFlowNodeStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.AggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionDefinitionEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
@@ -51,6 +55,7 @@ import io.camunda.search.clients.transformers.filter.MappingFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
+import io.camunda.search.clients.transformers.filter.ProcessInstanceStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.RoleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UsageMetricsFilterTransformer;
@@ -94,6 +99,7 @@ import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
@@ -112,6 +118,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.TenantQuery;
@@ -254,6 +261,7 @@ public final class ServiceTransformers {
             ProcessDefinitionQuery.class,
             ProcessDefinitionFlowNodeStatisticsQuery.class,
             ProcessInstanceQuery.class,
+            ProcessInstanceFlowNodeStatisticsQuery.class,
             RoleQuery.class,
             TenantQuery.class,
             UserTaskQuery.class,
@@ -359,6 +367,10 @@ public final class ServiceTransformers {
         ProcessDefinitionStatisticsFilter.class,
         new ProcessDefinitionStatisticsFilterTransformer(
             mappers, indexDescriptors.get(ListViewTemplate.class)));
+    mappers.put(
+        ProcessInstanceStatisticsFilter.class,
+        new ProcessInstanceStatisticsFilterTransformer(
+            indexDescriptors.get(ListViewTemplate.class)));
 
     // result config -> source config
     mappers.put(
@@ -373,10 +385,16 @@ public final class ServiceTransformers {
     mappers.put(
         ProcessDefinitionFlowNodeStatisticsAggregation.class,
         new ProcessDefinitionFlowNodeStatisticsAggregationTransformer());
+    mappers.put(
+        ProcessInstanceFlowNodeStatisticsAggregation.class,
+        new ProcessInstanceFlowNodeStatisticsAggregationTransformer());
 
     // aggregation result
     mappers.put(
         ProcessDefinitionFlowNodeStatisticsAggregationResult.class,
         new ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer());
+    mappers.put(
+        ProcessInstanceFlowNodeStatisticsAggregationResult.class,
+        new ProcessInstanceFlowNodeStatisticsAggregationResultTransformer());
   }
 }

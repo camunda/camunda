@@ -18,11 +18,8 @@ public interface ProcessInstanceSearchClient {
 
   SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(ProcessInstanceQuery query);
 
-  default List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
-      final long processInstanceKey) {
-    // TODO not implemented yet
-    return null;
-  }
+  List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
+      final long processInstanceKey);
 
   ProcessInstanceSearchClient withSecurityContext(SecurityContext securityContext);
 }
