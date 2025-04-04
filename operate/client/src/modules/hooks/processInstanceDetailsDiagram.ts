@@ -57,7 +57,7 @@ const useModifiableFlowNodes = () => {
   const cancellableFlowNodes = useCancellableFlowNodes();
 
   if (modificationsStore.state.status === 'moving-token') {
-    return processInstanceDetailsDiagramStore.appendableFlowNodes.filter(
+    return appendableFlowNodes.filter(
       (flowNodeId) =>
         flowNodeId !==
         modificationsStore.state.sourceFlowNodeIdForMoveOperation,
