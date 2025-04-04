@@ -25,6 +25,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
@@ -61,6 +62,7 @@ public class RecordCounterTest {
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
     when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported
     when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
@@ -83,6 +85,7 @@ public class RecordCounterTest {
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
     when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the flush fails
     when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
@@ -104,6 +107,7 @@ public class RecordCounterTest {
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
     when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the flush fails
     when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
@@ -128,6 +132,7 @@ public class RecordCounterTest {
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
     when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the flush fails
     when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
@@ -150,6 +155,7 @@ public class RecordCounterTest {
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
     when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the synchronous flush fails
     when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
@@ -180,6 +186,7 @@ public class RecordCounterTest {
     final Record mockRecord = mock(Record.class);
     final var valueType = ValueType.PROCESS_INSTANCE;
     when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the synchronous flush fails
     when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
@@ -213,6 +220,8 @@ public class RecordCounterTest {
     final var valueType = ValueType.PROCESS_INSTANCE;
     when(mockRecord1.getValueType()).thenReturn(valueType);
     when(mockRecord2.getValueType()).thenReturn(valueType);
+    when(mockRecord1.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
+    when(mockRecord2.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported
     when(client.index(eq(mockRecord1), any(RecordSequence.class))).thenReturn(true);
@@ -237,6 +246,8 @@ public class RecordCounterTest {
     exporter.configure(context);
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     when(client.shouldFlush()).thenReturn(true);
 
     // when

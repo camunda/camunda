@@ -18,6 +18,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
@@ -123,6 +124,11 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
+
+    if (!shouldExportRecord(record)) {
+      return;
+    }
+
     if (!indexTemplatesCreated.contains(record.getBrokerVersion())) {
       createIndexTemplates(record.getBrokerVersion());
 
@@ -359,6 +365,24 @@ public class ElasticsearchExporter implements Exporter {
     indexTemplatesCreated.add(version);
   }
 
+  /**
+   * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
+   * records to be exported, or if the configuration explicitly enables the export of all records
+   * {@link ElasticsearchExporterConfiguration#zeebeRecordsExportEnabled}. For past versions, we
+   * continue to export all records.
+   *
+   * @param record The record to check
+   * @return Whether the record should be exported or not
+   */
+  private boolean shouldExportRecord(final Record<?> record) {
+    final var recordVersion = getVersion(record.getBrokerVersion());
+    if (configuration.getIsZeebeRecordsExportEnabled()
+        || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
+      return true;
+    }
+    return configuration.shouldIndexRequiredValueType(record.getValueType());
+  }
+
   private void createIndexLifecycleManagementPolicy() {
     if (!client.putIndexLifecycleManagementPolicy()) {
       log.warn(
@@ -391,6 +415,16 @@ public class ElasticsearchExporter implements Exporter {
     if (!acknowledged) {
       log.warn("Failed to acknowledge the the update of retention policy for existing indices");
     }
+  }
+
+  private SemanticVersion getVersion(final String version) {
+    return SemanticVersion.parse(version)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Unsupported record broker version: ["
+                        + version
+                        + "] Must be a semantic version."));
   }
 
   private static class ElasticsearchRecordFilter implements Context.RecordFilter {

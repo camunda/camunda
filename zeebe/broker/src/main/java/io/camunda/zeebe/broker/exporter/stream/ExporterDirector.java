@@ -466,7 +466,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private ExporterEventFilter createEventFilter(final List<ExporterContainer> containers) {
 
     final List<Context.RecordFilter> recordFilters =
-        containers.stream().map(c -> c.getContext().getFilter()).collect(Collectors.toList());
+        containers.stream().map(c -> c.getContext().getFilter()).toList();
 
     final Map<RecordType, Boolean> acceptRecordTypes =
         Arrays.stream(RecordType.values())

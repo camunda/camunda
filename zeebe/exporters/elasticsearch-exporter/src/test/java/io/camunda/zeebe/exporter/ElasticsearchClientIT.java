@@ -122,7 +122,8 @@ final class ElasticsearchClientIT {
     client.putIndexTemplate(valueType);
 
     // then
-    final var templateWrapper = testClient.getIndexTemplate(valueType);
+    final var templateWrapper =
+        testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
     assertThat(templateWrapper)
         .as("should have created template for value type %s", valueType)
         .isPresent()
