@@ -55,6 +55,16 @@ jest.mock('modules/stores/notifications', () => ({
   },
 }));
 
+jest.mock('modules/stores/processInstanceListeners', () => ({
+  processInstanceListenersStore: {
+    state: {},
+    listenersFailureCount: 0,
+    reset: () => {},
+    fetchListeners: () => {},
+    setListenerTabVisibility: () => {},
+  },
+}));
+
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
