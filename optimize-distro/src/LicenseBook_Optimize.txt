@@ -1,3 +1,0 @@
-Licensing Information for Camunda Optimize extension ${project.version}
-
-Please obtain the licensing information from https://docs.camunda.io/docs/reference/licenses/#operate-tasklist-identity-optimize

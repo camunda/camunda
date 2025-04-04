@@ -1,9 +1,0 @@
-# Fallback Identity configuration for deprecated env variable naming
-camunda:
-  identity:
-    issuer: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
-    issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}
-    clientId: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID:}
-    clientSecret: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET:}
-    audience: ${CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE:}
-    baseUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL:}

@@ -1,2 +1,0 @@
-"processDefinitionKey"	"processDefinitionId"	"processInstanceId"	"businessKey"	"startDate"	"endDate"	"duration"	"engineName"	"tenantId"	"count:incidents"	"count:openIncidents"	"count:userTasks"	"dur:endEvent"	"dur:startEvent"	"variable:1"
-"aProcess"	"${PD_ID}"	"${PI_ID}"	"aBusinessKey"	"2018-02-26T14:20+01:00"	"2018-02-26T14:20+01:00"	"0"	"camunda-bpm"		"0"	"0"	"0"	"0"	"0"	"test"
