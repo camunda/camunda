@@ -8,9 +8,12 @@
 package io.camunda.search.schema.config;
 
 public class RetentionConfiguration {
+
+  private static final String DEFAULT_RETENTION_MINIMUM_AGE = "30d";
+  private static final String DEFAULT_RETENTION_POLICY_NAME = "camunda-history-retention-policy";
   private boolean enabled = false;
-  private String minimumAge = "30d";
-  private String policyName;
+  private String minimumAge = DEFAULT_RETENTION_MINIMUM_AGE;
+  private String policyName = DEFAULT_RETENTION_POLICY_NAME;
 
   public boolean isEnabled() {
     return enabled;
