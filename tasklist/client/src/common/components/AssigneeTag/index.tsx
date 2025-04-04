@@ -15,7 +15,7 @@ import cn from 'classnames';
 
 type Props = {
   currentUser: CurrentUser;
-  assignee: string | null;
+  assignee: string | null | undefined;
   isShortFormat?: boolean;
 };
 
@@ -55,7 +55,7 @@ const AssigneeTag: React.FC<Props> = ({
 }) => {
   const {t} = useTranslation();
   const {userId} = currentUser;
-  const isAssigned = assignee !== null;
+  const isAssigned = typeof assignee === 'string';
   const isAssignedToCurrentUser = assignee === userId;
 
   if (!isAssigned) {

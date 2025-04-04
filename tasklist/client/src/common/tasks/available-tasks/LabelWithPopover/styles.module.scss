@@ -1,0 +1,31 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/type';
+
+.label {
+  @include type.type-style('label-01');
+  color: var(--cds-text-secondary);
+
+  &.labelPrimary {
+    color: var(--cds-text-primary);
+  }
+
+  &.contextWrap {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre;
+  }
+}
+
+.popoverContent {
+  padding: var(--cds-spacing-03);
+}

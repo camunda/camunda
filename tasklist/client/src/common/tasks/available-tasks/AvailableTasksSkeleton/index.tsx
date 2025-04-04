@@ -6,17 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TaskSkeleton} from './Task/TaskSkeleton';
-import styles from './styles.module.scss';
+import {TaskPanelItemSkeleton} from './TaskPanelItemSkeleton';
 
-const Skeleton: React.FC = () => {
+type Props = {
+  className?: string;
+};
+
+const AvailableTasksSkeleton: React.FC<Props> = ({className}) => {
   return (
-    <div data-testid="tasks-skeleton" className={styles.listContainer}>
+    <div data-testid="tasks-skeleton" className={className}>
       {Array.from({length: 50}).map((_, index) => (
-        <TaskSkeleton key={index} />
+        <TaskPanelItemSkeleton key={index} />
       ))}
     </div>
   );
 };
 
-export {Skeleton};
+export {AvailableTasksSkeleton};

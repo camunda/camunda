@@ -7,7 +7,7 @@
  */
 
 import {render, screen, fireEvent} from 'common/testing/testing-library';
-import {Task} from './index';
+import {AvailableTaskItem} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {currentUser} from 'common/mocks/current-user';
 import {LocationLog} from 'common/testing/LocationLog';
@@ -40,10 +40,10 @@ describe('<Task />', () => {
 
   it('should render task', () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
         context="My Task"
         assignee={currentUser.userId}
@@ -72,10 +72,10 @@ describe('<Task />', () => {
 
   it('should handle unassigned tasks', () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
         context="My Task"
         assignee={null}
@@ -96,10 +96,10 @@ describe('<Task />', () => {
 
   it('should render creation time as empty value if given date is invalid', () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="invalid date"
         context="My Task"
         assignee={currentUser.userId}
@@ -120,10 +120,10 @@ describe('<Task />', () => {
 
   it('should navigate to task detail on click', () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
         context="My Task"
         assignee={currentUser.userId}
@@ -145,10 +145,10 @@ describe('<Task />', () => {
 
   it('should preserve search params', () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
         context="My Task"
         assignee={currentUser.userId}
@@ -173,10 +173,10 @@ describe('<Task />', () => {
 
   it('should render a task with due date', async () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
         context="My Task"
         assignee={currentUser.userId}
@@ -197,10 +197,10 @@ describe('<Task />', () => {
 
   it('should render a task with due date when filtered by due date', async () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
         context="My Task"
         assignee={currentUser.userId}
@@ -223,10 +223,10 @@ describe('<Task />', () => {
 
   it('should render a task with follow-up date when filtered by follow-up date', async () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
         context="My Task"
         assignee={currentUser.userId}
@@ -251,10 +251,10 @@ describe('<Task />', () => {
 
   it('should render a task with completion date', async () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
         context="My Task"
         assignee={currentUser.userId}
@@ -278,10 +278,10 @@ describe('<Task />', () => {
 
   it('should render a task with overdue date', async () => {
     render(
-      <Task
+      <AvailableTaskItem
         taskId="1"
-        name="name"
-        processName="processName"
+        displayName="name"
+        processDisplayName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
         context="My Task"
         assignee={currentUser.userId}

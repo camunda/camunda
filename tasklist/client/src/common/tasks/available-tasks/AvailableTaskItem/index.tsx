@@ -8,9 +8,7 @@
 
 import React, {useMemo} from 'react';
 import {NavLink, useLocation} from 'react-router-dom';
-import {t} from 'i18next';
 import {useTranslation} from 'react-i18next';
-import {isBefore} from 'date-fns';
 import {Stack} from '@carbon/react';
 import {
   Calendar,
@@ -24,99 +22,39 @@ import {
   formatISODateTime,
 } from 'common/dates/formatDateRelative';
 import {unraw} from './unraw';
-import type {Task as TaskType} from 'v1/api/types';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
-import {
-  type TaskFilters,
-  useTaskFilters,
-} from 'v1/features/tasks/filters/useTaskFilters';
+import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import {encodeTaskOpenedRef} from 'common/tracking/reftags';
-import {AssigneeTag} from 'v1/Tasks/AssigneeTag';
-import {DateLabel} from './DateLabel';
-import {PriorityLabel} from './PriorityLabel';
+import {AssigneeTag} from 'common/components/AssigneeTag';
+import {DateLabel} from 'common/tasks/available-tasks/DateLabel';
+import {PriorityLabel} from 'common/tasks/available-tasks/PriorityLabel';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {useIsCurrentTaskOpen} from './useIsCurrentTaskOpen';
+import {getNavLinkLabel} from './getNavLinkLabel';
+import {getSecondaryDate} from './getSecondaryDate';
 
 type Props = {
-  taskId: TaskType['id'];
-  name: TaskType['name'];
-  processName: TaskType['processName'];
-  context: TaskType['context'];
-  assignee: TaskType['assignee'];
-  creationDate: TaskType['creationDate'];
-  followUpDate: TaskType['followUpDate'];
-  dueDate: TaskType['dueDate'];
-  completionDate: TaskType['completionDate'];
-  priority: TaskType['priority'];
+  taskId: string;
+  displayName: string;
+  processDisplayName: string;
+  context: string | null;
+  assignee: string | null;
+  creationDate: string;
+  followUpDate: string | null;
+  dueDate: string | null;
+  completionDate: string | null;
+  priority: number | null;
   currentUser: CurrentUser;
   position: number;
 };
 
-function getNavLinkLabel({
-  name,
-  assigneeId,
-  currentUserId,
-}: {
-  name: string;
-  assigneeId: string | null;
-  currentUserId: string;
-}) {
-  const isAssigned = assigneeId !== null;
-  const isAssignedToCurrentUser = assigneeId === currentUserId;
-  if (isAssigned) {
-    if (isAssignedToCurrentUser) {
-      return t('availableTasksNavLinkAssignedToMe', {name});
-    } else {
-      return t('availableTasksNavLinkAssignedTask', {name});
-    }
-  } else {
-    return t('availableTasksNavLinkUnassignedTask', {name});
-  }
-}
-
-function getSecondaryDate({
-  completionDate,
-  dueDate,
-  followUpDate,
-  sortBy,
-}: {
-  completionDate: ReturnType<typeof formatISODate>;
-  dueDate: ReturnType<typeof formatISODate>;
-  followUpDate: ReturnType<typeof formatISODate>;
-  sortBy: TaskFilters['sortBy'];
-}) {
-  const now = Date.now();
-  const isOverdue = !completionDate && dueDate && isBefore(dueDate.date, now);
-  const isFollowupBeforeDueDate =
-    dueDate && followUpDate && isBefore(followUpDate.date, dueDate.date);
-
-  if (sortBy === 'creation' && completionDate) {
-    return {completionDate};
-  } else if (
-    sortBy === 'creation' &&
-    followUpDate &&
-    !isOverdue &&
-    isFollowupBeforeDueDate
-  ) {
-    return {followUpDate};
-  } else if (sortBy === 'completion' && completionDate) {
-    return {completionDate};
-  } else if (sortBy === 'follow-up' && followUpDate) {
-    return {followUpDate};
-  } else if (dueDate) {
-    return isOverdue ? {overDueDate: dueDate} : {dueDate};
-  } else {
-    return {};
-  }
-}
-
-const Task = React.forwardRef<HTMLDivElement, Props>(
+const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
   (
     {
       taskId,
-      name,
-      processName,
+      displayName,
+      processDisplayName,
       context,
       assignee,
       creationDate: creationDateString,
@@ -174,7 +112,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
             search: searchWithRefTag.toString(),
           }}
           aria-label={getNavLinkLabel({
-            name,
+            displayName,
             assigneeId: assignee,
             currentUserId: currentUser.userId,
           })}
@@ -183,11 +121,11 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
             className={styles.fullWidthAndHeight}
             data-testid={`task-${taskId}`}
             gap={3}
-            ref={ref as React.LegacyRef<React.ReactNode>}
+            ref={ref as React.Ref<React.ReactNode>}
           >
             <div className={cn(styles.flex, styles.flexColumn)}>
-              <span className={styles.name}>{name}</span>
-              <span className={styles.label}>{processName}</span>
+              <span className={styles.name}>{displayName}</span>
+              <span className={styles.label}>{processDisplayName}</span>
             </div>
             {decodedContext !== null && (
               <div className={cn(styles.flex, styles.flexColumn)}>
@@ -268,4 +206,4 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
   },
 );
 
-export {Task};
+export {AvailableTaskItem};
