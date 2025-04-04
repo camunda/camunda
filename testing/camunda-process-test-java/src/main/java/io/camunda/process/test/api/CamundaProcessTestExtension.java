@@ -27,6 +27,8 @@ import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,8 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.junit.platform.commons.util.ReflectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A JUnit extension that provides the runtime for process tests.
@@ -74,6 +78,8 @@ public class CamundaProcessTestExtension
 
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
+
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
 
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
@@ -138,6 +144,12 @@ public class CamundaProcessTestExtension
 
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
+    if (containerRuntime == null) {
+      throw new IllegalStateException(
+          "The CamundaProcessTestExtension failed to start because the runtime is not created. "
+              + "Make sure that you registering the extension on a static field.");
+    }
+
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
@@ -190,26 +202,56 @@ public class CamundaProcessTestExtension
   }
 
   @Override
-  public void afterEach(final ExtensionContext extensionContext) throws Exception {
-    // collect test results
-    final ProcessTestResult testResult = processTestResultCollector.collect();
+  public void afterEach(final ExtensionContext extensionContext) {
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
+    }
 
-    // reset assertions
-    CamundaAssert.reset();
-    // close all created clients
-    closeCreatedClients();
-    // purge cluster
-    camundaManagementClient.purgeCluster();
-
-    // print test results
     if (isTestFailed(extensionContext)) {
+      printTestResults();
+    }
+    CamundaAssert.reset();
+    closeCreatedClients();
+    // final step: delete data
+    deleteRuntimeData();
+  }
+
+  private void printTestResults() {
+    try {
+      // collect test results
+      final ProcessTestResult testResult = processTestResultCollector.collect();
+      // print test results
       processTestResultPrinter.print(testResult);
+    } catch (final Throwable t) {
+      LOG.warn("Failed to collect test results, skipping.", t);
+    }
+  }
+
+  private void deleteRuntimeData() {
+    try {
+      LOG.debug("Deleting the runtime data");
+      final Instant startTime = Instant.now();
+
+      camundaManagementClient.purgeCluster();
+      final Instant endTime = Instant.now();
+      final Duration duration = Duration.between(startTime, endTime);
+      LOG.debug("Runtime data deleted in {}", duration);
+
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Failed to delete the runtime data, skipping. Check the runtime for details. "
+              + "Note that a dirty runtime may cause failures in other test cases.",
+          t);
     }
   }
 
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
-    // close the runtime
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
+    }
     containerRuntime.close();
   }
 
@@ -346,9 +388,13 @@ public class CamundaProcessTestExtension
     return this;
   }
 
-  private void closeCreatedClients() throws Exception {
+  private void closeCreatedClients() {
     for (final AutoCloseable client : createdClients) {
-      client.close();
+      try {
+        client.close();
+      } catch (final Exception e) {
+        LOG.debug("Failed to close client, continue.", e);
+      }
     }
   }
 }

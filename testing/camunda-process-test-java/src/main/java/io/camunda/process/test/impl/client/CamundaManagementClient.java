@@ -36,6 +36,7 @@ import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
 public class CamundaManagementClient {
+
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
 
@@ -116,11 +117,12 @@ public class CamundaManagementClient {
           .pollInterval(Duration.ofMillis(250))
           .atMost(timeout)
           .until(() -> isPurgeComplete(startPurgeResponse.getChangeId()));
+
     } catch (final ConditionTimeoutException e) {
-      throw new RuntimeException(
-          "Failed to purge the cluster, timeout expired. Try increasing the timeout.", e);
+      throw new RuntimeException("Failed to purge the cluster, timeout expired.", e);
+
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to purge the cluster", e);
+      throw new RuntimeException("Failed to purge the cluster.", e);
     }
   }
 

@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.impl.testresult;
 
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.FlowNodeInstance;
@@ -26,13 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CamundaProcessTestResultCollector {
-
-  private static final Logger LOG =
-      LoggerFactory.getLogger(CamundaProcessTestResultCollector.class);
 
   private final CamundaDataSource dataSource;
 
@@ -43,15 +37,11 @@ public class CamundaProcessTestResultCollector {
   public ProcessTestResult collect() {
     final ProcessTestResult result = new ProcessTestResult();
 
-    try {
-      final List<ProcessInstanceResult> processInstanceResults =
-          dataSource.findProcessInstances().stream()
-              .map(this::collectProcessInstanceResult)
-              .collect(Collectors.toList());
-      result.setProcessInstanceTestResults(processInstanceResults);
-    } catch (final ClientException e) {
-      LOG.warn("Failed to collect the process instance results.", e);
-    }
+    final List<ProcessInstanceResult> processInstanceResults =
+        dataSource.findProcessInstances().stream()
+            .map(this::collectProcessInstanceResult)
+            .collect(Collectors.toList());
+    result.setProcessInstanceTestResults(processInstanceResults);
 
     return result;
   }
