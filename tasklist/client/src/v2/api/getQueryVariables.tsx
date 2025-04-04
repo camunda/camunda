@@ -113,6 +113,10 @@ function convertFiltersToQueryVariables(
     processInstanceKey,
     processDefinitionKey,
     userTaskKey,
+    dueDateFrom,
+    dueDateTo,
+    followUpDateFrom,
+    followUpDateTo,
     ...restFilters
   } = filters;
   const numberFilters =
@@ -142,6 +146,20 @@ function convertFiltersToQueryVariables(
 
   if (candidateUser !== undefined) {
     updatedFilters.candidateUser = candidateUser;
+  }
+
+  if (dueDateFrom !== undefined && dueDateTo !== undefined) {
+    updatedFilters.dueDate = {
+      $gte: dueDateFrom.toISOString(),
+      $lte: dueDateTo.toISOString(),
+    };
+  }
+
+  if (followUpDateFrom !== undefined && followUpDateTo !== undefined) {
+    updatedFilters.followUpDate = {
+      $gte: followUpDateFrom.toISOString(),
+      $lte: followUpDateTo.toISOString(),
+    };
   }
 
   return updatedFilters;

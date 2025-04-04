@@ -31,6 +31,10 @@ const filtersSchema = z
     processInstanceKey: z.string().optional(),
     processDefinitionKey: z.string().optional(),
     userTaskKey: z.string().optional(),
+    dueDateFrom: z.coerce.date().optional(),
+    dueDateTo: z.coerce.date().optional(),
+    followUpDateFrom: z.coerce.date().optional(),
+    followUpDateTo: z.coerce.date().optional(),
   })
   .merge(
     apiFiltersSchema.omit({
@@ -39,6 +43,10 @@ const filtersSchema = z
       processInstanceKey: true,
       processDefinitionKey: true,
       userTaskKey: true,
+      creationDate: true,
+      dueDate: true,
+      followUpDate: true,
+      completionDate: true,
     }),
   );
 
