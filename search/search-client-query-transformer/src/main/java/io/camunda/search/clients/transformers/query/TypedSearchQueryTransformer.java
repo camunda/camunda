@@ -27,6 +27,7 @@ import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Optional;
 
 public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOption>
     implements ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> {
@@ -68,10 +69,8 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
       builder.source(searchQuerySourceConfig);
     }
 
-    final var aggregation = query.aggregation();
-    if (aggregation != null) {
-      builder.aggregations(toAggregations(aggregation));
-    }
+    Optional.ofNullable(query.aggregation())
+        .ifPresent(aggregation -> builder.aggregations(toAggregations(aggregation)));
 
     return builder.build();
   }
