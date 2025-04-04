@@ -669,7 +669,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       return;
     }
 
+<<<<<<< HEAD
     log.info("Transitioning to {}", role);
+=======
+    LOGGER.info(
+        "Transitioning to {}: term={}, lastFlushedIdx={}, commitIdx={}",
+        role,
+        term,
+        raftLog.getLastIndex(),
+        raftLog.getCommitIndex());
+>>>>>>> fd33fead (fix: rejects appends from a leader who has experienced data loss)
 
     startTransition();
 
@@ -812,6 +821,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   @Override
   public void close() {
+    LOGGER.debug(
+        "Closing RaftContext: term={}, commitIdx={}, lastFlushedIdx={}",
+        term,
+        raftLog.getCommitIndex(),
+        raftLog.getLastIndex());
     raftRoleMetrics.becomingInactive();
     started = false;
     // Unregister protocol listeners.
@@ -833,6 +847,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     // close thread contexts
     threadContext.close();
+
+    LOGGER.debug("Raft context closed");
   }
 
   /** Unregisters server handlers on the configured protocol. */
@@ -886,10 +902,29 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @param firstCommitIndex The first commit index.
    */
-  public void setFirstCommitIndex(final long firstCommitIndex) {
+  public void setFirstCommitIndex(final long firstCommitIndex, final long lastFlushedIndex) {
     if (this.firstCommitIndex == 0) {
       if (firstCommitIndex == 0) {
         return;
+      }
+      // The previous leader may have crashed before updating the commit index on current leader.
+      // However, the data was already committed if the current leader had already flushed the
+      // message
+      // in its local storage.
+      // However, if the current leader has not received that message, we may be at risk of losing
+      // data.
+      if (firstCommitIndex < commitIndex && lastFlushedIndex < commitIndex) {
+        final var errorMessage =
+            String.format(
+                """
+                   A majority of nodes has lost committed data: firstCommitIndex(%d), lastflushedIndex(%d) < commitIndex(%d). \
+                   This node will become inactive to avoid overwriting previously committed data, \
+                   but the leader have formed a quorum and will continue to commit new events, \
+                   creating an inconsistent timeline of events: \
+                   THE CLUSTER SHOULD BE STOPPED IMMEDIATELY to further prevent inconsistencies.""",
+                firstCommitIndex, lastFlushedIndex, commitIndex);
+        LOGGER.error(errorMessage);
+        throw new RuntimeException(errorMessage);
       }
       this.firstCommitIndex = firstCommitIndex;
       log.info(
