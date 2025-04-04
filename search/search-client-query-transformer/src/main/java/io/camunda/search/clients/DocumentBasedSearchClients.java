@@ -199,6 +199,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
     final var originalFilter = filter.filter();
 
+    // Search for active incidents that match the given error message hash codes
     final var incidentFilter =
         FilterBuilders.incident(
             f ->
@@ -211,6 +212,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
       return new SearchQueryResult.Builder<ProcessInstanceEntity>().build();
     }
 
+    // Collect all relevant process instance keys (from both incidents and existing filter)
     final Set<Long> processInstanceKeys = new HashSet<>();
     incidentResult.items().forEach(i -> processInstanceKeys.add(i.processInstanceKey()));
 
@@ -222,6 +224,8 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
       }
     }
 
+    // Create a new filter that narrows the results to only process instances with
+    // matching incident error hashes and existing key filters
     final var updatedFilter =
         originalFilter.toBuilder()
             .replaceProcessInstanceKeyOperations(
