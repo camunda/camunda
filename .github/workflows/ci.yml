@@ -127,7 +127,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Not running Maven Spotless here since it is checked in a dedicated job
-      - run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -D skipOptimize -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
+      - run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -158,10 +158,6 @@ jobs:
         id: build-identity-fe
         with:
           directory: ./identity/client
-      - uses: ./.github/actions/build-frontend
-        id: build-optimize-fe
-        with:
-          directory: ./optimize/client
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -187,7 +183,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -197,7 +193,6 @@ jobs:
           ./mvnw -T2 -B --no-snapshot-updates
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
-          -D skipOptimize
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -279,7 +274,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/zeebe
@@ -293,7 +288,7 @@ jobs:
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks -D skipOptimize
+          -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
@@ -365,7 +360,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -D skipOptimize
+          maven-extra-args: -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
@@ -394,7 +389,7 @@ jobs:
           goldenfile: camunda-docker-labels.golden.json
       - name: Run Docker tests
         run: |
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -DskipOptimize -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
+          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
           -Dcamunda.docker.test.enabled=true \
           -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}" \
           -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}" \
@@ -482,7 +477,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Build Maven
         run: |
-          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       # Build the docker image to verify the built artifacts and the Dockerfile
       # It does NOT push the image to the registry
       - name: Build Docker image
@@ -506,96 +501,6 @@ jobs:
     needs: [ detect-changes ]
     uses: ./.github/workflows/tasklist-docker-tests.yml
     secrets: inherit
-
-  optimize-frontend-unit-tests:
-    if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
-    needs: [detect-changes]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    defaults:
-      run:
-        working-directory: optimize/client
-    env:
-      LIMITS_CPU: 4
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: "Parse pom.xml for versions"
-        id: "pom_info"
-        uses: YunaBraska/java-info-action@main
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: optimize/client
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Unit tests
-        run: yarn test:ci
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: unit-tests-frontend-junit
-          path: |
-            **/jest-test-results.xml
-          retention-days: 7
-          if-no-files-found: ignore
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  optimize-backend-unit-tests:
-    if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
-    needs: [detect-changes]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    env:
-      LIMITS_CPU: 4
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Setup Maven
-        uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: optimize-tests
-          maven-version: 3.8.6
-          time-zone: Europe/Berlin
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Test
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -pl optimize -am test -Dskip.fe.build -Dskip.docker
-          threads: .5C
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: unit-tests-backend-junit
-          path: |
-            **/surefire-reports/**/*.xml
-          retention-days: 7
-          if-no-files-found: ignore
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
@@ -669,8 +574,6 @@ jobs:
       - java-checks
       - java-unit-tests
       - maven-spotless-linter
-      - optimize-backend-unit-tests
-      - optimize-frontend-unit-tests
       - protobuf-checks
       - tasklist-docker-tests
       - tasklist-frontend-tests

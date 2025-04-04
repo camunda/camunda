@@ -1,8 +1,0 @@
-@mixin overflow-ellipsis($width: 100%, $display: inline-block) {
-  display: $display;
-  max-width: $width;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  word-wrap: normal;
-}
