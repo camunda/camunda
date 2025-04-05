@@ -54,6 +54,20 @@ improve
 - A problem, how we can reproduce it, and what the expected behavior would be
 - A change and the intention of how this would improve the system
 
+Severity and Likelihood (bugs):
+To help us prioritize, please also determine the severity and likelihood of the bug. To help you with this, here are the definitions for the options:
+
+Severity:
+- *Low:* Having little to no noticeable impact on usage for the user (e.g. log noise)
+- *Mid:* Having a noticeable impact on production usage, which does not lead to data loss, or for which there is a known configuration workaround.
+- *High:* Having a noticeable impact on production usage, which does not lead to data loss, but for which there is no known workaround, or the workaround is very complex. Examples include issues which lead to regular crashes and break the availability SLA.
+- *Critical:* Stop-the-world issue with a high impact that can lead to data loss (e.g. corruption, deletion, inconsistency, etc.), unauthorized privileged actions (e.g. remote code execution, data exposure, etc.), and for which there is no existing configuration workaround.
+
+Likelihood:
+- *Low:* rarely observed issue/ rather unlikely edge-case
+- *Mid:* occasionally observed
+- *High:* recurring issue
+
 ### Starting on an issue
 
 The `main` branch contains the current in-development state of the project. To work on an issue, follow these steps:

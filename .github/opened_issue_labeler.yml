@@ -1,0 +1,30 @@
+component/optimize:
+  '(Optimize-)'
+component/zeebe:
+  '(Zeebe-)'
+component/operate:
+  '(Operate-)'
+component/tasklist:
+  '(Tasklist-)'
+component/identity:
+  '(Identity-)'
+component/C8Run:
+  '(C8Run-)'
+needs component label:
+  '(Not sure-)'
+severity/critical:
+  '(Critical-)'
+severity/high:
+  '(High-)'
+severity/mid:
+  '(Medium-)'
+severity/low:
+  '(Low-)'
+likelihood/high:
+  '(High_)'
+likelihood/mid:
+  '(Medium_)'
+likelihood/low:
+  '(Low_)'
+likelihood/unknown:
+  '(Unknown_)'
