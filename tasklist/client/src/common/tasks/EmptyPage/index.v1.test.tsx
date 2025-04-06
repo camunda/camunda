@@ -35,7 +35,7 @@ const getWrapper = () => {
   return Wrapper;
 };
 
-describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
+describe('<EmptyPage />', () => {
   afterEach(() => {
     clearStateLocally('hasCompletedTask');
   });

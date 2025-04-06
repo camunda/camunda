@@ -64,7 +64,7 @@ const v1Routes = createRoutesFromElements(
       >
         <Route
           index
-          lazy={() => import('./v1/Tasks/EmptyPage')}
+          lazy={() => import('./common/tasks/EmptyPage')}
           ErrorBoundary={ErrorWithinLayout}
         />
         <Route
@@ -97,7 +97,13 @@ const v2Routes = createRoutesFromElements(
         path="/"
         lazy={() => import('./v2/Tasks')}
         ErrorBoundary={ErrorWithinLayout}
-      />
+      >
+        <Route
+          index
+          lazy={() => import('./common/tasks/EmptyPage')}
+          ErrorBoundary={ErrorWithinLayout}
+        />
+      </Route>
     </Route>
   </Route>,
 );
