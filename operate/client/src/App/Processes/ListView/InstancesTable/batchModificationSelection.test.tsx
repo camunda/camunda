@@ -19,6 +19,8 @@ import {mockProcessInstances, mockProcessStatistics} from 'modules/testUtils';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 jest.mock('modules/hooks/useCallbackPrompt', () => {
   return {
@@ -41,12 +43,14 @@ function getWrapper(initialPath: string = Paths.processes()) {
     });
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        {children}
-        <button onClick={batchModificationStore.enable}>
-          Enable batch modification mode
-        </button>
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          {children}
+          <button onClick={batchModificationStore.enable}>
+            Enable batch modification mode
+          </button>
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 

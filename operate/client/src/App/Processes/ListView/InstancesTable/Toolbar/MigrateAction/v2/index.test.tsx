@@ -7,7 +7,7 @@
  */
 
 import {act} from '@testing-library/react';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {
@@ -17,9 +17,7 @@ import {
 } from 'modules/testUtils';
 import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {tracking} from 'modules/tracking';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -28,6 +26,7 @@ import {fetchProcessInstances, getProcessInstance} from '../../mocks';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {useEffect} from 'react';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'eventBasedGatewayProcess';
@@ -52,7 +51,6 @@ function getWrapper(initialPath: string = '') {
         processInstancesSelectionStore.reset();
         processInstancesStore.reset();
         processInstanceMigrationStore.reset();
-        processXmlStore.reset();
         batchModificationStore.reset();
       };
     }, []);
@@ -74,13 +72,6 @@ function getWrapper(initialPath: string = '') {
           }
         >
           Fetch process instances
-        </button>
-        <button
-          onClick={() => {
-            processXmlStore.fetchProcessXml('1');
-          }}
-        >
-          Fetch process xml
         </button>
         <button onClick={batchModificationStore.enable}>
           Enter batch modification mode
@@ -175,9 +166,7 @@ describe('<MigrateAction />', () => {
       ),
     });
 
-    mockFetchProcessXML().withServerError();
-    await waitFor(() => processXmlStore.fetchProcessXml('1'));
-    expect(processXmlStore.state.status).toBe('error');
+    mockFetchProcessDefinitionXml().withServerError();
 
     await fetchProcessInstances(screen, user);
 

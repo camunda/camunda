@@ -9,11 +9,11 @@
 import {render, screen} from 'modules/testing-library';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockProcessInstances} from 'modules/testUtils';
-import {fetchProcessInstances, fetchProcessXml, getWrapper} from '../../mocks';
+import {fetchProcessInstances, getWrapper} from '../../mocks';
 import {MoveAction} from '..';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
 import {tracking} from 'modules/tracking';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const PROCESS_ID = 'MoveModificationProcess';
 const mockProcessXML = open('MoveModificationProcess.bpmn');
@@ -23,7 +23,7 @@ describe('<MoveAction /> - tracking', () => {
     const trackSpy = jest.spyOn(tracking, 'track');
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const {user} = render(<MoveAction />, {
       wrapper: getWrapper(
@@ -32,7 +32,6 @@ describe('<MoveAction /> - tracking', () => {
     });
 
     await fetchProcessInstances(screen, user);
-    await fetchProcessXml(screen, user);
 
     await user.click(
       screen.getByRole('button', {name: /select all instances/i}),

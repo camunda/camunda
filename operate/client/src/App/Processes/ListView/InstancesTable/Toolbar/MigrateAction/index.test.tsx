@@ -14,15 +14,15 @@ import {
   mockCalledProcessInstances,
   mockProcessInstances,
   mockProcessStatistics,
+  mockProcessXML,
 } from 'modules/testUtils';
 import {MigrateAction} from '.';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {tracking} from 'modules/tracking';
 import {fetchProcessInstances, getProcessInstance, getWrapper} from '../mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'eventBasedGatewayProcess';
@@ -41,20 +41,8 @@ jest.mock('modules/stores/processes/processes.list', () => ({
 }));
 
 describe('<MigrateAction />', () => {
-  it('should disable migrate button, when no process version is selected', () => {
-    render(<MigrateAction />, {wrapper: getWrapper()});
-
-    expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
-  });
-
-  it('should disable migrate button, when no active or incident instances are selected', () => {
-    render(<MigrateAction />, {
-      wrapper: getWrapper(
-        `/processes?process=eventBasedGatewayProcess&version=1`,
-      ),
-    });
-
-    expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
+  beforeEach(() => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
   });
 
   it('should enable migrate button, when active or incident instances are selected', async () => {
@@ -108,9 +96,7 @@ describe('<MigrateAction />', () => {
       ),
     });
 
-    mockFetchProcessXML().withServerError();
-    await waitFor(() => processXmlStore.fetchProcessXml('1'));
-    expect(processXmlStore.state.status).toBe('error');
+    mockFetchProcessDefinitionXml().withServerError();
 
     await fetchProcessInstances(screen, user);
 

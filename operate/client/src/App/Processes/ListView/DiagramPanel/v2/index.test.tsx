@@ -21,16 +21,16 @@ import {DiagramPanel} from './index';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
-import {useEffect, act} from 'react';
+import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 
 jest.mock('modules/utils/bpmn');
 
@@ -39,7 +39,6 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
     useEffect(() => {
       processInstancesSelectionStore.init();
       return () => {
-        processXmlStore.reset();
         processesStore.reset();
         batchModificationStore.reset();
         processInstancesSelectionStore.reset();
@@ -47,21 +46,23 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
     }, []);
 
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={[initialPath]}>
-          {children}
-          <button onClick={batchModificationStore.enable}>
-            Enable batch modification mode
-          </button>
-          <button
-            onClick={() =>
-              processInstancesSelectionStore.selectProcessInstance('0')
-            }
-          >
-            Select process instance
-          </button>
-        </MemoryRouter>
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value={'123'}>
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[initialPath]}>
+            {children}
+            <button onClick={batchModificationStore.enable}>
+              Enable batch modification mode
+            </button>
+            <button
+              onClick={() =>
+                processInstancesSelectionStore.selectProcessInstance('0')
+              }
+            >
+              Select process instance
+            </button>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
@@ -76,7 +77,7 @@ describe('DiagramPanel', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     processesStore.fetchProcesses();
   });
@@ -204,40 +205,15 @@ describe('DiagramPanel', () => {
       .mockImplementation();
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withServerError();
+    mockFetchProcessDefinitionXml().withServerError();
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(),
     });
 
-    await act(async () => {
-      await processXmlStore.fetchProcessXml('1');
-    });
-
-    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(
-      screen.queryByText(/There is no Process selected/),
-    ).not.toBeInTheDocument();
-
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess('');
-
-    await act(async () => {
-      await processXmlStore.fetchProcessXml('2');
-    });
-
-    expect(
-      screen.queryByText('Data could not be fetched'),
-    ).not.toBeInTheDocument();
-
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withServerError();
-
-    await act(async () => {
-      await processXmlStore.fetchProcessXml('3');
-    });
-
-    expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
+      await screen.findByText('Data could not be fetched'),
+    ).toBeInTheDocument();
     expect(
       screen.queryByText(/There is no Process selected/),
     ).not.toBeInTheDocument();
@@ -254,7 +230,7 @@ describe('DiagramPanel', () => {
     }));
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -276,7 +252,7 @@ describe('DiagramPanel', () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics, {
       mockResolverFn: mockProcessInstancesStatisticsResolver,
     });
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     const {user} = render(<DiagramPanel />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -338,7 +314,7 @@ describe('DiagramPanel', () => {
     }));
 
     mockFetchProcessInstancesStatistics().withServerError();
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -356,8 +332,7 @@ describe('DiagramPanel', () => {
       search: queryString,
     }));
 
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstancesStatistics().withServerError();
 
     render(<DiagramPanel />, {
