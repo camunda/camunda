@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
