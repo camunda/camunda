@@ -47,9 +47,29 @@ jobs:
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
+        # This step generates a GitHub App token to be used in Git operations as a workaround  for
+        # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
+          # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
+          # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
+          # NOTES:
+          # - This token will be used for all git operations in this job
+          # - This token expires after 1 hour (https://github.com/actions/create-github-app-token?tab=readme-ov-file#create-github-app-token)
+          token: ${{ steps.github-token.outputs.token }}
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.0.0
@@ -79,16 +99,6 @@ jobs:
           echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB }}" \
             | base64 --decode \
             | gpg -q --import --no-tty --batch --yes
-      - name: Setup Github cli
-        # On non-Github hosted runners it may be missing
-        # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
-        run: |
-          type -p curl >/dev/null || sudo apt install curl -y
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
       - name: Setup Build Tooling
         uses: ./.github/actions/setup-build
         with:
