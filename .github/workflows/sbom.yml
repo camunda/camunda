@@ -30,8 +30,6 @@ jobs:
             folder: "build"
           - component: "identity"
             folder: "dist"
-          - component: "optimize"
-            folder: "dist"
 
     defaults:
       run:
@@ -124,12 +122,6 @@ jobs:
         with:
           name: identity-fe-sbom
           path: ./sboms/identity
-
-      - name: Download Optimize SBOM Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: optimize-fe-sbom
-          path: ./sboms/optimize
 
       - name: Determine Release Tag
         id: get_release_tag

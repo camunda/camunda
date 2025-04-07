@@ -7,8 +7,8 @@
   <Properties>
     <Property name="log.path" value="${sys:app.home}/logs" />
     <Property name="log.pattern" value="[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] %notEmpty{[%X] }%-5level%n\t%logger{36} - %msg%n" />
-    <Property name="log.stackdriver.serviceName" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}}"/>
-    <Property name="log.stackdriver.serviceVersion" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}}"/>
+    <Property name="log.stackdriver.serviceName" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}}"/>
+    <Property name="log.stackdriver.serviceVersion" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}}"/>
   </Properties>
 
   <Appenders>
@@ -51,7 +51,6 @@
     <Logger name="io.camunda" level="${env:CAMUNDA_LOG_LEVEL:-INFO}" />
     <Logger name="io.camunda.zeebe" level="${env:ZEEBE_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL:-INFO}}" />
     <Logger name="io.atomix" level="${env:ATOMIX_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL:-INFO}}" />
-    <Logger name="io.camunda.optimize" level="${env:OPTIMIZE_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL:-INFO}}" />
     <Logger name="org.elasticsearch" level="${env:ES_LOG_LEVEL:-WARN}" />
     <Logger name="org.springframework" level="INFO" />
 
