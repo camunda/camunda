@@ -17,7 +17,6 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.zeebe.engine.state.batchoperation.EntityFilterDeserializeException;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState.BatchOperationVisitor;
@@ -85,7 +84,7 @@ public class BatchOperationExecutionSchedulerTest {
   public void shouldAppendFailedEvent() {
     // given
     when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
-        .thenThrow(new EntityFilterDeserializeException("error", new RuntimeException()));
+        .thenThrow(new RuntimeException("error", new RuntimeException()));
 
     // when our scheduler fires
     execute();

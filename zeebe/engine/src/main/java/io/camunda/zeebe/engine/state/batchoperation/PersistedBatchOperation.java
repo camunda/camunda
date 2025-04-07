@@ -92,12 +92,8 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
    * @return the deserialized entity filter
    * @throws EntityFilterDeserializeException if any error occurs during deserialization
    */
-  public <T> T getEntityFilter(final Class<T> clazz) throws EntityFilterDeserializeException {
-    try {
-      return MsgPackConverter.convertToObject(entityFilterProp.getValue(), clazz);
-    } catch (final Exception e) {
-      throw new EntityFilterDeserializeException("Failed to deserialize entity filter", e);
-    }
+  public <T> T getEntityFilter(final Class<T> clazz) {
+    return MsgPackConverter.convertToObject(entityFilterProp.getValue(), clazz);
   }
 
   public long nextChunkKey() {

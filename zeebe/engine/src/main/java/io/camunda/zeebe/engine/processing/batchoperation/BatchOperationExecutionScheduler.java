@@ -12,7 +12,6 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.zeebe.engine.state.batchoperation.EntityFilterDeserializeException;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -107,17 +106,10 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
             keys.stream().skip(i).limit(CHUNK_SIZE_IN_RECORD).collect(Collectors.toSet());
         appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
       }
-    } catch (final EntityFilterDeserializeException e) {
+    } catch (final Exception e) {
       LOG.error(
-          "Failed to deserialize entity filter, batch operation with key {} will be removed from queue",
+          "Failed to append chunks for batch operation with key {}. It will be removed from queue",
           batchOperation.getKey(),
-          e);
-      appendFailedCommand(taskResultBuilder, batchOperation);
-    } catch (final IllegalArgumentException e) {
-      LOG.error(
-          "Failed to execute batch operation with key {} because operation type '{}' is not known",
-          batchOperation.getKey(),
-          batchOperation.getBatchOperationType(),
           e);
       appendFailedCommand(taskResultBuilder, batchOperation);
     }
@@ -169,8 +161,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         batchOperationKey, BatchOperationExecutionIntent.EXECUTE, command, batchOperationKey);
   }
 
-  private Set<Long> queryAllKeys(final PersistedBatchOperation batchOperation)
-      throws EntityFilterDeserializeException, IllegalArgumentException {
+  private Set<Long> queryAllKeys(final PersistedBatchOperation batchOperation) {
     return switch (batchOperation.getBatchOperationType()) {
       case PROCESS_CANCELLATION -> queryAllProcessInstanceKeys(batchOperation);
       default ->
@@ -179,8 +170,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     };
   }
 
-  private Set<Long> queryAllProcessInstanceKeys(final PersistedBatchOperation batchOperation)
-      throws EntityFilterDeserializeException {
+  private Set<Long> queryAllProcessInstanceKeys(final PersistedBatchOperation batchOperation) {
     final ProcessInstanceFilter filter =
         batchOperation.getEntityFilter(ProcessInstanceFilter.class);
 
