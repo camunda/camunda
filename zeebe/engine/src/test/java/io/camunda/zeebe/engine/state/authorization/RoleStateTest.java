@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,19 +88,19 @@ public class RoleStateTest {
   @Test
   void shouldAddEntity() {
     // given
-    // TODO use a proper id https://github.com/camunda/camunda/issues/30113
     final var roleKey = 123L;
-    final var roleId = "123";
+    final var roleId = Strings.newRandomValidIdentityId();
     final var roleName = "foo";
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
 
     // when
-    roleRecord.setEntityKey(2L).setEntityType(EntityType.USER);
+    final var entityId = Strings.newRandomValidUsername();
+    roleRecord.setEntityId(entityId).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
 
     // then
-    final var entityType = roleState.getEntityType(roleKey, 2L).get();
+    final var entityType = roleState.getEntityType(roleId, entityId).get();
     assertThat(entityType).isEqualTo(EntityType.USER);
   }
 
@@ -112,18 +113,20 @@ public class RoleStateTest {
     final var roleName = "foo";
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
+    final var entityId1 = "456";
+    roleRecord.setEntityId(entityId1).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
+    final var entityId2 = "789";
     roleState.addEntity(
-        new RoleRecord().setRoleKey(roleKey).setEntityKey(2L).setEntityType(EntityType.USER));
+        new RoleRecord().setRoleId(roleId).setEntityId(entityId2).setEntityType(EntityType.USER));
 
     // when
-    roleState.removeEntity(roleKey, 1L);
+    roleState.removeEntity(roleKey, 456L);
 
     // then
-    final var deletedEntity = roleState.getEntityType(roleKey, 1L);
+    final var deletedEntity = roleState.getEntityType(roleKey, 456L);
     assertThat(deletedEntity).isEmpty();
-    final var entityType = roleState.getEntityType(roleKey, 2L).get();
+    final var entityType = roleState.getEntityType(roleKey, 789L).get();
     assertThat(entityType).isEqualTo(EntityType.USER);
   }
 
@@ -152,22 +155,23 @@ public class RoleStateTest {
   @Test
   void shouldReturnEntityByType() {
     // given
-    // TODO use a proper role id https://github.com/camunda/camunda/issues/30116
     final var roleKey = 123L;
-    final var roleId = "123";
+    final var roleId = Strings.newRandomValidIdentityId();
     final var roleName = "foo";
     final var roleRecord = new RoleRecord().setRoleId(roleId).setRoleKey(roleKey).setName(roleName);
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
+    final var entityId1 = Strings.newRandomValidUsername();
+    roleRecord.setEntityId(entityId1).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
-    roleRecord.setEntityKey(2L).setEntityType(EntityType.UNSPECIFIED);
+    final var entityId2 = Strings.newRandomValidUsername();
+    roleRecord.setEntityId(entityId2).setEntityType(EntityType.UNSPECIFIED);
     roleState.addEntity(roleRecord);
 
     // when
-    final var entities = roleState.getEntitiesByType(roleKey);
+    final var entities = roleState.getEntitiesByType(roleId);
 
     // then
-    assertThat(entities.get(EntityType.USER)).containsExactly(1L);
-    assertThat(entities.get(EntityType.UNSPECIFIED)).containsExactly(2L);
+    assertThat(entities.get(EntityType.USER)).containsExactly(entityId1);
+    assertThat(entities.get(EntityType.UNSPECIFIED)).containsExactly(entityId2);
   }
 }
