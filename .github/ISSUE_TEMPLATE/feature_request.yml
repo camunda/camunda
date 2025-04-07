@@ -44,7 +44,6 @@ body:
     id: dev-qa-handover
     attributes:
       label: Dev -> QA handover
-      description:
       value: |
              - Resources:
              - Versions to validate:

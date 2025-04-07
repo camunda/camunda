@@ -6,7 +6,7 @@ body:
     id: Component
     attributes:
       label: Component
-      description: In which component did the issue occur?
+      description: In which component shall the task be carried out?
       options:
         - Not sure-
         - Operate-
