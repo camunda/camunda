@@ -39,7 +39,8 @@ public record ProcessInstanceFilter(
     List<Operation<String>> flowNodeIdOperations,
     Boolean hasFlowNodeInstanceIncident,
     List<Operation<String>> flowNodeInstanceStateOperations,
-    List<Integer> incidentErrorHashCodes)
+    List<Integer> incidentErrorHashCodes,
+    Integer partitionId)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -58,7 +59,8 @@ public record ProcessInstanceFilter(
         .hasIncident(hasIncident)
         .tenantIdOperations(tenantIdOperations)
         .variables(variableFilters)
-        .batchOperationIdOperations(batchOperationIdOperations);
+        .batchOperationIdOperations(batchOperationIdOperations)
+        .partitionId(partitionId);
   }
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
@@ -84,6 +86,7 @@ public record ProcessInstanceFilter(
     private Boolean hasFlowNodeInstanceIncident;
     private List<Operation<String>> flowNodeInstanceStateOperations;
     private List<Integer> incidentErrorHashCodes;
+    private Integer partitionId;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -358,6 +361,11 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder partitionId(final Integer value) {
+      partitionId = value;
+      return this;
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -382,7 +390,8 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
           hasFlowNodeInstanceIncident,
           Objects.requireNonNullElse(flowNodeInstanceStateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(incidentErrorHashCodes, Collections.emptyList()));
+          Objects.requireNonNullElse(incidentErrorHashCodes, Collections.emptyList()),
+          partitionId);
     }
   }
 }

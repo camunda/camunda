@@ -240,7 +240,8 @@ public class ProcessInstanceIT {
                     .endDate(NOW)
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
-                    .version(1)));
+                    .version(1)
+                    .partitionId(123456)));
 
     final var searchResult =
         processInstanceReader.search(
@@ -253,7 +254,8 @@ public class ProcessInstanceIT {
                                     .processDefinitionKeys(1337L)
                                     .states(ProcessInstanceState.ACTIVE.name())
                                     .parentProcessInstanceKeys(-1L)
-                                    .parentFlowNodeInstanceKeys(-1L))
+                                    .parentFlowNodeInstanceKeys(-1L)
+                                    .partitionId(123456))
                         .sort(s -> s)
                         .page(p -> p.from(0).size(5))));
 
@@ -328,13 +330,22 @@ public class ProcessInstanceIT {
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
     final var pi1 =
         createAndSaveRandomProcessInstance(
-            rdbmsWriter, b -> b.processDefinitionKey(processDefinition.processDefinitionKey()));
+            rdbmsWriter,
+            b ->
+                b.processDefinitionKey(processDefinition.processDefinitionKey())
+                    .partitionId(PARTITION_ID));
     final var pi2 =
         createAndSaveRandomProcessInstance(
-            rdbmsWriter, b -> b.processDefinitionKey(processDefinition.processDefinitionKey()));
+            rdbmsWriter,
+            b ->
+                b.processDefinitionKey(processDefinition.processDefinitionKey())
+                    .partitionId(PARTITION_ID));
     final var pi3 =
         createAndSaveRandomProcessInstance(
-            rdbmsWriter, b -> b.processDefinitionKey(processDefinition.processDefinitionKey()));
+            rdbmsWriter,
+            b ->
+                b.processDefinitionKey(processDefinition.processDefinitionKey())
+                    .partitionId(PARTITION_ID));
 
     // set cleanup dates
     rdbmsWriter.getProcessInstanceWriter().scheduleForHistoryCleanup(pi1.processInstanceKey(), NOW);

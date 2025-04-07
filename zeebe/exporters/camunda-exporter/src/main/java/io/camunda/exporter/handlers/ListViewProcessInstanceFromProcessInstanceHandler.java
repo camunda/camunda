@@ -164,6 +164,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     updateFields.put(ListViewTemplate.PROCESS_VERSION, entity.getProcessVersion());
     updateFields.put(ListViewTemplate.PROCESS_KEY, entity.getProcessDefinitionKey());
     updateFields.put(ListViewTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+    updateFields.put(PARTITION_ID, entity.getPartitionId());
     updateFields.put(POSITION, entity.getPosition());
     if (entity.getState() != null) {
       updateFields.put(ListViewTemplate.STATE, entity.getState());

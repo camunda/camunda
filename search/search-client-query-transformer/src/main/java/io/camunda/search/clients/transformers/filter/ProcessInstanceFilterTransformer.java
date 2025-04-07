@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PARTITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
@@ -107,6 +108,10 @@ public final class ProcessInstanceFilterTransformer
     if (filter.flowNodeIdOperations() != null && !filter.flowNodeIdOperations().isEmpty()) {
       final var flowNodeInstanceQuery = getFlowNodeInstanceQuery(filter, queries);
       queries.add(flowNodeInstanceQuery);
+    }
+
+    if (filter.partitionId() != null) {
+      queries.add(term(PARTITION_ID, filter.partitionId()));
     }
 
     return and(queries);
