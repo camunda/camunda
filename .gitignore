@@ -54,7 +54,6 @@ hs_err*.log
 .eslintcache
 els-snapshots
 
-optimize/client/.node/
 .yarn
 
 c8run/*.tar.gz
