@@ -131,6 +131,9 @@
       </if>
       )
     </if>
+    <if test="filter.partitionId != null">
+      AND pi.PARTITION_ID = #{filter.partitionId}
+    </if>
 
     <!-- date filters -->
     <if test="filter.startDateOperations != null and !filter.startDateOperations.isEmpty()">
