@@ -27,12 +27,7 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
     switch (value.getEntityType()) {
       case USER, MAPPING ->
           membershipState.insertRelation(
-              value.getEntityType(),
-              // TODO: Use entity id instead of key
-              Long.toString(value.getEntityKey()),
-              RelationType.ROLE,
-              // TODO: Use role id instead of key
-              Long.toString(value.getRoleKey()));
+              value.getEntityType(), value.getEntityId(), RelationType.ROLE, value.getRoleId());
       default ->
           throw new IllegalStateException(
               String.format(
