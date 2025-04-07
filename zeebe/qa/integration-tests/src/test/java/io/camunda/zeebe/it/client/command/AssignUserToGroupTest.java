@@ -35,12 +35,12 @@ class AssignUserToGroupTest {
   @AutoClose private CamundaClient client;
 
   private long groupKey;
-  private long userKey;
+  private String username;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    userKey =
+    username =
         client
             .newUserCreateCommand()
             .name("User Name")
@@ -49,7 +49,7 @@ class AssignUserToGroupTest {
             .password("******")
             .send()
             .join()
-            .getUserKey();
+            .getUsername();
 
     groupKey = client.newCreateGroupCommand().name("groupName").send().join().getGroupKey();
   }
@@ -57,12 +57,12 @@ class AssignUserToGroupTest {
   @Test
   void shouldAssignUserToGroup() {
     // when
-    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
+    client.newAssignUserToGroupCommand(groupKey).username(username).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityAssignedToGroup(
         groupKey,
-        userKey,
+        username,
         group -> {
           assertThat(group).hasEntityType(EntityType.USER);
         });
@@ -71,21 +71,21 @@ class AssignUserToGroupTest {
   @Test
   void shouldRejectIfUserDoesNotExist() {
     // given
-    final long nonExistentUserKey = Protocol.encodePartitionId(1, 111L);
+    final var nonExistentUsername = String.valueOf(Protocol.encodePartitionId(1, 111L));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
                     .newAssignUserToGroupCommand(groupKey)
-                    .userKey(nonExistentUserKey)
+                    .username(nonExistentUsername)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add an entity with key '%d' and type '%s' to group with key '%d', but the entity does not exist."
-                .formatted(nonExistentUserKey, EntityType.USER, groupKey));
+            "Expected to add an entity with key '%s' and type '%s' to group with key '%d', but the entity does not exist."
+                .formatted(nonExistentUsername, EntityType.USER, groupKey));
   }
 
   @Test
@@ -98,7 +98,7 @@ class AssignUserToGroupTest {
             () ->
                 client
                     .newAssignUserToGroupCommand(nonExistentGroupKey)
-                    .userKey(userKey)
+                    .username(username)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -111,15 +111,15 @@ class AssignUserToGroupTest {
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
+    client.newAssignUserToGroupCommand(groupKey).username(username).send().join();
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join())
+            () -> client.newAssignUserToGroupCommand(groupKey).username(username).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to group with key '%d', but the entity is already assigned to this group."
-                .formatted(userKey, groupKey));
+            "Expected to add entity with ID '%s' to group with key '%d', but the entity is already assigned to this group."
+                .formatted(username, groupKey));
   }
 }

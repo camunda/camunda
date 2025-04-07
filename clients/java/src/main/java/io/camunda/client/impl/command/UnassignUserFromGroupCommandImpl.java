@@ -30,7 +30,7 @@ public class UnassignUserFromGroupCommandImpl implements UnassignUserFromGroupCo
   private final long groupKey;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private long userKey;
+  private String username;
 
   public UnassignUserFromGroupCommandImpl(final long groupKey, final HttpClient httpClient) {
     this.groupKey = groupKey;
@@ -39,9 +39,9 @@ public class UnassignUserFromGroupCommandImpl implements UnassignUserFromGroupCo
   }
 
   @Override
-  public UnassignUserFromGroupCommandStep1 userKey(final long userKey) {
-    ArgumentUtil.ensureNotNull("userKey", userKey);
-    this.userKey = userKey;
+  public UnassignUserFromGroupCommandStep1 username(final String username) {
+    ArgumentUtil.ensureNotNull("username", username);
+    this.username = username;
     return this;
   }
 
@@ -54,10 +54,10 @@ public class UnassignUserFromGroupCommandImpl implements UnassignUserFromGroupCo
 
   @Override
   public CamundaFuture<UnassignUserFromGroupResponse> send() {
-    ArgumentUtil.ensureNotNull("userKey", userKey);
+    ArgumentUtil.ensureNotNull("username", username);
     final HttpCamundaFuture<UnassignUserFromGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
-        "/groups/" + groupKey + "/users/" + userKey, httpRequestConfig.build(), result);
+        "/groups/" + groupKey + "/users/" + username, httpRequestConfig.build(), result);
     return result;
   }
 }

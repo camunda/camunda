@@ -41,23 +41,28 @@ public class UnassignUserFromGroupTest {
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
 
-    createdUser = client
-        .newUserCreateCommand()
-        .name("User Name")
-        .username("user")
-        .email("foo@example.com")
-        .password("******")
-        .send()
-        .join();
+    createdUser =
+        client
+            .newUserCreateCommand()
+            .name("User Name")
+            .username("user")
+            .email("foo@example.com")
+            .password("******")
+            .send()
+            .join();
 
     groupKey = client.newCreateGroupCommand().name("groupName").send().join().getGroupKey();
-    client.newAssignUserToGroupCommand(groupKey).userKey(createdUser.getUserKey()).send().join();
+    client.newAssignUserToGroupCommand(groupKey).username(createdUser.getUsername()).send().join();
   }
 
   @Test
   void shouldUnassignUserFromGroup() {
     // when
-    client.newUnassignUserFromGroupCommand(groupKey).userKey(createdUser.getUserKey()).send().join();
+    client
+        .newUnassignUserFromGroupCommand(groupKey)
+        .username(createdUser.getUsername())
+        .send()
+        .join();
 
     // then
     ZeebeAssertHelper.assertEntityUnassignedFromGroup(
@@ -71,21 +76,21 @@ public class UnassignUserFromGroupTest {
   @Test
   void shouldRejectIfUserDoesNotExist() {
     // given
-    final long nonExistentUserKey = Protocol.encodePartitionId(1, 111L);
+    final var nonExistentUsername = String.valueOf(Protocol.encodePartitionId(1, 111L));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
                     .newUnassignUserFromGroupCommand(groupKey)
-                    .userKey(nonExistentUserKey)
+                    .username(nonExistentUsername)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to remove an entity with ID '%d' and type '%s' from group with key '%d', but the entity does not exist."
-                .formatted(nonExistentUserKey, EntityType.USER, groupKey));
+            "Expected to remove an entity with ID '%s' and type '%s' from group with key '%d', but the entity does not exist."
+                .formatted(nonExistentUsername, EntityType.USER, groupKey));
   }
 
   @Test
@@ -98,7 +103,7 @@ public class UnassignUserFromGroupTest {
             () ->
                 client
                     .newUnassignUserFromGroupCommand(nonExistentGroupKey)
-                    .userKey(userKey)
+                    .username("nonExistentUsername")
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

@@ -436,12 +436,12 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertEntityAssignedToGroup(
-      final long groupKey, final long userKey, final Consumer<GroupRecordValue> consumer) {
+      final long groupKey, final String username, final Consumer<GroupRecordValue> consumer) {
     final GroupRecordValue groupRecordValue =
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.ENTITY_ADDED)
             .withGroupKey(groupKey)
-            .withEntityId(userKey)
+            .withEntityId(username)
             .getFirst()
             .getValue();
 

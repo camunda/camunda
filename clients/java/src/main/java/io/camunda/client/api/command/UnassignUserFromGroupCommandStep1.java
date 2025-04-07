@@ -21,11 +21,11 @@ public interface UnassignUserFromGroupCommandStep1
     extends FinalCommandStep<UnassignUserFromGroupResponse> {
 
   /**
-   * Sets the user key for the unassignment.
+   * Sets the user username for the unassignment.
    *
-   * @param userKey the key of the user
+   * @param username the username of the user
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  UnassignUserFromGroupCommandStep1 userKey(long userKey);
+  UnassignUserFromGroupCommandStep1 username(String username);
 }
