@@ -167,6 +167,11 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public boolean exists(final long batchKey) {
+    return get(batchKey).isPresent();
+  }
+
+  @Override
   public Optional<PersistedBatchOperation> get(final long key) {
     batchKey.wrapLong(key);
     return Optional.ofNullable(batchOperationColumnFamily.get(batchKey));
@@ -204,8 +209,21 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     return chunkKeys.stream().limit(batchSize).toList();
   }
 
+  /** This deletes everything related to the batch operation. */
   private void deleteBatchOperation(final long batchOperationKey) {
     batchKey.wrapLong(batchOperationKey);
+
+    // first delete the batch operation from the pendingBatchOperationColumnFamily if it exists
+    pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
+
+    // then delete all chunks
+    batchOperationChunksColumnFamily.whileEqualPrefix(
+        batchKey,
+        (compositeKey, entityTypeValue) -> {
+          batchOperationChunksColumnFamily.deleteExisting(compositeKey);
+        });
+
+    // finally delete batch operation itself
     batchOperationColumnFamily.deleteExisting(batchKey);
   }
 

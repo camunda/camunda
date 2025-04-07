@@ -344,6 +344,7 @@ public class BatchOperationStateTest {
 
     // then
     assertThat(state.get(batchOperationKey)).isEmpty();
+    assertThat(state.getNextItemKeys(batchOperationKey, 20)).isEmpty();
   }
 
   private static UnsafeBuffer convertToBuffer(final Object object) {
