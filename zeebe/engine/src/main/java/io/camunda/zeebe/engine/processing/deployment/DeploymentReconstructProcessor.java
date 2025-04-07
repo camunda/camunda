@@ -493,16 +493,18 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       }
     }
 
-    record Done() implements ProgressState {
+    final class Done implements ProgressState {
 
       private static final Done DONE = new Done();
+
+      private Done() {}
 
       @Override
       public Resource resource() {
         return null;
       }
 
-      public static ProgressState done() {
+      static ProgressState done() {
         return DONE;
       }
     }
