@@ -7,7 +7,7 @@
  */
 
 import { Page, Locator } from "@playwright/test";
-import { Paths } from "../../src/components/global/routePaths";
+import { Paths } from "../utils/paths";
 
 export class Login {
   private page: Page;

@@ -8,8 +8,8 @@
 
 import { expect } from "@playwright/test";
 import { loginTest as test } from "../text-fixtures";
-import { Paths } from "../../src/components/global/routePaths";
-import { relativizePath } from "../../src/utility/relativizePaths";
+import { Paths } from "../utils/paths";
+import { relativizePath } from "../utils/relativizePaths";
 
 test.beforeEach(async ({ loginPage }) => {
   await loginPage.navigateToLogin();
