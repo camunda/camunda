@@ -31,9 +31,13 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
-  private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
-      "Expected to add entity with key '%s' to role with key '%s', but the entity is already assigned to this role.";
 
+  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to update role with ID '%s', but a role with this ID does not exist.";
+  public static final String ENTITY_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to add an entity with ID '%s' and type '%s' to role with ID '%s', but the entity doesn't exist.";
+  private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
+      "Expected to add entity with ID '%s' to role with ID '%s', but the entity is already assigned to this role.";
   private final RoleState roleState;
   private final UserState userState;
   private final MappingState mappingState;
@@ -68,9 +72,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     final var record = command.getValue();
     final var persistedRecord = roleState.getRole(record.getRoleKey());
     if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to update role with key '%s', but a role with this key does not exist."
-              .formatted(record.getRoleKey());
+      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -91,8 +93,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     final var entityType = record.getEntityType();
     if (!isEntityPresent(entityKey, entityType)) {
       final var errorMessage =
-          "Expected to add an entity with key '%s' and type '%s' to role with key '%s', but the entity doesn't exist."
-              .formatted(entityKey, entityType, record.getRoleKey());
+          ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityKey, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -100,8 +101,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
     if (isEntityAssigned(record)) {
       final var errorMessage =
-          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
-              record.getEntityKey(), record.getRoleKey());
+          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
@@ -123,8 +123,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     final var record = command.getValue();
     if (isEntityAssigned(record)) {
       final var errorMessage =
-          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
-              record.getEntityKey(), record.getRoleKey());
+          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
     } else {
       stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, record);
