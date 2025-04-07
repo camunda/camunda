@@ -9,18 +9,16 @@
 import {Column, Grid, Link} from '@carbon/react';
 import CheckImage from 'common/images/orange-check-mark.svg';
 import {getStateLocally} from 'common/local-storage';
-import {useTasks} from 'v1/api/useTasks.query';
-import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import {useEffect} from 'react';
 import {useTranslation, Trans} from 'react-i18next';
 import {decodeTaskEmptyPageRef} from 'common/tracking/reftags';
 import {useSearchParams} from 'react-router-dom';
 import {tracking} from 'common/tracking';
 import styles from './styles.module.scss';
+import {useMultiModeTasks} from './useMultiModeTasks';
 
 const EmptyPage: React.FC = () => {
-  const filters = useTaskFilters();
-  const {isPending, data} = useTasks(filters);
+  const {isPending, data} = useMultiModeTasks();
   const tasks = data?.pages.flat() ?? [];
   const hasNoTasks = tasks.length === 0;
   const isOldUser = getStateLocally('hasCompletedTask') === true;
