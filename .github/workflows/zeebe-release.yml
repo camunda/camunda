@@ -93,16 +93,6 @@ jobs:
           echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB }}" \
             | base64 --decode \
             | gpg -q --import --no-tty --batch --yes
-      - name: Setup Github cli
-        # On non-Github hosted runners it may be missing
-        # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
-        run: |
-          type -p curl >/dev/null || sudo apt install curl -y
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
       - name: Setup Zeebe Build Tooling
         uses: ./.github/actions/setup-zeebe
         with:
@@ -250,7 +240,7 @@ jobs:
           then
             # Next, add the release labels to the release's issues, specifying the previous and current release in place of ZCL_FROM_REV and ZCL_TARGET_REV, respectively.
             #
-            # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and 
+            # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and
             # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type:
             #
             # PATCH: the tag for the previous patch version on the same minor branch. e.g. if you're releasing 1.2.3, then ZCL_FROM_REV=1.2.2.
