@@ -50,20 +50,6 @@ public class ProcessDefinitionFormDataMigrationIT {
         .addResourceFromClasspath("form/form.form")
         .send()
         .join();
-
-    final var embeddedFormStartedProcessKey =
-        migrator
-            .getCamundaClient()
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("process/startedByFormProcess.bpmn")
-            .send()
-            .join()
-            .getProcesses()
-            .getFirst()
-            .getProcessDefinitionKey();
-    awaitProcessDefinitionCreated(embeddedFormStartedProcessKey, migrator);
-    PROCESS_DEFINITION_KEYS.put("embeddedFormStartedProcessKey", embeddedFormStartedProcessKey);
-
     final var formStartedProcessKey =
         migrator
             .getCamundaClient()
@@ -76,6 +62,20 @@ public class ProcessDefinitionFormDataMigrationIT {
             .getProcessDefinitionKey();
     awaitProcessDefinitionCreated(formStartedProcessKey, migrator);
     PROCESS_DEFINITION_KEYS.put("formStartedProcessKey", formStartedProcessKey);
+
+    final var embeddedFormStartedProcessKey =
+        migrator
+            .getCamundaClient()
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("process/startedByFormProcess.bpmn")
+            .send()
+            .join()
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    awaitProcessDefinitionCreated(embeddedFormStartedProcessKey, migrator);
+
+    PROCESS_DEFINITION_KEYS.put("embeddedFormStartedProcessKey", embeddedFormStartedProcessKey);
   }
 
   @Test
