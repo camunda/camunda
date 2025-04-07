@@ -14,7 +14,6 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {FlexContainer, ErrorMessageCell} from './styled';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {Incident, incidentsStore} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
@@ -64,6 +63,11 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
   const hasPermissionForRetryOperation =
     processInstanceDetailsStore.hasPermission(['UPDATE_PROCESS_INSTANCE']);
+
+  const hasIncidentInCalledInstance = sortedIncidents.some(
+    ({rootCauseInstance}) =>
+      rootCauseInstance?.instanceId !== processInstanceId,
+  );
 
   return (
     <>
@@ -122,7 +126,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
             key: 'errorMessage',
             isDisabled: true,
           },
-          ...(processInstanceDetailsDiagramStore.hasCalledProcessInstances
+          ...(hasIncidentInCalledInstance
             ? [
                 {
                   header: 'Root Cause Instance',
@@ -177,9 +181,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
                 )}
               </FlexContainer>
             ),
-
             rootCauseInstance:
-              processInstanceDetailsDiagramStore.hasCalledProcessInstances &&
               rootCauseInstance !== null ? (
                 rootCauseInstance.instanceId === processInstanceId ? (
                   '--'
