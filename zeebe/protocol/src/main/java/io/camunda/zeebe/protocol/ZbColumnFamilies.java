@@ -239,7 +239,7 @@ public enum ZbColumnFamilies implements EnumValue {
   RELATIONS_BY_ENTITY(124),
   ENTITIES_BY_RELATION(125),
 
-  USER_TASK_INTERMEDIATE_ASSIGNEE(126);
+  USER_TASK_INITIAL_ASSIGNEE(126);
 
   private final int value;
 

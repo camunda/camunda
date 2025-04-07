@@ -56,7 +56,7 @@ public class UserTaskCreatingV2ApplierTest {
   }
 
   @Test
-  public void shouldStoreIntermediateStateAndAssigneeWhenCreatingUserTask() {
+  public void shouldStoreIntermediateStateAndInitialAssigneeWhenCreatingUserTask() {
     // given
     final long userTaskKey = new Random().nextLong();
     final long elementInstanceKey = new Random().nextLong();
@@ -84,7 +84,8 @@ public class UserTaskCreatingV2ApplierTest {
   }
 
   @Test
-  public void shouldStoreIntermediateStateAndNoAssigneeWhenCreatingUserTaskWithoutAssignee() {
+  public void
+      shouldStoreIntermediateStateAndNoInitialAssigneeWhenCreatingUserTaskWithoutAssignee() {
     // given
     final long userTaskKey = new Random().nextLong();
     final long elementInstanceKey = new Random().nextLong();

@@ -37,6 +37,6 @@ public final class UserTaskCancelingV2Applier
 
     // Persist new data related to "canceling" user task transition
     userTaskState.storeIntermediateState(value, LifecycleState.CANCELING);
-    userTaskState.deleteIntermediateAssignee(key);
+    userTaskState.deleteInitialAssignee(key);
   }
 }

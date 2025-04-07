@@ -32,7 +32,7 @@ public class UserTaskCreatingV2Applier
     final var valueWithoutAssignee = value.copy().unsetAssignee();
     userTaskState.create(valueWithoutAssignee);
     userTaskState.storeIntermediateState(valueWithoutAssignee, LifecycleState.CREATING);
-    userTaskState.storeIntermediateAssignee(key, value.getAssignee());
+    userTaskState.storeInitialAssignee(key, value.getAssignee());
 
     final long elementInstanceKey = value.getElementInstanceKey();
     if (elementInstanceKey > 0) {

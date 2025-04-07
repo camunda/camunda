@@ -57,7 +57,7 @@ public class DbUserTaskState implements MutableUserTaskState {
       userTasksTransitionTriggerRequestMetadataColumnFamily;
 
   private final DbString intermediateAssignee = new DbString();
-  private final ColumnFamily<DbLong, DbString> userTasksIntermediateAssigneeColumnFamily;
+  private final ColumnFamily<DbLong, DbString> userTasksInitialAssigneeColumnFamily;
 
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -87,9 +87,9 @@ public class DbUserTaskState implements MutableUserTaskState {
             userTaskKey,
             userTaskTransitionTriggerRequestMetadata);
 
-    userTasksIntermediateAssigneeColumnFamily =
+    userTasksInitialAssigneeColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USER_TASK_INTERMEDIATE_ASSIGNEE,
+            ZbColumnFamilies.USER_TASK_INITIAL_ASSIGNEE,
             transactionContext,
             userTaskKey,
             intermediateAssignee);
@@ -179,18 +179,18 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
-  public void storeIntermediateAssignee(final long key, final String assignee) {
+  public void storeInitialAssignee(final long key, final String assignee) {
     if (!StringUtils.isEmpty(assignee)) {
       userTaskKey.wrapLong(key);
       intermediateAssignee.wrapString(assignee);
-      userTasksIntermediateAssigneeColumnFamily.insert(userTaskKey, intermediateAssignee);
+      userTasksInitialAssigneeColumnFamily.insert(userTaskKey, intermediateAssignee);
     }
   }
 
   @Override
-  public void deleteIntermediateAssignee(final long key) {
+  public void deleteInitialAssignee(final long key) {
     userTaskKey.wrapLong(key);
-    userTasksIntermediateAssigneeColumnFamily.deleteIfExists(userTaskKey);
+    userTasksInitialAssigneeColumnFamily.deleteIfExists(userTaskKey);
   }
 
   @Override
@@ -237,7 +237,7 @@ public class DbUserTaskState implements MutableUserTaskState {
   @Override
   public String getIntermediateAssignee(final long key) {
     userTaskKey.wrapLong(key);
-    final var intermediateAssignee = userTasksIntermediateAssigneeColumnFamily.get(userTaskKey);
+    final var intermediateAssignee = userTasksInitialAssigneeColumnFamily.get(userTaskKey);
     return intermediateAssignee == null ? null : intermediateAssignee.toString();
   }
 }
