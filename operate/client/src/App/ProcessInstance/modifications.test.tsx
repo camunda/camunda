@@ -30,6 +30,7 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
+import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
@@ -44,23 +45,6 @@ jest.mock('modules/utils/bpmn');
 jest.mock('modules/stores/process', () => ({
   processStore: {state: {process: {}}, fetchProcess: jest.fn()},
 }));
-jest.mock('modules/stores/processInstanceListeners', () => ({
-  processInstanceListenersStore: {
-    state: {},
-    listenersFailureCount: 0,
-    reset: () => {},
-    fetchListeners: () => {},
-    setListenerTabVisibility: () => {},
-  },
-}));
-jest.mock(
-  'modules/queries/processDefinitions/useProcessInstanceXml.ts',
-  () => ({
-    useProcessInstanceXml: jest.fn(() => ({
-      data: undefined,
-    })),
-  }),
-);
 
 describe('ProcessInstance - modification mode', () => {
   beforeEach(() => {
@@ -197,11 +181,19 @@ describe('ProcessInstance - modification mode', () => {
       }),
     );
 
+    mockFetchProcessInstanceListeners().withSuccess({
+      listeners: [],
+      totalCount: 0,
+    });
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 
+    mockFetchProcessInstanceListeners().withSuccess({
+      listeners: [],
+      totalCount: 0,
+    });
     mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(
@@ -210,6 +202,10 @@ describe('ProcessInstance - modification mode', () => {
       }),
     );
 
+    mockFetchProcessInstanceListeners().withSuccess({
+      listeners: [],
+      totalCount: 0,
+    });
     mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(screen.getByTestId('apply-modifications-button'));
@@ -392,11 +388,19 @@ describe('ProcessInstance - modification mode', () => {
       screen.getByText('Process Instance Modification Mode'),
     ).toBeInTheDocument();
 
+    mockFetchProcessInstanceListeners().withSuccess({
+      listeners: [],
+      totalCount: 0,
+    });
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 
+    mockFetchProcessInstanceListeners().withSuccess({
+      listeners: [],
+      totalCount: 0,
+    });
     mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(
