@@ -20,7 +20,7 @@
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.5.2</surefire-plugin.version>
+    <surefire-plugin.version>3.5.3</surefire-plugin.version>
 
     <!-- database config -->
     <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
@@ -39,10 +39,10 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.24.3</elasticsearch.log4j.version>
 
-    <jetty.version>12.0.18</jetty.version>
+    <jetty.version>12.0.19</jetty.version>
     <jackson.version>2.17.2</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
-    <apache.http5-client.version>5.4.2</apache.http5-client.version>
+    <apache.http5-client.version>5.4.3</apache.http5-client.version>
     <apache.http5-core.version>5.3.4</apache.http5-core.version>
     <guava.version>33.3.1-jre</guava.version>
     <spring.boot.version>3.3.6</spring.boot.version>
@@ -51,7 +51,7 @@
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
     <netty.version>4.1.119.Final</netty.version>
-    <lombok.version>1.18.36</lombok.version>
+    <lombok.version>1.18.38</lombok.version>
     <logback.version>1.5.18</logback.version>
     <slf4j.version>2.0.17</slf4j.version>
     <commons.io.version>2.17.0</commons.io.version>
