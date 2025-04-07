@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.store.opensearch.client.sync;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
@@ -29,13 +28,11 @@ public class ZeebeRichOpenSearchClient {
 
   public ZeebeRichOpenSearchClient(
       final BeanFactory beanFactory,
-      @Qualifier("zeebeOpensearchClient") final OpenSearchClient openSearchClient,
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
+      @Qualifier("zeebeOpensearchClient") final OpenSearchClient openSearchClient) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     openSearchDocumentOperations = new OpenSearchDocumentOperations(LOGGER, openSearchClient);
-    openSearchIndexOperations =
-        new OpenSearchIndexOperations(LOGGER, openSearchClient, objectMapper);
+    openSearchIndexOperations = new OpenSearchIndexOperations(LOGGER, openSearchClient);
     openSearchTemplateOperations = new OpenSearchTemplateOperations(LOGGER, openSearchClient);
   }
 

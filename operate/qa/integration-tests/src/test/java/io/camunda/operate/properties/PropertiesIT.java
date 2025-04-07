@@ -10,6 +10,7 @@ package io.camunda.operate.properties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -24,6 +25,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
+      DatabaseInfo.class,
       OperateProperties.class,
       CamundaSecurityProperties.class
     },

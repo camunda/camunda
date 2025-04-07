@@ -24,8 +24,6 @@ import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
@@ -75,8 +73,6 @@ import org.springframework.test.context.junit4.SpringRunner;
       OperateURIs.class,
       OperateProperties.class,
       OperateProfileService.class,
-      RetryElasticsearchClient.class,
-      ElasticsearchTaskStore.class,
       SameSiteCookieTomcatContextCustomizer.class,
       ElasticsearchConnector.class,
       RichOpenSearchClient.class,

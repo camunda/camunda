@@ -53,4 +53,6 @@ public interface SearchEngineClient extends CloseableSilently {
   void deleteIndex(final String indexName);
 
   void truncateIndex(final String indexName);
+
+  boolean isHealthy();
 }

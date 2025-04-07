@@ -22,8 +22,6 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.UserStore;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
@@ -77,8 +75,6 @@ import org.springframework.test.context.junit4.SpringRunner;
       RolePermissionService.class,
       AuthenticationRestService.class,
       OperateUserDetailsService.class,
-      RetryElasticsearchClient.class,
-      ElasticsearchTaskStore.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
       JacksonConfig.class,

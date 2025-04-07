@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.store.opensearch.client.sync;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncDocumentOperations;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncIndexOperations;
@@ -18,7 +17,6 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +30,6 @@ public class RichOpenSearchClient {
   final OpenSearchDocumentOperations openSearchDocumentOperations;
   final OpenSearchIndexOperations openSearchIndexOperations;
   final OpenSearchPipelineOperations openSearchPipelineOperations;
-  final OpenSearchTaskOperations openSearchTaskOperations;
   final OpenSearchTemplateOperations openSearchTemplateOperations;
   final OpenSearchISMOperations openSearchISMOperations;
   BeanFactory beanFactory;
@@ -41,8 +38,7 @@ public class RichOpenSearchClient {
   public RichOpenSearchClient(
       final BeanFactory beanFactory,
       final OpenSearchClient openSearchClient,
-      final OpenSearchAsyncClient openSearchAsyncClient,
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
+      final OpenSearchAsyncClient openSearchAsyncClient) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     async = new Async(openSearchAsyncClient);
@@ -50,10 +46,8 @@ public class RichOpenSearchClient {
         new OpenSearchBatchOperations(LOGGER, openSearchClient, beanFactory);
     openSearchClusterOperations = new OpenSearchClusterOperations(LOGGER, openSearchClient);
     openSearchDocumentOperations = new OpenSearchDocumentOperations(LOGGER, openSearchClient);
-    openSearchIndexOperations =
-        new OpenSearchIndexOperations(LOGGER, openSearchClient, objectMapper);
+    openSearchIndexOperations = new OpenSearchIndexOperations(LOGGER, openSearchClient);
     openSearchPipelineOperations = new OpenSearchPipelineOperations(LOGGER, openSearchClient);
-    openSearchTaskOperations = new OpenSearchTaskOperations(LOGGER, openSearchClient);
     openSearchTemplateOperations = new OpenSearchTemplateOperations(LOGGER, openSearchClient);
     openSearchISMOperations = new OpenSearchISMOperations(LOGGER, openSearchClient);
   }
@@ -84,10 +78,6 @@ public class RichOpenSearchClient {
 
   public OpenSearchPipelineOperations pipeline() {
     return openSearchPipelineOperations;
-  }
-
-  public OpenSearchTaskOperations task() {
-    return openSearchTaskOperations;
   }
 
   public OpenSearchTemplateOperations template() {

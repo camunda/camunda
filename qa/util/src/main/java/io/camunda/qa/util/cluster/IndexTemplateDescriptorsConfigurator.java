@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
@@ -225,5 +226,12 @@ public class IndexTemplateDescriptorsConfigurator {
   public ProcessIndex getTasklistProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ProcessIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public OperateUserIndex getOperateUserIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new OperateUserIndex(
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 }

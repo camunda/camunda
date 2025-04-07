@@ -7,18 +7,15 @@
  */
 package io.camunda.operate.qa.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import java.util.List;
+import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.zeebe.util.retry.RetryDecorator;
+import java.io.IOException;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -26,32 +23,28 @@ import org.springframework.stereotype.Component;
 @Component("schemaManager")
 @Conditional(OpensearchCondition.class)
 @Profile("test")
-public class TestOpensearchSchemaManager extends OpensearchSchemaManager
-    implements TestSchemaManager {
+public class TestOpensearchSchemaManager implements TestSchemaManager, AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestOpensearchSchemaManager.class);
 
-  @Autowired
-  public TestOpensearchSchemaManager(
-      final OperateProperties operateProperties,
-      final RichOpenSearchClient richOpenSearchClient,
-      final List<IndexTemplateDescriptor> templateDescriptors,
-      final List<IndexDescriptor> indexDescriptors,
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
-    super(
-        operateProperties,
-        richOpenSearchClient,
-        templateDescriptors,
-        indexDescriptors,
-        objectMapper);
+  private final OpenSearchClient client;
+
+  private final SearchEngineConfiguration configuration;
+
+  private final RetryDecorator retryDecorator;
+
+  public TestOpensearchSchemaManager(final SearchEngineConfiguration configuration) {
+    client = new OpensearchConnector(configuration.connect()).createClient();
+    this.configuration = configuration;
+    retryDecorator =
+        new RetryDecorator().withRetryOnExceptions(OpenSearchException.class, IOException.class);
   }
 
-  @Override
-  public void deleteSchema() {
-    final String prefix = operateProperties.getOpensearch().getIndexPrefix();
+  private void deleteSchema() throws IOException {
+    final String prefix = configuration.connect().getIndexPrefix();
     LOGGER.info("Removing indices {}*", prefix);
-    richOpenSearchClient.index().deleteIndicesWithRetries(prefix + "*");
-    richOpenSearchClient.template().deleteTemplatesWithRetries(prefix + "*");
+    client.indices().delete(r -> r.index(prefix + "*"));
+    client.indices().deleteTemplate(r -> r.name(prefix + "*"));
   }
 
   @Override
@@ -64,17 +57,14 @@ public class TestOpensearchSchemaManager extends OpensearchSchemaManager
   }
 
   @Override
-  public void setCreateSchema(final boolean createSchema) {
-    operateProperties.getOpensearch().setCreateSchema(createSchema);
+  public void refresh(final String indexPattern) {
+    retryDecorator.decorateCheckedRunnable(
+        "refresh indices '%s'".formatted(indexPattern),
+        () -> client.indices().refresh(r -> r.index(indexPattern)));
   }
 
   @Override
-  public void setIndexPrefix(final String indexPrefix) {
-    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
-  }
-
-  @Override
-  public void setDefaultIndexPrefix() {
-    operateProperties.getOpensearch().setDefaultIndexPrefix();
+  public void close() throws Exception {
+    client._transport().close();
   }
 }

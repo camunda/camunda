@@ -10,6 +10,8 @@ package io.camunda.search.schema.elasticsearch;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.AcknowledgedResponse;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.HealthStatus;
+import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
@@ -280,6 +282,23 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException e) {
       final var errMsg = String.format("Failed to delete docs from index %s", indexName);
       throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public boolean isHealthy() {
+    try {
+      final var response = client.cluster().health(r -> r.timeout(Time.of(t -> t.time("500ms"))));
+      return !response.timedOut()
+          && response.status() != null
+          && !response.status().equals(HealthStatus.Red);
+    } catch (final IOException e) {
+      LOG.warn(
+          String.format(
+              "Couldn't connect to Elasticsearch due to %s. Return unhealthy state. ",
+              e.getMessage()),
+          e);
+      return false;
     }
   }
 

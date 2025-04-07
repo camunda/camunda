@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -311,5 +312,13 @@ public class IndexTemplateDescriptorsConfigurator {
         return indexPrefixHolder.getIndexPrefix();
       }
     };
+  }
+
+  @Bean
+  public OperateUserIndex getOperateUserIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new OperateUserIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 }

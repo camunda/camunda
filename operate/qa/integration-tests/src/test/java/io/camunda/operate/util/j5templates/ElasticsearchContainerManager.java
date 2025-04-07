@@ -7,17 +7,18 @@
  */
 package io.camunda.operate.util.j5templates;
 
+import static io.camunda.operate.property.OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.qa.util.TestSchemaManager;
 import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import java.io.IOException;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Request;
@@ -50,10 +51,11 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
 
   public ElasticsearchContainerManager(
       @Qualifier("esClient") final RestHighLevelClient esClient,
+      final SearchEngineConfiguration searchEngineConfiguration,
       final OperateProperties operateProperties,
-      final SchemaManager schemaManager,
+      final TestSchemaManager schemaManager,
       final IndexPrefixHolder indexPrefixHolder) {
-    super(operateProperties, schemaManager);
+    super(searchEngineConfiguration, operateProperties, schemaManager);
     this.esClient = esClient;
     this.indexPrefixHolder = indexPrefixHolder;
   }
@@ -75,6 +77,7 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
 
   @Override
   protected void updatePropertiesIndexPrefix() {
+    searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
   }
 
@@ -100,11 +103,10 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
   @Override
   public void stopContainer() {
     // TestUtil.removeIlmPolicy(esClient);
-    final String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
+    final String indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
     TestUtil.removeAllIndices(esClient, indexPrefix);
-    operateProperties
-        .getElasticsearch()
-        .setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
+    searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
+    operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
 
     assertThat(getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0))
         .describedAs("There are too many open scroll contexts left.")

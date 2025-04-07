@@ -16,8 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.opensearch.client.AbstractOpenSearchOperationIT;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
+import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
 import java.util.List;
 import org.junit.Test;
 import org.opensearch.client.opensearch._types.Conflicts;
@@ -25,7 +25,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperationIT {
-  @Autowired UserIndex userIndex;
+  @Autowired OperateUserIndex operateUserIndex;
 
   @Autowired OperateProperties operateProperties;
 
@@ -36,10 +36,10 @@ public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperatio
     opensearchTestDataHelper.addUser(id, "test", "test");
 
     // when
-    final String dstIndex = indexPrefix + this.getClass().getSimpleName().toLowerCase();
+    final String dstIndex = indexPrefix + getClass().getSimpleName().toLowerCase();
     final Query query = stringTerms("userId", List.of(id));
     final var deleteByQueryRequestBuilder =
-        reindexRequestBuilder(userIndex.getFullQualifiedName(), query, dstIndex)
+        reindexRequestBuilder(operateUserIndex.getFullQualifiedName(), query, dstIndex)
             .waitForCompletion(false)
             .scroll(time(OpenSearchDocumentOperations.INTERNAL_SCROLL_KEEP_ALIVE_MS))
             .slices((long) operateProperties.getOpensearch().getNumberOfShards())
@@ -64,7 +64,7 @@ public class OpenSearchAsyncIndexOperationsIT extends AbstractOpenSearchOperatio
                     .task()
                     .totalImpactedByTask(task, scheduler)
                     .get();
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 throw new RuntimeException(e);
               }
             });

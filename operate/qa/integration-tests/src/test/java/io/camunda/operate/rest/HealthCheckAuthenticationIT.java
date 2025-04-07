@@ -20,18 +20,12 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
-import io.camunda.operate.store.TaskStore;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
-import io.camunda.operate.store.opensearch.OpensearchTaskStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import java.io.IOException;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,11 +52,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       Jwt2AuthenticationTokenConverter.class,
       CCSaaSJwtAuthenticationTokenValidator.class,
       WebSecurityConfig.class,
-      ElasticsearchTaskStore.class,
-      RetryElasticsearchClient.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
-      OpensearchTaskStore.class,
       RichOpenSearchClient.class,
       OpensearchConnector.class,
       JacksonConfig.class,
@@ -80,8 +71,6 @@ public class HealthCheckAuthenticationIT {
 
   @MockBean private IndicesHealthIndicator probes;
 
-  @Autowired private TaskStore taskStore;
-
   @LocalManagementPort private int managementPort;
 
   @Test
@@ -93,18 +82,5 @@ public class HealthCheckAuthenticationIT {
             "http://localhost:" + managementPort + "/actuator/health/liveness", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
-
-  @Ignore // unless you have a reindex task in ELS for mentioned indices
-  @Test
-  public void testAccessElasticsearchTaskStatusFields() throws IOException {
-    assertThat(
-            taskStore.getRunningReindexTasksIdsFor(
-                "operate-flownode-instances-1.3.0_*", "operate-flownode-instance-8.2.0_"))
-        .isEmpty();
-    assertThat(
-            taskStore.getRunningReindexTasksIdsFor(
-                "operate-flownode-instance-1.3.0_*", "operate-flownode-instance-8.2.0_"))
-        .hasSize(1);
   }
 }

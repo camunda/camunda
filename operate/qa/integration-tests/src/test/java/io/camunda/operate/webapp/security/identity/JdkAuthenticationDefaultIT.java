@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
@@ -31,6 +32,7 @@ import org.springframework.test.util.ReflectionTestUtils;
     classes = {
       TestApplicationWithNoBeans.class,
       IdentityAuthentication.class,
+      DatabaseInfo.class,
       OperateProperties.class,
       IdentityOAuth2WebConfigurer.class
     },

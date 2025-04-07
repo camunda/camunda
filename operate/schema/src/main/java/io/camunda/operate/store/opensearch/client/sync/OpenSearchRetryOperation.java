@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.store.opensearch.client.sync;
 
-import static io.camunda.operate.util.ExceptionHelper.withIOException;
-
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.opensearch.client.OpenSearchFailedShardsException;
 import java.io.IOException;
@@ -35,25 +33,31 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
 
   private final int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
 
-  public OpenSearchRetryOperation(Logger logger, OpenSearchClient openSearchClient) {
+  public OpenSearchRetryOperation(final Logger logger, final OpenSearchClient openSearchClient) {
     super(logger, openSearchClient);
   }
 
-  protected <T> T executeWithRetries(CheckedSupplier<T> supplier) {
+  protected <T> T executeWithRetries(final CheckedSupplier<T> supplier) {
     return executeWithRetries("", supplier, null);
   }
 
-  protected <T> T executeWithRetries(String operationName, CheckedSupplier<T> supplier) {
+  protected <T> T executeWithRetries(
+      final String operationName, final CheckedSupplier<T> supplier) {
     return executeWithRetries(operationName, supplier, null);
   }
 
   protected <T> T executeWithRetries(
-      String operationName, CheckedSupplier<T> supplier, Predicate<T> retryPredicate) {
+      final String operationName,
+      final CheckedSupplier<T> supplier,
+      final Predicate<T> retryPredicate) {
     return executeWithGivenRetries(numberOfRetries, operationName, supplier, retryPredicate);
   }
 
   protected <T> T executeWithGivenRetries(
-      int retries, String operationName, CheckedSupplier<T> operation, Predicate<T> predicate) {
+      final int retries,
+      final String operationName,
+      final CheckedSupplier<T> operation,
+      final Predicate<T> predicate) {
     try {
       final RetryPolicy<T> retryPolicy =
           new RetryPolicy<T>()
@@ -79,7 +83,7 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
         retryPolicy.handleResultIf(predicate);
       }
       return Failsafe.with(retryPolicy).get(operation);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException(
           "Couldn't execute operation "
               + operationName
@@ -92,52 +96,11 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
     }
   }
 
-  protected GetTasksResponse task(String id) throws IOException {
+  protected GetTasksResponse task(final String id) throws IOException {
     return openSearchClient.tasks().get(t -> t.taskId(id));
   }
 
-  protected Map<String, Info> tasksWithActions(List<String> actions) throws IOException {
+  protected Map<String, Info> tasksWithActions(final List<String> actions) throws IOException {
     return openSearchClient.tasks().list(l -> l.actions(actions)).tasks();
-  }
-
-  protected GetTasksResponse waitTaskCompletion(String taskId) {
-    final String[] taskIdParts = taskId.split(":");
-    final String nodeId = taskIdParts[0];
-    final long id = Long.parseLong(taskIdParts[1]);
-    return executeWithGivenRetries(
-        Integer.MAX_VALUE,
-        "GetTaskInfo{" + nodeId + "},{" + id + "}",
-        () -> {
-          checkTaskErrorsOrFailures(nodeId, (int) id);
-          return task(taskId);
-        },
-        this::needsToPollAgain);
-  }
-
-  private void checkTaskErrorsOrFailures(final String node, final Integer id) throws IOException {
-    final GetTasksResponse tasks = withIOException(() -> task(node + ":" + id));
-
-    if (tasks != null) {
-      checkForErrors(tasks);
-      checkForFailures(tasks);
-    }
-  }
-
-  private void checkForErrors(final GetTasksResponse taskResponse) {
-    if (taskResponse.error() != null) {
-      throw new OperateRuntimeException(taskResponse.error().reason());
-    }
-  }
-
-  private void checkForFailures(final GetTasksResponse taskResponse) {
-    if (taskResponse.response().failures() != null) {
-      throw new OperateRuntimeException(taskResponse.response().failures().get(0));
-    }
-  }
-
-  private boolean needsToPollAgain(final GetTasksResponse taskResponse) {
-    final var r = taskResponse.response();
-    final var allTasksExecuted = r.total() == r.created() + r.updated() + r.deleted();
-    return !(taskResponse.completed() && allTasksExecuted);
   }
 }

@@ -15,6 +15,7 @@ import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
@@ -66,6 +67,8 @@ public class IndexDescriptors {
                 new ListViewTemplate(indexPrefix, isElasticsearch),
                 new MappingIndex(indexPrefix, isElasticsearch),
                 new MetricIndex(indexPrefix, isElasticsearch),
+                // OperateUserIndex should be deleted once harmonized with UserIndex
+                new OperateUserIndex(indexPrefix, isElasticsearch),
                 new OperationTemplate(indexPrefix, isElasticsearch),
                 new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch),
                 new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
@@ -76,10 +79,10 @@ public class IndexDescriptors {
                 new TaskTemplate(indexPrefix, isElasticsearch),
                 new TasklistImportPositionIndex(indexPrefix, isElasticsearch),
                 new TasklistMetricIndex(indexPrefix, isElasticsearch),
-                new TenantIndex(indexPrefix, isElasticsearch),
-                new UserIndex(indexPrefix, isElasticsearch),
                 // TasklistUserIndex should be deleted once harmonized with UserIndex
                 new TasklistUserIndex(indexPrefix, isElasticsearch),
+                new TenantIndex(indexPrefix, isElasticsearch),
+                new UserIndex(indexPrefix, isElasticsearch),
                 new VariableTemplate(indexPrefix, isElasticsearch),
                 new MessageTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));

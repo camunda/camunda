@@ -29,7 +29,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
+@DependsOn("searchEngineSchemaInitializer")
 public class ImportPositionHolder {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ImportPositionHolder.class);

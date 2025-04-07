@@ -11,7 +11,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestSupport;
@@ -53,7 +52,6 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   private static final OpensearchExporterConfiguration CONFIG =
       new OpensearchExporterConfiguration();
 
-  @Autowired public SchemaManager schemaManager;
   @Autowired private OperateProperties operateProperties;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   @Autowired private ImportPositionIndex importPositionIndex;

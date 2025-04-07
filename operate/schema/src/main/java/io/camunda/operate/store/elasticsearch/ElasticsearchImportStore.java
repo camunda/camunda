@@ -49,8 +49,6 @@ public class ElasticsearchImportStore implements ImportStore {
   @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
-
   @Autowired
   @Qualifier("operateObjectMapper")
   private ObjectMapper objectMapper;
