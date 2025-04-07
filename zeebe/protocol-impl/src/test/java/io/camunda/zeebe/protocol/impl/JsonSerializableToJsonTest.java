@@ -244,9 +244,7 @@ final class JsonSerializableToJsonTest {
             "decisionRequirementsMetadata": [],
             "formMetadata": [],
             "tenantId": "<default>",
-            "deploymentKey": -1,
-            "reconstructionKey": -1,
-            "reconstructionProgress": "DECISION_REQUIREMENTS"
+            "deploymentKey": -1
           }
         }
         """
@@ -292,9 +290,7 @@ final class JsonSerializableToJsonTest {
               "decisionsMetadata": [],
               "formMetadata": [],
               "tenantId": "<default>",
-              "deploymentKey":-1,
-              "reconstructionKey": -1,
-              "reconstructionProgress": "PROCESS"
+              "deploymentKey":-1
           }
         }
         """
@@ -435,9 +431,7 @@ final class JsonSerializableToJsonTest {
           ],
           "resourceMetadata":[],
           "tenantId": "tenant-23",
-          "deploymentKey": 1234,
-          "reconstructionKey": 123,
-          "reconstructionProgress": "FORM"
+          "deploymentKey": 1234
         }
         """
       },
@@ -473,9 +467,7 @@ final class JsonSerializableToJsonTest {
           "formMetadata": [],
           "resourceMetadata":[],
           "tenantId": "<default>",
-          "deploymentKey": -1,
-          "reconstructionKey": -1,
-          "reconstructionProgress": "PROCESS"
+          "deploymentKey": -1
         }
         """
       },
@@ -2324,9 +2316,7 @@ final class JsonSerializableToJsonTest {
             "formMetadata": [],
             "resourceMetadata":[],
             "tenantId": "<default>",
-            "deploymentKey": -1,
-            "reconstructionKey": -1,
-            "reconstructionProgress": "PROCESS"
+            "deploymentKey": -1
           }
         }
         """
