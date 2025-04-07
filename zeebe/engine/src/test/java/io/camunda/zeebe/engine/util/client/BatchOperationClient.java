@@ -12,11 +12,13 @@ import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementManagementRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Random;
@@ -38,8 +40,12 @@ public final class BatchOperationClient {
     return new BatchOperationCreationClient(writer, type);
   }
 
-  public BatchOperationExecutionClient newExecution(final BatchOperationType type) {
-    return new BatchOperationExecutionClient(writer, type);
+  public BatchOperationExecutionClient newExecution() {
+    return new BatchOperationExecutionClient(writer);
+  }
+
+  public BatchOperationLifecycleClient newLifecycle() {
+    return new BatchOperationLifecycleClient(writer);
   }
 
   public static class BatchOperationCreationClient {
@@ -152,25 +158,18 @@ public final class BatchOperationClient {
   public static class BatchOperationExecutionClient {
 
     private static final Function<Long, Record<BatchOperationCreationRecordValue>>
-        SUCCESS_EXPECTATION =
+        EXECUTION_SUCCESS_EXPECTATION =
             (position) ->
                 RecordingExporter.batchOperationCreationRecords()
                     .withIntent(BatchOperationExecutionIntent.EXECUTED)
                     .withSourceRecordPosition(position)
                     .getFirst();
 
-    private static final Function<Long, Record<BatchOperationCreationRecordValue>>
-        NOOP_EXPECTATION = (position) -> null;
-
     private final CommandWriter writer;
     private final BatchOperationExecutionRecord batchOperationExecutionRecord;
     private final int partition = DEFAULT_PARTITION;
 
-    private final Function<Long, Record<BatchOperationCreationRecordValue>> expectation =
-        SUCCESS_EXPECTATION;
-
-    public BatchOperationExecutionClient(
-        final CommandWriter writer, final BatchOperationType type) {
+    public BatchOperationExecutionClient(final CommandWriter writer) {
       this.writer = writer;
       batchOperationExecutionRecord = new BatchOperationExecutionRecord();
     }
@@ -185,12 +184,12 @@ public final class BatchOperationClient {
       return this;
     }
 
-    public Record<BatchOperationCreationRecordValue> createCanceled() {
-      return createCanceled(
+    public Record<BatchOperationCreationRecordValue> execute() {
+      return execute(
           AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
     }
 
-    public Record<BatchOperationCreationRecordValue> createCanceled(final AuthInfo authorizations) {
+    public Record<BatchOperationCreationRecordValue> execute(final AuthInfo authorizations) {
       final long position =
           writer.writeCommandOnPartition(
               partition,
@@ -201,7 +200,71 @@ public final class BatchOperationClient {
                       .requestId(new Random().nextLong())
                       .requestStreamId(new Random().nextInt()));
 
-      return NOOP_EXPECTATION.apply(position);
+      return EXECUTION_SUCCESS_EXPECTATION.apply(position);
+    }
+
+    public void executeWithoutExpectation() {
+      executeWithoutExpectation(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public void executeWithoutExpectation(final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationExecutionIntent.EXECUTE)
+                      .event(batchOperationExecutionRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+    }
+  }
+
+  public static class BatchOperationLifecycleClient {
+
+    private static final Function<Long, Record<BatchOperationLifecycleManagementRecordValue>>
+        CANCEL_SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.batchOperationLifecycleRecords()
+                    .withIntent(BatchOperationIntent.CANCELED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private final CommandWriter writer;
+    private final BatchOperationLifecycleManagementManagementRecord
+        batchOperationLifecycleManagementRecord;
+    private final int partition = DEFAULT_PARTITION;
+
+    public BatchOperationLifecycleClient(final CommandWriter writer) {
+      this.writer = writer;
+      batchOperationLifecycleManagementRecord =
+          new BatchOperationLifecycleManagementManagementRecord();
+    }
+
+    public BatchOperationLifecycleClient withBatchOperationKey(final long batchOperationKey) {
+      batchOperationLifecycleManagementRecord.setBatchOperationKey(batchOperationKey);
+      return this;
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> cancel() {
+      return cancel(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> cancel(
+        final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationIntent.CANCEL)
+                      .event(batchOperationLifecycleManagementRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+
+      return CANCEL_SUCCESS_EXPECTATION.apply(position);
     }
   }
 }

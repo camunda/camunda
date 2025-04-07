@@ -74,6 +74,7 @@ public class BatchOperationExecutionSchedulerTest {
             })
         .when(batchOperationState)
         .foreachPendingBatchOperation(any(BatchOperationVisitor.class));
+    lenient().when(batchOperationState.exists(anyLong())).thenReturn(true);
 
     scheduler =
         new BatchOperationExecutionScheduler(
@@ -167,6 +168,23 @@ public class BatchOperationExecutionSchedulerTest {
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
     assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(6);
+  }
+
+  @Test
+  public void shouldNotQueryOfBatchIsNotLongerActive() {
+    // given
+    when(batchOperationState.exists(anyLong())).thenReturn(false);
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(), eq(BatchOperationIntent.START), any(BatchOperationCreationRecord.class));
+    verify(taskResultBuilder, never())
+        .appendCommandRecord(anyLong(), eq(BatchOperationChunkIntent.CREATE), any());
   }
 
   @Test
