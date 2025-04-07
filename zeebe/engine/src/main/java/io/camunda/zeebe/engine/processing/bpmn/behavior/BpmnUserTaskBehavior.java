@@ -37,7 +37,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,7 +125,7 @@ public final class BpmnUserTaskBehavior {
         new UserTaskRecord()
             .setVariables(DocumentValue.EMPTY_DOCUMENT)
             .setUserTaskKey(userTaskKey)
-            .setAssignee(StringUtils.EMPTY)
+            .setAssignee(userTaskProperties.getAssignee())
             .setCandidateGroupsList(userTaskProperties.getCandidateGroups())
             .setCandidateUsersList(userTaskProperties.getCandidateUsers())
             .setDueDate(userTaskProperties.getDueDate())

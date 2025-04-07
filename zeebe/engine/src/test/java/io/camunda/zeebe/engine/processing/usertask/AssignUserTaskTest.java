@@ -123,7 +123,7 @@ public final class AssignUserTaskTest {
             r -> r.getValue().getAction(),
             r -> r.getValue().getChangedAttributes())
         .containsExactly(
-            tuple(UserTaskIntent.CREATING, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
             tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
             // The `assignee` property isn't yet available during the `CREATED` event
             // as it becomes effective only during the assignment phase.
@@ -260,7 +260,7 @@ public final class AssignUserTaskTest {
             r -> r.getValue().getAction(),
             r -> r.getValue().getChangedAttributes())
         .containsExactly(
-            tuple(UserTaskIntent.CREATING, "", "", List.of()),
+            tuple(UserTaskIntent.CREATING, initialAssignee, "", List.of()),
             tuple(UserTaskIntent.CREATED, "", "", List.of()),
             // The `assignee` property isn't yet available during the `CREATING/CREATED` events
             // as it becomes effective only during the assignment phase.

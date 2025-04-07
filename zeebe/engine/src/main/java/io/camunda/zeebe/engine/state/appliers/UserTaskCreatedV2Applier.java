@@ -11,32 +11,26 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
-import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-public final class UserTaskCancelingV2Applier
-    implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
-
+public class UserTaskCreatedV2Applier implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
   private final MutableUserTaskState userTaskState;
-  private final MutableVariableState variableState;
 
-  public UserTaskCancelingV2Applier(final MutableProcessingState processingState) {
+  public UserTaskCreatedV2Applier(final MutableProcessingState processingState) {
     userTaskState = processingState.getUserTaskState();
-    variableState = processingState.getVariableState();
   }
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
-    userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CANCELING);
+    // Ensure we store any corrections
+    final UserTaskRecord userTask = userTaskState.getUserTask(key);
+    userTask.wrapChangedAttributes(value, false);
+    userTaskState.update(userTask);
 
-    // Clean up data that may have been persisted by a previous transition
-    variableState.removeVariableDocumentState(value.getElementInstanceKey());
-    userTaskState.deleteIntermediateStateIfExists(key);
-    userTaskState.deleteRecordRequestMetadata(key);
+    userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
 
-    // Persist new data related to "canceling" user task transition
-    userTaskState.storeIntermediateState(value, LifecycleState.CANCELING);
-    userTaskState.deleteInitialAssignee(key);
+    // Clear operational data related to the current transition
+    userTaskState.deleteIntermediateState(key);
   }
 }

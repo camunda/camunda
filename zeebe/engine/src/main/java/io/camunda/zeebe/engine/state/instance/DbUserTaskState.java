@@ -12,12 +12,14 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.StringUtils;
 
 public class DbUserTaskState implements MutableUserTaskState {
 
@@ -54,6 +56,9 @@ public class DbUserTaskState implements MutableUserTaskState {
   private final ColumnFamily<DbLong, UserTaskTransitionTriggerRequestMetadata>
       userTasksTransitionTriggerRequestMetadataColumnFamily;
 
+  private final DbString initialAssignee = new DbString();
+  private final ColumnFamily<DbLong, DbString> userTasksInitialAssigneeColumnFamily;
+
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     userTaskKey = new DbLong();
@@ -81,6 +86,13 @@ public class DbUserTaskState implements MutableUserTaskState {
             transactionContext,
             userTaskKey,
             userTaskTransitionTriggerRequestMetadata);
+
+    userTasksInitialAssigneeColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.USER_TASK_INITIAL_ASSIGNEE,
+            transactionContext,
+            userTaskKey,
+            initialAssignee);
   }
 
   @Override
@@ -167,6 +179,21 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
+  public void storeInitialAssignee(final long key, final String assignee) {
+    if (!StringUtils.isEmpty(assignee)) {
+      userTaskKey.wrapLong(key);
+      initialAssignee.wrapString(assignee);
+      userTasksInitialAssigneeColumnFamily.insert(userTaskKey, initialAssignee);
+    }
+  }
+
+  @Override
+  public void deleteInitialAssignee(final long key) {
+    userTaskKey.wrapLong(key);
+    userTasksInitialAssigneeColumnFamily.deleteIfExists(userTaskKey);
+  }
+
+  @Override
   public LifecycleState getLifecycleState(final long key) {
     userTaskKey.wrapLong(key);
     final UserTaskLifecycleStateValue storedLifecycleState =
@@ -205,5 +232,12 @@ public class DbUserTaskState implements MutableUserTaskState {
     userTaskKey.wrapLong(key);
     return Optional.ofNullable(
         userTasksTransitionTriggerRequestMetadataColumnFamily.get(userTaskKey));
+  }
+
+  @Override
+  public Optional<String> findInitialAssignee(final long key) {
+    userTaskKey.wrapLong(key);
+    final var initialAssignee = userTasksInitialAssigneeColumnFamily.get(userTaskKey);
+    return initialAssignee == null ? Optional.empty() : Optional.of(initialAssignee.toString());
   }
 }
