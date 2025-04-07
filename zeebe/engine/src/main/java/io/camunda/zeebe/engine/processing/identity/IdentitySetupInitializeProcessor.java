@@ -113,7 +113,7 @@ public final class IdentitySetupInitializeProcessor
               final long roleKey = keyGenerator.nextKey();
               role.setRoleKey(roleKey);
               createRole(role);
-              addAllPermissions(role.getRoleKey());
+              addAllPermissions(roleKey, role.getRoleId());
             });
 
     final var tenant = record.getDefaultTenant();
@@ -151,13 +151,6 @@ public final class IdentitySetupInitializeProcessor
                           final long userKey = keyGenerator.nextKey();
                           user.setUserKey(userKey);
                           createUser(user, role.getRoleKey(), tenant);
-                          // TODO temporarily add all permission to the user directly
-                          // this is required since roles are in the progress of refactoring to be
-                          // id-based
-                          // and as a result we cannot find the permissions of the role of the user.
-                          // This will be removed again with:
-                          // https://github.com/camunda/camunda/issues/30116
-                          addAllPermissions(userKey, user.getUsername());
                         }));
 
     record.getMappings().stream()
@@ -190,13 +183,6 @@ public final class IdentitySetupInitializeProcessor
                             mapping.setMappingId(String.valueOf(mappingKey));
                           }
                           createMapping(mapping, role.getRoleKey(), tenant);
-                          // TODO temporarily add all permission to the mapping directly
-                          // this is required since roles are in the progress of refactoring to be
-                          // id-based
-                          // and as a result we cannot find the permissions of the role of the user.
-                          // This will be removed again with:
-                          // https://github.com/camunda/camunda/issues/30116
-                          addAllPermissions(mappingKey, mapping.getMappingId());
                         }));
     return createdNewEntities.get();
   }
@@ -309,10 +295,6 @@ public final class IdentitySetupInitializeProcessor
     return true;
   }
 
-  private void addAllPermissions(final long key) {
-    addAllPermissions(key, String.valueOf(key));
-  }
-
   private void addAllPermissions(final long key, final String id) {
 
     for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
@@ -321,7 +303,6 @@ public final class IdentitySetupInitializeProcessor
         continue;
       }
 
-      // TODO: refactor when Roles use String IDs as unique identifiers
       final var record =
           new AuthorizationRecord()
               .setOwnerId(id)
