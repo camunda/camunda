@@ -56,6 +56,10 @@ jest.mock('react-transition-group', () => {
   };
 });
 
+jest.mock('modules/queries/processDefinitions/useProcessDefinitionXml', () => ({
+  useProcessDefinitionXml: () => ({}),
+}));
+
 type Props = {
   children?: React.ReactNode;
 };

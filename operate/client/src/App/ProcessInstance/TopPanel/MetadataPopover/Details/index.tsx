@@ -14,11 +14,12 @@ import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {Header} from '../Header';
 import {SummaryDataKey, SummaryDataValue} from '../styled';
 import {getExecutionDuration} from './getExecutionDuration';
 import {buildMetadata} from './buildMetadata';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 
 type Props = {
   metaData: MetaDataDto;
@@ -39,9 +40,15 @@ const NULL_METADATA = {
 
 const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const businessObject =
-    processInstanceDetailsDiagramStore.businessObjects[flowNodeId];
+
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {data} = useProcessInstanceXml({
+    processDefinitionKey,
+  });
+  const businessObject = data?.businessObjects[flowNodeId];
+
   const flowNodeName = businessObject?.name || flowNodeId;
+
   const {instanceMetadata, incident} = metaData;
   const {
     flowNodeInstanceId,
