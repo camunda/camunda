@@ -48,6 +48,12 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public boolean canCancel() {
+    return getStatus() == BatchOperationStatus.CREATED
+        || getStatus() == BatchOperationStatus.STARTED
+        || getStatus() == BatchOperationStatus.PAUSED;
+  }
+
   public long getKey() {
     return keyProp.getValue();
   }
