@@ -82,7 +82,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       return;
     }
 
-    final var persistedRecord = roleState.getRole(record.getRoleKey());
+    final var persistedRecord = roleState.getRole(record.getRoleId());
     if (persistedRecord.isEmpty()) {
       final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -90,11 +90,11 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       return;
     }
 
-    final var entityKey = record.getEntityKey();
+    final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
+    if (!isEntityPresent(entityId, entityType)) {
       final var errorMessage =
-          ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityKey, entityType, record.getRoleId());
+          ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -133,12 +133,12 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
+  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     if (EntityType.USER == entityType) {
-      return userState.getUser(entityKey).isPresent();
+      return userState.getUser(entityId).isPresent();
     }
     if (EntityType.MAPPING == entityType) {
-      return mappingState.get(entityKey).isPresent();
+      return mappingState.get(entityId).isPresent();
     }
     return false;
   }
@@ -147,11 +147,8 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     return switch (record.getEntityType()) {
       case USER, MAPPING ->
           membershipState.hasRelation(
-              record.getEntityType(),
-              Long.toString(record.getEntityKey()),
-              RelationType.ROLE,
-              Long.toString(record.getRoleKey()));
-      default -> roleState.getEntityType(record.getRoleKey(), record.getEntityKey()).isPresent();
+              record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
+      default -> roleState.getEntityType(record.getRoleId(), record.getEntityId()).isPresent();
     };
   }
 }
