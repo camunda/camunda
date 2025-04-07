@@ -405,12 +405,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  zeebe-ci:
-    if: needs.detect-changes.outputs.zeebe-changes == 'true'
-    needs: [detect-changes]
-    uses: ./.github/workflows/zeebe-ci.yml
-    secrets: inherit
-
   optimize-frontend-unit-tests:
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
     needs: [detect-changes]
