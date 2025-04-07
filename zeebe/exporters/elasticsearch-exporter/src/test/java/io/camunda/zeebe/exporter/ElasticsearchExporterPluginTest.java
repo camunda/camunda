@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.util.VersionUtil;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +36,9 @@ final class ElasticsearchExporterPluginTest {
   void shouldLoadPlugins(final WireMockRuntimeInfo wmRuntimeInfo) {
     // given
     final var pluginConfig = new PluginConfiguration("test", TestPlugin.class.getName(), null);
-    final var record = recordFactory.generateRecord();
+    final var record =
+        recordFactory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+    config.setZeebeRecordsExportEnabled(true);
     config.interceptorPlugins.add(pluginConfig);
     config.url = "http://localhost:" + wmRuntimeInfo.getHttpPort();
     exporter.configure(context);
