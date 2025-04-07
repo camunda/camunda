@@ -75,6 +75,11 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .declareProperty(reconstructionKeyProp);
   }
 
+  /**
+   * Create an empty DeploymentRecord that can be used as a starting point for reconstructing
+   * deployments: The tenantId must be set to "", otherwise its default is "<default>" which breaks
+   * /* searching iteratively in RocksDB
+   */
   public static DeploymentRecord emptyCommandForReconstruction() {
     return new DeploymentRecord().setTenantId("");
   }
@@ -197,6 +202,31 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     return this;
   }
 
+  /**
+   * @return the current ReconstructionProgress
+   */
+  @JsonIgnore
+  public ReconstructionProgress getReconstructionProgress() {
+    return reconstructionProp.getValue();
+  }
+
+  public void setReconstructionProgress(final ReconstructionProgress progress) {
+    reconstructionProp.setValue(progress);
+  }
+
+  /**
+   * @return the last key whose Deployment was reconstructed
+   */
+  @JsonIgnore
+  public long getReconstructionKey() {
+    return reconstructionKeyProp.getValue();
+  }
+
+  public DeploymentRecord setReconstructionKey(final long deploymentKey) {
+    reconstructionKeyProp.setValue(deploymentKey);
+    return this;
+  }
+
   public void resetResources() {
     resourcesProp.reset();
   }
@@ -241,23 +271,6 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
             .allMatch(DecisionRequirementsMetadataValue::isDuplicate)
         && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate)
         && resourceMetadata().stream().allMatch(ResourceMetadataValue::isDuplicate);
-  }
-
-  public ReconstructionProgress getReconstructionProgress() {
-    return reconstructionProp.getValue();
-  }
-
-  public void setReconstructionProgress(final ReconstructionProgress progress) {
-    reconstructionProp.setValue(progress);
-  }
-
-  public long getReconstructionKey() {
-    return reconstructionKeyProp.getValue();
-  }
-
-  public DeploymentRecord setReconstructionKey(final long deploymentKey) {
-    reconstructionKeyProp.setValue(deploymentKey);
-    return this;
   }
 
   public enum ReconstructionProgress {
