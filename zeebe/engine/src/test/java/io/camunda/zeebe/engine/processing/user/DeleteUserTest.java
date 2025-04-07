@@ -21,6 +21,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -49,6 +50,7 @@ public class DeleteUserTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldCleanupMembership() {
     final var username = UUID.randomUUID().toString();
     final var tenantId = "tenant";

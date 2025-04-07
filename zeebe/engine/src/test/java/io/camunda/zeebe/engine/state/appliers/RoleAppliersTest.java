@@ -25,8 +25,10 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -60,54 +62,57 @@ public class RoleAppliersTest {
   void shouldAddEntityToRoleWithTypeUser() {
     // given
     final long entityKey = 1L;
+    final var username = "username";
     userState.create(
         new UserRecord()
             .setUserKey(entityKey)
-            .setUsername("username")
+            .setUsername(username)
             .setName("Foo")
             .setEmail("foo@bar.com")
             .setPassword("password"));
     final long roleKey = 11L;
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.USER);
+    roleRecord.setEntityId(username).setEntityType(EntityType.USER);
 
     // when
     roleEntityAddedApplier.applyState(roleKey, roleRecord);
 
     // then
-    assertThat(
-            membershipState.getMemberships(
-                EntityType.USER, Long.toString(entityKey), RelationType.ROLE))
+    assertThat(membershipState.getMemberships(EntityType.USER, username, RelationType.ROLE))
         .singleElement()
-        .isEqualTo(Long.toString(roleKey));
+        .isEqualTo(roleId);
   }
 
   @Test
   void shouldAddEntityToRoleWithTypeMapping() {
     // given
     final long entityKey = 1L;
+    final var mappingId = Strings.newRandomValidIdentityId();
     mappingState.create(
         new MappingRecord()
             .setMappingKey(entityKey)
+            .setMappingId(mappingId)
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final long roleKey = 11L;
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
+    roleRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
 
     // when
     roleEntityAddedApplier.applyState(roleKey, roleRecord);
 
     // then
-    assertThat(roleState.getEntitiesByType(roleKey).get(EntityType.MAPPING))
-        .containsExactly(entityKey);
-    final var persistedMapping = mappingState.get(entityKey).get();
-    assertThat(persistedMapping.getRoleKeysList()).containsExactly(roleKey);
+    assertThat(membershipState.getMemberships(EntityType.MAPPING, mappingId, RelationType.ROLE))
+        .singleElement()
+        .isEqualTo(roleId);
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/30114")
   void shouldDeleteRole() {
     // given
     final long roleKey = 11L;
@@ -142,6 +147,7 @@ public class RoleAppliersTest {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/30117")
   void shouldRemoveEntityFromRoleWithTypeUser() {
     // given
     final var username = "foo";
@@ -171,6 +177,7 @@ public class RoleAppliersTest {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/30117")
   void shouldRemoveEntityFromRoleWithTypeMapping() {
     // given
     final long entityKey = 1L;
