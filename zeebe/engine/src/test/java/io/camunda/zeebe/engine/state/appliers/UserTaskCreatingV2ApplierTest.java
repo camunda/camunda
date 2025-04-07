@@ -78,7 +78,7 @@ public class UserTaskCreatingV2ApplierTest {
         .isEmpty();
 
     // ensure the intermediate assignee is stored
-    assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+    assertThat(userTaskState.getInitialAssignee(userTaskKey))
         .describedAs("Expect intermediate assignee to be present")
         .isEqualTo(initialAssignee);
   }
@@ -103,7 +103,7 @@ public class UserTaskCreatingV2ApplierTest {
         .isEmpty();
 
     // ensure the intermediate assignee is not present
-    assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+    assertThat(userTaskState.getInitialAssignee(userTaskKey))
         .describedAs("Expect intermediate assignee to not be present")
         .isNull();
   }

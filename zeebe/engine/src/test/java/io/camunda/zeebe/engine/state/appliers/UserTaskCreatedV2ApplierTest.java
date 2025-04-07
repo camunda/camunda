@@ -93,7 +93,7 @@ public class UserTaskCreatedV2ApplierTest {
         .describedAs("Expect that intermediate state is cleared")
         .isNull();
 
-    assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+    assertThat(userTaskState.getInitialAssignee(userTaskKey))
         .describedAs("Expect that intermediate assignee is not cleared")
         .isEqualTo(initialAssignee);
   }

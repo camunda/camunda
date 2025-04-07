@@ -207,7 +207,7 @@ public class UserTaskCancelingV2ApplierTest {
   }
 
   @Test
-  public void shouldClearIntermediateAssigneeOnUserTaskCancelingTransition() {
+  public void shouldClearInitialAssigneeOnUserTaskCancelingTransition() {
     // given
     final long userTaskKey = new Random().nextLong();
     final long elementInstanceKey = new Random().nextLong();
@@ -226,7 +226,7 @@ public class UserTaskCancelingV2ApplierTest {
     final UserTaskRecord recordWithoutAssignee = userTaskRecord.unsetAssignee();
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
 
-    assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+    assertThat(userTaskState.getInitialAssignee(userTaskKey))
         .describedAs("Expect intermediate assignee to be present")
         .isEqualTo(initialAssignee);
 
@@ -234,7 +234,7 @@ public class UserTaskCancelingV2ApplierTest {
     userTaskCancelingApplier.applyState(userTaskKey, userTaskRecord);
 
     // then
-    assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+    assertThat(userTaskState.getInitialAssignee(userTaskKey))
         .describedAs("Expect intermediate assignee to be cleaned up")
         .isNull();
   }

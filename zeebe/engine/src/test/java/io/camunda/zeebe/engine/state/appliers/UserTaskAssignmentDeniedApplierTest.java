@@ -85,7 +85,7 @@ public class UserTaskAssignmentDeniedApplierTest {
   }
 
   @Test
-  public void shouldCleanUpIntermediateAssigneeIfAssignmentDeniedByTaskListener() {
+  public void shouldCleanUpInitialAssigneeIfAssignmentDeniedByTaskListener() {
     // given
     final long userTaskKey = new Random().nextLong();
     final var initialAssignee = "initial";
@@ -99,7 +99,7 @@ public class UserTaskAssignmentDeniedApplierTest {
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.ASSIGNING, given);
 
-    Assertions.assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+    Assertions.assertThat(userTaskState.getInitialAssignee(userTaskKey))
         .describedAs("Expect that intermediate assignee is stored")
         .isEqualTo(initialAssignee);
 
@@ -107,7 +107,7 @@ public class UserTaskAssignmentDeniedApplierTest {
     userTaskAssignmentDeniedApplierApplier.applyState(userTaskKey, given);
 
     // then
-    Assertions.assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+    Assertions.assertThat(userTaskState.getInitialAssignee(userTaskKey))
         .describedAs("Expect that intermediate assignee is not present anymore")
         .isNull();
   }

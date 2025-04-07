@@ -56,7 +56,7 @@ public class DbUserTaskState implements MutableUserTaskState {
   private final ColumnFamily<DbLong, UserTaskTransitionTriggerRequestMetadata>
       userTasksTransitionTriggerRequestMetadataColumnFamily;
 
-  private final DbString intermediateAssignee = new DbString();
+  private final DbString initialAssignee = new DbString();
   private final ColumnFamily<DbLong, DbString> userTasksInitialAssigneeColumnFamily;
 
   public DbUserTaskState(
@@ -92,7 +92,7 @@ public class DbUserTaskState implements MutableUserTaskState {
             ZbColumnFamilies.USER_TASK_INITIAL_ASSIGNEE,
             transactionContext,
             userTaskKey,
-            intermediateAssignee);
+            initialAssignee);
   }
 
   @Override
@@ -182,8 +182,8 @@ public class DbUserTaskState implements MutableUserTaskState {
   public void storeInitialAssignee(final long key, final String assignee) {
     if (!StringUtils.isEmpty(assignee)) {
       userTaskKey.wrapLong(key);
-      intermediateAssignee.wrapString(assignee);
-      userTasksInitialAssigneeColumnFamily.insert(userTaskKey, intermediateAssignee);
+      initialAssignee.wrapString(assignee);
+      userTasksInitialAssigneeColumnFamily.insert(userTaskKey, initialAssignee);
     }
   }
 
@@ -235,9 +235,9 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
-  public String getIntermediateAssignee(final long key) {
+  public String getInitialAssignee(final long key) {
     userTaskKey.wrapLong(key);
-    final var intermediateAssignee = userTasksInitialAssigneeColumnFamily.get(userTaskKey);
-    return intermediateAssignee == null ? null : intermediateAssignee.toString();
+    final var initialAssignee = userTasksInitialAssigneeColumnFamily.get(userTaskKey);
+    return initialAssignee == null ? null : initialAssignee.toString();
   }
 }
