@@ -28,10 +28,6 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 
 jest.unmock('modules/utils/date/formatDate');
 
-jest.mock('modules/queries/processDefinitions/useProcessDefinitionXml', () => ({
-  useProcessDefinitionXml: () => ({}),
-}));
-
 describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -133,7 +129,7 @@ describe('Filters', () => {
     });
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
