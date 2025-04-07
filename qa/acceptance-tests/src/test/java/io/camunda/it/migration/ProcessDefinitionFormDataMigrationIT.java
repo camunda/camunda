@@ -34,13 +34,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class ProcessMigrationIT {
+public class ProcessDefinitionFormDataMigrationIT {
 
   private static final Map<String, Long> PROCESS_DEFINITION_KEYS = new HashMap<>();
 
   @RegisterExtension
   private static final MigrationITExtension PROVIDER =
-      new MigrationITExtension().withBeforeUpgradeConsumer(ProcessMigrationIT::setup);
+      new MigrationITExtension()
+          .withBeforeUpgradeConsumer(ProcessDefinitionFormDataMigrationIT::setup);
 
   private static void setup(final DatabaseType databaseType, final CamundaMigrator migrator) {
     migrator
