@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -40,18 +41,17 @@ public class AddEntityRoleMultiPartitionTest {
   @Test
   public void shouldDistributeRoleAddEntityCommand() {
     // when
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    final var username = "foo";
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    engine.role().addEntity(roleId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     assertThat(
             RecordingExporter.records()
@@ -102,18 +102,18 @@ public class AddEntityRoleMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    final var username = "foo";
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create()
+        .getKey();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    engine.role().addEntity(roleId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // then
     assertThat(
@@ -130,20 +130,20 @@ public class AddEntityRoleMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
+    final var username = "foo";
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create()
+        .getKey();
 
     // when
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create().getValue().getRoleKey();
+    engine.role().addEntity(roleId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

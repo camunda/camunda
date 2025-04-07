@@ -234,6 +234,7 @@ public class MappingTest {
 
   @Ignore("https://github.com/camunda/camunda/issues/30092")
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldCleanupGroupAndRoleMembership() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
