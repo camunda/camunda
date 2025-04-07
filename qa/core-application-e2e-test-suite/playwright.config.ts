@@ -28,7 +28,7 @@ const useReportersWithSlack: any[] = [
       meta: [
         {
           key: `Nightly Test Results for Mono Repo - ${process.env.VERSION}`,
-          value: `<https://github.com/camunda/camunda/actions/runs/${process.env.GITHUB_RUN_ID}%7C📊>`,
+          value: `<https://github.com/camunda/camunda/actions/runs/${process.env.GITHUB_RUN_ID}|📊>`,
         },
       ],
     },
