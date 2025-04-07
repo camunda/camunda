@@ -7,13 +7,10 @@
  */
 
 import {IncidentsTable} from '../index';
-import {mockCallActivityProcessXML} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {incidentsStore} from 'modules/stores/incidents';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
 
 describe('IncidentsTable', () => {
@@ -21,12 +18,8 @@ describe('IncidentsTable', () => {
     window.clientConfig = undefined;
   });
 
-  it('should render the right column headers', async () => {
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
-
+  it('should render the right column headers', () => {
     incidentsStore.setIncidents(incidentsMock);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     render(<IncidentsTable />, {wrapper: Wrapper});
 
@@ -39,11 +32,8 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 
-  it('should render the right column headers for restricted user', async () => {
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
-
+  it('should render the right column headers for restricted user', () => {
     incidentsStore.setIncidents(incidentsMock);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
     authenticationStore.setUser({
       displayName: 'demo',
       canLogout: true,
@@ -65,15 +55,12 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 
-  it('should render the right column headers for restricted user (with resource-based permissions)', async () => {
+  it('should render the right column headers for restricted user (with resource-based permissions)', () => {
     window.clientConfig = {
       resourcePermissionsEnabled: true,
     };
 
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
-
     incidentsStore.setIncidents(incidentsMock);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
     authenticationStore.setUser({
       displayName: 'demo',
       canLogout: true,
@@ -95,11 +82,8 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 
-  it('should render incident details', async () => {
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
-
+  it('should render incident details', () => {
     incidentsStore.setIncidents(incidentsMock);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinRow = within(
@@ -146,13 +130,10 @@ describe('IncidentsTable', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render incident details (with resource-based permissions enabled)', async () => {
+  it('should render incident details (with resource-based permissions enabled)', () => {
     window.clientConfig = {
       resourcePermissionsEnabled: true,
     };
-
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     incidentsStore.setIncidents(incidentsMock);
     authenticationStore.setUser({
