@@ -19,6 +19,6 @@
   <artifactId>webapps-schema</artifactId>
   <name>Webapps Schema</name>
 
-  <dependencies />
+  <dependencies></dependencies>
 
 </project>
