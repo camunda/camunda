@@ -22,24 +22,12 @@ export class Login {
     this.loginButton = page.getByRole("button", { name: "Login" });
   }
 
-  async fillUsername(username: string): Promise<void> {
-    await this.usernameInput.fill(username);
-  }
-
-  async fillPassword(password: string): Promise<void> {
-    await this.passwordInput.fill(password);
-  }
-
-  async clickLoginButton(): Promise<void> {
-    await this.loginButton.click();
-  }
-
   async login(credentials: { username: string; password: string }) {
     const { username, password } = credentials;
 
-    await this.fillUsername(username);
-    await this.fillPassword(password);
-    await this.clickLoginButton();
+    await this.usernameInput.fill(username);
+    await this.passwordInput.fill(password);
+    await this.loginButton.click();
   }
 
   async navigateToLogin() {
