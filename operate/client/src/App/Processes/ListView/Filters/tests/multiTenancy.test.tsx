@@ -28,6 +28,10 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 
 jest.unmock('modules/utils/date/formatDate');
 
+jest.mock('modules/queries/processDefinitions/useProcessDefinitionXml', () => ({
+  useProcessDefinitionXml: () => ({}),
+}));
+
 describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
