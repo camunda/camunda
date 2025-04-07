@@ -11,7 +11,7 @@ export default defineConfig({
   forbidOnly: IS_CI,
   retries: IS_CI ? 2 : 0,
   workers: IS_CI ? 1 : undefined,
-  reporter: "html",
+  reporter: IS_CI ? [["github"], ["html"]] : "html",
   projects: [
     {
       name: "chromium",
