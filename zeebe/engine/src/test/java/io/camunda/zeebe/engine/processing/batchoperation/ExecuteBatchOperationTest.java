@@ -71,4 +71,31 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
         .doesNotContain(
             BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
   }
+
+  @Test
+  public void shouldCancelBatchOperationForProcessInstanceCancellation() {
+    // given
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey =
+        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+
+    // when we cancel the batch operation
+    engine.batchOperation().newExecution().withBatchOperationKey(batchOperationKey).cancel();
+
+    // then we have a canceled event
+    assertThat(
+        RecordingExporter.batchOperationExecutionRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .onlyEvents())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationExecutionIntent.CANCELED);
+
+    // and no follow op up command to execute again
+    assertThat(
+        RecordingExporter.batchOperationExecutionRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .onlyCommands())
+        .extracting(Record::getIntent)
+        .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
+  }
 }

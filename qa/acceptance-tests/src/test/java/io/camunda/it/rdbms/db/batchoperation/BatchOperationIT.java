@@ -262,7 +262,7 @@ public class BatchOperationIT {
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
     // when
-    writer.getBatchOperationWriter().paused(batchOperation.batchOperationKey());
+    writer.getBatchOperationWriter().pause(batchOperation.batchOperationKey());
     writer.flush();
 
     // then
@@ -285,7 +285,7 @@ public class BatchOperationIT {
 
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
-    writer.getBatchOperationWriter().paused(batchOperation.batchOperationKey());
+    writer.getBatchOperationWriter().pause(batchOperation.batchOperationKey());
     writer.flush();
 
     // when
