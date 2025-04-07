@@ -155,10 +155,15 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void cancel(final long batchOperationKey) {
+    LOGGER.trace("Cancel batch operation with key {}", batchOperationKey);
+    deleteBatchOperation(batchOperationKey);
+  }
+
+  @Override
   public void complete(final long batchOperationKey) {
     LOGGER.trace("Completing batch operation with key {}", batchOperationKey);
-    batchKey.wrapLong(batchOperationKey);
-    batchOperationColumnFamily.deleteExisting(batchKey);
+    deleteBatchOperation(batchOperationKey);
   }
 
   @Override
@@ -197,6 +202,11 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     final var chunkKeys = chunk.getItemKeys();
 
     return chunkKeys.stream().limit(batchSize).toList();
+  }
+
+  private void deleteBatchOperation(final long batchOperationKey) {
+    batchKey.wrapLong(batchOperationKey);
+    batchOperationColumnFamily.deleteExisting(batchKey);
   }
 
   private PersistedBatchOperationChunk createNewChunk(final PersistedBatchOperation batch) {

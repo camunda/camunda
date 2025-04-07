@@ -28,5 +28,7 @@ public interface MutableBatchOperationState extends BatchOperationState {
 
   void removeItemKeys(final long batchOperationKey, final Set<Long> itemKeys);
 
+  void cancel(final long batchKey);
+
   void complete(final long batchOperationKey);
 }
