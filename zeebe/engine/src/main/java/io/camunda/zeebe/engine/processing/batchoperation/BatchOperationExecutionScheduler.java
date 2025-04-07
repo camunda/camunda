@@ -178,6 +178,12 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
     Object[] searchValues = null;
     while (true) {
+      // Check if the batch operation is still present, could be canceled in the meantime
+      if (!batchOperationState.exists(batchOperation.getKey())) {
+        LOG.warn(
+            "Batch operation {} is no longer active, stopping query.", batchOperation.getKey());
+        break;
+      }
 
       final var page =
           SearchQueryPageBuilders.page().size(QUERY_SIZE).searchAfter(searchValues).build();
