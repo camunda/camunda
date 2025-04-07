@@ -19,7 +19,6 @@ import AddModal from "src/pages/mappings/modals/AddModal";
 import { searchMapping } from "src/utility/api/mappings";
 import DeleteModal from "src/pages/mappings/modals/DeleteModal";
 import EditModal from "src/pages/mappings/modals/EditModal";
-import { IS_UPDATE_MAPPINGS_SUPPORTED } from "src/feature-flags";
 
 const List: FC = () => {
   const { t } = useTranslate("mappingRules");
@@ -87,7 +86,6 @@ const List: FC = () => {
             label: t("edit"),
             icon: Edit,
             onClick: editMapping,
-            hidden: !IS_UPDATE_MAPPINGS_SUPPORTED,
           },
           {
             label: t("delete"),

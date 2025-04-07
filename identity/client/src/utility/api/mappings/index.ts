@@ -8,7 +8,7 @@
 import {
   ApiDefinition,
   apiDelete,
-  apiPatch,
+  apiPut,
   apiPost,
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
@@ -41,7 +41,7 @@ export const updateMapping: ApiDefinition<undefined, UpdateMappingParams> = ({
   claimValue,
   name,
 }) =>
-  apiPatch(`${MAPPINGS_ENDPOINT}/${mappingId}`, {
+  apiPut(`${MAPPINGS_ENDPOINT}/${mappingId}`, {
     name,
     claimName,
     claimValue,
