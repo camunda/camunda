@@ -312,8 +312,7 @@ public final class AuthorizationCheckBehavior {
     final var roleIds =
         membershipState.getMemberships(
             EntityType.USER,
-            // TODO: Use username instead of userKey when roles are id-based
-            Long.toString(user.getUserKey()),
+            user.getUsername(),
             RelationType.ROLE);
     final var roleAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
@@ -355,9 +354,12 @@ public final class AuthorizationCheckBehavior {
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
-              getAuthorizedResourceIdentifiersForOwnerKeys(
+              final var roleIds =
+                  membershipState.getMemberships(
+                      EntityType.MAPPING, mapping.getMappingId(), RelationType.ROLE);
+              getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.ROLE,
-                      mapping.getRoleKeysList(),
+                      roleIds,
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
