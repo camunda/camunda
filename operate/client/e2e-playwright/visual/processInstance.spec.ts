@@ -172,7 +172,7 @@ test.describe('process instance page', () => {
       );
 
       await processInstancePage.navigateToProcessInstance({
-        id: '1',
+        id: instanceWithIncident.detail.id,
         options: {
           waitUntil: 'networkidle',
         },
