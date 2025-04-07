@@ -255,6 +255,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         bucket.aggregations().get(INSTANCES_AGG).topHits().hits().hits().stream()
             .map(Hit::id)
             .toList();
+    metrics.recordArchivingBatchSize(ids.size());
     return new ArchiveBatch(finishDate, ids);
   }
 
