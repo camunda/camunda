@@ -9,23 +9,17 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, RoleRecord> {
 
-  private final MutableRoleState roleState;
-  private final MutableMappingState mappingState;
   private final MutableMembershipState membershipState;
 
   public RoleEntityAddedApplier(final MutableProcessingState state) {
-    roleState = state.getRoleState();
-    mappingState = state.getMappingState();
     membershipState = state.getMembershipState();
   }
 
@@ -35,15 +29,14 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
       case USER ->
           membershipState.insertRelation(
               EntityType.USER, value.getEntityId(), RelationType.ROLE, value.getRoleId());
-      case MAPPING -> {
-        roleState.addEntity(value);
-        mappingState.addRole(value.getEntityKey(), value.getRoleKey());
-      }
+      case MAPPING ->
+          membershipState.insertRelation(
+              EntityType.MAPPING, value.getEntityId(), RelationType.ROLE, value.getRoleId());
       default ->
           throw new IllegalStateException(
               String.format(
-                  "Expected to add entity '%d' to role '%d', but entities of type '%s' cannot be added to roles",
-                  value.getEntityKey(), value.getRoleKey(), value.getEntityType()));
+                  "Expected to add entity '%s' to role '%s', but entities of type '%s' cannot be added to roles",
+                  value.getEntityId(), value.getRoleId(), value.getEntityType()));
     }
   }
 }
