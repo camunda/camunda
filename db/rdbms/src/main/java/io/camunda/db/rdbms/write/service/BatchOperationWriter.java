@@ -110,6 +110,9 @@ public class BatchOperationWriter {
     updateCompleted(
         batchOperationKey,
         new BatchOperationUpdateDto(batchOperationKey, BatchOperationStatus.CANCELED, endDate));
+
+    updateItemsWithStatus(
+        batchOperationKey, BatchOperationItemStatus.ACTIVE, BatchOperationItemStatus.CANCELED);
   }
 
   public void paused(final long batchOperationKey) {
