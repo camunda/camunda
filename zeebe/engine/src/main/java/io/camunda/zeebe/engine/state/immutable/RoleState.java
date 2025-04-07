@@ -21,5 +21,9 @@ public interface RoleState {
 
   Optional<EntityType> getEntityType(long roleKey, long entityKey);
 
+  Optional<EntityType> getEntityType(String roleId, String entityId);
+
   Map<EntityType, List<Long>> getEntitiesByType(long roleKey);
+
+  Map<EntityType, List<String>> getEntitiesByType(String roleId);
 }
