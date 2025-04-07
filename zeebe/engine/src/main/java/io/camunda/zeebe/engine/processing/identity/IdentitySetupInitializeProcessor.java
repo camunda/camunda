@@ -188,7 +188,7 @@ public final class IdentitySetupInitializeProcessor
 
   private void createDistributedEntities(final IdentitySetupRecord record) {
     final var role = record.getDefaultRole();
-    if (roleState.getRole(role.getRoleKey()).isEmpty()) {
+    if (roleState.getRole(role.getRoleId()).isEmpty()) {
       createRole(role);
     }
 
@@ -202,7 +202,7 @@ public final class IdentitySetupInitializeProcessor
         .forEach(
             user ->
                 userState
-                    .getUser(user.getUserKey())
+                    .getUser(user.getUsername())
                     .ifPresentOrElse(
                         persistedUser -> {
                           assignEntityToRole(role, persistedUser.getUsername(), EntityType.USER);
@@ -255,6 +255,8 @@ public final class IdentitySetupInitializeProcessor
         switch (entityType) {
           case USER ->
               membershipState.hasRelation(EntityType.USER, entityId, RelationType.ROLE, roleId);
+          case MAPPING ->
+              membershipState.hasRelation(EntityType.MAPPING, entityId, RelationType.ROLE, roleId);
           default -> roleState.getEntityType(roleId, entityId).isPresent();
         };
     if (isAlreadyAssigned) {
