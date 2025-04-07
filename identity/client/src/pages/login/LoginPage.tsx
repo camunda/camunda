@@ -8,22 +8,32 @@
 
 import React, { useCallback, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Button, Link, PasswordInput, TextInput } from "@carbon/react";
-import { useNotifications } from "src/components/notifications";
-import Page from "src/components/layout/Page.tsx";
+import {
+  Button,
+  InlineNotification,
+  Link,
+  PasswordInput,
+  TextInput,
+} from "@carbon/react";
 import useTranslate from "src/utility/localization";
 import { login } from "src/utility/auth";
 import { getCopyrightNoticeText } from "src/utility/copyright.ts";
 import CamundaLogo from "src/assets/images/camunda.svg";
 import { useLicense } from "src/utility/license.ts";
-import "src/pages/login/LoginPage.scss";
+import {
+  LoginFormContainer,
+  LoginPageContainer,
+  Content,
+  CopyrightNotice,
+  Header,
+  LicenseInfo,
+} from "src/pages/login/styled.ts";
 
 interface LoginFormProps {
   onSuccess: () => void;
-  onFail: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { t } = useTranslate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -35,35 +45,44 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
     hasError: false,
     errorText: "",
   });
+  const [submitError, setSubmitError] = useState("");
 
   const submit = useCallback(() => {
     if (!username) {
       setUsernameError({
         hasError: true,
-        errorText: "Username field is required",
+        errorText: "Username is required",
       });
     }
 
     if (!password) {
       setPasswordError({
         hasError: true,
-        errorText: "Password field is required",
+        errorText: "Password is required",
       });
     }
 
     if (username && password) {
-      login(username, password).then((success) => {
+      login(username, password).then(({ success, message }) => {
         if (success) {
           onSuccess();
         } else {
-          onFail();
+          setSubmitError(message);
         }
       });
     }
-  }, [onSuccess, onFail, username, password]);
+  }, [onSuccess, username, password]);
 
   return (
-    <div className="LoginForm">
+    <LoginFormContainer $hasError={!!submitError}>
+      {submitError && (
+        <InlineNotification
+          title={submitError}
+          hideCloseButton
+          kind="error"
+          role="alert"
+        />
+      )}
       <TextInput
         id="username"
         name="username"
@@ -79,7 +98,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
           if (target.value.trim().length < 1) {
             setUsernameError({
               hasError: true,
-              errorText: "Username field is required",
+              errorText: "Username is required",
             });
           } else {
             setUsernameError({
@@ -112,7 +131,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
           if (target.value.trim().length < 1) {
             setPasswordError({
               hasError: true,
-              errorText: "Password field is required",
+              errorText: "Password is required",
             });
           } else {
             setPasswordError({
@@ -123,7 +142,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
         }}
       />
       <Button onClick={submit}>{t("login")}</Button>
-    </div>
+    </LoginFormContainer>
   );
 };
 
@@ -140,31 +159,23 @@ export const LoginPage: React.FC = () => {
   const { t, Translate } = useTranslate();
   const location = useLocation();
   const license = useLicense();
-  const { enqueueNotification } = useNotifications();
 
   const redirectUrl = getRedirectUrl(location.search);
   const onSuccess = useCallback(() => {
     window.location.href = redirectUrl ?? "/identity/users";
   }, [redirectUrl]);
-  const onFail = useCallback(() => {
-    enqueueNotification({
-      kind: "error",
-      title: "Login failed",
-      subtitle: "That username and password combination is incorrect.",
-    });
-  }, [enqueueNotification]);
   const hasProductionLicense = license?.isCommercial;
 
   return (
-    <Page className="LoginPage">
-      <div className="content">
-        <div className="header">
+    <LoginPageContainer>
+      <Content>
+        <Header>
           <CamundaLogo />
           <h1>{t("identity")}</h1>
-        </div>
-        <LoginForm onSuccess={onSuccess} onFail={onFail} />
+        </Header>
+        <LoginForm onSuccess={onSuccess} />
         {!hasProductionLicense && (
-          <div className="license-info">
+          <LicenseInfo>
             <Translate i18nKey="licenseInfo">
               Non-Production License. If you would like information on
               production usage, please refer to our{" "}
@@ -181,10 +192,10 @@ export const LoginPage: React.FC = () => {
               </Link>
               .
             </Translate>
-          </div>
+          </LicenseInfo>
         )}
-      </div>
-      <div className="copyright-notice">{getCopyrightNoticeText()}</div>
-    </Page>
+      </Content>
+      <CopyrightNotice>{getCopyrightNoticeText()}</CopyrightNotice>
+    </LoginPageContainer>
   );
 };
