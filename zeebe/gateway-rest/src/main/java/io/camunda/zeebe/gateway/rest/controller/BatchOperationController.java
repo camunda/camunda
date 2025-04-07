@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -71,6 +72,36 @@ public class BatchOperationController {
       @RequestBody(required = false) final BatchOperationSearchQuery query) {
     return SearchQueryRequestMapper.toBatchOperationQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  @CamundaPutMapping(path = "/{key}/cancel")
+  public ResponseEntity<Object> cancelBatchOperation(@PathVariable final long key) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+            () ->
+                batchOperationServices
+                    .withAuthentication(RequestMapper.getAuthentication())
+                    .cancel(key))
+        .join();
+  }
+
+  @CamundaPutMapping(path = "/{key}/pause")
+  public ResponseEntity<Object> pauseBatchOperation(@PathVariable final long key) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+            () ->
+                batchOperationServices
+                    .withAuthentication(RequestMapper.getAuthentication())
+                    .pause(key))
+        .join();
+  }
+
+  @CamundaPutMapping(path = "/{key}/resume")
+  public ResponseEntity<Object> resumeBatchOperation(@PathVariable final long key) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+            () ->
+                batchOperationServices
+                    .withAuthentication(RequestMapper.getAuthentication())
+                    .resume(key))
+        .join();
   }
 
   private ResponseEntity<BatchOperationSearchQueryResult> search(final BatchOperationQuery query) {

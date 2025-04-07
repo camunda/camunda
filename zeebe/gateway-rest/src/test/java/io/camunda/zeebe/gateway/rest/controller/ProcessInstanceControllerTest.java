@@ -1326,7 +1326,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isCreated()
+        .isAccepted()
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
