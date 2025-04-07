@@ -554,7 +554,6 @@ jobs:
       - integration-tests
       - java-checks
       - build-platform-frontend
-      - zeebe-ci
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
       - protobuf-checks
