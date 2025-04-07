@@ -329,6 +329,23 @@ public class BatchOperationStateTest {
     assertThat(state.get(batchOperationKey)).isEmpty();
   }
 
+  @Test
+  void canceledBatchShouldBeRemoved() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+    state.create(batchOperationKey, batchRecord);
+
+    // when
+    state.cancel(batchOperationKey);
+
+    // then
+    assertThat(state.get(batchOperationKey)).isEmpty();
+  }
+
   private static UnsafeBuffer convertToBuffer(final Object object) {
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(object));
   }
