@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.Optional;
 import java.util.Random;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,16 +100,16 @@ public class UserTaskAssignmentDeniedApplierTest {
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.ASSIGNING, given);
 
-    Assertions.assertThat(userTaskState.getInitialAssignee(userTaskKey))
-        .describedAs("Expect that intermediate assignee is stored")
-        .isEqualTo(initialAssignee);
+    Assertions.assertThat(userTaskState.findInitialAssignee(userTaskKey))
+        .describedAs("Expect that initial assignee is stored")
+        .isEqualTo(Optional.of(initialAssignee));
 
     // when
     userTaskAssignmentDeniedApplierApplier.applyState(userTaskKey, given);
 
     // then
-    Assertions.assertThat(userTaskState.getInitialAssignee(userTaskKey))
-        .describedAs("Expect that intermediate assignee is not present anymore")
-        .isNull();
+    Assertions.assertThat(userTaskState.findInitialAssignee(userTaskKey))
+        .describedAs("Expect that initial assignee is not present anymore")
+        .isEmpty();
   }
 }

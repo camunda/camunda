@@ -235,9 +235,9 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
-  public String getInitialAssignee(final long key) {
+  public Optional<String> findInitialAssignee(final long key) {
     userTaskKey.wrapLong(key);
     final var initialAssignee = userTasksInitialAssigneeColumnFamily.get(userTaskKey);
-    return initialAssignee == null ? null : initialAssignee.toString();
+    return initialAssignee == null ? Optional.empty() : Optional.of(initialAssignee.toString());
   }
 }

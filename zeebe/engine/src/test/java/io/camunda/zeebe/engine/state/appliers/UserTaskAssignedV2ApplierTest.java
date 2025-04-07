@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,9 +95,9 @@ public class UserTaskAssignedV2ApplierTest {
         .describedAs("Expect intermediate user task to be stored without assignee")
         .isEmpty();
 
-    assertThat(userTaskState.getInitialAssignee(userTaskKey))
-        .describedAs("Expect intermediate assignee to be present")
-        .isEqualTo(initialAssignee);
+    assertThat(userTaskState.findInitialAssignee(userTaskKey))
+        .describedAs("Expect initial assignee to be present")
+        .isEqualTo(Optional.of(initialAssignee));
 
     // when
     userTaskAssignedV2Applier.applyState(userTaskKey, userTaskRecord);
@@ -106,8 +107,8 @@ public class UserTaskAssignedV2ApplierTest {
         .describedAs("Expect that intermediate state to be cleaned up")
         .isNull();
 
-    assertThat(userTaskState.getInitialAssignee(userTaskKey))
-        .describedAs("Expect intermediate assignee to be cleaned up")
-        .isNull();
+    assertThat(userTaskState.findInitialAssignee(userTaskKey))
+        .describedAs("Expect initial assignee to be cleaned up")
+        .isEmpty();
   }
 }

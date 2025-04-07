@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,9 +79,9 @@ public class UserTaskCreatingV2ApplierTest {
         .isEmpty();
 
     // ensure the intermediate assignee is stored
-    assertThat(userTaskState.getInitialAssignee(userTaskKey))
-        .describedAs("Expect intermediate assignee to be present")
-        .isEqualTo(initialAssignee);
+    assertThat(userTaskState.findInitialAssignee(userTaskKey))
+        .describedAs("Expect initial assignee to be present")
+        .isEqualTo(Optional.of(initialAssignee));
   }
 
   @Test
@@ -103,8 +104,8 @@ public class UserTaskCreatingV2ApplierTest {
         .isEmpty();
 
     // ensure the intermediate assignee is not present
-    assertThat(userTaskState.getInitialAssignee(userTaskKey))
-        .describedAs("Expect intermediate assignee to not be present")
-        .isNull();
+    assertThat(userTaskState.findInitialAssignee(userTaskKey))
+        .describedAs("Expect initial assignee to not be present")
+        .isEmpty();
   }
 }

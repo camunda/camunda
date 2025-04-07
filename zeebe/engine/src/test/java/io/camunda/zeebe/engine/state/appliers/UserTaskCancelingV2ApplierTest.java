@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -226,16 +227,16 @@ public class UserTaskCancelingV2ApplierTest {
     final UserTaskRecord recordWithoutAssignee = userTaskRecord.unsetAssignee();
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
 
-    assertThat(userTaskState.getInitialAssignee(userTaskKey))
-        .describedAs("Expect intermediate assignee to be present")
-        .isEqualTo(initialAssignee);
+    assertThat(userTaskState.findInitialAssignee(userTaskKey))
+        .describedAs("Expect initial assignee to be present")
+        .isEqualTo(Optional.of(initialAssignee));
 
     // when
     userTaskCancelingApplier.applyState(userTaskKey, userTaskRecord);
 
     // then
-    assertThat(userTaskState.getInitialAssignee(userTaskKey))
-        .describedAs("Expect intermediate assignee to be cleaned up")
-        .isNull();
+    assertThat(userTaskState.findInitialAssignee(userTaskKey))
+        .describedAs("Expect initial assignee to be cleaned up")
+        .isEmpty();
   }
 }
