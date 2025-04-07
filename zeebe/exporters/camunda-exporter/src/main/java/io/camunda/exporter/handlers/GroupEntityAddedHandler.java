@@ -44,7 +44,7 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupEntity, Group
   @Override
   public List<String> generateIds(final Record<GroupRecordValue> record) {
     final var groupRecord = record.getValue();
-    return List.of(GroupEntity.getChildKey(groupRecord.getGroupKey(), groupRecord.getEntityKey()));
+    return List.of(GroupEntity.getChildKey(groupRecord.getGroupKey(), groupRecord.getEntityId()));
   }
 
   @Override
@@ -59,7 +59,7 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupEntity, Group
     entity
         .setKey(value.getGroupKey())
         .setName(value.getName())
-        .setMemberKey(value.getEntityKey())
+        .setMemberId(value.getEntityId())
         .setJoin(joinRelation);
   }
 

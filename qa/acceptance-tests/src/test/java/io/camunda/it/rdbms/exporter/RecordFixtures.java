@@ -340,7 +340,7 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getGroupRecord(
-      final Long groupKey, final GroupIntent intent, final Long entityKey) {
+      final Long groupKey, final GroupIntent intent, final String entityId) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.GROUP);
     return ImmutableRecord.builder()
         .from(recordValueRecord)
@@ -352,8 +352,8 @@ public class RecordFixtures {
             ImmutableGroupRecordValue.builder()
                 .from((GroupRecordValue) recordValueRecord.getValue())
                 .withGroupKey(groupKey)
-                .withEntityKey(entityKey != null ? entityKey : 0)
-                .withEntityType(entityKey != null ? EntityType.USER : null)
+                .withEntityId(entityId)
+                .withEntityType(entityId != null ? EntityType.USER : null)
                 .build())
         .build();
   }

@@ -100,7 +100,6 @@ public class GroupAppliersTest {
   void shouldAddUserEntityToGroup() {
     // given
     final var entityKey = 1L;
-    final var entityId = "entityId";
     final var userRecord =
         new UserRecord()
             .setUserKey(entityKey)
@@ -116,26 +115,26 @@ public class GroupAppliersTest {
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityId(entityId).setEntityType(entityType);
+    groupRecord.setEntityId(userRecord.getUsername()).setEntityType(entityType);
 
     // when
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // then
     final var entitiesByType = groupState.getEntitiesByType(groupKey);
-    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityId)));
-    final var persistedUser = userState.getUser(entityId).get();
+    assertThat(entitiesByType)
+        .containsOnly(Map.entry(entityType, List.of(userRecord.getUsername())));
+    final var persistedUser = userState.getUser(userRecord.getUsername()).get();
     assertThat(persistedUser.getGroupKeysList()).containsExactly(groupKey);
   }
 
   @Test
   void shouldAddMappingEntityToGroup() {
     // given
-    final var entityKey = 1L;
     final var entityId = "entityId";
     final var mappingRecord =
         new MappingRecord()
-            .setMappingKey(entityKey)
+            .setMappingId(entityId)
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
@@ -193,11 +192,10 @@ public class GroupAppliersTest {
   @Test
   void shouldRemoveMappingEntityFromGroup() {
     // given
-    final var entityKey = 1L;
     final var entityId = "entityId";
     final var mappingRecord =
         new MappingRecord()
-            .setMappingKey(entityKey)
+            .setMappingId(entityId)
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);

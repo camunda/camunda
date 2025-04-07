@@ -52,6 +52,6 @@ public class GroupReader extends AbstractEntityReader<GroupEntity> {
     return new GroupEntity(
         model.groupKey(),
         model.name(),
-        model.members().stream().map(GroupMemberDbModel::entityKey).collect(Collectors.toSet()));
+        model.members().stream().map(GroupMemberDbModel::entityId).collect(Collectors.toSet()));
   }
 }

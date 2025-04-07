@@ -13,7 +13,7 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
   private Long key;
   private String name;
-  private Long memberKey;
+  private String memberId;
 
   private EntityJoinRelation<Long> join;
 
@@ -35,12 +35,12 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
     return this;
   }
 
-  public Long getMemberKey() {
-    return memberKey;
+  public String getMemberId() {
+    return memberId;
   }
 
-  public GroupEntity setMemberKey(final Long memberKey) {
-    this.memberKey = memberKey;
+  public GroupEntity setMemberId(final String memberId) {
+    this.memberId = memberId;
     return this;
   }
 
@@ -53,7 +53,7 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
     return this;
   }
 
-  public static String getChildKey(final long groupKey, final long memberKey) {
-    return String.format("%d-%d", groupKey, memberKey);
+  public static String getChildKey(final long groupKey, final String memberKey) {
+    return String.format("%d-%s", groupKey, memberKey);
   }
 }

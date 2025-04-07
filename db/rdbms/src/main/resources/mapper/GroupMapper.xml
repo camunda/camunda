@@ -23,7 +23,7 @@
     g.GROUP_KEY,
     g.NAME,
     gm.GROUP_KEY AS MEMBER_GROUP_KEY,
-    gm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
+    gm.ENTITY_ID AS MEMBER_ENTITY_ID,
     gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
     FROM ${prefix}GROUPS g
     LEFT JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_KEY = gm.GROUP_KEY
@@ -47,7 +47,7 @@
       javaType="java.util.List">
       <constructor>
         <idArg column="MEMBER_GROUP_KEY" javaType="java.lang.Long"/>
-        <idArg column="MEMBER_ENTITY_KEY" javaType="java.lang.Long"/>
+        <idArg column="MEMBER_ENTITY_ID" javaType="java.lang.String"/>
         <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
       </constructor>
     </collection>
@@ -80,8 +80,8 @@
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}GROUP_MEMBER (GROUP_KEY, ENTITY_KEY, ENTITY_TYPE)
-    VALUES (#{groupKey}, #{entityKey}, #{entityType})
+    INSERT INTO ${prefix}GROUP_MEMBER (GROUP_KEY, ENTITY_ID, ENTITY_TYPE)
+    VALUES (#{groupKey}, #{entityId}, #{entityType})
   </insert>
 
   <delete
@@ -91,7 +91,7 @@
     DELETE
     FROM ${prefix}GROUP_MEMBER
     WHERE GROUP_KEY = #{groupKey}
-      AND ENTITY_KEY = #{entityKey}
+      AND ENTITY_ID = #{entityId}
       AND ENTITY_TYPE = #{entityType}
   </delete>
 

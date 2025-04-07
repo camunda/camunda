@@ -54,14 +54,14 @@ public class GroupExportHandler implements RdbmsExportHandler<GroupRecordValue> 
           groupWriter.addMember(
               new GroupMemberDbModel.Builder()
                   .groupKey(value.getGroupKey())
-                  .entityKey(value.getEntityKey())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       case GroupIntent.ENTITY_REMOVED ->
           groupWriter.removeMember(
               new GroupMemberDbModel.Builder()
                   .groupKey(value.getGroupKey())
-                  .entityKey(value.getEntityKey())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       default -> LOG.warn("Unexpected intent {} for group record", record.getIntent());

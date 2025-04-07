@@ -468,20 +468,20 @@ class RdbmsExporterIT {
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
 
     // when
-    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_ADDED, 1337L));
+    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_ADDED, "entityId"));
 
     // then
     final var updatedGroup =
         rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
-    assertThat(updatedGroup.assignedMemberKeys()).containsExactly(1337L);
+    assertThat(updatedGroup.assignedMemberIds()).containsExactly("entityId");
 
     // when
-    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_REMOVED, 1337L));
+    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_REMOVED, "entityId"));
 
     // then
     final var deletedGroup =
         rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
-    assertThat(deletedGroup.assignedMemberKeys()).isEmpty();
+    assertThat(deletedGroup.assignedMemberIds()).isEmpty();
   }
 
   @Test

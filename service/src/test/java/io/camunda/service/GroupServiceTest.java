@@ -125,7 +125,7 @@ public class GroupServiceTest {
   }
 
   @Test
-  public void shouldReturnListOfGroupsForGetByUserKey() {
+  public void shouldReturnListOfGroupsForGetByUsername() {
     // given
     final var group1 = mock(GroupEntity.class);
     final var group2 = mock(GroupEntity.class);
@@ -134,7 +134,7 @@ public class GroupServiceTest {
     when(client.searchGroups(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getGroupsByUserKey(1L);
+    final var searchQueryResult = services.getGroupsByUsername("username");
 
     // then
     assertThat(searchQueryResult).contains(group1, group2);

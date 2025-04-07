@@ -440,7 +440,7 @@
       <column name="GROUP_KEY" type="BIGINT" >
         <constraints primaryKey="true"/>
       </column>
-      <column name="ENTITY_KEY" type="BIGINT" >
+      <column name="ENTITY_ID" type="VARCHAR(255)" >
         <constraints primaryKey="true"/>
       </column>
       <column name="ENTITY_TYPE" type="VARCHAR(255)" />

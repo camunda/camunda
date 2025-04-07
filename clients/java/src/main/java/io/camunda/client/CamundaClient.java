@@ -1185,7 +1185,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newUnassignUserFromGroupCommand(123L)
-   *  .userKey(456L)
+   *  .username(username)
    *  .send();
    * </pre>
    *

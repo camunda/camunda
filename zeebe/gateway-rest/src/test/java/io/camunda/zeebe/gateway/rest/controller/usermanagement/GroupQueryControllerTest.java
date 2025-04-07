@@ -44,17 +44,17 @@ public class GroupQueryControllerTest extends RestControllerTest {
           {
             "groupKey":"111",
             "name":"Group 1",
-            "assignedMemberKeys":[]
+            "assignedMemberIds":[]
           },
           {
             "groupKey":"222",
             "name":"Group 2",
-            "assignedMemberKeys":[]
+            "assignedMemberIds":[]
           },
           {
             "groupKey":"333",
             "name":"Group 3",
-            "assignedMemberKeys":[]
+            "assignedMemberIds":[]
           }
         ],
         "page":{

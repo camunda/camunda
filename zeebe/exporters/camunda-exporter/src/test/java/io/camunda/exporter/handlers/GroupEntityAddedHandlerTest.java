@@ -61,7 +61,7 @@ public class GroupEntityAddedHandlerTest {
     // then
     final var value = groupRecord.getValue();
     assertThat(idList)
-        .containsExactly(GroupEntity.getChildKey(value.getGroupKey(), value.getEntityKey()));
+        .containsExactly(GroupEntity.getChildKey(value.getGroupKey(), value.getEntityId()));
   }
 
   @Test
@@ -79,7 +79,7 @@ public class GroupEntityAddedHandlerTest {
     // given
     final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(111L);
     final GroupEntity inputEntity =
-        new GroupEntity().setId("111").setMemberKey(222L).setJoin(joinRelation);
+        new GroupEntity().setId("111").setMemberId("memberId").setJoin(joinRelation);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

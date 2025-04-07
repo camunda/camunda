@@ -91,7 +91,7 @@ public class CamundaOidcUserService extends OidcUserService {
             tenantServices.getTenantsByMemberIds(mappingIds).stream()
                 .map(TenantDTO::fromEntity)
                 .toList(),
-            groupServices.getGroupsByMemberKeys(mappingKeys).stream()
+            groupServices.getGroupsByMemberIds(mappingIds).stream()
                 .map(GroupEntity::name)
                 .toList()));
   }
