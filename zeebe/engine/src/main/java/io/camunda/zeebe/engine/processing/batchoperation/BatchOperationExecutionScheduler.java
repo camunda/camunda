@@ -16,9 +16,11 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
@@ -93,14 +95,46 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   private void executeBatchOperation(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
-    final var keys = queryAllKeys(batchOperation);
-    for (int i = 0; i < keys.size(); i += CHUNK_SIZE_IN_RECORD) {
-      final Set<Long> chunkKeys =
-          keys.stream().skip(i).limit(CHUNK_SIZE_IN_RECORD).collect(Collectors.toSet());
-      appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
+    // First fire a start event
+    appendStartedCommand(taskResultBuilder, batchOperation);
+
+    try {
+      // Then append the chunks
+      final var keys = queryAllKeys(batchOperation);
+      for (int i = 0; i < keys.size(); i += CHUNK_SIZE_IN_RECORD) {
+        final Set<Long> chunkKeys =
+            keys.stream().skip(i).limit(CHUNK_SIZE_IN_RECORD).collect(Collectors.toSet());
+        appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
+      }
+    } catch (final Exception e) {
+      LOG.error(
+          "Failed to append chunks for batch operation with key {}. It will be removed from queue",
+          batchOperation.getKey(),
+          e);
+      appendFailedCommand(taskResultBuilder, batchOperation);
     }
 
     appendExecution(batchOperation.getKey(), taskResultBuilder);
+  }
+
+  private void appendStartedCommand(
+      final TaskResultBuilder taskResultBuilder, final PersistedBatchOperation batchOperation) {
+    final var batchOperationKey = batchOperation.getKey();
+    final var command = new BatchOperationCreationRecord();
+    command.setBatchOperationKey(batchOperationKey);
+    command.setBatchOperationType(batchOperation.getBatchOperationType());
+    LOG.debug("Appending batch operation {} started event", batchOperationKey);
+    taskResultBuilder.appendCommandRecord(batchOperationKey, BatchOperationIntent.START, command);
+  }
+
+  private void appendFailedCommand(
+      final TaskResultBuilder taskResultBuilder, final PersistedBatchOperation batchOperation) {
+    final var batchOperationKey = batchOperation.getKey();
+    final var command = new BatchOperationCreationRecord();
+    command.setBatchOperationKey(batchOperationKey);
+    command.setBatchOperationType(batchOperation.getBatchOperationType());
+    LOG.debug("Appending batch operation {} failed event", batchOperationKey);
+    taskResultBuilder.appendCommandRecord(batchOperationKey, BatchOperationIntent.FAIL, command);
   }
 
   private void appendChunk(

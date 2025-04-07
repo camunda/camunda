@@ -85,6 +85,13 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return this;
   }
 
+  /**
+   * Deserializes the entity filter to the given class.
+   *
+   * @param clazz of the entity filter
+   * @return the deserialized entity filter
+   * @throws EntityFilterDeserializeException if any error occurs during deserialization
+   */
   public <T> T getEntityFilter(final Class<T> clazz) {
     return MsgPackConverter.convertToObject(entityFilterProp.getValue(), clazz);
   }
@@ -127,8 +134,9 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   public enum BatchOperationStatus {
     CREATED,
-    ACTIVATED,
+    STARTED,
     PAUSED,
-    CANCELED
+    CANCELED,
+    FAILED
   }
 }

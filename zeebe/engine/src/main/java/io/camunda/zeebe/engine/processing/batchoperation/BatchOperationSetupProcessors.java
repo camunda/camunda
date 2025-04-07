@@ -38,6 +38,14 @@ public final class BatchOperationSetupProcessors {
             BatchOperationIntent.CREATE,
             new BatchOperationCreateProcessor(writers, keyGenerator, commandDistributionBehavior))
         .onCommand(
+            ValueType.BATCH_OPERATION_CREATION,
+            BatchOperationIntent.START,
+            new BatchOperationStartProcessor(writers))
+        .onCommand(
+            ValueType.BATCH_OPERATION_CREATION,
+            BatchOperationIntent.FAIL,
+            new BatchOperationFailProcessor(writers))
+        .onCommand(
             ValueType.BATCH_OPERATION_CHUNK,
             BatchOperationChunkIntent.CREATE,
             new BatchOperationCreateChunkProcessor(writers))
