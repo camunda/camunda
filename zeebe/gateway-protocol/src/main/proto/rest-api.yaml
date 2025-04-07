@@ -7990,6 +7990,7 @@ components:
           enum:
             - ACTIVE
             - COMPLETED
+            - CANCELED
             - FAILED
   responses:
     InternalServerError:
