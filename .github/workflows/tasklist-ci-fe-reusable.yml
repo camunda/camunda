@@ -10,7 +10,7 @@ jobs:
   fe-type-check:
     name: Type check
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -40,7 +40,7 @@ jobs:
   fe-eslint:
     name: ESLint
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -70,7 +70,7 @@ jobs:
   fe-stylelint:
     name: Stylelint
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
