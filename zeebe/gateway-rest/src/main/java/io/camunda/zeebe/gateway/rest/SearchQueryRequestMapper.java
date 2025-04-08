@@ -177,6 +177,22 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getBatchOperationId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::batchOperationIdOperations);
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
+      ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
+      ofNullable(filter.getFlowNodeId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getHasFlowNodeInstanceIncident())
+          .ifPresent(builder::hasFlowNodeInstanceIncident);
+      ofNullable(filter.getFlowNodeInstanceState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeInstanceStateOperations);
+      ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFiltersForProcessInstance(filter.getVariables());
@@ -637,6 +653,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getBatchOperationId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::batchOperationIdOperations);
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
