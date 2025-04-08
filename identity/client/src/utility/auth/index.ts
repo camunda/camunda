@@ -18,7 +18,10 @@ export function redirectToLogin() {
   window.location.href = getLoginPath(window.location.pathname);
 }
 
-export function login(username: string, password: string): Promise<boolean> {
+export function login(
+  username: string,
+  password: string,
+): Promise<{ success: boolean; message: string }> {
   const data = new FormData();
   data.set("username", username);
   data.set("password", password);
@@ -27,11 +30,24 @@ export function login(username: string, password: string): Promise<boolean> {
     body: data,
   })
     .then((response: Response) => {
-      return response.status < 400;
+      if (response.status < 400) {
+        return { success: true, message: "" };
+      }
+
+      if (response.status === 401) {
+        return { success: false, message: "Username and password don't match" };
+      }
+
+      return {
+        success: false,
+        message: "An error occurred. Please try again.",
+      };
     })
-    .catch((e) => {
-      console.log(e);
-      return false;
+    .catch(() => {
+      return {
+        success: false,
+        message: "An error occurred. Please try again.",
+      };
     });
 }
 
