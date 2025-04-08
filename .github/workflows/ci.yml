@@ -32,10 +32,6 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
-      camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
-      identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
-      frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
-      zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
@@ -88,44 +84,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: ./mvnw -T1C -B -D skipTests -D skipOptimize -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  build-platform-frontend:
-    if: needs.detect-changes.outputs.frontend-changes == 'true'
-    needs: [detect-changes]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-frontend
-        id: build-operate-fe
-        with:
-          directory: ./operate/client
-      - uses: ./.github/actions/build-frontend
-        id: build-tasklist-fe
-        with:
-          directory: ./tasklist/client
-      - uses: ./.github/actions/build-frontend
-        id: build-identity-fe
-        with:
-          directory: ./identity/client
-      - uses: ./.github/actions/build-frontend
-        id: build-optimize-fe
-        with:
-          directory: ./optimize/client
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -265,127 +223,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  docker-checks:
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
-    name: Camunda docker tests
-    needs: [ detect-changes ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    services:
-      # local registry is used as this job needs to push as it builds multi-platform images
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
-    env:
-      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
-        with:
-          config: ./.hadolint.yaml
-          dockerfile: ./camunda.Dockerfile
-          format: sarif
-          output-file: ./hadolint.sarif
-          no-color: true
-          verbose: true
-      - name: Upload Hadolint Results
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: ./hadolint.sarif
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          docker-secret-path: secret/data/products/camunda/ci/github-actions
-      - uses: ./.github/actions/build-zeebe
-        id: build-camunda
-        with:
-          maven-extra-args: -PskipFrontendBuild -D skipOptimize
-      - uses: ./.github/actions/build-platform-docker
-        id: build-camunda-docker
-        with:
-          # we use a local registry for pushing
-          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: camunda.Dockerfile
-          # push is needed for multi-arch images as buildkit does not support loading them locally
-          push: true
-
-      # We need to free up some space to let the step after this block succeed.
-      # With this cleanup, at the time of measuring, we go from a 100% disk usage (73/74 GB) to a
-      # 94% (68/73 GB), on the runner ubuntu-latest. This allows the workflow to go through.
-      - name: Cleanup docker images
-        run: docker system prune -af
-
-      - name: Verify Docker image
-        uses: ./.github/actions/verify-platform-docker
-        with:
-          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
-          date: ${{ steps.build-camunda-docker.outputs.date }}
-          revision: ${{ github.sha }}
-          version: ${{ steps.build-camunda-docker.outputs.version }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          goldenfile: camunda-docker-labels.golden.json
-      - name: Run Docker tests
-        run: |
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -DskipOptimize -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
-          -Dcamunda.docker.test.enabled=true \
-          -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}" \
-          -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}" \
-          test
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  identity-frontend-tests:
-    if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
-    needs: [detect-changes]
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    defaults:
-      run:
-        working-directory: identity/client
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: identity/client
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Check formatting
-        run: yarn test:format
-      - name: Lint code
-        run: yarn test:lint
-      - name: Unit & Integration tests
-        run: yarn test:unit
-      - name: Check licenses
-        run: yarn test:licenses
-      - name: Build frontend
-        run: yarn build
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   optimize-frontend-unit-tests:
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
@@ -532,7 +369,6 @@ jobs:
       - actionlint
       - java-unit-tests
       - docker-checks
-      - identity-frontend-tests
       - integration-tests
       - java-checks
       - build-platform-frontend
