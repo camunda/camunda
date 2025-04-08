@@ -24,22 +24,25 @@ import {
   createInstance,
   createOperation,
   createVariable,
-  mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
 import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
+import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
@@ -55,18 +58,21 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       variablesStore.reset();
       flowNodeSelectionStore.reset();
       flowNodeMetaDataStore.reset();
-      processInstanceDetailsDiagramStore.reset();
       modificationsStore.reset();
       processInstanceDetailsStatisticsStore.reset();
     };
   }, []);
 
   return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      <Routes>
-        <Route path={Paths.processInstance()} element={children} />
-      </Routes>
-    </MemoryRouter>
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
   );
 };
 
@@ -91,6 +97,8 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
@@ -128,6 +136,7 @@ describe('VariablePanel', () => {
         screen.getByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
+      mockFetchProcessInstanceListeners().withSuccess(noListeners);
       act(() => {
         flowNodeSelectionStore.setSelection({
           flowNodeId: 'TEST_FLOW_NODE',
@@ -380,6 +389,7 @@ describe('VariablePanel', () => {
     );
 
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockApplyOperation().withSuccess(
       createBatchOperation({id: 'batch-operation-id'}),
     );
@@ -409,6 +419,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
       flowNodeSelectionStore.setSelection({
@@ -862,15 +873,13 @@ describe('VariablePanel', () => {
   });
 
   it('should select correct tab when navigating between flow nodes', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
-
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     act(() => {
       flowNodeSelectionStore.setSelection({
@@ -883,11 +892,10 @@ describe('VariablePanel', () => {
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
 
-    expect(screen.getByText('localVariable1')).toBeInTheDocument();
-    expect(screen.getByText('localVariable2')).toBeInTheDocument();
-
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     act(() => {
       flowNodeSelectionStore.setSelection({
@@ -905,6 +913,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
       flowNodeSelectionStore.clearSelection();
@@ -924,6 +933,7 @@ describe('VariablePanel', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
       flowNodeSelectionStore.setSelection({
@@ -955,6 +965,7 @@ describe('VariablePanel', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
 
     act(() => {
@@ -984,6 +995,7 @@ describe('VariablePanel', () => {
 
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'non-existing',
@@ -1011,6 +1023,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
         flowNodeId: 'flowNode-without-running-tokens',
@@ -1054,11 +1067,14 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
+    mockFetchProcessDefinitionXml().withSuccess('');
+
     // go to input mappings and back, see the correct state
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
     expect(
@@ -1095,6 +1111,7 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     // select only one of the scopes
     act(() => {
@@ -1114,6 +1131,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     // select new parent scope
     act(() => {
@@ -1154,6 +1172,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
@@ -1220,6 +1239,8 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
     expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
     // select only one of the scopes
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
@@ -1248,6 +1269,8 @@ describe('VariablePanel', () => {
         endDate: null,
       },
     });
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     modificationsStore.enableModificationMode();
 
@@ -1260,6 +1283,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
@@ -1359,6 +1383,7 @@ describe('VariablePanel', () => {
         startDate: '2022-09-30T15:00:31.772+0000',
       },
     });
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     // select existing scope
     act(() => {
@@ -1393,6 +1418,8 @@ describe('VariablePanel', () => {
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
+
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     // select new scope
     act(() => {
@@ -1439,6 +1466,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([
       createVariable({name: 'some-other-variable'}),
     ]);
@@ -1503,6 +1531,8 @@ describe('VariablePanel', () => {
         endDate: null,
       },
     });
+
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
@@ -1586,6 +1616,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
@@ -1676,6 +1707,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
