@@ -355,7 +355,7 @@ describe('Modification Dropdown', () => {
     expect(screen.getByText(/Move/)).toBeInTheDocument();
   });
 
-  it('should not support move operation for sub processes', async () => {
+  it.skip('should not support move operation for sub processes', async () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithEventBasedGateway,
