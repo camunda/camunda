@@ -7,10 +7,12 @@
  */
 package io.camunda.operate.webapp.elasticsearch.backup;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
@@ -22,6 +24,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.webapp.management.dto.BackupStateDto;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +33,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.SnapshotClient;
 import org.elasticsearch.snapshots.SnapshotInfo;
@@ -36,6 +42,7 @@ import org.elasticsearch.snapshots.SnapshotState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
+import org.mockito.ArgumentMatcher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -130,5 +137,35 @@ public class ElasticsearchBackupRepositoryTest {
     }
 
     fail("Expected to continue waiting for snapshotting to finish.");
+  }
+
+  @Test
+  public void shouldForwardVerboseFlagToES() throws IOException {
+    // mock calls to `findSnapshot` and `operateProperties`
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+    when(snapshotInfo.state()).thenReturn(SnapshotState.IN_PROGRESS);
+    when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
+    final var response = mock(GetSnapshotsResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getSnapshots()).thenReturn(List.of(snapshotInfo));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    when(snapshotClient.get(any(), any())).thenReturn(response);
+
+    final var responses = backupRepository.getBackups(repositoryName, false);
+    final var notVerbose =
+        new ArgumentMatcher<GetSnapshotsRequest>() {
+
+          @Override
+          public boolean matches(final GetSnapshotsRequest argument) {
+            return !argument.verbose();
+          }
+        };
+    verify(snapshotClient).get(argThat(notVerbose), any());
+    assertThat(responses)
+        .singleElement()
+        .satisfies(
+            details -> {
+              assertThat(details.getBackupId()).isEqualTo(backupId);
+              assertThat(details.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+            });
   }
 }
