@@ -16,14 +16,12 @@ import {
 import {FlowNodeInstanceLog} from './index';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   createInstance,
   createMultiInstanceFlowNodeInstances,
   createOperation,
 } from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {useEffect} from 'react';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
@@ -41,7 +39,6 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
     return () => {
       processInstanceDetailsStore.reset();
       flowNodeInstanceStore.reset();
-      processInstanceDetailsDiagramStore.reset();
     };
   }, []);
 
@@ -71,16 +68,14 @@ describe('FlowNodeInstanceLog', () => {
         ],
       }),
     );
-    mockFetchProcessDefinitionXml().withSuccess('');
 
     processInstanceDetailsStore.init({id: '1'});
   });
 
   it('should render skeleton when instance tree is not loaded', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
     flowNodeInstanceStore.init();
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
@@ -93,9 +88,8 @@ describe('FlowNodeInstanceLog', () => {
 
   it('should render skeleton when instance diagram is not loaded', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
     flowNodeInstanceStore.init();
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
@@ -110,9 +104,8 @@ describe('FlowNodeInstanceLog', () => {
 
   it('should display error when instance tree data could not be fetched', async () => {
     mockFetchFlowNodeInstances().withServerError();
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
     flowNodeInstanceStore.init();
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
@@ -123,27 +116,21 @@ describe('FlowNodeInstanceLog', () => {
 
   it('should display error when instance diagram could not be fetched', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-    mockFetchProcessXML().withServerError();
+    mockFetchProcessDefinitionXml().withServerError();
     flowNodeInstanceStore.init();
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('Instance History could not be fetched'),
     ).toBeInTheDocument();
-
-    await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toBe('error'),
-    );
   });
 
   it('should continue polling after poll failure', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
     jest.useFakeTimers();
     flowNodeInstanceStore.init();
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
@@ -191,9 +178,8 @@ describe('FlowNodeInstanceLog', () => {
 
   it('should render flow node instances tree', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
     flowNodeInstanceStore.init();
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 

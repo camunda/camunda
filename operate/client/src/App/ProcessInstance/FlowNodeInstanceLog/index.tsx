@@ -17,12 +17,13 @@ import {
   PanelHeader,
   ErrorMessage,
 } from './styled';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Stack, TreeView} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const {
@@ -30,10 +31,11 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
     isInstanceExecutionHistoryAvailable,
     state: {status: flowNodeInstanceStatus},
   } = flowNodeInstanceStore;
-  const {
-    areDiagramDefinitionsAvailable,
-    state: {status: diagramStatus},
-  } = processInstanceDetailsDiagramStore;
+
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {isSuccess, isError, isPending} = useProcessInstanceXml({
+    processDefinitionKey,
+  });
 
   const LOADING_STATES = ['initial', 'first-fetch'];
 
@@ -50,7 +52,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
           </Stack>
         )}
       </PanelHeader>
-      {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
+      {isSuccess && isInstanceExecutionHistoryAvailable ? (
         <InstanceHistory ref={instanceHistoryRef}>
           <NodeContainer>
             <TreeView
@@ -68,12 +70,12 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
         </InstanceHistory>
       ) : (
         <>
-          {(flowNodeInstanceStatus === 'error' ||
-            diagramStatus === 'error') && (
+          {(flowNodeInstanceStatus === 'error' || isError) && (
             <ErrorMessage message="Instance History could not be fetched" />
           )}
-          {(LOADING_STATES.includes(flowNodeInstanceStatus) ||
-            LOADING_STATES.includes(diagramStatus)) && <Skeleton />}
+          {(LOADING_STATES.includes(flowNodeInstanceStatus) || isPending) && (
+            <Skeleton />
+          )}
         </>
       )}
     </Container>
