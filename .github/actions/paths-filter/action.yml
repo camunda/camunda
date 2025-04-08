@@ -21,14 +21,6 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.markdown-change == 'true'
       }}
-  identity-frontend-tests:
-    description: Output whether Identity frontend tests should be run based on GitHub event and files changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
-        steps.filter-identity.outputs.identity-frontend-change == 'true'
-      }}
   optimize-frontend-changes:
     description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
     value: >-
@@ -44,35 +36,6 @@ outputs:
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-optimize.outputs.optimize-backend-change == 'true'
-      }}
-  camunda-docker-tests:
-    description: Output whether Camunda Docker tests should be run based on GitHub event and files changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
-        steps.filter-common.outputs.java-code-change == 'true' ||
-        steps.filter-common.outputs.maven-change == 'true' ||
-        steps.filter-common.outputs.dockerfile-change == 'true' ||
-        steps.filter-common.outputs.frontend-change == 'true'
-      }}
-  frontend-changes:
-    description: Output whether any frontend has changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
-        steps.filter-common.outputs.frontend-change == 'true' ||
-        steps.filter-identity.outputs.frontend-identity == 'true'
-      }}
-  zeebe-changes:
-    description: Output whether any Zeebe code has changed
-    value: >-
-      ${{
-        github.event_name == 'push' ||
-        steps.filter-common.outputs.github-actions-change == 'true' ||
-        steps.filter-common.outputs.maven-change == 'true' ||
-        steps.filter-zeebe.outputs.zeebe-change == 'true'
       }}
   protobuf-changes:
     description: Output whether any Protobuf files have changed
