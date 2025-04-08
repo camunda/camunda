@@ -12,6 +12,8 @@ jobs:
     name: Add issue to team projects if no project assigned and by corresponding component label
     runs-on: ubuntu-latest
     steps:
+      - name: Wait 15 seconds
+        run: sleep 15s
       - id: get_project_count
         uses: octokit/graphql-action@v2.3.2
         with:
