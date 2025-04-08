@@ -2,8 +2,9 @@
 camunda-platform:
   core:
     # Require n2-standard-2 to ensure the broker is the only application running on its node
+    # However, that node does not have the required cpu/memory capacity
     nodeSelector:
-      cloud.google.com/gke-nodepool: n2-standard-2-stable
+      cloud.google.com/gke-nodepool: n2-standard-4-stable
 
     # Ignore the stable VM node taints
     tolerations:
@@ -14,8 +15,9 @@ camunda-platform:
 
   zeebe:
     # Require n2-standard-2 to ensure the broker is the only application running on its node
+    # However, that node does not have the required cpu/memory capacity
     nodeSelector:
-      cloud.google.com/gke-nodepool: n2-standard-2-stable
+      cloud.google.com/gke-nodepool: n2-standard-4-stable
 
     # Ignore the stable VM node taints
     tolerations:
