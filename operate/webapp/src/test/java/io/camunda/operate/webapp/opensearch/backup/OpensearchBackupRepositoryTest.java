@@ -233,7 +233,7 @@ class OpensearchBackupRepositoryTest {
             new OpenSearchGetSnapshotResponse(
                 List.of(
                     new OpenSearchSnapshotInfo()
-                        .setSnapshot("snapshot")
+                        .setSnapshot("camunda_operate_1_8.7.0_part_1_of_6")
                         .setState(SnapshotState.SUCCESS)
                         .setStartTimeInMillis(23L))));
 
@@ -247,7 +247,7 @@ class OpensearchBackupRepositoryTest {
     final var snapshotDetail = snapshotDetails.get(0);
     assertThat(snapshotDetail.getState()).isEqualTo(SnapshotState.SUCCESS.toString());
     assertThat(snapshotDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(23L);
-    assertThat(snapshotDetail.getSnapshotName()).isEqualTo("snapshot");
+    assertThat(snapshotDetail.getSnapshotName()).isEqualTo("camunda_operate_1_8.7.0_part_1_of_6");
     assertThat(snapshotDetail.getFailures()).isNull();
   }
 
