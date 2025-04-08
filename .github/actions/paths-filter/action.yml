@@ -17,6 +17,13 @@ outputs:
         github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true'
       }}
+  commitlint:
+    description: Output whether commit messages should be linted based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        !contains(github.event.pull_request.labels.*.name, 'ci:ignore-commitlint')
+      }}
   maven-spotless-linter:
     description: Output whether jobs depending on files relevant for Maven spotless should be run, related checks are based on GitHub events and file changes
     value: >-
