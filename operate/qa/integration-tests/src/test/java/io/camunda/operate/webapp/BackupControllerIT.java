@@ -59,6 +59,7 @@ import org.elasticsearch.transport.TransportException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -87,8 +88,8 @@ public class BackupControllerIT {
 
   @Mock private SnapshotClient snapshotClient;
 
-  @MockBean
   @Qualifier("esClient")
+  @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
   private RestHighLevelClient esClient;
 
   @SpyBean private OperateProperties operateProperties;
@@ -654,7 +655,7 @@ public class BackupControllerIT {
         assertThrows(
             OperateRuntimeException.class,
             () -> {
-              backupController.getBackups();
+              backupController.getBackups(true);
             });
 
     final String expectedMessage =
@@ -674,7 +675,7 @@ public class BackupControllerIT {
                 SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    assertThat(backupController.getBackups()).isEmpty();
+    assertThat(backupController.getBackups(true)).isEmpty();
   }
 
   @Test
@@ -685,7 +686,7 @@ public class BackupControllerIT {
         assertThrows(
             OperateElasticsearchConnectionException.class,
             () -> {
-              backupController.getBackups();
+              backupController.getBackups(true);
             });
     final String expectedMessage =
         String.format(
@@ -747,7 +748,7 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupController.getBackups();
+    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true);
     assertThat(backups).hasSize(3);
 
     final GetBackupStateResponseDto backup3 =
@@ -810,7 +811,7 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupController.getBackups();
+    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true);
     assertThat(backups).hasSize(1);
     final GetBackupStateResponseDto backup1 = backups.get(0);
     assertThat(backup1.getState()).isEqualTo(COMPLETED);
@@ -819,8 +820,50 @@ public class BackupControllerIT {
     assertBackupDetails(List.of(snapshotInfo11, snapshotInfo12), backup1);
   }
 
+  @Test
+  public void shouldRespectVerboseFlag() throws IOException {
+    final Long backupId = 2L;
+    // when using verbose=false, ES/OS will return something like this:
+    //    {
+    //      "snapshot": "camunda_operate_20250320000001_8.6.9_part_1_of_6",
+    //        "uuid": "3V4JXZ5GRE2Yy5VnDKTF5w",
+    //        "indices": [
+    //      "operate-import-position-8.3.0_"
+    //        ],
+    //      "data_streams": [],
+    //      "state": "SUCCESS"
+    //    }
+
+    final Metadata metadata =
+        new Metadata().setBackupId(backupId).setVersion("8.8.8").setPartNo(1).setPartCount(1);
+
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
+    when(snapshotInfo.snapshotId())
+        .thenReturn(new SnapshotId(metadata.buildSnapshotName(), "snapshot-uuid"));
+    when(snapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    final List<SnapshotInfo> snapshotInfos = asList(new SnapshotInfo[] {snapshotInfo});
+    when(snapshotClient.get(any(), any()))
+        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+
+    final var backups = backupController.getBackups(false);
+    assertThat(backups)
+        .allSatisfy(
+            backupState -> {
+              assertThat(backupState.getState()).isEqualTo(COMPLETED);
+              assertThat(backupState.getBackupId()).isEqualTo(backupId);
+              assertThat(backupState.getDetails())
+                  .singleElement()
+                  .satisfies(
+                      info -> {
+                        System.out.println(info);
+                        assertThat(info.getState()).isEqualTo("SUCCESS");
+                      });
+            });
+  }
+
   private void assertBackupDetails(
-      List<SnapshotInfo> snapshotInfos, GetBackupStateResponseDto backupState) {
+      final List<SnapshotInfo> snapshotInfos, final GetBackupStateResponseDto backupState) {
     assertThat(backupState.getDetails()).hasSize(snapshotInfos.size());
     assertThat(backupState.getDetails())
         .extracting(GetBackupStateResponseDetailDto::getSnapshotName)
@@ -836,27 +879,32 @@ public class BackupControllerIT {
             snapshotInfos.stream().map(si -> si.startTime()).toArray(Long[]::new));
   }
 
-  private SnapshotInfo createSnapshotInfoMock(String name, String uuid, SnapshotState state) {
+  private SnapshotInfo createSnapshotInfoMock(
+      final String name, final String uuid, final SnapshotState state) {
     return createSnapshotInfoMock(null, name, uuid, state, null);
   }
 
-  private SnapshotInfo createSnapshotInfoMock(Metadata metadata, String uuid, SnapshotState state) {
+  private SnapshotInfo createSnapshotInfoMock(
+      final Metadata metadata, final String uuid, final SnapshotState state) {
     return createSnapshotInfoMock(metadata, null, uuid, state, null);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
-      String name, String uuid, SnapshotState state, List<SnapshotShardFailure> failures) {
+      final String name,
+      final String uuid,
+      final SnapshotState state,
+      final List<SnapshotShardFailure> failures) {
     return createSnapshotInfoMock(null, name, uuid, state, failures);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
-      Metadata metadata,
-      String name,
-      String uuid,
-      SnapshotState state,
-      List<SnapshotShardFailure> failures) {
+      final Metadata metadata,
+      final String name,
+      final String uuid,
+      final SnapshotState state,
+      final List<SnapshotShardFailure> failures) {
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
     if (metadata != null) {
       when(snapshotInfo.snapshotId())

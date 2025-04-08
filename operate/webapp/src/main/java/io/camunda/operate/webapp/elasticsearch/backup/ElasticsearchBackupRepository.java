@@ -162,22 +162,29 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   }
 
   @Override
-  public List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
-    final GetSnapshotsRequest snapshotsStatusRequest =
+  public List<GetBackupStateResponseDto> getBackups(
+      final String repositoryName, final boolean verbose) {
+    GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(repositoryName)
             .snapshots(new String[] {Metadata.SNAPSHOT_NAME_PREFIX + "*"})
-            // it looks like sorting as well as size/offset are not working, need to sort
-            // additionally before return
-            .sort(GetSnapshotsRequest.SortBy.START_TIME)
-            .order(SortOrder.DESC);
+            .verbose(verbose);
+    if (verbose) {
+      // it looks like sorting as well as size/offset are not working, need to sort
+      // additionally before return
+      snapshotsStatusRequest =
+          snapshotsStatusRequest.sort(GetSnapshotsRequest.SortBy.START_TIME).order(SortOrder.DESC);
+    }
     final GetSnapshotsResponse response;
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
-      final List<SnapshotInfo> snapshots =
-          response.getSnapshots().stream()
-              .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed())
-              .collect(toList());
+      List<SnapshotInfo> snapshots = response.getSnapshots();
+      if (verbose) {
+        snapshots =
+            snapshots.stream()
+                .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed())
+                .toList();
+      }
 
       final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
@@ -185,7 +192,10 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                   groupingBy(
                       si -> {
                         final Metadata metadata =
-                            objectMapper.convertValue(si.userMetadata(), Metadata.class);
+                            Metadata.extractFromMetadataOrName(
+                                objectMapper,
+                                si.userMetadata(),
+                                si.snapshot().getSnapshotId().getName());
                         Long backupId = metadata.getBackupId();
                         // backward compatibility with v. 8.1
                         if (backupId == null) {
@@ -376,7 +386,10 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       final Long backupId, final List<SnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final Metadata metadata =
-        objectMapper.convertValue(snapshots.get(0).userMetadata(), Metadata.class);
+        Metadata.extractFromMetadataOrName(
+            objectMapper,
+            snapshots.getFirst().userMetadata(),
+            snapshots.getFirst().snapshot().getSnapshotId().getName());
     final Integer expectedSnapshotsCount = metadata.getPartCount();
     if (snapshots.size() == expectedSnapshotsCount
         && snapshots.stream().map(SnapshotInfo::state).allMatch(s -> SUCCESS.equals(s))) {
@@ -398,9 +411,11 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     for (final SnapshotInfo snapshot : snapshots) {
       final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.snapshotId().getName());
-      detail.setStartTime(
-          OffsetDateTime.ofInstant(
-              Instant.ofEpochMilli(snapshot.startTime()), ZoneId.systemDefault()));
+      if (snapshot.startTime() > 0) {
+        detail.setStartTime(
+            OffsetDateTime.ofInstant(
+                Instant.ofEpochMilli(snapshot.startTime()), ZoneId.systemDefault()));
+      }
       if (snapshot.shardFailures() != null) {
         detail.setFailures(
             snapshot.shardFailures().stream()

@@ -105,7 +105,8 @@ class OpenSearchSnapshotOperationsTest {
     when(openSearchClient.arbitraryRequest("GET", "/_snapshot/test-repository/test-snapshot", "{}"))
         .thenReturn(openSearchResponse);
     final var response =
-        snapshotOperations.get(getSnapshotRequestBuilder("test-repository", "test-snapshot"));
+        snapshotOperations.get(
+            getSnapshotRequestBuilder("test-repository", "test-snapshot").build());
     assertThat(response.snapshots()).hasSize(1);
     final var snapshotInfo = response.snapshots().getFirst();
     assertSnapshotInfo(snapshotInfo);
@@ -120,7 +121,7 @@ class OpenSearchSnapshotOperationsTest {
             OperateRuntimeException.class,
             () ->
                 snapshotOperations.get(
-                    getSnapshotRequestBuilder("test-repository", "test-snapshot")));
+                    getSnapshotRequestBuilder("test-repository", "test-snapshot").build()));
     assertThat(exception)
         .hasMessage("Failed to get snapshot test-snapshot in repository test-repository");
     assertThat(exception.getCause()).isInstanceOf(IOException.class);
