@@ -125,7 +125,7 @@
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.jackson-annotations>2.16.1</version.jackson-annotations>
-    <version.swagger-annotations>2.2.29</version.swagger-annotations>
+    <version.swagger-annotations>2.2.30</version.swagger-annotations>
     <version.checker-qual>3.42.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
