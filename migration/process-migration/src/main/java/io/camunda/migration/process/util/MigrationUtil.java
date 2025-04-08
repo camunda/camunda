@@ -19,7 +19,7 @@ public class MigrationUtil {
   public static final Pattern MIGRATION_REPOSITORY_NOT_EXISTS =
       Pattern.compile(
           "no such index \\[[a-zA-Z0-9\\-]+-migration-steps-repository-[0-9]+\\.[0-9]+\\.[0-9]+_]");
-  private static final Logger log = LoggerFactory.getLogger(MigrationUtil.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MigrationUtil.class);
 
   public static ProcessEntity migrate(final ProcessEntity entity) {
     final ProcessEntity processEntity = new ProcessEntity();
@@ -40,7 +40,7 @@ public class MigrationUtil {
                       () -> processEntity.setIsFormEmbedded(false));
               processEntity.setIsPublic(reader.extractIsPublicAccess());
             });
-    log.info(
+    LOGGER.info(
         "Migrating process {} from {} to {}", entity.getBpmnProcessId(), entity, processEntity);
     return processEntity;
   }
