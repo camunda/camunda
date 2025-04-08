@@ -25,6 +25,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -54,6 +56,10 @@ public class OidcAuthOverRestIT {
   private static final String USER_ID_CLAIM_NAME = "sub";
 
   @Container
+  private static final ElasticsearchContainer CONTAINER =
+      TestSearchContainers.createDefeaultElasticsearchContainer();
+
+  @Container
   private static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();
 
   @AutoClose private static CamundaClient defaultMappingClient;
@@ -64,6 +70,7 @@ public class OidcAuthOverRestIT {
       new TestStandaloneBroker()
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
+          .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
