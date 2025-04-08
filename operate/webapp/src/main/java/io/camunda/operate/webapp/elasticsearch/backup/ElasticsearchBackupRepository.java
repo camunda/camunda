@@ -193,9 +193,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                       si -> {
                         final Metadata metadata =
                             Metadata.extractFromMetadataOrName(
-                                objectMapper,
-                                si.userMetadata(),
-                                si.snapshot().getSnapshotId().getName());
+                                objectMapper, si.userMetadata(), si.snapshotId().getName());
                         Long backupId = metadata.getBackupId();
                         // backward compatibility with v. 8.1
                         if (backupId == null) {
@@ -389,7 +387,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
         Metadata.extractFromMetadataOrName(
             objectMapper,
             snapshots.getFirst().userMetadata(),
-            snapshots.getFirst().snapshot().getSnapshotId().getName());
+            snapshots.getFirst().snapshotId().getName());
     final Integer expectedSnapshotsCount = metadata.getPartCount();
     if (snapshots.size() == expectedSnapshotsCount
         && snapshots.stream().map(SnapshotInfo::state).allMatch(s -> SUCCESS.equals(s))) {

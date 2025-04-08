@@ -53,6 +53,7 @@ public class Metadata {
   }
 
   public static Metadata extractMetadataFromSnapshotName(final String snapshotName) {
+    Objects.requireNonNull(snapshotName, "Snapshot name cannot be null");
     final Matcher matcher = METADATA_PATTERN.matcher(snapshotName);
     if (matcher.matches()) {
       final Long backupId = Long.parseLong(matcher.group("backupId"));
