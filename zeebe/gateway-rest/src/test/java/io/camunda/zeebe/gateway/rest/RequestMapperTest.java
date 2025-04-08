@@ -13,26 +13,30 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import io.camunda.authentication.CamundaJwtAuthenticationToken;
 import io.camunda.authentication.entity.AuthenticationContext;
+import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
+import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.zeebe.auth.Authorization;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -109,8 +113,20 @@ class RequestMapperTest {
             Instant.ofEpochSecond(100),
             Map.of("alg", "RSA256"),
             Map.of("sub", sub, "aud", aud, "groups", List.of("g1", "g2")));
-    final JwtAuthenticationToken jwtAuthenticationToken = new JwtAuthenticationToken(jwt);
-    SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationToken);
+
+    final AbstractAuthenticationToken token =
+        new CamundaJwtAuthenticationToken(
+            jwt,
+            new CamundaJwtUser(
+                jwt,
+                new OAuthContext(
+                    new HashSet<>(),
+                    new HashSet<>(),
+                    new AuthenticationContext(
+                        sub, List.of(), List.of(), List.of(), List.of("g1", "g2")))),
+            null,
+            null);
+    SecurityContextHolder.getContext().setAuthentication(token);
   }
 
   private void setOidcAuthenticationInContext(
