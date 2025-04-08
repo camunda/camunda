@@ -7,7 +7,11 @@
 # An example is a pull request that builds upon the work of another pull request.
 
 name: Reject Merge Commits
-on: [pull_request]
+
+# owner: @camunda/monorepo-devops-team
+
+on:
+  pull_request: {}
 
 permissions: {}
 

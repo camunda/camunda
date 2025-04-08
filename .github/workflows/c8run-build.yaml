@@ -1,4 +1,7 @@
+---
 name: "C8Run: build/test"
+
+# owner: @camunda/distribution
 
 on:
   push:

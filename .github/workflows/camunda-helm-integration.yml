@@ -1,5 +1,7 @@
 name: Camunda Helm Chart Integration Test
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   schedule:
     - cron: "0 5 * * *"

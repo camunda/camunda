@@ -1,7 +1,12 @@
+---
 name: Assign new issues to the default projects
+
+# owner: @camunda/monorepo-devops-team
+
 on:
   issues:
     types: [ opened, reopened, transferred, labeled ]
+
 jobs:
   add-to-projects:
     name: Add issue to team projects if no project assigned and by corresponding component label
