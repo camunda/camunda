@@ -140,7 +140,7 @@
         AND j.RETRIES > 0
       </if>
       <if test="filter.hasRetriesLeft == false">
-        AND j.RETRIES = 0
+         AND j.RETRIES = 0
       </if>
       )
     </if>
@@ -203,42 +203,26 @@
         AND pd.VERSION_TAG <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-      <!-- process definition filters -->
-      <if test="filter.processDefinitionNameOperations != null and !filter.processDefinitionNameOperations.isEmpty()">
-        <foreach collection="filter.processDefinitionNameOperations" item="operation">
-          AND pd.NAME <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.processDefinitionVersionOperations != null and !filter.processDefinitionVersionOperations.isEmpty()">
-        <foreach collection="filter.processDefinitionVersionOperations" item="operation">
-          AND pd.VERSION <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.processDefinitionVersionTagOperations != null and !filter.processDefinitionVersionTagOperations.isEmpty()">
-        <foreach collection="filter.processDefinitionVersionTagOperations" item="operation">
-          AND pd.VERSION_TAG <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
 
-      <!-- Variable filters -->
-      <if test="filter.variableFilters != null and !filter.variableFilters.isEmpty()">
-        <foreach collection="filter.variableFilters" item="variableFilter"
-          open="AND (" separator=" AND " close=")">
-          EXISTS (
-          SELECT 1
-          FROM ${prefix}VARIABLE v
-          WHERE v.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-          AND v.VAR_NAME = #{variableFilter.name}
-          <if
-            test="variableFilter.valueOperations != null and !variableFilter.valueOperations.isEmpty()">
-            <foreach collection="variableFilter.valueOperations" item="operation">
-              AND
-              <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
-            </foreach>
-          </if>
-          )
-        </foreach>
-      </if>
+    <!-- Variable filters -->
+    <if test="filter.variableFilters != null and !filter.variableFilters.isEmpty()">
+      <foreach collection="filter.variableFilters" item="variableFilter"
+        open="AND (" separator=" AND " close=")">
+        EXISTS (
+        SELECT 1
+        FROM ${prefix}VARIABLE v
+        WHERE v.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+        AND v.VAR_NAME = #{variableFilter.name}
+        <if
+          test="variableFilter.valueOperations != null and !variableFilter.valueOperations.isEmpty()">
+          <foreach collection="variableFilter.valueOperations" item="operation">
+            AND
+            <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+          </foreach>
+        </if>
+        )
+      </foreach>
+    </if>
 
     <!-- Error message filters -->
     <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
@@ -259,18 +243,6 @@
         AND i.ERROR_MESSAGE_HASH IN <foreach collection="filter.incidentErrorHashCodes" item="value" open="(" separator=", " close=")">#{value}</foreach>
       )
     </if>
-      <!-- Error message filters -->
-      <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
-        <foreach collection="filter.errorMessageOperations" item="operation">
-          AND EXISTS (
-          SELECT 1
-          FROM INCIDENT i
-          WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-          AND i.ERROR_MESSAGE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-          )
-        </foreach>
-      </if>
-    </trim>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
