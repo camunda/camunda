@@ -1,7 +1,12 @@
+---
 name: Assign new issues to the default projects
+
+# owner: @camunda/monorepo-devops-team
+
 on:
   issues:
     types: [ opened, reopened, transferred, labeled ]
+
 jobs:
   add-to-projects:
     name: Add issue to team projects if no project assigned and by corresponding component label
@@ -93,4 +98,3 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/c8run
-  

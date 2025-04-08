@@ -6,6 +6,9 @@
 #   - VAULT_SECRET_ID
 ---
 name: Observe Build Status
+
+# owner: @camunda/monorepo-devops-team
+
 description: Records the build status remotely for analytic purposes
 
 inputs:

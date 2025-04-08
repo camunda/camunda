@@ -1,6 +1,8 @@
 ---
 name: Common paths filter for camunda/camunda
 
+# owner: @camunda/monorepo-devops-team
+
 description: |
   Common filters to detect and group changes against a base branch
   It leverages the `dorny/paths-filter` action to filter paths

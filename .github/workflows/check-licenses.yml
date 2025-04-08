@@ -1,4 +1,7 @@
+---
 name: Check Licenses
+
+# owner: @camunda/monorepo-devops-team
 
 on:
   push:

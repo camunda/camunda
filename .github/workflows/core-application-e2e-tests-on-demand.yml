@@ -1,6 +1,8 @@
+---
 name: Core Application E2E Tests On Demand
-permissions:
-  contents: read
+
+# owner: @camunda/qa-engineering
+
 on:
   workflow_dispatch:
     inputs:
@@ -13,6 +15,9 @@ on:
           - main
           - stable/8.6
           - stable/8.7
+
+permissions:
+  contents: read
 
 jobs:
   core-e2e-component-tests:

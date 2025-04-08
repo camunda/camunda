@@ -1,4 +1,7 @@
+---
 name: "C8Run: Issue Closed"
+
+# owner: @camunda/distribution
 
 on:
   issues:

@@ -1,6 +1,8 @@
 ---
 name: Is Fork
 
+# owner: @camunda/monorepo-devops-team
+
 description: |
   Checks if current job runs on code from a forked repository (via PR).
   This information can be used to disable certain CI features that are not

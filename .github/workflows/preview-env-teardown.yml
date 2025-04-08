@@ -1,5 +1,8 @@
 ---
 name: Preview Env Teardown
+
+# owner: @camunda/monorepo-devops-team
+
 on:
   pull_request:
     types: [unlabeled, closed]

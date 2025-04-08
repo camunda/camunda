@@ -1,6 +1,8 @@
 ---
 name: Collect test artifacts
 
+# owner: @camunda/monorepo-devops-team
+
 description: Collects test outputs and uploads them as artifact
 
 inputs:

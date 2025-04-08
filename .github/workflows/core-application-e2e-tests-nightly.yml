@@ -1,9 +1,14 @@
+---
 name: Core Application E2E Tests Nightly
-permissions:
-  contents: read
+
+# owner: @camunda/qa-engineering
+
 on:
   schedule:
     - cron: "0 0 * * *" # Run all tests at midnight UTC
+
+permissions:
+  contents: read
 
 jobs:
   nightly-tests:

@@ -1,6 +1,8 @@
 ---
 name: CI
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   push:
     branches:
