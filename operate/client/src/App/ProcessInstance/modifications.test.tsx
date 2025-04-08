@@ -31,6 +31,7 @@ import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
+import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
@@ -181,19 +182,13 @@ describe('ProcessInstance - modification mode', () => {
       }),
     );
 
-    mockFetchProcessInstanceListeners().withSuccess({
-      listeners: [],
-      totalCount: 0,
-    });
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 
-    mockFetchProcessInstanceListeners().withSuccess({
-      listeners: [],
-      totalCount: 0,
-    });
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(
@@ -202,10 +197,7 @@ describe('ProcessInstance - modification mode', () => {
       }),
     );
 
-    mockFetchProcessInstanceListeners().withSuccess({
-      listeners: [],
-      totalCount: 0,
-    });
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(screen.getByTestId('apply-modifications-button'));
@@ -388,19 +380,13 @@ describe('ProcessInstance - modification mode', () => {
       screen.getByText('Process Instance Modification Mode'),
     ).toBeInTheDocument();
 
-    mockFetchProcessInstanceListeners().withSuccess({
-      listeners: [],
-      totalCount: 0,
-    });
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 
-    mockFetchProcessInstanceListeners().withSuccess({
-      listeners: [],
-      totalCount: 0,
-    });
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(

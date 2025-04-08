@@ -34,6 +34,7 @@ import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
+import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 
 jest.mock('modules/stores/processInstanceListeners', () => ({
   processInstanceListenersStore: {
@@ -125,10 +126,7 @@ describe('New Variable Modifications', () => {
       },
     ]);
 
-    mockFetchProcessInstanceListeners().withSuccess({
-      listeners: [],
-      totalCount: 0,
-    });
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
