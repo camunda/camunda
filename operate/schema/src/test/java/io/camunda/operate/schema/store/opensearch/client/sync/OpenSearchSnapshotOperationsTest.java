@@ -25,6 +25,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
@@ -83,8 +85,9 @@ class OpenSearchSnapshotOperationsTest {
     assertThat(exception).hasMessage("Failed to get repository test-repository");
   }
 
-  @Test
-  void shouldGetSnapshot() throws IOException {
+  @ParameterizedTest
+  @ValueSource(strings = {"true", "false"})
+  void shouldGetSnapshot(final boolean verbose) throws IOException {
     final Map<String, Object> openSearchResponse =
         Map.of(
             "snapshots",
@@ -102,26 +105,31 @@ class OpenSearchSnapshotOperationsTest {
                     Map.of(),
                     "failures",
                     List.of())));
-    when(openSearchClient.arbitraryRequest("GET", "/_snapshot/test-repository/test-snapshot", "{}"))
+    when(openSearchClient.arbitraryRequest(
+            "GET", "/_snapshot/test-repository/test-snapshot?verbose=" + verbose, "{}"))
         .thenReturn(openSearchResponse);
     final var response =
         snapshotOperations.get(
-            getSnapshotRequestBuilder("test-repository", "test-snapshot").build());
+            getSnapshotRequestBuilder("test-repository", "test-snapshot").verbose(verbose).build());
     assertThat(response.snapshots()).hasSize(1);
     final var snapshotInfo = response.snapshots().getFirst();
     assertSnapshotInfo(snapshotInfo);
   }
 
-  @Test
-  void shouldThrowExceptionIfCantGetSnapshot() throws Exception {
-    when(openSearchClient.arbitraryRequest("GET", "/_snapshot/test-repository/test-snapshot", "{}"))
+  @ParameterizedTest
+  @ValueSource(strings = {"true", "false"})
+  void shouldThrowExceptionIfCantGetSnapshot(final boolean verbose) throws Exception {
+    when(openSearchClient.arbitraryRequest(
+            "GET", "/_snapshot/test-repository/test-snapshot?verbose=" + verbose, "{}"))
         .thenThrow(new IOException("Connection error"));
     final var exception =
         assertThrows(
             OperateRuntimeException.class,
             () ->
                 snapshotOperations.get(
-                    getSnapshotRequestBuilder("test-repository", "test-snapshot").build()));
+                    getSnapshotRequestBuilder("test-repository", "test-snapshot")
+                        .verbose(verbose)
+                        .build()));
     assertThat(exception)
         .hasMessage("Failed to get snapshot test-snapshot in repository test-repository");
     assertThat(exception.getCause()).isInstanceOf(IOException.class);
