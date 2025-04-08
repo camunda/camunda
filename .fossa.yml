@@ -29,7 +29,7 @@ targets:
     target: io.camunda:camunda-qa
   - type: maven
     path: bom/
-    target: io.camunda:camunda-qa-integration-tests
+    target: io.camunda:camunda-qa-acceptance-tests
   - type: maven
     path: bom/
     target: io.camunda:camunda-qa-util
