@@ -55,13 +55,15 @@ export const Header = styled.div`
 
 export const LicenseInfo = styled.div`
   width: 100%;
-  font-size: ${spacing04};
-  font-weight: 400;
+  color: var(--cds-text-secondary);
+  font-size: var(--cds-legal-01-font-size);
+  font-weight: var(--cds-legal-01-font-weight);
   text-align: center;
-  line-height: 1.3333;
+  line-height: var(--cds-legal-01-line-height);
+  letter-spacing: var(--cds-legal-01-letter-spacing);
 
   a {
-    font-size: ${spacing04};
+    font-size: var(--cds-legal-01-font-size);
   }
 `;
 
