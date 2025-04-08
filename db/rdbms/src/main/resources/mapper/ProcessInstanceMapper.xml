@@ -69,10 +69,13 @@
     <where>
       <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
       <if test="filter.orOperations != null and !filter.orOperations.isEmpty()">
-        AND
-        <foreach open="(" close=")" collection="filter.orOperations" item="filter" separator=" OR ">
-          <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
+        AND (
+        <foreach collection="filter.orOperations" item="filter" separator=" OR ">
+          <trim prefix="(" suffix=")">
+            <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
+          </trim>
         </foreach>
+          )
       </if>
     </where>
     ) t
