@@ -84,6 +84,13 @@ public class ElasticsearchAdapter implements Adapter {
                       || res.items().isEmpty()
                       || res.items().stream().allMatch(i -> i.error() != null));
       LOGGER.info("Migrated {} entities res {}", idList, response);
+      client.indices().refresh();
+      final SearchRequest request =
+          new SearchRequest.Builder().index(processIndex.getFullQualifiedName()).build();
+      final var resp = client.search(request, ProcessEntity.class);
+      resp.hits().hits().stream()
+          .map(Hit::source)
+          .forEach(e -> LOGGER.info("After Migration search Entity: {}", e));
     } catch (final Exception e) {
       throw new MigrationException("Failed to migrate entities %s".formatted(idList), e);
     }
