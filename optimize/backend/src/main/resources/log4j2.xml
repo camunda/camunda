@@ -15,7 +15,10 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="io.camunda.optimize" level="info" />
+    <Logger name="io.camunda.optimize" level="${env:OPTIMIZE_LOG_LEVEL:-info}" />
+    <Logger name="io.camunda.optimize.update" level="${env:UPGRADE_LOG_LEVEL:-info}" />
+    <Logger name="org.elasticsearch" level="${env:ES_LOG_LEVEL:-warn}" />
+
     <Root level="info">
       <AppenderRef ref="${env:OPTIMIZE_LOG_APPENDER:-Console}"/>
     </Root>
