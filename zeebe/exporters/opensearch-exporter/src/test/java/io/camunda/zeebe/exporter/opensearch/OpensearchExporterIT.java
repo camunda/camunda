@@ -82,7 +82,7 @@ final class OpensearchExporterIT {
   @BeforeAll
   public void beforeAll() {
     config.url = CONTAINER.getHttpHostAddress();
-    config.setZeebeRecordsExportEnabled(true);
+    config.setExportLegacyRecords(true);
     config.index.setNumberOfShards(1);
     config.index.setNumberOfReplicas(1);
     config.index.createTemplate = true;
@@ -108,7 +108,7 @@ final class OpensearchExporterIT {
 
   @BeforeEach
   void cleanup() {
-    config.setZeebeRecordsExportEnabled(true);
+    config.setExportLegacyRecords(true);
     testClient.deleteIndices();
     testClient.deleteIndexTemplates();
     configureExporter(true);
@@ -318,7 +318,7 @@ final class OpensearchExporterIT {
   @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
   void shouldExportOnlyRequiredRecords(final ValueType valueType) {
     // given
-    config.setZeebeRecordsExportEnabled(false);
+    config.setExportLegacyRecords(false);
     exporter.configure(exporterTestContext);
     exporter.open(controller);
 
@@ -354,7 +354,7 @@ final class OpensearchExporterIT {
   @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
   void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
     // given
-    config.setZeebeRecordsExportEnabled(false);
+    config.setExportLegacyRecords(false);
     exporter.configure(exporterTestContext);
     exporter.open(controller);
 

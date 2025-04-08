@@ -142,7 +142,7 @@ public class OpensearchExporter implements Exporter {
    */
   private boolean shouldExportRecord(final Record<?> record) {
     final var recordVersion = getVersion(record.getBrokerVersion());
-    if (configuration.getIsZeebeRecordsExportEnabled()
+    if (configuration.getIsExportLegacyRecords()
         || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
       return true;
     }

@@ -29,7 +29,7 @@ public class ElasticsearchExporterConfiguration {
   public final RetentionConfiguration retention = new RetentionConfiguration();
   public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
-  private boolean zeebeRecordsExportEnabled = false;
+  private boolean exportLegacyRecords = false;
 
   public boolean hasAuthenticationPresent() {
     return getAuthentication().isPresent();
@@ -138,12 +138,12 @@ public class ElasticsearchExporterConfiguration {
     };
   }
 
-  public boolean getIsZeebeRecordsExportEnabled() {
-    return zeebeRecordsExportEnabled;
+  public boolean getIsExportLegacyRecords() {
+    return exportLegacyRecords;
   }
 
-  public void setZeebeRecordsExportEnabled(final boolean zeebeRecordsExportEnabled) {
-    this.zeebeRecordsExportEnabled = zeebeRecordsExportEnabled;
+  public void setExportLegacyRecords(final boolean exportLegacyRecords) {
+    this.exportLegacyRecords = exportLegacyRecords;
   }
 
   public static class IndexConfiguration {
