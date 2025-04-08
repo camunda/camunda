@@ -110,8 +110,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
               stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
             },
             () -> {
-              final var errorMessage =
-                  GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupKey());
+              final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupId());
               rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
             });
 
