@@ -29,6 +29,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.FlowNodeInstanceType;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.response.FlowNodeInstance;
@@ -677,13 +678,13 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.state(b -> b.neq(ACTIVE)))
+            .filter(f -> f.state(b -> b.neq(ProcessInstanceState.ACTIVE)))
             .send()
             .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items()).extracting("state").doesNotContain(ACTIVE);
+    assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceState.ACTIVE);
   }
 
   @Test
