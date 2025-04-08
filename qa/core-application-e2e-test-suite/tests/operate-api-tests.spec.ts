@@ -23,25 +23,30 @@ test.beforeAll(async () => {
 
 test.describe('API tests', () => {
   test.use({
-    storageState: 'utils/.auth',
+    storageState: 'utils/.auth_operate',
     baseURL: baseURL,
   });
 
   test('Search for process definitions', async ({request}) => {
-    const processDefinitionsList = await request.post(
+    const processDefinition = await request.post(
       '/v1/process-definitions/search',
     );
-    expect(processDefinitionsList.status()).toBe(200);
+    expect(processDefinition.status()).toBe(200);
   });
 
   test('Get a process definition via key', async ({request}) => {
-    const searchProcessDefinitions = await request.post(
-      '/v1/process-definitions/search',
-    );
-    const processKey = await searchProcessDefinitions.json();
-    expect(processKey.items.length).toBeGreaterThan(0);
+    let processDefinitions: {items: {key: number}[]} = {items: []};
+    await expect(async () => {
+      const response = await request.post('/v1/process-definitions/search');
+      expect(response.status()).toBe(200);
+      processDefinitions = await response.json();
+      expect(processDefinitions.items.length).toBeGreaterThan(0);
+    }).toPass({
+      intervals: [3_000, 4_000, 5_000],
+      timeout: 30_000,
+    });
     const response = await request.get(
-      '/v1/process-definitions/' + processKey.items[0].key,
+      `/v1/process-definitions/${processDefinitions.items[0].key}`,
     );
     expect(response.status()).toBe(200);
   });
