@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
@@ -57,6 +58,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
   private final TenantState tenantState;
   private final MembershipState membershipState;
   private final RoleState roleState;
+  private final GroupState groupState;
 
   public UserDeleteProcessor(
       final KeyGenerator keyGenerator,
@@ -69,6 +71,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
     roleState = state.getRoleState();
+    groupState = state.getGroupState();
     membershipState = state.getMembershipState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -161,12 +164,19 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
               .setEntityType(EntityType.USER));
     }
 
-    for (final var groupKey : user.getGroupKeysList()) {
+    for (final var groupId :
+        membershipState.getMemberships(
+            EntityType.USER,
+            // TODO: use the username instead of the userKey
+            Long.toString(userKey),
+            RelationType.GROUP)) {
+      final var group = groupState.get(groupId).orElseThrow();
       stateWriter.appendFollowUpEvent(
-          groupKey,
+          group.getGroupKey(),
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
-              .setGroupKey(groupKey)
+              .setGroupKey(group.getGroupKey())
+              .setGroupId(groupId)
               .setEntityKey(userKey)
               .setEntityType(EntityType.USER));
     }
