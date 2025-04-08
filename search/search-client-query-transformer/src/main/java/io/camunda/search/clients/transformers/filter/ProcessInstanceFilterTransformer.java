@@ -124,7 +124,7 @@ public final class ProcessInstanceFilterTransformer
 
     if (filter.orOperations() != null && !filter.orOperations().isEmpty()) {
       final var orQueries = new ArrayList<SearchQuery>();
-      filter.orOperations().stream().map(this::toSearchQueryFields).forEach(orQueries::addAll);
+      filter.orOperations().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
       queries.add(or(orQueries));
     }
 

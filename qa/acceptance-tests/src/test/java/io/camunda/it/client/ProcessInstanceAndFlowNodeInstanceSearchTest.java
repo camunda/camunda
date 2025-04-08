@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.client.api.search.enums.ProcessInstanceState.ACTIVE;
 import static io.camunda.client.api.search.enums.ProcessInstanceState.COMPLETED;
+import static io.camunda.client.api.search.enums.ProcessInstanceState.TERMINATED;
 import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
@@ -28,7 +29,6 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.FlowNodeInstanceType;
-import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.response.FlowNodeInstance;
@@ -472,7 +472,114 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldQueryProcessInstancesByOrFilters() {
+  void shouldQueryBySingleOrConditionOnly() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.or(List.of(f2 -> f2.state(ACTIVE))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).size().isEqualTo(4);
+  }
+
+  @Test
+  void shouldQueryByMultipleOrConditionsOnly() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.or(List.of(f2 -> f2.state(ACTIVE), f3 -> f3.hasIncident(true))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).size().isEqualTo(4);
+  }
+
+  @Test
+  void shouldQueryBySingleAndSingleOrCondition() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.endDate(d -> d.exists(false)).or(List.of(f2 -> f2.hasIncident(false))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items()).filteredOn(pi -> pi.getEndDate() == null).hasSize(3);
+    assertThat(result.items()).filteredOn(pi -> !pi.getHasIncident()).hasSize(3);
+  }
+
+  @Test
+  void shouldQueryByMultipleAndMultipleOrConditions() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.tenantId("<default>")
+                        .processDefinitionId(
+                            f2 ->
+                                f2.in(
+                                    "incident_process_v1",
+                                    "parent_process_v1",
+                                    "child_process_v1",
+                                    "manual_process",
+                                    "service_tasks_v1"))
+                        .or(
+                            List.of(
+                                f3 -> f3.state(ACTIVE).processDefinitionId("service_tasks_v1"),
+                                f4 -> f4.state(ACTIVE).hasIncident(true))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v1", "incident_process_v1");
+  }
+
+  @Test
+  void shouldNotQueryIfNoOrConditionMatches() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.or(
+                        List.of(
+                            f2 -> f2.state(TERMINATED),
+                            f2 -> f2.processDefinitionId("non-existent"))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldIgnoreEmptyOrCondition() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.tenantId("<default>").or(Collections.emptyList()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).size().isEqualTo(7);
+  }
+
+  @Test
+  void shouldQueryByOverlappingOrConditions() {
     // when
     final var result =
         camundaClient
@@ -481,18 +588,66 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
                 f ->
                     f.tenantId("<default>")
                         .or(
-                            Arrays.asList(
-                                f2 -> f2.hasIncident(true),
-                                f3 ->
-                                    f3.processDefinitionId(
-                                        b -> b.in("manual_process", "child_process_v1")))))
+                            List.of(
+                                f2 -> f2.state(ACTIVE), f3 -> f3.state(ACTIVE).hasIncident(true))))
             .send()
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
-        .containsExactlyInAnyOrder("manual_process", "child_process_v1", "incident_process_v1");
+    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items()).filteredOn(pi -> "ACTIVE".equals(pi.getState().name())).hasSize(4);
+    assertThat(result.items()).filteredOn(ProcessInstance::getHasIncident).hasSize(1);
+  }
+
+  @Test
+  void shouldIgnoreConflictingNestedOrWithAndConditions() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.hasIncident(false).or(List.of(f2 -> f2.state(ACTIVE).hasIncident(true))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldIgnoreDuplicateOrConditions() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.or(
+                        List.of(
+                            f2 -> f2.state(ACTIVE),
+                            f3 -> f3.state(ACTIVE),
+                            f4 -> f4.state(ACTIVE))))
+            .send()
+            .join();
+    // then
+    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items()).allMatch(pi -> pi.getState().name().equals("ACTIVE"));
+  }
+
+  @Test
+  void shouldNotQueryIfAndConflictsWithOr() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.state(ACTIVE)
+                        .or(List.of(f2 -> f2.state(COMPLETED), f3 -> f3.state(TERMINATED))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(0);
   }
 
   @Test
@@ -522,13 +677,13 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.state(b -> b.neq(ProcessInstanceState.ACTIVE)))
+            .filter(f -> f.state(b -> b.neq(ACTIVE)))
             .send()
             .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceState.ACTIVE);
+    assertThat(result.items()).extracting("state").doesNotContain(ACTIVE);
   }
 
   @Test
