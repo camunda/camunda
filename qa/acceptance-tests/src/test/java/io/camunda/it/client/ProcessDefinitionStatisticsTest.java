@@ -203,8 +203,8 @@ public class ProcessDefinitionStatisticsTest {
   void shouldGetStatisticsAndFilterByEndDateExists() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
     waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(2, processDefinitionKey);
     final var userTask = getUserTask(processDefinitionKey);
@@ -232,8 +232,8 @@ public class ProcessDefinitionStatisticsTest {
   void shouldGetStatisticsAndFilterByEndDateNotExists() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
     waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(2, processDefinitionKey);
     final var userTask = getUserTask(processDefinitionKey);
@@ -261,9 +261,9 @@ public class ProcessDefinitionStatisticsTest {
   void shouldGetStatisticsAndFilterByStateActive() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
     waitForProcessInstances(3, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(3, processDefinitionKey);
     final var userTask = getUserTask(processDefinitionKey);
@@ -307,8 +307,8 @@ public class ProcessDefinitionStatisticsTest {
             .getFirst()
             .getProcessDefinitionKey();
 
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
     waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(6, processDefinitionKey);
 
@@ -329,8 +329,8 @@ public class ProcessDefinitionStatisticsTest {
   void shouldGetStatisticsAndFilterByStateNotEq() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
     waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(2, processDefinitionKey);
     final var userTask = getUserTask(processDefinitionKey);
