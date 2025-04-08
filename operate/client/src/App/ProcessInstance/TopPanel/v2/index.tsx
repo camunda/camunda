@@ -278,7 +278,7 @@ const TopPanel: React.FC = observer(() => {
               overlaysData={
                 isModificationModeEnabled
                   ? [
-                      ...(flowNodeStateOverlays || []),
+                      ...(flowNodeStateOverlays ?? []),
                       ...modificationBadgesPerFlowNode.get(),
                     ]
                   : flowNodeStateOverlays

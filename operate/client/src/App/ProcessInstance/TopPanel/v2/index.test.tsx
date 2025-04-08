@@ -185,13 +185,17 @@ describe('TopPanel', () => {
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
 
-    expect(
-      screen.queryByText('Incidents View - 1 result'),
-    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Incidents View - 1 result'),
+      ).not.toBeInTheDocument(),
+    );
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
-    expect(screen.getByText('Incidents View - 1 result')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Incidents View - 1 result'),
+    ).toBeInTheDocument();
 
     await user.click(await screen.findByTitle('View 1 Incident in Instance 1'));
 
