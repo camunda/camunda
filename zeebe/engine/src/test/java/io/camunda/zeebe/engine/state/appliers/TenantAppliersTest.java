@@ -120,9 +120,9 @@ public class TenantAppliersTest {
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntityType(tenantId, groupId).get()).isEqualTo(EntityType.GROUP);
-    final var persistedGroup = groupState.get(groupId).get();
-    assertThat(persistedGroup.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(
+            membershipState.hasRelation(EntityType.GROUP, groupId, RelationType.TENANT, tenantId))
+        .isTrue();
   }
 
   @Test
@@ -227,10 +227,9 @@ public class TenantAppliersTest {
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // Ensure the group is associated with the tenant before removal
-    assertThat(tenantState.getEntitiesByType(tenantId).get(EntityType.GROUP))
-        .containsExactly(groupId);
-    final var persistedGroup = groupState.get(groupId).get();
-    assertThat(persistedGroup.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(
+            membershipState.hasRelation(EntityType.GROUP, groupId, RelationType.TENANT, tenantId))
+        .isTrue();
 
     // when
     final var tenantRecordToRemove =
@@ -241,9 +240,9 @@ public class TenantAppliersTest {
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecordToRemove);
 
     // then
-    assertThat(tenantState.getEntitiesByType(tenantId)).isEmpty();
-    final var updatedGroup = groupState.get(groupId).get();
-    assertThat(updatedGroup.getTenantIdsList()).isEmpty();
+    assertThat(
+            membershipState.hasRelation(EntityType.GROUP, groupId, RelationType.TENANT, tenantId))
+        .isFalse();
   }
 
   private TenantRecord createTenant(final long tenantKey, final String tenantId) {

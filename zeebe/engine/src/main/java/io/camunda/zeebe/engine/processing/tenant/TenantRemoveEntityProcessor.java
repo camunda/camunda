@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
@@ -34,7 +33,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class TenantRemoveEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
   private final TenantState tenantState;
-  private final GroupState groupState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -50,7 +48,6 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
-    groupState = state.getGroupState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
@@ -108,49 +105,11 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final TypedRecord<TenantRecord> command, final String tenantId) {
     final var entityType = command.getValue().getEntityType();
     final var entityId = command.getValue().getEntityId();
-
-    return switch (entityType) {
-      case USER -> checkUserAssignment(entityId, command, tenantId);
-      case GROUP -> checkGroupAssignment(entityId, command, tenantId);
-      default ->
-          throw new IllegalStateException(
-              formatErrorMessage(EntityType.UNSPECIFIED, entityId, tenantId, "doesn't exist"));
-    };
-  }
-
-  private boolean checkUserAssignment(
-      final String entityId, final TypedRecord<TenantRecord> command, final String tenantId) {
-    if (!membershipState.hasRelation(EntityType.USER, entityId, RelationType.TENANT, tenantId)) {
-      createNotAssignedRejectCommand(command, entityId, EntityType.USER, tenantId);
+    if (!membershipState.hasRelation(entityType, entityId, RelationType.TENANT, tenantId)) {
+      createNotAssignedRejectCommand(command, entityId, entityType, tenantId);
       return false;
     }
     return true;
-  }
-
-  private boolean checkGroupAssignment(
-      final String entityId, final TypedRecord<TenantRecord> command, final String tenantId) {
-    final var group = groupState.get(entityId);
-    if (group.isEmpty()) {
-      createEntityNotExistRejectCommand(command, entityId, EntityType.GROUP, tenantId);
-      return false;
-    }
-
-    if (!group.get().getTenantIdsList().contains(tenantId)) {
-      createNotAssignedRejectCommand(command, entityId, EntityType.GROUP, tenantId);
-      return false;
-    }
-    return true;
-  }
-
-  private void createEntityNotExistRejectCommand(
-      final TypedRecord<TenantRecord> command,
-      final String entityId,
-      final EntityType entityType,
-      final String tenantId) {
-    rejectCommand(
-        command,
-        RejectionType.NOT_FOUND,
-        formatErrorMessage(entityType, entityId, tenantId, "doesn't exist"));
   }
 
   private void createNotAssignedRejectCommand(
@@ -158,20 +117,13 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final String entityId,
       final EntityType entityType,
       final String tenantId) {
+    final var entityName = entityType.name().toLowerCase();
     rejectCommand(
         command,
         RejectionType.NOT_FOUND,
-        formatErrorMessage(entityType, entityId, tenantId, "is not assigned to this tenant"));
-  }
-
-  private String formatErrorMessage(
-      final EntityType entityType,
-      final String entityId,
-      final String tenantId,
-      final String reason) {
-    final var entityName = entityType.name().toLowerCase();
-    return "Expected to remove %s with ID '%s' from tenant with ID '%s', but the %s %s."
-        .formatted(entityName, entityId, tenantId, entityName, reason);
+        "Expected to remove %s with ID '%s' from tenant with ID '%s', but the %s %s."
+            .formatted(
+                entityName, entityId, tenantId, entityName, "is not assigned to this tenant"));
   }
 
   private void rejectCommandWithUnauthorizedError(

@@ -213,10 +213,8 @@ public final class AuthorizationCheckBehavior {
     final var groupIds =
         membershipState.getMemberships(
             EntityType.USER, Long.toString(user.getUserKey()), RelationType.GROUP);
-    // TODO: use group id instead of converting to a key when groups are id-based
-    final var groupKeys = groupIds.stream().map(Long::parseLong).collect(Collectors.toSet());
 
-    return areGroupsAuthorizedForTenant(groupKeys, tenantId);
+    return areGroupsAuthorizedForTenant(groupIds, tenantId);
   }
 
   private boolean isMappingAuthorizedForTenant(
@@ -233,33 +231,33 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
-    final var groupKeys =
+    final var groupIds =
         persistedMappings.stream()
             .flatMap(persistedMapping -> persistedMapping.getGroupKeysList().stream())
+            // TODO: Use actual group id instead of key
+            .map(key -> Long.toString(key))
             .collect(Collectors.toSet());
 
-    return areGroupsAuthorizedForTenant(groupKeys, tenantId);
+    return areGroupsAuthorizedForTenant(groupIds, tenantId);
   }
 
-  private boolean areGroupsAuthorizedForTenant(final List<Long> groupKeys, final String tenantId) {
-    return areGroupsAuthorizedForTenant(new HashSet<>(groupKeys), tenantId);
+  private boolean areGroupsAuthorizedForTenant(
+      final Collection<String> groupIds, final String tenantId) {
+    for (final var groupId : groupIds) {
+      if (membershipState.hasRelation(EntityType.GROUP, groupId, RelationType.TENANT, tenantId)) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  private boolean areGroupsAuthorizedForTenant(final Set<Long> groupKeys, final String tenantId) {
-    return getTenantIdsForGroups(groupKeys).contains(tenantId);
-  }
-
-  private Set<String> getTenantIdsForGroups(final List<Long> groupKeys) {
-    return getTenantIdsForGroups(new HashSet<>(groupKeys));
-  }
-
-  private Set<String> getTenantIdsForGroups(final Set<Long> groupKeys) {
-    return groupKeys.stream()
-        .map(groupState::get)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .flatMap(group -> group.getTenantIdsList().stream())
-        .collect(Collectors.toSet());
+  private Set<String> getTenantIdsForGroups(final Collection<String> groupIds) {
+    final var tenantIds = new HashSet<String>();
+    for (final var groupId : groupIds) {
+      tenantIds.addAll(
+          membershipState.getMemberships(EntityType.GROUP, groupId, RelationType.TENANT));
+    }
+    return tenantIds;
   }
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
@@ -458,10 +456,7 @@ public final class AuthorizationCheckBehavior {
                 final var groupIds =
                     membershipState.getMemberships(
                         EntityType.USER, Long.toString(user.getUserKey()), RelationType.GROUP);
-                // TODO: use group id instead of converting to a key when groups are id-based
-                final var groupKeys =
-                    groupIds.stream().map(Long::parseLong).collect(Collectors.toSet());
-                tenantIds.addAll(getTenantIdsForGroups(groupKeys));
+                tenantIds.addAll(getTenantIdsForGroups(groupIds));
                 return tenantIds;
               })
           .filter(t -> !t.isEmpty())
@@ -474,7 +469,11 @@ public final class AuthorizationCheckBehavior {
             .flatMap(
                 mapping -> {
                   final var tenantIdsList = mapping.getTenantIdsList();
-                  tenantIdsList.addAll(getTenantIdsForGroups(mapping.getGroupKeysList()));
+                  final var groupIds =
+                      mapping.getGroupKeysList().stream()
+                          .map(key -> Long.toString(key))
+                          .collect(Collectors.toSet());
+                  tenantIdsList.addAll(getTenantIdsForGroups(groupIds));
                   return tenantIdsList.stream();
                 })
             .toList();
