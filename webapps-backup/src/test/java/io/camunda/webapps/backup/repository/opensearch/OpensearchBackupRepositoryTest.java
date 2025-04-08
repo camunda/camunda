@@ -14,7 +14,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +27,8 @@ import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.TestSnapshotProvider;
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -62,13 +65,13 @@ class OpensearchBackupRepositoryTest {
   private final long incompleteCheckTimeoutLength =
       BackupRepositoryProps.defaultIncompleteCheckTimeoutInSeconds() * 1000;
   private long now;
-  private final TestSnapshotProvider snapshotNameProvider = new TestSnapshotProvider();
+  private final SnapshotNameProvider snapshotNameProvider = new WebappsSnapshotNameProvider();
 
   @BeforeEach
   public void setUp() {
     repository =
         new OpensearchBackupRepository(
-            openSearchClient, openSearchAsyncClient, backupProps, new TestSnapshotProvider());
+            openSearchClient, openSearchAsyncClient, backupProps, snapshotNameProvider);
     now = Instant.now().toEpochMilli();
   }
 
@@ -78,7 +81,7 @@ class OpensearchBackupRepositoryTest {
     final var response = emptyResponse();
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(response);
 
-    assertThat(repository.getBackups("repo")).isEmpty();
+    assertThat(repository.getBackups("repo", true)).isEmpty();
   }
 
   @Test
@@ -96,7 +99,7 @@ class OpensearchBackupRepositoryTest {
 
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(response);
 
-    final var snapshotDtoList = repository.getBackups("repo");
+    final var snapshotDtoList = repository.getBackups("repo", true);
     assertThat(snapshotDtoList).hasSize(1);
 
     final var snapshotDto = snapshotDtoList.get(0);
@@ -118,7 +121,7 @@ class OpensearchBackupRepositoryTest {
     final var snapshotRequest =
         new BackupService.SnapshotRequest(
             "repo",
-            "camunda_operate_1_2",
+            "camunda_webapps_1_8.7.0_part_1_of_1",
             new SnapshotIndexCollection(List.of("index-1", "index-2"), List.of("index-3")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> {};
@@ -146,7 +149,7 @@ class OpensearchBackupRepositoryTest {
     final var snapshotRequest =
         new SnapshotRequest(
             "repo",
-            "camunda_operate_1_2",
+            "camunda_webapps_1_8.7.0_part_1_of_1",
             new SnapshotIndexCollection(List.of("index-1", "index-2"), List.of("index-3")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> fail("Should execute snapshot with failures.");
@@ -427,6 +430,34 @@ class OpensearchBackupRepositoryTest {
     assertThat(result.size()).isEqualTo(0);
     verify(openSearchClient.indices(), atLeastOnce())
         .get((GetIndexRequest) argThat(r -> ((GetIndexRequest) r).ignoreUnavailable()));
+  }
+
+  @Test
+  void shouldForwardVerboseFlagToOpensearch() throws IOException {
+    final var metadata = new Metadata(5L, "1", 1, 3);
+    final var snapshotInfos = List.of(mock(SnapshotInfo.class));
+    when(snapshotInfos.getFirst().snapshot())
+        .thenReturn(snapshotNameProvider.getSnapshotName(metadata));
+    when(snapshotInfos.getLast().state()).thenReturn(SnapshotState.IN_PROGRESS.name());
+    final var response = mock(GetSnapshotResponse.class, RETURNS_DEEP_STUBS);
+    when(response.snapshots()).thenReturn(snapshotInfos);
+    when(openSearchClient.snapshot().get(any(GetSnapshotRequest.class))).thenReturn(response);
+    final var snapshotDtoList = repository.getBackups("repo", false);
+    verify(openSearchClient.snapshot()).get(argThat((GetSnapshotRequest req) -> !req.verbose()));
+
+    assertThat(snapshotDtoList)
+        .singleElement()
+        .satisfies(
+            backup -> {
+              assertThat(backup.getBackupId()).isEqualTo(5L);
+              assertThat(backup.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
+              assertThat(backup.getDetails())
+                  .allSatisfy(
+                      d -> {
+                        assertThat(d.getStartTime()).isNull();
+                        assertThat(d.getState()).isEqualTo(BackupStateDto.IN_PROGRESS.name());
+                      });
+            });
   }
 
   private SnapshotInfo.Builder defaultFields(final SnapshotInfo.Builder b) {

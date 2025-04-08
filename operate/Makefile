@@ -18,9 +18,10 @@ env-up:
 env-os-up:
 	docker compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild \
-	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
-	&& CAMUNDA_OPERATE_DATABASE=opensearch \
-	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth
+	&& 	CAMUNDA_OPERATE_TASKLIST_URL="http://localhost:8081" \
+      CAMUNDA_OPERATE_DATABASE=opensearch \
+      CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test \
+         mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth
 
 # Look up for users (bender/bender etc) in: https://github.com/rroemhild/docker-test-openldap
 .PHONY: env-ldap-up

@@ -18,6 +18,10 @@ public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
   private static final String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
   private static final Pattern BACKUPID_PATTERN =
       Pattern.compile(SNAPSHOT_NAME_PREFIX + "(\\d*)_.*");
+  private static final Pattern METADATA_PATTERN =
+      Pattern.compile(
+          SNAPSHOT_NAME_PREFIX
+              + "(?<backupId>\\d+)_(?<version>[^_]+)_part_(?<index>\\d+)_of_(?<count>\\d+)");
 
   @Override
   public String getSnapshotNamePrefix(final long backupId) {
@@ -40,6 +44,22 @@ public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
       return Long.valueOf(matcher.group(1));
     } else {
       throw new BackupException("Unable to extract backupId. Snapshot name: " + snapshotName);
+    }
+  }
+
+  @Override
+  public Metadata extractMetadataFromSnapshotName(final String snapshotName) {
+    final Matcher matcher = METADATA_PATTERN.matcher(snapshotName);
+    if (matcher.matches()) {
+      final Long backupId = Long.parseLong(matcher.group("backupId"));
+      final String version = matcher.group("version");
+      final Integer index = Integer.parseInt(matcher.group("index"));
+      final Integer count = Integer.parseInt(matcher.group("count"));
+
+      return new Metadata(backupId, version, index, count);
+    } else {
+      throw new IllegalArgumentException(
+          "Unable to extract metadata. Snapshot name: " + snapshotName);
     }
   }
 

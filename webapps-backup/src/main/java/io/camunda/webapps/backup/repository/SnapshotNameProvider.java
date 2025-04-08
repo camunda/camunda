@@ -16,5 +16,7 @@ public interface SnapshotNameProvider {
 
   Long extractBackupId(String snapshotName);
 
+  Metadata extractMetadataFromSnapshotName(final String snapshotName);
+
   String snapshotNamePrefix();
 }

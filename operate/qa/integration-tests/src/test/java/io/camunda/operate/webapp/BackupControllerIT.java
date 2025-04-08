@@ -40,6 +40,7 @@ import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.webapps.backup.Metadata;
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.backup.repository.elasticsearch.MetadataMarshaller;
 import io.camunda.webapps.controllers.BackupController;
@@ -90,8 +91,9 @@ public class BackupControllerIT {
   private ElasticsearchClient elasticsearchClient;
 
   private final JsonpMapper jsonpMapper = new JacksonJsonpMapper();
+  private final SnapshotNameProvider snapshotNameProvider = new WebappsSnapshotNameProvider();
 
-  @MockBean(name = "esClient")
+  @MockBean(name = "esClient", answer = Answers.RETURNS_DEEP_STUBS)
   private RestHighLevelClient esClient;
 
   @MockBean(name = "zeebeEsClient")
@@ -500,7 +502,7 @@ public class BackupControllerIT {
         String.format(
             "No repository with name [%s] could be found.",
             operateProperties.getBackup().getRepositoryName());
-    assertReturnsError(() -> backupController.getBackups(), 404, expectedMessage);
+    assertReturnsError(() -> backupController.getBackups(true), 404, expectedMessage);
 
     verify(elasticsearchClient, times(1)).snapshot();
   }
@@ -511,7 +513,7 @@ public class BackupControllerIT {
         mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
     when(elsEx.error().type()).thenReturn(SNAPSHOT_MISSING_EXCEPTION_TYPE);
     mockGetWithException(elsEx);
-    final var response = backupController.getBackups();
+    final var response = backupController.getBackups(true);
 
     assertThat((List<HistoryBackupInfo>) response.getBody()).isEmpty();
   }
@@ -526,7 +528,7 @@ public class BackupControllerIT {
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
             operateProperties.getBackup().getRepositoryName());
-    assertReturnsError(() -> backupController.getBackups(), 502, expectedMessage);
+    assertReturnsError(() -> backupController.getBackups(true), 502, expectedMessage);
   }
 
   @Test
@@ -567,7 +569,7 @@ public class BackupControllerIT {
     mockGetWithReturn(
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
-    final var backups = (List<HistoryBackupInfo>) backupController.getBackups().getBody();
+    final var backups = (List<HistoryBackupInfo>) backupController.getBackups(true).getBody();
     assertThat(backups).hasSize(3);
 
     final var backup3 =
@@ -625,13 +627,52 @@ public class BackupControllerIT {
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1));
     mockGetWithReturn(returnedResponse);
 
-    final var backups = (List<HistoryBackupInfo>) backupController.getBackups().getBody();
+    final var backups = (List<HistoryBackupInfo>) backupController.getBackups(true).getBody();
     assertThat(backups).hasSize(1);
     final HistoryBackupInfo backup1 = backups.get(0);
     assertThat(backup1.getState()).isEqualTo(COMPLETED);
     assertThat(backup1.getBackupId()).isEqualTo(new BigDecimal(backupId1));
     assertThat(backup1.getFailureReason()).isNull();
     assertBackupDetails(List.of(snapshotInfo11, snapshotInfo12), backup1);
+  }
+
+  @Test
+  public void shouldRespectVerboseFlag() throws IOException {
+    final Long backupId = 2L;
+    // when using verbose=false, ES/OS will return something like this:
+    //    {
+    //      "snapshot": "camunda_operate_20250320000001_8.6.9_part_1_of_6",
+    //        "uuid": "3V4JXZ5GRE2Yy5VnDKTF5w",
+    //        "indices": [
+    //      "operate-import-position-8.3.0_"
+    //        ],
+    //      "data_streams": [],
+    //      "state": "SUCCESS"
+    //    }
+
+    final Metadata metadata = new Metadata(backupId, "8.8.8", 1, 1);
+
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
+    when(snapshotInfo.snapshot()).thenReturn(snapshotNameProvider.getSnapshotName(metadata));
+    when(snapshotInfo.state()).thenReturn(SnapshotState.SUCCESS.toString());
+    final List<SnapshotInfo> snapshotInfos = asList(new SnapshotInfo[] {snapshotInfo});
+    when(snapshotClient.get(any(GetSnapshotRequest.class)))
+        .thenReturn(GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).total(1).remaining(0)));
+
+    final var backups = backupController.getBackups(false);
+    assertThat((List<HistoryBackupInfo>) backups.getBody())
+        .allSatisfy(
+            backupState -> {
+              assertThat(backupState.getState()).isEqualTo(COMPLETED);
+              assertThat(backupState.getBackupId().longValue()).isEqualTo(backupId);
+              assertThat(backupState.getDetails())
+                  .singleElement()
+                  .satisfies(
+                      info -> {
+                        assertThat(info.getState()).isEqualTo("SUCCESS");
+                        assertThat(info.getStartTime()).isNull();
+                      });
+            });
   }
 
   private void assertBackupDetails(

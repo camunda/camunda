@@ -174,10 +174,7 @@ public class OpensearchBackupRepository implements BackupRepository {
     if (snapshots.isEmpty()) {
       return Optional.empty();
     } else {
-      final var first = snapshots.getFirst();
-      return Optional.of(
-          MetadataMarshaller.fromMetadata(
-              first.getMetadata(), openSearchClient._transport().jsonpMapper()));
+      return Optional.of(extractMetadata(snapshots.getFirst()));
     }
   }
 
@@ -201,28 +198,31 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   @Override
-  public List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
-    final var requestBuilder =
+  public List<GetBackupStateResponseDto> getBackups(
+      final String repositoryName, final boolean verbose) {
+    final var request =
         getSnapshotRequestBuilder(repositoryName, snapshotNameProvider.snapshotNamePrefix() + "*")
+            .verbose(verbose)
             .build();
     final OpenSearchGetSnapshotResponse response;
     try {
       response =
-          OpenSearchGetSnapshotResponse.fromResponse(
-              openSearchClient.snapshot().get(requestBuilder));
-      final List<OpenSearchSnapshotInfo> snapshots =
-          response.snapshots().stream()
-              .sorted(Comparator.comparing(OpenSearchSnapshotInfo::getStartTimeInMillis).reversed())
-              .toList();
+          OpenSearchGetSnapshotResponse.fromResponse(openSearchClient.snapshot().get(request));
+      List<OpenSearchSnapshotInfo> snapshots = response.snapshots();
+      if (verbose) {
+        snapshots =
+            snapshots.stream()
+                .sorted(
+                    Comparator.comparing(OpenSearchSnapshotInfo::getStartTimeInMillis).reversed())
+                .toList();
+      }
 
       final LinkedHashMap<Long, List<OpenSearchSnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
               .collect(
                   groupingBy(
                       si -> {
-                        final Metadata metadata =
-                            MetadataMarshaller.fromMetadata(
-                                si.getMetadata(), openSearchClient._transport().jsonpMapper());
+                        final Metadata metadata = extractMetadata(si);
                         Long backupId = metadata.backupId();
                         // backward compatibility with v. 8.1
                         if (backupId == null) {
@@ -335,6 +335,19 @@ public class OpensearchBackupRepository implements BackupRepository {
             });
   }
 
+  private Metadata extractMetadata(final OpenSearchSnapshotInfo snapshotInfo) {
+    final var jsonpMapper = openSearchClient._transport().jsonpMapper();
+    try {
+      var metadata = MetadataMarshaller.fromMetadata(snapshotInfo.getMetadata(), jsonpMapper);
+      if (metadata == null || !metadata.isInitialized()) {
+        metadata = snapshotNameProvider.extractMetadataFromSnapshotName(snapshotInfo.getSnapshot());
+      }
+      return metadata;
+    } catch (final RuntimeException e) {
+      return snapshotNameProvider.extractMetadataFromSnapshotName(snapshotInfo.getSnapshot());
+    }
+  }
+
   private boolean isErrorType(final Throwable t, final String errorType) {
     if (t instanceof final OpenSearchException oe) {
       return Objects.equals(oe.error().type(), errorType);
@@ -395,7 +408,7 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   private List<OpenSearchSnapshotInfo> findSnapshots(
       final String repositoryName, final Long backupId) {
-    final var requestBuilder =
+    final var request =
         getSnapshotRequestBuilder(
                 repositoryName, snapshotNameProvider.getSnapshotNamePrefix(backupId) + "*")
             .build();
@@ -403,8 +416,7 @@ public class OpensearchBackupRepository implements BackupRepository {
     final OpenSearchGetSnapshotResponse response;
     try {
       response =
-          OpenSearchGetSnapshotResponse.fromResponse(
-              openSearchClient.snapshot().get(requestBuilder));
+          OpenSearchGetSnapshotResponse.fromResponse(openSearchClient.snapshot().get(request));
       return response.snapshots();
     } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
@@ -448,9 +460,7 @@ public class OpensearchBackupRepository implements BackupRepository {
   private GetBackupStateResponseDto toGetBackupStateResponseDto(
       final Long backupId, final List<OpenSearchSnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
-    final Metadata metadata =
-        MetadataMarshaller.fromMetadata(
-            snapshots.getFirst().getMetadata(), openSearchClient._transport().jsonpMapper());
+    final Metadata metadata = extractMetadata(snapshots.getFirst());
     final Integer expectedSnapshotsCount = metadata.partCount();
 
     response.setState(getState(snapshots, expectedSnapshotsCount));
@@ -470,10 +480,12 @@ public class OpensearchBackupRepository implements BackupRepository {
     for (final OpenSearchSnapshotInfo snapshot : snapshots) {
       final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.getSnapshot());
-      detail.setStartTime(
-          OffsetDateTime.ofInstant(
-              Instant.ofEpochMilli(snapshot.getStartTimeInMillis()), ZoneId.systemDefault()));
-      if (!snapshot.getFailures().isEmpty()) {
+      if (snapshot.getStartTimeInMillis() != null && snapshot.getStartTimeInMillis() > 0) {
+        detail.setStartTime(
+            OffsetDateTime.ofInstant(
+                Instant.ofEpochMilli(snapshot.getStartTimeInMillis()), ZoneId.systemDefault()));
+      }
+      if (snapshot.getFailures() != null && !snapshot.getFailures().isEmpty()) {
         detail.setFailures(
             snapshot.getFailures().stream().map(Object::toString).toArray(String[]::new));
       }
