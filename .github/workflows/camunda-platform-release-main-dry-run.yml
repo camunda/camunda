@@ -1,4 +1,7 @@
 name: Camunda Platform Release Dry Run from main
+
+# owner: @camunda/monorepo-devops-team
+
 on:
   workflow_dispatch:
     inputs:

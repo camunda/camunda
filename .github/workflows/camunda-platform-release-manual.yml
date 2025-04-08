@@ -1,4 +1,7 @@
 name: Camunda Platform Release
+
+# owner: @camunda/monorepo-devops-team
+
 on:
   workflow_dispatch:
     inputs:
