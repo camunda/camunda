@@ -106,11 +106,9 @@ public class GroupStateTest {
   @Test
   void shouldReturnEntitiesByType() {
     // given
-    final var groupId = "1";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "group";
-    final var groupRecord =
-        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
     final var userKey = 2L;
     groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
@@ -120,7 +118,7 @@ public class GroupStateTest {
     groupState.addEntity(groupRecord);
 
     // when
-    final var entities = groupState.getEntitiesByType(groupKey);
+    final var entities = groupState.getEntitiesByType(groupId);
 
     // then
     assertThat(entities)
@@ -131,11 +129,9 @@ public class GroupStateTest {
   @Test
   void shouldRemoveEntity() {
     // given
-    final var groupId = "1";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "group";
-    final var groupRecord =
-        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
     final var userKey = 2L;
     groupRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
@@ -145,21 +141,19 @@ public class GroupStateTest {
     groupState.addEntity(groupRecord);
 
     // when
-    groupState.removeEntity(groupKey, userKey);
+    groupState.removeEntity(groupId, userKey);
 
     // then
-    final var entityType = groupState.getEntitiesByType(groupKey);
+    final var entityType = groupState.getEntitiesByType(groupId);
     assertThat(entityType).containsOnly(Map.entry(EntityType.MAPPING, List.of(mappingKey)));
   }
 
   @Test
   void shouldDeleteGroup() {
     // given
-    final var groupId = "1";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "group";
-    final var groupRecord =
-        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
     groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
     groupState.addEntity(groupRecord);
@@ -173,7 +167,7 @@ public class GroupStateTest {
     final var group = groupState.get(groupId);
     assertThat(group).isEmpty();
 
-    final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
+    final var entitiesByGroup = groupState.getEntitiesByType(groupId);
     assertThat(entitiesByGroup).isEmpty();
   }
 

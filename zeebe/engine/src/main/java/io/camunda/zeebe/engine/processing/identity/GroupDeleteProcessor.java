@@ -83,6 +83,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
 
     final var persistedGroup = persistedRecord.get();
     final var groupKey = persistedGroup.getGroupKey();
+    record.setGroupKey(groupKey);
 
     removeAssignedEntities(record);
     deleteAuthorizations(record);
@@ -109,8 +110,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
               stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
             },
             () -> {
-              final var errorMessage =
-                  GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupKey());
+              final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupId());
               rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
             });
 
@@ -118,20 +118,20 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   }
 
   private void removeAssignedEntities(final GroupRecord record) {
-    final var groupKey = record.getGroupKey();
+    final var groupId = record.getGroupId();
     groupState
-        .getEntitiesByType(groupKey)
+        .getEntitiesByType(groupId)
         .forEach(
             (entityType, entityKeys) -> {
               entityKeys.forEach(
                   entityKey -> {
                     final var entityRecord =
                         new GroupRecord()
-                            .setGroupKey(groupKey)
+                            .setGroupId(groupId)
                             .setEntityKey(entityKey)
                             .setEntityType(entityType);
                     stateWriter.appendFollowUpEvent(
-                        groupKey, GroupIntent.ENTITY_REMOVED, entityRecord);
+                        record.getGroupKey(), GroupIntent.ENTITY_REMOVED, entityRecord);
                   });
             });
   }

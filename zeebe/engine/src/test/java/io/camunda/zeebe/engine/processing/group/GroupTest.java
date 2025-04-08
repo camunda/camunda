@@ -96,7 +96,7 @@ public class GroupTest {
   @Test
   public void shouldAddEntityToGroup() {
     // given
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
     final var userKey =
         engine
@@ -169,7 +169,7 @@ public class GroupTest {
   @Test
   public void shouldRejectIfEntityIsAlreadyAssigned() {
     // given
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create();
@@ -204,10 +204,9 @@ public class GroupTest {
 
   @Test
   public void shouldRemoveEntityToGroup() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30029
     // given
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
     final var userKey =
         engine
             .user()
@@ -225,7 +224,7 @@ public class GroupTest {
     final var groupWithRemovedEntity =
         engine
             .group()
-            .removeEntity(groupKey)
+            .removeEntity(groupId)
             .withEntityKey(userKey)
             .withEntityType(EntityType.USER)
             .remove()
@@ -233,33 +232,30 @@ public class GroupTest {
 
     // then
     assertThat(groupWithRemovedEntity)
-        .hasGroupKey(groupKey)
+        .hasGroupId(groupId)
         .hasEntityKey(userKey)
         .hasEntityType(EntityType.USER);
   }
 
   @Test
   public void shouldRejectIfGroupIsNotPresentEntityRemoval() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30029
     // when
-    final var notPresentGroupKey = 1L;
+    final var notPresentGroupId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
-        engine.group().removeEntity(notPresentGroupKey).expectRejection().remove();
+        engine.group().removeEntity(notPresentGroupId).expectRejection().remove();
 
     // then
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update group with key '%d', but a group with this key does not exist."
-                .formatted(notPresentGroupKey));
+            "Expected to update group with ID '%s', but a group with this ID does not exist."
+                .formatted(notPresentGroupId));
   }
 
   @Test
   public void shouldRejectIfEntityIsNotPresentEntityRemoval() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30029
     // given
-    final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
     final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
 
@@ -268,7 +264,7 @@ public class GroupTest {
     final var notPresentUpdateRecord =
         engine
             .group()
-            .removeEntity(groupKey)
+            .removeEntity(groupId)
             .withEntityKey(1L)
             .withEntityType(EntityType.USER)
             .expectRejection()
@@ -279,8 +275,8 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove an entity with key '%s' and type '%s' from group with key '%s', but the entity does not exist."
-                .formatted(1L, EntityType.USER, groupKey));
+            "Expected to remove an entity with key '%s' and type '%s' from group with ID '%s', but the entity does not exist."
+                .formatted(1L, EntityType.USER, groupId));
   }
 
   @Test
@@ -312,7 +308,7 @@ public class GroupTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create().getValue().getGroupKey();
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // when
@@ -323,7 +319,7 @@ public class GroupTest {
     final var groupRecords =
         RecordingExporter.groupRecords()
             .withIntents(GroupIntent.ENTITY_REMOVED, GroupIntent.DELETED)
-            .withGroupKey(groupKey)
+            .withGroupId(groupId)
             .asList();
     assertThat(deletedGroup).hasGroupId(groupId);
     assertThat(groupRecords).hasSize(2);
