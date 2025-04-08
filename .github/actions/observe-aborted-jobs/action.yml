@@ -6,6 +6,9 @@
 #   - VAULT_SECRET_ID
 ---
 name: Observe Aborted Jobs
+
+# owner: @camunda/monorepo-devops-team
+
 description: Checks failed jobs of a GHA workflow for runner problems and submits https://confluence.camunda.com/display/HAN/CI+Analytics data on their behalf
 
 inputs:

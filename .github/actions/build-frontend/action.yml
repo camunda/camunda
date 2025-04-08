@@ -1,6 +1,8 @@
 ---
 name: Build Frontend
 
+# owner: @camunda/monorepo-devops-team
+
 description: Builds the frontend project in a certain Yarn workspace
 
 inputs:
