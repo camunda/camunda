@@ -1,0 +1,139 @@
+---
+name: Identity E2E Tests
+on:
+  push:
+    branches:
+      - "main"
+      - "stable/**"
+      - "release**"
+    paths:
+      - ".ci/**"
+      - ".github/actions/**"
+      - ".github/workflows/identity-*"
+      - "bom/*"
+      - "distro/**"
+      - "identity/**"
+      - "zeebe/exporters/camunda-exporter/**"
+      - "parent/*"
+      - "pom.xml"
+  pull_request:
+    paths:
+      - ".ci/**"
+      - ".github/actions/**"
+      - ".github/workflows/identity-*"
+      - "bom/*"
+      - "distro/**"
+      - "identity/**"
+      - "zeebe/exporters/camunda-exporter/**"
+      - "parent/*"
+      - "pom.xml"
+
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+
+jobs:
+  test:
+    runs-on: gcp-core-4-default
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
+        env:
+          discovery.type: single-node
+          cluster.name: docker-cluster
+          bootstrap.memory_lock: true
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+        ports:
+          - 9200:9200
+          - 9300:9300
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.3.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Setup yarn
+        run: npm install -g yarn
+      - name: Install node dependencies
+        working-directory: ./identity/client
+        run: yarn install
+      - name: Add Yarn binaries to Path
+        working-directory: ./identity/client
+        run: |
+          echo "$(yarn bin)" >> $GITHUB_PATH
+          echo "$(yarn global bin)" >> $GITHUB_PATH
+      - name: Install Playwright
+        run: yarn exec playwright install --with-deps chromium
+        working-directory: ./identity/client
+      - name: Build frontend
+        working-directory: ./identity/client
+        run: yarn build
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven-dist
+        with:
+          maven-version: "3.9.6"
+          set-mvnw: true
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: "Create settings.xml"
+        uses: s4u/maven-settings-action@v3.1.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build backend
+        run: ./mvnw clean install -DskipTests=true -DskipChecks -Dskip.fe.build=true -T1C -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Start Identity
+        run: >
+          ./mvnw -q -B spring-boot:start -pl dist
+          -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
+          -Dspring-boot.run.fork=true
+          -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=consolidated-auth,broker,identity -Dzeebe.broker.exporters.camundaexporter.classname=io.camunda.exporter.CamundaExporter -Dzeebe.broker.exporters.camundaexporter.args.connect.url=http://localhost:9200 -Dzeebe.broker.exporters.camundaexporter.args.bulk.size=100 -Dzeebe.broker.backpressure.enabled=false -Dzeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters=false"
+        env:
+          CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: false
+          CAMUNDA_SECURITY_AUTHENTICATION_METHOD: BASIC
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE: elasticsearch
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CREATESCHEMA: true
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_RETENTION_ENABLED: false
+      - name: Run tests
+        working-directory: ./identity/client
+        run: yarn run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Playwright report
+          path: identity/client/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
