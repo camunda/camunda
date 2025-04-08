@@ -49,9 +49,6 @@ import org.slf4j.Logger;
 
 public final class OpenSearchArchiverRepository extends OpensearchRepository
     implements ArchiverRepository {
-  private static final String DATES_AGG = "datesAgg";
-  private static final String INSTANCES_AGG = "instancesAgg";
-  private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
   private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
@@ -64,7 +61,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final String batchOperationIndex;
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
-  private final CalendarInterval rolloverInterval;
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -87,7 +83,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     this.metrics = metrics;
 
     genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
-    rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }
 
   @Override

@@ -60,8 +60,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final String batchOperationIndex;
   private final CamundaExporterMetrics metrics;
 
-  private final CalendarInterval rolloverInterval;
-
   public ElasticsearchArchiverRepository(
       final int partitionId,
       final HistoryConfiguration config,
@@ -81,8 +79,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.metrics = metrics;
-
-    rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }
 
   @Override
