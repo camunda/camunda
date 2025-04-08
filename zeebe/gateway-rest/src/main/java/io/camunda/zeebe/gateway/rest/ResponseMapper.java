@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationCreatedResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirementsResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionResult;
@@ -483,7 +484,8 @@ public final class ResponseMapper {
     final var response =
         new BatchOperationCreatedResult()
             .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
-            .batchOperationType(brokerResponse.getBatchOperationType().toString());
+            .batchOperationType(
+                BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
     return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
   }
 
