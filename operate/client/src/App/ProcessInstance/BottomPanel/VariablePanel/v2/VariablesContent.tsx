@@ -17,15 +17,13 @@ import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Loading} from '@carbon/react';
 import {VariablesForm} from './VariablesForm';
-import {VariablesForm as VariablesFormV2} from '../v2/VariablesForm';
 import {notificationsStore} from 'modules/stores/notifications';
-import {IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
+import {useDisplayStatus} from 'modules/hooks/variables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-
-  const {displayStatus} = variablesStore;
+  const displayStatus = useDisplayStatus();
 
   if (displayStatus === 'error') {
     return (
@@ -61,13 +59,7 @@ const VariablesContent: React.FC = observer(() => {
           },
         }}
         key={variablesStore.scopeId}
-        render={(props) =>
-          IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED ? (
-            <VariablesFormV2 {...props} />
-          ) : (
-            <VariablesForm {...props} />
-          )
-        }
+        render={(props) => <VariablesForm {...props} />}
         onSubmit={async (values, form) => {
           const {initialValues} = form.getState();
 
