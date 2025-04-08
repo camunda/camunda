@@ -19,17 +19,7 @@ public enum BatchOperationExecutionIntent implements Intent {
   EXECUTE((short) 0),
   EXECUTING((short) 1),
   EXECUTED((short) 2),
-
-  COMPLETED((short) 3),
-
-  CANCEL((short) 4),
-  //  CANCELED((short) 5),
-
-  PAUSE((short) 6),
-  //  PAUSED((short) 7),
-
-  RESUME((short) 8);
-  //  RESUMED((short) 9),
+  COMPLETED((short) 3);
 
   private final short value;
 
@@ -51,12 +41,6 @@ public enum BatchOperationExecutionIntent implements Intent {
         return EXECUTED;
       case 3:
         return COMPLETED;
-      case 4:
-        return CANCEL;
-      case 6:
-        return PAUSE;
-      case 8:
-        return RESUME;
 
       default:
         return Intent.UNKNOWN;

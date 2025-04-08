@@ -8,18 +8,19 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementManagementRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import org.agrona.DirectBuffer;
 
 public class BrokerCancelBatchOperationRequest
-    extends BrokerExecuteCommand<BatchOperationExecutionRecord> {
+    extends BrokerExecuteCommand<BatchOperationLifecycleManagementManagementRecord> {
 
-  BatchOperationExecutionRecord requestDto = new BatchOperationExecutionRecord();
+  BatchOperationLifecycleManagementManagementRecord requestDto =
+      new BatchOperationLifecycleManagementManagementRecord();
 
   public BrokerCancelBatchOperationRequest() {
-    super(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationExecutionIntent.CANCEL);
+    super(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, BatchOperationIntent.CANCEL);
   }
 
   public BrokerCancelBatchOperationRequest setBatchOperationKey(final long batchOperationKey) {
@@ -28,13 +29,15 @@ public class BrokerCancelBatchOperationRequest
   }
 
   @Override
-  public BatchOperationExecutionRecord getRequestWriter() {
+  public BatchOperationLifecycleManagementManagementRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected BatchOperationExecutionRecord toResponseDto(final DirectBuffer buffer) {
-    final BatchOperationExecutionRecord responseDto = new BatchOperationExecutionRecord();
+  protected BatchOperationLifecycleManagementManagementRecord toResponseDto(
+      final DirectBuffer buffer) {
+    final BatchOperationLifecycleManagementManagementRecord responseDto =
+        new BatchOperationLifecycleManagementManagementRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }
