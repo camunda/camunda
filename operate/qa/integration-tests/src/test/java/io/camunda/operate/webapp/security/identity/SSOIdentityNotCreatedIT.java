@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.security.identity;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import org.junit.Test;
@@ -23,7 +24,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @ActiveProfiles({"sso-auth"})
 @SpringBootTest(
-    classes = {IdentityConfigurer.class, OperateProperties.class, SecurityContextWrapper.class},
+    classes = {
+      IdentityConfigurer.class,
+      DatabaseInfo.class,
+      OperateProperties.class,
+      SecurityContextWrapper.class
+    },
     properties = {
       // when resource permissions are disabled, no Identity bean should be created
       OperateProperties.PREFIX + ".identity.resourcePermissionsEnabled = false"

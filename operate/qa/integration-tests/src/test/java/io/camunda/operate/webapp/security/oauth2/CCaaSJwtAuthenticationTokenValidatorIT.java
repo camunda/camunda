@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.security.oauth2;
 import static io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator.CLUSTER_ID_CLAIM;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {
       TestApplicationWithNoBeans.class,
       CCSaaSJwtAuthenticationTokenValidator.class,
+      DatabaseInfo.class,
       OperateProperties.class,
     },
     properties = {

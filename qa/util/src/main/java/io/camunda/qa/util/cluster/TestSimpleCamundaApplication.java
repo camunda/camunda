@@ -62,11 +62,6 @@ public final class TestSimpleCamundaApplication
         IdentityModuleConfiguration.class,
         WebappsModuleConfiguration.class,
         BrokerModuleConfiguration.class,
-        // test overrides - to control data clean up; (and some components are not installed on
-        // Tests)
-        TestOperateElasticsearchSchemaManager.class,
-        TestOperateOpensearchSchemaManager.class,
-        TestOperateSchemaStartup.class,
         IndexTemplateDescriptorsConfigurator.class);
 
     brokerProperties = new BrokerBasedProperties();

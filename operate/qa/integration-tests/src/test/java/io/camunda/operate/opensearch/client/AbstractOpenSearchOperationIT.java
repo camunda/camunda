@@ -9,7 +9,6 @@ package io.camunda.operate.opensearch.client;
 
 import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OpensearchOperateAbstractIT;
@@ -26,7 +25,6 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = DatabaseCondition.DATABASE_PROPERTY + "=opensearch")
 public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbstractIT {
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
-  @Autowired protected SchemaManager schemaManager;
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected SearchEngineConfiguration searchEngineConfiguration;
   @Autowired protected OpensearchTestDataHelper opensearchTestDataHelper;

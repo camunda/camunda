@@ -26,6 +26,7 @@ import com.auth0.AuthorizeUrl;
 import com.auth0.Tokens;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -89,6 +90,7 @@ import org.springframework.web.client.RestTemplate;
       AuthenticationRestService.class,
       RolePermissionService.class,
       OperateURIs.class,
+      DatabaseInfo.class,
       OperateProperties.class,
       OperateProfileService.class,
       ProcessRestService.class,

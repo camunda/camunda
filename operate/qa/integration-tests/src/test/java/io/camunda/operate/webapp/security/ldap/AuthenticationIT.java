@@ -15,8 +15,6 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
@@ -54,8 +52,6 @@ import org.testcontainers.containers.GenericContainer;
       LDAPConfig.class,
       LDAPWebSecurityConfig.class,
       LDAPUserService.class,
-      RetryElasticsearchClient.class,
-      ElasticsearchTaskStore.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
       JacksonConfig.class,

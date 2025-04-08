@@ -8,14 +8,12 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
-import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static io.camunda.webapps.schema.entities.incident.ErrorType.JOB_NO_RETRIES;
 
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
@@ -48,7 +46,6 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indexlifecycle.DeleteLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -497,25 +494,6 @@ public abstract class TestUtil {
       LOGGER.info("Removing indices");
       indexOperations.deleteIndicesWithRetries(prefix + "*");
       templateOperations.deleteTemplatesWithRetries(prefix + "*");
-    } catch (final Exception ex) {
-      LOGGER.error(ex.getMessage(), ex);
-    }
-  }
-
-  public static void removeIlmPolicy(final RestHighLevelClient esClient) {
-    try {
-      LOGGER.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
-      final var request = new DeleteLifecyclePolicyRequest(OPERATE_DELETE_ARCHIVED_INDICES);
-      esClient.indexLifecycle().deleteLifecyclePolicy(request, RequestOptions.DEFAULT);
-    } catch (final ElasticsearchStatusException | IOException ex) {
-      LOGGER.error(ex.getMessage(), ex);
-    }
-  }
-
-  public static void removeIlmPolicy(final RichOpenSearchClient richOpenSearchClient) {
-    try {
-      LOGGER.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
-      richOpenSearchClient.ism().deletePolicy(OPERATE_DELETE_ARCHIVED_INDICES);
     } catch (final Exception ex) {
       LOGGER.error(ex.getMessage(), ex);
     }

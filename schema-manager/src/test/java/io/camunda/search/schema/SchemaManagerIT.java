@@ -805,6 +805,7 @@ public class SchemaManagerIT {
             newPrefix + "-operate-sequence-flow-8.3.0_",
             newPrefix + "-operate-variable-8.3.0_",
             newPrefix + "-operate-job-8.6.0_",
+            newPrefix + "-operate-user-1.2.0_",
             newPrefix + "-tasklist-draft-task-variable-8.3.0_",
             newPrefix + "-tasklist-form-8.4.0_",
             newPrefix + "-tasklist-metric-8.3.0_",

@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.property.OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,13 +15,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
@@ -94,6 +94,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
   Map<Class<? extends ExporterEntity>, String> entityToESAliasMap;
+  @Autowired private SearchEngineConfiguration searchEngineConfiguration;
   @Autowired private ListViewTemplate listViewTemplate;
 
   @Autowired
@@ -110,7 +111,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
-  @Autowired private SchemaManager schemaManager;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
 
   @Autowired private ObjectMapper objectMapper;
@@ -124,11 +124,12 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void starting(final Description description) {
-    indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
+    indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
     if (indexPrefix.isBlank()) {
       indexPrefix =
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+      searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
     if (operateProperties.getElasticsearch().isCreateSchema()) {
       final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, true);
@@ -142,12 +143,11 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void finished(final Description description) {
     if (!failed) {
-      final String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
+      final String indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
       TestUtil.removeAllIndices(esClient, indexPrefix);
     }
-    operateProperties
-        .getElasticsearch()
-        .setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
+    operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
+    searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(15);
   }
 
@@ -179,7 +179,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   public void refreshOperateSearchIndices() {
     try {
       final RefreshRequest refreshRequest =
-          new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
+          new RefreshRequest(searchEngineConfiguration.connect().getIndexPrefix() + "*");
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Operate Elasticsearch indices", t);

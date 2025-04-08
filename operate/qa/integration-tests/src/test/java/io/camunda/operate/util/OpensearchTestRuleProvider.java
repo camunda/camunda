@@ -15,7 +15,6 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebe.ImportValueType;
@@ -77,10 +76,10 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   protected OpenSearchClient zeebeOsClient;
 
   @Autowired protected OperateProperties operateProperties;
-  @Autowired protected SearchEngineConfiguration searchEngineConfiguration;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
   Map<Class<? extends ExporterEntity>, String> entityToAliasMap;
+  @Autowired private SearchEngineConfiguration searchEngineConfiguration;
   @Autowired private ListViewTemplate listViewTemplate;
 
   @Autowired
@@ -97,7 +96,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
-  @Autowired private SchemaManager schemaManager;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
@@ -167,7 +165,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     try {
       richOpenSearchClient
           .index()
-          .refresh(operateProperties.getOpensearch().getIndexPrefix() + "*");
+          .refresh(searchEngineConfiguration.connect().getIndexPrefix() + "*");
       Thread.sleep(3000); // TODO: Find a way to wait for refresh completion
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Operate Opensearch indices", t);

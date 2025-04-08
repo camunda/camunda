@@ -176,6 +176,7 @@ class BackupPrioritiesTest {
         .containsExactlyInAnyOrder(
             "operate-decision-requirements-8.3.0_",
             "operate-metric-8.3.0_",
+            "operate-user-1.2.0_",
             "operate-process-8.3.0_",
             "tasklist-form-8.4.0_",
             "tasklist-metric-8.3.0_",

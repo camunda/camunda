@@ -13,7 +13,6 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestSupport;
 import io.camunda.operate.zeebe.ImportValueType;
@@ -52,7 +51,6 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   private static final ElasticsearchExporterConfiguration CONFIG =
       new ElasticsearchExporterConfiguration();
 
-  @Autowired public SchemaManager schemaManager;
   @Autowired private OperateProperties operateProperties;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   @Autowired private ImportPositionIndex importPositionIndex;

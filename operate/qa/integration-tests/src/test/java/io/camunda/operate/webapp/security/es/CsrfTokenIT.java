@@ -23,8 +23,6 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.UserStore;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
 import io.camunda.operate.webapp.api.v1.rest.ProcessDefinitionController;
@@ -78,8 +76,6 @@ import org.springframework.util.MultiValueMap;
       RolePermissionService.class,
       AuthenticationRestService.class,
       OperateUserDetailsService.class,
-      ElasticsearchTaskStore.class,
-      RetryElasticsearchClient.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
       ProcessRestService.class,

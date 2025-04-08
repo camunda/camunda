@@ -54,9 +54,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.index.reindex.ReindexRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -298,23 +295,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public void reindex(
-      final String srcIndex,
-      final String dstIndex,
-      final String script,
-      final Map<String, Object> scriptParams)
-      throws IOException {
-    final ReindexRequest reindexRequest =
-        new ReindexRequest()
-            .setSourceIndices(srcIndex)
-            .setDestIndex(dstIndex)
-            .setScript(
-                new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, scriptParams));
-
-    esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
-  }
-
-  @Override
   public boolean ilmPolicyExists(final String policyName) throws IOException {
     final var request = new GetLifecyclePolicyRequest(policyName);
     return esClient
@@ -323,19 +303,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
             .getPolicies()
             .get(policyName)
         != null;
-  }
-
-  @Override
-  public IndexSettings getIndexSettings(final String indexName) throws IOException {
-    final var settings =
-        esClient
-            .indices()
-            .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT)
-            .getSettings()
-            .get(indexName);
-    return new IndexSettings(
-        settings.getAsInt("index.number_of_shards", null),
-        settings.getAsInt("index.number_of_replicas", null));
   }
 
   @Override

@@ -9,12 +9,7 @@ package io.camunda.operate.store.opensearch.client.sync;
 
 import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.OpenSearchOperation;
-import jakarta.json.stream.JsonGenerator;
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
-import org.opensearch.client.json.JsonpSerializable;
-import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 
@@ -34,16 +29,5 @@ public class OpenSearchSyncOperation extends OpenSearchOperation {
           "ExtendedOpenSearchClient is required! Provided: "
               + openSearchClient.getClass().getName());
     }
-  }
-
-  public String toJsonString(final JsonpSerializable serializable) {
-
-    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    try (final JsonGenerator generator =
-        openSearchClient._transport().jsonpMapper().jsonProvider().createGenerator(baos)) {
-      serializable.serialize(generator, new JsonbJsonpMapper());
-    }
-
-    return baos.toString(StandardCharsets.UTF_8);
   }
 }

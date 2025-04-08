@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.retry;
 
 import io.github.resilience4j.core.IntervalBiFunction;
 import io.github.resilience4j.core.IntervalFunction;
+import io.github.resilience4j.core.functions.CheckedRunnable;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
 import java.util.UUID;
@@ -34,8 +35,26 @@ public class RetryDecorator {
     this(retryConfiguration, e -> true);
   }
 
+  public RetryDecorator() {
+    this(new RetryConfiguration());
+  }
+
   public RetryDecorator withRetryOnException(final Predicate<Throwable> retryOnExceptionPredicate) {
     return new RetryDecorator(retryConfiguration, retryOnExceptionPredicate);
+  }
+
+  public RetryDecorator withRetryOnExceptions(
+      final Class<? extends Throwable>... exceptionClasses) {
+    return new RetryDecorator(
+        retryConfiguration,
+        e -> {
+          for (final var exceptionClass : exceptionClasses) {
+            if (exceptionClass.isAssignableFrom(e.getClass())) {
+              return true;
+            }
+          }
+          return false;
+        });
   }
 
   public <T> T decorate(
@@ -48,6 +67,11 @@ public class RetryDecorator {
   public void decorate(final String message, final Runnable runnable) {
     final Retry retry = buildRetry(message, null);
     Retry.decorateRunnable(retry, runnable).run();
+  }
+
+  public void decorateCheckedRunnable(final String message, final CheckedRunnable runnable) {
+    final Retry retry = buildRetry(message, null);
+    Retry.decorateCheckedRunnable(retry, runnable).unchecked().run();
   }
 
   private <T> Retry buildRetry(final String message, final Predicate<T> retryPredicate) {

@@ -64,10 +64,6 @@ public class SearchTestRule extends TestWatcher {
     searchTestRuleProvider.refreshSearchIndices();
   }
 
-  public void refreshZeebeIndices() {
-    searchTestRuleProvider.refreshZeebeIndices();
-  }
-
   public void refreshOperateSearchIndices() {
     searchTestRuleProvider.refreshOperateSearchIndices();
   }

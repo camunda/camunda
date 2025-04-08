@@ -37,9 +37,11 @@ import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -302,6 +304,22 @@ public class OpensearchEngineClient implements SearchEngineClient {
     } catch (final IOException ioe) {
       final var errMsg = String.format("Failed to delete docs from index %s", indexName);
       throw new SearchEngineException(errMsg, ioe);
+    }
+  }
+
+  @Override
+  public boolean isHealthy() {
+    try {
+      final HealthResponse response = client.cluster().health(h -> h.timeout(t -> t.time("500ms")));
+      return !response.timedOut()
+          && response.status() != null
+          && !response.status().equals(HealthStatus.Red);
+    } catch (final IOException e) {
+      LOG.warn(
+          String.format(
+              "Couldn't connect to OpenSearch due to %s. Return unhealthy state.", e.getMessage()),
+          e);
+      return false;
     }
   }
 

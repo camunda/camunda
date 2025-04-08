@@ -7,17 +7,18 @@
  */
 package io.camunda.operate.util.j5templates;
 
+import static io.camunda.operate.property.OperateOpensearchProperties.DEFAULT_INDEX_PREFIX;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.qa.util.TestSchemaManager;
 import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import java.io.IOException;
 import org.opensearch.client.opensearch._types.ExpandWildcard;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
@@ -37,10 +38,11 @@ public class OpensearchContainerManager extends SearchContainerManager {
 
   public OpensearchContainerManager(
       final RichOpenSearchClient richOpenSearchClient,
+      final SearchEngineConfiguration searchEngineConfiguration,
       final OperateProperties operateProperties,
-      final SchemaManager schemaManager,
+      final TestSchemaManager schemaManager,
       final IndexPrefixHolder indexPrefixHolder) {
-    super(operateProperties, schemaManager);
+    super(searchEngineConfiguration, operateProperties, schemaManager);
     this.richOpenSearchClient = richOpenSearchClient;
     this.indexPrefixHolder = indexPrefixHolder;
   }
@@ -87,12 +89,11 @@ public class OpensearchContainerManager extends SearchContainerManager {
 
   @Override
   public void stopContainer() {
-    final String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
+    final String indexPrefix = searchEngineConfiguration.connect().getIndexPrefix();
     TestUtil.removeAllIndices(
         richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
-    operateProperties
-        .getOpensearch()
-        .setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
+    searchEngineConfiguration.connect().setIndexPrefix(DEFAULT_INDEX_PREFIX);
+    operateProperties.getOpensearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
 
     assertThat(getOpenScrollContextSize())
         .describedAs("There are too many open scroll contexts left.")

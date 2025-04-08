@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.identity.sdk.Identity;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
@@ -30,6 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(
     classes = {
       IdentityConfigurer.class,
+      DatabaseInfo.class,
       OperateProperties.class,
       CamundaSecurityProperties.class,
       TenantService.class,
