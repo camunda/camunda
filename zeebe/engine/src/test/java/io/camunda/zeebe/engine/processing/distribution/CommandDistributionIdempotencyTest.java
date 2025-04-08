@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
@@ -72,6 +73,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -240,6 +242,21 @@ public class CommandDistributionIdempotencyTest {
                                         .build())))
                         .create()),
             BatchOperationCreateProcessor.class
+          },
+          {
+            "BatchOperation.CANCEL is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+                BatchOperationIntent.CANCEL,
+                () -> {
+                  final var batchOperation = createBatchOperation();
+                  return ENGINE
+                      .batchOperation()
+                      .newLifecycle()
+                      .withBatchOperationKey(batchOperation.getKey())
+                      .cancel();
+                }),
+            BatchOperationCancelProcessor.class
           },
           {
             "Clock.RESET is idempotent",
@@ -664,6 +681,17 @@ public class CommandDistributionIdempotencyTest {
                 .withRecordKey(distributionCommand.getKey())
                 .exists())
         .isTrue();
+  }
+
+  private static Record<BatchOperationCreationRecordValue> createBatchOperation() {
+    return ENGINE
+        .batchOperation()
+        .newCreation(BatchOperationType.PROCESS_CANCELLATION)
+        .withFilter(
+            new UnsafeBuffer(
+                MsgPackConverter.convertToMsgPack(
+                    new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build())))
+        .create();
   }
 
   private static Record<UserRecordValue> createUser() {
