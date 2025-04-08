@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticsearchAdapter implements Adapter {
 
-  private static final Logger log = LoggerFactory.getLogger(ElasticsearchAdapter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchAdapter.class);
   private final ElasticsearchClient client;
   private final ProcessMigrationProperties properties;
   private final MigrationRepositoryIndex migrationRepositoryIndex;
@@ -83,7 +83,7 @@ public class ElasticsearchAdapter implements Adapter {
                   res == null
                       || res.items().isEmpty()
                       || res.items().stream().allMatch(i -> i.error() != null));
-      log.info("Migrated {} entities res {}", idList, response);
+      LOGGER.info("Migrated {} entities res {}", idList, response);
     } catch (final Exception e) {
       throw new MigrationException("Failed to migrate entities %s".formatted(idList), e);
     }

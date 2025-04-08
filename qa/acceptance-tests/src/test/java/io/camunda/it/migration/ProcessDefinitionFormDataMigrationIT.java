@@ -45,7 +45,7 @@ public class ProcessDefinitionFormDataMigrationIT {
       new MigrationITExtension()
           .withBeforeUpgradeConsumer(ProcessDefinitionFormDataMigrationIT::setup);
 
-  private static final Logger log =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessDefinitionFormDataMigrationIT.class);
 
   private static void setup(final DatabaseType databaseType, final CamundaMigrator migrator) {
@@ -94,7 +94,7 @@ public class ProcessDefinitionFormDataMigrationIT {
             () -> {
               final var proc = findProcess(migrator, processDefinitionKey);
               assertThat(proc).isPresent();
-              log.info("Process definition found: {}", proc.get());
+              LOGGER.info("Process definition found: {}", proc.get());
               assertThat(proc.get().getFormId()).isEqualTo("test");
               assertThat(proc.get().getIsPublic()).isFalse();
               assertThat(proc.get().getFormKey()).isNull();
@@ -114,7 +114,7 @@ public class ProcessDefinitionFormDataMigrationIT {
             () -> {
               final var proc = findProcess(migrator, processDefinitionKey);
               assertThat(proc).isPresent();
-              log.info("Process definition found: {}", proc.get());
+              LOGGER.info("Process definition found: {}", proc.get());
               assertThat(proc.get().getFormId()).isNull();
               assertThat(proc.get().getFormKey()).isEqualTo("camunda-forms:bpmn:testForm");
               assertThat(proc.get().getIsPublic()).isTrue();
