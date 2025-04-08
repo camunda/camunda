@@ -483,7 +483,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(4);
+    assertThat(result.items()).size().isEqualTo(5);
   }
 
   @Test
@@ -497,7 +497,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(4);
+    assertThat(result.items()).size().isEqualTo(5);
   }
 
   @Test
@@ -576,7 +576,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).size().isEqualTo(7);
+    assertThat(result.items()).size().isEqualTo(8);
   }
 
   @Test
@@ -595,9 +595,9 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
-    assertThat(result.items()).filteredOn(pi -> "ACTIVE".equals(pi.getState().name())).hasSize(4);
-    assertThat(result.items()).filteredOn(ProcessInstance::getHasIncident).hasSize(1);
+    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items()).filteredOn(pi -> "ACTIVE".equals(pi.getState().name())).hasSize(5);
+    assertThat(result.items()).filteredOn(ProcessInstance::getHasIncident).hasSize(2);
   }
 
   @Test
@@ -630,7 +630,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .send()
             .join();
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(5);
     assertThat(result.items()).allMatch(pi -> pi.getState().name().equals("ACTIVE"));
   }
 
