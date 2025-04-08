@@ -2,11 +2,5 @@
   "rules": {
     "testing-library/prefer-screen-queries": "off",
     "testing-library/no-await-sync-query": "off",
-    "overrides": [
-      {
-        "files": ["tests/**", "pages/**/*"],
-        "extends": "plugin:playwright/recommended",
-      },
-    ],
   },
 }
