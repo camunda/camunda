@@ -368,10 +368,8 @@ jobs:
     needs:
       - actionlint
       - java-unit-tests
-      - docker-checks
       - integration-tests
       - java-checks
-      - build-platform-frontend
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
       - protobuf-checks
@@ -441,7 +439,7 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ docker-checks, check-results ]
+    needs: [ check-results ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
