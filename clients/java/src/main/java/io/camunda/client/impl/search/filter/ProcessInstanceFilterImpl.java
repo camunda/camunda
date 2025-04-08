@@ -329,7 +329,8 @@ public class ProcessInstanceFilterImpl
       fn.accept(orFilter);
       final io.camunda.client.protocol.rest.ProcessInstanceFilter protocolFilter =
           orFilter.getSearchRequestProperty();
-      final ProcessInstanceFilterFields protocolFilterFields = ProcessInstanceFilterMapper.from(protocolFilter);
+      final ProcessInstanceFilterFields protocolFilterFields =
+          ProcessInstanceFilterMapper.from(protocolFilter);
       filter.add$OrItem(protocolFilterFields);
     }
     return this;
