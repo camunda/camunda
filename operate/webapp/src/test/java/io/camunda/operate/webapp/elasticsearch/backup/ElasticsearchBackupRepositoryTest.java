@@ -33,7 +33,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.SnapshotClient;
@@ -42,7 +41,6 @@ import org.elasticsearch.snapshots.SnapshotState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
-import org.mockito.ArgumentMatcher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -151,15 +149,7 @@ public class ElasticsearchBackupRepositoryTest {
     when(snapshotClient.get(any(), any())).thenReturn(response);
 
     final var responses = backupRepository.getBackups(repositoryName, false);
-    final var notVerbose =
-        new ArgumentMatcher<GetSnapshotsRequest>() {
-
-          @Override
-          public boolean matches(final GetSnapshotsRequest argument) {
-            return !argument.verbose();
-          }
-        };
-    verify(snapshotClient).get(argThat(notVerbose), any());
+    verify(snapshotClient).get(argThat(req -> !req.verbose()), any());
     assertThat(responses)
         .singleElement()
         .satisfies(

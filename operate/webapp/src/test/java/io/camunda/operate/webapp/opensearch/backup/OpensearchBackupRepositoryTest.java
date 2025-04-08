@@ -36,7 +36,6 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch._types.ErrorCause;
@@ -129,17 +128,10 @@ class OpensearchBackupRepositoryTest {
                 .setState(SnapshotState.STARTED));
     final var response = new OpenSearchGetSnapshotResponse(snapshotInfos);
     mockObjectMapperForMetadata(metadata);
-    final var requestIsNotVerbose =
-        new ArgumentMatcher<GetSnapshotRequest>() {
-          @Override
-          public boolean matches(final GetSnapshotRequest request) {
-            return request.verbose().equals(false);
-          }
-        };
     when(openSearchSnapshotOperations.get(any())).thenReturn(response);
     mockSynchronSnapshotOperations();
     final var snapshotDtoList = repository.getBackups("repo", false);
-    verify(openSearchSnapshotOperations).get(argThat(requestIsNotVerbose));
+    verify(openSearchSnapshotOperations).get(argThat(req -> !req.verbose()));
 
     assertThat(snapshotDtoList)
         .singleElement()
