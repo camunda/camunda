@@ -6,30 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {ExecutionCountToggle} from './index';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.mock('modules/utils/bpmn');
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
-  mockFetchProcessXML().withSuccess('');
-
-  useEffect(() => {
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
-    return () => {
-      processInstanceDetailsDiagramStore.reset();
-    };
-  }, []);
-
-  return <>{children}</>;
+  return (
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        {children}
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
+  );
 };
 
-describe('TimeStampPill', () => {
+describe('ExecutionCountToggle', () => {
   beforeEach(() => {
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
   });
 
   it('should render "Show" / "Hide" label', async () => {

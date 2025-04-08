@@ -27,6 +27,10 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {useEffect} from 'react';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 jest.mock('modules/utils/bpmn');
 
@@ -41,7 +45,13 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
     };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        {children}
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
+  );
 };
 
 describe('FlowNodeInstanceLog', () => {
@@ -61,6 +71,7 @@ describe('FlowNodeInstanceLog', () => {
         ],
       }),
     );
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     processInstanceDetailsStore.init({id: '1'});
   });
