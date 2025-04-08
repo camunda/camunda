@@ -19,10 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.protocol.rest.BaseProcessInstanceFilter;
 import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import io.camunda.client.protocol.rest.DateTimeFilterProperty;
+import io.camunda.client.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
@@ -81,7 +83,14 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
                     .state(ProcessInstanceState.ACTIVE)
                     .hasIncident(true)
                     .tenantId("tenant")
-                    .variables(variablesMap))
+                    .variables(variablesMap)
+                    .batchOperationId("batchOperationId")
+                    .errorMessage("Error message")
+                    .hasRetriesLeft(true)
+                    .elementId("elementId")
+                    .elementInstanceState(ElementInstanceState.ACTIVE)
+                    .hasElementInstanceIncident(true)
+                    .incidentErrorHashCode(123456789))
         .send()
         .join();
 
@@ -100,6 +109,14 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
+    assertThat(filter.getBatchOperationId().get$Eq()).isEqualTo("batchOperationId");
+    assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
+    assertThat(filter.getHasRetriesLeft()).isEqualTo(true);
+    assertThat(filter.getElementId().get$Eq()).isEqualTo("elementId");
+    assertThat(filter.getElementInstanceState().get$Eq())
+        .isEqualTo(ElementInstanceStateEnum.ACTIVE);
+    assertThat(filter.getHasElementInstanceIncident()).isEqualTo(true);
+    assertThat(filter.getIncidentErrorHashCode()).isEqualTo(123456789);
   }
 
   @Test
