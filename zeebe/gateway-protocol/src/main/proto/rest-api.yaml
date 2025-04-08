@@ -7854,6 +7854,11 @@ components:
         resourceKey:
           description: The unique key of this resource.
           type: string
+    BatchOperationTypeEnum:
+      description: The type of the batch operation.
+      type: string
+      enum:
+      - PROCESS_CANCELLATION
     BatchOperationCreatedResult:
       type: object
       properties:
@@ -7861,9 +7866,7 @@ components:
           description: Key of the batch operation.
           type: string
         batchOperationType:
-          description: The type of the batch operation.
-          type: string
-          example: PROCESS_CANCELLATION
+          $ref: "#/components/schemas/BatchOperationTypeEnum"
     BatchOperationSearchQuerySortRequest:
       type: object
       properties:
@@ -7903,10 +7906,7 @@ components:
           description: The batch operation key.
           type: string
         operationType:
-          type: string
-          description: The operation type of the batch operation.
-          enum:
-            - PROCESS_CANCELLATION
+          $ref: "#/components/schemas/BatchOperationTypeEnum"
         status:
           type: string
           description: The status of the batch operation.
@@ -7944,9 +7944,7 @@ components:
             - COMPLETED_WITH_ERRORS
             - CANCELED
         batchOperationType:
-          description: The type of the batch operation.
-          type: string
-          example: PROCESS_CANCELLATION
+          $ref: "#/components/schemas/BatchOperationTypeEnum"
         startDate:
           type: string
           description: The start date of the batch operation.

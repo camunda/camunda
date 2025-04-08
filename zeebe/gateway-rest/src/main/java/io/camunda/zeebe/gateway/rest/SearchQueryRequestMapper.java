@@ -73,7 +73,6 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.OperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StatusEnum;
 import io.camunda.zeebe.gateway.rest.util.GenericVariable;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
@@ -546,7 +545,7 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::batchOperationKeys);
       ofNullable(filter.getStatus()).map(StatusEnum::toString).ifPresent(builder::status);
       ofNullable(filter.getOperationType())
-          .map(OperationTypeEnum::toString)
+          .map(BatchOperationTypeEnum::toString)
           .ifPresent(builder::operationTypes);
     }
 
