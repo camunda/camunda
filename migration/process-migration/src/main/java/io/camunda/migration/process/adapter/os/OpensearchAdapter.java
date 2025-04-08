@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 
 public class OpensearchAdapter implements Adapter {
 
-  private static final Logger log = LoggerFactory.getLogger(OpensearchAdapter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchAdapter.class);
   private final ProcessMigrationProperties properties;
   private final OpenSearchClient client;
   private final MigrationRepositoryIndex migrationRepositoryIndex;
@@ -87,7 +87,7 @@ public class OpensearchAdapter implements Adapter {
                   res == null
                       || res.items().isEmpty()
                       || res.items().stream().allMatch(i -> i.error() != null));
-      log.info("Migrated {} entities res {}", idList, response);
+      LOGGER.info("Migrated {} entities res {}", idList, response);
     } catch (final Exception e) {
       throw new MigrationException("Failed to migrate entities %s".formatted(idList), e);
     }
