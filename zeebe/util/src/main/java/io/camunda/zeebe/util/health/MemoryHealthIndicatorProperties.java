@@ -9,11 +9,9 @@ package io.camunda.zeebe.util.health;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
 
 /** External configuration properties for {@link MemoryHealthIndicator}. */
 @ConfigurationProperties(prefix = "management.health.memory")
-@Component
 @Primary
 public class MemoryHealthIndicatorProperties {
 
@@ -24,7 +22,7 @@ public class MemoryHealthIndicatorProperties {
     return threshold;
   }
 
-  public void setThreshold(double threshold) {
+  public void setThreshold(final double threshold) {
     if (threshold <= 0 || threshold >= 1) {
       throw new IllegalArgumentException("Threshold must be a value in the interval ]0,1[");
     }
