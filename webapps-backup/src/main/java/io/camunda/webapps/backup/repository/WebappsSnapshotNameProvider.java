@@ -49,6 +49,9 @@ public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
 
   @Override
   public Metadata extractMetadataFromSnapshotName(final String snapshotName) {
+    if (snapshotName == null) {
+      return null;
+    }
     final Matcher matcher = METADATA_PATTERN.matcher(snapshotName);
     if (matcher.matches()) {
       final Long backupId = Long.parseLong(matcher.group("backupId"));

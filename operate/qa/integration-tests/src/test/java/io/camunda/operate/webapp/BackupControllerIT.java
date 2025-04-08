@@ -186,7 +186,7 @@ public class BackupControllerIT {
   @Test
   public void shouldFailCreateBackupOnBackupIdNotFound() throws IOException {
     final long backupId = 2L;
-    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, Answers.RETURNS_DEEP_STUBS);
     when(snapshotInfo.snapshot()).thenReturn("snapshotName");
     final List<SnapshotInfo> snapshotInfos = List.of(snapshotInfo);
     mockGetWithReturn(
