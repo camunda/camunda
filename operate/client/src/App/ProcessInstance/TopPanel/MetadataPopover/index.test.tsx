@@ -29,6 +29,7 @@ import {
 } from 'modules/mocks/metadata';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {labels, renderPopover} from './mocks';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
@@ -38,14 +39,11 @@ jest.mock('date-fns', () => ({
   formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
 }));
 
-jest.mock('modules/queries/processDefinitions/useProcessDefinitionXml', () => ({
-  useProcessDefinitionXml: () => ({data: {businessObjects: {}}}),
-}));
-
 describe('MetadataPopover', () => {
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
+    mockFetchProcessDefinitionXml().withSuccess('');
   });
 
   it('should not show unrelated data', async () => {
