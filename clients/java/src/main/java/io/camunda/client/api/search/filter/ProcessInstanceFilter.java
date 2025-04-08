@@ -134,7 +134,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by flowNodeId using {@link StringProperty} */
   ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn);
 
-  /** Filter by state */
+  /** Filter by flowNodeInstanceState */
   ProcessInstanceFilter flowNodeInstanceState(final FlowNodeInstanceState state);
 
   /** Filter by flowNodeInstanceState using {@link FlowNodeInstanceStateProperty} */
