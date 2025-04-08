@@ -203,8 +203,8 @@ public class ProcessDefinitionStatisticsTest {
   void shouldGetStatisticsAndFilterByEndDateExists() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
     waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(2, processDefinitionKey);
     final var userTask = getUserTask(processDefinitionKey);
@@ -232,8 +232,8 @@ public class ProcessDefinitionStatisticsTest {
   void shouldGetStatisticsAndFilterByEndDateNotExists() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
     waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(2, processDefinitionKey);
     final var userTask = getUserTask(processDefinitionKey);
@@ -261,9 +261,9 @@ public class ProcessDefinitionStatisticsTest {
   void shouldGetStatisticsAndFilterByStateActive() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
     waitForProcessInstances(3, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(3, processDefinitionKey);
     final var userTask = getUserTask(processDefinitionKey);
@@ -288,11 +288,49 @@ public class ProcessDefinitionStatisticsTest {
   }
 
   @Test
+  void shouldGetDistinctStatisticsForMultiInstanceActivity() {
+    // given
+    final var processModel =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("UserTaskMultiInstance")
+            .zeebeUserTask()
+            .multiInstance()
+            .parallel()
+            .zeebeInputCollectionExpression("[1,2,3]")
+            .multiInstanceDone()
+            .endEvent("EndEvent")
+            .done();
+    final var processDefinitionKey =
+        deployResource(processModel, "multi-instance.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
+    waitForUserTasks(6, processDefinitionKey);
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .filter(f -> f.state(ACTIVE))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(1);
+    assertStatistics(actual.getFirst(), "UserTaskMultiInstance", 2L, 0L, 0L, 0L);
+  }
+
+  @Test
   void shouldGetStatisticsAndFilterByStateNotEq() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
-    createInstance(processDefinitionKey).getProcessInstanceKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
     waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(2, processDefinitionKey);
     final var userTask = getUserTask(processDefinitionKey);

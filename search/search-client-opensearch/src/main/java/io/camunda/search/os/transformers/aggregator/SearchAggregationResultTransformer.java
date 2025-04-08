@@ -88,6 +88,7 @@ public class SearchAggregationResultTransformer
           final AggregationResult res;
           switch (Objects.requireNonNull(aggregate._kind())) {
             case Children -> res = transformSingleBucketAggregate(aggregate.children());
+            case Parent -> res = transformSingleBucketAggregate(aggregate.parent());
             case Filter -> res = transformSingleBucketAggregate(aggregate.filter());
             case Filters -> res = transformMultiBucketAggregate(aggregate.filters());
             case Sterms -> res = transformMultiBucketAggregate(aggregate.sterms());

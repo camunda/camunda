@@ -7,25 +7,25 @@
  */
 package io.camunda.search.clients.transformers.query;
 
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_ACTIVE;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_CANCELED;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_COMPLETED;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_FLOW_NODES;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FILTERS;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODES;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_INCIDENTS;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_CHILDREN_FN;
+import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchChildrenAggregator;
 import io.camunda.search.clients.aggregator.SearchFilterAggregator;
-import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
+import io.camunda.search.clients.aggregator.SearchParentAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchBoolQuery;
@@ -38,6 +38,7 @@ import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
@@ -48,6 +49,22 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
   protected <Q extends TypedSearchAggregationQuery> SearchQueryRequest transformQuery(
       final Q query) {
     return transformers.getTypedSearchQueryTransformer(query.getClass()).apply(query);
+  }
+
+  private void assertSubAggregations(final List<SearchAggregator> subAggregations) {
+    assertThat(subAggregations).hasSize(1);
+
+    final var termsAgg = (SearchTermsAggregator) subAggregations.getFirst();
+    assertThat(termsAgg.name()).isEqualTo(AGGREGATION_GROUP_FLOW_NODE_ID);
+    assertThat(termsAgg.field()).isEqualTo(ListViewTemplate.ACTIVITY_ID);
+    assertThat(termsAgg.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
+    assertThat(termsAgg.minDocCount()).isEqualTo(1);
+    assertThat(termsAgg.aggregations()).hasSize(1);
+
+    final var parentAgg = (SearchParentAggregator) termsAgg.aggregations().getFirst();
+    assertThat(parentAgg.name()).isEqualTo(AGGREGATION_TO_PARENT_PI);
+    assertThat(parentAgg.type()).isEqualTo(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
+    assertThat(parentAgg.aggregations()).isNull();
   }
 
   @Test
@@ -70,7 +87,7 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
     assertThat(aggregations.getFirst()).isInstanceOf(SearchChildrenAggregator.class);
 
     final var childrenAgg = (SearchChildrenAggregator) aggregations.getFirst();
-    assertThat(childrenAgg.name()).isEqualTo(AGGREGATION_TO_FLOW_NODES);
+    assertThat(childrenAgg.name()).isEqualTo(AGGREGATION_TO_CHILDREN_FN);
     assertThat(childrenAgg.type()).isEqualTo(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
     assertThat(childrenAgg.aggregations()).hasSize(1);
     assertThat(childrenAgg.aggregations().getFirst()).isInstanceOf(SearchFilterAggregator.class);
@@ -82,41 +99,56 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
             or(
                 not(term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString())),
                 term(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString())));
-    assertThat(filterAgg.aggregations()).hasSize(1);
-    assertThat(filterAgg.aggregations().getFirst()).isInstanceOf(SearchTermsAggregator.class);
+    assertThat(filterAgg.aggregations()).hasSize(4);
 
-    final var termsAgg = (SearchTermsAggregator) filterAgg.aggregations().getFirst();
-    assertThat(termsAgg.name()).isEqualTo(AGGREGATION_GROUP_FLOW_NODES);
-    assertThat(termsAgg.field()).isEqualTo(ListViewTemplate.ACTIVITY_ID);
-    assertThat(termsAgg.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
-    assertThat(termsAgg.minDocCount()).isEqualTo(1);
-    assertThat(termsAgg.aggregations()).hasSize(1);
-    assertThat(termsAgg.aggregations().getFirst()).isInstanceOf(SearchFiltersAggregator.class);
-
-    final var filtersAgg = (SearchFiltersAggregator) termsAgg.aggregations().getFirst();
-    assertThat(filtersAgg.name()).isEqualTo(AGGREGATION_GROUP_FILTERS);
-    assertThat(filtersAgg.aggregations()).isNull();
-    assertThat(filtersAgg.queries()).hasSize(4);
-    assertThat(filtersAgg.queries())
-        .containsOnly(
-            entry(
-                AGGREGATION_ACTIVE,
-                and(
-                    term(ListViewTemplate.INCIDENT, false),
-                    term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString()))),
-            entry(
-                AGGREGATION_COMPLETED,
-                and(
-                    term(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString()),
-                    term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString()))),
-            entry(
-                AGGREGATION_CANCELED,
-                term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.TERMINATED.toString())),
-            entry(
-                AGGREGATION_INCIDENTS,
-                and(
-                    term(ListViewTemplate.INCIDENT, true),
-                    term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString()))));
+    assertThat(filterAgg.aggregations().get(0))
+        .isInstanceOfSatisfying(
+            SearchFilterAggregator.class,
+            activeFilter -> {
+              assertThat(activeFilter.name()).isEqualTo(AGGREGATION_FILTER_ACTIVE);
+              assertThat(activeFilter.query())
+                  .isEqualTo(
+                      and(
+                          term(ListViewTemplate.INCIDENT, false),
+                          term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())));
+              assertSubAggregations(activeFilter.aggregations());
+            });
+    assertThat(filterAgg.aggregations().get(1))
+        .isInstanceOfSatisfying(
+            SearchFilterAggregator.class,
+            completedFilter -> {
+              assertThat(completedFilter.name()).isEqualTo(AGGREGATION_FILTER_COMPLETED);
+              assertThat(completedFilter.query())
+                  .isEqualTo(
+                      and(
+                          term(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString()),
+                          term(
+                              ListViewTemplate.ACTIVITY_STATE,
+                              FlowNodeState.COMPLETED.toString())));
+              assertSubAggregations(completedFilter.aggregations());
+            });
+    assertThat(filterAgg.aggregations().get(2))
+        .isInstanceOfSatisfying(
+            SearchFilterAggregator.class,
+            canceledFilter -> {
+              assertThat(canceledFilter.name()).isEqualTo(AGGREGATION_FILTER_CANCELED);
+              assertThat(canceledFilter.query())
+                  .isEqualTo(
+                      term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.TERMINATED.toString()));
+              assertSubAggregations(canceledFilter.aggregations());
+            });
+    assertThat(filterAgg.aggregations().get(3))
+        .isInstanceOfSatisfying(
+            SearchFilterAggregator.class,
+            incidentsFilter -> {
+              assertThat(incidentsFilter.name()).isEqualTo(AGGREGATION_FILTER_INCIDENTS);
+              assertThat(incidentsFilter.query())
+                  .isEqualTo(
+                      and(
+                          term(ListViewTemplate.INCIDENT, true),
+                          term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())));
+              assertSubAggregations(incidentsFilter.aggregations());
+            });
 
     final var queryVariant = searchRequest.query().queryOption();
     assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
