@@ -29,6 +29,7 @@ import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
+import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
@@ -1741,4 +1742,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the update authorization command
    */
   UpdateAuthorizationCommandStep1 newUpdateAuthorizationCommand(long authorizationKey);
+
+  /**
+   * Command to create a batch operation
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newCreateBatchOperationCommand()
+   *   .processInstanceCancel()
+   *   .filter(filter)
+   *   .send();
+   * </pre>
+   *
+   * @return a builder to configure and send the create batch operation command
+   */
+  CreateBatchOperationCommandStep1 newCreateBatchOperationCommand();
 }
