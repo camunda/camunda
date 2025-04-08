@@ -368,8 +368,8 @@ public class ElasticsearchExporter implements Exporter {
   /**
    * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
    * records to be exported, or if the configuration explicitly enables the export of all records
-   * {@link ElasticsearchExporterConfiguration#zeebeRecordsExportEnabled}. For past versions, we
-   * continue to export all records.
+   * {@link ElasticsearchExporterConfiguration#exportLegacyRecords}. For past versions, we continue
+   * to export all records.
    *
    * @param record The record to check
    * @return Whether the record should be exported or not
