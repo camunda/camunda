@@ -36,6 +36,7 @@ jobs:
   detect-changes:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
+      commitlint: ${{ steps.filter.outputs.commitlint }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
@@ -82,6 +83,37 @@ jobs:
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
           ./conftest test -o github --policy .github .github/workflows/*.y*ml
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  commitlint:
+    if: needs.detect-changes.outputs.commitlint == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - name: Determine fetch depth for checkout
+        id: depth
+        run: echo "depth=$(expr ${{ github.event.pull_request.commits }} + 1)" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: ${{ steps.depth.outputs.depth }}
+      - uses: wagoid/commitlint-github-action@v6
+        with:
+          commitDepth: ${{ github.event.pull_request.commits }}
+          helpURL: https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#commit-message-guidelines
+      - name: Post failure hint
+        if: failure()
+        run: echo "::error::Found commit message guideline violations! Check https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#commit-message-guidelines and in exceptional cases, document the reasoning and add the ci:ignore-commitlint PR label."
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1023,6 +1055,7 @@ jobs:
       checks: read
     needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
+      - commitlint
       - build-operate-backend
       - build-platform-frontend
       - detect-changes
