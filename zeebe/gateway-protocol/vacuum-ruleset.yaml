@@ -19,6 +19,71 @@ rules:
       functionOptions:
         notMatch: ^.*\.$
     type: validation
+  no-flow-node-in-path-summary:
+    category:
+      id: operations
+    description: Path summary must not include term "flow node"
+    severity: error
+    given: $.paths[*][*].summary
+    howToFix: Please replace the term "flow node" with "element".
+    id: no-flow-node-in-path-summary
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode|flow node).*
+    type: validation
+  no-flow-node-in-path-description:
+    category:
+      id: operations
+    description: Path description must not include term "flow node"
+    severity: error
+    given: $.paths[*][*].description
+    howToFix: Please replace the term "flow node" with "element".
+    id: no-flow-node-in-description
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode|flow node).*
+    type: validation
+  no-flow-node-in-operation-id:
+    category:
+      id: operations
+    description: Path operation ID must not include term "flow node"
+    severity: error
+    given: $.paths[*][*].operationId
+    howToFix: Please replace the term "flow node" with "element".
+    id: no-flow-node-in-operation-id
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode|FlowNode|Flownode).*
+    type: validation
+  no-flow-node-in-path:
+    category:
+      id: operations
+    description: Paths must not include term "flow node"
+    severity: error
+    given: $.paths.*~
+    howToFix: Please replace the term "flow node" with "element".
+    id: no-flow-node-in-path
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode).*
+    type: validation
+  no-flow-node-in-component-property:
+    category:
+      id: operations
+    description: Component properties must not include term "flow node"
+    severity: error
+    given: $.components[*][*].properties.*~
+    howToFix: Please replace the term "flow node" with "element".
+    id: no-flow-node-in-component-property
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flownode|flowNode).*
+    type: validation
   require-property-descriptions:
     category:
       id: descriptions
