@@ -16,9 +16,6 @@ import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import java.util.List;
-import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.context.annotation.Profile;
@@ -32,8 +29,6 @@ import org.springframework.web.bind.annotation.*;
 @Profile("standalone")
 public class BackupController extends ErrorController {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BackupController.class);
-  private final Pattern pattern = Pattern.compile("((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$");
   @Autowired private BackupService backupService;
   @Autowired private OperateProperties operateProperties;
 
