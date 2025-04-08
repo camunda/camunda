@@ -1,6 +1,8 @@
 ---
 name: chatops-command-ci-disable-cache
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   repository_dispatch:
     types: [ci-disable-cache-command, ci-enable-cache-command]

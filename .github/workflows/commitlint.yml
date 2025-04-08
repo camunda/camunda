@@ -1,5 +1,10 @@
+---
 name: Commitlint
-on: [pull_request]
+
+# owner: @camunda/monorepo-devops-team
+
+on:
+  pull_request: {}
 
 jobs:
   lint-commits:

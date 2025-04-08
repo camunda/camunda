@@ -1,10 +1,11 @@
+---
 name: Add support label to issue
+
+# owner: @camunda/monorepo-devops-team
 
 on:
   issues:
-    types:
-      - opened
-      - edited
+    types: [ opened, edited ]
 
 permissions:
   issues: write

@@ -1,6 +1,8 @@
 ---
 name: chatops-command-ci-problems
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   repository_dispatch:
     types: [ci-problems-command]

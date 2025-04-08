@@ -3,6 +3,8 @@
 #
 name: Repo dispatch Release 8.7
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   repository_dispatch:
     types: [ trigger_release_8_7 ]

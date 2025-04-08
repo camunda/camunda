@@ -1,6 +1,8 @@
 ---
 name: Preview Env Clean
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   schedule:
   - cron: 0 6,22 * * *

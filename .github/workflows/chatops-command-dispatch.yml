@@ -1,6 +1,8 @@
 ---
 name: ChatOps Command Dispatch
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   issue_comment:
     types: [created]

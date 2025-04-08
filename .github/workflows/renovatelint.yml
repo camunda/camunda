@@ -1,5 +1,8 @@
 ---
 name: Renovate lint
+
+# owner: @camunda/monorepo-devops-team
+
 on:
   pull_request:
     paths:

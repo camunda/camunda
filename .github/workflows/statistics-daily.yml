@@ -1,6 +1,8 @@
 ---
 name: Statistics Daily
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   schedule:
     - cron: '0 6 * * 2-5'  # Tuesdays to Fridays, to keep it actionable

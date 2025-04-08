@@ -1,4 +1,8 @@
+---
 name: "C8Run: Release"
+
+# owner: @camunda/distribution
+
 on:
   workflow_dispatch:
     inputs:
