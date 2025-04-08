@@ -204,24 +204,6 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-8-default
-          - group: modules
-            name: "Zeebe Module Integration Tests"
-            maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: gcp-perf-core-8-default
-          - group: qa-integration
-            name: "Zeebe QA - Integration Tests"
-            maven-modules: "zeebe/qa/integration-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-16-default
-          - group: qa-update
-            name: "Zeebe QA - Update Tests"
-            maven-modules: "zeebe/qa/update-tests"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-8-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:

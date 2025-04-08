@@ -26,24 +26,6 @@ jobs:
       branch: ${{ github.head_ref }}
       pushDocker: true
 
-  build-operare:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Operate Build
-    uses: ./.github/workflows/operate-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-      previewEnv: true
-
-  build-tasklist:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Tasklist Build
-    uses: ./.github/workflows/tasklist-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-      previewEnv: true
-
   build-zeebe:
     if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
     name: Build Zeebe
