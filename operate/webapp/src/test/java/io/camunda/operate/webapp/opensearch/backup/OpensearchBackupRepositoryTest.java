@@ -12,7 +12,9 @@ import static io.camunda.operate.webapp.opensearch.backup.OpensearchBackupReposi
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch._types.ErrorCause;
@@ -113,6 +116,38 @@ class OpensearchBackupRepositoryTest {
     assertThat(snapshotDtoDetail.getState()).isEqualTo("STARTED");
     assertThat(snapshotDtoDetail.getFailures()).isNull();
     assertThat(snapshotDtoDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(23L);
+  }
+
+  @Test
+  void shouldForwardVerboseFlagToOpensearch() {
+    final var metadata =
+        new Metadata().setBackupId(5L).setVersion("1").setPartNo(1).setPartCount(3);
+    final var snapshotInfos =
+        List.of(
+            new OpenSearchSnapshotInfo()
+                .setSnapshot("test-snapshot")
+                .setState(SnapshotState.STARTED));
+    final var response = new OpenSearchGetSnapshotResponse(snapshotInfos);
+    mockObjectMapperForMetadata(metadata);
+    final var requestIsNotVerbose =
+        new ArgumentMatcher<GetSnapshotRequest>() {
+          @Override
+          public boolean matches(final GetSnapshotRequest request) {
+            return request.verbose().equals(false);
+          }
+        };
+    when(openSearchSnapshotOperations.get(any())).thenReturn(response);
+    mockSynchronSnapshotOperations();
+    final var snapshotDtoList = repository.getBackups("repo", false);
+    verify(openSearchSnapshotOperations).get(argThat(requestIsNotVerbose));
+
+    assertThat(snapshotDtoList)
+        .singleElement()
+        .satisfies(
+            backup -> {
+              assertThat(backup.getBackupId()).isEqualTo(5L);
+              assertThat(backup.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+            });
   }
 
   @Test

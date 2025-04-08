@@ -53,13 +53,13 @@ public class BackupService {
   private String[][] indexPatternsOrdered;
 
   public BackupService(
-      @Qualifier("backupThreadPoolExecutor") ThreadPoolTaskExecutor threadPoolTaskExecutor,
-      List<Prio1Backup> prio1BackupIndices,
-      List<Prio2Backup> prio2BackupTemplates,
-      List<Prio3Backup> prio3BackupTemplates,
-      List<Prio4Backup> prio4BackupIndices,
-      OperateProperties operateProperties,
-      BackupRepository repository) {
+      @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor,
+      final List<Prio1Backup> prio1BackupIndices,
+      final List<Prio2Backup> prio2BackupTemplates,
+      final List<Prio3Backup> prio3BackupTemplates,
+      final List<Prio4Backup> prio4BackupIndices,
+      final OperateProperties operateProperties,
+      final BackupRepository repository) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.prio1BackupIndices = prio1BackupIndices;
     this.prio2BackupTemplates = prio2BackupTemplates;
@@ -69,7 +69,7 @@ public class BackupService {
     this.operateProperties = operateProperties;
   }
 
-  public void deleteBackup(Long backupId) {
+  public void deleteBackup(final Long backupId) {
     repository.validateRepositoryExists(getRepositoryName());
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
@@ -86,7 +86,7 @@ public class BackupService {
     }
   }
 
-  public TakeBackupResponseDto takeBackup(TakeBackupRequestDto request) {
+  public TakeBackupResponseDto takeBackup(final TakeBackupRequestDto request) {
     repository.validateRepositoryExists(getRepositoryName());
     repository.validateNoDuplicateBackupId(getRepositoryName(), request.getBackupId());
     if (!requestsQueue.isEmpty()) {
@@ -100,7 +100,7 @@ public class BackupService {
     }
   }
 
-  private TakeBackupResponseDto scheduleSnapshots(TakeBackupRequestDto request) {
+  private TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
     final List<String> snapshotNames = new ArrayList<>();
@@ -186,12 +186,12 @@ public class BackupService {
     return operateProperties.getVersion().toLowerCase();
   }
 
-  public GetBackupStateResponseDto getBackupState(Long backupId) {
+  public GetBackupStateResponseDto getBackupState(final Long backupId) {
     return repository.getBackupState(getRepositoryName(), backupId);
   }
 
-  public List<GetBackupStateResponseDto> getBackups() {
-    return repository.getBackups(getRepositoryName());
+  public List<GetBackupStateResponseDto> getBackups(final boolean verbose) {
+    return repository.getBackups(getRepositoryName(), verbose);
   }
 
   public record SnapshotRequest(

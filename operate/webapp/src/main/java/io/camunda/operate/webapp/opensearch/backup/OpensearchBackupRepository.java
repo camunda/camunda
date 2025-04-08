@@ -110,7 +110,9 @@ public class OpensearchBackupRepository implements BackupRepository {
     final OpenSearchGetSnapshotResponse response;
     try {
       response =
-          richOpenSearchClient.snapshot().get(getSnapshotRequestBuilder(repositoryName, snapshot));
+          richOpenSearchClient
+              .snapshot()
+              .get(getSnapshotRequestBuilder(repositoryName, snapshot).build());
     } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
@@ -142,16 +144,23 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   @Override
-  public List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
-    final var requestBuilder =
-        getSnapshotRequestBuilder(repositoryName, Metadata.SNAPSHOT_NAME_PREFIX + "*");
+  public List<GetBackupStateResponseDto> getBackups(
+      final String repositoryName, final boolean verbose) {
+    final var request =
+        getSnapshotRequestBuilder(repositoryName, Metadata.SNAPSHOT_NAME_PREFIX + "*")
+            .verbose(verbose)
+            .build();
     final OpenSearchGetSnapshotResponse response;
     try {
-      response = richOpenSearchClient.snapshot().get(requestBuilder);
-      final List<OpenSearchSnapshotInfo> snapshots =
-          response.snapshots().stream()
-              .sorted(Comparator.comparing(OpenSearchSnapshotInfo::getStartTimeInMillis).reversed())
-              .toList();
+      response = richOpenSearchClient.snapshot().get(request);
+      List<OpenSearchSnapshotInfo> snapshots = response.snapshots();
+      if (verbose) {
+        snapshots =
+            snapshots.stream()
+                .sorted(
+                    Comparator.comparing(OpenSearchSnapshotInfo::getStartTimeInMillis).reversed())
+                .toList();
+      }
 
       final LinkedHashMap<Long, List<OpenSearchSnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
@@ -159,7 +168,8 @@ public class OpensearchBackupRepository implements BackupRepository {
                   groupingBy(
                       si -> {
                         final Metadata metadata =
-                            objectMapper.convertValue(si.getMetadata(), Metadata.class);
+                            Metadata.extractFromMetadataOrName(
+                                objectMapper, si.getMetadata(), si.getSnapshot());
                         Long backupId = metadata.getBackupId();
                         // backward compatibility with v. 8.1
                         if (backupId == null) {
@@ -321,12 +331,13 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   private List<OpenSearchSnapshotInfo> findSnapshots(
       final String repositoryName, final Long backupId) {
-    final var requestBuilder =
-        getSnapshotRequestBuilder(repositoryName, Metadata.buildSnapshotNamePrefix(backupId) + "*");
+    final var request =
+        getSnapshotRequestBuilder(repositoryName, Metadata.buildSnapshotNamePrefix(backupId) + "*")
+            .build();
 
     final OpenSearchGetSnapshotResponse response;
     try {
-      response = richOpenSearchClient.snapshot().get(requestBuilder);
+      response = richOpenSearchClient.snapshot().get(request);
       return response.snapshots();
     } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
@@ -365,7 +376,8 @@ public class OpensearchBackupRepository implements BackupRepository {
       final Long backupId, final List<OpenSearchSnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final Metadata metadata =
-        objectMapper.convertValue(snapshots.get(0).getMetadata(), Metadata.class);
+        Metadata.extractFromMetadataOrName(
+            objectMapper, snapshots.getFirst().getMetadata(), snapshots.getFirst().getSnapshot());
     final Integer expectedSnapshotsCount = metadata.getPartCount();
 
     response.setState(getState(snapshots, expectedSnapshotsCount));
@@ -385,10 +397,12 @@ public class OpensearchBackupRepository implements BackupRepository {
     for (final OpenSearchSnapshotInfo snapshot : snapshots) {
       final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.getSnapshot());
-      detail.setStartTime(
-          OffsetDateTime.ofInstant(
-              Instant.ofEpochMilli(snapshot.getStartTimeInMillis()), ZoneId.systemDefault()));
-      if (!snapshot.getFailures().isEmpty()) {
+      if (snapshot.getStartTimeInMillis() != null) {
+        detail.setStartTime(
+            OffsetDateTime.ofInstant(
+                Instant.ofEpochMilli(snapshot.getStartTimeInMillis()), ZoneId.systemDefault()));
+      }
+      if (snapshot.getFailures() != null && !snapshot.getFailures().isEmpty()) {
         detail.setFailures(
             snapshot.getFailures().stream().map(Object::toString).toArray(String[]::new));
       }
