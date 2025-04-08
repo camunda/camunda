@@ -36,6 +36,10 @@ import {open} from 'modules/mocks/diagrams';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {Paths} from 'modules/Routes';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -62,11 +66,15 @@ type Props = {
 
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      <Routes>
-        <Route path={Paths.processInstance()} element={children} />
-      </Routes>
-    </MemoryRouter>
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
   );
 };
 
@@ -83,6 +91,9 @@ describe('TopPanel', () => {
 
   beforeEach(() => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
+    );
 
     mockFetchProcessInstance().withSuccess(
       createInstance({id: 'instance_id', state: 'INCIDENT'}),

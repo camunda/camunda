@@ -129,7 +129,7 @@ describe('Filters', () => {
     });
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,

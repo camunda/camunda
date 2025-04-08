@@ -6,25 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {MetadataPopover} from '.';
-import {
-  createInstance,
-  mockCallActivityProcessXML,
-  mockProcessXML,
-} from 'modules/testUtils';
+import {createInstance} from 'modules/testUtils';
 import {mockIncidents} from 'modules/mocks/incidents';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {incidentsStore} from 'modules/stores/incidents';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
-  calledDecisionMetadata,
-  calledFailedDecisionMetadata,
   calledInstanceMetadata,
-  calledUnevaluatedDecisionMetadata,
   incidentFlowNodeMetaData,
   multiInstanceCallActivityMetadata,
   multiInstancesMetadata,
@@ -37,14 +27,10 @@ import {
   retriesLeftFlowNodeMetaData,
   singleInstanceMetadata,
 } from 'modules/mocks/metadata';
-import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
-import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {useEffect} from 'react';
-import {Paths} from 'modules/Routes';
-import {ProcessInstance} from 'modules/testUtils/pages/ProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {labels, renderPopover} from './mocks';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -53,52 +39,14 @@ jest.mock('date-fns', () => ({
   formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
 }));
 
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => {
-    return () => {
-      flowNodeMetaDataStore.reset();
-      flowNodeSelectionStore.reset();
-      processInstanceDetailsStore.reset();
-      incidentsStore.reset();
-      processInstanceDetailsDiagramStore.reset();
-    };
-  }, []);
-
-  return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      <Routes>
-        <Route path={Paths.processInstance()} element={children} />
-        <Route path={Paths.decisionInstance()} element={<></>} />
-      </Routes>
-      <LocationLog />
-    </MemoryRouter>
-  );
-};
-
-const renderPopover = () => {
-  const {container} = render(<svg />);
-
-  return render(
-    <MetadataPopover selectedFlowNodeRef={container.querySelector('svg')} />,
-    {
-      wrapper: Wrapper,
-    },
-  );
-};
-
-const {
-  metadataPopover: {labels},
-} = new ProcessInstance();
-
 describe('MetadataPopover', () => {
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
-    processInstanceDetailsDiagramStore.init();
+    mockFetchProcessDefinitionXml().withSuccess('');
   });
 
   it('should not show unrelated data', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -141,7 +89,6 @@ describe('MetadataPopover', () => {
   });
 
   it('should render meta data for incident flow node', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
 
@@ -195,46 +142,7 @@ describe('MetadataPopover', () => {
     );
   });
 
-  it('should render meta data for completed flow node', async () => {
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
-    });
-
-    renderPopover();
-
-    expect(
-      await screen.findByText(labels.flowNodeInstanceKey),
-    ).toBeInTheDocument();
-    expect(screen.getByText(labels.executionDuration)).toBeInTheDocument();
-    expect(screen.getByText(labels.calledProcessInstance)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: labels.showMoreMetadata}),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText(
-        calledInstanceMetadata.instanceMetadata!.flowNodeInstanceId,
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Less than 1 second')).toBeInTheDocument();
-    expect(screen.getByTestId('called-process-instance')).toHaveTextContent(
-      `Called Process - ${
-        calledInstanceMetadata.instanceMetadata!.calledProcessInstanceId
-      }`,
-    );
-  });
-
   it('should render meta data modal', async () => {
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -304,7 +212,6 @@ describe('MetadataPopover', () => {
   });
 
   it('should render metadata for multi instance flow nodes', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -337,7 +244,6 @@ describe('MetadataPopover', () => {
   });
 
   it('should not render called instances for multi instance call activities', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(multiInstanceCallActivityMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -363,7 +269,6 @@ describe('MetadataPopover', () => {
   it('should not render root cause instance link when instance is root', async () => {
     const {rootCauseInstance} = rootIncidentFlowNodeMetaData.incident;
 
-    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(rootIncidentFlowNodeMetaData);
 
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
@@ -391,143 +296,10 @@ describe('MetadataPopover', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should render completed decision', async () => {
-    jest.useFakeTimers();
-    const {instanceMetadata} = calledDecisionMetadata;
-
-    mockFetchProcessXML().withSuccess(metadataDemoProcess);
-    mockFetchFlowNodeMetadata().withSuccess(calledDecisionMetadata);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'COMPLETED',
-      }),
-    );
-
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
-
-    const {user} = renderPopover();
-
-    expect(
-      await screen.findByText(labels.calledDecisionInstance),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('heading', {name: labels.incident}),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(labels.rootCauseDecisionInstance),
-    ).not.toBeInTheDocument();
-
-    await user.click(
-      screen.getByText(
-        `${instanceMetadata!.calledDecisionDefinitionName} - ${
-          instanceMetadata!.calledDecisionInstanceId
-        }`,
-      ),
-    );
-
-    await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(
-        `/decisions/${instanceMetadata!.calledDecisionInstanceId}`,
-      ),
-    );
-
-    jest.clearAllTimers();
-    jest.useFakeTimers();
-  });
-
-  it('should render failed decision', async () => {
-    jest.useFakeTimers();
-
-    const {instanceMetadata} = calledFailedDecisionMetadata;
-    const {rootCauseDecision} = calledFailedDecisionMetadata!.incident!;
-
-    mockFetchProcessXML().withSuccess(metadataDemoProcess);
-    mockFetchFlowNodeMetadata().withSuccess(calledFailedDecisionMetadata);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'INCIDENT',
-      }),
-    );
-
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
-
-    const {user} = renderPopover();
-
-    expect(
-      await screen.findByText(labels.calledDecisionInstance),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', {name: labels.incident}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        `${instanceMetadata!.calledDecisionDefinitionName} - ${
-          instanceMetadata!.calledDecisionInstanceId
-        }`,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(labels.rootCauseDecisionInstance),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(labels.rootCauseProcessInstance),
-    ).not.toBeInTheDocument();
-
-    await user.click(
-      screen.getByText(
-        `${rootCauseDecision!.decisionName!} - ${
-          rootCauseDecision!.instanceId
-        }`,
-      ),
-    );
-    await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(
-        `/decisions/${rootCauseDecision!.instanceId}`,
-      ),
-    );
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should render unevaluated decision', async () => {
-    const {instanceMetadata} = calledUnevaluatedDecisionMetadata;
-
-    mockFetchProcessXML().withSuccess(metadataDemoProcess);
-    mockFetchFlowNodeMetadata().withSuccess(calledUnevaluatedDecisionMetadata);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
-
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
-
-    renderPopover();
-
-    expect(
-      await screen.findByText(labels.calledDecisionInstance),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(instanceMetadata.calledDecisionDefinitionName),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(labels.incident)).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(labels.rootCauseDecisionInstance),
-    ).not.toBeInTheDocument();
-  });
-
   it('should render link to tasklist', async () => {
     const tasklistUrl = 'https://tasklist:8080';
     window.clientConfig = {tasklistUrl};
 
-    mockFetchProcessXML().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(userTaskFlowNodeMetaData);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -547,7 +319,6 @@ describe('MetadataPopover', () => {
   });
 
   it('should render retries left', async () => {
-    mockFetchProcessXML().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(retriesLeftFlowNodeMetaData);
 
     processInstanceDetailsStore.setProcessInstance(
