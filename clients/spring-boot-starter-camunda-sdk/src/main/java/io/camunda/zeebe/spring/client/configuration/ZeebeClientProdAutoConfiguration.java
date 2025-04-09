@@ -41,7 +41,7 @@ import org.springframework.context.annotation.Bean;
  * All configurations that will only be used in production code - meaning NO TEST cases
  */
 @ConditionalOnProperty(
-    prefix = "zeebe.client",
+    prefix = "camunda.client.zeebe",
     name = "enabled",
     havingValue = "true",
     matchIfMissing = true)
