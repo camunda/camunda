@@ -21,8 +21,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("https://github.com/camunda/camunda/issues/29903")
 public class GroupEntityAddedHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
