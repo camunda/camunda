@@ -11,16 +11,10 @@ import java.net.http.HttpClient;
 
 public class HttpClientWrapper {
   private static volatile HttpClient httpClient;
-  private static final Object LOCK = new Object();
 
-  // double lock to avoid threading issues
   public static HttpClient newHttpClient() {
     if (httpClient == null) {
-      synchronized (LOCK) {
-        if (httpClient == null) {
-          httpClient = HttpClient.newBuilder().build();
-        }
-      }
+      httpClient = HttpClient.newBuilder().build();
     }
 
     return httpClient;
