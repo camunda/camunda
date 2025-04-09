@@ -33,7 +33,9 @@ public final class BatchOperationPauseProcessor
   private static final String MESSAGE_PREFIX =
       "Expected to pause a batch operation with key '%d', but ";
   private static final String BATCH_OPERATION_NOT_FOUND_MESSAGE =
-      MESSAGE_PREFIX + "no such batch operation was found";
+      MESSAGE_PREFIX + "no such batch operation was found.";
+  private static final String BATCH_OPERATION_INVALID_STATE_MESSAGE =
+      MESSAGE_PREFIX + "it has an invalid state '%s'.";
 
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final StateWriter stateWriter;
@@ -68,21 +70,22 @@ public final class BatchOperationPauseProcessor
 
     // validation
     final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isPresent() && batchOperation.get().canPause()) {
-      pauseBatchOperation(pauseKey, recordValue);
-      responseWriter.writeEventOnCommand(
-          pauseKey, BatchOperationIntent.PAUSED, command.getValue(), command);
-      commandDistributionBehavior.withKey(pauseKey).unordered().distribute(command);
-    } else {
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.NOT_FOUND,
-          String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
-      responseWriter.writeRejectionOnCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
+    if (batchOperation.isEmpty()) {
+      rejectNotFound(command, batchOperationKey, recordValue);
+      return;
     }
+
+    // check if the batch operation can be paused
+    if (batchOperation.get().canPause()) {
+      final var batchOperationStatus = batchOperation.get().getStatus().name();
+      rejectInvalidState(command, batchOperationKey, batchOperationStatus, recordValue);
+      return;
+    }
+
+    pauseBatchOperation(pauseKey, recordValue);
+    responseWriter.writeEventOnCommand(
+        pauseKey, BatchOperationIntent.PAUSED, command.getValue(), command);
+    commandDistributionBehavior.withKey(pauseKey).unordered().distribute(command);
   }
 
   @Override
@@ -102,5 +105,45 @@ public final class BatchOperationPauseProcessor
   private void pauseBatchOperation(
       final Long pauseKey, final BatchOperationLifecycleManagementRecord recordValue) {
     stateWriter.appendFollowUpEvent(pauseKey, BatchOperationIntent.PAUSED, recordValue);
+  }
+
+  private void rejectInvalidState(
+      final TypedRecord<BatchOperationLifecycleManagementRecord> command,
+      final long batchOperationKey,
+      final String batchOperationStatus,
+      final BatchOperationLifecycleManagementRecord recordValue) {
+    LOGGER.info(
+        "Batch operation with key '{}' cannot be paused because of invalid status '{}', rejecting command: {}",
+        batchOperationKey,
+        batchOperationStatus,
+        recordValue);
+    rejectionWriter.appendRejection(
+        command,
+        RejectionType.INVALID_STATE,
+        String.format(
+            BATCH_OPERATION_INVALID_STATE_MESSAGE, batchOperationKey, batchOperationStatus));
+    responseWriter.writeRejectionOnCommand(
+        command,
+        RejectionType.INVALID_STATE,
+        String.format(
+            BATCH_OPERATION_INVALID_STATE_MESSAGE, batchOperationKey, batchOperationStatus));
+  }
+
+  private void rejectNotFound(
+      final TypedRecord<BatchOperationLifecycleManagementRecord> command,
+      final long batchOperationKey,
+      final BatchOperationLifecycleManagementRecord recordValue) {
+    LOGGER.info(
+        "Batch operation with key '{}' not found, rejecting command: {}",
+        batchOperationKey,
+        recordValue);
+    rejectionWriter.appendRejection(
+        command,
+        RejectionType.NOT_FOUND,
+        String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
+    responseWriter.writeRejectionOnCommand(
+        command,
+        RejectionType.NOT_FOUND,
+        String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
   }
 }

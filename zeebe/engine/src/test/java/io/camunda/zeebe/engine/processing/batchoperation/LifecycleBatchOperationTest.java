@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -19,7 +20,7 @@ import org.junit.Test;
 public final class LifecycleBatchOperationTest extends AbstractBatchOperationTest {
 
   @Test
-  public void shouldCancelBatchOperationForProcessInstanceCancellation() {
+  public void shouldCancelBatchOperation() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey =
@@ -46,7 +47,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
-  public void shouldPauseBatchOperationForProcessInstanceCancellation() {
+  public void shouldPauseBatchOperation() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey =
@@ -62,6 +63,68 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .onlyEvents())
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.PAUSED);
+
+    // and no follow op up command to execute again
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyCommands())
+        .extracting(Record::getIntent)
+        .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
+  }
+
+  @Test
+  public void shouldRejectPauseBatchOperationIfNotFound() {
+    // given a nonexisting batch operation key
+    final var batchOperationKey = 1L;
+
+    // when we pause the batch operation which does not exist
+    engine
+        .batchOperation()
+        .newLifecycle()
+        .withBatchOperationKey(batchOperationKey)
+        .pauseWithoutExpectations();
+
+    // then we have a rejected command
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withRejectionType(RejectionType.NOT_FOUND)
+                .onlyCommandRejections())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.PAUSE);
+
+    // and no follow op up command to execute again
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyCommands())
+        .extracting(Record::getIntent)
+        .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
+  }
+
+  @Test
+  public void shouldRejectPauseBatchOperationIfInvalidState() {
+    // given a failed batch operation
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey =
+        createNewFailedProcessInstanceCancellationBatchOperation(processInstanceKeys);
+
+    // when we pause the batch operation which does not exist
+    engine
+        .batchOperation()
+        .newLifecycle()
+        .withBatchOperationKey(batchOperationKey)
+        .pauseWithoutExpectations();
+
+    // then we have a rejected command
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withRejectionType(RejectionType.INVALID_STATE)
+                .onlyCommandRejections())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.PAUSE);
 
     // and no follow op up command to execute again
     assertThat(

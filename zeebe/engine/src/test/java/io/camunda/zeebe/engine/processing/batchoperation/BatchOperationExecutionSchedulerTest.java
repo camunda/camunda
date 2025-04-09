@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -104,7 +103,8 @@ public class BatchOperationExecutionSchedulerTest {
 
     // and should NOT append an execute command
     verify(taskResultBuilder, times(0))
-        .appendCommandRecord(anyLong(), any(Intent.class), any(UnifiedRecordValue.class), anyLong());
+        .appendCommandRecord(
+            anyLong(), any(Intent.class), any(UnifiedRecordValue.class), anyLong());
   }
 
   @Test

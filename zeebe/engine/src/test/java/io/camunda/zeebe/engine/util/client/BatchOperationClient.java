@@ -292,5 +292,21 @@ public final class BatchOperationClient {
 
       return PAUSE_SUCCESS_EXPECTATION.apply(position);
     }
+
+    public void pauseWithoutExpectations() {
+      pauseWithoutExpectations(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public void pauseWithoutExpectations(final AuthInfo authorizations) {
+      writer.writeCommandOnPartition(
+          partition,
+          r ->
+              r.intent(BatchOperationIntent.PAUSE)
+                  .event(batchOperationLifecycleManagementRecord)
+                  .authorizations(authorizations)
+                  .requestId(new Random().nextLong())
+                  .requestStreamId(new Random().nextInt()));
+    }
   }
 }

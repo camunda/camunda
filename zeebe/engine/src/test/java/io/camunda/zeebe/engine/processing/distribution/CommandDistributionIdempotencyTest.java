@@ -260,19 +260,19 @@ public class CommandDistributionIdempotencyTest {
             BatchOperationCancelProcessor.class
           },
           {
-              "BatchOperation.PAUSE is idempotent",
-              new Scenario(
-                  ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-                  BatchOperationIntent.PAUSE,
-                  () -> {
-                    final var batchOperation = createBatchOperation();
-                    return ENGINE
-                        .batchOperation()
-                        .newLifecycle()
-                        .withBatchOperationKey(batchOperation.getKey())
-                        .pause();
-                  }),
-              BatchOperationPauseProcessor.class
+            "BatchOperation.PAUSE is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+                BatchOperationIntent.PAUSE,
+                () -> {
+                  final var batchOperation = createBatchOperation();
+                  return ENGINE
+                      .batchOperation()
+                      .newLifecycle()
+                      .withBatchOperationKey(batchOperation.getKey())
+                      .pause();
+                }),
+            BatchOperationPauseProcessor.class
           },
           {
             "Clock.RESET is idempotent",
