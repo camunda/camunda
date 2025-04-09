@@ -13,12 +13,12 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.7.1</version>
+    <version>8.7.2-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
   <artifactId>webapps-schema</artifactId>
   <name>Webapps Schema</name>
 
-  <dependencies />
+  <dependencies></dependencies>
 
 </project>
