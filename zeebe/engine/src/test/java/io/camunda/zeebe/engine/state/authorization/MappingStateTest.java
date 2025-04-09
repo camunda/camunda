@@ -48,8 +48,7 @@ public class MappingStateTest {
     mappingState.create(mapping);
 
     // then
-    final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getMappingKey()).isEqualTo(key);
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getMappingId()).isEqualTo(mappingId);
     assertThat(persistedMapping.getName()).isEqualTo(name);
     assertThat(persistedMapping.getClaimName()).isEqualTo(claimName);
@@ -59,7 +58,7 @@ public class MappingStateTest {
   @Test
   void shouldReturnEmptyIfMappingDoesNotExist() {
     // when
-    final var mapping = mappingState.get(1L);
+    final var mapping = mappingState.get("someMappingId");
 
     // then
     assertThat(mapping).isEmpty();
@@ -123,7 +122,7 @@ public class MappingStateTest {
 
     // then
     assertThat(retrievedMapping).isPresent();
-    assertThat(retrievedMapping.get().getMappingKey()).isEqualTo(key);
+    assertThat(retrievedMapping.get().getMappingId()).isEqualTo(mappingId);
     assertThat(retrievedMapping.get().getName()).isEqualTo(name);
     assertThat(retrievedMapping.get().getClaimName()).isEqualTo(claimName);
     assertThat(retrievedMapping.get().getClaimValue()).isEqualTo(claimValue);
@@ -148,7 +147,6 @@ public class MappingStateTest {
     mappingState.delete(mappingId);
 
     // then
-    assertThat(mappingState.get(key)).isEmpty();
     assertThat(mappingState.get(mappingId)).isEmpty();
     assertThat(mappingState.get(claimName, claimValue)).isEmpty();
   }
