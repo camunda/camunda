@@ -96,8 +96,7 @@ public class GroupTest {
   @Test
   public void shouldAddEntityToGroup() {
     // given
-    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
-    final var groupId = "123";
+    final var groupId = Strings.newRandomValidIdentityId();
     final var username =
         engine
             .user()
@@ -171,8 +170,7 @@ public class GroupTest {
   @Test
   public void shouldRejectIfEntityIsAlreadyAssigned() {
     // given
-    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
-    final var groupId = "123";
+    final var groupId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create();
     final var username =
@@ -208,8 +206,7 @@ public class GroupTest {
   @Test
   public void shouldRemoveEntityToGroup() {
     // given
-    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
-    final var groupId = "123";
+    final var groupId = Strings.newRandomValidIdentityId();
     final var username =
         engine
             .user()

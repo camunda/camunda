@@ -15,12 +15,12 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,12 +48,11 @@ public class DeleteUserTest {
     assertThat(deletedUser).isNotNull().hasFieldOrPropertyWithValue("userKey", userRecord.getKey());
   }
 
-  @Ignore("https://github.com/camunda/camunda/issues/30091")
   @Test
   public void shouldCleanupMembership() {
     final var username = UUID.randomUUID().toString();
     final var tenantId = "tenant";
-    final var groupId = "123";
+    final var groupId = Strings.newRandomValidIdentityId();
     final var userRecord =
         ENGINE
             .user()
@@ -86,7 +85,7 @@ public class DeleteUserTest {
     // then
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
-                .withGroupKey(Long.parseLong(groupId))
+                .withGroupId(groupId)
                 .withEntityId(username)
                 .exists())
         .isTrue();

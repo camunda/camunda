@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -50,8 +51,7 @@ public class RemoveEntityGroupMultiPartitionTest {
             .getValue()
             .getUsername();
     final var name = UUID.randomUUID().toString();
-    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
-    final var groupId = "123";
+    final var groupId = Strings.newRandomValidIdentityId();
     engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
@@ -121,8 +121,7 @@ public class RemoveEntityGroupMultiPartitionTest {
             .getValue()
             .getUsername();
     final var name = UUID.randomUUID().toString();
-    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
-    final var groupId = "123";
+    final var groupId = Strings.newRandomValidIdentityId();
     engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
@@ -160,8 +159,7 @@ public class RemoveEntityGroupMultiPartitionTest {
 
     // when
     final var name = UUID.randomUUID().toString();
-    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
-    final var groupId = "123";
+    final var groupId = Strings.newRandomValidIdentityId();
     engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
     engine

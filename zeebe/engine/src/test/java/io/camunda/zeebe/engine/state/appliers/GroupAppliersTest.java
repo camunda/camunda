@@ -177,7 +177,7 @@ public class GroupAppliersTest {
     final var entitiesByType = groupState.getEntitiesByType(groupId);
     assertThat(entitiesByType).isEmpty();
     final var persistedUser = userState.getUser(username).get();
-    assertThat(persistedUser.getGroupKeysList()).isEmpty();
+    assertThat(persistedUser.getGroupIdsList()).isEmpty();
   }
 
   @Test
