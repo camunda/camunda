@@ -15,16 +15,25 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.webapp.es.backup.Metadata;
+import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 
@@ -32,6 +41,7 @@ import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 class BackupManagerOpenSearchTest {
 
   @Mock private OpenSearchAsyncClient openSearchAsyncClient;
+  @Mock private OpenSearchClient openSearchClient;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private TasklistProperties tasklistProperties;
@@ -51,5 +61,59 @@ class BackupManagerOpenSearchTest {
         ArgumentCaptor.forClass(SimpleEndpoint.class);
     verify(openSearchTransport).performRequestAsync(any(), endpointArgumentCaptor.capture(), any());
     assertThat(endpointArgumentCaptor.getValue().responseDeserializer()).isNull();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"SUCCESS", "IN_PROGRESS", "PARTIAL", "FAILED"})
+  void shouldReturnPartialDataWhenVerboseIsFalse(final String state) throws IOException {
+    // given
+    final var metadata =
+        new Metadata().setBackupId(2L).setPartCount(3).setPartNo(1).setVersion("8.6.1");
+    final OpenSearchTransport openSearchTransport = mock(OpenSearchTransport.class);
+    when(tasklistProperties.getBackup().getRepositoryName()).thenReturn("test-repo");
+    final var snapshots = new ArrayList<SnapshotInfo>(metadata.getPartCount());
+    for (int i = 1; i <= metadata.getPartCount(); i++) {
+      final var copy = new Metadata(metadata);
+      copy.setPartNo(i);
+      snapshots.add(
+          SnapshotInfo.of(
+              sib ->
+                  sib.snapshot(copy.buildSnapshotName())
+                      .state(state)
+                      .uuid(UUID.randomUUID().toString())
+                      .dataStreams(List.of())
+                      .indices(List.of())));
+    }
+
+    final var snapshotResponse = GetCustomSnapshotResponse.of(b -> b.snapshots(snapshots));
+    when(openSearchClient._transport()).thenReturn(openSearchTransport);
+    when(openSearchTransport.performRequest(any(), any(), any())).thenReturn(snapshotResponse);
+
+    // when
+    final var backupResponse = backupManagerOpenSearch.getBackups(false);
+
+    // then
+    assertThat(backupResponse)
+        .singleElement()
+        .satisfies(
+            snap -> {
+              final var expectedState =
+                  switch (state) {
+                    case "SUCCESS" -> BackupStateDto.COMPLETED;
+                    case "IN_PROGRESS" -> BackupStateDto.IN_PROGRESS;
+                    case "PARTIAL", "FAILED" -> BackupStateDto.FAILED;
+                    default -> null;
+                  };
+              assertThat(snap.getState()).isEqualTo(expectedState);
+              assertThat(snap.getBackupId()).isEqualTo(metadata.getBackupId());
+              assertThat(snap.getDetails())
+                  .hasSize(metadata.getPartCount())
+                  .zipSatisfy(
+                      snapshots,
+                      (detail, snapshotInfo) -> {
+                        assertThat(detail.getState()).isEqualTo(state);
+                        assertThat(detail.getSnapshotName()).isEqualTo(snapshotInfo.snapshot());
+                      });
+            });
   }
 }
