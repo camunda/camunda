@@ -15,25 +15,28 @@
  */
 package io.camunda.spring.client.event;
 
-import io.camunda.spring.client.annotation.processor.CamundaAnnotationProcessorRegistry;
+import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware;
+import java.util.Set;
 import org.springframework.context.event.EventListener;
 
 public class CamundaClientEventListener {
 
-  private final CamundaAnnotationProcessorRegistry camundaAnnotationProcessorRegistry;
+  private final Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet;
 
   public CamundaClientEventListener(
-      final CamundaAnnotationProcessorRegistry camundaAnnotationProcessorRegistry) {
-    this.camundaAnnotationProcessorRegistry = camundaAnnotationProcessorRegistry;
+      final Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet) {
+    this.camundaClientLifecycleAwareSet = camundaClientLifecycleAwareSet;
   }
 
   @EventListener
   public void handleStart(final CamundaClientCreatedEvent evt) {
-    camundaAnnotationProcessorRegistry.startAll(evt.getClient());
+    camundaClientLifecycleAwareSet.forEach(
+        camundaClientLifecycleAware -> camundaClientLifecycleAware.onStart(evt.getClient()));
   }
 
   @EventListener
   public void handleStop(final CamundaClientClosingEvent evt) {
-    camundaAnnotationProcessorRegistry.stopAll(evt.getClient());
+    camundaClientLifecycleAwareSet.forEach(
+        camundaClientLifecycleAware -> camundaClientLifecycleAware.onStop(evt.getClient()));
   }
 }

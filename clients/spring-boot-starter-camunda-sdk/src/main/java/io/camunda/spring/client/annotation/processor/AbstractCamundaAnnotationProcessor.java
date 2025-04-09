@@ -17,26 +17,44 @@ package io.camunda.spring.client.annotation.processor;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.spring.client.bean.ClassInfo;
-import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 
-public abstract class AbstractCamundaAnnotationProcessor implements BeanNameAware {
+public abstract class AbstractCamundaAnnotationProcessor
+    implements ApplicationContextAware, CamundaClientLifecycleAware {
+  private ApplicationContext applicationContext;
 
-  private String beanName;
-
-  public String getBeanName() {
-    return beanName;
+  public ApplicationContext getApplicationContext() {
+    return applicationContext;
   }
 
   @Override
-  public void setBeanName(final String beanName) {
-    this.beanName = beanName;
+  public void setApplicationContext(final ApplicationContext applicationContext) {
+    this.applicationContext = applicationContext;
   }
 
-  public abstract boolean isApplicableFor(ClassInfo beanInfo);
+  protected abstract boolean isApplicableFor(ClassInfo beanInfo);
 
-  public abstract void configureFor(final ClassInfo beanInfo);
+  protected abstract void configureFor(final ClassInfo beanInfo);
 
-  public abstract void start(CamundaClient client);
+  protected abstract void start(CamundaClient client);
 
-  public abstract void stop(CamundaClient client);
+  protected abstract void stop(CamundaClient client);
+
+  @Override
+  public void onStart(final CamundaClient client) {
+    for (final String beanName : getApplicationContext().getBeanDefinitionNames()) {
+      final Object bean = getApplicationContext().getBean(beanName);
+      final ClassInfo classInfo = ClassInfo.builder().beanName(beanName).bean(bean).build();
+      if (isApplicableFor(classInfo)) {
+        configureFor(classInfo);
+      }
+    }
+    start(client);
+  }
+
+  @Override
+  public void onStop(final CamundaClient client) {
+    stop(client);
+  }
 }
