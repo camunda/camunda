@@ -44,4 +44,31 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .extracting(Record::getIntent)
         .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
   }
+
+  @Test
+  public void shouldPauseBatchOperationForProcessInstanceCancellation() {
+    // given
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey =
+        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+
+    // when we pause the batch operation
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+
+    // then we have a paused event
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.PAUSED);
+
+    // and no follow op up command to execute again
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyCommands())
+        .extracting(Record::getIntent)
+        .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
+  }
 }

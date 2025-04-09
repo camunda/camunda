@@ -231,6 +231,14 @@ public final class BatchOperationClient {
                     .withSourceRecordPosition(position)
                     .getFirst();
 
+    private static final Function<Long, Record<BatchOperationLifecycleManagementRecordValue>>
+        PAUSE_SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.batchOperationLifecycleRecords()
+                    .withIntent(BatchOperationIntent.PAUSED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
     private final CommandWriter writer;
     private final BatchOperationLifecycleManagementRecord batchOperationLifecycleManagementRecord;
     private final int partition = DEFAULT_PARTITION;
@@ -263,6 +271,26 @@ public final class BatchOperationClient {
                       .requestStreamId(new Random().nextInt()));
 
       return CANCEL_SUCCESS_EXPECTATION.apply(position);
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> pause() {
+      return pause(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> pause(
+        final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationIntent.PAUSE)
+                      .event(batchOperationLifecycleManagementRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+
+      return PAUSE_SUCCESS_EXPECTATION.apply(position);
     }
   }
 }
