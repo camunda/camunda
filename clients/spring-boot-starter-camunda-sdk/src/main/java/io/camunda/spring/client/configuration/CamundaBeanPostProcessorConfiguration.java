@@ -15,13 +15,13 @@
  */
 package io.camunda.spring.client.configuration;
 
-import io.camunda.spring.client.annotation.customizer.LegacyJobWorkerValueCustomizerBeanPostProcessor;
+import io.camunda.spring.client.annotation.customizer.LegacyJobWorkerValueCustomizerBeanDefinitionRegistryPostProcessor;
 import org.springframework.context.annotation.Bean;
 
 public class CamundaBeanPostProcessorConfiguration {
   @Bean
-  public static LegacyJobWorkerValueCustomizerBeanPostProcessor
+  public static LegacyJobWorkerValueCustomizerBeanDefinitionRegistryPostProcessor
       legacyJobWorkerValueCustomizerBeanPostProcessor() {
-    return new LegacyJobWorkerValueCustomizerBeanPostProcessor();
+    return new LegacyJobWorkerValueCustomizerBeanDefinitionRegistryPostProcessor();
   }
 }
