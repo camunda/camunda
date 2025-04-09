@@ -35,12 +35,8 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
     final var entityId = value.getEntityId();
     final var entityType = value.getEntityType();
     switch (entityType) {
-      case USER ->
-          userState
-              .getUser(entityId)
-              .ifPresent(user -> userState.addGroup(user.getUsername(), groupId));
-      // TODO: refactor this with https://github.com/camunda/camunda/issues/30092
-      case MAPPING -> mappingState.addGroup(entityId, Long.parseLong(groupId));
+      case USER -> userState.addGroup(entityId, groupId);
+      case MAPPING -> mappingState.addGroup(entityId, groupId);
       default ->
           throw new IllegalStateException(
               String.format(

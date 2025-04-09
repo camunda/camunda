@@ -35,12 +35,8 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
     groupState.removeEntity(groupId, entityId);
 
     switch (entityType) {
-      case USER ->
-          userState
-              .getUser(entityId)
-              .ifPresent(user -> userState.removeGroup(user.getUsername(), groupId));
-      // TODO: refactor this with https://github.com/camunda/camunda/issues/30092
-      case MAPPING -> mappingState.removeGroup(entityId, Long.parseLong(groupId));
+      case USER -> userState.removeGroup(entityId, groupId);
+      case MAPPING -> mappingState.removeGroup(entityId, groupId);
       default ->
           throw new IllegalStateException(
               String.format(
