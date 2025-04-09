@@ -4,14 +4,12 @@ package main
 # aligned with the inclusion criteria and best practices:
 # See https://github.com/camunda/camunda/wiki/CI-&-Automation#unified-ci
 
-unified_ci_workflow_names = ["CI", "Tasklist Frontend Jobs", "Zeebe CI"]
-
 # The `input` variable is a data structure that contains a YAML file's contents
 # as objects and arrays. See https://www.openpolicyagent.org/docs/latest/philosophy/#how-does-opa-work
 
 deny[msg] {
-    # only enforced on Unified CI and related workflows
-    input.name == unified_ci_workflow_names[_]
+    # only enforced on workflows that opted-in
+    input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
 
     count(get_jobs_without_timeoutminutes(input.jobs)) > 0
 
@@ -20,8 +18,8 @@ deny[msg] {
 }
 
 warn[msg] {
-    # only enforced on Unified CI and related workflows
-    input.name == unified_ci_workflow_names[_]
+    # only enforced on workflows that opted-in
+    input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
 
     count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 15)) > 0
 
@@ -30,8 +28,8 @@ warn[msg] {
 }
 
 deny[msg] {
-    # only enforced on Unified CI and related workflows
-    input.name == unified_ci_workflow_names[_]
+    # only enforced on workflows that opted-in
+    input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
 
     count(get_jobs_without_cihealth(input.jobs)) > 0
 
@@ -40,8 +38,8 @@ deny[msg] {
 }
 
 deny[msg] {
-    # only enforced on Unified CI and related workflows
-    input.name == unified_ci_workflow_names[_]
+    # only enforced on workflows that opted-in
+    input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
 
     count(get_jobs_without_permissions(input.jobs)) > 0
 

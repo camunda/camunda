@@ -5,6 +5,9 @@ on:
     - cron: "0 5 * * *"
   workflow_dispatch:
 
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
 jobs:
   helm-deploy:
     name: Helm chart Integration Tests
@@ -33,11 +36,14 @@ jobs:
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+
   notify:
     name: Send slack notification
     runs-on: ubuntu-latest
     needs: [helm-deploy]
-    if: ${{ always() }}
+    if: always()
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
@@ -67,3 +73,13 @@ jobs:
                 }
               ]
             }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
