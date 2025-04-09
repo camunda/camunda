@@ -134,12 +134,18 @@ public class BackupManagerOpenSearch extends BackupManager {
   }
 
   @Override
-  public List<GetBackupStateResponseDto> getBackups(final boolean verbose) {
+  public List<GetBackupStateResponseDto> getBackups(final boolean verbose, final String pattern) {
+    final var validatedPattern = validPattern(pattern);
+
+    validatedPattern.ifLeft(
+        ex -> {
+          throw new InvalidRequestException(ex.getMessage(), ex);
+        });
     final GetSnapshotRequest snapshotStatusRequest =
         GetSnapshotRequest.of(
             gsr ->
                 gsr.repository(getRepositoryName())
-                    .snapshot(Metadata.SNAPSHOT_NAME_PREFIX + "*")
+                    .snapshot(Metadata.SNAPSHOT_NAME_PREFIX + validatedPattern.get())
                     .verbose(verbose));
     final GetCustomSnapshotResponse response;
     try {
