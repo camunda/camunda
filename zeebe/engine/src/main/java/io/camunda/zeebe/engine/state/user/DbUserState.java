@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import java.util.List;
 import java.util.Optional;
 
 public class DbUserState implements UserState, MutableUserState {
@@ -65,24 +64,6 @@ public class DbUserState implements UserState, MutableUserState {
   public void delete(final String username) {
     this.username.wrapString(username);
     usersColumnFamily.deleteExisting(this.username);
-  }
-
-  @Override
-  public void addTenantId(final String username, final String tenantId) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    persistedUser.addTenantId(tenantId);
-    usersColumnFamily.update(this.username, persistedUser);
-  }
-
-  @Override
-  public void removeTenant(final String username, final String tenantId) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    final List<String> tenantIds = persistedUser.getTenantIdsList();
-    tenantIds.remove(tenantId);
-    persistedUser.setTenantIdsList(tenantIds);
-    usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override
