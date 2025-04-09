@@ -19,7 +19,6 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import * as pageParamsModule from 'App/ProcessInstance/useProcessInstancePageParams';
 import {
   createBatchOperation,
   createInstance,
@@ -59,27 +58,34 @@ jest.mock('modules/feature-flags', () => ({
   IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
 }));
 
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => {
-    return () => {
-      variablesStore.reset();
-      flowNodeSelectionStore.reset();
-      flowNodeMetaDataStore.reset();
-      processInstanceDetailsDiagramStore.reset();
-      modificationsStore.reset();
-      processInstanceDetailsStatisticsStore.reset();
-    };
-  }, []);
+const getWrapper = (
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = [Paths.processInstance('1')],
+) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        variablesStore.reset();
+        flowNodeSelectionStore.reset();
+        flowNodeMetaDataStore.reset();
+        processInstanceDetailsDiagramStore.reset();
+        modificationsStore.reset();
+        processInstanceDetailsStatisticsStore.reset();
+      };
+    }, []);
 
-  return (
-    <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
+    return (
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={initialEntries}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+  return Wrapper;
 };
 
 describe('VariablePanel', () => {
@@ -132,7 +138,7 @@ describe('VariablePanel', () => {
         instanceMetadata: null,
       });
 
-      render(<VariablePanel />, {wrapper: Wrapper});
+      render(<VariablePanel />, {wrapper: getWrapper()});
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
@@ -164,7 +170,7 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel />, {wrapper: Wrapper});
+      render(<VariablePanel />, {wrapper: getWrapper()});
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
@@ -201,7 +207,7 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel />, {wrapper: Wrapper});
+      render(<VariablePanel />, {wrapper: getWrapper()});
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
@@ -230,7 +236,7 @@ describe('VariablePanel', () => {
   );
 
   it('should render variables', async () => {
-    render(<VariablePanel />, {wrapper: Wrapper});
+    render(<VariablePanel />, {wrapper: getWrapper()});
 
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
   });
@@ -238,7 +244,7 @@ describe('VariablePanel', () => {
   it('should add new variable', async () => {
     jest.useFakeTimers();
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -358,7 +364,7 @@ describe('VariablePanel', () => {
       instanceCount: 1,
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -448,7 +454,7 @@ describe('VariablePanel', () => {
   });
 
   it('should display validation error if backend validation fails while adding variable', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -543,7 +549,7 @@ describe('VariablePanel', () => {
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -612,7 +618,7 @@ describe('VariablePanel', () => {
   });
 
   it('should display error notification if add variable operation could not be created because of auth error', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -684,7 +690,7 @@ describe('VariablePanel', () => {
   it('should display error notification if add variable operation fails', async () => {
     jest.useFakeTimers();
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -774,7 +780,7 @@ describe('VariablePanel', () => {
   it('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
     jest.useFakeTimers();
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -853,7 +859,7 @@ describe('VariablePanel', () => {
   });
 
   it('should display spinner on second variable fetch', async () => {
-    render(<VariablePanel />, {wrapper: Wrapper});
+    render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     mockFetchVariables().withDelay([createVariable()]);
@@ -878,7 +884,7 @@ describe('VariablePanel', () => {
 
     await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
@@ -963,7 +969,7 @@ describe('VariablePanel', () => {
   });
 
   it('should display spinner for variables tab when switching between tabs', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
@@ -991,7 +997,7 @@ describe('VariablePanel', () => {
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
@@ -1015,7 +1021,7 @@ describe('VariablePanel', () => {
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -1157,7 +1163,7 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -1263,7 +1269,7 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: Wrapper});
+    render(<VariablePanel />, {wrapper: getWrapper()});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -1442,7 +1448,7 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: Wrapper});
+    render(<VariablePanel />, {wrapper: getWrapper()});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -1494,7 +1500,7 @@ describe('VariablePanel', () => {
       modificationsStore.enableModificationMode();
     });
 
-    render(<VariablePanel />, {wrapper: Wrapper});
+    render(<VariablePanel />, {wrapper: getWrapper()});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -1547,9 +1553,6 @@ describe('VariablePanel', () => {
   });
 
   it('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
-    jest
-      .spyOn(pageParamsModule, 'useProcessInstancePageParams')
-      .mockReturnValue({processInstanceId: 'processInstanceId123'});
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
@@ -1583,7 +1586,9 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: Wrapper});
+    render(<VariablePanel />, {
+      wrapper: getWrapper([Paths.processInstance('processInstanceId123')]),
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -1614,7 +1619,7 @@ describe('VariablePanel', () => {
       modificationsStore.enableModificationMode();
     });
 
-    render(<VariablePanel />, {wrapper: Wrapper});
+    render(<VariablePanel />, {wrapper: getWrapper()});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -1704,7 +1709,7 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: Wrapper});
+    render(<VariablePanel />, {wrapper: getWrapper()});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
