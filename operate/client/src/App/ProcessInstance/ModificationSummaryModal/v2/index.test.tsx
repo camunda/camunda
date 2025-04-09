@@ -646,11 +646,7 @@ describe('Modification Summary Modal', () => {
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
   });
 
-<<<<<<< HEAD
   it.skip('should display/hide warning message if all modifications are about to be canceled', async () => {
-=======
-  it('should display/hide warning message if all modifications are about to be canceled', async () => {
->>>>>>> 21d0cc81d3e (feat: migrate ModificationSummaryModal component to v2)
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {

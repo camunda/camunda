@@ -28,13 +28,17 @@ import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
 import {
   useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesForFlowNode,
+  useTotalRunningInstancesVisibleForFlowNode,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
 import {
   useAvailableModifications,
   useCanBeModified,
 } from 'modules/hooks/modifications';
 import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
-import {generateParentScopeIds} from 'modules/utils/modifications';
+import {
+  cancelAllTokens,
+  generateParentScopeIds,
+} from 'modules/utils/modifications';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
@@ -55,6 +59,8 @@ const ModificationDropdown: React.FC<Props> = observer(
     const {data: businessObjects} = useBusinessObjects();
     const {data: totalRunningInstances} =
       useTotalRunningInstancesForFlowNode(flowNodeId);
+    const {data: totalRunningInstancesVisible} =
+      useTotalRunningInstancesVisibleForFlowNode(flowNodeId);
     const {data: totalRunningInstancesByFlowNode} =
       useTotalRunningInstancesByFlowNode();
     const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
@@ -206,7 +212,11 @@ const ModificationDropdown: React.FC<Props> = observer(
                             eventName: 'cancel-token',
                           });
 
-                          modificationsStore.cancelAllTokens(flowNodeId);
+                          cancelAllTokens(
+                            flowNodeId,
+                            totalRunningInstances ?? 0,
+                            totalRunningInstancesVisible ?? 0,
+                          );
                           flowNodeSelectionStore.clearSelection();
                         }}
                       >

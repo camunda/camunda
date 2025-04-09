@@ -14,6 +14,18 @@ import {generateUniqueID} from './generateUniqueID';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {getFlowNodeParents} from './processInstanceDetailsDiagram';
 
+const cancelAllTokens = (
+  flowNodeId: string,
+  totalRunningInstancesForFlowNode: number,
+  totalRunningInstancesVisibleForFlowNode: number,
+) => {
+  modificationsStore.addCancelModification({
+    flowNodeId,
+    affectedTokenCount: totalRunningInstancesForFlowNode,
+    visibleAffectedTokenCount: totalRunningInstancesVisibleForFlowNode,
+  });
+};
+
 const finishMovingToken = (
   affectedTokenCount: number,
   visibleAffectedTokenCount: number,
@@ -114,6 +126,7 @@ const hasPendingCancelOrMoveModification = (
 };
 
 export {
+  cancelAllTokens,
   generateParentScopeIds,
   finishMovingToken,
   hasPendingCancelOrMoveModification,
