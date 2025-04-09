@@ -173,7 +173,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       return false;
     }
 
-    if (group.get().getTenantIdsList().contains(tenantId)) {
+    if (membershipState.hasRelation(EntityType.GROUP, entityId, RelationType.TENANT, tenantId)) {
       createAlreadyAssignedRejectCommand(command, entityId, EntityType.GROUP, tenantId);
       return false;
     }
