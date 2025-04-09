@@ -33,7 +33,6 @@ import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from '../MetadataPopover';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {ModificationInfoBanner} from '../ModificationInfoBanner';
 import {ModificationDropdown} from '../ModificationDropdown/v2';
 import {StateOverlay} from 'modules/components/StateOverlay';
@@ -52,6 +51,9 @@ import {finishMovingToken} from 'modules/utils/modifications';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {init} from 'modules/utils/flowNodeMetadata';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -96,6 +98,16 @@ const TopPanel: React.FC = observer(() => {
   const visibleAffectedTokenCount =
     totalMoveOperationRunningInstancesVisible || 1;
 
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+
+  const {
+    data: processDefinitionData,
+    isFetching: isXmlFetching,
+    isError: isXmlError,
+  } = useProcessInstanceXml({
+    processDefinitionKey,
+  });
+
   useEffect(() => {
     if (flowNodeInstancesStatistics?.items) {
       init(flowNodeInstancesStatistics.items);
@@ -129,15 +141,17 @@ const TopPanel: React.FC = observer(() => {
     ? allFlowNodeStateOverlays
     : notCompletedFlowNodeStateOverlays;
 
-  const compensationAssociationIds =
-    processInstanceDetailsDiagramStore.compensationAssociations
-      .filter(({targetRef}) => {
-        // check if the target element for the association was executed
-        return executedFlowNodes?.find(({flowNodeId, completed}) => {
-          return targetRef?.id === flowNodeId && completed > 0;
-        });
-      })
-      .map(({id}) => id);
+  const compensationAssociationIds = Object.values(
+    processDefinitionData?.diagramModel.elementsById ?? {},
+  )
+    .filter(isCompensationAssociation)
+    .filter(({targetRef}) => {
+      // check if the target element for the association was executed
+      return executedFlowNodes?.find(({flowNodeId, completed}) => {
+        return targetRef?.id === flowNodeId && completed > 0;
+      });
+    })
+    .map(({id}) => id);
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsByFlowNode).reduce<
@@ -171,9 +185,7 @@ const TopPanel: React.FC = observer(() => {
   const modificationBadgeOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE,
   );
-  const {
-    state: {status, xml},
-  } = processInstanceDetailsDiagramStore;
+
   const modifiableFlowNodes = useModifiableFlowNodes();
 
   const {
@@ -199,10 +211,10 @@ const TopPanel: React.FC = observer(() => {
   }, [flowNodeSelection?.flowNodeId, isModificationModeEnabled]);
 
   const getStatus = () => {
-    if (['initial', 'first-fetch', 'fetching'].includes(status)) {
+    if (isXmlFetching) {
       return 'loading';
     }
-    if (status === 'error') {
+    if (isXmlError) {
       return 'error';
     }
     return 'content';
@@ -258,9 +270,9 @@ const TopPanel: React.FC = observer(() => {
       )}
       <DiagramPanel>
         <DiagramShell status={getStatus()}>
-          {xml !== null && businessObjects && (
+          {processDefinitionData?.xml !== undefined && businessObjects && (
             <Diagram
-              xml={xml}
+              xml={processDefinitionData?.xml}
               selectableFlowNodes={
                 isModificationModeEnabled
                   ? modifiableFlowNodes

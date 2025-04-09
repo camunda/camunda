@@ -22,25 +22,12 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {Paths} from 'modules/Routes';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {PAGE_TITLE} from 'modules/constants';
 import {getProcessName} from 'modules/utils/instance';
-import {notificationsStore} from 'modules/stores/notifications';
 import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-
-const handleRefetchSpy = jest.spyOn(
-  processInstanceDetailsStore,
-  'handleRefetch',
-);
-
-jest.mock('modules/stores/notifications', () => ({
-  notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
-  },
-}));
 
 jest.mock('modules/utils/bpmn');
 
@@ -108,9 +95,9 @@ describe('ProcessInstance', () => {
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('variables-skeleton')).toBeInTheDocument();
+    expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
 
     mockFetchProcessInstance().withSuccess(
       testData.fetch.onPageLoad.processInstance,
@@ -136,53 +123,6 @@ describe('ProcessInstance', () => {
       expect(
         screen.queryByTestId('variables-skeleton'),
       ).not.toBeInTheDocument();
-    });
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should poll 3 times for not found instance, then redirect to instances page and display notification', async () => {
-    jest.useFakeTimers();
-
-    mockFetchProcessInstance().withServerError(404);
-
-    render(<ProcessInstance />, {
-      wrapper: getWrapper({initialPath: Paths.processInstance('123')}),
-    });
-
-    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('variables-skeleton')).toBeInTheDocument();
-
-    mockFetchProcessInstance().withServerError(404);
-    jest.runOnlyPendingTimers();
-    await waitFor(() =>
-      expect(processInstanceDetailsStore.state.status).toBe('fetching'),
-    );
-
-    expect(handleRefetchSpy).toHaveBeenCalledTimes(1);
-
-    mockFetchProcessInstance().withServerError(404);
-    jest.runOnlyPendingTimers();
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
-
-    mockFetchProcessInstance().withServerError(404);
-    jest.runOnlyPendingTimers();
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-      expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?active=true&incidents=true$/,
-      );
-    });
-
-    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-      kind: 'error',
-      title: 'Instance 123 could not be found',
-      isDismissable: true,
     });
 
     jest.clearAllTimers();

@@ -53,7 +53,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       state: observable,
       startFetch: action,
       handleFetchSuccess: action,
-      compensationAssociations: computed,
       flowNodes: computed,
       businessObjects: computed,
       cancellableFlowNodes: computed,
@@ -234,19 +233,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return this.flowNodes
       .filter((flowNode) => !this.modifiableFlowNodes.includes(flowNode.id))
       .map(({id}) => id);
-  }
-
-  get compensationAssociations() {
-    if (this.state.diagramModel === null) {
-      return [];
-    }
-
-    return Object.values(this.state.diagramModel.elementsById).filter(
-      (element) => {
-        const isAssociation = element.$type === 'bpmn:Association';
-        return isAssociation && element.targetRef?.isForCompensation;
-      },
-    );
   }
 
   isSubProcess = (flowNodeId: string) => {
