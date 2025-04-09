@@ -218,14 +218,14 @@ class OpensearchBackupRepositoryTest {
   @Test
   void getBackupState() {
     mockSynchronSnapshotOperations();
-    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
+    mockObjectMapperForMetadata(new Metadata().setPartNo(1).setVersion("8.7.0").setPartCount(3));
 
     when(openSearchSnapshotOperations.get(any()))
         .thenReturn(
             new OpenSearchGetSnapshotResponse(
                 List.of(
                     new OpenSearchSnapshotInfo()
-                        .setSnapshot("camunda_operate_1_8.7.0_part_1_of_6")
+                        .setSnapshot("snapshot")
                         .setState(SnapshotState.SUCCESS)
                         .setStartTimeInMillis(23L))));
 
@@ -239,7 +239,7 @@ class OpensearchBackupRepositoryTest {
     final var snapshotDetail = snapshotDetails.get(0);
     assertThat(snapshotDetail.getState()).isEqualTo(SnapshotState.SUCCESS.toString());
     assertThat(snapshotDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(23L);
-    assertThat(snapshotDetail.getSnapshotName()).isEqualTo("camunda_operate_1_8.7.0_part_1_of_6");
+    assertThat(snapshotDetail.getSnapshotName()).isEqualTo("snapshot");
     assertThat(snapshotDetail.getFailures()).isNull();
   }
 

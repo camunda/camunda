@@ -34,7 +34,7 @@ public class Metadata {
   public Metadata() {}
 
   public boolean isInitialized() {
-    return backupId != null && partCount != null && partNo != null && version != null;
+    return partCount != null && partNo != null && version != null;
   }
 
   public static String buildSnapshotNamePrefix(final Long backupId) {
@@ -143,7 +143,6 @@ public class Metadata {
     }
     final Metadata that = (Metadata) o;
     return Objects.equals(version, that.version)
-        && Objects.equals(backupId, that.backupId)
         && Objects.equals(partNo, that.partNo)
         && Objects.equals(partCount, that.partCount);
   }
