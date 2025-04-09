@@ -93,14 +93,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     return sendRequestAsync(() -> client.search(request, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenApplyAsync(
-            (response) -> {
-              final ArchiveBatch archiveBatch =
-                  createArchiveBatch(response, ListViewTemplate.END_DATE);
-
-              metrics.recordProcessInstancesArchiving(archiveBatch.ids().size());
-              return archiveBatch;
-            },
-            executor);
+            (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE), executor);
   }
 
   @Override
@@ -111,14 +104,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenApplyAsync(
-            (response) -> {
-              final ArchiveBatch archiveBatch =
-                  createArchiveBatch(response, BatchOperationTemplate.END_DATE);
-
-              metrics.recordBatchOperationsArchiving(archiveBatch.ids().size());
-              return archiveBatch;
-            },
-            executor);
+            (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
   @Override

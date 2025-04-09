@@ -49,6 +49,7 @@ public class ProcessInstancesArchiverJob implements ArchiverJob {
   private CompletionStage<Integer> archiveBatch(final ArchiveBatch batch) {
     if (batch != null && !(batch.ids() == null || batch.ids().isEmpty())) {
       logger.trace("Following process instances are found for archiving: {}", batch);
+      metrics.recordProcessInstancesArchiving(batch.ids().size());
 
       return moveDependants(batch.finishDate(), batch.ids())
           .thenComposeAsync(
