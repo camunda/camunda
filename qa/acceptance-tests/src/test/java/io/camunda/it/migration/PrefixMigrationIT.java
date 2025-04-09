@@ -283,16 +283,18 @@ public class PrefixMigrationIT {
     prefixMigration(OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, "prefixmigrationit");
 
     // then
-    STANDALONE_CAMUNDA.start();
-    STANDALONE_CAMUNDA.awaitCompleteTopology();
-    try (final var currentCamundaClient = STANDALONE_CAMUNDA.newClientBuilder().build()) {
-      final var processDefinitions =
-          currentCamundaClient.newProcessDefinitionSearchRequest().send().join();
-      assertThat(processDefinitions.items().size()).isEqualTo(1);
-      assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
-          .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+    try {
+      STANDALONE_CAMUNDA.start();
+      STANDALONE_CAMUNDA.awaitCompleteTopology();
+      try (final var currentCamundaClient = STANDALONE_CAMUNDA.newClientBuilder().build()) {
+        final var processDefinitions =
+            currentCamundaClient.newProcessDefinitionSearchRequest().send().join();
+        assertThat(processDefinitions.items().size()).isEqualTo(1);
+        assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
+            .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+      }
+    } finally {
+      STANDALONE_CAMUNDA.stop();
     }
-
-    STANDALONE_CAMUNDA.stop();
   }
 }
