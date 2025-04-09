@@ -308,6 +308,29 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList("a"));
   }
 
+  @Test
+  void shouldSearchProcessInstanceWithOrOperatorFilters() {
+    // when
+    final OffsetDateTime now = OffsetDateTime.now();
+
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.or(Arrays.asList(f1 -> f1.state(ACTIVE), f3 -> f3.hasIncident(true))))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.get$Or()).isNotNull();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getState().get$Eq())
+        .isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(filter.get$Or().get(1).getHasIncident()).isTrue();
+  }
+
   private void assertSort(
       final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
