@@ -247,7 +247,6 @@ public class MappingStateTest {
 
     // then
     assertThat(mappingState.get(mappingId)).isEmpty();
-    assertThat(mappingState.get(mappingId)).isEmpty();
     assertThat(mappingState.get(claimName, claimValue)).isEmpty();
   }
 
