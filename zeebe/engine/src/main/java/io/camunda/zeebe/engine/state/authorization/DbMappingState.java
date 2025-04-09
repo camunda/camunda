@@ -139,13 +139,13 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void addGroup(final String mappingId, final long groupKey) {
+  public void addGroup(final String mappingId, final String groupId) {
     this.mappingId.wrapString(mappingId);
     final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
-      persistedMapping.addGroupKey(groupKey);
+      persistedMapping.addGroupId(groupId);
       mappingColumnFamily.update(claim, persistedMapping);
     }
   }
@@ -179,15 +179,15 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void removeGroup(final String mappingId, final long groupKey) {
+  public void removeGroup(final String mappingId, final String groupId) {
     this.mappingId.wrapString(mappingId);
     final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
-      final List<Long> groupKeys = persistedMapping.getGroupKeysList();
-      groupKeys.remove(groupKey);
-      persistedMapping.setGroupKeysList(groupKeys);
+      final List<String> groupIds = persistedMapping.getGroupIdsList();
+      groupIds.remove(groupId);
+      persistedMapping.setGroupIdsList(groupIds);
       mappingColumnFamily.update(claim, persistedMapping);
     }
   }
