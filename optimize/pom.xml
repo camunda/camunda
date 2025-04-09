@@ -278,7 +278,6 @@
 
               <!-- test dependencies -->
               <dep>com.sun.mail:jakarta.mail</dep>
-              <dep>io.camunda:zeebe-build-tools</dep>
               <dep>io.camunda.optimize:optimize-backend</dep>
               <dep>io.camunda.optimize:optimize-backend:test-jar</dep>
               <dep>io.camunda.optimize:upgrade-optimize</dep>
