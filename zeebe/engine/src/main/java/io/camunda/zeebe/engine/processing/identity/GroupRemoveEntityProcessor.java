@@ -142,7 +142,8 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
   private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
     return switch (entityType) {
       case USER -> userState.getUser(entityKey).isPresent();
-      case MAPPING -> mappingState.get(entityKey).isPresent();
+      // todo use entityId, refactor with https://github.com/camunda/camunda/issues/30624
+      case MAPPING -> mappingState.get(String.valueOf(entityKey)).isPresent();
       default -> false;
     };
   }

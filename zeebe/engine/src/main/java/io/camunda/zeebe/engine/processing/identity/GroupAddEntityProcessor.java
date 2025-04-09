@@ -137,7 +137,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
     return switch (entityType) {
       case EntityType.USER -> userState.getUser(entityKey).isPresent();
-      case EntityType.MAPPING -> mappingState.get(entityKey).isPresent();
+      // todo use entityId, refactor with https://github.com/camunda/camunda/issues/30624
+      case EntityType.MAPPING -> mappingState.get(String.valueOf(entityKey)).isPresent();
       default -> false;
     };
   }

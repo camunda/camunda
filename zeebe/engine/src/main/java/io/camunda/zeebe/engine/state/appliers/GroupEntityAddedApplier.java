@@ -47,7 +47,8 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
               value.getGroupId());
       case MAPPING -> {
         groupState.addEntity(value);
-        mappingState.addGroup(entityKey, groupKey);
+        // todo use entityId, refactor with https://github.com/camunda/camunda/issues/30624
+        mappingState.addGroup(String.valueOf(entityKey), groupKey);
       }
       default ->
           throw new IllegalStateException(
