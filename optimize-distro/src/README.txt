@@ -21,7 +21,7 @@ Contents:
 
         optimize-startup.sh (unix) or optimize-startup.bat (windows)
 
-                    a script to start elasticsearch and optimize in embedded Tomcat container.
+                    a script to start Optimize in embedded Tomcat container.
 
 ==================
 
