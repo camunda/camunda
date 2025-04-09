@@ -29,20 +29,14 @@ import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
 import {
   useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesForFlowNode,
-<<<<<<< HEAD
   useTotalRunningInstancesVisibleForFlowNode,
-=======
->>>>>>> 03d5c075a20 (feat: migrate ModificationDropdown component to v2)
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
 import {
   useAvailableModifications,
   useCanBeModified,
 } from 'modules/hooks/modifications';
 import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
-<<<<<<< HEAD
 import {cancelAllTokens} from 'modules/utils/modifications';
-=======
->>>>>>> 03d5c075a20 (feat: migrate ModificationDropdown component to v2)
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -57,11 +51,8 @@ const ModificationDropdown: React.FC<Props> = observer(
       flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
     const {data: totalRunningInstances} =
       useTotalRunningInstancesForFlowNode(flowNodeId);
-<<<<<<< HEAD
     const {data: totalRunningInstancesVisible} =
       useTotalRunningInstancesVisibleForFlowNode(flowNodeId);
-=======
->>>>>>> 03d5c075a20 (feat: migrate ModificationDropdown component to v2)
     const {data: totalRunningInstancesByFlowNode} =
       useTotalRunningInstancesByFlowNode();
     const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
