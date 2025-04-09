@@ -130,7 +130,7 @@ class OpensearchBackupRepositoryTest {
     mockObjectMapperForMetadata(metadata);
     when(openSearchSnapshotOperations.get(any())).thenReturn(response);
     mockSynchronSnapshotOperations();
-    final var snapshotDtoList = repository.getBackups("repo", false);
+    final var snapshotDtoList = repository.getBackups("repo", false, null);
     verify(openSearchSnapshotOperations).get(argThat(req -> !req.verbose()));
 
     assertThat(snapshotDtoList)
@@ -140,6 +140,24 @@ class OpensearchBackupRepositoryTest {
               assertThat(backup.getBackupId()).isEqualTo(5L);
               assertThat(backup.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
             });
+  }
+
+  @Test
+  void shouldForwardSnapshotPatternFlagToOpensearch() {
+    final var metadata =
+        new Metadata().setBackupId(5L).setVersion("1").setPartNo(1).setPartCount(3);
+    final var snapshotInfos =
+        List.of(
+            new OpenSearchSnapshotInfo()
+                .setSnapshot("test-snapshot")
+                .setState(SnapshotState.STARTED));
+    final var response = new OpenSearchGetSnapshotResponse(snapshotInfos);
+    mockObjectMapperForMetadata(metadata);
+    when(openSearchSnapshotOperations.get(any())).thenReturn(response);
+    mockSynchronSnapshotOperations();
+    repository.getBackups("repo", false, "2023*");
+    verify(openSearchSnapshotOperations)
+        .get(argThat(req -> req.snapshot().contains("camunda_operate_2023*")));
   }
 
   @Test
