@@ -66,12 +66,7 @@ public class DeleteUserTest {
     final var role = ENGINE.role().newRole("role").create();
     final var tenant = ENGINE.tenant().newTenant().withTenantId(tenantId).create();
 
-    ENGINE
-        .group()
-        .addEntity(groupId)
-        .withEntityId(username)
-        .withEntityType(EntityType.USER)
-        .add();
+    ENGINE.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
     ENGINE
         .role()
         .addEntity(role.getKey())
