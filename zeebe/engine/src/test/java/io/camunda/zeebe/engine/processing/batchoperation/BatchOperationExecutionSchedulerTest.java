@@ -21,10 +21,13 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState.BatchOperationVisitor;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -98,8 +101,10 @@ public class BatchOperationExecutionSchedulerTest {
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(), eq(BatchOperationIntent.FAIL), any(BatchOperationCreationRecord.class));
+
+    // and should NOT append an execute command
     verify(taskResultBuilder, times(0))
-        .appendCommandRecord(anyLong(), eq(BatchOperationChunkIntent.CREATE), any());
+        .appendCommandRecord(anyLong(), any(Intent.class), any(UnifiedRecordValue.class), anyLong());
   }
 
   @Test

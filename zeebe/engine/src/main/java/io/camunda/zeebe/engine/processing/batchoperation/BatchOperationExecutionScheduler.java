@@ -111,6 +111,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
             keys.stream().skip(i).limit(CHUNK_SIZE_IN_RECORD).collect(Collectors.toSet());
         appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
       }
+
+      appendExecution(batchOperation.getKey(), taskResultBuilder);
     } catch (final Exception e) {
       LOG.error(
           "Failed to append chunks for batch operation with key {}. It will be removed from queue",
@@ -118,8 +120,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
           e);
       appendFailedCommand(taskResultBuilder, batchOperation);
     }
-
-    appendExecution(batchOperation.getKey(), taskResultBuilder);
   }
 
   private void appendStartedCommand(
