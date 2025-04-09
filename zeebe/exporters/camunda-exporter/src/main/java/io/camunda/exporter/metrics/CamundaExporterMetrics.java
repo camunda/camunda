@@ -41,6 +41,7 @@ public class CamundaExporterMetrics {
   private final Timer archiverDeleteTimer;
   private final Timer archiverReindexTimer;
   private Timer.Sample flushLatencyMeasurement;
+  private final Timer archivingDuration;
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -93,6 +94,12 @@ public class CamundaExporterMetrics {
             .description(
                 "Duration of how long it takes to run the reindex request to copy over to the dated indices, from old indices.")
             .tags("type", "reindex")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    archivingDuration =
+        Timer.builder(meterName("archiver.duration"))
+            .description(
+                "Duration of how long it takes from resolving to archiving entities, all in all together.")
             .publishPercentileHistogram()
             .register(meterRegistry);
   }
@@ -167,5 +174,9 @@ public class CamundaExporterMetrics {
 
   public void measureArchiverReindex(final Sample timer) {
     timer.stop(archiverReindexTimer);
+  }
+
+  public void measureArchivingDuration(final Sample timer) {
+    timer.stop(archivingDuration);
   }
 }
