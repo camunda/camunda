@@ -134,7 +134,7 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsQuery(
-          final long processDefinitionKey, final ProcessDefinitionFlowNodeStatisticsQuery request) {
+          final long processDefinitionKey, final ProcessDefinitionElementStatisticsQuery request) {
     if (request == null) {
       return Either.right(
           new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build());
@@ -162,7 +162,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getParentProcessInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentProcessInstanceKeyOperations);
-      ofNullable(filter.getParentFlowNodeInstanceKey())
+      ofNullable(filter.getParentElementInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.getStartDate())
@@ -300,7 +300,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, FlowNodeInstanceQuery> toFlownodeInstanceQuery(
-      final FlowNodeInstanceSearchQuery request) {
+      final ElementInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
     }
@@ -649,7 +649,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getParentProcessInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentProcessInstanceKeyOperations);
-      ofNullable(filter.getParentFlowNodeInstanceKey())
+      ofNullable(filter.getParentElementInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.getStartDate())
@@ -669,12 +669,12 @@ public final class SearchQueryRequestMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
       ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
-      ofNullable(filter.getFlowNodeId())
+      ofNullable(filter.getElementId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeIdOperations);
-      ofNullable(filter.getHasFlowNodeInstanceIncident())
+      ofNullable(filter.getHasElementInstanceIncident())
           .ifPresent(builder::hasFlowNodeInstanceIncident);
-      ofNullable(filter.getFlowNodeInstanceState())
+      ofNullable(filter.getElementInstanceState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeInstanceStateOperations);
       ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
@@ -753,12 +753,12 @@ public final class SearchQueryRequestMapper {
   }
 
   private static FlowNodeInstanceFilter toFlownodeInstanceFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceFilter filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.ElementInstanceFilter filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
-              Optional.ofNullable(f.getFlowNodeInstanceKey())
+              Optional.ofNullable(f.getElementInstanceKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::flowNodeInstanceKeys);
               Optional.ofNullable(f.getProcessInstanceKey())
@@ -775,7 +775,7 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getType())
                   .ifPresent(
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
-              Optional.ofNullable(f.getFlowNodeId()).ifPresent(builder::flowNodeIds);
+              Optional.ofNullable(f.getElementId()).ifPresent(builder::flowNodeIds);
               Optional.ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
               Optional.ofNullable(f.getIncidentKey())
                   .map(KeyUtil::keyToLong)
@@ -885,8 +885,8 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getErrorType())
           .ifPresent(t -> builder.errorTypes(IncidentEntity.ErrorType.valueOf(t.getValue())));
       ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessages);
-      ofNullable(filter.getFlowNodeId()).ifPresent(builder::flowNodeIds);
-      ofNullable(filter.getFlowNodeInstanceKey())
+      ofNullable(filter.getElementId()).ifPresent(builder::flowNodeIds);
+      ofNullable(filter.getElementInstanceKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::flowNodeInstanceKeys);
       ofNullable(filter.getCreationTime())
@@ -914,7 +914,7 @@ public final class SearchQueryRequestMapper {
         case PROCESS_DEFINITION_VERSION_TAG -> builder.processDefinitionVersionTag();
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case PARENT_PROCESS_INSTANCE_KEY -> builder.parentProcessInstanceKey();
-        case PARENT_FLOW_NODE_INSTANCE_KEY -> builder.parentFlowNodeInstanceKey();
+        case PARENT_ELEMENT_INSTANCE_KEY -> builder.parentFlowNodeInstanceKey();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
         case STATE -> builder.state();
@@ -1052,20 +1052,20 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyFlownodeInstanceSortField(
-      final FlowNodeInstanceSearchQuerySortRequest.FieldEnum field,
+      final ElementInstanceSearchQuerySortRequest.FieldEnum field,
       final FlowNodeInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case FLOW_NODE_INSTANCE_KEY -> builder.flowNodeInstanceKey();
+        case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
-        case FLOW_NODE_ID -> builder.flowNodeId();
+        case ELEMENT_ID -> builder.flowNodeId();
         case TYPE -> builder.type();
         case STATE -> builder.state();
         case INCIDENT_KEY -> builder.incidentKey();
@@ -1089,8 +1089,8 @@ public final class SearchQueryRequestMapper {
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case ERROR_TYPE -> builder.errorType();
         case ERROR_MESSAGE -> builder.errorMessage();
-        case FLOW_NODE_ID -> builder.flowNodeId();
-        case FLOW_NODE_INSTANCE_KEY -> builder.flowNodeInstanceKey();
+        case ELEMENT_ID -> builder.flowNodeId();
+        case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
         case CREATION_TIME -> builder.creationTime();
         case STATE -> builder.state();
         case JOB_KEY -> builder.jobKey();

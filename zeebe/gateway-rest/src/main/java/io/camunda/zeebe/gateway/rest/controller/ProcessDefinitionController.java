@@ -15,8 +15,8 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -130,14 +130,14 @@ public class ProcessDefinitionController {
   }
 
   @CamundaPostMapping(path = "/{processDefinitionKey}/statistics/flownode-instances")
-  public ResponseEntity<ProcessDefinitionFlowNodeStatisticsQueryResult> flowNodeStatistics(
+  public ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> flowNodeStatistics(
       @PathVariable("processDefinitionKey") final long processDefinitionKey,
-      @RequestBody(required = false) final ProcessDefinitionFlowNodeStatisticsQuery query) {
+      @RequestBody(required = false) final ProcessDefinitionElementStatisticsQuery query) {
     return SearchQueryRequestMapper.toProcessDefinitionStatisticsQuery(processDefinitionKey, query)
         .fold(RestErrorMapper::mapProblemToResponse, this::flowNodeStatistics);
   }
 
-  private ResponseEntity<ProcessDefinitionFlowNodeStatisticsQueryResult> flowNodeStatistics(
+  private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> flowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     try {
       final var result =

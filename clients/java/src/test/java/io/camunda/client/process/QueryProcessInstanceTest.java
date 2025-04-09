@@ -112,7 +112,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionVersionTag().get$Eq()).isEqualTo("v7");
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("15");
     assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo("25");
-    assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo("30");
+    assertThat(filter.getParentElementInstanceKey().get$Eq()).isEqualTo("30");
     assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
     assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
     assertThat(filter.getState().get$Eq())
@@ -122,10 +122,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getVariables()).isEqualTo(variables);
     assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
     assertThat(filter.getHasRetriesLeft()).isEqualTo(true);
-    assertThat(filter.getFlowNodeId().get$Eq()).isEqualTo("flowNodeId");
-    assertThat(filter.getFlowNodeInstanceState().get$Eq())
-        .isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
-    assertThat(filter.getHasFlowNodeInstanceIncident()).isEqualTo(true);
+    assertThat(filter.getElementId().get$Eq()).isEqualTo("flowNodeId");
+    assertThat(filter.getElementInstanceState().get$Eq())
+        .isEqualTo(ElementInstanceStateEnum.ACTIVE);
+    assertThat(filter.getHasElementInstanceIncident()).isEqualTo(true);
     assertThat(filter.getIncidentErrorHashCode()).isEqualTo(123456789);
   }
 

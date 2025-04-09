@@ -45,7 +45,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     processDefinitionVersionTag = item.getProcessDefinitionVersionTag();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     parentProcessInstanceKey = ParseUtil.parseLongOrNull(item.getParentProcessInstanceKey());
-    parentFlowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getParentFlowNodeInstanceKey());
+    parentFlowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getParentElementInstanceKey());
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     state = EnumUtil.convert(item.getState(), ProcessInstanceState.class);

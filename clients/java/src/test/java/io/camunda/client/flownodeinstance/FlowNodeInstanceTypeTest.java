@@ -17,8 +17,8 @@ package io.camunda.client.flownodeinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilter;
-import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
+import io.camunda.client.protocol.rest.ElementInstanceFilter;
+import io.camunda.client.protocol.rest.ElementInstanceResult;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -29,8 +29,8 @@ public class FlowNodeInstanceTypeTest {
   @EnumSource(BpmnElementType.class)
   void shouldHaveFlowNodeInstanceFilterType(final BpmnElementType bpmnElementType) {
     // when
-    final FlowNodeInstanceFilter.TypeEnum filterType =
-        FlowNodeInstanceFilter.TypeEnum.fromValue(bpmnElementType.name());
+    final ElementInstanceFilter.TypeEnum filterType =
+        ElementInstanceFilter.TypeEnum.fromValue(bpmnElementType.name());
 
     // then
     assertThat(filterType)
@@ -39,23 +39,23 @@ public class FlowNodeInstanceTypeTest {
                 + "Probably, the BPMN element is new and need to be added to the REST specification (rest-api.yaml).",
             bpmnElementType)
         .isNotNull()
-        .isNotEqualTo(FlowNodeInstanceFilter.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
+        .isNotEqualTo(ElementInstanceFilter.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
   }
 
   @ParameterizedTest
   @EnumSource(BpmnElementType.class)
   void shouldHaveFlowNodeInstanceResultType(final BpmnElementType bpmnElementType) {
     // when
-    final FlowNodeInstanceResult.TypeEnum resultType =
-        FlowNodeInstanceResult.TypeEnum.fromValue(bpmnElementType.name());
+    final ElementInstanceResult.TypeEnum resultType =
+        ElementInstanceResult.TypeEnum.fromValue(bpmnElementType.name());
 
     // then
     assertThat(resultType)
         .describedAs(
-            "The enum FlowNodeInstanceResult should contain a value for: %s. "
+            "The enum ElementInstanceResult should contain a value for: %s. "
                 + "Probably, the BPMN element is new and need to be added to the REST specification (rest-api.yaml).",
             bpmnElementType)
         .isNotNull()
-        .isNotEqualTo(FlowNodeInstanceResult.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
+        .isNotEqualTo(ElementInstanceResult.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
   }
 }

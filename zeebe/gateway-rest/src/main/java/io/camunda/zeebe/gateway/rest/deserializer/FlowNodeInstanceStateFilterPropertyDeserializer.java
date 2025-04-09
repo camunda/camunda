@@ -7,27 +7,27 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedFlowNodeInstanceStateFilter;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.AdvancedElementInstanceStateFilter;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
 
 public class FlowNodeInstanceStateFilterPropertyDeserializer
-    extends FilterDeserializer<FlowNodeInstanceStateFilterProperty, FlowNodeInstanceStateEnum> {
+    extends FilterDeserializer<ElementInstanceStateFilterProperty, ElementInstanceStateEnum> {
 
   @Override
-  protected Class<? extends FlowNodeInstanceStateFilterProperty> getFinalType() {
-    return AdvancedFlowNodeInstanceStateFilter.class;
+  protected Class<? extends ElementInstanceStateFilterProperty> getFinalType() {
+    return AdvancedElementInstanceStateFilter.class;
   }
 
   @Override
-  protected Class<FlowNodeInstanceStateEnum> getImplicitValueType() {
-    return FlowNodeInstanceStateEnum.class;
+  protected Class<ElementInstanceStateEnum> getImplicitValueType() {
+    return ElementInstanceStateEnum.class;
   }
 
   @Override
-  protected FlowNodeInstanceStateFilterProperty createFromImplicitValue(
-      final FlowNodeInstanceStateEnum value) {
-    final var filter = new AdvancedFlowNodeInstanceStateFilter();
+  protected ElementInstanceStateFilterProperty createFromImplicitValue(
+      final ElementInstanceStateEnum value) {
+    final var filter = new AdvancedElementInstanceStateFilter();
     filter.set$Eq(value);
     return filter;
   }

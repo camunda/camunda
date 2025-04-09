@@ -27,8 +27,8 @@ import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
 import io.camunda.client.impl.statistics.response.StatisticsResponseMapper;
 import io.camunda.client.protocol.rest.BaseProcessInstanceFilter;
-import io.camunda.client.protocol.rest.ProcessDefinitionFlowNodeStatisticsQuery;
-import io.camunda.client.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
+import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -36,18 +36,18 @@ import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class ProcessDefinitionFlowNodeStatisticsRequestImpl
-    extends TypedSearchRequestPropertyProvider<ProcessDefinitionFlowNodeStatisticsQuery>
+    extends TypedSearchRequestPropertyProvider<ProcessDefinitionElementStatisticsQuery>
     implements ProcessDefinitionFlowNodeStatisticsRequest {
 
   private final long processDefinitionKey;
-  private final ProcessDefinitionFlowNodeStatisticsQuery request;
+  private final ProcessDefinitionElementStatisticsQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public ProcessDefinitionFlowNodeStatisticsRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final long processDefinitionKey) {
-    request = new ProcessDefinitionFlowNodeStatisticsQuery();
+    request = new ProcessDefinitionElementStatisticsQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     this.processDefinitionKey = processDefinitionKey;
@@ -68,7 +68,7 @@ public class ProcessDefinitionFlowNodeStatisticsRequestImpl
         "/process-definitions/" + processDefinitionKey + "/statistics/flownode-instances",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        ProcessDefinitionFlowNodeStatisticsQueryResult.class,
+        ProcessDefinitionElementStatisticsQueryResult.class,
         StatisticsResponseMapper::toProcessDefinitionStatisticsResponse,
         result);
     return result;
@@ -93,7 +93,7 @@ public class ProcessDefinitionFlowNodeStatisticsRequestImpl
   }
 
   @Override
-  protected ProcessDefinitionFlowNodeStatisticsQuery getSearchRequestProperty() {
+  protected ProcessDefinitionElementStatisticsQuery getSearchRequestProperty() {
     return request;
   }
 }

@@ -54,11 +54,11 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceResult;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceResult;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
@@ -69,10 +69,10 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessFlowNodeStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
@@ -121,18 +121,18 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static ProcessDefinitionFlowNodeStatisticsQueryResult toProcessFlowNodeStatisticsResult(
+  public static ProcessDefinitionElementStatisticsQueryResult toProcessFlowNodeStatisticsResult(
       final List<ProcessFlowNodeStatisticsEntity> result) {
-    return new ProcessDefinitionFlowNodeStatisticsQueryResult()
+    return new ProcessDefinitionElementStatisticsQueryResult()
         .items(
             result.stream()
                 .map(SearchQueryResponseMapper::toProcessFlowNodeStatisticsResult)
                 .toList());
   }
 
-  private static ProcessFlowNodeStatisticsResult toProcessFlowNodeStatisticsResult(
+  private static ProcessElementStatisticsResult toProcessFlowNodeStatisticsResult(
       final ProcessFlowNodeStatisticsEntity result) {
-    return new ProcessFlowNodeStatisticsResult()
+    return new ProcesselementStatisticsResult()
         .flowNodeId(result.flowNodeId())
         .active(result.active())
         .canceled(result.canceled())

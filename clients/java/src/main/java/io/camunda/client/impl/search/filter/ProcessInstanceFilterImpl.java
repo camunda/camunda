@@ -161,7 +161,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setParentFlowNodeInstanceKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setParentElementInstanceKey(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -290,7 +290,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setFlowNodeId(RequestMapper.toProtocolObject(property.build()));
+    filter.setElementId(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -306,14 +306,14 @@ public class ProcessInstanceFilterImpl
       final Consumer<FlowNodeInstanceStateProperty> fn) {
     final FlowNodeInstanceStateProperty property = new FlowNodeInstanceStatePropertyImpl();
     fn.accept(property);
-    filter.setFlowNodeInstanceState(RequestMapper.toProtocolObject(property.build()));
+    filter.setElementInstanceState(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
   @Override
   public ProcessInstanceFilter hasFlowNodeInstanceIncident(
       final Boolean hasFlowNodeInstanceIncident) {
-    filter.hasFlowNodeInstanceIncident(hasFlowNodeInstanceIncident);
+    filter.hasElementInstanceIncident(hasFlowNodeInstanceIncident);
     return this;
   }
 

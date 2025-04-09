@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
@@ -41,7 +41,7 @@ public class JacksonConfig {
         ProcessInstanceStateFilterProperty.class,
         new ProcessInstanceStateFilterPropertyDeserializer());
     module.addDeserializer(
-        FlowNodeInstanceStateFilterProperty.class,
+        ElementInstanceStateFilterProperty.class,
         new FlowNodeInstanceStateFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
