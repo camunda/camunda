@@ -204,6 +204,8 @@ public class MigrationITExtension
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(() -> assertThat(appender.logs.size()).isGreaterThan(0));
+
+    logger.detachAndStopAllAppenders();
   }
 
   private void ingestRecordToTriggerImporters(final CamundaClient client) {

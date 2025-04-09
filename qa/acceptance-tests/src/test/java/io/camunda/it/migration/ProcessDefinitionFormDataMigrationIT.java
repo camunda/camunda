@@ -39,14 +39,13 @@ import org.slf4j.LoggerFactory;
 public class ProcessDefinitionFormDataMigrationIT {
 
   private static final Map<String, Long> PROCESS_DEFINITION_KEYS = new HashMap<>();
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ProcessDefinitionFormDataMigrationIT.class);
 
   @RegisterExtension
   private static final MigrationITExtension PROVIDER =
       new MigrationITExtension()
           .withBeforeUpgradeConsumer(ProcessDefinitionFormDataMigrationIT::setup);
-
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(ProcessDefinitionFormDataMigrationIT.class);
 
   private static void setup(final DatabaseType databaseType, final CamundaMigrator migrator) {
     migrator
