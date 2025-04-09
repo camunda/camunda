@@ -1,11 +1,9 @@
 ---
-
 name: Core Application – Automated E2E Test Request
 about: Create a test case for the automated Core Application E2E test suite based on a user flow.
 title: "E2E - [Module or Area Name] - [Short scenario description]"
-labels: ["kind/bug", "qa/core-application-e2e-test-suite"]
-assignees: ''
-
+labels: ["kind/test-case", "qa/core-application-e2e-test-suite"]
+assignees: ""
 ---
 
 ### Description
@@ -41,11 +39,13 @@ Scenario: As a user, I can ...
 ### Supported Versions
 
 <!-- List the versions impacted by the feature, including when it was introduced and supported versions. -->
+
 - Version X.X
 
 ### Implementation Timeline
 
 <!-- Specify when the feature will be available or when it’s expected to be implemented. -->
+
 - Available in: Version Y.Y
 
 ### Priority
@@ -61,5 +61,5 @@ Scenario: As a user, I can ...
 ### Definition of Ready - Checklist
 
 <!-- The assignee will check the DRI. -->
-- [ ] The test case has a meaningful title, description, and testable acceptance criteria
 
+- [ ] The test case has a meaningful title, description, and testable acceptance criteria
