@@ -36,8 +36,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
     client.newFlownodeInstanceSearchRequest().send().join();
 
     // then
-    final FlowNodeInstanceSearchQuery request =
-        gatewayService.getLastRequest(FlowNodeInstanceSearchQuery.class);
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
     assertThat(request.getFilter()).isNull();
   }
 
@@ -61,16 +61,16 @@ public class FlownodeInstanceTest extends ClientRestTest {
         .send()
         .join();
     // then
-    final FlowNodeInstanceSearchQuery request =
-        gatewayService.getLastRequest(FlowNodeInstanceSearchQuery.class);
-    final FlowNodeInstanceFilter filter = Objects.requireNonNull(request.getFilter());
-    assertThat(filter.getFlowNodeInstanceKey()).isEqualTo("1");
-    assertThat(filter.getType()).isEqualTo(FlowNodeInstanceFilter.TypeEnum.SERVICE_TASK);
-    assertThat(filter.getState().get$Eq()).isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getElementInstanceKey()).isEqualTo("1");
+    assertThat(filter.getType()).isEqualTo(ElementInstanceFilter.TypeEnum.SERVICE_TASK);
+    assertThat(filter.getState().get$Eq()).isEqualTo(ElementInstanceStateEnum.ACTIVE);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
-    assertThat(filter.getFlowNodeId()).isEqualTo("flowNodeId");
+    assertThat(filter.getElementId()).isEqualTo("flowNodeId");
     assertThat(filter.getHasIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo("4");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
@@ -106,8 +106,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
         .join();
 
     // then
-    final FlowNodeInstanceSearchQuery request =
-        gatewayService.getLastRequest(FlowNodeInstanceSearchQuery.class);
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromFlowNodeInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));

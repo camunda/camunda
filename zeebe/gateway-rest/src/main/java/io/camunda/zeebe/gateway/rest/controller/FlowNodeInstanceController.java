@@ -12,9 +12,9 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.FlowNodeInstanceServices;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceResult;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceResult;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -41,14 +41,14 @@ public class FlowNodeInstanceController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<FlowNodeInstanceSearchQueryResult> searchFlownodeInstances(
-      @RequestBody(required = false) final FlowNodeInstanceSearchQuery query) {
+  public ResponseEntity<ElementInstanceSearchQueryResult> searchFlownodeInstances(
+      @RequestBody(required = false) final ElementInstanceSearchQuery query) {
     return SearchQueryRequestMapper.toFlownodeInstanceQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   @CamundaGetMapping(path = "/{flowNodeInstanceKey}")
-  public ResponseEntity<FlowNodeInstanceResult> getByKey(
+  public ResponseEntity<ElementInstanceResult> getByKey(
       @PathVariable("flowNodeInstanceKey") final Long flowNodeInstanceKey) {
     try {
       final FlowNodeInstanceEntity flowNode =
@@ -62,7 +62,7 @@ public class FlowNodeInstanceController {
     }
   }
 
-  private ResponseEntity<FlowNodeInstanceSearchQueryResult> search(
+  private ResponseEntity<ElementInstanceSearchQueryResult> search(
       final FlowNodeInstanceQuery query) {
     try {
       final var result =

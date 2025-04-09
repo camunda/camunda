@@ -24,22 +24,22 @@ import io.camunda.client.impl.search.filter.builder.FlowNodeInstanceStatePropert
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilter;
+import io.camunda.client.protocol.rest.ElementInstanceFilter;
 import java.util.function.Consumer;
 
 public class FlownodeInstanceFilterImpl
-    extends TypedSearchRequestPropertyProvider<FlowNodeInstanceFilter>
+    extends TypedSearchRequestPropertyProvider<ElementInstanceFilter>
     implements FlownodeInstanceFilter {
 
-  private final io.camunda.client.protocol.rest.FlowNodeInstanceFilter filter;
+  private final io.camunda.client.protocol.rest.ElementInstanceFilter filter;
 
   public FlownodeInstanceFilterImpl() {
-    filter = new io.camunda.client.protocol.rest.FlowNodeInstanceFilter();
+    filter = new io.camunda.client.protocol.rest.ElementInstanceFilter();
   }
 
   @Override
   public FlownodeInstanceFilter flowNodeInstanceKey(final long value) {
-    filter.flowNodeInstanceKey(ParseUtil.keyToString(value));
+    filter.elementInstanceKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -63,7 +63,7 @@ public class FlownodeInstanceFilterImpl
 
   @Override
   public FlownodeInstanceFilter flowNodeId(final String value) {
-    filter.setFlowNodeId(value);
+    filter.setElementId(value);
     return this;
   }
 
@@ -84,7 +84,7 @@ public class FlownodeInstanceFilterImpl
   public FlownodeInstanceFilter type(final FlowNodeInstanceType value) {
     filter.setType(
         EnumUtil.convert(
-            value, io.camunda.client.protocol.rest.FlowNodeInstanceFilter.TypeEnum.class));
+            value, io.camunda.client.protocol.rest.ElementInstanceFilter.TypeEnum.class));
     return this;
   }
 
@@ -107,7 +107,7 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
-  protected io.camunda.client.protocol.rest.FlowNodeInstanceFilter getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.ElementInstanceFilter getSearchRequestProperty() {
     return filter;
   }
 }
