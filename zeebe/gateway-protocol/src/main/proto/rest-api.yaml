@@ -4985,7 +4985,7 @@ components:
         - type: object
           properties:
             $or:
-              description: Filter properties used in 'or' conjunction.
+              description: An array of filter objects combined using logical OR. Filters within each object are implicitly combined using AND logic.
               type: array
               items:
                 $ref: "#/components/schemas/ProcessInstanceFilterFields"
