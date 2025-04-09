@@ -92,7 +92,8 @@ public class DeleteUserTest {
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupKey(Long.parseLong(groupId))
-                .withEntityKey(userRecord.getKey())
+                // TODO: revisit
+                .withEntityId(String.valueOf(userRecord.getKey()))
                 .exists())
         .isTrue();
     Assertions.assertThat(

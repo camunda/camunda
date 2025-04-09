@@ -167,7 +167,8 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
               .setGroupKey(groupKey)
-              .setEntityKey(userKey)
+              // TODO: revisit with https://github.com/camunda/camunda/issues/30091
+              .setEntityId(String.valueOf(userKey))
               .setEntityType(EntityType.USER));
     }
 

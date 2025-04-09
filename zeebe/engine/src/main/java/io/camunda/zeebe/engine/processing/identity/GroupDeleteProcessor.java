@@ -128,7 +128,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
                     final var entityRecord =
                         new GroupRecord()
                             .setGroupId(groupId)
-                            .setEntityKey(entityKey)
+                            .setEntityId(entityKey)
                             .setEntityType(entityType);
                     stateWriter.appendFollowUpEvent(
                         record.getGroupKey(), GroupIntent.ENTITY_REMOVED, entityRecord);

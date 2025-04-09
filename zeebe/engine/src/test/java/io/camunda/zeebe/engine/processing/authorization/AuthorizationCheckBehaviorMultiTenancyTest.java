@@ -525,7 +525,8 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
             .setGroupId(groupId)
             .setName(UUID.randomUUID().toString())
             .setDescription(UUID.randomUUID().toString())
-            .setEntityKey(entityKey)
+            // TODO: revisit
+            .setEntityId(String.valueOf(entityKey))
             .setEntityType(entityType);
     groupCreatedApplier.applyState(groupKey, group);
     groupEntityAddedApplier.applyState(groupKey, group);
