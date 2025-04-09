@@ -29,7 +29,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
   private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
-      "Expected to add entity with key '%s' to group with ID '%s', but the entity is already assigned to this group.";
+      "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group.";
 
   private final GroupState groupState;
   private final UserState userState;

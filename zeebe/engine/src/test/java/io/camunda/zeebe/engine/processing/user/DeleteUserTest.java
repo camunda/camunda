@@ -69,7 +69,7 @@ public class DeleteUserTest {
     ENGINE
         .group()
         .addEntity(groupId)
-        .withEntityKey(userRecord.getKey())
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
     ENGINE
@@ -92,8 +92,7 @@ public class DeleteUserTest {
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupKey(Long.parseLong(groupId))
-                // TODO: revisit
-                .withEntityId(String.valueOf(userRecord.getKey()))
+                .withEntityId(username)
                 .exists())
         .isTrue();
     Assertions.assertThat(

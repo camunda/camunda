@@ -246,7 +246,7 @@ public class MappingTest {
     engine
         .group()
         .addEntity(groupId)
-        .withEntityKey(mappingRecord.getKey())
+        .withEntityId(mappingRecord.getValue().getMappingId())
         .withEntityType(EntityType.MAPPING)
         .add();
     engine
