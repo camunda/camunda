@@ -4,6 +4,5 @@ camunda:
     auth:
       username: demo
       password: demo
-    enabled: true
     grpc-address: http://localhost:26500
     rest-address: http://localhost:8088
