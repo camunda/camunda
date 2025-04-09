@@ -121,19 +121,19 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static ProcessDefinitionElementStatisticsQueryResult toProcessFlowNodeStatisticsResult(
+  public static ProcessDefinitionElementStatisticsQueryResult toProcessElementStatisticsResult(
       final List<ProcessFlowNodeStatisticsEntity> result) {
     return new ProcessDefinitionElementStatisticsQueryResult()
         .items(
             result.stream()
-                .map(SearchQueryResponseMapper::toProcessFlowNodeStatisticsResult)
+                .map(SearchQueryResponseMapper::toProcessElementStatisticsResult)
                 .toList());
   }
 
-  private static ProcessElementStatisticsResult toProcessFlowNodeStatisticsResult(
+  private static ProcessElementStatisticsResult toProcessElementStatisticsResult(
       final ProcessFlowNodeStatisticsEntity result) {
-    return new ProcesselementStatisticsResult()
-        .flowNodeId(result.flowNodeId())
+    return new ProcessElementStatisticsResult()
+        .elementId(result.flowNodeId())
         .active(result.active())
         .canceled(result.canceled())
         .incidents(result.incidents())
@@ -215,15 +215,15 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static FlowNodeInstanceSearchQueryResult toFlowNodeInstanceSearchQueryResponse(
+  public static ElementInstanceSearchQueryResult toElementInstanceSearchQueryResponse(
       final SearchQueryResult<FlowNodeInstanceEntity> result,
       final Map<Long, ProcessCacheItem> processCacheItems) {
     final var page = toSearchQueryPageResponse(result);
-    return new FlowNodeInstanceSearchQueryResult()
+    return new ElementInstanceSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(instances -> toFlowNodeInstance(instances, processCacheItems))
+                .map(instances -> toElementInstance(instances, processCacheItems))
                 .orElseGet(Collections::emptyList));
   }
 
@@ -326,7 +326,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
         .processDefinitionKey(KeyUtil.keyToString(p.processDefinitionKey()))
         .parentProcessInstanceKey(KeyUtil.keyToString(p.parentProcessInstanceKey()))
-        .parentFlowNodeInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
+        .parentElementInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
         .state(toProtocolState(p.state()))
@@ -421,27 +421,27 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
   }
 
-  private static List<FlowNodeInstanceResult> toFlowNodeInstance(
+  private static List<ElementInstanceResult> toElementInstance(
       final List<FlowNodeInstanceEntity> instances,
       final Map<Long, ProcessCacheItem> processCacheItems) {
     return instances.stream()
         .map(
             instance -> {
-              final var flowNodeName =
+              final var elementName =
                   processCacheItems
                       .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.EMPTY)
-                      .getFlowNodeName(instance.flowNodeId());
-              return toFlowNodeInstance(instance, flowNodeName);
+                      .getElementName(instance.flowNodeId());
+              return toElementInstance(instance, elementName);
             })
         .toList();
   }
 
-  public static FlowNodeInstanceResult toFlowNodeInstance(
+  public static ElementInstanceResult toElementInstance(
       final FlowNodeInstanceEntity instance, final String name) {
-    return new FlowNodeInstanceResult()
-        .flowNodeInstanceKey(KeyUtil.keyToString(instance.flowNodeInstanceKey()))
-        .flowNodeId(instance.flowNodeId())
-        .flowNodeName(name)
+    return new ElementInstanceResult()
+        .elementInstanceKey(KeyUtil.keyToString(instance.flowNodeInstanceKey()))
+        .elementId(instance.flowNodeId())
+        .elementName(name)
         .processDefinitionKey(KeyUtil.keyToString(instance.processDefinitionKey()))
         .processDefinitionId(instance.processDefinitionId())
         .processInstanceKey(KeyUtil.keyToString(instance.processInstanceKey()))
@@ -449,8 +449,8 @@ public final class SearchQueryResponseMapper {
         .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
-        .state(FlowNodeInstanceStateEnum.fromValue(instance.state().name()))
-        .type(FlowNodeInstanceResult.TypeEnum.fromValue(instance.type().name()))
+        .state(ElementInstanceStateEnum.fromValue(instance.state().name()))
+        .type(ElementInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }
 
@@ -497,7 +497,7 @@ public final class SearchQueryResponseMapper {
               final var name =
                   processCacheItems
                       .getOrDefault(t.processDefinitionKey(), ProcessCacheItem.EMPTY)
-                      .getFlowNodeName(t.elementId());
+                      .getElementName(t.elementId());
               return toUserTask(t, name);
             })
         .toList();
@@ -515,8 +515,8 @@ public final class SearchQueryResponseMapper {
         .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
         .errorType(IncidentResult.ErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())
-        .flowNodeId(t.flowNodeId())
-        .flowNodeInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
+        .elementId(t.flowNodeId())
+        .elementInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
         .creationTime(formatDate(t.creationTime()))
         .state(IncidentResult.StateEnum.fromValue(t.state().name()))
         .jobKey(KeyUtil.keyToString(t.jobKey()))

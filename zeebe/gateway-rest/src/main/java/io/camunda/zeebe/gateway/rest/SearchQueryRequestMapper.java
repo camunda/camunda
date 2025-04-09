@@ -26,7 +26,6 @@ import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
-import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -299,7 +298,7 @@ public final class SearchQueryRequestMapper {
         filter, sort, page, SearchQueryBuilders::decisionRequirementsSearchQuery);
   }
 
-  public static Either<ProblemDetail, FlowNodeInstanceQuery> toFlownodeInstanceQuery(
+  public static Either<ProblemDetail, FlowNodeInstanceQuery> toElementInstanceQuery(
       final ElementInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
@@ -307,11 +306,11 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromFlowNodeInstanceSearchQuerySortRequest(
+            SearchQuerySortRequestMapper.fromElementInstanceSearchQuerySortRequest(
                 request.getSort()),
             SortOptionBuilders::flowNodeInstance,
-            SearchQueryRequestMapper::applyFlownodeInstanceSortField);
-    final var filter = toFlownodeInstanceFilter(request.getFilter());
+            SearchQueryRequestMapper::applyElementInstanceSortField);
+    final var filter = toElementInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::flownodeInstanceSearchQuery);
   }
 
@@ -752,7 +751,7 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static FlowNodeInstanceFilter toFlownodeInstanceFilter(
+  private static FlowNodeInstanceFilter toElementInstanceFilter(
       final io.camunda.zeebe.gateway.protocol.rest.ElementInstanceFilter filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     Optional.ofNullable(filter)
@@ -1051,7 +1050,7 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
-  private static List<String> applyFlownodeInstanceSortField(
+  private static List<String> applyElementInstanceSortField(
       final ElementInstanceSearchQuerySortRequest.FieldEnum field,
       final FlowNodeInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();

@@ -13,7 +13,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider;
+import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,20 +28,20 @@ import org.springframework.context.annotation.Configuration;
 public class RestApiConfiguration {
 
   @Bean
-  public ProcessFlowNodeProvider processFlowNodeProvider(
+  public ProcessElementProvider processElementProvider(
       final ProcessDefinitionServices processDefinitionServices) {
-    return new ProcessFlowNodeProvider(processDefinitionServices);
+    return new ProcessElementProvider(processDefinitionServices);
   }
 
   @Bean
   public ProcessCache processCache(
       final GatewayRestConfiguration configuration,
-      final ProcessFlowNodeProvider processFlowNodeProvider,
+      final ProcessElementProvider processElementProvider,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry) {
 
     return new ProcessCache(
-        configuration, processFlowNodeProvider, brokerTopologyManager, meterRegistry);
+        configuration, processElementProvider, brokerTopologyManager, meterRegistry);
   }
 
   @ConfigurationProperties("camunda.rest")

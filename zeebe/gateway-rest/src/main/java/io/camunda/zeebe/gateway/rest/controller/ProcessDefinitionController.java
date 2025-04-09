@@ -129,22 +129,22 @@ public class ProcessDefinitionController {
     }
   }
 
-  @CamundaPostMapping(path = "/{processDefinitionKey}/statistics/flownode-instances")
-  public ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> flowNodeStatistics(
+  @CamundaPostMapping(path = "/{processDefinitionKey}/statistics/element-instances")
+  public ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
       @PathVariable("processDefinitionKey") final long processDefinitionKey,
       @RequestBody(required = false) final ProcessDefinitionElementStatisticsQuery query) {
     return SearchQueryRequestMapper.toProcessDefinitionStatisticsQuery(processDefinitionKey, query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::flowNodeStatistics);
+        .fold(RestErrorMapper::mapProblemToResponse, this::elementStatistics);
   }
 
-  private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> flowNodeStatistics(
+  private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     try {
       final var result =
           processDefinitionServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .flowNodeStatistics(filter);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toProcessFlowNodeStatisticsResult(result));
+              .elementStatistics(filter);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toProcessElementStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

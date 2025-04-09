@@ -20,7 +20,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider.ProcessFlowNode;
+import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider.ProcessElement;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -38,8 +38,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {ProcessFlowNodeProvider.class})
-class ProcessFlowNodeProviderTest {
+@ContextConfiguration(classes = {ProcessElementProvider.class})
+class ProcessElementProviderTest {
 
   public static final String PROC_DEF_ID1 = "testProcess";
   public static final String PROC_DEF_ID2 = "parent_process_v1";
@@ -47,10 +47,10 @@ class ProcessFlowNodeProviderTest {
   public static final String PROC_DEF_ID41 = "Process_0diikxu";
   public static final String PROC_DEF_ID42 = "Process_18z2cdf";
   private static final Long PROC_DEF_KEY = 1L;
-  @Autowired ProcessFlowNodeProvider processFlowNodeProvider;
+  @Autowired ProcessElementProvider processElementProvider;
   @MockBean ProcessDefinitionServices processDefinitionServices;
   @Mock ProcessDefinitionEntity processDefinition;
-  @Mock BiConsumer<Long, ProcessFlowNode> mockConsumer;
+  @Mock BiConsumer<Long, ProcessElement> mockConsumer;
   private String bpmn1;
   private String bpmn2;
   private String bpmn3;
@@ -74,34 +74,34 @@ class ProcessFlowNodeProviderTest {
     when(processDefinitionServices.getByKey(eq(PROC_DEF_KEY))).thenReturn(processDefinition);
   }
 
-  private void verifyFlowNodesBpmn1() {
+  private void verifyElementsBpmn1() {
     verify(mockConsumer)
         .accept(
-            ProcessFlowNodeProviderTest.PROC_DEF_KEY, new ProcessFlowNode("StartEvent_1", "Start"));
+            ProcessElementProviderTest.PROC_DEF_KEY, new ProcessElement("StartEvent_1", "Start"));
     verify(mockConsumer)
         .accept(
-            ProcessFlowNodeProviderTest.PROC_DEF_KEY, new ProcessFlowNode("Event_0692jdh", "End"));
+            ProcessElementProviderTest.PROC_DEF_KEY, new ProcessElement("Event_0692jdh", "End"));
     verify(mockConsumer)
-        .accept(ProcessFlowNodeProviderTest.PROC_DEF_KEY, new ProcessFlowNode("taskB", "Task B"));
+        .accept(ProcessElementProviderTest.PROC_DEF_KEY, new ProcessElement("taskB", "Task B"));
   }
 
-  private void verifyFlowNodesBpmn2(final long key) {
-    verify(mockConsumer).accept(key, new ProcessFlowNode("call_activity", "Call Activity"));
-    verify(mockConsumer).accept(key, new ProcessFlowNode("taskX", "TaskX"));
-    verify(mockConsumer).accept(key, new ProcessFlowNode("taskY", "TaskY"));
+  private void verifyElementsBpmn2(final long key) {
+    verify(mockConsumer).accept(key, new ProcessElement("call_activity", "Call Activity"));
+    verify(mockConsumer).accept(key, new ProcessElement("taskX", "TaskX"));
+    verify(mockConsumer).accept(key, new ProcessElement("taskY", "TaskY"));
   }
 
-  private void verifyFlowNodesBpmn3(final long key) {
+  private void verifyElementsBpmn3(final long key) {
     verify(mockConsumer)
-        .accept(key, new ProcessFlowNode("parentProcessTask", "Parent process task"));
-    verify(mockConsumer).accept(key, new ProcessFlowNode("subprocessTask", "Subprocess task"));
+        .accept(key, new ProcessElement("parentProcessTask", "Parent process task"));
+    verify(mockConsumer).accept(key, new ProcessElement("subprocessTask", "Subprocess task"));
     verify(mockConsumer)
         .accept(
-            key, new ProcessFlowNode("SubProcess_006dg16", "Event Subprocess inside Subprocess"));
+            key, new ProcessElement("SubProcess_006dg16", "Event Subprocess inside Subprocess"));
     verify(mockConsumer)
-        .accept(key, new ProcessFlowNode("taskInSubprocess", "Task in sub-subprocess"));
+        .accept(key, new ProcessElement("taskInSubprocess", "Task in sub-subprocess"));
     verify(mockConsumer)
-        .accept(key, new ProcessFlowNode("StartEvent_0kpitfv", "Timer in sub-subprocess"));
+        .accept(key, new ProcessElement("StartEvent_0kpitfv", "Timer in sub-subprocess"));
   }
 
   @Test
@@ -109,80 +109,80 @@ class ProcessFlowNodeProviderTest {
     // given
     when(processDefinition.bpmnXml()).thenReturn("not-xml");
     // when
-    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processElementProvider.extractElementNames(PROC_DEF_KEY, mockConsumer);
     // then
     verifyNoInteractions(mockConsumer);
   }
 
   @Test
-  void shouldExtractFlowNodeNames() {
+  void shouldExtractElementNames() {
     // given
     when(processDefinition.bpmnXml()).thenReturn(bpmn1);
     // when
-    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processElementProvider.extractElementNames(PROC_DEF_KEY, mockConsumer);
     // then
-    verifyFlowNodesBpmn1();
+    verifyElementsBpmn1();
     verifyNoMoreInteractions(mockConsumer);
   }
 
   @Test
-  void shouldExtractFlowNodeNamesWithCallActivity() {
+  void shouldExtractElementNamesWithCallActivity() {
     // given
     when(processDefinition.bpmnXml()).thenReturn(bpmn2);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID2);
     // when
-    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processElementProvider.extractElementNames(PROC_DEF_KEY, mockConsumer);
     // then
-    verifyFlowNodesBpmn2(PROC_DEF_KEY);
+    verifyElementsBpmn2(PROC_DEF_KEY);
     verifyNoMoreInteractions(mockConsumer);
   }
 
   @Test
-  void shouldExtractFlowNodeNamesWithSubProcess() {
+  void shouldExtractElementNamesWithSubProcess() {
     // given
     when(processDefinition.bpmnXml()).thenReturn(bpmn3);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID3);
     // when
-    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processElementProvider.extractElementNames(PROC_DEF_KEY, mockConsumer);
     // then
-    verifyFlowNodesBpmn3(PROC_DEF_KEY);
+    verifyElementsBpmn3(PROC_DEF_KEY);
     verifyNoMoreInteractions(mockConsumer);
   }
 
   @Test
-  void shouldExtractFlowNodeNamesWith2Processes1() {
+  void shouldExtractElementNamesWith2Processes1() {
     // given
     when(processDefinition.bpmnXml()).thenReturn(bpmn4);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID41);
     // when
-    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processElementProvider.extractElementNames(PROC_DEF_KEY, mockConsumer);
     // then
     verify(mockConsumer)
-        .accept(PROC_DEF_KEY, new ProcessFlowNode("StartEvent_1", "Start process A"));
-    verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessFlowNode("Activity_0whadek", "Do task A"));
+        .accept(PROC_DEF_KEY, new ProcessElement("StartEvent_1", "Start process A"));
+    verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessElement("Activity_0whadek", "Do task A"));
     verify(mockConsumer)
-        .accept(PROC_DEF_KEY, new ProcessFlowNode("Event_0ovp9k6", "End process B"));
+        .accept(PROC_DEF_KEY, new ProcessElement("Event_0ovp9k6", "End process B"));
     verifyNoMoreInteractions(mockConsumer);
   }
 
   @Test
-  void shouldExtractFlowNodeNamesWith2Processes2() {
+  void shouldExtractElementNamesWith2Processes2() {
     // given
     when(processDefinition.bpmnXml()).thenReturn(bpmn4);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID42);
     // when
-    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processElementProvider.extractElementNames(PROC_DEF_KEY, mockConsumer);
     // then
     verify(mockConsumer)
-        .accept(PROC_DEF_KEY, new ProcessFlowNode("Event_00cm7tu", "Start process B"));
-    verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessFlowNode("Activity_0w5vpxz", "Do task B"));
+        .accept(PROC_DEF_KEY, new ProcessElement("Event_00cm7tu", "Start process B"));
+    verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessElement("Activity_0w5vpxz", "Do task B"));
     verify(mockConsumer)
-        .accept(PROC_DEF_KEY, new ProcessFlowNode("Event_083hekc", "End process B"));
+        .accept(PROC_DEF_KEY, new ProcessElement("Event_083hekc", "End process B"));
     verifyNoMoreInteractions(mockConsumer);
   }
 
   @Test
-  void shouldExtractFlowNodeNamesForMultipleProcessDefinitions() {
+  void shouldExtractElementNamesForMultipleProcessDefinitions() {
     // given
     when(processDefinition.bpmnXml()).thenReturn(bpmn1);
     when(processDefinition.processDefinitionKey()).thenReturn(PROC_DEF_KEY);
@@ -197,11 +197,11 @@ class ProcessFlowNodeProviderTest {
                 .total(3)
                 .build());
     // when
-    processFlowNodeProvider.extractFlowNodeNames(Set.of(PROC_DEF_KEY, 2L, 3L), mockConsumer);
+    processElementProvider.extractElementNames(Set.of(PROC_DEF_KEY, 2L, 3L), mockConsumer);
     // then
-    verifyFlowNodesBpmn1();
-    verifyFlowNodesBpmn2(2L);
-    verifyFlowNodesBpmn3(3L);
+    verifyElementsBpmn1();
+    verifyElementsBpmn2(2L);
+    verifyElementsBpmn3(3L);
     verifyNoMoreInteractions(mockConsumer);
 
     final var searchRequestCaptor = ArgumentCaptor.forClass(ProcessDefinitionQuery.class);

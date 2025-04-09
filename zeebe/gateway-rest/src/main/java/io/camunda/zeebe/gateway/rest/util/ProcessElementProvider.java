@@ -18,25 +18,25 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessFlowNodeProvider {
+public class ProcessElementProvider {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ProcessFlowNodeProvider.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessElementProvider.class);
   private final ProcessDefinitionServices processDefinitionServices;
 
-  public ProcessFlowNodeProvider(final ProcessDefinitionServices processDefinitionServices) {
+  public ProcessElementProvider(final ProcessDefinitionServices processDefinitionServices) {
     this.processDefinitionServices = processDefinitionServices;
   }
 
-  public void extractFlowNodeNames(
+  public void extractElementNames(
       final Long processDefinitionKey,
-      final BiConsumer<Long, ProcessFlowNode> processDefinitionKeyFlowNodeConsumer) {
+      final BiConsumer<Long, ProcessElement> processDefinitionKeyElementConsumer) {
     final var processDefinition = processDefinitionServices.getByKey(processDefinitionKey);
-    extractFlowNodeNames(processDefinition, processDefinitionKeyFlowNodeConsumer);
+    extractElementNames(processDefinition, processDefinitionKeyElementConsumer);
   }
 
-  public void extractFlowNodeNames(
+  public void extractElementNames(
       final Set<Long> processDefinitionKeys,
-      final BiConsumer<Long, ProcessFlowNode> processDefinitionKeyFlowNodeConsumer) {
+      final BiConsumer<Long, ProcessElement> processDefinitionKeyElementConsumer) {
     final var keysList = new ArrayList<>(processDefinitionKeys);
     final var result =
         processDefinitionServices.search(
@@ -50,24 +50,24 @@ public class ProcessFlowNodeProvider {
     }
 
     for (final ProcessDefinitionEntity processDefinition : result.items()) {
-      extractFlowNodeNames(processDefinition, processDefinitionKeyFlowNodeConsumer);
+      extractElementNames(processDefinition, processDefinitionKeyElementConsumer);
     }
   }
 
-  private void extractFlowNodeNames(
+  private void extractElementNames(
       final ProcessDefinitionEntity processDefinition,
-      final BiConsumer<Long, ProcessFlowNode> flowNodeConsumer) {
+      final BiConsumer<Long, ProcessElement> elementConsumer) {
     final byte[] bpmnBytes = processDefinition.bpmnXml().getBytes(StandardCharsets.UTF_8);
     ProcessModelReader.of(bpmnBytes, processDefinition.processDefinitionId())
         .ifPresent(
             reader ->
                 reader.extractFlowNodes().stream()
                     .filter(fn -> fn.getName() != null)
-                    .map(fn -> new ProcessFlowNode(fn.getId(), fn.getName()))
+                    .map(fn -> new ProcessElement(fn.getId(), fn.getName()))
                     .forEach(
                         fn ->
-                            flowNodeConsumer.accept(processDefinition.processDefinitionKey(), fn)));
+                            elementConsumer.accept(processDefinition.processDefinitionKey(), fn)));
   }
 
-  public record ProcessFlowNode(String id, String name) {}
+  public record ProcessElement(String id, String name) {}
 }

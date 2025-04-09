@@ -17,7 +17,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.rest.deserializer.BasicStringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
-import io.camunda.zeebe.gateway.rest.deserializer.FlowNodeInstanceStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.ElementInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
@@ -42,7 +42,7 @@ public class JacksonConfig {
         new ProcessInstanceStateFilterPropertyDeserializer());
     module.addDeserializer(
         ElementInstanceStateFilterProperty.class,
-        new FlowNodeInstanceStateFilterPropertyDeserializer());
+        new ElementInstanceStateFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 
