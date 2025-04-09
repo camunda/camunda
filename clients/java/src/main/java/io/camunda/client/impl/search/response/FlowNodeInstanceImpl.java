@@ -20,7 +20,7 @@ import io.camunda.client.api.search.enums.FlowNodeInstanceType;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
+import io.camunda.client.protocol.rest.ElementInstanceResult;
 import java.util.Objects;
 
 public final class FlowNodeInstanceImpl implements FlowNodeInstance {
@@ -39,13 +39,13 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final String tenantId;
   private final FlowNodeInstanceType type;
 
-  public FlowNodeInstanceImpl(final FlowNodeInstanceResult item) {
-    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
+  public FlowNodeInstanceImpl(final ElementInstanceResult item) {
+    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
-    flowNodeId = item.getFlowNodeId();
-    flowNodeName = item.getFlowNodeName();
+    flowNodeId = item.getElementId();
+    flowNodeName = item.getElementName();
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     incident = item.getHasIncident();

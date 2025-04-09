@@ -72,13 +72,13 @@ public class IncidentFilterImpl
 
   @Override
   public IncidentFilter flowNodeId(final String value) {
-    filter.setFlowNodeId(value);
+    filter.setElementId(value);
     return this;
   }
 
   @Override
   public IncidentFilter flowNodeInstanceKey(final Long value) {
-    filter.setFlowNodeInstanceKey(ParseUtil.keyToString(value));
+    filter.setElementInstanceKey(ParseUtil.keyToString(value));
     return this;
   }
 

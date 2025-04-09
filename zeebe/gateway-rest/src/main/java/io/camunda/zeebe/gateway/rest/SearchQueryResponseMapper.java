@@ -53,11 +53,11 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceResult;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceResult;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
@@ -68,8 +68,8 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
@@ -120,21 +120,21 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static ProcessDefinitionFlowNodeStatisticsQueryResult
+  public static ProcessDefinitionElementStatisticsQueryResult
       toProcessDefinitionFlowNodeStatisticsQueryResult(
           final List<ProcessDefinitionFlowNodeStatisticsEntity> result) {
-    return new ProcessDefinitionFlowNodeStatisticsQueryResult()
+    return new ProcessDefinitionElementStatisticsQueryResult()
         .items(
             result.stream()
                 .map(SearchQueryResponseMapper::toProcessDefinitionFlowNodeStatisticsResult)
                 .toList());
   }
 
-  private static ProcessDefinitionFlowNodeStatisticsResult
+  private static ProcessDefinitionElementStatisticsResult
       toProcessDefinitionFlowNodeStatisticsResult(
           final ProcessDefinitionFlowNodeStatisticsEntity result) {
-    return new ProcessDefinitionFlowNodeStatisticsResult()
-        .flowNodeId(result.flowNodeId())
+    return new ProcessDefinitionElementStatisticsResult()
+        .elementId(result.flowNodeId())
         .active(result.active())
         .canceled(result.canceled())
         .incidents(result.incidents())
@@ -216,11 +216,11 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static FlowNodeInstanceSearchQueryResult toFlowNodeInstanceSearchQueryResponse(
+  public static ElementInstanceSearchQueryResult toFlowNodeInstanceSearchQueryResponse(
       final SearchQueryResult<FlowNodeInstanceEntity> result,
       final Map<Long, ProcessCacheItem> processCacheItems) {
     final var page = toSearchQueryPageResponse(result);
-    return new FlowNodeInstanceSearchQueryResult()
+    return new ElementInstanceSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -327,7 +327,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
         .processDefinitionKey(KeyUtil.keyToString(p.processDefinitionKey()))
         .parentProcessInstanceKey(KeyUtil.keyToString(p.parentProcessInstanceKey()))
-        .parentFlowNodeInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
+        .parentElementInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
         .state(toProtocolState(p.state()))
@@ -422,7 +422,7 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
   }
 
-  private static List<FlowNodeInstanceResult> toFlowNodeInstance(
+  private static List<ElementInstanceResult> toFlowNodeInstance(
       final List<FlowNodeInstanceEntity> instances,
       final Map<Long, ProcessCacheItem> processCacheItems) {
     return instances.stream()
@@ -437,12 +437,12 @@ public final class SearchQueryResponseMapper {
         .toList();
   }
 
-  public static FlowNodeInstanceResult toFlowNodeInstance(
+  public static ElementInstanceResult toFlowNodeInstance(
       final FlowNodeInstanceEntity instance, final String name) {
-    return new FlowNodeInstanceResult()
-        .flowNodeInstanceKey(KeyUtil.keyToString(instance.flowNodeInstanceKey()))
-        .flowNodeId(instance.flowNodeId())
-        .flowNodeName(name)
+    return new ElementInstanceResult()
+        .elementInstanceKey(KeyUtil.keyToString(instance.flowNodeInstanceKey()))
+        .elementId(instance.flowNodeId())
+        .elementName(name)
         .processDefinitionKey(KeyUtil.keyToString(instance.processDefinitionKey()))
         .processDefinitionId(instance.processDefinitionId())
         .processInstanceKey(KeyUtil.keyToString(instance.processInstanceKey()))
@@ -450,8 +450,8 @@ public final class SearchQueryResponseMapper {
         .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
-        .state(FlowNodeInstanceStateEnum.fromValue(instance.state().name()))
-        .type(FlowNodeInstanceResult.TypeEnum.fromValue(instance.type().name()))
+        .state(ElementInstanceStateEnum.fromValue(instance.state().name()))
+        .type(ElementInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }
 
@@ -516,8 +516,8 @@ public final class SearchQueryResponseMapper {
         .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
         .errorType(IncidentResult.ErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())
-        .flowNodeId(t.flowNodeId())
-        .flowNodeInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
+        .elementId(t.flowNodeId())
+        .elementInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
         .creationTime(formatDate(t.creationTime()))
         .state(IncidentResult.StateEnum.fromValue(t.state().name()))
         .jobKey(KeyUtil.keyToString(t.jobKey()))

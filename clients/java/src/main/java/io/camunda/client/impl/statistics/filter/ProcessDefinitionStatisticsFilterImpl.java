@@ -87,7 +87,7 @@ public class ProcessDefinitionStatisticsFilterImpl
       final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setParentFlowNodeInstanceKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setParentElementInstanceKey(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 

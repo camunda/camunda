@@ -90,7 +90,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchResponse<FlowNodeInstance> toFlowNodeInstanceSearchResponse(
-      final FlowNodeInstanceSearchQueryResult response) {
+      final ElementInstanceSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<FlowNodeInstance> instances =
         toSearchResponseInstances(response.getItems(), FlowNodeInstanceImpl::new);
@@ -98,7 +98,7 @@ public final class SearchResponseMapper {
   }
 
   public static FlowNodeInstance toFlowNodeInstanceGetResponse(
-      final FlowNodeInstanceResult response) {
+      final ElementInstanceResult response) {
     return new FlowNodeInstanceImpl(response);
   }
 

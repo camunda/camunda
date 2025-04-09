@@ -45,8 +45,8 @@ public class IncidentImpl implements Incident {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     errorType = EnumUtil.convert(item.getErrorType(), IncidentErrorType.class);
     errorMessage = item.getErrorMessage();
-    flowNodeId = item.getFlowNodeId();
-    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
+    flowNodeId = item.getElementId();
+    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     creationTime = item.getCreationTime();
     state = EnumUtil.convert(item.getState(), IncidentState.class);
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());

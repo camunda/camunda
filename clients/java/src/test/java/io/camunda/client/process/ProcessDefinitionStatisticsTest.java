@@ -23,7 +23,7 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.protocol.rest.BaseProcessInstanceFilter;
 import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import io.camunda.client.protocol.rest.DateTimeFilterProperty;
-import io.camunda.client.protocol.rest.ProcessDefinitionFlowNodeStatisticsQuery;
+import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.protocol.rest.StringFilterProperty;
@@ -86,14 +86,14 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery query =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery query =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = query.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getProcessInstanceKey().get$Eq())
         .isEqualTo(String.valueOf(PROCESS_DEFINITION_KEY));
     assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo("25");
-    assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo("30");
+    assertThat(filter.getParentElementInstanceKey().get$Eq()).isEqualTo("30");
     assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
     assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
     assertThat(filter.getState().get$Eq()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
@@ -112,8 +112,8 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
@@ -131,8 +131,8 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final StringFilterProperty tenantId = filter.getTenantId();
@@ -151,8 +151,8 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final DateTimeFilterProperty startDate = filter.getStartDate();
@@ -183,8 +183,8 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getVariables()).isEqualTo(variables);

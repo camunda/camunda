@@ -89,8 +89,8 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
     assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.CALLED_DECISION_ERROR);
     assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");
-    assertThat(filter.getFlowNodeId()).isEqualTo("flowNode");
-    assertThat(filter.getFlowNodeInstanceKey()).isEqualTo("4");
+    assertThat(filter.getElementId()).isEqualTo("flowNode");
+    assertThat(filter.getElementInstanceKey()).isEqualTo("4");
     assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.000+000");
     assertThat(filter.getState()).isEqualTo(StateEnum.ACTIVE);
     assertThat(filter.getJobKey()).isEqualTo("5");

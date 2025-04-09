@@ -32,26 +32,26 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.impl.search.sort.FlownodeInstanceSortImpl;
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilter;
-import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQuery;
-import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryResult;
+import io.camunda.client.protocol.rest.ElementInstanceFilter;
+import io.camunda.client.protocol.rest.ElementInstanceSearchQuery;
+import io.camunda.client.protocol.rest.ElementInstanceSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class FlowNodeInstanceSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<FlowNodeInstanceSearchQuery>
+    extends TypedSearchRequestPropertyProvider<ElementInstanceSearchQuery>
     implements FlownodeInstanceSearchRequest {
 
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
-  private final FlowNodeInstanceSearchQuery request;
+  private final ElementInstanceSearchQuery request;
   private final RequestConfig.Builder httpRequestConfig;
 
   public FlowNodeInstanceSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new FlowNodeInstanceSearchQuery();
+    request = new ElementInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -67,10 +67,10 @@ public class FlowNodeInstanceSearchRequestImpl
   public CamundaFuture<SearchResponse<FlowNodeInstance>> send() {
     final HttpCamundaFuture<SearchResponse<FlowNodeInstance>> result = new HttpCamundaFuture<>();
     httpClient.post(
-        "/flownode-instances/search",
+        "/element-instances/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        FlowNodeInstanceSearchQueryResult.class,
+        ElementInstanceSearchQueryResult.class,
         SearchResponseMapper::toFlowNodeInstanceSearchResponse,
         result);
     return result;
@@ -78,7 +78,7 @@ public class FlowNodeInstanceSearchRequestImpl
 
   @Override
   public FlownodeInstanceSearchRequest filter(final FlownodeInstanceFilter value) {
-    final FlowNodeInstanceFilter filter = provideSearchRequestProperty(value);
+    final ElementInstanceFilter filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -115,7 +115,7 @@ public class FlowNodeInstanceSearchRequestImpl
   }
 
   @Override
-  protected FlowNodeInstanceSearchQuery getSearchRequestProperty() {
+  protected ElementInstanceSearchQuery getSearchRequestProperty() {
     return request;
   }
 }
