@@ -145,7 +145,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-build-tools</artifactId>
-      <version>${project.version}</version>
+      <version>8.8.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
