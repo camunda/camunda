@@ -18,10 +18,13 @@ import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.exporter.notifier.HttpClientWrapper;
+import io.camunda.it.util.HttpRequestBodyTestUtility;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -31,7 +34,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -47,6 +52,7 @@ public class IncidentNotifierIT {
   private static final String WEBHOOK_PATH = "/webhook";
   private static final String OAUTH_TOKEN_PATH = "/oauth/token";
   private static final HttpClient HTTP_CLIENT = spy(HttpClient.newHttpClient());
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @Test
   public void shouldNotifyWebhookAboutIncident() throws IOException, InterruptedException {
@@ -75,10 +81,11 @@ public class IncidentNotifierIT {
     generateIncident(camundaClient);
 
     // then
-    await()
-        .atMost(Duration.ofSeconds(30))
-        .pollInterval(Duration.ofSeconds(1))
-        .until(() -> getIncidents(camundaClient), res -> res.items().size() == 1);
+    final var incidents =
+        await()
+            .atMost(Duration.ofSeconds(30))
+            .pollInterval(Duration.ofSeconds(1))
+            .until(() -> getIncidents(camundaClient), res -> res.items().size() == 1);
 
     await()
         .untilAsserted(
@@ -88,9 +95,24 @@ public class IncidentNotifierIT {
                       argThat(
                           req ->
                               req.uri().toString().endsWith(WEBHOOK_PATH)
-                                  && req.method().equalsIgnoreCase("POST")),
+                                  && req.method().equalsIgnoreCase("POST")
+                                  && getProcessInstanceIdsForIncidentsSentInRequest(req)
+                                      .contains(
+                                          incidents.items().getFirst().getProcessInstanceKey())),
                       any());
             });
+  }
+
+  private List<Long> getProcessInstanceIdsForIncidentsSentInRequest(final HttpRequest httpRequest) {
+    try {
+      final var incidentsSentToWebHook =
+          MAPPER.readTree(HttpRequestBodyTestUtility.extractBody(httpRequest)).at("/alerts");
+      return StreamSupport.stream(incidentsSentToWebHook.spliterator(), false)
+          .map(node -> node.at("/processInstanceId").asLong())
+          .toList();
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void stubHttpClientResponses() throws IOException, InterruptedException {
