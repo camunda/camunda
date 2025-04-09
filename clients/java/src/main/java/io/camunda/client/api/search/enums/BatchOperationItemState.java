@@ -19,5 +19,6 @@ public enum BatchOperationItemState {
   ACTIVE,
   COMPLETED,
   FAILED,
+  CANCELED,
   UNKNOWN_ENUM_VALUE;
 }
