@@ -45,7 +45,11 @@ import org.springframework.context.annotation.Import;
     name = "enabled",
     havingValue = "true",
     matchIfMissing = true)
-@Import({AnnotationProcessorConfiguration.class, JsonMapperConfiguration.class})
+@Import({
+  AnnotationProcessorConfiguration.class,
+  JsonMapperConfiguration.class,
+  CamundaBeanPostProcessorConfiguration.class
+})
 @EnableConfigurationProperties({CamundaClientProperties.class})
 public class CamundaClientAllAutoConfiguration {
 

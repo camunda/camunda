@@ -16,19 +16,22 @@
 package io.camunda.spring.client.annotation.customizer;
 
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.properties.PropertyBasedJobWorkerValueCustomizer;
+import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
+import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 
-/**
- * This interface could be used to customize the {@link
- * io.camunda.spring.client.annotation.JobWorker} annotation's values. Just implement it and put it
- * into to the {@link org.springframework.context.ApplicationContext} to make it work. But be
- * careful: these customizers are applied sequentially and if you need to change the order of these
- * customizers use the {@link org.springframework.core.annotation.Order} annotation or the {@link
- * org.springframework.core.Ordered} interface.
- *
- * @see PropertyBasedJobWorkerValueCustomizer
- */
-public interface JobWorkerValueCustomizer {
+public class JobWorkerValueCustomizerCompat implements JobWorkerValueCustomizer {
+  private final ZeebeWorkerValueCustomizer customizer;
 
-  void customize(final JobWorkerValue jobWorkerValue);
+  public JobWorkerValueCustomizerCompat(final ZeebeWorkerValueCustomizer customizer) {
+    this.customizer = customizer;
+  }
+
+  @Override
+  public void customize(final JobWorkerValue jobWorkerValue) {
+    customizer.customize(new ZeebeWorkerValue(jobWorkerValue));
+  }
+
+  public ZeebeWorkerValueCustomizer getCustomizer() {
+    return customizer;
+  }
 }
