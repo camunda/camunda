@@ -34,7 +34,7 @@ public class ZeebeClientPropertiesSelfManagedTest {
     assertThat(properties.getZeebe().getGrpcAddress().toString())
         .isEqualTo("http://localhost:26500");
     assertThat(properties.getZeebe().getRestAddress().toString())
-        .isEqualTo("http://localhost:8086");
+        .isEqualTo("http://localhost:8088");
     assertThat(properties.getZeebe().getPreferRestOverGrpc()).isEqualTo(false);
     assertThat(properties.getZeebe().getEnabled()).isEqualTo(true);
     assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe-api");
