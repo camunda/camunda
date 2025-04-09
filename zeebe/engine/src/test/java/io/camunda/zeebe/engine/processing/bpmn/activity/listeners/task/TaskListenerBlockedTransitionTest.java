@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -762,7 +761,7 @@ public class TaskListenerBlockedTransitionTest {
     verifyListenerIsRetriedWhenListenerJobFailed(
         ZeebeTaskListenerEventType.assigning,
         userTask -> userTask.zeebeAssignee("gandalf"),
-        userTaskClient -> {},
+        ignored -> {},
         UserTaskIntent.ASSIGNED);
   }
 
@@ -771,7 +770,7 @@ public class TaskListenerBlockedTransitionTest {
     verifyListenerIsRetriedWhenListenerJobFailed(
         ZeebeTaskListenerEventType.assigning,
         UnaryOperator.identity(),
-        userTaskClient -> userTaskClient.withAssignee("bilbo").assign(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("bilbo").assign(),
         UserTaskIntent.ASSIGNED);
   }
 
@@ -780,7 +779,7 @@ public class TaskListenerBlockedTransitionTest {
     verifyListenerIsRetriedWhenListenerJobFailed(
         ZeebeTaskListenerEventType.assigning,
         UnaryOperator.identity(),
-        userTaskClient -> userTaskClient.withAssignee("bilbo").claim(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("bilbo").claim(),
         UserTaskIntent.ASSIGNED);
   }
 
@@ -789,7 +788,7 @@ public class TaskListenerBlockedTransitionTest {
     verifyListenerIsRetriedWhenListenerJobFailed(
         ZeebeTaskListenerEventType.updating,
         UnaryOperator.identity(),
-        UserTaskClient::update,
+        pik -> ENGINE.userTask().ofInstance(pik).update(),
         UserTaskIntent.UPDATED);
   }
 
@@ -798,14 +797,23 @@ public class TaskListenerBlockedTransitionTest {
     verifyListenerIsRetriedWhenListenerJobFailed(
         ZeebeTaskListenerEventType.completing,
         UnaryOperator.identity(),
-        UserTaskClient::complete,
+        pik -> ENGINE.userTask().ofInstance(pik).complete(),
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldRetryCancelingListenerWhenListenerJobFailedOnTaskCancellation() {
+    verifyListenerIsRetriedWhenListenerJobFailed(
+        ZeebeTaskListenerEventType.canceling,
+        UnaryOperator.identity(),
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
+        UserTaskIntent.CANCELED);
   }
 
   private void verifyListenerIsRetriedWhenListenerJobFailed(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
-      final Consumer<UserTaskClient> userTaskAction,
+      final Consumer<Long> transitionTrigger,
       final UserTaskIntent terminalActionIntent) {
     // given
     final long processInstanceKey =
@@ -817,8 +825,8 @@ public class TaskListenerBlockedTransitionTest {
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
-    // when: performing the user task action
-    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
+    // when: trigger the user task transition
+    transitionTrigger.accept(processInstanceKey);
 
     // when: fail listener job with retries
     ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).withRetries(1).fail();
