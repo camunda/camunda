@@ -192,6 +192,42 @@ const useModificationsByFlowNode = () => {
   }, {});
 };
 
+const useNewScopeIdForFlowNode = (flowNodeId?: string) => {
+  const modificationsByFlowNode = useModificationsByFlowNode();
+
+  if (
+    flowNodeId === undefined ||
+    (modificationsByFlowNode[flowNodeId]?.newTokens ?? 0) !== 1
+  ) {
+    return null;
+  }
+
+  const addTokenModification = modificationsStore.flowNodeModifications.find(
+    (modification) =>
+      modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
+      modification.flowNode.id === flowNodeId,
+  );
+
+  if (addTokenModification !== undefined && 'scopeId' in addTokenModification) {
+    return addTokenModification.scopeId;
+  }
+
+  const moveTokenModification = modificationsStore.flowNodeModifications.find(
+    (modification) =>
+      modification.operation === TOKEN_OPERATIONS.MOVE_TOKEN &&
+      modification.targetFlowNode.id === flowNodeId,
+  );
+
+  if (
+    moveTokenModification !== undefined &&
+    'scopeIds' in moveTokenModification
+  ) {
+    return moveTokenModification.scopeIds[0] ?? null;
+  }
+
+  return null;
+};
+
 const useCanBeCanceled = (selectedRunningInstanceCount: number) => {
   const cancellableFlowNodes = useCancellableFlowNodes();
   const canBeModified = useCanBeModified();
@@ -287,5 +323,6 @@ export {
   useAvailableModifications,
   useCanBeModified,
   useModificationsByFlowNode,
+  useNewScopeIdForFlowNode,
   useWillAllFlowNodesBeCanceled,
 };
