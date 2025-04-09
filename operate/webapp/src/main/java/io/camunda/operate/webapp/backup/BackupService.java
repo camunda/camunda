@@ -190,8 +190,8 @@ public class BackupService {
     return repository.getBackupState(getRepositoryName(), backupId);
   }
 
-  public List<GetBackupStateResponseDto> getBackups(final boolean verbose) {
-    return repository.getBackups(getRepositoryName(), verbose);
+  public List<GetBackupStateResponseDto> getBackups(final boolean verbose, final String pattern) {
+    return repository.getBackups(getRepositoryName(), verbose, pattern);
   }
 
   public record SnapshotRequest(

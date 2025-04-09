@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.management.dto.BackupStateDto;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -148,7 +149,7 @@ public class ElasticsearchBackupRepositoryTest {
     when(esClient.snapshot()).thenReturn(snapshotClient);
     when(snapshotClient.get(any(), any())).thenReturn(response);
 
-    final var responses = backupRepository.getBackups(repositoryName, false);
+    final var responses = backupRepository.getBackups(repositoryName, false, null);
     verify(snapshotClient).get(argThat(req -> !req.verbose()), any());
     assertThat(responses)
         .singleElement()
@@ -157,5 +158,23 @@ public class ElasticsearchBackupRepositoryTest {
               assertThat(details.getBackupId()).isEqualTo(backupId);
               assertThat(details.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
             });
+  }
+
+  @Test
+  public void shouldForwardThePatternToES() throws IOException {
+    // mock calls to `findSnapshot` and `operateProperties`
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+    when(snapshotInfo.state()).thenReturn(SnapshotState.IN_PROGRESS);
+    when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
+    final var response = mock(GetSnapshotsResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getSnapshots()).thenReturn(List.of(snapshotInfo));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    when(snapshotClient.get(any(), any())).thenReturn(response);
+
+    backupRepository.getBackups(repositoryName, true, "2023*");
+    verify(snapshotClient)
+        .get(
+            argThat(req -> Arrays.asList(req.snapshots()).contains("camunda_operate_2023*")),
+            any());
   }
 }
