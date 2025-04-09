@@ -352,7 +352,8 @@ public class RecordFixtures {
             ImmutableGroupRecordValue.builder()
                 .from((GroupRecordValue) recordValueRecord.getValue())
                 .withGroupKey(groupKey)
-                .withEntityKey(entityKey != null ? entityKey : 0)
+                // TODO: revisit with https://github.com/camunda/camunda/issues/29903
+                .withEntityId(entityKey != null ? String.valueOf(entityKey) : "0")
                 .withEntityType(entityKey != null ? EntityType.USER : null)
                 .build())
         .build();

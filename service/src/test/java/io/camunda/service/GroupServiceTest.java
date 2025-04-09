@@ -202,7 +202,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
-    assertThat(record).hasEntityKey(Long.parseLong(memberId));
+    assertThat(record).hasEntityId(memberId);
     assertThat(record).hasEntityType(EntityType.USER);
   }
 
@@ -211,8 +211,7 @@ public class GroupServiceTest {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123L);
     final var groupId = String.valueOf(groupKey);
-    final var memberKey = 456L;
-    final var username = String.valueOf(memberKey);
+    final var username = "username";
     final var memberType = EntityType.USER;
 
     // when
@@ -226,7 +225,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
-    assertThat(record).hasEntityKey(memberKey);
+    assertThat(record).hasEntityId(username);
     assertThat(record).hasEntityType(EntityType.USER);
   }
 
