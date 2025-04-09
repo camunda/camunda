@@ -65,7 +65,7 @@ public class CamundaOAuthPrincipalService {
         mappings.stream().map(MappingEntity::mappingKey).collect(Collectors.toSet());
     final Set<String> mappingIds =
         mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
-    if (mappingKeys.isEmpty()) {
+    if (mappingKeys.isEmpty() && mappingIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
@@ -80,8 +80,7 @@ public class CamundaOAuthPrincipalService {
             authorizationServices.getAuthorizedApplications(
                 Stream.concat(
                         assignedRoles.stream().map(r -> r.roleKey().toString()),
-                        mappingKeys.stream()
-                            .map(String::valueOf)) // TODO remove mapping when refactoring to IDs
+                        mappingIds.stream())
                     .collect(Collectors.toSet())),
             tenantServices.getTenantsByMemberIds(mappingIds).stream()
                 .map(TenantDTO::fromEntity)
