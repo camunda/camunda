@@ -19,19 +19,52 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(
-    classes = CamundaClientProdAutoConfiguration.class,
-    properties = {"camunda.client.enabled=false"})
 public class CamundaClientEnabledTest {
-  @Autowired(required = false)
-  CamundaClient camundaClient;
 
-  @Test
-  void shouldNotEnableCamundaClient() {
-    assertThat(camundaClient).isNull();
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientProdAutoConfiguration.class,
+      properties = {"camunda.client.enabled=false"})
+  class CurrentConfiguration {
+    @Autowired(required = false)
+    CamundaClient camundaClient;
+
+    @Test
+    void shouldNotEnableCamundaClient() {
+      assertThat(camundaClient).isNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientProdAutoConfiguration.class,
+      properties = {"camunda.client.zeebe.enabled=false"})
+  class ZeebeClientConfiguration {
+    @Autowired(required = false)
+    CamundaClient camundaClient;
+
+    @Test
+    void shouldNotEnableCamundaClient() {
+      assertThat(camundaClient).isNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientProdAutoConfiguration.class,
+      properties = {"zeebe.client.enabled=false"})
+  class LegacyConfiguration {
+    @Autowired(required = false)
+    CamundaClient camundaClient;
+
+    @Test
+    void shouldNotEnableCamundaClient() {
+      assertThat(camundaClient).isNull();
+    }
   }
 }
