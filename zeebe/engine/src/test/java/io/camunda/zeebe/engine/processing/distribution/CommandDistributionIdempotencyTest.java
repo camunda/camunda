@@ -313,14 +313,14 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.ADD_ENTITY,
                 () -> {
-                  // TODO: refactor with https://github.com/camunda/camunda/issues/30091
-                  final var groupId = "321";
+                  // TODO: revisit with https://github.com/camunda/camunda/issues/30091
+                  final var groupId = "123";
                   createGroup(groupId);
-                  final var user = createUser();
+                  final var username = createUser().getValue().getUsername();
                   return ENGINE
                       .group()
                       .addEntity(groupId)
-                      .withEntityKey(user.getKey())
+                      .withEntityId(username)
                       .withEntityType(EntityType.USER)
                       .add();
                 }),
@@ -332,20 +332,20 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.REMOVE_ENTITY,
                 () -> {
-                  // TODO: refactor with https://github.com/camunda/camunda/issues/30091
-                  final var groupId = "654";
+                  // TODO: revisit with https://github.com/camunda/camunda/issues/30091
+                  final var groupId = "456";
                   createGroup(groupId);
-                  final var user = createUser();
+                  final var username = createUser().getValue().getUsername();
                   ENGINE
                       .group()
                       .addEntity(groupId)
-                      .withEntityKey(user.getKey())
+                      .withEntityId(username)
                       .withEntityType(EntityType.USER)
                       .add();
                   return ENGINE
                       .group()
                       .removeEntity(groupId)
-                      .withEntityKey(user.getKey())
+                      .withEntityId(username)
                       .withEntityType(EntityType.USER)
                       .remove();
                 }),

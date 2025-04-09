@@ -32,7 +32,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
-      "Expected to remove entity with key '%s' from group with key '%s', but the entity is not assigned to this group.";
+      "Expected to remove entity with ID '%s' from group with key '%s', but the entity is not assigned to this group.";
   private final GroupState groupState;
   private final UserState userState;
   private final MappingState mappingState;

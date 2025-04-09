@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -41,7 +42,7 @@ public class AddEntityGroupMultiPartitionTest {
   @Test
   public void shouldDistributeGroupAddEntityCommand() {
     // when
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -49,12 +50,13 @@ public class AddEntityGroupMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
+    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     assertThat(
             RecordingExporter.records()
@@ -105,7 +107,7 @@ public class AddEntityGroupMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -113,12 +115,13 @@ public class AddEntityGroupMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
+    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // then
     assertThat(
@@ -135,7 +138,7 @@ public class AddEntityGroupMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptGroupCommandForPartition(partitionId, GroupIntent.CREATE);
     }
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -143,14 +146,15 @@ public class AddEntityGroupMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
 
     // when
     final var name = UUID.randomUUID().toString();
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
+    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

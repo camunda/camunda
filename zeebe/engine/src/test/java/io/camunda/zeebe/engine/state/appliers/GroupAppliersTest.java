@@ -157,7 +157,7 @@ public class GroupAppliersTest {
   }
 
   @Test
-  void shoulRemoveUserEntityFromGroup() {
+  void shouldRemoveUserEntityFromGroup() {
     // given
     final var username = Strings.newRandomValidIdentityId();
     final var userRecord =
@@ -189,11 +189,10 @@ public class GroupAppliersTest {
   @Test
   void shouldRemoveMappingEntityFromGroup() {
     // given
-    final var entityKey = 1L;
-    final var mappingId = String.valueOf(entityKey);
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var mappingRecord =
         new MappingRecord()
-            .setMappingKey(entityKey)
+            .setMappingId(mappingId)
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
