@@ -31,6 +31,13 @@ import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
+}));
 
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
@@ -83,11 +90,13 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   }, []);
 
   return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      <Routes>
-        <Route path={Paths.processInstance()} element={children} />
-      </Routes>
-    </MemoryRouter>
+    <QueryClientProvider client={getMockQueryClient()}>
+      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+        <Routes>
+          <Route path={Paths.processInstance()} element={children} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 };
 

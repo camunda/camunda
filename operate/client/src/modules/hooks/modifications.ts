@@ -8,6 +8,8 @@
 
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {TOKEN_OPERATIONS} from 'modules/constants';
+import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {
   useTotalRunningInstancesForFlowNodes,
   useTotalRunningInstancesVisibleForFlowNodes,
@@ -18,6 +20,29 @@ import {
 } from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {useMemo} from 'react';
+
+const useWillAllFlowNodesBeCanceled = () => {
+  const {data: statistics} = useFlownodeInstancesStatistics();
+
+  if (
+    modificationsStore.flowNodeModifications.some(
+      ({operation}) =>
+        operation === TOKEN_OPERATIONS.ADD_TOKEN ||
+        operation === TOKEN_OPERATIONS.MOVE_TOKEN,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    statistics?.items.every(
+      ({flowNodeId, active, incidents}) =>
+        (active === 0 && incidents === 0) ||
+        modificationsStore.modificationsByFlowNode[flowNodeId]
+          ?.areAllTokensCanceled,
+    ) || false
+  );
+};
 
 const useModificationsByFlowNode = () => {
   const flowNodeIds = modificationsStore.flowNodeModifications.map(
@@ -82,7 +107,7 @@ const useModificationsByFlowNode = () => {
 
     const totalRunningInstancesCount = flowNodeData[flowNode.id] ?? 0;
 
-    if (operation === 'ADD_TOKEN') {
+    if (operation === TOKEN_OPERATIONS.ADD_TOKEN) {
       sourceFlowNode.newTokens += affectedTokenCount;
       modificationsByFlowNode[flowNode.id] = sourceFlowNode;
       return modificationsByFlowNode;
@@ -103,7 +128,7 @@ const useModificationsByFlowNode = () => {
     sourceFlowNode.areAllTokensCanceled =
       sourceFlowNode.cancelledTokens === totalRunningInstancesCount;
 
-    if (operation === 'MOVE_TOKEN') {
+    if (operation === TOKEN_OPERATIONS.MOVE_TOKEN) {
       const targetFlowNode = modificationsByFlowNode[
         payload.targetFlowNode.id
       ] ?? {
@@ -119,7 +144,7 @@ const useModificationsByFlowNode = () => {
       modificationsByFlowNode[payload.targetFlowNode.id] = targetFlowNode;
     }
 
-    if (operation === 'CANCEL_TOKEN') {
+    if (operation === TOKEN_OPERATIONS.CANCEL_TOKEN) {
       if (sourceFlowNode.areAllTokensCanceled) {
         // set cancel token counts for child elements if flow node has any
         const elementIds = getFlowElementIds(
@@ -158,4 +183,4 @@ const useModificationsByFlowNode = () => {
   }, {});
 };
 
-export {useModificationsByFlowNode};
+export {useModificationsByFlowNode, useWillAllFlowNodesBeCanceled};
