@@ -67,4 +67,16 @@ public class CamundaClientEnabledTest {
       assertThat(camundaClient).isNull();
     }
   }
+
+  @Nested
+  @SpringBootTest(classes = CamundaClientProdAutoConfiguration.class)
+  class NegativeTest {
+    @Autowired(required = false)
+    CamundaClient camundaClient;
+
+    @Test
+    void shouldEnableCamundaClient() {
+      assertThat(camundaClient).isNotNull();
+    }
+  }
 }
