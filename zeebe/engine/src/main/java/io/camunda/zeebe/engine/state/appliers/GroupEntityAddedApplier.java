@@ -51,7 +51,7 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
       default ->
           throw new IllegalStateException(
               String.format(
-                  "Expected to add entity '%d' to group '%d', but entities of type '%s' cannot be added to groups.",
+                  "Expected to add entity '%s' to group '%d', but entities of type '%s' cannot be added to groups.",
                   entityId, groupKey, entityType));
     }
   }

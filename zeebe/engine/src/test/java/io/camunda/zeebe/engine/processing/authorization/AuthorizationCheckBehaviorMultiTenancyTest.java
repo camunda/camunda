@@ -121,7 +121,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
         user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
-    final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
+    final var groupKey = createGroup(user.getUsername(), EntityType.USER);
     final var tenantId = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var command = mockCommand(user.getUsername());
 
@@ -174,7 +174,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
         resourceType,
         permissionType,
         resourceId);
-    final var groupKey = createGroup(mapping.getMappingKey(), EntityType.MAPPING);
+    final var groupKey = createGroup(mapping.getMappingId(), EntityType.MAPPING);
     final var tenantId = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
@@ -238,7 +238,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   void shouldGetUserAuthorizedTenantIdsThroughGroup() {
     // given
     final var user = createUser();
-    final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
+    final var groupKey = createGroup(user.getUsername(), EntityType.USER);
     final var tenantId1 = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var tenantId2 = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var command = mockCommand(user.getUsername());
@@ -263,7 +263,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    final var groupKey = createGroup(mapping.getMappingKey(), EntityType.MAPPING);
+    final var groupKey = createGroup(mapping.getMappingId(), EntityType.MAPPING);
     final var tenantId1 = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var tenantId2 = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var command = mockCommandWithMapping(claimName, claimValue);
@@ -516,7 +516,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     }
   }
 
-  private long createGroup(final long entityKey, final EntityType entityType) {
+  private long createGroup(final String entityId, final EntityType entityType) {
     final var groupKey = random.nextLong();
     final var groupId = String.valueOf(groupKey);
     final var group =
@@ -525,8 +525,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
             .setGroupId(groupId)
             .setName(UUID.randomUUID().toString())
             .setDescription(UUID.randomUUID().toString())
-            // TODO: revisit
-            .setEntityId(String.valueOf(entityKey))
+            .setEntityId(entityId)
             .setEntityType(entityType);
     groupCreatedApplier.applyState(groupKey, group);
     groupEntityAddedApplier.applyState(groupKey, group);
