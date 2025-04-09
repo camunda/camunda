@@ -62,6 +62,7 @@ public class DbMappingState implements MutableMappingState {
     this.claimName.wrapString(claimName);
     claimValue.wrapString(value);
     mappingId.wrapString(id);
+    persistedMapping.setMappingKey(mappingRecord.getMappingKey());
     persistedMapping.setClaimName(claimName);
     persistedMapping.setClaimValue(value);
     persistedMapping.setName(name);
@@ -119,6 +120,16 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
+  public Optional<PersistedMapping> get(final String id) {
+    mappingId.wrapString(id);
+    final var fk = claimByIdColumnFamily.get(mappingId);
+    if (fk != null) {
+      return Optional.of(mappingColumnFamily.get(fk.inner()));
+    }
+    return Optional.empty();
+  }
+
+  @Override
   public Optional<PersistedMapping> get(final String claimName, final String claimValue) {
     this.claimName.wrapString(claimName);
     this.claimValue.wrapString(claimValue);
@@ -129,15 +140,5 @@ public class DbMappingState implements MutableMappingState {
     }
 
     return Optional.of(persistedMapping.copy());
-  }
-
-  @Override
-  public Optional<PersistedMapping> get(final String id) {
-    mappingId.wrapString(id);
-    final var fk = claimByIdColumnFamily.get(mappingId);
-    if (fk != null) {
-      return Optional.of(mappingColumnFamily.get(fk.inner()));
-    }
-    return Optional.empty();
   }
 }
