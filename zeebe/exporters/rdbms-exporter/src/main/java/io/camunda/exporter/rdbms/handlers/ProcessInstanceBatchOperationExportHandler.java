@@ -11,7 +11,7 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationRe
 
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemStatus;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -44,12 +44,12 @@ public class ProcessInstanceBatchOperationExportHandler
       batchOperationWriter.updateItem(
           record.getOperationReference(),
           value.getProcessInstanceKey(),
-          BatchOperationItemStatus.COMPLETED);
+          BatchOperationItemState.COMPLETED);
     } else if (isFailed(record)) {
       batchOperationWriter.updateItem(
           record.getOperationReference(),
           value.getProcessInstanceKey(),
-          BatchOperationItemStatus.FAILED);
+          BatchOperationItemState.FAILED);
     }
   }
 

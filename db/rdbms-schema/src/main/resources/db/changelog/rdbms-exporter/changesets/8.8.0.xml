@@ -474,7 +474,7 @@
       <column name="BATCH_OPERATION_KEY" type="BIGINT">
         <constraints primaryKey="true" nullable="false"/>
       </column>
-      <column name="STATUS" type="VARCHAR(255)"/>
+      <column name="STATE" type="VARCHAR(255)"/>
       <column name="OPERATION_TYPE" type="VARCHAR(255)"/>
       <column name="START_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="END_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
@@ -493,7 +493,7 @@
         />
       </column>
       <column name="ITEM_KEY" type="BIGINT"/>
-      <column name="STATUS" type="VARCHAR(20)" defaultValue="ACTIVE"/>
+      <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
 
     <createIndex tableName="${prefix}BATCH_OPERATION_ITEM"

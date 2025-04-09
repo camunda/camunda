@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record BatchOperationEntity(
     Long batchOperationKey,
-    BatchOperationStatus status,
+    BatchOperationState state,
     String operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
@@ -22,9 +22,9 @@ public record BatchOperationEntity(
     Integer operationsCompletedCount) {
 
   public record BatchOperationItemEntity(
-      Long batchOperationKey, Long itemKey, BatchOperationItemStatus status) {}
+      Long batchOperationKey, Long itemKey, BatchOperationItemState state) {}
 
-  public enum BatchOperationStatus {
+  public enum BatchOperationState {
     CREATED,
     ACTIVE,
     PAUSED,
@@ -33,7 +33,7 @@ public record BatchOperationEntity(
     CANCELED
   }
 
-  public enum BatchOperationItemStatus {
+  public enum BatchOperationItemState {
     ACTIVE,
     COMPLETED,
     CANCELED,

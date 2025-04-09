@@ -11,7 +11,7 @@ import io.camunda.db.rdbms.read.domain.BatchOperationDbQuery;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
@@ -39,17 +39,17 @@ public interface BatchOperationMapper {
   List<BatchOperationItemEntity> getItems(Long batchOperationKey);
 
   record BatchOperationUpdateDto(
-      long batchOperationKey, BatchOperationStatus status, OffsetDateTime endDate) {}
+      long batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}
 
   record BatchOperationUpdateTotalCountDto(long batchOperationKey, int operationsTotalCount) {}
 
   record BatchOperationItemsDto(Long batchOperationKey, Set<Long> items) {}
 
   record BatchOperationItemDto(
-      Long batchOperationKey, Long itemKey, BatchOperationEntity.BatchOperationItemStatus status) {}
+      Long batchOperationKey, Long itemKey, BatchOperationEntity.BatchOperationItemState state) {}
 
   record BatchOperationItemStatusUpdateDto(
       Long batchOperationKey,
-      BatchOperationEntity.BatchOperationItemStatus oldState,
-      BatchOperationEntity.BatchOperationItemStatus newState) {}
+      BatchOperationEntity.BatchOperationItemState oldState,
+      BatchOperationEntity.BatchOperationItemState newState) {}
 }

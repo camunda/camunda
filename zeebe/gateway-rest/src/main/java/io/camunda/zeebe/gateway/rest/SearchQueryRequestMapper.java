@@ -543,7 +543,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getBatchOperationKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::batchOperationKeys);
-      ofNullable(filter.getStatus()).map(StatusEnum::toString).ifPresent(builder::status);
+      ofNullable(filter.getStatus()).map(StatusEnum::toString).ifPresent(builder::state);
       ofNullable(filter.getOperationType())
           .map(BatchOperationTypeEnum::toString)
           .ifPresent(builder::operationTypes);
