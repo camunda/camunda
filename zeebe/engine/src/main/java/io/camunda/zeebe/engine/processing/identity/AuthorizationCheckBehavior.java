@@ -208,8 +208,13 @@ public final class AuthorizationCheckBehavior {
     if (user.getTenantIdsList().contains(tenantId)) {
       return true;
     }
+    final var groupIds =
+        membershipState.getMemberships(
+            EntityType.USER, Long.toString(user.getUserKey()), RelationType.GROUP);
+    // TODO: use group id instead of converting to a key when groups are id-based
+    final var groupKeys = groupIds.stream().map(Long::parseLong).collect(Collectors.toSet());
 
-    return areGroupsAuthorizedForTenant(user.getGroupKeysList(), tenantId);
+    return areGroupsAuthorizedForTenant(groupKeys, tenantId);
   }
 
   private boolean isMappingAuthorizedForTenant(
@@ -307,14 +312,23 @@ public final class AuthorizationCheckBehavior {
     // Get resource identifiers for the user's roles
     final var roleIds =
         membershipState.getMemberships(
-            EntityType.USER, Long.toString(user.getUserKey()), RelationType.ROLE);
+            EntityType.USER,
+            // TODO: Use username instead of userKey when roles are id-based
+            Long.toString(user.getUserKey()),
+            RelationType.ROLE);
     final var roleAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
             AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
     // Get resource identifiers for the user's groups
+    final var groupIds =
+        membershipState.getMemberships(
+            EntityType.USER,
+            // TODO: Use username instead of userKey when groups are id-based
+            Long.toString(user.getUserKey()),
+            RelationType.GROUP);
     final var groupAuthorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiersForOwnerKeys(
-            AuthorizationOwnerType.GROUP, user.getGroupKeysList(), resourceType, permissionType);
+        getAuthorizedResourceIdentifiersForOwners(
+            AuthorizationOwnerType.GROUP, groupIds, resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
         Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
@@ -435,8 +449,14 @@ public final class AuthorizationCheckBehavior {
           .getUser(username.get())
           .map(
               user -> {
-                final List<String> tenantIds = user.getTenantIdsList();
-                tenantIds.addAll(getTenantIdsForGroups(user.getGroupKeysList()));
+                final var tenantIds = user.getTenantIdsList();
+                final var groupIds =
+                    membershipState.getMemberships(
+                        EntityType.USER, Long.toString(user.getUserKey()), RelationType.GROUP);
+                // TODO: use group id instead of converting to a key when groups are id-based
+                final var groupKeys =
+                    groupIds.stream().map(Long::parseLong).collect(Collectors.toSet());
+                tenantIds.addAll(getTenantIdsForGroups(groupKeys));
                 return tenantIds;
               })
           .filter(t -> !t.isEmpty())

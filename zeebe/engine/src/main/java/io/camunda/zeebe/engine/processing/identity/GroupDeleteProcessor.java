@@ -14,9 +14,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -35,6 +37,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       "Expected to delete group with ID '%s', but a group with this ID does not exist.";
   private final GroupState groupState;
   private final AuthorizationState authorizationState;
+  private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -50,6 +53,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       final CommandDistributionBehavior commandDistributionBehavior) {
     groupState = processingState.getGroupState();
     authorizationState = processingState.getAuthorizationState();
+    membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -119,21 +123,18 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
 
   private void removeAssignedEntities(final GroupRecord record) {
     final var groupId = record.getGroupId();
-    groupState
-        .getEntitiesByType(groupId)
-        .forEach(
-            (entityType, entityKeys) -> {
-              entityKeys.forEach(
-                  entityKey -> {
-                    final var entityRecord =
-                        new GroupRecord()
-                            .setGroupId(groupId)
-                            .setEntityKey(entityKey)
-                            .setEntityType(entityType);
-                    stateWriter.appendFollowUpEvent(
-                        record.getGroupKey(), GroupIntent.ENTITY_REMOVED, entityRecord);
-                  });
-            });
+    membershipState.forEachMember(
+        RelationType.GROUP,
+        groupId,
+        (entityType, entityId) -> {
+          stateWriter.appendFollowUpEvent(
+              record.getGroupKey(),
+              GroupIntent.ENTITY_REMOVED,
+              new GroupRecord()
+                  .setGroupId(groupId)
+                  .setEntityType(entityType)
+                  .setEntityKey(Long.parseLong(entityId)));
+        });
   }
 
   private void deleteAuthorizations(final GroupRecord record) {
