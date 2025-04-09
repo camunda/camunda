@@ -103,7 +103,8 @@ public class RoleAppliersTest {
     // then
     assertThat(roleState.getEntitiesByType(roleKey).get(EntityType.MAPPING))
         .containsExactly(entityKey);
-    final var persistedMapping = mappingState.get(entityKey).get();
+    // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
+    final var persistedMapping = mappingState.get(String.valueOf(entityKey)).get();
     assertThat(persistedMapping.getRoleKeysList()).containsExactly(roleKey);
   }
 
@@ -180,7 +181,8 @@ public class RoleAppliersTest {
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final long roleKey = 11L;
-    mappingState.addRole(entityKey, 11L);
+    // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
+    mappingState.addRole(String.valueOf(entityKey), 11L);
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
     roleRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
@@ -191,7 +193,8 @@ public class RoleAppliersTest {
 
     // then
     assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    final var persistedMapping = mappingState.get(entityKey).get();
+    // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
+    final var persistedMapping = mappingState.get(String.valueOf(entityKey)).get();
     assertThat(persistedMapping.getRoleKeysList()).isEmpty();
   }
 }

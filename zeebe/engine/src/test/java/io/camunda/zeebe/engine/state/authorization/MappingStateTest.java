@@ -49,7 +49,7 @@ public class MappingStateTest {
     mappingState.create(mapping);
 
     // then
-    final var persistedMapping = mappingState.get(key).get();
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getMappingKey()).isEqualTo(key);
     assertThat(persistedMapping.getMappingId()).isEqualTo(mappingId);
     assertThat(persistedMapping.getName()).isEqualTo(name);
@@ -60,7 +60,7 @@ public class MappingStateTest {
   @Test
   void shouldReturnEmptyIfMappingDoesNotExist() {
     // when
-    final var mapping = mappingState.get(1L);
+    final var mapping = mappingState.get("someMappingId");
 
     // then
     assertThat(mapping).isEmpty();
@@ -125,6 +125,7 @@ public class MappingStateTest {
     // then
     assertThat(retrievedMapping).isPresent();
     assertThat(retrievedMapping.get().getMappingKey()).isEqualTo(key);
+    assertThat(retrievedMapping.get().getMappingId()).isEqualTo(mappingId);
     assertThat(retrievedMapping.get().getName()).isEqualTo(name);
     assertThat(retrievedMapping.get().getClaimName()).isEqualTo(claimName);
     assertThat(retrievedMapping.get().getClaimValue()).isEqualTo(claimValue);
@@ -134,38 +135,46 @@ public class MappingStateTest {
   void shouldAddRole() {
     // given
     final long key = 1L;
+    final var mappingId = "mappingId";
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+        new MappingRecord()
+            .setMappingKey(key)
+            .setMappingId(mappingId)
+            .setClaimName(claimName)
+            .setClaimValue(claimValue);
     mappingState.create(mapping);
     final long roleKey = 1L;
 
     // when
-    mappingState.addRole(key, roleKey);
+    mappingState.addRole(mappingId, roleKey);
 
     // then
-    final var persistedMapping = mappingState.get(key).get();
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getRoleKeysList()).containsExactly(roleKey);
   }
 
   @Test
   void shouldRemoveRole() {
     // given
-    final long key = 1L;
+    final var mappingId = "mappingId";
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+        new MappingRecord()
+            .setMappingId(mappingId)
+            .setClaimName(claimName)
+            .setClaimValue(claimValue);
     mappingState.create(mapping);
     final long roleKey = 1L;
-    mappingState.addRole(key, roleKey);
+    mappingState.addRole(mappingId, roleKey);
 
     // when
-    mappingState.removeRole(key, roleKey);
+    mappingState.removeRole(mappingId, roleKey);
 
     // then
-    final var persistedMapping = mappingState.get(key).get();
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getRoleKeysList()).isEmpty();
   }
 
@@ -189,7 +198,7 @@ public class MappingStateTest {
     mappingState.addTenant(mappingId, tenantId);
 
     // then
-    final var persistedMapping = mappingState.get(key).get();
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
   }
 
@@ -211,10 +220,10 @@ public class MappingStateTest {
     mappingState.addTenant(mappingId, tenantId);
 
     // when
-    mappingState.removeTenant(key, tenantId);
+    mappingState.removeTenant(mappingId, tenantId);
 
     // then
-    final var persistedMapping = mappingState.get(key).get();
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getTenantIdsList()).isEmpty();
   }
 
@@ -237,7 +246,7 @@ public class MappingStateTest {
     mappingState.delete(mappingId);
 
     // then
-    assertThat(mappingState.get(key)).isEmpty();
+    assertThat(mappingState.get(mappingId)).isEmpty();
     assertThat(mappingState.get(mappingId)).isEmpty();
     assertThat(mappingState.get(claimName, claimValue)).isEmpty();
   }
