@@ -53,4 +53,16 @@ public class ZeebeClientEnabledTest {
       assertThat(camundaClient).isNull();
     }
   }
+
+  @Nested
+  @SpringBootTest(classes = ZeebeClientProdAutoConfiguration.class)
+  class NegativeTest {
+    @Autowired(required = false)
+    ZeebeClient camundaClient;
+
+    @Test
+    void shouldNotEnableCamundaClient() {
+      assertThat(camundaClient).isNotNull();
+    }
+  }
 }

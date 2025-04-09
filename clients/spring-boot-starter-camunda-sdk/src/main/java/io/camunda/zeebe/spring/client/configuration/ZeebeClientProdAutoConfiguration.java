@@ -35,6 +35,7 @@ import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /*
@@ -53,6 +54,7 @@ import org.springframework.context.annotation.Bean;
   CredentialsProviderConfiguration.class,
 })
 @AutoConfigureBefore(ZeebeClientAllAutoConfiguration.class)
+@EnableConfigurationProperties({CamundaClientProperties.class})
 public class ZeebeClientProdAutoConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientProdAutoConfiguration.class);
