@@ -23,8 +23,6 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
@@ -32,6 +30,7 @@ import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 jest.mock('modules/feature-flags', () => ({
   ...jest.requireActual('modules/feature-flags'),
@@ -76,47 +75,56 @@ const editValue = async (type: string, user: UserEvent, value: string) => {
   }
 };
 
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => {
-    return () => {
-      variablesStore.reset();
-      flowNodeSelectionStore.reset();
-      flowNodeMetaDataStore.reset();
-      modificationsStore.reset();
-      processInstanceDetailsStatisticsStore.reset();
-    };
-  }, []);
+const getWrapper = (
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = [Paths.processInstance('1')],
+) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        variablesStore.reset();
+        flowNodeSelectionStore.reset();
+        flowNodeMetaDataStore.reset();
+        modificationsStore.reset();
+      };
+    }, []);
 
-  return (
-    <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
+    return (
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={initialEntries}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+  return Wrapper;
 };
 
 describe('New Variable Modifications', () => {
-  beforeEach(() => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
+  beforeEach(async () => {
+    const statisticsData = [
       {
-        activityId: 'TEST_FLOW_NODE',
+        flowNodeId: 'TEST_FLOW_NODE',
         active: 0,
         canceled: 0,
         incidents: 0,
         completed: 1,
       },
       {
-        activityId: 'Activity_0qtp1k6',
+        flowNodeId: 'Activity_0qtp1k6',
         active: 0,
         canceled: 0,
         incidents: 1,
         completed: 0,
       },
-    ]);
+    ];
 
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statisticsData,
+    });
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
@@ -128,16 +136,13 @@ describe('New Variable Modifications', () => {
         state: 'ACTIVE',
       }),
     );
-    processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      'instance_id',
-    );
   });
 
   it('should not create add variable modification if fields are empty', async () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('variables-skeleton'),
     );
@@ -165,7 +170,7 @@ describe('New Variable Modifications', () => {
 
       modificationsStore.enableModificationMode();
 
-      const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+      const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       await waitFor(() => {
@@ -200,7 +205,7 @@ describe('New Variable Modifications', () => {
       jest.useFakeTimers();
       modificationsStore.enableModificationMode();
 
-      const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+      const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       await waitFor(() => {
@@ -269,7 +274,7 @@ describe('New Variable Modifications', () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() => {
@@ -309,7 +314,7 @@ describe('New Variable Modifications', () => {
           <VariablePanel />
           <LastModification />
         </>,
-        {wrapper: Wrapper},
+        {wrapper: getWrapper()},
       );
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
@@ -493,7 +498,7 @@ describe('New Variable Modifications', () => {
       jest.useFakeTimers();
       modificationsStore.enableModificationMode();
 
-      const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+      const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       await waitFor(() => {
@@ -551,7 +556,7 @@ describe('New Variable Modifications', () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() => {
@@ -641,16 +646,11 @@ describe('New Variable Modifications', () => {
       flowNodeId: 'flow-node-that-has-not-run-yet',
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     expect(
       await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
-    await waitFor(() =>
-      expect(processInstanceDetailsStatisticsStore.state.status).toBe(
-        'fetched',
-      ),
-    );
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });

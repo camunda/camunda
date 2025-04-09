@@ -14,12 +14,12 @@ import {
 } from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from '../index';
+import Variables from './index';
 import {mockVariables} from '../index.setup';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {Wrapper} from './mocks';
+import {getWrapper} from './mocks';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -40,7 +40,7 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      render(<Variables />, {wrapper: getWrapper()});
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       expect(screen.getByText('Name')).toBeInTheDocument();
@@ -68,7 +68,7 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      render(<Variables />, {wrapper: getWrapper()});
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
       const {items} = variablesStore.state;
       const [activeOperationVariable] = items.filter(
@@ -108,7 +108,7 @@ describe('Variables', () => {
         payload: {pageSize: 10, scopeId: '1'},
       });
 
-      render(<Variables />, {wrapper: Wrapper});
+      render(<Variables />, {wrapper: getWrapper()});
 
       await waitForElementToBeRemoved(() =>
         screen.getByTestId('variables-skeleton'),
