@@ -16,7 +16,6 @@
 package io.camunda.spring.client.annotation.customizer;
 
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -38,24 +37,16 @@ public class LegacyJobWorkerValueCustomizerBeanDefinitionRegistryPostProcessor
     final String[] beanDefinitionNames = registry.getBeanDefinitionNames();
     for (final String beanDefinitionName : beanDefinitionNames) {
       final BeanDefinition beanDefinition = registry.getBeanDefinition(beanDefinitionName);
-      Optional.ofNullable(beanDefinition.getResolvableType().getRawClass())
-          .ifPresent(
-              beanClass -> {
-                if (beanDefinition
-                    .getResolvableType()
-                    .getRawClass()
-                    .isAssignableFrom(ZeebeWorkerValueCustomizer.class)) {
-                  LOG.warn(
-                      "Bean '{}' is implementing ZeebeWorkerValueCustomizer, please migrate to JobWorkerValueCustomizer",
-                      beanDefinitionName);
-                  final BeanDefinitionBuilder beanDefinitionBuilder =
-                      BeanDefinitionBuilder.genericBeanDefinition(
-                              JobWorkerValueCustomizerCompat.class)
-                          .addConstructorArgReference(beanDefinitionName);
-                  registry.registerBeanDefinition(
-                      beanDefinitionName + "_Compat", beanDefinitionBuilder.getBeanDefinition());
-                }
-              });
+      if (beanDefinition.getResolvableType().isAssignableFrom(ZeebeWorkerValueCustomizer.class)) {
+        LOG.warn(
+            "Bean '{}' is implementing ZeebeWorkerValueCustomizer, please migrate to JobWorkerValueCustomizer",
+            beanDefinitionName);
+        final BeanDefinitionBuilder beanDefinitionBuilder =
+            BeanDefinitionBuilder.genericBeanDefinition(JobWorkerValueCustomizerCompat.class)
+                .addConstructorArgReference(beanDefinitionName);
+        registry.registerBeanDefinition(
+            beanDefinitionName + "_Compat", beanDefinitionBuilder.getBeanDefinition());
+      }
     }
   }
 }
