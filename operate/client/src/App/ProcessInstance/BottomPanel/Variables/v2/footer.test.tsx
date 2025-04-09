@@ -28,12 +28,7 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {act} from 'react';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-<<<<<<< HEAD
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-=======
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
->>>>>>> 7318a94e12f (feat: migrate Variables component to v2)
 
 const instanceMock = createInstance({id: '1'});
 
@@ -132,14 +127,9 @@ describe('Footer', () => {
         },
       ],
     });
-<<<<<<< HEAD
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-=======
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
->>>>>>> 7318a94e12f (feat: migrate Variables component to v2)
     mockFetchVariables().withSuccess([]);
 
     flowNodeMetaDataStore.init();
