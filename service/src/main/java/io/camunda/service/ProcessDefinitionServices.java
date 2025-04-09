@@ -49,7 +49,7 @@ public class ProcessDefinitionServices
         .searchProcessDefinitions(query);
   }
 
-  public List<ProcessDefinitionFlowNodeStatisticsEntity> flowNodeStatistics(
+  public List<ProcessDefinitionFlowNodeStatisticsEntity> elementStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     return processDefinitionSearchClient
         .withSecurityContext(

@@ -164,7 +164,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               List.of(
                   new UserTaskEntity(
                       0L, // key
-                      "e", // flowNodeBpmnId
+                      "e", // elementBpmnId
                       "b", // bpmnProcessId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // creationTime
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // completionTime
@@ -173,7 +173,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       0L, // formKey (adjusted to match expected value)
                       2L, // processDefinitionId
                       1L, // processInstanceId
-                      3L, // flowNodeInstanceId
+                      3L, // elementInstanceId
                       "t", // tenantId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // dueDate
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // followUpDate
@@ -239,7 +239,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 CamundaSearchException.Reason.NOT_FOUND));
     when(processCache.getUserTaskName(any())).thenReturn("name");
     final var processCacheItem = mock(ProcessCacheItem.class);
-    when(processCacheItem.getFlowNodeName(any())).thenReturn("name");
+    when(processCacheItem.getElementName(any())).thenReturn("name");
     final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
     when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
     when(processCache.getUserTaskNames(any())).thenReturn(processDefinitionMap);

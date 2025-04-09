@@ -57,7 +57,7 @@ public class SearchQuerySortRequestMapper {
   }
 
   public static List<SearchQuerySortRequest<ElementInstanceSearchQuerySortRequest.FieldEnum>>
-      fromFlowNodeInstanceSearchQuerySortRequest(
+      fromElementInstanceSearchQuerySortRequest(
           final List<ElementInstanceSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }

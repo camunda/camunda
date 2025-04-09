@@ -48,8 +48,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "processInstanceKey": "42",
                       "errorType": "JOB_NO_RETRIES",
                       "errorMessage": "No retries left.",
-                      "flowNodeId": "flowNodeId",
-                      "flowNodeInstanceKey": "17",
+                      "elementId": "elementId",
+                      "elementInstanceKey": "17",
                       "creationTime": "2024-05-23T23:05:00.000Z",
                       "state": "ACTIVE",
                       "jobKey": "101",
@@ -77,7 +77,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       42L,
                       ErrorType.JOB_NO_RETRIES,
                       "No retries left.",
-                      "flowNodeId",
+                      "elementId",
                       17L,
                       OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
                       IncidentState.ACTIVE,
@@ -96,8 +96,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                           "processInstanceKey": "42",
                           "errorType": "JOB_NO_RETRIES",
                           "errorMessage": "No retries left.",
-                          "flowNodeId": "flowNodeId",
-                          "flowNodeInstanceKey": "17",
+                          "elementId": "elementId",
+                          "elementInstanceKey": "17",
                           "creationTime": "2024-05-23T23:05:00.000Z",
                           "state": "ACTIVE",
                           "jobKey": "101",
@@ -113,7 +113,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           42L,
           ErrorType.JOB_NO_RETRIES,
           "No retries left.",
-          "flowNodeId",
+          "elementId",
           17L,
           OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
           IncidentState.ACTIVE,
@@ -186,8 +186,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 "processInstanceKey": 42,
                 "errorType": "JOB_NO_RETRIES",
                 "errorMessage": "No retries left.",
-                "flowNodeId": "flowNodeId",
-                "flowNodeInstanceKey": 17,
+                "elementId": "elementId",
+                "elementInstanceKey": 17,
                 "creationTime": "2024-05-23T23:05:00.000Z",
                 "state": "ACTIVE",
                 "jobKey": 101,
@@ -224,7 +224,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                         .processInstanceKeys(42L)
                         .errorTypes(ErrorType.JOB_NO_RETRIES)
                         .errorMessages("No retries left.")
-                        .flowNodeIds("flowNodeId")
+                        .flowNodeIds("elementId")
                         .flowNodeInstanceKeys(17L)
                         .creationTime(
                             new DateValueFilter.Builder()

@@ -243,12 +243,12 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  public void shouldGetFlowNodeStatistics() {
+  public void shouldGetElementStatistics() {
     // given
     final long processDefinitionKey = 1L;
     final var stats =
         List.of(new ProcessDefinitionFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
-    when(processDefinitionServices.flowNodeStatistics(any())).thenReturn(stats);
+    when(processDefinitionServices.elementStatistics(any())).thenReturn(stats);
     final var request =
         """
             {
@@ -260,7 +260,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         """
             {"items":[
               {
-                "flowNodeId": "node1",
+                "elementId": "node1",
                 "active": 1,
                 "canceled": 1,
                 "incidents": 1,
@@ -271,7 +271,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(PROCESS_DEFINITION_URL + "1/statistics/flownode-instances")
+        .uri(PROCESS_DEFINITION_URL + "1/statistics/element-instances")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -284,7 +284,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(response);
 
     verify(processDefinitionServices)
-        .flowNodeStatistics(
+        .elementStatistics(
             new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
                 .hasIncident(true)
                 .build());

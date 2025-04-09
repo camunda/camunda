@@ -23,7 +23,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.FlowNodeInstanceServices;
+import io.camunda.service.ElementInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
@@ -37,22 +37,22 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = FlowNodeInstanceController.class)
-public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
+@WebMvcTest(value = ElementInstanceController.class)
+public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
       """
           {
               "items": [
                   {
-                   "flowNodeInstanceKey":"1",
+                   "elementInstanceKey":"1",
                    "processInstanceKey":"2",
                    "processDefinitionKey":"3",
                    "processDefinitionId":"bpmnProcessId",
                    "startDate": "2023-05-17T00:00:00.000Z",
                    "endDate":"2023-05-23T00:00:00.000Z",
-                   "flowNodeId":"flowNodeId",
-                   "flowNodeName":"flowNodeName",
+                   "elementId":"elementId",
+                   "elementName":"elementName",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":false,
@@ -79,7 +79,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                       3L,
                       OffsetDateTime.parse("2023-05-17T00:00:00Z"),
                       OffsetDateTime.parse("2023-05-23T00:00:00Z"),
-                      "flowNodeId",
+                      "elementId",
                       null,
                       FlowNodeType.SERVICE_TASK,
                       FlowNodeState.ACTIVE,
@@ -94,13 +94,13 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
   static final String EXPECTED_GET_RESPONSE =
       """
                  {
-                   "flowNodeInstanceKey":"23",
+                   "elementInstanceKey":"23",
                    "processInstanceKey":"5",
                    "processDefinitionKey":"17",
                    "processDefinitionId":"complexProcess",
                    "startDate": "2023-05-17T10:10:10.000Z",
                    "endDate":"2023-05-23T10:10:10.000Z",
-                   "flowNodeId":"startEvent_1",
+                   "elementId":"startEvent_1",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":true,
@@ -125,33 +125,33 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
           "complexProcess",
           "tenantId");
 
-  static final String FLOW_NODE_INSTANCES_URL = "/v2/flownode-instances/";
-  static final String FLOW_NODE_INSTANCES_SEARCH_URL = FLOW_NODE_INSTANCES_URL + "search";
+  static final String ELEMENT_INSTANCES_URL = "/v2/element-instances/";
+  static final String ELEMENT_INSTANCES_SEARCH_URL = ELEMENT_INSTANCES_URL + "search";
 
-  @MockBean FlowNodeInstanceServices flowNodeInstanceServices;
+  @MockBean ElementInstanceServices elementInstanceServices;
   @MockBean ProcessCache processCache;
 
   @BeforeEach
   void setupServices() {
-    when(flowNodeInstanceServices.withAuthentication(any(Authentication.class)))
-        .thenReturn(flowNodeInstanceServices);
-    when(processCache.getFlowNodeName(any())).thenReturn("flowNodeName");
+    when(elementInstanceServices.withAuthentication(any(Authentication.class)))
+        .thenReturn(elementInstanceServices);
+    when(processCache.getElementName(any())).thenReturn("elementName");
     final var processCacheItem = mock(ProcessCacheItem.class);
-    when(processCacheItem.getFlowNodeName(any())).thenReturn("flowNodeName");
+    when(processCacheItem.getElementName(any())).thenReturn("elementName");
     final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
     when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
-    when(processCache.getFlowNodeNames(any())).thenReturn(processDefinitionMap);
+    when(processCache.getElementNames(any())).thenReturn(processDefinitionMap);
   }
 
   @Test
-  void shouldSearchFlownodeInstancesWithEmptyBody() {
+  void shouldSearchElementInstancesWithEmptyBody() {
     // given
-    when(flowNodeInstanceServices.search(any(FlowNodeInstanceQuery.class)))
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
         .post()
-        .uri(FLOW_NODE_INSTANCES_SEARCH_URL)
+        .uri(ELEMENT_INSTANCES_SEARCH_URL)
         .exchange()
         .expectStatus()
         .isOk()
@@ -160,20 +160,20 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(processCache).getFlowNodeNames(any());
+    verify(elementInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
+    verify(processCache).getElementNames(any());
   }
 
   @Test
-  void shouldSearchFlownodeInstancesWithEmptyQuery() {
+  void shouldSearchElementInstancesWithEmptyQuery() {
     // given
-    when(flowNodeInstanceServices.search(any(FlowNodeInstanceQuery.class)))
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     final var request = "{}";
     webClient
         .post()
-        .uri(FLOW_NODE_INSTANCES_SEARCH_URL)
+        .uri(ELEMENT_INSTANCES_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -185,28 +185,28 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(processCache).getFlowNodeNames(any());
+    verify(elementInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
+    verify(processCache).getElementNames(any());
   }
 
   @Test
-  void shouldSearchFlownodeInstancesWithAllFilters() {
+  void shouldSearchElementInstancesWithAllFilters() {
     // given
-    when(flowNodeInstanceServices.search(any(FlowNodeInstanceQuery.class)))
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     final var request =
         """
             {
               "filter":{
-                "flowNodeInstanceKey": "2251799813685996",
+                "elementInstanceKey": "2251799813685996",
                 "processInstanceKey": "2251799813685989",
                 "processDefinitionKey": "3",
                 "processDefinitionId": "complexProcess",
                 "state": "ACTIVE",
                 "type": "SERVICE_TASK",
-                "flowNodeId": "StartEvent_1",
-                "flowNodeName": "name",
+                "elementId": "StartEvent_1",
+                "elementName": "name",
                 "hasIncident": true,
                 "incidentKey": "2251799813685320",
                 "tenantId": "default"
@@ -215,7 +215,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
             """;
     webClient
         .post()
-        .uri(FLOW_NODE_INSTANCES_SEARCH_URL)
+        .uri(ELEMENT_INSTANCES_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -227,7 +227,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(flowNodeInstanceServices)
+    verify(elementInstanceServices)
         .search(
             new FlowNodeInstanceQuery.Builder()
                 .filter(
@@ -247,21 +247,21 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  public void shouldSearchFlownodeInstancesWithFullSorting() {
+  public void shouldSearchElementInstancesWithFullSorting() {
     // given
-    when(flowNodeInstanceServices.search(any(FlowNodeInstanceQuery.class)))
+    when(elementInstanceServices.search(any(FlowNodeInstanceQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
              {
                "sort": [
-                 { "field": "flowNodeInstanceKey", "order": "ASC" },
+                 { "field": "elementInstanceKey", "order": "ASC" },
                  { "field": "processInstanceKey", "order": "ASC" },
                  { "field": "processDefinitionKey", "order": "ASC" },
                  { "field": "processDefinitionId", "order": "ASC" },
                  { "field": "startDate", "order": "DESC" },
                  { "field": "endDate", "order": "DESC" },
-                 { "field": "flowNodeId", "order": "ASC" },
+                 { "field": "elementId", "order": "ASC" },
                  { "field": "type", "order": "ASC" },
                  { "field": "state", "order": "ASC" },
                  { "field": "incidentKey", "order": "ASC" },
@@ -271,7 +271,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
             """;
     webClient
         .post()
-        .uri(FLOW_NODE_INSTANCES_SEARCH_URL)
+        .uri(ELEMENT_INSTANCES_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -283,12 +283,11 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(flowNodeInstanceServices)
+    verify(elementInstanceServices)
         .search(
             new FlowNodeInstanceQuery.Builder()
                 .sort(
                     new FlowNodeInstanceSort.Builder()
-                        .flowNodeInstanceKey()
                         .asc()
                         .processInstanceKey()
                         .asc()
@@ -312,34 +311,34 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .asc()
                         .build())
                 .build());
-    verify(processCache).getFlowNodeNames(any());
+    verify(processCache).getElementNames(any());
   }
 
   @Test
-  void shouldGetFlowNodeInstanceByKey() {
-    when(flowNodeInstanceServices.getByKey(any(Long.class))).thenReturn(GET_QUERY_RESULT);
+  void shouldGetElementInstanceByKey() {
+    when(elementInstanceServices.getByKey(any(Long.class))).thenReturn(GET_QUERY_RESULT);
     // when / then
     webClient
         .get()
-        .uri(FLOW_NODE_INSTANCES_URL + "23")
+        .uri(ELEMENT_INSTANCES_URL + "23")
         .exchange()
         .expectStatus()
         .isOk()
         .expectBody()
         .json(EXPECTED_GET_RESPONSE);
 
-    verify(flowNodeInstanceServices).getByKey(23L);
-    verify(processCache).getFlowNodeName(any());
+    verify(elementInstanceServices).getByKey(23L);
+    verify(processCache).getElementName(any());
   }
 
   @Test
-  void shouldThrowNotFoundIfKeyNotExistsForGetFlowNodeInstanceByKey() {
-    when(flowNodeInstanceServices.getByKey(any(Long.class)))
+  void shouldThrowNotFoundIfKeyNotExistsForGetElementInstanceByKey() {
+    when(elementInstanceServices.getByKey(any(Long.class)))
         .thenThrow(new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND));
     // when / then
     webClient
         .get()
-        .uri(FLOW_NODE_INSTANCES_URL + "5")
+        .uri(ELEMENT_INSTANCES_URL + "5")
         .exchange()
         .expectStatus()
         .isNotFound()
@@ -352,11 +351,11 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                       "type":"about:blank",
                       "title":"NOT_FOUND",
                       "status":404,
-                      "instance":"/v2/flownode-instances/5"
+                      "instance":"/v2/element-instances/5"
                   }
                 """);
 
-    verify(flowNodeInstanceServices).getByKey(5L);
-    verify(processCache, never()).getFlowNodeName(any());
+    verify(elementInstanceServices).getByKey(5L);
+    verify(processCache, never()).getElementName(any());
   }
 }

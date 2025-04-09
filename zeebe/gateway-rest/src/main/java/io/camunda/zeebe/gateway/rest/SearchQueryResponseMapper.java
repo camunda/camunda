@@ -121,17 +121,17 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ProcessDefinitionElementStatisticsQueryResult
-      toProcessDefinitionFlowNodeStatisticsQueryResult(
+      toProcessDefinitionElementStatisticsQueryResult(
           final List<ProcessDefinitionFlowNodeStatisticsEntity> result) {
     return new ProcessDefinitionElementStatisticsQueryResult()
         .items(
             result.stream()
-                .map(SearchQueryResponseMapper::toProcessDefinitionFlowNodeStatisticsResult)
+                .map(SearchQueryResponseMapper::toProcessDefinitionElementStatisticsResult)
                 .toList());
   }
 
   private static ProcessDefinitionElementStatisticsResult
-      toProcessDefinitionFlowNodeStatisticsResult(
+      toProcessDefinitionElementStatisticsResult(
           final ProcessDefinitionFlowNodeStatisticsEntity result) {
     return new ProcessDefinitionElementStatisticsResult()
         .elementId(result.flowNodeId())
@@ -216,7 +216,7 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static ElementInstanceSearchQueryResult toFlowNodeInstanceSearchQueryResponse(
+  public static ElementInstanceSearchQueryResult toElementInstanceSearchQueryResponse(
       final SearchQueryResult<FlowNodeInstanceEntity> result,
       final Map<Long, ProcessCacheItem> processCacheItems) {
     final var page = toSearchQueryPageResponse(result);
@@ -224,7 +224,7 @@ public final class SearchQueryResponseMapper {
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(instances -> toFlowNodeInstance(instances, processCacheItems))
+                .map(instances -> toElementInstance(instances, processCacheItems))
                 .orElseGet(Collections::emptyList));
   }
 
@@ -422,22 +422,22 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
   }
 
-  private static List<ElementInstanceResult> toFlowNodeInstance(
+  private static List<ElementInstanceResult> toElementInstance(
       final List<FlowNodeInstanceEntity> instances,
       final Map<Long, ProcessCacheItem> processCacheItems) {
     return instances.stream()
         .map(
             instance -> {
-              final var flowNodeName =
+              final var elementName =
                   processCacheItems
                       .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.EMPTY)
-                      .getFlowNodeName(instance.flowNodeId());
-              return toFlowNodeInstance(instance, flowNodeName);
+                      .getElementName(instance.flowNodeId());
+              return toElementInstance(instance, elementName);
             })
         .toList();
   }
 
-  public static ElementInstanceResult toFlowNodeInstance(
+  public static ElementInstanceResult toElementInstance(
       final FlowNodeInstanceEntity instance, final String name) {
     return new ElementInstanceResult()
         .elementInstanceKey(KeyUtil.keyToString(instance.flowNodeInstanceKey()))
@@ -498,7 +498,7 @@ public final class SearchQueryResponseMapper {
               final var name =
                   processCacheItems
                       .getOrDefault(t.processDefinitionKey(), ProcessCacheItem.EMPTY)
-                      .getFlowNodeName(t.elementId());
+                      .getElementName(t.elementId());
               return toUserTask(t, name);
             })
         .toList();

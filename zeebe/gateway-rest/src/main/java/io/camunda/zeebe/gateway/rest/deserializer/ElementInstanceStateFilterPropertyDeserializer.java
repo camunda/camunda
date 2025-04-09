@@ -11,7 +11,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AdvancedElementInstanceStateFilter
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
 
-public class FlowNodeInstanceStateFilterPropertyDeserializer
+public class ElementInstanceStateFilterPropertyDeserializer
     extends FilterDeserializer<ElementInstanceStateFilterProperty, ElementInstanceStateEnum> {
 
   @Override

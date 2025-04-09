@@ -27,9 +27,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
-public final class FlowNodeInstanceServiceTest {
+public final class ElementInstanceServiceTest {
 
-  private FlowNodeInstanceServices services;
+  private ElementInstanceServices services;
   private FlowNodeInstanceSearchClient client;
   private SecurityContextProvider securityContextProvider;
   private Authentication authentication;
@@ -41,12 +41,12 @@ public final class FlowNodeInstanceServiceTest {
     securityContextProvider = mock(SecurityContextProvider.class);
     authentication = mock(Authentication.class);
     services =
-        new FlowNodeInstanceServices(
+        new ElementInstanceServices(
             mock(BrokerClient.class), securityContextProvider, client, authentication);
   }
 
   @Test
-  public void shouldReturnFlowNodeInstance() {
+  public void shouldReturnElementInstance() {
     // given
     final var result = mock(SearchQueryResult.class);
     when(client.searchFlowNodeInstances(any())).thenReturn(result);
