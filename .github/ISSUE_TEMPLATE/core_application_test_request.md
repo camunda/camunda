@@ -41,13 +41,11 @@ Scenario: As a user, I can ...
 ### Supported Versions
 
 <!-- List the versions impacted by the feature, including when it was introduced and supported versions. -->
-
 - Version X.X
 
 ### Implementation Timeline
 
 <!-- Specify when the feature will be available or when it’s expected to be implemented. -->
-
 - Available in: Version Y.Y
 
 ### Priority
@@ -63,5 +61,5 @@ Scenario: As a user, I can ...
 ### Definition of Ready - Checklist
 
 <!-- The assignee will check the DRI. -->
-
 - [ ] The test case has a meaningful title, description, and testable acceptance criteria
+
