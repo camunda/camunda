@@ -18,6 +18,9 @@ package io.camunda.client.impl.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.search.enums.*;
+import io.camunda.client.protocol.rest.BatchOperationItemResponse;
+import io.camunda.client.protocol.rest.BatchOperationResponse;
+import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import org.junit.jupiter.api.Test;
 
 public class EnumUtilTest {
@@ -440,6 +443,86 @@ public class EnumUtilTest {
       if (protocolValue
           == io.camunda.client.protocol.rest.UserTaskFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(UserTaskState.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertBatchOperationState() {
+
+    for (final BatchOperationState value : BatchOperationState.values()) {
+      final BatchOperationResponse.StatusEnum protocolValue =
+          EnumUtil.convert(value, BatchOperationResponse.StatusEnum.class);
+      assertThat(protocolValue).isNotNull();
+      if (value == BatchOperationState.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(BatchOperationResponse.StatusEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final BatchOperationResponse.StatusEnum protocolValue :
+        BatchOperationResponse.StatusEnum.values()) {
+      final BatchOperationState value = EnumUtil.convert(protocolValue, BatchOperationState.class);
+      assertThat(value).isNotNull();
+      if (protocolValue == BatchOperationResponse.StatusEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(BatchOperationState.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertBatchOperationItemState() {
+
+    for (final BatchOperationItemState value : BatchOperationItemState.values()) {
+      final BatchOperationItemResponse.StatusEnum protocolValue =
+          EnumUtil.convert(value, BatchOperationItemResponse.StatusEnum.class);
+      assertThat(protocolValue).isNotNull();
+      if (value == BatchOperationItemState.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(BatchOperationItemResponse.StatusEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final BatchOperationItemResponse.StatusEnum protocolValue :
+        BatchOperationItemResponse.StatusEnum.values()) {
+      final BatchOperationItemState value =
+          EnumUtil.convert(protocolValue, BatchOperationItemState.class);
+      assertThat(value).isNotNull();
+      if (protocolValue == BatchOperationItemResponse.StatusEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(BatchOperationItemState.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertBatchOperationType() {
+
+    for (final BatchOperationType value : BatchOperationType.values()) {
+      final BatchOperationTypeEnum protocolValue =
+          EnumUtil.convert(value, BatchOperationTypeEnum.class);
+      assertThat(protocolValue).isNotNull();
+      if (value == BatchOperationType.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue).isEqualTo(BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final BatchOperationTypeEnum protocolValue : BatchOperationTypeEnum.values()) {
+      final BatchOperationType value = EnumUtil.convert(protocolValue, BatchOperationType.class);
+      assertThat(value).isNotNull();
+      if (protocolValue == BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(BatchOperationType.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
       }
