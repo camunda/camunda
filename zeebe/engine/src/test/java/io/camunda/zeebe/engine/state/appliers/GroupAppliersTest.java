@@ -205,7 +205,7 @@ public class GroupAppliersTest {
     final var entitiesByType = groupState.getEntitiesByType(groupId);
     assertThat(entitiesByType).isEmpty();
     final var persistedMapping = mappingState.get(mappingId).get();
-    assertThat(persistedMapping.getGroupKeysList()).isEmpty();
+    assertThat(persistedMapping.getGroupIdsList()).isEmpty();
   }
 
   @Test

@@ -14,11 +14,11 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -232,21 +232,25 @@ public class MappingTest {
         .hasFieldOrPropertyWithValue("mappingId", mappingId);
   }
 
-  @Ignore("https://github.com/camunda/camunda/issues/30092")
   @Test
   public void shouldCleanupGroupAndRoleMembership() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var mappingRecord =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
-    final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
+        engine
+            .mapping()
+            .newMapping(claimName)
+            .withMappingId(mappingId)
+            .withClaimValue(claimValue)
+            .create();
+    final var groupId = Strings.newRandomValidIdentityId();
     engine.group().newGroup("group").withGroupId(groupId).create();
     final var role = engine.role().newRole("role").create();
     engine
         .group()
         .addEntity(groupId)
-        .withEntityId(mappingRecord.getValue().getMappingId())
+        .withEntityId(mappingId)
         .withEntityType(EntityType.MAPPING)
         .add();
     engine
@@ -257,14 +261,13 @@ public class MappingTest {
         .add();
 
     // when
-    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingId()).delete();
+    engine.mapping().deleteMapping(mappingId).delete();
 
     // then
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
-                .withGroupKey(groupKey)
-                // TODO: revisit
-                .withEntityId(String.valueOf(mappingRecord.getKey()))
+                .withGroupId(groupId)
+                .withEntityId(mappingRecord.getValue().getMappingId())
                 .exists())
         .isTrue();
     Assertions.assertThat(
