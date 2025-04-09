@@ -36,7 +36,7 @@ public class MultiDbConfigurator {
     configureElasticsearchSupport(elasticsearchUrl, indexPrefix);
 
     testApplication.withExporter(
-        "ElasticsearchExporter",
+        ElasticsearchExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(ElasticsearchExporter.class.getName());
           cfg.setArgs(
@@ -86,7 +86,7 @@ public class MultiDbConfigurator {
     testApplication.withAdditionalProperties(elasticsearchProperties);
 
     testApplication.withExporter(
-        "CamundaExporter",
+        CamundaExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(CamundaExporter.class.getName());
           cfg.setArgs(
@@ -128,7 +128,7 @@ public class MultiDbConfigurator {
     configureOpenSearchSupport(opensearchUrl, indexPrefix, userName, userPassword);
 
     testApplication.withExporter(
-        "OpensearchExporter",
+        OpensearchExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(OpensearchExporter.class.getName());
           cfg.setArgs(
@@ -196,7 +196,7 @@ public class MultiDbConfigurator {
     testApplication.withAdditionalProperties(opensearchProperties);
 
     testApplication.withExporter(
-        "CamundaExporter",
+        CamundaExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(CamundaExporter.class.getName());
           cfg.setArgs(
@@ -277,7 +277,7 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.operate.opensearch.aws.enabled", true);
     testApplication.withAdditionalProperties(opensearchProperties);
     testApplication.withExporter(
-        "OpensearchExporter",
+        OpensearchExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(OpensearchExporter.class.getName());
           cfg.setArgs(
