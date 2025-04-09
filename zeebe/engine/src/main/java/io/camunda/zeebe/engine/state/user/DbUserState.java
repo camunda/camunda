@@ -86,20 +86,20 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public void addGroup(final String username, final long groupKey) {
+  public void addGroup(final String username, final String groupId) {
     this.username.wrapString(username);
     final var persistedUser = usersColumnFamily.get(this.username);
-    persistedUser.addGroupKey(groupKey);
+    persistedUser.addGroupId(groupId);
     usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override
-  public void removeGroup(final String username, final long groupKey) {
+  public void removeGroup(final String username, final String groupId) {
     this.username.wrapString(username);
     final var persistedUser = usersColumnFamily.get(this.username);
-    final List<Long> groupKeys = persistedUser.getGroupKeysList();
-    groupKeys.remove(groupKey);
-    persistedUser.setGroupKeysList(groupKeys);
+    final List<String> groupIds = persistedUser.getGroupIdsList();
+    groupIds.remove(groupId);
+    persistedUser.setGroupIdsList(groupIds);
     usersColumnFamily.update(this.username, persistedUser);
   }
 
