@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
-import { Stack } from "@carbon/react";
+import { InlineNotification, Stack } from "@carbon/react";
 import { spacing05 } from "@carbon/elements";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
@@ -26,7 +26,9 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
   entity,
 }) => {
   const { t } = useTranslate("mappingRules");
-  const [callUpdateMapping, { loading }] = useApiCall(updateMapping);
+  const [callUpdateMapping, { loading, error }] = useApiCall(updateMapping, {
+    suppressErrorNotification: true,
+  });
   const [mapping, setMapping] = useState<Mapping>(entity);
 
   const handleSubmit = async () => {
@@ -88,6 +90,15 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
           </CustomStack>
         </Stack>
       </MappingRuleContainer>
+      {error && (
+        <InlineNotification
+          kind="error"
+          role="alert"
+          lowContrast
+          title={error.title}
+          subtitle={error.detail}
+        />
+      )}
     </FormModal>
   );
 };
