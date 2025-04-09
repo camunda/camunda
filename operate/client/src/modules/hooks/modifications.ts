@@ -8,7 +8,7 @@
 
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import {MODIFICATION_OPERATIONS} from 'modules/constants';
+import {TOKEN_OPERATIONS} from 'modules/constants';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {
   useTotalRunningInstancesForFlowNodes,
@@ -27,8 +27,8 @@ const useWillAllFlowNodesBeCanceled = () => {
   if (
     modificationsStore.flowNodeModifications.some(
       ({operation}) =>
-        operation === MODIFICATION_OPERATIONS.ADD_TOKEN ||
-        operation === MODIFICATION_OPERATIONS.MOVE_TOKEN,
+        operation === TOKEN_OPERATIONS.ADD_TOKEN ||
+        operation === TOKEN_OPERATIONS.MOVE_TOKEN,
     )
   ) {
     return false;
@@ -107,7 +107,7 @@ const useModificationsByFlowNode = () => {
 
     const totalRunningInstancesCount = flowNodeData[flowNode.id] ?? 0;
 
-    if (operation === MODIFICATION_OPERATIONS.ADD_TOKEN) {
+    if (operation === TOKEN_OPERATIONS.ADD_TOKEN) {
       sourceFlowNode.newTokens += affectedTokenCount;
       modificationsByFlowNode[flowNode.id] = sourceFlowNode;
       return modificationsByFlowNode;
@@ -128,7 +128,7 @@ const useModificationsByFlowNode = () => {
     sourceFlowNode.areAllTokensCanceled =
       sourceFlowNode.cancelledTokens === totalRunningInstancesCount;
 
-    if (operation === MODIFICATION_OPERATIONS.MOVE_TOKEN) {
+    if (operation === TOKEN_OPERATIONS.MOVE_TOKEN) {
       const targetFlowNode = modificationsByFlowNode[
         payload.targetFlowNode.id
       ] ?? {
@@ -144,7 +144,7 @@ const useModificationsByFlowNode = () => {
       modificationsByFlowNode[payload.targetFlowNode.id] = targetFlowNode;
     }
 
-    if (operation === MODIFICATION_OPERATIONS.CANCEL_TOKEN) {
+    if (operation === TOKEN_OPERATIONS.CANCEL_TOKEN) {
       if (sourceFlowNode.areAllTokensCanceled) {
         // set cancel token counts for child elements if flow node has any
         const elementIds = getFlowElementIds(
