@@ -60,7 +60,7 @@ class BatchOperationControllerTest extends RestControllerTest {
             """
           {
               "batchOperationKey":"1",
-              "status":"COMPLETED",
+              "state":"COMPLETED",
               "batchOperationType":"PROCESS_CANCELLATION",
               "startDate":"2025-03-18T10:57:44.000+01:00",
               "endDate":"2025-03-18T10:57:45.000+01:00",
@@ -95,7 +95,7 @@ class BatchOperationControllerTest extends RestControllerTest {
           {"items":[
           {
             "batchOperationKey":"1",
-            "status":"COMPLETED",
+            "state":"COMPLETED",
             "batchOperationType":"PROCESS_CANCELLATION",
             "startDate":"2025-03-18T10:57:44.000+01:00",
             "endDate":"2025-03-18T10:57:45.000+01:00",
@@ -173,7 +173,7 @@ class BatchOperationControllerTest extends RestControllerTest {
                 {
                    "batchOperationKey":"1",
                    "itemKey":"1",
-                   "status":"COMPLETED"}
+                   "state":"COMPLETED"}
                 ]}
           """);
   }

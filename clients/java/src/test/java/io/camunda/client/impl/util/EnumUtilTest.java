@@ -453,22 +453,22 @@ public class EnumUtilTest {
   public void shouldConvertBatchOperationState() {
 
     for (final BatchOperationState value : BatchOperationState.values()) {
-      final BatchOperationResponse.StatusEnum protocolValue =
-          EnumUtil.convert(value, BatchOperationResponse.StatusEnum.class);
+      final BatchOperationResponse.StateEnum protocolValue =
+          EnumUtil.convert(value, BatchOperationResponse.StateEnum.class);
       assertThat(protocolValue).isNotNull();
       if (value == BatchOperationState.UNKNOWN_ENUM_VALUE) {
         assertThat(protocolValue)
-            .isEqualTo(BatchOperationResponse.StatusEnum.UNKNOWN_DEFAULT_OPEN_API);
+            .isEqualTo(BatchOperationResponse.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }
     }
 
-    for (final BatchOperationResponse.StatusEnum protocolValue :
-        BatchOperationResponse.StatusEnum.values()) {
+    for (final BatchOperationResponse.StateEnum protocolValue :
+        BatchOperationResponse.StateEnum.values()) {
       final BatchOperationState value = EnumUtil.convert(protocolValue, BatchOperationState.class);
       assertThat(value).isNotNull();
-      if (protocolValue == BatchOperationResponse.StatusEnum.UNKNOWN_DEFAULT_OPEN_API) {
+      if (protocolValue == BatchOperationResponse.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(BatchOperationState.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
@@ -480,23 +480,23 @@ public class EnumUtilTest {
   public void shouldConvertBatchOperationItemState() {
 
     for (final BatchOperationItemState value : BatchOperationItemState.values()) {
-      final BatchOperationItemResponse.StatusEnum protocolValue =
-          EnumUtil.convert(value, BatchOperationItemResponse.StatusEnum.class);
+      final BatchOperationItemResponse.StateEnum protocolValue =
+          EnumUtil.convert(value, BatchOperationItemResponse.StateEnum.class);
       assertThat(protocolValue).isNotNull();
       if (value == BatchOperationItemState.UNKNOWN_ENUM_VALUE) {
         assertThat(protocolValue)
-            .isEqualTo(BatchOperationItemResponse.StatusEnum.UNKNOWN_DEFAULT_OPEN_API);
+            .isEqualTo(BatchOperationItemResponse.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }
     }
 
-    for (final BatchOperationItemResponse.StatusEnum protocolValue :
-        BatchOperationItemResponse.StatusEnum.values()) {
+    for (final BatchOperationItemResponse.StateEnum protocolValue :
+        BatchOperationItemResponse.StateEnum.values()) {
       final BatchOperationItemState value =
           EnumUtil.convert(protocolValue, BatchOperationItemState.class);
       assertThat(value).isNotNull();
-      if (protocolValue == BatchOperationItemResponse.StatusEnum.UNKNOWN_DEFAULT_OPEN_API) {
+      if (protocolValue == BatchOperationItemResponse.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(BatchOperationItemState.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());

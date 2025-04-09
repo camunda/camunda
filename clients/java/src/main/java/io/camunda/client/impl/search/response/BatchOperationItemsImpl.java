@@ -51,7 +51,7 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
     public BatchOperationItemImpl(final BatchOperationItemResponse item) {
       batchOperationKey = ParseUtil.parseLongOrNull(item.getBatchOperationKey());
       itemKey = ParseUtil.parseLongOrNull(item.getItemKey());
-      status = EnumUtil.convert(item.getStatus(), BatchOperationItemState.class);
+      status = EnumUtil.convert(item.getState(), BatchOperationItemState.class);
     }
 
     @Override

@@ -7876,7 +7876,7 @@ components:
           enum:
             - batchOperationKey
             - operationType
-            - status
+            - state
             - startDate
             - endDate
         order:
@@ -7907,9 +7907,9 @@ components:
           type: string
         operationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"
-        status:
+        state:
           type: string
-          description: The status of the batch operation.
+          description: The state of the batch operation.
           enum:
             - CREATED
             - ACTIVE
@@ -7933,8 +7933,8 @@ components:
         batchOperationKey:
           description: Key of the batch operation.
           type: string
-        status:
-          description: The status of the batch operation.
+        state:
+          description: The state of the batch operation.
           type: string
           enum:
             - CREATED
@@ -7984,8 +7984,8 @@ components:
         itemKey:
           description: Key of the item, e.g. a process instance key.
           type: string
-        status:
-          description: Status of the item.
+        state:
+          description: State of the item.
           type: string
           enum:
             - ACTIVE

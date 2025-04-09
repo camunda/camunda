@@ -56,7 +56,7 @@ public class BatchOperationImpl implements BatchOperation {
         item.getBatchOperationType() != null
             ? BatchOperationType.valueOf(item.getBatchOperationType().name())
             : null;
-    status = item.getStatus() != null ? BatchOperationState.valueOf(item.getStatus().name()) : null;
+    status = item.getState() != null ? BatchOperationState.valueOf(item.getState().name()) : null;
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     operationsTotalCount = item.getOperationsTotalCount();
