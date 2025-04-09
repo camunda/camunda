@@ -54,6 +54,15 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         || getStatus() == BatchOperationStatus.PAUSED;
   }
 
+  public boolean canPause() {
+    return getStatus() == BatchOperationStatus.CREATED
+        || getStatus() == BatchOperationStatus.STARTED;
+  }
+
+  public boolean isPaused() {
+    return getStatus() == BatchOperationStatus.PAUSED;
+  }
+
   public long getKey() {
     return keyProp.getValue();
   }
