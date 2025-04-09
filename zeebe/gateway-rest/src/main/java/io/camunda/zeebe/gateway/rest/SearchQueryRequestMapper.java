@@ -73,7 +73,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StatusEnum;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StateEnum;
 import io.camunda.zeebe.gateway.rest.util.GenericVariable;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
@@ -543,7 +543,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getBatchOperationKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::batchOperationKeys);
-      ofNullable(filter.getStatus()).map(StatusEnum::toString).ifPresent(builder::status);
+      ofNullable(filter.getState()).map(StateEnum::toString).ifPresent(builder::state);
       ofNullable(filter.getOperationType())
           .map(BatchOperationTypeEnum::toString)
           .ifPresent(builder::operationTypes);
@@ -561,7 +561,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case BATCH_OPERATION_KEY -> builder.batchOperationKey();
-        case STATUS -> builder.status();
+        case STATE -> builder.state();
         case OPERATION_TYPE -> builder.operationType();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();

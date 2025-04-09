@@ -18,8 +18,8 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemStatus;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -70,7 +70,7 @@ public class BatchOperationWriter {
   }
 
   public void updateItem(
-      final long batchOperationKey, final long itemKey, final BatchOperationItemStatus state) {
+      final long batchOperationKey, final long itemKey, final BatchOperationItemState state) {
 
     // TODO merging this into one statement would be more efficient
     executionQueue.executeInQueue(
@@ -81,7 +81,7 @@ public class BatchOperationWriter {
             "io.camunda.db.rdbms.sql.BatchOperationMapper.updateItem",
             new BatchOperationItemDto(batchOperationKey, itemKey, state)));
 
-    if (state == BatchOperationItemStatus.FAILED) {
+    if (state == BatchOperationItemState.FAILED) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.BATCH_OPERATION,
@@ -89,7 +89,7 @@ public class BatchOperationWriter {
               batchOperationKey,
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementFailedOperationsCount",
               batchOperationKey));
-    } else if (state == BatchOperationItemStatus.COMPLETED) {
+    } else if (state == BatchOperationItemState.COMPLETED) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.BATCH_OPERATION,
@@ -103,28 +103,28 @@ public class BatchOperationWriter {
   public void finish(final long batchOperationKey, final OffsetDateTime endDate) {
     updateCompleted(
         batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, BatchOperationStatus.COMPLETED, endDate));
+        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.COMPLETED, endDate));
   }
 
   public void cancel(final long batchOperationKey, final OffsetDateTime endDate) {
     updateCompleted(
         batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, BatchOperationStatus.CANCELED, endDate));
+        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.CANCELED, endDate));
 
-    updateItemsWithStatus(
-        batchOperationKey, BatchOperationItemStatus.ACTIVE, BatchOperationItemStatus.CANCELED);
+    updateItemsWithState(
+        batchOperationKey, BatchOperationItemState.ACTIVE, BatchOperationItemState.CANCELED);
   }
 
   public void paused(final long batchOperationKey) {
     updateCompleted(
         batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, BatchOperationStatus.PAUSED, null));
+        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.PAUSED, null));
   }
 
   public void resumed(final long batchOperationKey) {
     updateCompleted(
         batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, BatchOperationStatus.ACTIVE, null));
+        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.ACTIVE, null));
   }
 
   private void updateCompleted(final long batchOperationKey, final BatchOperationUpdateDto dto) {
@@ -137,10 +137,10 @@ public class BatchOperationWriter {
             dto));
   }
 
-  private void updateItemsWithStatus(
+  private void updateItemsWithState(
       final long batchOperationKey,
-      final BatchOperationItemStatus oldState,
-      final BatchOperationItemStatus newState) {
+      final BatchOperationItemState oldState,
+      final BatchOperationItemState newState) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,

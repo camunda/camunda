@@ -11,8 +11,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemStatus;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -60,7 +60,7 @@ class BatchOperationControllerTest extends RestControllerTest {
             """
           {
               "batchOperationKey":"1",
-              "status":"COMPLETED",
+              "state":"COMPLETED",
               "batchOperationType":"PROCESS_CANCELLATION",
               "startDate":"2025-03-18T10:57:44.000+01:00",
               "endDate":"2025-03-18T10:57:45.000+01:00",
@@ -79,7 +79,7 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     final var searchQuery =
         new BatchOperationSearchQuery()
-            .filter(new BatchOperationFilter().status(BatchOperationFilter.StatusEnum.ACTIVE));
+            .filter(new BatchOperationFilter().state(BatchOperationFilter.StateEnum.ACTIVE));
 
     webClient
         .post()
@@ -95,7 +95,7 @@ class BatchOperationControllerTest extends RestControllerTest {
           {"items":[
           {
             "batchOperationKey":"1",
-            "status":"COMPLETED",
+            "state":"COMPLETED",
             "batchOperationType":"PROCESS_CANCELLATION",
             "startDate":"2025-03-18T10:57:44.000+01:00",
             "endDate":"2025-03-18T10:57:45.000+01:00",
@@ -155,7 +155,7 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     final var batchOperationItem =
         new BatchOperationEntity.BatchOperationItemEntity(
-            batchOperationKey, 1L, BatchOperationItemStatus.COMPLETED);
+            batchOperationKey, 1L, BatchOperationItemState.COMPLETED);
     when(batchOperationServices.getItemsByKey(batchOperationKey))
         .thenReturn(List.of(batchOperationItem));
 
@@ -173,7 +173,7 @@ class BatchOperationControllerTest extends RestControllerTest {
                 {
                    "batchOperationKey":"1",
                    "itemKey":"1",
-                   "status":"COMPLETED"}
+                   "state":"COMPLETED"}
                 ]}
           """);
   }
@@ -181,7 +181,7 @@ class BatchOperationControllerTest extends RestControllerTest {
   private static BatchOperationEntity getBatchOperationEntity(final long batchOperationKey) {
     return new BatchOperationEntity(
         batchOperationKey,
-        BatchOperationStatus.COMPLETED,
+        BatchOperationState.COMPLETED,
         "PROCESS_CANCELLATION",
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),

@@ -22,8 +22,8 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemStatus;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.BatchOperationQuery;
@@ -76,8 +76,7 @@ public class BatchOperationIT {
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(
-            writer,
-            b -> b.status(BatchOperationStatus.ACTIVE).endDate(null).operationsTotalCount(0));
+            writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null).operationsTotalCount(0));
 
     // when
     insertBatchOperationsItems(writer, batchOperation.batchOperationKey(), Set.of(nextKey()));
@@ -92,15 +91,15 @@ public class BatchOperationIT {
     final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
     assertThat(batchOperationEntity.endDate()).isNull();
     assertThat(batchOperationEntity.operationsTotalCount()).isEqualTo(3);
-    assertThat(batchOperationEntity.status()).isEqualTo(BatchOperationStatus.ACTIVE);
+    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.ACTIVE);
 
     // and items are there
     final var updatedItems =
         rdbmsService.getBatchOperationReader().getItems(batchOperation.batchOperationKey());
     assertThat(updatedItems).isNotNull();
     assertThat(updatedItems).hasSize(3);
-    assertThat(updatedItems.stream().map(BatchOperationItemEntity::status))
-        .containsOnly(BatchOperationItemStatus.ACTIVE);
+    assertThat(updatedItems.stream().map(BatchOperationItemEntity::state))
+        .containsOnly(BatchOperationItemState.ACTIVE);
   }
 
   @TestTemplate
@@ -113,7 +112,7 @@ public class BatchOperationIT {
         createAndSaveBatchOperation(
             writer,
             b ->
-                b.status(BatchOperationStatus.ACTIVE)
+                b.state(BatchOperationState.ACTIVE)
                     .endDate(null)
                     .operationsTotalCount(0)
                     .operationsCompletedCount(0));
@@ -127,7 +126,7 @@ public class BatchOperationIT {
         .updateItem(
             batchOperation.batchOperationKey(),
             items.getFirst(),
-            BatchOperationItemStatus.COMPLETED);
+            BatchOperationItemState.COMPLETED);
     writer.flush();
 
     // then
@@ -138,7 +137,7 @@ public class BatchOperationIT {
     assertThat(batchOperationEntity.endDate()).isNull();
     assertThat(batchOperationEntity.operationsTotalCount()).isEqualTo(2);
     assertThat(batchOperationEntity.operationsCompletedCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.status()).isEqualTo(BatchOperationStatus.ACTIVE);
+    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.ACTIVE);
 
     // and items have correct state
     final var updatedItems =
@@ -150,14 +149,14 @@ public class BatchOperationIT {
             .filter(i -> Objects.equals(i.itemKey(), items.getFirst()))
             .findFirst()
             .get();
-    assertThat(firstItem.status()).isEqualTo(BatchOperationItemStatus.COMPLETED);
+    assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
 
     final var lastItem =
         updatedItems.stream()
             .filter(i -> Objects.equals(i.itemKey(), items.getLast()))
             .findFirst()
             .get();
-    assertThat(lastItem.status()).isEqualTo(BatchOperationItemStatus.ACTIVE);
+    assertThat(lastItem.state()).isEqualTo(BatchOperationItemState.ACTIVE);
   }
 
   @TestTemplate
@@ -170,7 +169,7 @@ public class BatchOperationIT {
         createAndSaveBatchOperation(
             writer,
             b ->
-                b.status(BatchOperationStatus.ACTIVE)
+                b.state(BatchOperationState.ACTIVE)
                     .endDate(null)
                     .operationsTotalCount(0)
                     .operationsFailedCount(0));
@@ -182,7 +181,7 @@ public class BatchOperationIT {
     writer
         .getBatchOperationWriter()
         .updateItem(
-            batchOperation.batchOperationKey(), items.getFirst(), BatchOperationItemStatus.FAILED);
+            batchOperation.batchOperationKey(), items.getFirst(), BatchOperationItemState.FAILED);
     writer.flush();
 
     // then
@@ -193,7 +192,7 @@ public class BatchOperationIT {
     assertThat(batchOperationEntity.endDate()).isNull();
     assertThat(batchOperationEntity.operationsTotalCount()).isEqualTo(2);
     assertThat(batchOperationEntity.operationsFailedCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.status()).isEqualTo(BatchOperationStatus.ACTIVE);
+    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.ACTIVE);
 
     // and items have correct state
     final var updatedItems =
@@ -205,14 +204,14 @@ public class BatchOperationIT {
             .filter(i -> Objects.equals(i.itemKey(), items.getFirst()))
             .findFirst()
             .get();
-    assertThat(firstItem.status()).isEqualTo(BatchOperationItemStatus.FAILED);
+    assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.FAILED);
 
     final var lastItem =
         updatedItems.stream()
             .filter(i -> Objects.equals(i.itemKey(), items.getLast()))
             .findFirst()
             .get();
-    assertThat(lastItem.status()).isEqualTo(BatchOperationItemStatus.ACTIVE);
+    assertThat(lastItem.state()).isEqualTo(BatchOperationItemState.ACTIVE);
   }
 
   @TestTemplate
@@ -223,8 +222,7 @@ public class BatchOperationIT {
     // given
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
-        createAndSaveBatchOperation(
-            writer, b -> b.status(BatchOperationStatus.ACTIVE).endDate(null));
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
     final var items =
         createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
@@ -234,7 +232,7 @@ public class BatchOperationIT {
         .updateItem(
             batchOperation.batchOperationKey(),
             items.getFirst(),
-            BatchOperationItemStatus.COMPLETED);
+            BatchOperationItemState.COMPLETED);
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
@@ -248,8 +246,8 @@ public class BatchOperationIT {
     assertThat(updatedBatchOperation).isNotNull();
     assertThat(updatedBatchOperation.items().getFirst().endDate())
         .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(updatedBatchOperation.items().getFirst().status())
-        .isEqualTo(BatchOperationStatus.CANCELED);
+    assertThat(updatedBatchOperation.items().getFirst().state())
+        .isEqualTo(BatchOperationState.CANCELED);
   }
 
   @TestTemplate
@@ -259,8 +257,7 @@ public class BatchOperationIT {
     // given
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
-        createAndSaveBatchOperation(
-            writer, b -> b.status(BatchOperationStatus.ACTIVE).endDate(null));
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
@@ -273,8 +270,8 @@ public class BatchOperationIT {
 
     assertThat(updatedBatchOperation).isNotNull();
     assertThat(updatedBatchOperation.items().getFirst().endDate()).isNull();
-    assertThat(updatedBatchOperation.items().getFirst().status())
-        .isEqualTo(BatchOperationStatus.PAUSED);
+    assertThat(updatedBatchOperation.items().getFirst().state())
+        .isEqualTo(BatchOperationState.PAUSED);
   }
 
   @TestTemplate
@@ -284,8 +281,7 @@ public class BatchOperationIT {
     // given
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
-        createAndSaveBatchOperation(
-            writer, b -> b.status(BatchOperationStatus.ACTIVE).endDate(null));
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
@@ -301,8 +297,8 @@ public class BatchOperationIT {
 
     assertThat(updatedBatchOperation).isNotNull();
     assertThat(updatedBatchOperation.items().getFirst().endDate()).isNull();
-    assertThat(updatedBatchOperation.items().getFirst().status())
-        .isEqualTo(BatchOperationStatus.ACTIVE);
+    assertThat(updatedBatchOperation.items().getFirst().state())
+        .isEqualTo(BatchOperationState.ACTIVE);
   }
 
   @TestTemplate
@@ -312,8 +308,7 @@ public class BatchOperationIT {
     // given
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
-        createAndSaveBatchOperation(
-            writer, b -> b.status(BatchOperationStatus.ACTIVE).endDate(null));
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
@@ -328,8 +323,8 @@ public class BatchOperationIT {
     assertThat(updatedBatchOperation).isNotNull();
     assertThat(updatedBatchOperation.items().getFirst().endDate())
         .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(updatedBatchOperation.items().getFirst().status())
-        .isEqualTo(BatchOperationStatus.COMPLETED);
+    assertThat(updatedBatchOperation.items().getFirst().state())
+        .isEqualTo(BatchOperationState.COMPLETED);
   }
 
   @TestTemplate
@@ -390,11 +385,10 @@ public class BatchOperationIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     createAndSaveRandomBatchOperations(
-        rdbmsService.createWriter(0),
-        b -> b.status(BatchOperationEntity.BatchOperationStatus.COMPLETED));
+        rdbmsService.createWriter(0), b -> b.state(BatchOperationState.COMPLETED));
     final var batchOperation =
         createAndSaveBatchOperation(
-            rdbmsService.createWriter(0), b -> b.status(BatchOperationStatus.ACTIVE));
+            rdbmsService.createWriter(0), b -> b.state(BatchOperationState.ACTIVE));
 
     final var searchResult =
         rdbmsService
@@ -402,7 +396,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
-                        .status(BatchOperationStatus.ACTIVE.name())
+                        .state(BatchOperationState.ACTIVE.name())
                         .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));

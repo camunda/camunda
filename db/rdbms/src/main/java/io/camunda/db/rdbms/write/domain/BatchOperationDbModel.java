@@ -7,13 +7,13 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 
 public record BatchOperationDbModel(
     Long batchOperationKey,
-    BatchOperationStatus status,
+    BatchOperationState state,
     String operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
@@ -25,7 +25,7 @@ public record BatchOperationDbModel(
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
 
     private Long batchOperationKey;
-    private BatchOperationStatus status;
+    private BatchOperationState state;
     private String operationType;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate = null;
@@ -40,8 +40,8 @@ public record BatchOperationDbModel(
       return this;
     }
 
-    public Builder status(final BatchOperationStatus status) {
-      this.status = status;
+    public Builder state(final BatchOperationState state) {
+      this.state = state;
       return this;
     }
 
@@ -79,7 +79,7 @@ public record BatchOperationDbModel(
     public BatchOperationDbModel build() {
       return new BatchOperationDbModel(
           batchOperationKey,
-          status,
+          state,
           operationType,
           startDate,
           endDate,
