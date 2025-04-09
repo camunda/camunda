@@ -39,11 +39,9 @@ public class UpgradeMain {
       Collections.unmodifiableSet(new HashSet<>(Arrays.asList("n", "no")));
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradeMain.class);
 
-  static {
-    new LoggingConfigurationReader().defineLog4jLoggingConfiguration();
-  }
-
   public static void main(final String... args) {
+    new LoggingConfigurationReader().defineLog4jLoggingConfiguration();
+
     try {
       final DatabaseType databaseType =
           ConfigurationService.convertToDatabaseProperty(
