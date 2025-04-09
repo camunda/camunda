@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.group;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.not;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
@@ -312,7 +311,8 @@ public class GroupTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getValue().getUsername();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();

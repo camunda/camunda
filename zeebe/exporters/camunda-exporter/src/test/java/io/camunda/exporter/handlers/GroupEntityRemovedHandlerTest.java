@@ -62,7 +62,8 @@ public class GroupEntityRemovedHandlerTest {
     final var value = groupRecord.getValue();
     // TODO: revisit with https://github.com/camunda/camunda/pull/30697
     assertThat(idList)
-        .containsExactly(GroupEntity.getChildKey(value.getGroupKey(), Long.parseLong(value.getEntityId())));
+        .containsExactly(
+            GroupEntity.getChildKey(value.getGroupKey(), Long.parseLong(value.getEntityId())));
   }
 
   @Test
