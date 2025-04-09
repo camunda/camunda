@@ -10,6 +10,7 @@ package io.camunda.optimize;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.util.tomcat.LoggingConfigurationReader;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.SpringApplication;
@@ -22,6 +23,8 @@ import org.springframework.context.annotation.ComponentScan;
 public class Main {
 
   public static void main(final String[] args) {
+    new LoggingConfigurationReader().defineLog4jLoggingConfiguration();
+
     final ConfigurationService configurationService = ConfigurationService.createDefault();
     final SpringApplication optimize = new SpringApplication(Main.class);
 
