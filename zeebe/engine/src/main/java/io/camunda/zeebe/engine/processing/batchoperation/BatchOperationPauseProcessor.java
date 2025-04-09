@@ -76,7 +76,7 @@ public final class BatchOperationPauseProcessor
     }
 
     // check if the batch operation can be paused
-    if (batchOperation.get().canPause()) {
+    if (!batchOperation.get().canPause()) {
       final var batchOperationStatus = batchOperation.get().getStatus().name();
       rejectInvalidState(command, batchOperationKey, batchOperationStatus, recordValue);
       return;
@@ -94,11 +94,21 @@ public final class BatchOperationPauseProcessor
     final var recordValue = command.getValue();
     final var batchOperationKey = recordValue.getBatchOperationKey();
 
-    LOGGER.debug(
-        "Processing distributed command to pause with key '{}': {}",
-        batchOperationKey,
-        recordValue);
-    pauseBatchOperation(batchOperationKey, recordValue);
+    // Validation
+    final var batchOperation = batchOperationState.get(batchOperationKey);
+    if (batchOperation.isPresent() && batchOperation.get().canPause()) {
+      LOGGER.debug(
+          "Processing distributed command to pause with key '{}': {}",
+          batchOperationKey,
+          recordValue);
+      pauseBatchOperation(batchOperationKey, recordValue);
+    } else {
+      LOGGER.debug(
+          "Distributed command to pause batch operation with key '{}' will be ignored: {}",
+          batchOperationKey,
+          recordValue);
+    }
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
