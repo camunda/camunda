@@ -39,9 +39,13 @@ public abstract class BackupManager {
 
   public abstract GetBackupStateResponseDto getBackupState(Long backupId);
 
-  public abstract List<GetBackupStateResponseDto> getBackups();
+  public List<GetBackupStateResponseDto> getBackups() {
+    return getBackups(true);
+  }
 
-  protected String getFullQualifiedName(BackupPriority index) {
+  public abstract List<GetBackupStateResponseDto> getBackups(boolean verbose);
+
+  protected String getFullQualifiedName(final BackupPriority index) {
     if (index instanceof IndexDescriptor) {
       return ((IndexDescriptor) index).getFullQualifiedName();
     } else if (index instanceof TemplateDescriptor) {

@@ -9,39 +9,40 @@ package io.camunda.tasklist.webapp.es.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.json.JsonData;
 
 public class MetadataTest {
+  final Metadata metadata =
+      new Metadata().setBackupId(23L).setVersion("8.7.1").setPartCount(6).setPartNo(2);
+
   @Test
   public void shouldExtractMetadataFromSnapshotname() {
-    final Metadata metadata =
-        new Metadata().setBackupId(23L).setVersion("8.7.1").setPartCount(6).setPartNo(2);
     final var name = metadata.buildSnapshotName();
     final var fromName = Metadata.extractMetadataFromSnapshotName(name);
     assertThat(metadata).isEqualTo(fromName);
-    assertThat(Metadata.extractFromMetadataOrName(new ObjectMapper(), Map.of(), name))
-        .isEqualTo(fromName);
+    assertThat(Metadata.extractFromMetadataOrName(null, name)).isEqualTo(fromName);
+  }
+
+  @Test
+  public void shouldExtractMetadataFromSnapshot() {
+    final var jsonMap =
+        Map.of(
+            "backupId",
+            JsonData.of(metadata.getBackupId()),
+            "partNo",
+            JsonData.of(metadata.getPartNo()),
+            "partCount",
+            JsonData.of(metadata.getPartCount()),
+            "version",
+            JsonData.of(metadata.getVersion()));
+    assertThat(metadata).isEqualTo(Metadata.fromOSJsonData(jsonMap));
   }
 
   @Test
   public void shouldPreferExtractingFromMetadataField() {
-    final Metadata metadata =
-        new Metadata().setBackupId(23L).setVersion("8.7.1").setPartCount(6).setPartNo(2);
-    final var extracted =
-        Metadata.extractFromMetadataOrName(
-            new ObjectMapper(),
-            Map.of(
-                "backupId",
-                metadata.getBackupId(),
-                "partNo",
-                metadata.getPartNo(),
-                "partCount",
-                metadata.getPartCount(),
-                "version",
-                metadata.getVersion()),
-            "");
+    final var extracted = Metadata.extractFromMetadataOrName(metadata, "");
     assertThat(extracted).isEqualTo(metadata);
   }
 }

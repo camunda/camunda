@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.opensearch.client.json.JsonData;
 
 public class Metadata {
 
@@ -30,6 +31,15 @@ public class Metadata {
   private String version;
   private Integer partNo;
   private Integer partCount;
+
+  public Metadata() {}
+
+  public Metadata(final Metadata metadata) {
+    backupId = metadata.backupId;
+    version = metadata.version;
+    partNo = metadata.partNo;
+    partCount = metadata.partCount;
+  }
 
   public Long getBackupId() {
     return backupId;
@@ -114,11 +124,31 @@ public class Metadata {
     }
   }
 
+  public static Metadata fromObjectMapper(
+      final ObjectMapper objectMapper, final Map<String, Object> jsonMap) {
+    if (jsonMap == null) {
+      return null;
+    }
+    return objectMapper.convertValue(jsonMap, Metadata.class);
+  }
+
+  public static Metadata fromOSJsonData(final Map<String, JsonData> jsonDataMap) {
+    if (jsonDataMap == null) {
+      return null;
+    }
+    try {
+      return new Metadata()
+          .setBackupId(jsonDataMap.get("backupId").to(Long.class))
+          .setPartCount(jsonDataMap.get("partCount").to(Integer.class))
+          .setPartNo(jsonDataMap.get("partNo").to(Integer.class))
+          .setVersion(jsonDataMap.get("version").to(String.class));
+    } catch (final Exception e) {
+      return null;
+    }
+  }
+
   public static Metadata extractFromMetadataOrName(
-      final ObjectMapper objectMapper,
-      final Map<String, Object> metadata,
-      final String snapshotName) {
-    final Metadata fromMetadata = objectMapper.convertValue(metadata, Metadata.class);
+      final Metadata fromMetadata, final String snapshotName) {
     if (fromMetadata != null && fromMetadata.isInitialized()) {
       return fromMetadata;
     } else {

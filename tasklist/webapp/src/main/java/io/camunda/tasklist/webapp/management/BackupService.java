@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Component
@@ -63,9 +64,11 @@ public class BackupService extends ManagementAPIErrorController {
   }
 
   @GetMapping
-  public List<GetBackupStateResponseDto> getBackups() {
+  public List<GetBackupStateResponseDto> getBackups(
+      @RequestParam(value = "verbose", defaultValue = "true", required = false)
+          final boolean verbose) {
     validateRepositoryNameIsConfigured();
-    return backupManager.getBackups();
+    return backupManager.getBackups(verbose);
   }
 
   @DeleteMapping("/{backupId}")
