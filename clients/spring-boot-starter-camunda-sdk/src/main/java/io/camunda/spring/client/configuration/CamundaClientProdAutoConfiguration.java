@@ -73,7 +73,7 @@ public class CamundaClientProdAutoConfiguration {
         interceptors,
         chainHandlers,
         camundaClientExecutorService,
-        camundaClientCredentialsProvider) {};
+        camundaClientCredentialsProvider);
   }
 
   @Bean(destroyMethod = "close")
