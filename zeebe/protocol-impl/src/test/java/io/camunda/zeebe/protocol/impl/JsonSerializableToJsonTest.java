@@ -2980,7 +2980,7 @@ final class JsonSerializableToJsonTest {
         "groupId": "groupId",
         "name": "group",
         "description": "description",
-        "entityKey": "entityId",
+        "entityId": "entityId",
         "entityType": "USER"
       }
       """
@@ -2997,7 +2997,7 @@ final class JsonSerializableToJsonTest {
         "groupId": "",
         "name": "",
         "description": "",
-        "entityKey": "",
+        "entityId": "",
         "entityType": "UNSPECIFIED"
       }
       """
