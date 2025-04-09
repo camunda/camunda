@@ -209,7 +209,8 @@ public class GroupAppliersTest {
     // then
     final var entitiesByType = groupState.getEntitiesByType(groupId);
     assertThat(entitiesByType).isEmpty();
-    final var persistedMapping = mappingState.get(entityKey).get();
+    // todo use entityId, refactor with https://github.com/camunda/camunda/issues/30624
+    final var persistedMapping = mappingState.get(String.valueOf(entityKey)).get();
     assertThat(persistedMapping.getGroupKeysList()).isEmpty();
   }
 

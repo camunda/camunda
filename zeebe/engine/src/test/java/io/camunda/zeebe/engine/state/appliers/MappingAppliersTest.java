@@ -133,7 +133,7 @@ public class MappingAppliersTest {
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;
-    mappingState.addRole(mappingKey, roleKey);
+    mappingState.addRole(mappingId, roleKey);
     final var role =
         new RoleRecord()
             .setRoleKey(roleKey)
@@ -156,7 +156,8 @@ public class MappingAppliersTest {
     // create group
     final var groupId = "1";
     final var groupKey = Long.parseLong(groupId);
-    mappingState.addGroup(mappingKey, groupKey);
+    // todo use entityId (username), refactor with https://github.com/camunda/camunda/issues/30624
+    mappingState.addGroup(String.valueOf(mappingKey), groupKey);
     final var group =
         new GroupRecord()
             .setGroupKey(groupKey)
