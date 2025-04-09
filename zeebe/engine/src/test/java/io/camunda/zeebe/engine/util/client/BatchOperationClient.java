@@ -74,6 +74,8 @@ public final class BatchOperationClient {
     private Function<Long, Record<BatchOperationCreationRecordValue>> expectation =
         SUCCESS_EXPECTATION;
 
+    private boolean waitForStarted = false;
+
     public BatchOperationCreationClient(final CommandWriter writer, final BatchOperationType type) {
       this.writer = writer;
       batchOperationCreationRecord = new BatchOperationCreationRecord();
@@ -87,6 +89,16 @@ public final class BatchOperationClient {
 
     public BatchOperationCreationClient withFilter(final DirectBuffer filter) {
       batchOperationCreationRecord.setEntityFilter(filter);
+      return this;
+    }
+
+    /**
+     * This is needed if we want to make sure that the scheduler does it's work and created chunks
+     *
+     * @return
+     */
+    public BatchOperationCreationClient waitForStarted() {
+      waitForStarted = true;
       return this;
     }
 
@@ -111,6 +123,14 @@ public final class BatchOperationClient {
                       .requestStreamId(new Random().nextInt()));
 
       final var resultingRecord = expectation.apply(position);
+
+      if (waitForStarted) {
+        RecordingExporter.batchOperationCreationRecords()
+            .withIntent(BatchOperationIntent.STARTED)
+            .withBatchOperationKey(resultingRecord.getKey())
+            .await();
+      }
+
       return resultingRecord;
     }
 
@@ -231,6 +251,14 @@ public final class BatchOperationClient {
                     .withSourceRecordPosition(position)
                     .getFirst();
 
+    private static final Function<Long, Record<BatchOperationLifecycleManagementRecordValue>>
+        PAUSE_SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.batchOperationLifecycleRecords()
+                    .withIntent(BatchOperationIntent.PAUSED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
     private final CommandWriter writer;
     private final BatchOperationLifecycleManagementRecord batchOperationLifecycleManagementRecord;
     private final int partition = DEFAULT_PARTITION;
@@ -263,6 +291,42 @@ public final class BatchOperationClient {
                       .requestStreamId(new Random().nextInt()));
 
       return CANCEL_SUCCESS_EXPECTATION.apply(position);
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> pause() {
+      return pause(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> pause(
+        final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationIntent.PAUSE)
+                      .event(batchOperationLifecycleManagementRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+
+      return PAUSE_SUCCESS_EXPECTATION.apply(position);
+    }
+
+    public void pauseWithoutExpectations() {
+      pauseWithoutExpectations(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public void pauseWithoutExpectations(final AuthInfo authorizations) {
+      writer.writeCommandOnPartition(
+          partition,
+          r ->
+              r.intent(BatchOperationIntent.PAUSE)
+                  .event(batchOperationLifecycleManagementRecord)
+                  .authorizations(authorizations)
+                  .requestId(new Random().nextLong())
+                  .requestStreamId(new Random().nextInt()));
     }
   }
 }

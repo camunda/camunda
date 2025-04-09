@@ -20,7 +20,8 @@ import java.util.Set;
 public class BatchOperationLifecycleManagementExportHandler
     implements RdbmsExportHandler<BatchOperationLifecycleManagementRecordValue> {
 
-  private static final Set<Intent> EXPORTABLE_INTENTS = Set.of(BatchOperationIntent.CANCELED);
+  private static final Set<Intent> EXPORTABLE_INTENTS =
+      Set.of(BatchOperationIntent.CANCELED, BatchOperationIntent.PAUSED);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -42,6 +43,9 @@ public class BatchOperationLifecycleManagementExportHandler
     if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
       batchOperationWriter.cancel(
           batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
+    }
+    if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
+      batchOperationWriter.pause(batchOperationKey);
     }
   }
 }

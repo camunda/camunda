@@ -161,14 +161,25 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void pause(final long batchOperationKey) {
+    LOGGER.trace("Pausing batch operation with key {}", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+
+    // Set status to PAUSED
+    final var batch = batchOperationColumnFamily.get(batchKey);
+    batch.setStatus(BatchOperationStatus.PAUSED);
+    batchOperationColumnFamily.update(batchKey, batch);
+  }
+
+  @Override
   public void complete(final long batchOperationKey) {
     LOGGER.trace("Completing batch operation with key {}", batchOperationKey);
     deleteBatchOperation(batchOperationKey);
   }
 
   @Override
-  public boolean exists(final long batchKey) {
-    return get(batchKey).isPresent();
+  public boolean exists(final long batchOperationKey) {
+    return get(batchOperationKey).isPresent();
   }
 
   @Override

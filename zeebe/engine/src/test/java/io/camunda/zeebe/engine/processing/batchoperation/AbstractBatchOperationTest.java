@@ -62,6 +62,31 @@ abstract class AbstractBatchOperationTest {
         .getBatchOperationKey();
   }
 
+  protected long createNewFailedProcessInstanceCancellationBatchOperation() {
+    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenThrow(new RuntimeException("You are playing with fire!"));
+
+    final var filterBuffer =
+        convertToBuffer(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
+
+    final var batchKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.PROCESS_CANCELLATION)
+            .withFilter(filterBuffer)
+            .waitForStarted()
+            .create()
+            .getValue()
+            .getBatchOperationKey();
+
+    return batchKey;
+  }
+
+  protected void cancelBatchOperation(final Long batchOperationKey) {
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).cancel();
+  }
+
   protected static UnsafeBuffer convertToBuffer(final Object object) {
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(object));
   }

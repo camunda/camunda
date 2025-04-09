@@ -63,6 +63,11 @@ public final class BatchOperationExecuteProcessor
       return;
     }
 
+    if (batchOperation.isPaused()) {
+      LOGGER.info("Batch operation {} is paused.", batchOperation.getKey());
+      return;
+    }
+
     final var entityKeys = batchOperationState.getNextItemKeys(batchKey, BATCH_SIZE);
     if (entityKeys.isEmpty()) {
       LOGGER.debug(
