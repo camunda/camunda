@@ -192,6 +192,7 @@ public class GroupAppliersTest {
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(entityKey)
+            .setMappingId(String.valueOf(entityKey))
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);

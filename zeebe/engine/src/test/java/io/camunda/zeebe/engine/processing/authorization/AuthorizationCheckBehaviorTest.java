@@ -628,7 +628,7 @@ final class AuthorizationCheckBehaviorTest {
     final var mapping =
         new MappingRecord()
             .setMappingKey(mappingKey)
-            .setMappingId(Strings.newRandomValidIdentityId())
+            .setMappingId(String.valueOf(mappingKey))
             .setName(Strings.newRandomValidUsername())
             .setClaimName(claimName)
             .setClaimValue(claimValue);

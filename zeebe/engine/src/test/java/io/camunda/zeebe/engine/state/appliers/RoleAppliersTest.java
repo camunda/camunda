@@ -90,6 +90,7 @@ public class RoleAppliersTest {
     mappingState.create(
         new MappingRecord()
             .setMappingKey(entityKey)
+            .setMappingId(String.valueOf(entityKey))
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final long roleKey = 11L;
@@ -178,6 +179,7 @@ public class RoleAppliersTest {
     mappingState.create(
         new MappingRecord()
             .setMappingKey(entityKey)
+            .setMappingId(String.valueOf(entityKey))
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final long roleKey = 11L;
