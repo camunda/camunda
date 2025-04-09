@@ -164,45 +164,38 @@ public final class IdentitySetupInitializeProcessor
     record.getMappings().stream()
         .map(MappingRecord.class::cast)
         .forEach(
-            mapping ->
-                mappingState
-                    .get(mapping.getClaimName(), mapping.getClaimValue())
-                    .ifPresentOrElse(
-                        persistedMapping -> {
-                          mapping.setMappingKey(Long.parseLong(persistedMapping.getMappingId()));
-                          mapping.setMappingId(persistedMapping.getMappingId());
-                          // todo refactor with https://github.com/camunda/camunda/issues/30094
-                          if (assignEntityToRole(
-                              role.getRoleKey(),
-                              Long.parseLong(persistedMapping.getMappingId()),
-                              EntityType.MAPPING)) {
-                            createdNewEntities.set(true);
-                          }
-                          if (assignEntityToTenant(
-                              tenant, mapping.getMappingId(), EntityType.MAPPING)) {
-                            createdNewEntities.set(true);
-                          }
-                        },
-                        () -> {
-                          createdNewEntities.set(true);
-                          final long mappingKey = keyGenerator.nextKey();
-                          mapping.setMappingKey(mappingKey);
-                          //                          // TODO: Remove null checks after migrating
-                          // fully to mapping ID #27820
-                          //                          if (mapping.getMappingId() == null ||
-                          // mapping.getMappingId().isBlank()) {
-                          //
-                          // mapping.setMappingId(String.valueOf(mappingKey));
-                          //                          }
-                          createMapping(mapping, role.getRoleKey(), tenant);
-                          // TODO temporarily add all permission to the mapping directly
-                          // this is required since roles are in the progress of refactoring to be
-                          // id-based
-                          // and as a result we cannot find the permissions of the role of the user.
-                          // This will be removed again with:
-                          // https://github.com/camunda/camunda/issues/30116
-                          addAllPermissions(mappingKey, mapping.getMappingId());
-                        }));
+            mapping -> {
+              final var byId = mappingState.get(mapping.getMappingId());
+              final var byClaim = mappingState.get(mapping.getClaimName(), mapping.getClaimValue());
+              if (byId.isPresent() || byClaim.isPresent()) {
+                final var persistedMapping = byId.orElseGet(byClaim::get);
+                mapping.setMappingKey(Long.parseLong(persistedMapping.getMappingId()));
+                mapping.setMappingId(persistedMapping.getMappingId());
+                // todo refactor with https://github.com/camunda/camunda/issues/30094
+                if (assignEntityToRole(
+                    role.getRoleKey(),
+                    Long.parseLong(persistedMapping.getMappingId()),
+                    EntityType.MAPPING)) {
+                  createdNewEntities.set(true);
+                }
+                if (assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING)) {
+                  createdNewEntities.set(true);
+                }
+
+              } else {
+                createdNewEntities.set(true);
+                final long mappingKey = keyGenerator.nextKey();
+                mapping.setMappingKey(mappingKey);
+                createMapping(mapping, role.getRoleKey(), tenant);
+                // TODO temporarily add all permission to the mapping directly
+                // this is required since roles are in the progress of refactoring to be
+                // id-based
+                // and as a result we cannot find the permissions of the role of the user.
+                // This will be removed again with:
+                // https://github.com/camunda/camunda/issues/30116
+                addAllPermissions(mappingKey, mapping.getMappingId());
+              }
+            });
     return createdNewEntities.get();
   }
 
