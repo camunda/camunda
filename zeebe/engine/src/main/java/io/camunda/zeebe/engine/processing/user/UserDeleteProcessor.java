@@ -161,14 +161,13 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
               .setEntityType(EntityType.USER));
     }
 
-    for (final var groupKey : user.getGroupKeysList()) {
+    for (final var groupId : user.getGroupIdsList()) {
       stateWriter.appendFollowUpEvent(
-          groupKey,
+          keyGenerator.nextKey(),
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
-              .setGroupKey(groupKey)
-              // TODO: revisit with https://github.com/camunda/camunda/issues/30091
-              .setEntityId(String.valueOf(userKey))
+              .setGroupId(groupId)
+              .setEntityId(username)
               .setEntityType(EntityType.USER));
     }
 

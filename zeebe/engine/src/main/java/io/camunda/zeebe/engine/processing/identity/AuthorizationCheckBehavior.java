@@ -209,7 +209,7 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
-    return areGroupsAuthorizedForTenant(user.getGroupKeysList(), tenantId);
+    return areGroupsAuthorizedForTenant(user.getGroupIdsList(), tenantId);
   }
 
   private boolean isMappingAuthorizedForTenant(
@@ -229,25 +229,27 @@ public final class AuthorizationCheckBehavior {
     final var groupKeys =
         persistedMappings.stream()
             .flatMap(persistedMapping -> persistedMapping.getGroupKeysList().stream())
+            // TODO: remove this with https://github.com/camunda/camunda/issues/30092
+            .map(String::valueOf)
             .collect(Collectors.toSet());
 
     return areGroupsAuthorizedForTenant(groupKeys, tenantId);
   }
 
-  private boolean areGroupsAuthorizedForTenant(final List<Long> groupKeys, final String tenantId) {
-    return areGroupsAuthorizedForTenant(new HashSet<>(groupKeys), tenantId);
+  private boolean areGroupsAuthorizedForTenant(final List<String> groupIds, final String tenantId) {
+    return areGroupsAuthorizedForTenant(new HashSet<>(groupIds), tenantId);
   }
 
-  private boolean areGroupsAuthorizedForTenant(final Set<Long> groupKeys, final String tenantId) {
-    return getTenantIdsForGroups(groupKeys).contains(tenantId);
+  private boolean areGroupsAuthorizedForTenant(final Set<String> groupIds, final String tenantId) {
+    return getTenantIdsForGroups(groupIds).contains(tenantId);
   }
 
-  private Set<String> getTenantIdsForGroups(final List<Long> groupKeys) {
-    return getTenantIdsForGroups(new HashSet<>(groupKeys));
+  private Set<String> getTenantIdsForGroups(final List<String> groupIds) {
+    return getTenantIdsForGroups(new HashSet<>(groupIds));
   }
 
-  private Set<String> getTenantIdsForGroups(final Set<Long> groupKeys) {
-    return groupKeys.stream()
+  private Set<String> getTenantIdsForGroups(final Set<String> groupIds) {
+    return groupIds.stream()
         .map(groupState::get)
         .filter(Optional::isPresent)
         .map(Optional::get)
@@ -313,8 +315,8 @@ public final class AuthorizationCheckBehavior {
             AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
     // Get resource identifiers for the user's groups
     final var groupAuthorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiersForOwnerKeys(
-            AuthorizationOwnerType.GROUP, user.getGroupKeysList(), resourceType, permissionType);
+        getAuthorizedResourceIdentifiersForOwners(
+            AuthorizationOwnerType.GROUP, user.getGroupIdsList(), resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
         Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
@@ -436,7 +438,7 @@ public final class AuthorizationCheckBehavior {
           .map(
               user -> {
                 final List<String> tenantIds = user.getTenantIdsList();
-                tenantIds.addAll(getTenantIdsForGroups(user.getGroupKeysList()));
+                tenantIds.addAll(getTenantIdsForGroups(user.getGroupIdsList()));
                 return tenantIds;
               })
           .filter(t -> !t.isEmpty())
@@ -449,7 +451,10 @@ public final class AuthorizationCheckBehavior {
             .flatMap(
                 mapping -> {
                   final var tenantIdsList = mapping.getTenantIdsList();
-                  tenantIdsList.addAll(getTenantIdsForGroups(mapping.getGroupKeysList()));
+                  // TODO: remove this with https://github.com/camunda/camunda/issues/30092
+                  final var groupIds =
+                      mapping.getGroupKeysList().stream().map(String::valueOf).toList();
+                  tenantIdsList.addAll(getTenantIdsForGroups(groupIds));
                   return tenantIdsList.stream();
                 })
             .toList();

@@ -29,9 +29,7 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30092 and
-    // https://github.com/camunda/camunda/issues/30091
-    final var groupKey = Long.parseLong(value.getGroupId());
+    final var groupId = value.getGroupId();
     groupState.addEntity(value);
 
     final var entityId = value.getEntityId();
@@ -40,13 +38,14 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
       case USER ->
           userState
               .getUser(entityId)
-              .ifPresent(user -> userState.addGroup(user.getUsername(), groupKey));
-      case MAPPING -> mappingState.addGroup(entityId, groupKey);
+              .ifPresent(user -> userState.addGroup(user.getUsername(), groupId));
+      // TODO: refactor this with https://github.com/camunda/camunda/issues/30092
+      case MAPPING -> mappingState.addGroup(entityId, Long.parseLong(groupId));
       default ->
           throw new IllegalStateException(
               String.format(
-                  "Expected to add entity '%s' to group '%d', but entities of type '%s' cannot be added to groups.",
-                  entityId, groupKey, entityType));
+                  "Expected to add entity '%s' to group '%s', but entities of type '%s' cannot be added to groups.",
+                  entityId, groupId, entityType));
     }
   }
 }

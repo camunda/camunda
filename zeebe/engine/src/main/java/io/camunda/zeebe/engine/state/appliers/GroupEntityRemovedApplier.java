@@ -29,23 +29,18 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
+    final var groupId = value.getGroupId();
     final var entityId = value.getEntityId();
     final var entityType = value.getEntityType();
-
-    // get the record key from the GroupRecord, as the key argument
-    // may belong to the distribution command
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30092 and
-    // https://github.com/camunda/camunda/issues/30091
-    final var groupId = value.getGroupId();
-    final var groupKey = Long.parseLong(value.getGroupId());
     groupState.removeEntity(groupId, entityId);
 
     switch (entityType) {
       case USER ->
           userState
               .getUser(entityId)
-              .ifPresent(user -> userState.removeGroup(user.getUsername(), groupKey));
-      case MAPPING -> mappingState.removeGroup(entityId, groupKey);
+              .ifPresent(user -> userState.removeGroup(user.getUsername(), groupId));
+      // TODO: refactor this with https://github.com/camunda/camunda/issues/30092
+      case MAPPING -> mappingState.removeGroup(entityId, Long.parseLong(groupId));
       default ->
           throw new IllegalStateException(
               String.format(
