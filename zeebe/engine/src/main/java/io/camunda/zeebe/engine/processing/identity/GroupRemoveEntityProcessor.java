@@ -88,12 +88,12 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       return;
     }
 
-    final var entityKey = record.getEntityKey();
+    final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
+    if (!isEntityPresent(entityId, entityType)) {
       final var errorMessage =
-          "Expected to remove an entity with key '%s' and type '%s' from group with ID '%s', but the entity does not exist."
-              .formatted(entityKey, entityType, groupId);
+          "Expected to remove an entity with ID '%s' and type '%s' from group with ID '%s', but the entity does not exist."
+              .formatted(entityId, entityType, groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -120,11 +120,10 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
           case USER ->
               membershipState.hasRelation(
                   EntityType.USER,
-                  // TODO: Use entity id instead of key
-                  Long.toString(record.getEntityKey()),
+                  record.getEntityId(),
                   RelationType.GROUP,
                   groupId);
-          default -> groupState.getEntityType(groupId, record.getEntityKey()).isPresent();
+          default -> groupState.getEntityType(groupId, record.getEntityId()).isPresent();
         };
 
     if (isAssigned) {
@@ -132,17 +131,17 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
           command.getKey(), GroupIntent.ENTITY_REMOVED, command.getValue());
     } else {
       final var errorMessage =
-          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), record.getGroupKey());
+          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getGroupKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
+  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
-      case USER -> userState.getUser(entityKey).isPresent();
-      case MAPPING -> mappingState.get(entityKey).isPresent();
+      case USER -> userState.getUser(entityId).isPresent();
+      case MAPPING -> mappingState.get(entityId).isPresent();
       default -> false;
     };
   }

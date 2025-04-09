@@ -104,12 +104,12 @@ public class GroupAppliersTest {
   @Test
   void shouldAddUserEntityToGroup() {
     // given
-    final var entityKey = 1L;
+    final var username = Strings.newRandomValidIdentityId();
     final var userRecord =
         new UserRecord()
-            .setUserKey(entityKey)
+            .setUserKey(1L)
             .setName("test")
-            .setUsername("username")
+            .setUsername(username)
             .setPassword("password")
             .setEmail("test@example.com");
     userState.create(userRecord);
@@ -118,7 +118,7 @@ public class GroupAppliersTest {
     final var entityType = EntityType.USER;
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(username).setEntityType(entityType);
 
     // when
     groupEntityAddedApplier.applyState(1L, groupRecord);
@@ -126,7 +126,7 @@ public class GroupAppliersTest {
     // then
     assertThat(
             membershipState.getMemberships(
-                EntityType.USER, Long.toString(entityKey), RelationType.GROUP))
+                EntityType.USER, username, RelationType.GROUP))
         .containsExactly(groupId);
   }
 
@@ -134,6 +134,7 @@ public class GroupAppliersTest {
   void shouldAddMappingEntityToGroup() {
     // given
     final var entityKey = 1L;
+    final var mappingId = String.valueOf(entityKey);
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(entityKey)
@@ -145,25 +146,25 @@ public class GroupAppliersTest {
     final var entityType = EntityType.MAPPING;
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(mappingId).setEntityType(entityType);
 
     // when
     groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // then
     final var entitiesByType = groupState.getEntitiesByType(groupId);
-    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityKey)));
+    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(mappingId)));
   }
 
   @Test
   void shoulRemoveUserEntityFromGroup() {
     // given
-    final var entityKey = 1L;
+    final var username = Strings.newRandomValidIdentityId();
     final var userRecord =
         new UserRecord()
-            .setUserKey(entityKey)
+            .setUserKey(1L)
             .setName("test")
-            .setUsername("username")
+            .setUsername(username)
             .setPassword("password")
             .setEmail("test@example.com");
     userState.create(userRecord);
@@ -172,7 +173,7 @@ public class GroupAppliersTest {
     final var entityType = EntityType.USER;
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(username).setEntityType(entityType);
     groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // when
@@ -181,7 +182,7 @@ public class GroupAppliersTest {
     // then
     assertThat(
             membershipState.getMemberships(
-                EntityType.USER, Long.toString(entityKey), RelationType.GROUP))
+                EntityType.USER, username, RelationType.GROUP))
         .isEmpty();
   }
 
@@ -189,6 +190,7 @@ public class GroupAppliersTest {
   void shouldRemoveMappingEntityFromGroup() {
     // given
     final var entityKey = 1L;
+    final var mappingId = String.valueOf(entityKey);
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(entityKey)
@@ -200,7 +202,7 @@ public class GroupAppliersTest {
     final var entityType = EntityType.MAPPING;
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupRecord.setEntityId(mappingId).setEntityType(entityType);
     groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // when
@@ -209,7 +211,7 @@ public class GroupAppliersTest {
     // then
     final var entitiesByType = groupState.getEntitiesByType(groupId);
     assertThat(entitiesByType).isEmpty();
-    final var persistedMapping = mappingState.get(entityKey).get();
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getGroupKeysList()).isEmpty();
   }
 

@@ -133,7 +133,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
               new GroupRecord()
                   .setGroupId(groupId)
                   .setEntityType(entityType)
-                  .setEntityKey(Long.parseLong(entityId)));
+                  .setEntityId(entityId));
         });
   }
 

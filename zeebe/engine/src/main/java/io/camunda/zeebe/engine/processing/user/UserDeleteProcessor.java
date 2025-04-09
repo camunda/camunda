@@ -168,8 +168,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     for (final var groupId :
         membershipState.getMemberships(
             EntityType.USER,
-            // TODO: use the username instead of the userKey
-            Long.toString(userKey),
+            username,
             RelationType.GROUP)) {
       final var group = groupState.get(groupId).orElseThrow();
       stateWriter.appendFollowUpEvent(
@@ -178,7 +177,8 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
           new GroupRecord()
               .setGroupKey(group.getGroupKey())
               .setGroupId(groupId)
-              .setEntityKey(userKey)
+              // TODO: revisit with https://github.com/camunda/camunda/issues/30091
+              .setEntityId(String.valueOf(userKey))
               .setEntityType(EntityType.USER));
     }
 

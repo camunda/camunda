@@ -161,7 +161,8 @@ public class MappingAppliersTest {
         new GroupRecord()
             .setGroupKey(groupKey)
             .setGroupId(groupId)
-            .setEntityKey(mappingKey)
+            // TODO: revisit
+            .setEntityId(String.valueOf(mappingKey))
             .setEntityType(EntityType.MAPPING);
     groupState.create(group);
     groupState.addEntity(group);

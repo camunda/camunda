@@ -121,7 +121,8 @@ public class GroupTest {
             .getValue();
 
     // then
-    assertThat(updatedGroup).hasEntityKey(userKey).hasEntityType(EntityType.USER);
+    // TODO: revisit
+    assertThat(updatedGroup).hasEntityId(String.valueOf(userKey)).hasEntityType(EntityType.USER);
   }
 
   @Test
@@ -233,7 +234,8 @@ public class GroupTest {
     // then
     assertThat(groupWithRemovedEntity)
         .hasGroupId(groupId)
-        .hasEntityKey(userKey)
+        // TODO: revisit
+        .hasEntityId(String.valueOf(userKey))
         .hasEntityType(EntityType.USER);
   }
 

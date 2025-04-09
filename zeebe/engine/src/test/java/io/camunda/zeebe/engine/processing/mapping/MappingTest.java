@@ -263,7 +263,8 @@ public class MappingTest {
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupKey(groupKey)
-                .withEntityKey(mappingRecord.getKey())
+                // TODO: revisit
+                .withEntityId(String.valueOf(mappingRecord.getKey()))
                 .exists())
         .isTrue();
     Assertions.assertThat(
