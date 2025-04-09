@@ -10,12 +10,14 @@ package io.camunda.it.rdbms.exporter;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationChunkRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationExecutionCompletedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleCanceledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationProcessCancelledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationProcessCancelledRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemStatus;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
@@ -85,6 +87,42 @@ class RdbmsExporterBatchOperationsIT {
     // then it should be completed
     batchOperation = rdbmsService.getBatchOperationReader().findOne(batchOperationKey).get();
     assertThat(batchOperation.status()).isEqualTo(BatchOperationStatus.COMPLETED);
+  }
+
+  @Test
+  public void shouldCancelBatchOperation() {
+    // given
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationCanceledRecord =
+        getBatchOperationLifecycleCanceledRecord(batchOperationKey, 3L);
+
+    // when
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+
+    // then
+    var batchOperation = rdbmsService.getBatchOperationReader().findOne(batchOperationKey).get();
+    assertThat(batchOperation).isNotNull();
+    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
+    assertThat(batchOperation.status()).isEqualTo(BatchOperationStatus.ACTIVE);
+
+    // and when we cancel it
+    exporter.export(batchOperationCanceledRecord);
+
+    // then it should be canceled
+    batchOperation = rdbmsService.getBatchOperationReader().findOne(batchOperationKey).get();
+    assertThat(batchOperation.status()).isEqualTo(BatchOperationStatus.CANCELED);
+
+    // and the items should be canceled
+    final var batchOperationItems =
+        rdbmsService.getBatchOperationReader().getItems(batchOperationKey);
+    assertThat(batchOperationItems).hasSize(3);
+    assertThat(
+            batchOperationItems.stream()
+                .allMatch(item -> item.status() == BatchOperationItemStatus.CANCELED))
+        .isTrue();
   }
 
   @Test

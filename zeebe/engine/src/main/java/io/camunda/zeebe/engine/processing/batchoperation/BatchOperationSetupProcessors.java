@@ -53,6 +53,11 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationExecutionIntent.EXECUTE,
             new BatchOperationExecuteProcessor(writers, processingState, partitionId))
+        .onCommand(
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            BatchOperationIntent.CANCEL,
+            new BatchOperationCancelProcessor(
+                writers, commandDistributionBehavior, processingState, keyGenerator))
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory, searchClientsProxy, Duration.ofMillis(1000)));

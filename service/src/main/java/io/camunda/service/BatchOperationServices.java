@@ -23,7 +23,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPauseBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeBatchOperationRequest;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -71,7 +71,7 @@ public final class BatchOperationServices
     return batchOperationSearchClient.getBatchOperationItems(key);
   }
 
-  public CompletableFuture<BatchOperationExecutionRecord> cancel(final long batchKey) {
+  public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(final long batchKey) {
     LOGGER.debug("Cancelling batch operation with key '{}'", batchKey);
 
     final var brokerRequest =
@@ -80,7 +80,7 @@ public final class BatchOperationServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public CompletableFuture<BatchOperationExecutionRecord> pause(final long batchKey) {
+  public CompletableFuture<BatchOperationLifecycleManagementRecord> pause(final long batchKey) {
     LOGGER.debug("Pausing batch operation with key '{}'", batchKey);
 
     final var brokerRequest = new BrokerPauseBatchOperationRequest().setBatchOperationKey(batchKey);
@@ -88,7 +88,7 @@ public final class BatchOperationServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public CompletableFuture<BatchOperationExecutionRecord> resume(final long batchKey) {
+  public CompletableFuture<BatchOperationLifecycleManagementRecord> resume(final long batchKey) {
     LOGGER.debug("Resuming batch operation with key '{}'", batchKey);
 
     final var brokerRequest =

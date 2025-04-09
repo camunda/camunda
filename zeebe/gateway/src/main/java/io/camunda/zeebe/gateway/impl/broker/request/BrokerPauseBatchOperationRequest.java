@@ -9,17 +9,18 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import org.agrona.DirectBuffer;
 
 public class BrokerPauseBatchOperationRequest
-    extends BrokerExecuteCommand<BatchOperationExecutionRecord> {
+    extends BrokerExecuteCommand<BatchOperationLifecycleManagementRecord> {
 
   BatchOperationExecutionRecord requestDto = new BatchOperationExecutionRecord();
 
   public BrokerPauseBatchOperationRequest() {
-    super(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationExecutionIntent.PAUSE);
+    super(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationIntent.PAUSE);
   }
 
   public BrokerPauseBatchOperationRequest setBatchOperationKey(final long batchOperationKey) {
@@ -33,8 +34,9 @@ public class BrokerPauseBatchOperationRequest
   }
 
   @Override
-  protected BatchOperationExecutionRecord toResponseDto(final DirectBuffer buffer) {
-    final BatchOperationExecutionRecord responseDto = new BatchOperationExecutionRecord();
+  protected BatchOperationLifecycleManagementRecord toResponseDto(final DirectBuffer buffer) {
+    final BatchOperationLifecycleManagementRecord responseDto =
+        new BatchOperationLifecycleManagementRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }

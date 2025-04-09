@@ -53,6 +53,7 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
   }
 
   public BatchOperationExecutionRecord wrap(final BatchOperationExecutionRecord record) {
+    setBatchOperationKey(record.getBatchOperationKey());
     setItemKeys(record.getItemKeys());
     return this;
   }
