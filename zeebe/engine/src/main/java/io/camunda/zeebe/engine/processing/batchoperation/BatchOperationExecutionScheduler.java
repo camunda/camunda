@@ -95,6 +95,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   private void executeBatchOperation(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
+    if (batchOperation.isPaused()) {
+      LOG.info("Batch operation {} is paused.", batchOperation.getKey());
+      return;
+    }
+
     // First fire a start event
     appendStartedCommand(taskResultBuilder, batchOperation);
 
