@@ -53,23 +53,22 @@ public class DbMappingState implements MutableMappingState {
 
   @Override
   public void create(final MappingRecord mappingRecord) {
-    final var id = mappingRecord.getMappingId();
+    final var mappingId = mappingRecord.getMappingId();
     final var name = mappingRecord.getName();
     final var claimName = mappingRecord.getClaimName();
     final var value = mappingRecord.getClaimValue();
 
-    mappingId.wrapString(id);
+    this.mappingId.wrapString(mappingId);
     this.claimName.wrapString(claimName);
     claimValue.wrapString(value);
-    mappingId.wrapString(id);
     persistedMapping.setMappingKey(mappingRecord.getMappingKey());
     persistedMapping.setClaimName(claimName);
     persistedMapping.setClaimValue(value);
     persistedMapping.setName(name);
-    persistedMapping.setMappingId(id);
+    persistedMapping.setMappingId(mappingId);
 
     mappingColumnFamily.insert(claim, persistedMapping);
-    claimByIdColumnFamily.insert(mappingId, fkClaim);
+    claimByIdColumnFamily.insert(this.mappingId, fkClaim);
   }
 
   @Override
