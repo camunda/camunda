@@ -106,9 +106,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   @Test
   public void shouldRejectPauseBatchOperationIfInvalidState() {
     // given a failed batch operation
-    final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final var batchOperationKey =
-        createNewFailedProcessInstanceCancellationBatchOperation(processInstanceKeys);
+    final var batchOperationKey = createNewFailedProcessInstanceCancellationBatchOperation();
 
     // when we pause the batch operation which does not exist
     engine
