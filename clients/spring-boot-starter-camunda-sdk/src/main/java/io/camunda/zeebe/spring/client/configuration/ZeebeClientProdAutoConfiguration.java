@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
+import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
@@ -40,11 +41,7 @@ import org.springframework.context.annotation.Bean;
 /*
  * All configurations that will only be used in production code - meaning NO TEST cases
  */
-@ConditionalOnProperty(
-    prefix = "zeebe.client",
-    name = "enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnCamundaClientEnabled
 @ConditionalOnMissingBean(SpringZeebeTestContext.class)
 @ImportAutoConfiguration({
   ExecutorServiceConfiguration.class,
