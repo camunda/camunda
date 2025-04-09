@@ -245,6 +245,7 @@ public class RecordCounterTest {
     exporter.configure(context);
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     when(client.shouldFlush()).thenReturn(true);
 

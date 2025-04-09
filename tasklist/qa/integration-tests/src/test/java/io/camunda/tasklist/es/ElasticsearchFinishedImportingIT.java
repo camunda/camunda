@@ -75,6 +75,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   public void beforeEach() {
     tasklistProperties.getImporter().setImportPositionUpdateInterval(5000);
     CONFIG.index.prefix = tasklistProperties.getZeebeElasticsearch().getPrefix();
+    CONFIG.setExportLegacyRecords(true);
     CONFIG.index.setNumberOfShards(1);
     CONFIG.index.setNumberOfReplicas(0);
     CONFIG.index.createTemplate = true;

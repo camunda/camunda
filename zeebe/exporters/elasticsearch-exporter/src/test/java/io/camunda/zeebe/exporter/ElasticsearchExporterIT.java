@@ -86,7 +86,7 @@ final class ElasticsearchExporterIT {
   @BeforeAll
   public void beforeAll() {
     config.url = CONTAINER.getHttpHostAddress();
-    config.setZeebeRecordsExportEnabled(true);
+    config.setExportLegacyRecords(true);
     config.index.setNumberOfShards(1);
     config.index.setNumberOfReplicas(1);
     config.index.createTemplate = true;
@@ -111,7 +111,7 @@ final class ElasticsearchExporterIT {
 
   @BeforeEach
   void cleanup() {
-    config.setZeebeRecordsExportEnabled(true);
+    config.setExportLegacyRecords(true);
     testClient.deleteIndices();
     exporter.configure(exporterTestContext);
   }
@@ -241,7 +241,7 @@ final class ElasticsearchExporterIT {
   @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
   void shouldExportOnlyRequiredRecords(final ValueType valueType) {
     // given
-    config.setZeebeRecordsExportEnabled(false);
+    config.setExportLegacyRecords(false);
     exporter.configure(exporterTestContext);
     exporter.open(controller);
 
@@ -277,7 +277,7 @@ final class ElasticsearchExporterIT {
   @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
   void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
     // given
-    config.setZeebeRecordsExportEnabled(false);
+    config.setExportLegacyRecords(false);
     exporter.configure(exporterTestContext);
     exporter.open(controller);
 

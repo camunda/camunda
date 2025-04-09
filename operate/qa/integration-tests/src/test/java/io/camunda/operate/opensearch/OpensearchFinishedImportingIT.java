@@ -62,7 +62,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   @Before
   public void beforeEach() {
     operateProperties.getImporter().setImportPositionUpdateInterval(1000);
-
+    CONFIG.setExportLegacyRecords(true);
     CONFIG.index.prefix = operateProperties.getZeebeOpensearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
     CONFIG.index.setNumberOfReplicas(0);

@@ -70,7 +70,7 @@ final class OpensearchExporterTest {
   void shouldNotFailOnOpenIfOpensearchIsUnreachable() {
     // given
     final var exporter = new OpensearchExporter();
-    config.setZeebeRecordsExportEnabled(true);
+    config.setExportLegacyRecords(true);
     exporter.configure(context);
 
     // when
@@ -300,7 +300,7 @@ final class OpensearchExporterTest {
     void shouldCreateAllTemplatesOnPreviousVersion(final ValueType valueType) {
       // given
       config.index.createTemplate = true;
-      config.setZeebeRecordsExportEnabled(false);
+      config.setExportLegacyRecords(false);
       TestSupport.setIndexingForValueType(config.index, valueType, true);
       exporter.configure(context);
       exporter.open(controller);
@@ -445,6 +445,7 @@ final class OpensearchExporterTest {
 
     @BeforeEach
     void initExporter() {
+      config.setExportLegacyRecords(true);
       exporter.configure(context);
       exporter.open(controller);
     }

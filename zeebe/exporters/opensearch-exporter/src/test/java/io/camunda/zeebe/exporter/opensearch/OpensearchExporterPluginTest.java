@@ -37,7 +37,7 @@ final class OpensearchExporterPluginTest {
     final var pluginConfig = new PluginConfiguration("test", TestPlugin.class.getName(), null);
     final var record =
         recordFactory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
-    config.setZeebeRecordsExportEnabled(true);
+    config.setExportLegacyRecords(true);
     config.interceptorPlugins.add(pluginConfig);
     config.url = "http://localhost:" + wmRuntimeInfo.getHttpPort();
     exporter.configure(context);

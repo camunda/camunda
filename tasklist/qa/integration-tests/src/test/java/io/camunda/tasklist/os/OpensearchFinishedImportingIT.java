@@ -78,6 +78,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   @BeforeEach
   public void beforeEach() throws IOException {
     tasklistProperties.getImporter().setImportPositionUpdateInterval(1000);
+    CONFIG.setExportLegacyRecords(true);
     CONFIG.url = tasklistProperties.getOpenSearch().getUrl();
     CONFIG.index.prefix = tasklistProperties.getZeebeOpenSearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);

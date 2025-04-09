@@ -201,7 +201,7 @@ final class ElasticsearchExporterTest {
     void shouldPutValueTypeTemplate(final ValueType valueType) {
       // given
       config.index.createTemplate = true;
-      config.setZeebeRecordsExportEnabled(true);
+      config.setExportLegacyRecords(true);
       TestSupport.setIndexingForValueType(config.index, valueType, true);
       exporter.configure(context);
       exporter.open(controller);
@@ -240,7 +240,7 @@ final class ElasticsearchExporterTest {
     void shouldCreateAllTemplatesOnPreviousVersion(final ValueType valueType) {
       // given
       config.index.createTemplate = true;
-      config.setZeebeRecordsExportEnabled(false);
+      config.setExportLegacyRecords(false);
       TestSupport.setIndexingForValueType(config.index, valueType, true);
       exporter.configure(context);
       exporter.open(controller);
@@ -414,7 +414,7 @@ final class ElasticsearchExporterTest {
 
     @BeforeEach
     void initExporter() {
-      config.setZeebeRecordsExportEnabled(true);
+      config.setExportLegacyRecords(true);
       exporter.configure(context);
       exporter.open(controller);
     }
