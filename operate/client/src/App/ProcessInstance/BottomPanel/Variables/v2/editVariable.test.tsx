@@ -15,8 +15,8 @@ import {
 } from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from '../index';
-import {Wrapper, mockVariables} from './mocks';
+import Variables from './index';
+import {getWrapper, mockVariables} from './mocks';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
@@ -44,7 +44,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     const [activeOperationVariable] = variablesStore.state.items.filter(
@@ -80,7 +80,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     const [inactiveOperationVariable] = variablesStore.state.items.filter(
@@ -117,7 +117,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.queryByTestId('add-variable-value')).not.toBeInTheDocument();
@@ -163,7 +163,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.queryByTestId('add-variable-value')).not.toBeInTheDocument();
@@ -194,7 +194,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
@@ -249,7 +249,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.getByText('"value-preview"')).toBeInTheDocument();
@@ -302,7 +302,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.getByText('"value-preview"')).toBeInTheDocument();
@@ -341,7 +341,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.getByText('"full-value"')).toBeInTheDocument();
@@ -376,7 +376,7 @@ describe('Edit variable', () => {
     });
 
     const {user} = render(<Variables isVariableModificationAllowed />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
@@ -417,7 +417,7 @@ describe('Edit variable', () => {
     });
 
     const {user} = render(<Variables isVariableModificationAllowed />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
@@ -448,7 +448,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /edit variable/i}));
