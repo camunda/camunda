@@ -2,14 +2,9 @@
 
 name: Core Application – Automated E2E Test Request
 about: Create a test case for the automated Core Application E2E test suite based on a user flow.
-title: "E2E - [Module or Area Name] - [Short scenario description]" # e.g., 'E2E - Tasklist - User completes form with dropdown input'
-labels:
-- kind/test-case
-- qa/core-application-e2e-test-suite
-assignees: ""
--------------
-
----
+title: "E2E - [Module or Area Name] - [Short scenario description]"
+labels: ["kind/bug", "qa/core-application-e2e-test-suite"]
+assignees: ''
 
 ---
 
