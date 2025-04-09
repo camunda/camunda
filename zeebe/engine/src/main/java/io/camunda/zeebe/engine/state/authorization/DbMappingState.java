@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -29,10 +28,7 @@ public class DbMappingState implements MutableMappingState {
   private final ColumnFamily<DbCompositeKey<DbString, DbString>, PersistedMapping>
       mappingColumnFamily;
 
-  private final DbLong mappingKey;
   private final DbForeignKey<DbCompositeKey<DbString, DbString>> fkClaim;
-  private final ColumnFamily<DbLong, DbForeignKey<DbCompositeKey<DbString, DbString>>>
-      claimByKeyColumnFamily;
 
   private final DbString mappingId;
   private final ColumnFamily<DbString, DbForeignKey<DbCompositeKey<DbString, DbString>>>
@@ -48,11 +44,7 @@ public class DbMappingState implements MutableMappingState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MAPPINGS, transactionContext, claim, persistedMapping);
 
-    mappingKey = new DbLong();
     fkClaim = new DbForeignKey<>(claim, ZbColumnFamilies.MAPPINGS);
-    claimByKeyColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.CLAIM_BY_KEY, transactionContext, mappingKey, fkClaim);
 
     mappingId = new DbString();
     claimByIdColumnFamily =
@@ -62,17 +54,15 @@ public class DbMappingState implements MutableMappingState {
 
   @Override
   public void create(final MappingRecord mappingRecord) {
-    final var key = mappingRecord.getMappingKey();
     final var id = mappingRecord.getMappingId();
     final var name = mappingRecord.getName();
     final var claimName = mappingRecord.getClaimName();
     final var value = mappingRecord.getClaimValue();
 
-    mappingKey.wrapLong(key);
+    mappingId.wrapString(id);
     this.claimName.wrapString(claimName);
     claimValue.wrapString(value);
     mappingId.wrapString(id);
-    persistedMapping.setMappingKey(key);
     persistedMapping.setClaimName(claimName);
     persistedMapping.setClaimValue(value);
     persistedMapping.setName(name);
@@ -80,7 +70,6 @@ public class DbMappingState implements MutableMappingState {
 
     mappingColumnFamily.insert(claim, persistedMapping);
     claimByIdColumnFamily.insert(mappingId, fkClaim);
-    claimByKeyColumnFamily.insert(mappingKey, fkClaim);
   }
 
   @Override
@@ -89,8 +78,6 @@ public class DbMappingState implements MutableMappingState {
     get(mappingRecord.getMappingId())
         .ifPresentOrElse(
             persistedMapping -> {
-              mappingKey.wrapLong(persistedMapping.getMappingKey());
-
               // remove old record from mapping by claim
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
@@ -103,7 +90,6 @@ public class DbMappingState implements MutableMappingState {
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
               mappingColumnFamily.insert(claim, persistedMapping);
-              claimByKeyColumnFamily.update(mappingKey, fkClaim);
               claimByIdColumnFamily.update(mappingId, fkClaim);
             },
             () -> {
@@ -115,9 +101,9 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void addRole(final long mappingKey, final long roleKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+  public void addRole(final String mappingId, final long roleKey) {
+    this.mappingId.wrapString(mappingId);
+    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
@@ -139,9 +125,9 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void addGroup(final long mappingKey, final long groupKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+  public void addGroup(final String mappingId, final long groupKey) {
+    this.mappingId.wrapString(mappingId);
+    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
@@ -151,9 +137,9 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void removeRole(final long mappingKey, final long roleKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+  public void removeRole(final String mappingId, final long roleKey) {
+    this.mappingId.wrapString(mappingId);
+    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
@@ -165,9 +151,9 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void removeTenant(final long mappingKey, final String tenantId) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+  public void removeTenant(final String mappingId, final String tenantId) {
+    this.mappingId.wrapString(mappingId);
+    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
@@ -179,9 +165,9 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void removeGroup(final long mappingKey, final long groupKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+  public void removeGroup(final String mappingId, final long groupKey) {
+    this.mappingId.wrapString(mappingId);
+    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
@@ -197,11 +183,10 @@ public class DbMappingState implements MutableMappingState {
     get(id)
         .ifPresentOrElse(
             persistedMapping -> {
-              mappingKey.wrapLong(persistedMapping.getMappingKey());
+              mappingId.wrapString(persistedMapping.getMappingId());
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
               mappingColumnFamily.deleteExisting(claim);
-              claimByKeyColumnFamily.deleteExisting(mappingKey);
               claimByIdColumnFamily.deleteExisting(mappingId);
             },
             () -> {
@@ -210,16 +195,6 @@ public class DbMappingState implements MutableMappingState {
                       "Expected to delete mapping with id '%s', but a mapping with this id does not exist.",
                       id));
             });
-  }
-
-  @Override
-  public Optional<PersistedMapping> get(final long key) {
-    mappingKey.wrapLong(key);
-    final var fk = claimByKeyColumnFamily.get(mappingKey);
-    if (fk != null) {
-      return Optional.of(mappingColumnFamily.get(fk.inner()));
-    }
-    return Optional.empty();
   }
 
   @Override
