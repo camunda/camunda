@@ -27,9 +27,11 @@ import {ExistingVariableValue} from './ExistingVariableValue';
 import {Name} from './NewVariableModification/Name';
 import {Value} from './NewVariableModification/Value';
 import {Operation} from './NewVariableModification/Operation';
+import {Operation as OperationV2} from './NewVariableModification/v2/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 import {notificationsStore} from 'modules/stores/notifications';
+import {IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   scopeId: string | null;
@@ -156,14 +158,22 @@ const VariablesTable: React.FC<Props> = observer(
                               width: '55%',
                             },
                             {
-                              cellContent: (
-                                <Operation
-                                  variableName={variableName}
-                                  onRemove={() => {
-                                    fields.remove(index);
-                                  }}
-                                />
-                              ),
+                              cellContent:
+                                IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED ? (
+                                  <OperationV2
+                                    variableName={variableName}
+                                    onRemove={() => {
+                                      fields.remove(index);
+                                    }}
+                                  />
+                                ) : (
+                                  <Operation
+                                    variableName={variableName}
+                                    onRemove={() => {
+                                      fields.remove(index);
+                                    }}
+                                  />
+                                ),
                               width: '10%',
                             },
                           ],

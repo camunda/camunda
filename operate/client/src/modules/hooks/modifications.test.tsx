@@ -13,6 +13,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {
   useModificationsByFlowNode,
   useWillAllFlowNodesBeCanceled,
+  useNewScopeIdForFlowNode,
 } from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
@@ -280,6 +281,96 @@ describe('modifications hooks', () => {
           areAllTokensCanceled: false,
         },
       });
+    });
+  });
+
+  describe('useNewScopeIdForFlowNode', () => {
+    it('should return null if flowNodeId is undefined', () => {
+      const {result} = renderHook(() => useNewScopeIdForFlowNode(), {
+        wrapper: getWrapper(),
+      });
+
+      expect(result.current).toBeNull();
+    });
+
+    it('should return null if no matching ADD_TOKEN modification exists', () => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'CANCEL_TOKEN',
+          flowNode: {id: 'node1', name: 'node1'},
+          affectedTokenCount: 5,
+          visibleAffectedTokenCount: 3,
+        },
+      });
+
+      const {result} = renderHook(() => useNewScopeIdForFlowNode('node1'), {
+        wrapper: getWrapper(),
+      });
+
+      expect(result.current).toBeNull();
+    });
+
+    it('should return the scopeId for an ADD_TOKEN modification', () => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {id: 'node1', name: 'node1'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'scope1',
+          parentScopeIds: {},
+        },
+      });
+
+      const {result} = renderHook(() => useNewScopeIdForFlowNode('node1'), {
+        wrapper: getWrapper(),
+      });
+
+      expect(result.current).toBe('scope1');
+    });
+
+    it('should return the first scopeId for a MOVE_TOKEN modification', () => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'MOVE_TOKEN',
+          flowNode: {id: 'node1', name: 'node1'},
+          targetFlowNode: {id: 'node2', name: 'node2'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeIds: ['scope2', 'scope3'],
+          parentScopeIds: {},
+        },
+      });
+
+      const {result} = renderHook(() => useNewScopeIdForFlowNode('node2'), {
+        wrapper: getWrapper(),
+      });
+
+      expect(result.current).toBe('scope2');
+    });
+
+    it('should return null if no matching MOVE_TOKEN modification exists', () => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'MOVE_TOKEN',
+          flowNode: {id: 'node1', name: 'node1'},
+          targetFlowNode: {id: 'node2', name: 'node2'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeIds: [],
+          parentScopeIds: {},
+        },
+      });
+
+      const {result} = renderHook(() => useNewScopeIdForFlowNode('node2'), {
+        wrapper: getWrapper(),
+      });
+
+      expect(result.current).toBeNull();
     });
   });
 });
