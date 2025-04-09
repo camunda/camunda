@@ -130,7 +130,6 @@ const useApiCall: UseApiCall = <R, P>(
         success: apiSuccess,
       };
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [apiDefinition],
   ) as ApiCall<R, P>;
 

@@ -48,19 +48,16 @@ const useApi: UseApi = <R, P>(
   const [called, setCalled] = useState(false);
 
   const paramsDependency = JSON.stringify(params);
-  // params are passed to dependencies as json string which is not recognised by eslint
-  const reload = useCallback(
-    () => call(params as P),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [call, paramsDependency],
-  );
+  const reload = useCallback(() => call(params as P), [call, paramsDependency]);
+
+  const handleValidParams = async () => {
+    await reload();
+    setCalled(true);
+  };
 
   useEffect(() => {
     if (Options.paramsValid) {
-      (async () => {
-        await reload();
-        setCalled(true);
-      })();
+      void handleValidParams();
     }
   }, [reload, setCalled, Options.paramsValid]);
 

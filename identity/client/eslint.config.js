@@ -9,6 +9,7 @@
 import tseslint from "@typescript-eslint/eslint-plugin";
 import prettierPlugin from "eslint-plugin-prettier";
 import reactRefreshPlugin from "eslint-plugin-react-refresh";
+import reactHooksPlugin from "eslint-plugin-react-hooks";
 import tsParser from "@typescript-eslint/parser";
 import prettierConfig from "eslint-config-prettier";
 import path from "node:path";
@@ -19,7 +20,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default [
   {
-    ignores: ["node_modules/", "yarn.lock", ".eslintcache", ".env"],
+    ignores: [
+      "node_modules/",
+      "yarn.lock",
+      ".yarn/",
+      ".eslintcache",
+      ".env",
+      "e2e/",
+      "target/",
+      "playwright.config.ts",
+      "vite.config.ts",
+    ],
   },
   {
     files: ["**/*.ts"],
@@ -39,6 +50,7 @@ export default [
       "@typescript-eslint": tseslint,
       prettier: prettierPlugin,
       "react-refresh": reactRefreshPlugin,
+      "react-hooks": reactHooksPlugin,
     },
     rules: {
       ...tseslint.configs.recommended.rules,
