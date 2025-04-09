@@ -9,12 +9,11 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
 public class BatchOperationCanceledApplier
-    implements TypedEventApplier<
-        BatchOperationIntent, BatchOperationLifecycleManagementManagementRecord> {
+    implements TypedEventApplier<BatchOperationIntent, BatchOperationLifecycleManagementRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 
@@ -24,7 +23,7 @@ public class BatchOperationCanceledApplier
 
   @Override
   public void applyState(
-      final long cancelKey, final BatchOperationLifecycleManagementManagementRecord value) {
+      final long cancelKey, final BatchOperationLifecycleManagementRecord value) {
     batchOperationState.cancel(value.getBatchOperationKey());
   }
 }

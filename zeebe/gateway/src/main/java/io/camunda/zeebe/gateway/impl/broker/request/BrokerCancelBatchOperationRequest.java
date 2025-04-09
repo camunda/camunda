@@ -8,16 +8,16 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import org.agrona.DirectBuffer;
 
 public class BrokerCancelBatchOperationRequest
-    extends BrokerExecuteCommand<BatchOperationLifecycleManagementManagementRecord> {
+    extends BrokerExecuteCommand<BatchOperationLifecycleManagementRecord> {
 
-  BatchOperationLifecycleManagementManagementRecord requestDto =
-      new BatchOperationLifecycleManagementManagementRecord();
+  BatchOperationLifecycleManagementRecord requestDto =
+      new BatchOperationLifecycleManagementRecord();
 
   public BrokerCancelBatchOperationRequest() {
     super(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, BatchOperationIntent.CANCEL);
@@ -29,15 +29,14 @@ public class BrokerCancelBatchOperationRequest
   }
 
   @Override
-  public BatchOperationLifecycleManagementManagementRecord getRequestWriter() {
+  public BatchOperationLifecycleManagementRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected BatchOperationLifecycleManagementManagementRecord toResponseDto(
-      final DirectBuffer buffer) {
-    final BatchOperationLifecycleManagementManagementRecord responseDto =
-        new BatchOperationLifecycleManagementManagementRecord();
+  protected BatchOperationLifecycleManagementRecord toResponseDto(final DirectBuffer buffer) {
+    final BatchOperationLifecycleManagementRecord responseDto =
+        new BatchOperationLifecycleManagementRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }

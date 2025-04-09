@@ -11,14 +11,14 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 
-public final class BatchOperationLifecycleManagementManagementRecord extends UnifiedRecordValue
+public final class BatchOperationLifecycleManagementRecord extends UnifiedRecordValue
     implements BatchOperationLifecycleManagementRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
 
-  public BatchOperationLifecycleManagementManagementRecord() {
+  public BatchOperationLifecycleManagementRecord() {
     super(1);
     declareProperty(batchOperationKeyProp);
   }
@@ -28,15 +28,15 @@ public final class BatchOperationLifecycleManagementManagementRecord extends Uni
     return batchOperationKeyProp.getValue();
   }
 
-  public BatchOperationLifecycleManagementManagementRecord setBatchOperationKey(
+  public BatchOperationLifecycleManagementRecord setBatchOperationKey(
       final Long batchOperationKey) {
     batchOperationKeyProp.reset();
     batchOperationKeyProp.setValue(batchOperationKey);
     return this;
   }
 
-  public BatchOperationLifecycleManagementManagementRecord wrap(
-      final BatchOperationLifecycleManagementManagementRecord record) {
+  public BatchOperationLifecycleManagementRecord wrap(
+      final BatchOperationLifecycleManagementRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     return this;
   }

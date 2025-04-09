@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
 public final class BatchOperationCancelProcessor
-    implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementManagementRecord> {
+    implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationCancelProcessor.class);
 
@@ -57,7 +57,7 @@ public final class BatchOperationCancelProcessor
 
   @Override
   public void processNewCommand(
-      final TypedRecord<BatchOperationLifecycleManagementManagementRecord> command) {
+      final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
     final var recordValue = command.getValue();
     final var batchOperationKey = recordValue.getBatchOperationKey();
     final var cancelKey = keyGenerator.nextKey();
@@ -86,7 +86,7 @@ public final class BatchOperationCancelProcessor
 
   @Override
   public void processDistributedCommand(
-      final TypedRecord<BatchOperationLifecycleManagementManagementRecord> command) {
+      final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
     final var recordValue = command.getValue();
     final var batchOperationKey = recordValue.getBatchOperationKey();
 
@@ -107,7 +107,7 @@ public final class BatchOperationCancelProcessor
   }
 
   private void cancelBatchOperationEvent(
-      final Long cancelKey, final BatchOperationLifecycleManagementManagementRecord recordValue) {
+      final Long cancelKey, final BatchOperationLifecycleManagementRecord recordValue) {
     stateWriter.appendFollowUpEvent(cancelKey, BatchOperationIntent.CANCELED, recordValue);
   }
 }

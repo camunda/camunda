@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -232,14 +232,12 @@ public final class BatchOperationClient {
                     .getFirst();
 
     private final CommandWriter writer;
-    private final BatchOperationLifecycleManagementManagementRecord
-        batchOperationLifecycleManagementRecord;
+    private final BatchOperationLifecycleManagementRecord batchOperationLifecycleManagementRecord;
     private final int partition = DEFAULT_PARTITION;
 
     public BatchOperationLifecycleClient(final CommandWriter writer) {
       this.writer = writer;
-      batchOperationLifecycleManagementRecord =
-          new BatchOperationLifecycleManagementManagementRecord();
+      batchOperationLifecycleManagementRecord = new BatchOperationLifecycleManagementRecord();
     }
 
     public BatchOperationLifecycleClient withBatchOperationKey(final long batchOperationKey) {
