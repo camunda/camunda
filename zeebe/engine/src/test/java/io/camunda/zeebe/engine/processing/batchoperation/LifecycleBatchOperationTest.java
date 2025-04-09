@@ -47,7 +47,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
-  public void shouldPauseBatchOperation() {
+  public void shouldPauseBatchOperationInScheduler() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey =
@@ -71,6 +71,40 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .onlyCommands())
         .extracting(Record::getIntent)
         .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
+  }
+
+  @Test
+  public void shouldPauseBatchOperationInExecutor() {
+    // given
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey =
+        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+
+    // when we pause the batch operation
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+
+    // and send the execute command
+    engine
+        .batchOperation()
+        .newExecution()
+        .withBatchOperationKey(batchOperationKey)
+        .executeWithoutExpectation();
+
+    // then we have a paused event
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.PAUSED);
+
+    // and that we have no executed event
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents())
+        .extracting(Record::getIntent)
+        .doesNotContain(BatchOperationExecutionIntent.EXECUTED);
   }
 
   @Test
