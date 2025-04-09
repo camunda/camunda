@@ -45,11 +45,11 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
           userState
               .getUser(entityId)
               .ifPresent(user -> userState.removeGroup(user.getUsername(), groupKey));
-      case MAPPING -> mappingState.removeGroup(Long.parseLong(entityId), groupKey);
+      case MAPPING -> mappingState.removeGroup(entityId, groupKey);
       default ->
           throw new IllegalStateException(
               String.format(
-                  "Expected to remove entity '%d' from group with ID '%s', but entities of type '%s' cannot be removed from groups.",
+                  "Expected to remove entity '%s' from group with ID '%s', but entities of type '%s' cannot be removed from groups.",
                   entityId, groupId, entityType));
     }
   }

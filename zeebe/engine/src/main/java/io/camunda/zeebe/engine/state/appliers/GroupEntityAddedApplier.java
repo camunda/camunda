@@ -41,11 +41,11 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
           userState
               .getUser(entityId)
               .ifPresent(user -> userState.addGroup(user.getUsername(), groupKey));
-      case MAPPING -> mappingState.addGroup(Long.parseLong(entityId), groupKey);
+      case MAPPING -> mappingState.addGroup(entityId, groupKey);
       default ->
           throw new IllegalStateException(
               String.format(
-                  "Expected to add entity '%d' to group '%d', but entities of type '%s' cannot be added to groups.",
+                  "Expected to add entity '%s' to group '%d', but entities of type '%s' cannot be added to groups.",
                   entityId, groupKey, entityType));
     }
   }
