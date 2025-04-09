@@ -8,7 +8,6 @@
 
 import React, {useRef} from 'react';
 import {observer} from 'mobx-react';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
@@ -25,6 +24,8 @@ import {FlowNodeIcon} from 'modules/components/FlowNodeIcon';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {Bar} from './Bar';
 import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 
 const TREE_NODE_HEIGHT = 32;
 
@@ -113,11 +114,19 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     const hasVisibleChildPlaceholders = visibleChildPlaceholders.length > 0;
     const hasVisibleChildNodes = visibleChildNodes.length > 0;
 
+    const processDefinitionKey = useProcessDefinitionKeyContext();
+    const {data: processInstanceXmlData} = useProcessInstanceXml({
+      processDefinitionKey,
+    });
+
+    const bpmnProcessId =
+      processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
+
     const businessObject = isProcessInstance
-      ? processInstanceDetailsDiagramStore.processBusinessObject
-      : processInstanceDetailsDiagramStore.businessObjects[
-          flowNodeInstance.flowNodeId
-        ];
+      ? bpmnProcessId
+        ? processInstanceXmlData?.diagramModel.elementsById[bpmnProcessId]
+        : undefined
+      : processInstanceXmlData?.businessObjects[flowNodeInstance.flowNodeId];
 
     const isMultiInstanceBody = flowNodeInstance.type === 'MULTI_INSTANCE_BODY';
 

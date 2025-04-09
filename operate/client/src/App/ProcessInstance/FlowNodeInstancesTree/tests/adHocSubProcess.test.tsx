@@ -21,11 +21,13 @@ import {FlowNodeInstancesTree} from '..';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('FlowNodeInstancesTree - Ad Hoc Sub Process', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(adHocSubProcessesInstance);
     mockFetchProcessXML().withSuccess(open('AdHocProcess.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(open('AdHocProcess.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       adHocSubProcessesInstance.bpmnProcessId,
@@ -72,7 +74,7 @@ describe('FlowNodeInstancesTree - Ad Hoc Sub Process', () => {
     mockFetchFlowNodeInstances().withSuccess(adHocNodeFlowNodeInstances.level2);
 
     await user.type(
-      screen.getByLabelText('Ad Hoc Sub Process', {
+      await screen.findByLabelText('Ad Hoc Sub Process', {
         selector: "[aria-expanded='false']",
       }),
       '{arrowright}',

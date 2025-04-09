@@ -32,11 +32,13 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetch
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockFetchProcessXML().withSuccess(multiInstanceProcess);
+    mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
   });
 
   it('should show and remove two add modification flow nodes', async () => {
@@ -171,7 +173,9 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       modificationsStore.cancelAllTokens('peterJoin');
     });
 
-    expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Multi-Instance Process'),
+    ).toBeInTheDocument();
     expect(screen.getAllByText('Peter Join')).toHaveLength(2);
 
     // modification icons
@@ -224,6 +228,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     );
 
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
+    mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
 
@@ -255,7 +260,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     );
 
     expect(
-      screen.getAllByLabelText('parent_sub_process', {
+      await screen.findAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
       }),
     ).toHaveLength(2);
@@ -428,6 +433,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     );
 
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
+    mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
 
@@ -458,7 +464,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     );
 
     expect(
-      screen.getAllByLabelText('parent_sub_process', {
+      await screen.findAllByLabelText('parent_sub_process', {
         selector: "[aria-expanded='false']",
       }),
     ).toHaveLength(2);

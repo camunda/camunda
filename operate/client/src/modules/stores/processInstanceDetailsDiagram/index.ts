@@ -56,7 +56,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       compensationAssociations: computed,
       flowNodes: computed,
       businessObjects: computed,
-      processBusinessObject: computed,
       cancellableFlowNodes: computed,
       appendableFlowNodes: computed,
       modifiableFlowNodes: computed,
@@ -95,17 +94,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       },
       {},
     );
-  }
-
-  get processBusinessObject(): BusinessObject | undefined {
-    const bpmnProcessId =
-      processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
-
-    if (bpmnProcessId === undefined) {
-      return undefined;
-    }
-
-    return this.state.diagramModel?.elementsById[bpmnProcessId];
   }
 
   fetchProcessXml = this.retryOnConnectionLost(
