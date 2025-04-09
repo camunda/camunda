@@ -10,6 +10,7 @@ package io.camunda.tasklist.webapp.es.backup.os;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,9 +32,11 @@ import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.endpoints.SimpleEndpoint;
@@ -40,18 +44,28 @@ import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 @ExtendWith(MockitoExtension.class)
 class BackupManagerOpenSearchTest {
 
-  @Mock private OpenSearchAsyncClient openSearchAsyncClient;
-  @Mock private OpenSearchClient openSearchClient;
+  @Mock OpenSearchTransport openSearchTransport;
+
+  @Mock(strictness = Strictness.LENIENT)
+  private OpenSearchAsyncClient openSearchAsyncClient;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private OpenSearchClient openSearchClient;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private TasklistProperties tasklistProperties;
 
   @InjectMocks private BackupManagerOpenSearch backupManagerOpenSearch;
 
+  @BeforeEach
+  public void setUp() {
+    when(tasklistProperties.getBackup().getRepositoryName()).thenReturn("test-repo");
+    when(openSearchClient._transport()).thenReturn(openSearchTransport);
+    when(openSearchAsyncClient._transport()).thenReturn(openSearchTransport);
+  }
+
   @Test
   void shouldValidateRepositoryExistsDoNotDeserializeOpenSearchResponse() throws IOException {
-    final OpenSearchTransport openSearchTransport = mock(OpenSearchTransport.class);
-    when(openSearchAsyncClient._transport()).thenReturn(openSearchTransport);
     when(openSearchTransport.performRequestAsync(any(), any(), any()))
         .thenReturn(mock(CompletableFuture.class));
 
@@ -69,8 +83,6 @@ class BackupManagerOpenSearchTest {
     // given
     final var metadata =
         new Metadata().setBackupId(2L).setPartCount(3).setPartNo(1).setVersion("8.6.1");
-    final OpenSearchTransport openSearchTransport = mock(OpenSearchTransport.class);
-    when(tasklistProperties.getBackup().getRepositoryName()).thenReturn("test-repo");
     final var snapshots = new ArrayList<SnapshotInfo>(metadata.getPartCount());
     for (int i = 1; i <= metadata.getPartCount(); i++) {
       final var copy = new Metadata(metadata);
@@ -86,11 +98,10 @@ class BackupManagerOpenSearchTest {
     }
 
     final var snapshotResponse = GetCustomSnapshotResponse.of(b -> b.snapshots(snapshots));
-    when(openSearchClient._transport()).thenReturn(openSearchTransport);
     when(openSearchTransport.performRequest(any(), any(), any())).thenReturn(snapshotResponse);
 
     // when
-    final var backupResponse = backupManagerOpenSearch.getBackups(false);
+    final var backupResponse = backupManagerOpenSearch.getBackups(false, null);
 
     // then
     assertThat(backupResponse)
@@ -115,5 +126,23 @@ class BackupManagerOpenSearchTest {
                         assertThat(detail.getSnapshotName()).isEqualTo(snapshotInfo.snapshot());
                       });
             });
+  }
+
+  @Test
+  public void shouldForwardPatternToOS() throws IOException {
+    // given
+    final var snapshotResponse = mock(GetCustomSnapshotResponse.class, Answers.RETURNS_DEEP_STUBS);
+    when(snapshotResponse.snapshots()).thenReturn(List.of());
+    when(openSearchTransport.performRequest(any(), any(), any())).thenReturn(snapshotResponse);
+
+    // when
+    final var backupResponse = backupManagerOpenSearch.getBackups(false, "2025*");
+    // then
+
+    verify(openSearchTransport)
+        .performRequest(
+            argThat((GetSnapshotRequest r) -> r.snapshot().contains("camunda_tasklist_2025*")),
+            any(),
+            any());
   }
 }
