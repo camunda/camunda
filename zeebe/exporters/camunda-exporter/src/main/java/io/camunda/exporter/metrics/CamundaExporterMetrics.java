@@ -74,9 +74,27 @@ public class CamundaExporterMetrics {
             .description(
                 "Count of completed batch operations that have been found, and are now in progress of archiving.")
             .register(meterRegistry);
-    archiverSearchTimer = meterRegistry.timer(meterName("archiver.query"));
-    archiverDeleteTimer = meterRegistry.timer(meterName("archiver.delete.query"));
-    archiverReindexTimer = meterRegistry.timer(meterName("archiver.reindex.query"));
+    archiverSearchTimer =
+        Timer.builder(meterName("archiver.request.duration"))
+            .description(
+                "Duration of how long it takes to run the search request to resolve completed entities, that need to be archived.")
+            .tags("type", "search")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    archiverDeleteTimer =
+        Timer.builder(meterName("archiver.request.duration"))
+            .description(
+                "Duration of how long it takes to run the delete request to remove completed entities, from old indices.")
+            .tags("type", "delete")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    archiverReindexTimer =
+        Timer.builder(meterName("archiver.request.duration"))
+            .description(
+                "Duration of how long it takes to run the reindex request to copy over to the dated indices, from old indices.")
+            .tags("type", "reindex")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
   }
 
   public ResourceSample measureFlushDuration() {
