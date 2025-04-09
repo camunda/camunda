@@ -19,7 +19,6 @@ import {reaction, when} from 'mobx';
 import {variablesStore} from 'modules/stores/variables';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {Locations} from 'modules/Routes';
@@ -27,8 +26,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from '../ProcessInstanceHeader';
-import {TopPanel} from '../TopPanel';
-import {TopPanel as TopPanelV2} from '../TopPanel/v2';
+import {TopPanel} from '../TopPanel/v2';
 import {BottomPanel, ModificationFooter, Buttons} from '../styled';
 import {FlowNodeInstanceLog} from '../FlowNodeInstanceLog';
 import {Button, Modal} from '@carbon/react';
@@ -42,7 +40,6 @@ import {Forbidden} from 'modules/components/Forbidden';
 import {notificationsStore} from 'modules/stores/notifications';
 import {Frame} from 'modules/components/Frame';
 import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
-import {IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
   variablesStore.startPolling(processInstanceId, {runImmediately: true});
@@ -54,9 +51,6 @@ const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
     runImmediately: true,
   });
   flowNodeInstanceStore.startPolling({runImmediately: true});
-  processInstanceDetailsStatisticsStore.startPolling(processInstanceId, {
-    runImmediately: true,
-  });
 };
 
 const stopPolling = () => {
@@ -65,7 +59,6 @@ const stopPolling = () => {
   processInstanceDetailsStore.stopPolling();
   incidentsStore.stopPolling();
   flowNodeInstanceStore.stopPolling();
-  processInstanceDetailsStatisticsStore.stopPolling();
 };
 
 const ProcessInstance: React.FC = observer(() => {
@@ -140,7 +133,6 @@ const ProcessInstance: React.FC = observer(() => {
         },
       });
       flowNodeInstanceStore.init();
-      processInstanceDetailsStatisticsStore.init(processInstanceId);
       processInstanceDetailsDiagramStore.init();
       flowNodeSelectionStore.init();
     }
@@ -150,7 +142,6 @@ const ProcessInstance: React.FC = observer(() => {
     return () => {
       instanceHistoryModificationStore.reset();
       processInstanceDetailsStore.reset();
-      processInstanceDetailsStatisticsStore.reset();
       flowNodeInstanceStore.reset();
       processInstanceDetailsDiagramStore.reset();
       flowNodeTimeStampStore.reset();
@@ -217,13 +208,7 @@ const ProcessInstance: React.FC = observer(() => {
             ) : undefined
           }
           header={<ProcessInstanceHeader />}
-          topPanel={
-            IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED ? (
-              <TopPanelV2 />
-            ) : (
-              <TopPanel />
-            )
-          }
+          topPanel={<TopPanel />}
           bottomPanel={
             <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
               <FlowNodeInstanceLog />
