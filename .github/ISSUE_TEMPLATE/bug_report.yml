@@ -15,6 +15,7 @@ body:
         - Identity-
         - Zeebe-
         - C8Run-
+        - Feel-
       default: 0
     validations:
       required: true
