@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
+import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -46,6 +47,7 @@ import org.springframework.context.annotation.Bean;
     name = "enabled",
     havingValue = "true",
     matchIfMissing = true)
+@ConditionalOnCamundaClientEnabled
 @ConditionalOnMissingBean(SpringZeebeTestContext.class)
 @ImportAutoConfiguration({
   ExecutorServiceConfiguration.class,
