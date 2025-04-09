@@ -16,8 +16,10 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -107,6 +109,19 @@ public final class TestHelper {
             () -> {
               final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
+            });
+  }
+
+  public static void waitForProcessInstanceToBeTerminated(
+      final CamundaClient camundaClient, final Long processInstanceKey) {
+    Awaitility.await("should wait until process is terminated")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+              assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
             });
   }
 

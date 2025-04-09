@@ -64,6 +64,8 @@ import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.BatchOperationGetRequest;
+import io.camunda.client.api.fetch.BatchOperationItemsGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -1759,4 +1761,34 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the create batch operation command
    */
   CreateBatchOperationCommandStep1 newCreateBatchOperationCommand();
+
+  /**
+   * Request to get a single batch operation by batch operation key.
+   *
+   * <pre>
+   * camundaClient
+   *  .newBatchOperationGetRequest(batchOperationKey)
+   *  .send();
+   * </pre>
+   *
+   * @param batchOperationKey the key which identifies the corresponding batch operation
+   * @return a builder for the request
+   */
+  BatchOperationGetRequest newBatchOperationGetRequest(Long batchOperationKey);
+
+  /**
+   * Request to get all items for a batch operation by batch operation key. This request is will
+   * return <b>ALL</b> items of the batch operation. Depending on the number of elements, this may
+   * be a large set of items.
+   *
+   * <pre>
+   * camundaClient
+   *  .newBatchOperationItemsGetRequest(batchOperationKey)
+   *  .send();
+   * </pre>
+   *
+   * @param batchOperationKey the key which identifies the corresponding batch operation
+   * @return a builder for the request
+   */
+  BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(Long batchOperationKey);
 }
