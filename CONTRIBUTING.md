@@ -249,7 +249,7 @@ _Inspired by [Microsoft's emoji code](https://devblogs.microsoft.com/appcenter/h
 
 ### Stale pull requests
 
-If there has not been any activity in your PR after a month, it is automatically marked as stale. If it remains inactive, we may decide to close the PR.
+If there has not been any activity in your PR after a month, we may decide to close the PR.
 When this happens and you're still interested in contributing, please feel free to reopen it.
 
 ## Backporting changes
