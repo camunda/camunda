@@ -15,8 +15,8 @@ import {
 } from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from '../index';
-import {Wrapper, mockVariables} from './mocks';
+import Variables from './index';
+import {getWrapper, mockVariables} from './mocks';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {act} from 'react';
@@ -35,7 +35,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(
@@ -86,7 +86,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -124,7 +124,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
@@ -222,7 +222,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -311,7 +311,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -373,7 +373,7 @@ describe('Add variable', () => {
 
     variablesStore.fetchVariables('1');
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -398,7 +398,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(
@@ -448,7 +448,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -493,7 +493,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));

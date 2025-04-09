@@ -13,8 +13,8 @@ import {
 } from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from '../index';
-import {Wrapper} from './mocks';
+import Variables from './index';
+import {getWrapper} from './mocks';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
@@ -62,7 +62,7 @@ describe('Restricted user with resource based permissions', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(
@@ -84,7 +84,7 @@ describe('Restricted user with resource based permissions', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(
@@ -106,7 +106,7 @@ describe('Restricted user with resource based permissions', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('variables-skeleton'),
