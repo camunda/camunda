@@ -78,7 +78,9 @@ public class OidcAuthOverGrpcIT {
 
                 c.getInitialization()
                     .setMappings(
-                        List.of(new ConfiguredMapping(USER_ID_CLAIM_NAME, DEFAULT_MAPPING_ID, DEFAULT_USER_ID)));
+                        List.of(
+                            new ConfiguredMapping(
+                                USER_ID_CLAIM_NAME, DEFAULT_MAPPING_ID, DEFAULT_USER_ID)));
               });
 
   @BeforeAll

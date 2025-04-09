@@ -15,7 +15,8 @@ public class ConfiguredMapping {
   private String claimName;
   private String claimValue;
 
-  public ConfiguredMapping(final String mappingId, final String claimName, final String claimValue) {
+  public ConfiguredMapping(
+      final String mappingId, final String claimName, final String claimValue) {
     ensureNotNullOrEmpty("mappingId", mappingId);
     ensureNotNullOrEmpty("claimName", claimName);
     ensureNotNullOrEmpty("claimValue", claimValue);

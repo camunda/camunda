@@ -187,10 +187,13 @@ public final class IdentitySetupInitializeProcessor
                           createdNewEntities.set(true);
                           final long mappingKey = keyGenerator.nextKey();
                           mapping.setMappingKey(mappingKey);
-                          // TODO: Remove null checks after migrating fully to mapping ID #27820
-                          if (mapping.getMappingId() == null || mapping.getMappingId().isBlank()) {
-                            mapping.setMappingId(String.valueOf(mappingKey));
-                          }
+                          //                          // TODO: Remove null checks after migrating
+                          // fully to mapping ID #27820
+                          //                          if (mapping.getMappingId() == null ||
+                          // mapping.getMappingId().isBlank()) {
+                          //
+                          // mapping.setMappingId(String.valueOf(mappingKey));
+                          //                          }
                           createMapping(mapping, role.getRoleKey(), tenant);
                           // TODO temporarily add all permission to the mapping directly
                           // this is required since roles are in the progress of refactoring to be
