@@ -11,6 +11,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationChunk
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationExecutionCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleCanceledRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecyclePausedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationProcessCancelledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationProcessCancelledRecord;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -123,6 +124,27 @@ class RdbmsExporterBatchOperationsIT {
             batchOperationItems.stream()
                 .allMatch(item -> item.state() == BatchOperationItemState.CANCELED))
         .isTrue();
+  }
+
+  @Test
+  public void shouldPauseBatchOperation() {
+    // given
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationPauseRecord =
+        getBatchOperationLifecyclePausedRecord(batchOperationKey, 3L);
+
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+
+    // when we pause it
+    exporter.export(batchOperationPauseRecord);
+
+    // then it should be canceled
+    final var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(batchOperationKey).get();
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.PAUSED);
   }
 
   @Test
