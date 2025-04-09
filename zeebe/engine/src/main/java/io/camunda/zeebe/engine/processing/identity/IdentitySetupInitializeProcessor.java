@@ -164,8 +164,9 @@ public final class IdentitySetupInitializeProcessor
                     .get(mapping.getClaimName(), mapping.getClaimValue())
                     .ifPresentOrElse(
                         persistedMapping -> {
-                          mapping.setMappingKey(persistedMapping.getMappingKey());
+                          mapping.setMappingKey(Long.parseLong(persistedMapping.getMappingId()));
                           mapping.setMappingId(persistedMapping.getMappingId());
+                          // todo refactor with https://github.com/camunda/camunda/issues/30094
                           if (assignEntityToRole(
                               role,
                               persistedMapping.getMappingId(),

@@ -61,7 +61,6 @@ public class DbMappingState implements MutableMappingState {
     this.mappingId.wrapString(mappingId);
     this.claimName.wrapString(claimName);
     claimValue.wrapString(value);
-    persistedMapping.setMappingKey(mappingRecord.getMappingKey());
     persistedMapping.setClaimName(claimName);
     persistedMapping.setClaimValue(value);
     persistedMapping.setName(name);

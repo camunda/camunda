@@ -86,7 +86,6 @@ public class MappingStateTest {
 
     // then
     assertThat(retrievedMapping).isPresent();
-    assertThat(retrievedMapping.get().getMappingKey()).isEqualTo(key);
     assertThat(retrievedMapping.get().getName()).isEqualTo(name);
     assertThat(retrievedMapping.get().getMappingId()).isEqualTo(mappingId);
   }

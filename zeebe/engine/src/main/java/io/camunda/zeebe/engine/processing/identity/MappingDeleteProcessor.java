@@ -95,13 +95,10 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
-    final var persistedMapping = persistedMappingOptional.get();
-    record.setMappingKey(persistedMapping.getMappingKey());
-    deleteMapping(persistedMapping);
-    responseWriter.writeEventOnCommand(
-        persistedMapping.getMappingKey(), MappingIntent.DELETED, record, command);
-
     final long key = keyGenerator.nextKey();
+    deleteMapping(persistedMappingOptional.get(), key);
+    responseWriter.writeEventOnCommand(key, MappingIntent.DELETED, record, command);
+
     commandDistributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
@@ -114,7 +111,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     mappingState
         .get(record.getMappingId())
         .ifPresentOrElse(
-            this::deleteMapping,
+            r -> deleteMapping(r, record.getMappingKey()),
             () -> {
               final var errorMessage =
                   MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingKey());
@@ -125,8 +122,8 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   }
 
   private void deleteMapping(final PersistedMapping mapping) {
-    final var mappingKey = mapping.getMappingKey();
-    deleteAuthorizations(mappingKey);
+    final var mappingId = mapping.getMappingId();
+    deleteAuthorizations(mappingId);
     for (final var tenantId :
         membershipState.getMemberships(
             EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT)) {
@@ -166,15 +163,12 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
               .setEntityType(EntityType.MAPPING));
     }
     stateWriter.appendFollowUpEvent(
-        mappingKey,
-        MappingIntent.DELETED,
-        new MappingRecord().setMappingKey(mappingKey).setMappingId(mapping.getMappingId()));
+        key, MappingIntent.DELETED, new MappingRecord().setMappingId(mapping.getMappingId()));
   }
 
-  private void deleteAuthorizations(final long mappingKey) {
+  private void deleteAuthorizations(final String mappingId) {
     final var authorizationKeysForMapping =
-        authorizationState.getAuthorizationKeysForOwner(
-            AuthorizationOwnerType.MAPPING, String.valueOf(mappingKey));
+        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.MAPPING, mappingId);
 
     authorizationKeysForMapping.forEach(
         authorizationKey -> {
