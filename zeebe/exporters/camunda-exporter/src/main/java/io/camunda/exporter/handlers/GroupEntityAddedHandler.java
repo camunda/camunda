@@ -44,7 +44,8 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupEntity, Group
   @Override
   public List<String> generateIds(final Record<GroupRecordValue> record) {
     final var groupRecord = record.getValue();
-    return List.of(GroupEntity.getChildKey(groupRecord.getGroupKey(), groupRecord.getEntityKey()));
+    // TODO: revisit https://github.com/camunda/camunda/issues/29903
+    return List.of(GroupEntity.getChildKey(groupRecord.getGroupKey(), Long.parseLong(groupRecord.getEntityId())));
   }
 
   @Override
@@ -59,7 +60,8 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupEntity, Group
     entity
         .setKey(value.getGroupKey())
         .setName(value.getName())
-        .setMemberKey(value.getEntityKey())
+        // TODO: revisit with https://github.com/camunda/camunda/issues/29903
+        .setMemberKey(Long.parseLong(value.getEntityId()))
         .setJoin(joinRelation);
   }
 
