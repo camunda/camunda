@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -25,12 +24,12 @@ public class PersistedUser extends UnpackedObject implements DbValue {
       new ObjectProperty<>("user", new UserRecord());
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>("tenantIds", StringValue::new);
-  private final ArrayProperty<LongValue> groupKeysProp =
-      new ArrayProperty<>("groupKeys", LongValue::new);
+  private final ArrayProperty<StringValue> groupIdsProp =
+      new ArrayProperty<>("groupIds", StringValue::new);
 
   public PersistedUser() {
     super(3);
-    declareProperty(userProp).declareProperty(tenantIdsProp).declareProperty(groupKeysProp);
+    declareProperty(userProp).declareProperty(tenantIdsProp).declareProperty(groupIdsProp);
   }
 
   public PersistedUser copy() {
@@ -85,20 +84,21 @@ public class PersistedUser extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public List<Long> getGroupKeysList() {
-    return StreamSupport.stream(groupKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
+  public List<String> getGroupIdsList() {
+    return StreamSupport.stream(groupIdsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
         .collect(Collectors.toList());
   }
 
-  public PersistedUser setGroupKeysList(final List<Long> groupKeys) {
-    groupKeysProp.reset();
-    groupKeys.forEach(groupKey -> groupKeysProp.add().setValue(groupKey));
+  public PersistedUser setGroupIdsList(final List<String> groupIds) {
+    groupIdsProp.reset();
+    groupIds.forEach(groupId -> groupIdsProp.add().wrap(BufferUtil.wrapString(groupId)));
     return this;
   }
 
-  public PersistedUser addGroupKey(final long groupKey) {
-    groupKeysProp.add().setValue(groupKey);
+  public PersistedUser addGroupId(final String groupId) {
+    groupIdsProp.add().wrap(BufferUtil.wrapString(groupId));
     return this;
   }
 }
