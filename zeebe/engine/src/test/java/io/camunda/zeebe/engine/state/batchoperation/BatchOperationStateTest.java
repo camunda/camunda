@@ -348,6 +348,44 @@ public class BatchOperationStateTest {
   }
 
   @Test
+  void shouldReturnTrueForCanPause() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+
+    // when
+    state.create(batchOperationKey, batchRecord);
+
+    // then
+    final var persistedBatchOperation = state.get(batchOperationKey);
+    assertThat(persistedBatchOperation).isNotEmpty();
+    assertThat(persistedBatchOperation.get().canPause()).isTrue();
+  }
+
+  @Test
+  void shouldReturnFalseForCanPause() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+
+    state.create(batchOperationKey, batchRecord);
+
+    // when
+    state.fail(batchOperationKey);
+
+    // then
+    final var persistedBatchOperation = state.get(batchOperationKey);
+    assertThat(persistedBatchOperation).isNotEmpty();
+    assertThat(persistedBatchOperation.get().canPause()).isFalse();
+  }
+
+  @Test
   void shouldPauseBatch() {
     // given
     final var batchOperationKey = 1L;
