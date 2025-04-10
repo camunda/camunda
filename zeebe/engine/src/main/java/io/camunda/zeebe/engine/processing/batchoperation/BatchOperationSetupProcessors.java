@@ -63,6 +63,11 @@ public final class BatchOperationSetupProcessors {
             BatchOperationIntent.PAUSE,
             new BatchOperationPauseProcessor(
                 writers, commandDistributionBehavior, processingState, keyGenerator))
+        .onCommand(
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            BatchOperationIntent.RESUME,
+            new BatchOperationResumeProcessor(
+                writers, commandDistributionBehavior, processingState, keyGenerator))
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory, searchClientsProxy, Duration.ofMillis(1000)));

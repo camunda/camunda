@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -177,10 +178,10 @@ public final class BatchOperationClient {
 
   public static class BatchOperationExecutionClient {
 
-    private static final Function<Long, Record<BatchOperationCreationRecordValue>>
+    private static final Function<Long, Record<BatchOperationExecutionRecordValue>>
         EXECUTION_SUCCESS_EXPECTATION =
             (position) ->
-                RecordingExporter.batchOperationCreationRecords()
+                RecordingExporter.batchOperationExecutionRecords()
                     .withIntent(BatchOperationExecutionIntent.EXECUTED)
                     .withSourceRecordPosition(position)
                     .getFirst();
@@ -204,12 +205,12 @@ public final class BatchOperationClient {
       return this;
     }
 
-    public Record<BatchOperationCreationRecordValue> execute() {
+    public Record<BatchOperationExecutionRecordValue> execute() {
       return execute(
           AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
     }
 
-    public Record<BatchOperationCreationRecordValue> execute(final AuthInfo authorizations) {
+    public Record<BatchOperationExecutionRecordValue> execute(final AuthInfo authorizations) {
       final long position =
           writer.writeCommandOnPartition(
               partition,
@@ -256,6 +257,14 @@ public final class BatchOperationClient {
             (position) ->
                 RecordingExporter.batchOperationLifecycleRecords()
                     .withIntent(BatchOperationIntent.PAUSED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private static final Function<Long, Record<BatchOperationLifecycleManagementRecordValue>>
+        RESUME_SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.batchOperationLifecycleRecords()
+                    .withIntent(BatchOperationIntent.RESUMED)
                     .withSourceRecordPosition(position)
                     .getFirst();
 
@@ -323,6 +332,42 @@ public final class BatchOperationClient {
           partition,
           r ->
               r.intent(BatchOperationIntent.PAUSE)
+                  .event(batchOperationLifecycleManagementRecord)
+                  .authorizations(authorizations)
+                  .requestId(new Random().nextLong())
+                  .requestStreamId(new Random().nextInt()));
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> resume() {
+      return resume(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> resume(
+        final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationIntent.RESUME)
+                      .event(batchOperationLifecycleManagementRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+
+      return RESUME_SUCCESS_EXPECTATION.apply(position);
+    }
+
+    public void resumeWithoutExpectation() {
+      resumeWithoutExpectation(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public void resumeWithoutExpectation(final AuthInfo authorizations) {
+      writer.writeCommandOnPartition(
+          partition,
+          r ->
+              r.intent(BatchOperationIntent.RESUME)
                   .event(batchOperationLifecycleManagementRecord)
                   .authorizations(authorizations)
                   .requestId(new Random().nextLong())

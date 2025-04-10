@@ -21,7 +21,8 @@ public class BatchOperationLifecycleManagementExportHandler
     implements RdbmsExportHandler<BatchOperationLifecycleManagementRecordValue> {
 
   private static final Set<Intent> EXPORTABLE_INTENTS =
-      Set.of(BatchOperationIntent.CANCELED, BatchOperationIntent.PAUSED);
+      Set.of(
+          BatchOperationIntent.CANCELED, BatchOperationIntent.PAUSED, BatchOperationIntent.RESUMED);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -43,9 +44,10 @@ public class BatchOperationLifecycleManagementExportHandler
     if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
       batchOperationWriter.cancel(
           batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
-    }
-    if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
+    } else if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
       batchOperationWriter.pause(batchOperationKey);
+    } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
+      batchOperationWriter.resume(batchOperationKey);
     }
   }
 }

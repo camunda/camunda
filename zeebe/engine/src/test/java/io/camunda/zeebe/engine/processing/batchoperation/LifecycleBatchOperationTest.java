@@ -158,12 +158,95 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.PAUSE);
 
-    // and no follow op up command to execute again
+    // and no follow-up command to execute again
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .onlyCommands())
         .extracting(Record::getIntent)
         .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
+  }
+
+  @Test
+  public void shouldResumeBatchOperation() {
+    // given
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey =
+        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+
+    // and we pause the batch operation
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+
+    // when we resume it again
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).resume();
+
+    // then the batch should be active
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.PAUSED, BatchOperationIntent.RESUMED);
+
+    // and at least the completed
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents())
+        .extracting(Record::getIntent)
+        .containsSequence(
+            BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldRejectResumeBatchOperationIfNotFound() {
+    // when we resume it again
+    final var batchOperationKey = 1L;
+    engine
+        .batchOperation()
+        .newLifecycle()
+        .withBatchOperationKey(batchOperationKey)
+        .resumeWithoutExpectation();
+
+    // then we have a rejected command
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withRejectionType(RejectionType.NOT_FOUND)
+                .onlyCommandRejections())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.RESUME);
+
+    // and no follow-up command to execute again
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyCommands())
+        .extracting(Record::getIntent)
+        .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
+  }
+
+  @Test
+  public void shouldRejectResumeBatchOperationIfInvalidState() {
+    // given a batch operation wich is not paused
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey =
+        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+
+    // when we resume the batch operation which is not paused
+    engine
+        .batchOperation()
+        .newLifecycle()
+        .withBatchOperationKey(batchOperationKey)
+        .resumeWithoutExpectation();
+
+    // then we have a rejected command
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withRejectionType(RejectionType.INVALID_STATE)
+                .onlyCommandRejections())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.RESUME);
   }
 }

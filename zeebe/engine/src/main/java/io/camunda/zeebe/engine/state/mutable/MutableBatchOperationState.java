@@ -32,5 +32,7 @@ public interface MutableBatchOperationState extends BatchOperationState {
 
   void pause(final long batchOperationKey);
 
+  void resume(final long batchOperationKey);
+
   void complete(final long batchOperationKey);
 }

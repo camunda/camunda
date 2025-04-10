@@ -289,7 +289,7 @@ public class BatchOperationIT {
     writer.flush();
 
     // when
-    writer.getBatchOperationWriter().resumed(batchOperation.batchOperationKey());
+    writer.getBatchOperationWriter().resume(batchOperation.batchOperationKey());
     writer.flush();
 
     // then

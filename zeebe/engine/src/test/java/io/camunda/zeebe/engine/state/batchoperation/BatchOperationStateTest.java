@@ -404,6 +404,67 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.get().isPaused()).isTrue();
   }
 
+  @Test
+  void shouldResumeBatch() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+    state.create(batchOperationKey, batchRecord);
+    state.pause(batchOperationKey);
+
+    // when
+    state.resume(batchOperationKey);
+
+    // then
+    final var persistedBatchOperation = state.get(batchOperationKey);
+    assertThat(persistedBatchOperation).isNotEmpty();
+    assertThat(persistedBatchOperation.get().getStatus()).isEqualTo(BatchOperationStatus.STARTED);
+  }
+
+  @Test
+  void shouldReturnTrueForResumeBatch() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+    state.create(batchOperationKey, batchRecord);
+    state.start(batchOperationKey);
+    state.pause(batchOperationKey);
+
+    // when
+    final var persistedBatchOperation = state.get(batchOperationKey).get();
+    final var canResume = persistedBatchOperation.canResume();
+
+    // then
+
+    assertThat(canResume).isTrue();
+  }
+
+  @Test
+  void shouldReturnFalseForResumeBatch() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+    state.create(batchOperationKey, batchRecord);
+    state.fail(batchOperationKey);
+
+    // when
+    final var persistedBatchOperation = state.get(batchOperationKey).get();
+    final var canResume = persistedBatchOperation.canResume();
+
+    // then
+
+    assertThat(canResume).isFalse();
+  }
+
   private static UnsafeBuffer convertToBuffer(final Object object) {
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(object));
   }

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Collections;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +74,7 @@ public final class BatchOperationExecuteProcessor
       LOGGER.debug(
           "No items to process for BatchOperation {} on partition {}", batchKey, partitionId);
 
+      appendBatchOperationExecutionExecutedEvent(command.getValue(), Collections.emptySet());
       appendBatchOperationExecutionCompletedEvent(command.getValue());
       return;
     }
