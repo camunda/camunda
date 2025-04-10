@@ -1,7 +1,7 @@
 version: 3
 
 project:
-  id: camunda/optimize
+  id: sandbox:camunda/optimize
   labels:
   - camunda8
   - optimize
