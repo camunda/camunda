@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -29,6 +28,7 @@ import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.FeatureFlagProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
@@ -84,8 +84,7 @@ class TaskServiceTest {
   @Mock private TaskValidator taskValidator;
   @Mock private TasklistServicesAdapter tasklistServicesAdapter;
 
-  @Mock(answer = CALLS_REAL_METHODS)
-  private TasklistProperties tasklistProperties;
+  @Mock private TasklistProperties tasklistProperties;
 
   @InjectMocks private TaskService instance;
 
@@ -94,6 +93,7 @@ class TaskServiceTest {
   @BeforeEach
   public void setUp() {
     authenticationUtil = mockStatic(TasklistAuthenticationUtil.class);
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
   }
 
   @AfterEach
@@ -304,10 +304,11 @@ class TaskServiceTest {
     final var userA = "userA";
     final var userB = "userB";
     return Stream.of(
-        Arguments.of(null, true, userA, new UserDTO().setUserId(userA), false, userA),
-        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), true, userA),
-        Arguments.of(true, true, null, new UserDTO().setUserId(userB), false, userB),
-        Arguments.of(true, true, "", new UserDTO().setUserId(userB), false, userB));
+        Arguments.of(null, true, userA, new UserDTO().setUserId(userA), false, userA, false),
+        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), true, userA, false),
+        Arguments.of(true, true, null, new UserDTO().setUserId(userB), false, userB, false),
+        Arguments.of(true, true, "", new UserDTO().setUserId(userB), false, userB, false),
+        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), false, userA, true));
   }
 
   @ParameterizedTest
@@ -318,9 +319,12 @@ class TaskServiceTest {
       final String providedAssignee,
       final UserDTO user,
       final boolean isApiUser,
-      final String expectedAssignee) {
+      final String expectedAssignee,
+      final boolean allowNonSelfAssignment) {
 
     // Given
+    when(tasklistProperties.getFeatureFlag())
+        .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
@@ -555,8 +559,11 @@ class TaskServiceTest {
       final String providedAssignee,
       final UserDTO user,
       final boolean isApiUser,
-      final String expectedAssignee) {
+      final String expectedAssignee,
+      final boolean allowNonSelfAssignment) {
     // Given
+    when(tasklistProperties.getFeatureFlag())
+        .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
