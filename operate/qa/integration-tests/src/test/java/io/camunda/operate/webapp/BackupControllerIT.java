@@ -80,6 +80,7 @@ anymore, it will be done in a follow-up PR
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "management.endpoints.web.exposure.include = backupHistory",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })

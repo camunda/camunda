@@ -38,6 +38,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "management.endpoints.web.exposure.include = usage-metrics",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       "spring.profiles.active=test,consolidated-auth"
