@@ -145,7 +145,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-build-tools</artifactId>
-      <version>${project.version}</version>
+      <version>8.8.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -287,6 +287,7 @@
               <dep>io.camunda.optimize:optimize-backend</dep>
               <dep>io.camunda.optimize:optimize-backend:test-jar</dep>
               <dep>io.camunda.optimize:upgrade-optimize</dep>
+              <dep>io.camunda:zeebe-build-tools</dep>
               <dep>io.github.netmikey.logunit:logunit-core</dep>
               <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
               <dep>io.netty:netty-codec-http</dep>
