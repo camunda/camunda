@@ -544,7 +544,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @EnumSource(ProcessInstanceStateEnum.class)
-  void shouldSearchProcessInstancesByState(ProcessInstanceStateEnum state) {
+  void shouldSearchProcessInstancesByState(final ProcessInstanceStateEnum state) {
     // given
     final var request =
         """
@@ -577,5 +577,56 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     // then
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  void shouldSearchProcessInstancesWithOrOperator() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "state": "ACTIVE",
+            "tenantId": "tenant",
+            "$or": [
+              { "processDefinitionId": "process_v1" },
+              { "processDefinitionId": "process_v2", "hasIncident": true }
+            ]
+          }
+        }""";
+
+    final var orOperations =
+        List.of(
+            new ProcessInstanceFilter.Builder().processDefinitionIds("process_v1").build(),
+            new ProcessInstanceFilter.Builder()
+                .processDefinitionIds("process_v2")
+                .hasIncident(true)
+                .build());
+
+    final var expectedFilter =
+        new ProcessInstanceFilter.Builder()
+            .stateOperations(Operation.eq("ACTIVE"))
+            .tenantIdOperations(Operation.eq("tenant"));
+    orOperations.forEach(expectedFilter::addOrOperation);
+
+    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(processInstanceServices)
+        .search(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build());
   }
 }
