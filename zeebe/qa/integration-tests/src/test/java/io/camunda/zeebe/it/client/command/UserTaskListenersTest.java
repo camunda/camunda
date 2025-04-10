@@ -180,6 +180,51 @@ public class UserTaskListenersTest {
         });
   }
 
+  @Test
+  void shouldCancelUserTaskWhileInAssigningTransitionAfterCancelingListenerCompletes() {
+    // given
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t ->
+                t.zeebeAssignee("initial_assignee")
+                    .zeebeTaskListener(l -> l.assigning().type("my_assigning_listener"))
+                    .zeebeTaskListener(l -> l.canceling().type("my_canceling_listener")));
+
+    final JobHandler completeListenerJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).send().join();
+    client.newWorker().jobType("my_canceling_listener").handler(completeListenerJobHandler).open();
+
+    final var createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue();
+    final long processInstanceKey = createdUserTask.getProcessInstanceKey();
+
+    // wait until the user task enters the ASSIGNING transition
+    RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNING).withRecordKey(userTaskKey).await();
+
+    // when: cancel the process instance
+    final var cancelProcessInstanceFuture =
+        client.newCancelInstanceCommand(processInstanceKey).send();
+
+    // then: wait for successfully process cancellation
+    assertThatCode(cancelProcessInstanceFuture::join).doesNotThrowAnyException();
+
+    ZeebeAssertHelper.assertUserTaskCanceled(
+        userTaskKey,
+        userTask -> {
+          assertThat(userTask)
+              .describedAs("Canceled user task should match the originally created one")
+              .isEqualTo(createdUserTask);
+
+          assertThat(userTask.getAssignee())
+              .describedAs(
+                  "Assignee should be empty because the task was canceled during an ongoing `assigning` transition")
+              .isEmpty();
+        });
+  }
+
   /**
    * This test verifies the behavior when attempting to complete a Task Listener job with variables
    * while awaiting the result of the completion command.
@@ -862,6 +907,63 @@ public class UserTaskListenersTest {
           assertThat(userTask.getFollowUpDate()).isEqualTo("follow up date");
           assertThat(userTask.getCandidateUsersList()).containsExactly("User A", "User B");
           assertThat(userTask.getPriority()).isEqualTo(80);
+        });
+  }
+
+  @Test
+  void shouldCancelUserTaskAfterCompletingCancelingListenerWithPartialCorrections() {
+    // given
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.canceling().type("my_canceling_listener")));
+
+    final JobHandler completeCancelingListenerWithCorrections =
+        (jobClient, job) ->
+            client
+                .newCompleteCommand(job)
+                .withResult()
+                .correctPriority(3)
+                .correctAssignee("corrected_assignee")
+                .send()
+                .join();
+
+    client
+        .newWorker()
+        .jobType("my_canceling_listener")
+        .handler(completeCancelingListenerWithCorrections)
+        .open();
+
+    final long processInstanceKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    // when: cancel the process instance
+    final var cancelProcessInstanceFuture =
+        client.newCancelInstanceCommand(processInstanceKey).send();
+
+    // then: wait for successfully process cancellation
+    assertThatCode(cancelProcessInstanceFuture::join).doesNotThrowAnyException();
+
+    // and: verify user task was canceled with partial corrections applied by canceling listener
+    ZeebeAssertHelper.assertUserTaskCanceled(
+        userTaskKey,
+        userTask -> {
+          // not changed attributes
+          assertThat(userTask.getCandidateGroupsList()).isEmpty();
+          assertThat(userTask.getCandidateUsersList()).isEmpty();
+          assertThat(userTask.getDueDate()).isEmpty();
+          assertThat(userTask.getFollowUpDate()).isEmpty();
+          assertThat(userTask.getVariables()).isEmpty();
+          assertThat(userTask.getAction()).isEmpty();
+          // updated attributes
+          assertThat(userTask.getAssignee()).isEqualTo("corrected_assignee");
+          assertThat(userTask.getPriority()).isEqualTo(3);
+          assertThat(userTask.getChangedAttributes())
+              .describedAs("Only corrected attributes should be reported as changed")
+              .containsExactly(UserTaskRecord.ASSIGNEE, UserTaskRecord.PRIORITY);
         });
   }
 
