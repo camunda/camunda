@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {isNil} from 'lodash';
+import isNil from 'lodash/isNil';
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {TOKEN_OPERATIONS} from 'modules/constants';

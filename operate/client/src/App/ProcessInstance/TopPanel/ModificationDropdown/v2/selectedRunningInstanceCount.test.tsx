@@ -13,15 +13,10 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
-import * as pageParamsModule from 'App/ProcessInstance/useProcessInstancePageParams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 describe('selectedRunningInstanceCount', () => {
   beforeEach(() => {
-    jest
-      .spyOn(pageParamsModule, 'useProcessInstancePageParams')
-      .mockReturnValue({processInstanceId: 'processInstanceId123'});
-
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {

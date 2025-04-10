@@ -21,7 +21,6 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {incidentFlowNodeMetaData} from 'modules/mocks/metadata';
 import {open} from 'modules/mocks/diagrams';
 import {act} from 'react';
-import * as pageParamsModule from 'App/ProcessInstance/useProcessInstancePageParams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {fetchMetaData, init} from 'modules/utils/flowNodeMetadata';
 
@@ -86,10 +85,6 @@ describe('Modification Dropdown', () => {
   ];
 
   beforeEach(() => {
-    jest
-      .spyOn(pageParamsModule, 'useProcessInstancePageParams')
-      .mockReturnValue({processInstanceId: 'processInstanceId123'});
-
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statisticsData,
     });

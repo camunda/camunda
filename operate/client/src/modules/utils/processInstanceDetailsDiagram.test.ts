@@ -16,19 +16,31 @@ describe('hasMultipleScopes', () => {
   });
 
   it('should return false if totalRunningInstancesByFlowNode is undefined', () => {
-    const parentFlowNode = {id: 'node1'} as BusinessObject;
+    const parentFlowNode: BusinessObject = {
+      id: 'node1',
+      name: 'Node 1',
+      $type: 'bpmn:SequenceFlow',
+    };
     const result = hasMultipleScopes(parentFlowNode, undefined);
     expect(result).toBe(false);
   });
 
   it('should return false if totalRunningInstancesByFlowNode does not contain the parentFlowNode id', () => {
-    const parentFlowNode = {id: 'node1'} as BusinessObject;
+    const parentFlowNode: BusinessObject = {
+      id: 'node1',
+      name: 'Node 1',
+      $type: 'bpmn:SequenceFlow',
+    };
     const result = hasMultipleScopes(parentFlowNode, {});
     expect(result).toBe(false);
   });
 
   it('should return false if the scope count is 0 or undefined', () => {
-    const parentFlowNode = {id: 'node1'} as BusinessObject;
+    const parentFlowNode: BusinessObject = {
+      id: 'node1',
+      name: 'Node 1',
+      $type: 'bpmn:SequenceFlow',
+    };
     const totalRunningInstancesByFlowNode = {
       node1: 0,
     };
@@ -40,7 +52,11 @@ describe('hasMultipleScopes', () => {
   });
 
   it('should return true if the scope count is greater than 1', () => {
-    const parentFlowNode = {id: 'node1'} as BusinessObject;
+    const parentFlowNode: BusinessObject = {
+      id: 'node1',
+      name: 'Node 1',
+      $type: 'bpmn:SequenceFlow',
+    };
     const totalRunningInstancesByFlowNode = {
       node1: 2,
     };
@@ -52,7 +68,12 @@ describe('hasMultipleScopes', () => {
   });
 
   it('should return false if the parentFlowNode has no parent and scope count is not greater than 1', () => {
-    const parentFlowNode = {id: 'node1', $parent: undefined} as BusinessObject;
+    const parentFlowNode: BusinessObject = {
+      id: 'node1',
+      name: 'Node 1',
+      $type: 'bpmn:SequenceFlow',
+      $parent: undefined,
+    };
     const totalRunningInstancesByFlowNode = {
       node1: 0,
     };
@@ -64,18 +85,22 @@ describe('hasMultipleScopes', () => {
   });
 
   it('should return true if a parent in the hierarchy has a scope count greater than 1', () => {
-    const parentFlowNode = {
+    const parentFlowNode: BusinessObject = {
       id: 'node1',
+      name: 'Node 1',
+      $type: 'bpmn:Process',
       $parent: {
         id: 'node2',
+        name: 'Node 2',
         $type: 'bpmn:SubProcess',
         $parent: {
           id: 'node3',
+          name: 'Node 3',
           $type: 'bpmn:SubProcess',
           $parent: undefined,
         },
       },
-    } as BusinessObject;
+    };
 
     const totalRunningInstancesByFlowNode = {
       node1: 0,
@@ -91,18 +116,22 @@ describe('hasMultipleScopes', () => {
   });
 
   it('should return false if no parent in the hierarchy has a scope count greater than 1', () => {
-    const parentFlowNode = {
+    const parentFlowNode: BusinessObject = {
       id: 'node1',
+      name: 'Node 1',
+      $type: 'bpmn:Process',
       $parent: {
         id: 'node2',
+        name: 'Node 2',
         $type: 'bpmn:SubProcess',
         $parent: {
           id: 'node3',
+          name: 'Node 3',
           $type: 'bpmn:SubProcess',
           $parent: undefined,
         },
       },
-    } as BusinessObject;
+    };
 
     const totalRunningInstancesByFlowNode = {
       node1: 0,
@@ -118,7 +147,7 @@ describe('hasMultipleScopes', () => {
   });
 
   it('should stop checking parents if a non-SubProcess parent is encountered', () => {
-    const parentFlowNode = {
+    const parentFlowNode: BusinessObject = {
       id: 'node1',
       name: 'Node 1',
       $type: 'bpmn:SequenceFlow',
@@ -133,7 +162,7 @@ describe('hasMultipleScopes', () => {
           $parent: undefined,
         },
       },
-    } as BusinessObject;
+    };
 
     const totalRunningInstancesByFlowNode = {
       node1: 0,

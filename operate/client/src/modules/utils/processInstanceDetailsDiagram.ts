@@ -19,9 +19,9 @@ const hasMultipleScopes = (
   const totalRunningInstancesCount =
     totalRunningInstancesByFlowNode?.[parentFlowNode.id];
 
-  const scopeCount = totalRunningInstancesCount;
+  const scopeCount = totalRunningInstancesCount ?? 0;
 
-  if ((scopeCount ?? 0) > 1) {
+  if (scopeCount > 1) {
     return true;
   }
 

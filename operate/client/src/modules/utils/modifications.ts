@@ -11,6 +11,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {tracking} from 'modules/tracking';
 import {generateUniqueID} from './generateUniqueID';
+import {TOKEN_OPERATIONS} from 'modules/constants';
 
 const finishMovingToken = (
   affectedTokenCount: number,
@@ -73,8 +74,8 @@ const generateParentScopeIds = (
       const hasExistingParentScopeId =
         modificationsStore.flowNodeModifications.some(
           (modification) =>
-            (modification.operation === 'ADD_TOKEN' ||
-              modification.operation === 'MOVE_TOKEN') &&
+            (modification.operation === TOKEN_OPERATIONS.ADD_TOKEN ||
+              modification.operation === TOKEN_OPERATIONS.MOVE_TOKEN) &&
             Object.keys(modification.parentScopeIds).includes(flowNodeId),
         ) || totalRunningInstancesByFlowNode?.[flowNodeId] === 1;
 
