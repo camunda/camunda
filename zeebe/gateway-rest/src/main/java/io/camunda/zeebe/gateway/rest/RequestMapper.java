@@ -64,8 +64,8 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.RoleServices.AddEntityToRoleRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
@@ -325,11 +325,11 @@ public class RequestMapper {
                 roleCreateRequest.getDescription()));
   }
 
-  public static Either<ProblemDetail, AddEntityToRoleRequest> toRoleAddEntityRequest(
-      final String roleId, final String entityId, final EntityType entityType) {
+  public static Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
+      final String roleId, final String memberId, final EntityType entityType) {
     return getResult(
-        RoleRequestValidator.validateAddEntityRequest(roleId, entityId, entityType),
-        () -> new AddEntityToRoleRequest(roleId, entityId, entityType));
+        RoleRequestValidator.validateMemberRequest(roleId, memberId, entityType),
+        () -> new RoleMemberRequest(roleId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
