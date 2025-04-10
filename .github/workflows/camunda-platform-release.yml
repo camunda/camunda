@@ -82,7 +82,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           name: ${{ inputs.releaseVersion }}
-          artifacts: "release-artifacts/*"
+#          artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
           draft: true
           body: ${{ steps.gen-changelog.outputs.changelog }}
