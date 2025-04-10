@@ -105,7 +105,7 @@ const hasPendingCancelOrMoveModification = (
   if (flowNodeInstanceKey !== undefined) {
     return modificationsStore.flowNodeModifications.some(
       (modification) =>
-        modification.operation !== 'ADD_TOKEN' &&
+        modification.operation !== TOKEN_OPERATIONS.ADD_TOKEN &&
         modification.flowNodeInstanceKey === flowNodeInstanceKey,
     );
   }
