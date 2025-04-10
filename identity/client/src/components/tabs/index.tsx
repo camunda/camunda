@@ -43,7 +43,7 @@ const Tabs = <T extends { key: string; label: string; content: ReactNode }>({
 
   useEffect(() => {
     if (selectedTabIndex === -1) {
-      navigate(`${path}/${tabs[0].key}`, { replace: true });
+      void navigate(`${path}/${tabs[0].key}`, { replace: true });
     }
   }, [navigate, path, selectedTabIndex]);
 

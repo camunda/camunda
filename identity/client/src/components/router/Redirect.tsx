@@ -17,7 +17,7 @@ const Redirect: FC<RedirectProps> = ({ to }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate(to, { replace: true });
+    void navigate(to, { replace: true });
   }, [navigate, to]);
 
   return null;

@@ -64,7 +64,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     }
 
     if (username && password) {
-      login(username, password).then(({ success, message }) => {
+      void login(username, password).then(({ success, message }) => {
         if (success) {
           onSuccess();
         } else {
