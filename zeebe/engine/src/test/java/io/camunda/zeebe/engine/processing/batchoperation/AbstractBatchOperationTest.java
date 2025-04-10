@@ -70,17 +70,14 @@ abstract class AbstractBatchOperationTest {
         convertToBuffer(
             new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
 
-    final var batchKey =
-        engine
-            .batchOperation()
-            .newCreation(BatchOperationType.PROCESS_CANCELLATION)
-            .withFilter(filterBuffer)
-            .waitForStarted()
-            .create()
-            .getValue()
-            .getBatchOperationKey();
-
-    return batchKey;
+    return engine
+        .batchOperation()
+        .newCreation(BatchOperationType.PROCESS_CANCELLATION)
+        .withFilter(filterBuffer)
+        .waitForStarted()
+        .create()
+        .getValue()
+        .getBatchOperationKey();
   }
 
   protected void cancelBatchOperation(final Long batchOperationKey) {
