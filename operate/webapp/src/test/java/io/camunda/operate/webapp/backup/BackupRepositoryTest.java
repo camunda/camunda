@@ -32,7 +32,17 @@ public class BackupRepositoryTest {
 
     @ParameterizedTest
     @ValueSource(
-        strings = {"23a", "backup24*", "**", "12389128391829381923891238", "  ", "\n", "\t", "abcd123*", "123*?query=all"})
+        strings = {
+          "23a",
+          "backup24*",
+          "**",
+          "12389128391829381923891238",
+          "  ",
+          "\n",
+          "\t",
+          "abcd123*",
+          "123*?query=all"
+        })
     public void shouldNotBeAvalidPattern(final String pattern) {
       assertThat(BackupRepository.validPattern(pattern))
           .satisfies(p -> assertThat(p.isLeft()).withFailMessage("result is " + p).isTrue());
