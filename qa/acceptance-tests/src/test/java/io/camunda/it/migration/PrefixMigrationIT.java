@@ -16,6 +16,7 @@ import static io.camunda.it.migration.util.PrefixMigrationITUtils.createCamundaC
 import static io.camunda.it.migration.util.PrefixMigrationITUtils.requestProcessInstanceFromV1;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbDatabaseType;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -40,7 +41,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -198,7 +198,7 @@ public class PrefixMigrationIT {
             Collections.nCopies(TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION, null));
 
     // validate all 8.7 operate/tasklist indices have been created
-    Awaitility.await("Await schema readiness")
+    await("Await schema readiness")
         .timeout(Duration.ofMinutes(1))
         .pollInterval(Duration.ofMillis(500))
         .until(() -> setupHelper.validateSchemaCreation(shortUUID));
@@ -228,7 +228,7 @@ public class PrefixMigrationIT {
             SearchEngineConfiguration.of(b -> b),
             new ObjectMapper());
 
-    Awaitility.await("All indices migrated")
+    await("All indices migrated")
         .untilAsserted(
             () -> {
               Assertions.assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
@@ -262,7 +262,7 @@ public class PrefixMigrationIT {
             .join();
 
     // Wait for documents to be written to indices
-    Awaitility.await("document should be written")
+    await("document should be written")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -287,11 +287,16 @@ public class PrefixMigrationIT {
       STANDALONE_CAMUNDA.start();
       STANDALONE_CAMUNDA.awaitCompleteTopology();
       try (final var currentCamundaClient = STANDALONE_CAMUNDA.newClientBuilder().build()) {
-        final var processDefinitions =
-            currentCamundaClient.newProcessDefinitionSearchRequest().send().join();
-        assertThat(processDefinitions.items().size()).isEqualTo(1);
-        assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
-            .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+        await("documents are migrated")
+            .atMost(Duration.ofSeconds(30))
+            .untilAsserted(
+                () -> {
+                  final var processDefinitions =
+                      currentCamundaClient.newProcessDefinitionSearchRequest().send().join();
+                  assertThat(processDefinitions.items().size()).isEqualTo(1);
+                  assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
+                      .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+                });
       }
     } finally {
       STANDALONE_CAMUNDA.stop();
