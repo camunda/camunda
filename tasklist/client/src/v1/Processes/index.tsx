@@ -30,7 +30,7 @@ import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from './empty-message-image.svg';
 import {observer} from 'mobx-react-lite';
 import {newProcessInstance} from 'v1/newProcessInstance';
-import {FirstTimeModal} from './FirstTimeModal';
+import {FirstTimeModal} from 'common/processes/FirstTimeModal';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {logger} from 'common/utils/logger';
 import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
