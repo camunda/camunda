@@ -16,8 +16,8 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
@@ -37,8 +37,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class CompatibilityTasklistUserTaskAuthorizationIT {
 
   @MultiDbTestApplication
-  private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
-      new TestSimpleCamundaApplication()
+  private static final TestCamundaApplication STANDALONE_CAMUNDA =
+      new TestCamundaApplication()
           .withAuthorizationsEnabled()
           .withBasicAuth()
           .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true);

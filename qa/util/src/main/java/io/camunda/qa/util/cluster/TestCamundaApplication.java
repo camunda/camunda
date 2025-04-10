@@ -45,16 +45,15 @@ import org.springframework.util.unit.DataSize;
  * applications (like ES containers, etc.), to keep it simple.
  */
 @SuppressWarnings("UnusedReturnValue")
-public final class TestSimpleCamundaApplication
-    extends TestSpringApplication<TestSimpleCamundaApplication>
-    implements TestGateway<TestSimpleCamundaApplication>,
-        TestStandaloneApplication<TestSimpleCamundaApplication> {
+public final class TestCamundaApplication extends TestSpringApplication<TestCamundaApplication>
+    implements TestGateway<TestCamundaApplication>,
+        TestStandaloneApplication<TestCamundaApplication> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestSimpleCamundaApplication.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestCamundaApplication.class);
   private final BrokerBasedProperties brokerProperties;
   private final CamundaSecurityProperties securityConfig;
 
-  public TestSimpleCamundaApplication() {
+  public TestCamundaApplication() {
     super(
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
@@ -101,7 +100,7 @@ public final class TestSimpleCamundaApplication
   }
 
   @Override
-  public TestSimpleCamundaApplication stop() {
+  public TestCamundaApplication stop() {
     // clean up ES/OS indices
     LOGGER.info("Stopping standalone camunda test...");
     return super.stop();
@@ -118,7 +117,7 @@ public final class TestSimpleCamundaApplication
   }
 
   @Override
-  public TestSimpleCamundaApplication withProperty(final String key, final Object value) {
+  public TestCamundaApplication withProperty(final String key, final Object value) {
     // Since the security config is not constructed from the properties, we need to manually update
     // it when we override a property.
     AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
@@ -134,19 +133,19 @@ public final class TestSimpleCamundaApplication
     return super.createSpringBuilder();
   }
 
-  public TestSimpleCamundaApplication withAuthorizationsEnabled() {
+  public TestCamundaApplication withAuthorizationsEnabled() {
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
-  public TestSimpleCamundaApplication withMultiTenancyEnabled() {
+  public TestCamundaApplication withMultiTenancyEnabled() {
     withAuthenticatedAccess();
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setEnabled(true));
   }
 
   @Override
-  public TestSimpleCamundaApplication self() {
+  public TestCamundaApplication self() {
     return this;
   }
 
@@ -186,7 +185,7 @@ public final class TestSimpleCamundaApplication
   }
 
   @Override
-  public TestSimpleCamundaApplication withGatewayConfig(final Consumer<GatewayCfg> modifier) {
+  public TestCamundaApplication withGatewayConfig(final Consumer<GatewayCfg> modifier) {
     modifier.accept(brokerProperties.getGateway());
     return this;
   }
@@ -200,7 +199,7 @@ public final class TestSimpleCamundaApplication
    * Modifies the security configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
    */
-  public TestSimpleCamundaApplication withSecurityConfig(
+  public TestCamundaApplication withSecurityConfig(
       final Consumer<CamundaSecurityProperties> modifier) {
     modifier.accept(securityConfig);
     return this;
@@ -215,7 +214,7 @@ public final class TestSimpleCamundaApplication
    * @return itself for chaining
    */
   @Override
-  public TestSimpleCamundaApplication withExporter(
+  public TestCamundaApplication withExporter(
       final String id, final Consumer<ExporterCfg> modifier) {
     final var cfg = new ExporterCfg();
     modifier.accept(cfg);
@@ -228,8 +227,7 @@ public final class TestSimpleCamundaApplication
    * started, but likely has no effect until it's restarted.
    */
   @Override
-  public TestSimpleCamundaApplication withBrokerConfig(
-      final Consumer<BrokerBasedProperties> modifier) {
+  public TestCamundaApplication withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(brokerProperties);
     return this;
   }

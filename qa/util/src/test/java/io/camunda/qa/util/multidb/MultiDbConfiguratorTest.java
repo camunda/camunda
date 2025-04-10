@@ -11,7 +11,7 @@ import static io.camunda.qa.util.multidb.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
@@ -29,7 +29,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithElasticsearch() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -112,7 +112,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureElasticsearchWithRetention() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -147,7 +147,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithOpenSearchWithRetention() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -183,7 +183,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithOldElasticsearchExporter() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -269,7 +269,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithOpensearch() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -362,7 +362,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithOpensearchIncludingOldExporter() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -456,7 +456,7 @@ public class MultiDbConfiguratorTest {
   }
 
   private <T> void assertProperty(
-      final TestSimpleCamundaApplication applicationContext,
+      final TestCamundaApplication applicationContext,
       final String propertyKey,
       final T expectedValue) {
     final T propertyValue =

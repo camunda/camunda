@@ -10,8 +10,8 @@ package io.camunda.it;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -27,8 +27,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class StandaloneCamundaTest {
 
   @MultiDbTestApplication
-  private static final TestSimpleCamundaApplication CAMUNDA_APPLICATION =
-      new TestSimpleCamundaApplication().withUnauthenticatedAccess();
+  private static final TestCamundaApplication CAMUNDA_APPLICATION =
+      new TestCamundaApplication().withUnauthenticatedAccess();
 
   private static CamundaClient camundaClient;
 

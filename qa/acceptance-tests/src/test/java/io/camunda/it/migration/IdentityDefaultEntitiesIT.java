@@ -13,7 +13,7 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
 
 import io.camunda.application.Profile;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -45,8 +45,8 @@ public class IdentityDefaultEntitiesIT {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   @TestZeebe(autoStart = false)
-  final TestSimpleCamundaApplication camunda =
-      new TestSimpleCamundaApplication()
+  final TestCamundaApplication camunda =
+      new TestCamundaApplication()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
 
   @Test

@@ -16,7 +16,7 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.qa.util.cluster.HistoryBackupClient;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
@@ -116,7 +116,7 @@ public class BackupRestoreIT {
   }
 
   private void setup(final BackupRestoreTestConfig config) throws Exception {
-    testStandaloneApplication = new TestSimpleCamundaApplication().withUnauthenticatedAccess();
+    testStandaloneApplication = new TestCamundaApplication().withUnauthenticatedAccess();
     configurator = new MultiDbConfigurator(testStandaloneApplication);
     testStandaloneApplication.withBrokerConfig(this::configureZeebeBackupStore);
     final String dbUrl;

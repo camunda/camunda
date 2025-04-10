@@ -24,7 +24,7 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.S
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -58,8 +58,8 @@ public class PrefixMigrationIT {
   private static final int TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION = 34;
 
   @MultiDbTestApplication(managedLifecycle = false)
-  private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
-      new TestSimpleCamundaApplication().withBasicAuth().withAuthorizationsEnabled();
+  private static final TestCamundaApplication STANDALONE_CAMUNDA =
+      new TestCamundaApplication().withBasicAuth().withAuthorizationsEnabled();
 
   @BeforeAll
   public static void beforeAll() {
