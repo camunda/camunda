@@ -1585,6 +1585,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /process-instances/batch-operations/incident-resolution:
+    post:
+      tags:
+        - Process instance
+      operationId: resolveIncidentsBatchOperation
+      summary: Create a batch operation to resolve incidents of process instances
+      description: |
+        Resolves multiple instances of process instances.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceFilter"
+      responses:
+        "202":
+          description: The batch operation request was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationCreatedResult"
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/migration:
     post:
       tags:
