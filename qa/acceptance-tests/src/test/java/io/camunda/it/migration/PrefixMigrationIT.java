@@ -7,13 +7,6 @@
  */
 package io.camunda.it.migration;
 
-import static io.camunda.it.migration.util.PrefixMigrationITUtils.GATEWAY_GRPC_PORT;
-import static io.camunda.it.migration.util.PrefixMigrationITUtils.MANAGEMENT_PORT;
-import static io.camunda.it.migration.util.PrefixMigrationITUtils.OLD_OPERATE_PREFIX;
-import static io.camunda.it.migration.util.PrefixMigrationITUtils.OLD_TASKLIST_PREFIX;
-import static io.camunda.it.migration.util.PrefixMigrationITUtils.SERVER_PORT;
-import static io.camunda.it.migration.util.PrefixMigrationITUtils.createCamundaClient;
-import static io.camunda.it.migration.util.PrefixMigrationITUtils.requestProcessInstanceFromV1;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbDatabaseType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -21,9 +14,12 @@ import static org.awaitility.Awaitility.await;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
@@ -36,8 +32,9 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
 import java.io.IOException;
-import java.net.http.HttpResponse;
+import java.net.URI;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -53,6 +50,11 @@ import org.testcontainers.utility.DockerImageName;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class PrefixMigrationIT {
+  public static final int SERVER_PORT = 8080;
+  public static final int MANAGEMENT_PORT = 9600;
+  public static final int GATEWAY_GRPC_PORT = 26500;
+  public static final String OLD_OPERATE_PREFIX = "operate-dev";
+  public static final String OLD_TASKLIST_PREFIX = "tasklist-dev";
   private static final String DEFAULT_ES_OS_URL_FOR_MULTI_DB =
       "http://host.testcontainers.internal:9200";
   private static final int TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION = 34;
@@ -261,20 +263,23 @@ public class PrefixMigrationIT {
             .send()
             .join();
 
+    final var operateClient = new TestRestOperateClient(camunda87);
+
     // Wait for documents to be written to indices
     await("document should be written")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
               final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
-              final HttpResponse<String> processInstanceResponse =
-                  requestProcessInstanceFromV1(
-                      String.format("http://localhost:%d/", camunda87.getMappedPort(SERVER_PORT)),
-                      processInstanceKey);
+              final var processInstanceResponse =
+                  operateClient.getProcessInstanceWith(processInstanceKey);
 
-              assertThat(processInstanceResponse.statusCode()).isEqualTo(200);
-              assertThat(processInstanceResponse.body())
-                  .contains(Long.toString(processInstanceKey));
+              assertThat(processInstanceResponse.isRight()).isTrue();
+              assertThat(
+                      processInstanceResponse.get().processInstances().stream()
+                          .anyMatch(
+                              processInstance -> processInstance.getKey() == processInstanceKey))
+                  .isTrue();
             });
 
     camunda87.stop();
@@ -301,5 +306,30 @@ public class PrefixMigrationIT {
     } finally {
       STANDALONE_CAMUNDA.stop();
     }
+  }
+
+  private CamundaClient createCamundaClient(final GenericContainer<?> container)
+      throws IOException {
+
+    return CamundaClient.newClientBuilder()
+        .grpcAddress(URI.create("http://localhost:" + container.getMappedPort(GATEWAY_GRPC_PORT)))
+        .restAddress(URI.create("http://localhost:" + container.getMappedPort(SERVER_PORT)))
+        .usePlaintext()
+        .credentialsProvider(
+            new CredentialsProvider() {
+              @Override
+              public void applyCredentials(final CredentialsApplier applier) {
+                applier.put(
+                    "Authorization",
+                    "Basic %s"
+                        .formatted(Base64.getEncoder().encodeToString("demo:demo".getBytes())));
+              }
+
+              @Override
+              public boolean shouldRetryRequest(final StatusCode statusCode) {
+                return false;
+              }
+            })
+        .build();
   }
 }
