@@ -145,9 +145,16 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public List<GetBackupStateResponseDto> getBackups(
-      final String repositoryName, final boolean verbose) {
+      final String repositoryName, final boolean verbose, final String pattern) {
+    final var validatedPattern = BackupRepository.validPattern(pattern);
+
+    validatedPattern.ifLeft(
+        ex -> {
+          throw new InvalidRequestException(ex.getMessage(), ex);
+        });
     final var request =
-        getSnapshotRequestBuilder(repositoryName, Metadata.SNAPSHOT_NAME_PREFIX + "*")
+        getSnapshotRequestBuilder(
+                repositoryName, Metadata.SNAPSHOT_NAME_PREFIX + validatedPattern.get())
             .verbose(verbose)
             .build();
     final OpenSearchGetSnapshotResponse response;
