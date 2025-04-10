@@ -13,10 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.zeebeimport.v870.record.value.ProcessInstanceRecordValueImpl;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
@@ -48,7 +48,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
           BpmnElementType.EVENT_SUB_PROCESS,
           BpmnElementType.SERVICE_TASK,
           BpmnElementType.USER_TASK,
-          BpmnElementType.MULTI_INSTANCE_BODY);
+          BpmnElementType.MULTI_INSTANCE_BODY,
+          BpmnElementType.AD_HOC_SUB_PROCESS);
 
   static {
     FLOW_NODE_STATES.add(ELEMENT_ACTIVATING.name());

@@ -15,13 +15,16 @@ import {
 } from 'modules/testing-library';
 import {BottomPanel} from '.';
 import {open} from 'modules/mocks/diagrams';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {elements, Wrapper} from './tests/mocks';
+import {elements, SOURCE_PROCESS_DEFINITION_KEY, Wrapper} from './tests/mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+
+const TARGET_PROCESS_DEFINITION_KEY = '2';
 
 jest.mock('modules/stores/processes/processes.migration', () => ({
   processesStore: {
     migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
     getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),
+    selectedTargetProcessId: TARGET_PROCESS_DEFINITION_KEY,
   },
 }));
 
@@ -82,50 +85,128 @@ const getMatcherFunction = (flowNodeName: string): MatcherFunction => {
 
 describe('MigrationView/BottomPanel', () => {
   it('should render source flow nodes', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
+
     render(<BottomPanel />, {wrapper: Wrapper});
 
-    expect(await screen.findByText(requestForPayment.name)).toBeInTheDocument();
-    expect(screen.getByText(checkPayment.name)).toBeInTheDocument();
-    expect(screen.getByText(ExclusiveGateway.name)).toBeInTheDocument();
-    expect(screen.getByText(shipArticles.name)).toBeInTheDocument();
-    expect(screen.getByText(shippingSubProcess.name)).toBeInTheDocument();
-    expect(screen.getByText(confirmDelivery.name)).toBeInTheDocument();
-    expect(screen.getByText(MessageInterrupting.name)).toBeInTheDocument();
-    expect(screen.getByText(TimerInterrupting.name)).toBeInTheDocument();
-    expect(screen.getByText(MessageNonInterrupting.name)).toBeInTheDocument();
-    expect(screen.getByText(TimerNonInterrupting.name)).toBeInTheDocument();
-    expect(screen.getByText(MessageIntermediateCatch.name)).toBeInTheDocument();
-    expect(screen.getByText(TimerIntermediateCatch.name)).toBeInTheDocument();
-    expect(screen.getByText(TaskX.name)).toBeInTheDocument();
-    expect(screen.getByText(TaskY.name)).toBeInTheDocument();
-    expect(screen.getByText(MessageEventSubProcess.name)).toBeInTheDocument();
-    expect(screen.getByText(TimerEventSubProcess.name)).toBeInTheDocument();
-    expect(screen.getByText(MessageReceiveTask.name)).toBeInTheDocument();
-    expect(screen.getByText(BusinessRuleTask.name)).toBeInTheDocument();
-    expect(screen.getByText(ScriptTask.name)).toBeInTheDocument();
-    expect(screen.getByText(SendTask.name)).toBeInTheDocument();
-    expect(screen.getByText(TimerStartEvent.name)).toBeInTheDocument();
-    expect(screen.getByText(EventBasedGateway.name)).toBeInTheDocument();
-    expect(screen.getByText(IntermediateTimerEvent.name)).toBeInTheDocument();
-    expect(screen.getByText(SignalIntermediateCatch.name)).toBeInTheDocument();
-    expect(screen.getByText(SignalBoundaryEvent.name)).toBeInTheDocument();
-    expect(screen.getByText(SignalEventSubProcess.name)).toBeInTheDocument();
-    expect(screen.getByText(SignalStartEvent.name)).toBeInTheDocument();
-    expect(screen.getByText(ErrorEventSubProcess.name)).toBeInTheDocument();
-    expect(screen.getByText(ErrorStartEvent.name)).toBeInTheDocument();
     expect(
-      screen.getByText(EscalationEventSubProcess.name),
+      await screen.findByText(getMatcherFunction(requestForPayment.name)),
     ).toBeInTheDocument();
-    expect(screen.getByText(EscalationStartEvent.name)).toBeInTheDocument();
-    expect(screen.getByText(CompensationTask.name)).toBeInTheDocument();
     expect(
-      screen.getByText(CompensationBoundaryEvent.name),
+      screen.getByText(getMatcherFunction(checkPayment.name)),
     ).toBeInTheDocument();
-    expect(screen.getByText(MessageStartEvent.name)).toBeInTheDocument();
-    expect(screen.getByText(ParallelGateway_1.name)).toBeInTheDocument();
-    expect(screen.getByText(ParallelGateway_2.name)).toBeInTheDocument();
-    expect(screen.getByText(ParallelGateway_3.name)).toBeInTheDocument();
-    expect(screen.getByText(ParallelGateway_4.name)).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(checkPayment.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(ExclusiveGateway.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(shipArticles.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(shippingSubProcess.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(confirmDelivery.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(MessageInterrupting.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(TimerInterrupting.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(MessageNonInterrupting.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(TimerNonInterrupting.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(MessageIntermediateCatch.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(TimerIntermediateCatch.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(TaskX.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(TaskY.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(MessageEventSubProcess.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(TimerEventSubProcess.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(MessageReceiveTask.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(BusinessRuleTask.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(ScriptTask.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(SendTask.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(TimerStartEvent.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(EventBasedGateway.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(IntermediateTimerEvent.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(SignalIntermediateCatch.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(SignalBoundaryEvent.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(SignalEventSubProcess.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(SignalStartEvent.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(ErrorEventSubProcess.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(ErrorStartEvent.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(EscalationEventSubProcess.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(EscalationStartEvent.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(CompensationTask.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(CompensationBoundaryEvent.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(MessageStartEvent.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(ParallelGateway_1.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(ParallelGateway_2.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(ParallelGateway_3.name)),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(getMatcherFunction(ParallelGateway_4.name)),
+    ).toBeInTheDocument();
 
     expect(screen.getAllByRole('row')).toHaveLength(
       HEADER_ROW_COUNT + CONTENT_ROW_COUNT,
@@ -154,22 +235,17 @@ describe('MigrationView/BottomPanel', () => {
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
-      mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
+      mockFetchProcessDefinitionXml().withSuccess(
+        open('instanceMigration.bpmn'),
+      );
+      mockFetchProcessDefinitionXml().withSuccess(
+        open('instanceMigration.bpmn'),
+      );
 
       const {user} = render(<BottomPanel />, {wrapper: Wrapper});
 
       const combobox = await screen.findByRole('combobox', {
         name: new RegExp(`target flow node for ${source.name}`, 'i'),
-      });
-
-      expect(combobox).toBeDisabled();
-
-      await user.click(
-        screen.getByRole('button', {name: /fetch target process/i}),
-      );
-
-      await waitFor(() => {
-        expect(combobox).toBeEnabled();
       });
 
       await user.selectOptions(combobox, target.name);
@@ -210,20 +286,17 @@ describe('MigrationView/BottomPanel', () => {
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
-      mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
+      mockFetchProcessDefinitionXml().withSuccess(
+        open('instanceMigration.bpmn'),
+      );
+      mockFetchProcessDefinitionXml().withSuccess(
+        open('instanceMigration.bpmn'),
+      );
 
       render(<BottomPanel />, {wrapper: Wrapper});
 
       const combobox = await screen.findByRole('combobox', {
         name: new RegExp(`target flow node for ${source.name}`, 'i'),
-      });
-
-      expect(combobox).toBeDisabled();
-
-      screen.getByRole('button', {name: /fetch target process/i}).click();
-
-      await waitFor(() => {
-        expect(combobox).toBeEnabled();
       });
 
       expect(
@@ -236,7 +309,14 @@ describe('MigrationView/BottomPanel', () => {
   );
 
   it('should auto-map flow nodes', async () => {
-    mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
+    // source process definition
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration.bpmn'));
+    // target process definition
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration_v2.bpmn'));
 
     render(<BottomPanel />, {wrapper: Wrapper});
 
@@ -331,8 +411,6 @@ describe('MigrationView/BottomPanel', () => {
       new RegExp(`target flow node for ${MessageStartEvent.name}`, 'i'),
     );
 
-    screen.getByRole('button', {name: /fetch target process/i}).click();
-
     await waitFor(() => {
       expect(comboboxCheckPayment).toBeEnabled();
     });
@@ -409,11 +487,16 @@ describe('MigrationView/BottomPanel', () => {
   });
 
   it('should add tags for unmapped flow nodes', async () => {
-    mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
+    // source process definition
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration.bpmn'));
+    // target process definition
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration_v2.bpmn'));
 
     const {user} = render(<BottomPanel />, {wrapper: Wrapper});
-
-    screen.getByRole('button', {name: /fetch target process/i}).click();
 
     const comboboxRequestForPayment = await screen.findByRole('combobox', {
       name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
@@ -578,11 +661,14 @@ describe('MigrationView/BottomPanel', () => {
   });
 
   it('should hide mapped flow nodes', async () => {
-    mockFetchProcessXML().withSuccess(open('instanceMigration_v2.bpmn'));
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration_v2.bpmn'));
 
     const {user} = render(<BottomPanel />, {wrapper: Wrapper});
-
-    screen.getByRole('button', {name: /fetch target process/i}).click();
 
     // wait for target combobox to be visible
     expect(

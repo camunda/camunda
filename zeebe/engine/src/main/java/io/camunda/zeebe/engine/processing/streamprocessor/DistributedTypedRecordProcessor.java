@@ -17,7 +17,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * distribute it a second time.
  *
  * <p>This interface provides some convenience for commands that get distributed. Instead of
- * checking if the command was distributed in the processor directly, the interface taskes care of
+ * checking if the command was distributed in the processor directly, the interface takes care of
  * it.
  *
  * @param <T>

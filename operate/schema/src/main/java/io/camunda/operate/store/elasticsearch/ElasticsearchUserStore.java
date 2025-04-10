@@ -13,10 +13,10 @@ import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.UserStore;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
 import java.io.IOException;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-@DependsOn("schemaStartup")
+@DependsOn("searchEngineSchemaInitializer")
 @Profile(
     "!"
         + OperateProfileService.LDAP_AUTH_PROFILE
@@ -57,18 +57,19 @@ public class ElasticsearchUserStore implements UserStore {
   @Qualifier("operateObjectMapper")
   protected ObjectMapper objectMapper;
 
-  @Autowired private UserIndex userIndex;
+  @Autowired private OperateUserIndex operateUserIndex;
 
-  protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {
+  protected String userEntityToJSONString(final UserEntity aUser) throws JsonProcessingException {
     return objectMapper.writeValueAsString(aUser);
   }
 
   @Override
-  public UserEntity getById(String id) {
+  public UserEntity getById(final String id) {
     final SearchRequest searchRequest =
-        new SearchRequest(userIndex.getAlias())
+        new SearchRequest(operateUserIndex.getAlias())
             .source(
-                new SearchSourceBuilder().query(QueryBuilders.termQuery(UserIndex.USER_ID, id)));
+                new SearchSourceBuilder()
+                    .query(QueryBuilders.termQuery(OperateUserIndex.USER_ID, id)));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       if (response.getHits().getTotalHits().value == 1) {
@@ -80,7 +81,7 @@ public class ElasticsearchUserStore implements UserStore {
       } else {
         throw new NotFoundException(String.format("Could not find user with userId '%s'.", id));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the user: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
@@ -88,14 +89,14 @@ public class ElasticsearchUserStore implements UserStore {
   }
 
   @Override
-  public void save(UserEntity user) {
+  public void save(final UserEntity user) {
     try {
       final IndexRequest request =
-          new IndexRequest(userIndex.getFullQualifiedName())
+          new IndexRequest(operateUserIndex.getFullQualifiedName())
               .id(user.getId())
               .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request, RequestOptions.DEFAULT);
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.error("Could not create user with userId {}", user.getUserId(), t);
     }
   }

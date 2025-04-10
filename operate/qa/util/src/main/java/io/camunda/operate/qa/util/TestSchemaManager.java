@@ -7,16 +7,8 @@
  */
 package io.camunda.operate.qa.util;
 
-import io.camunda.operate.schema.SchemaManager;
-
-public interface TestSchemaManager extends SchemaManager {
-  void deleteSchema();
-
+public interface TestSchemaManager {
   void deleteSchemaQuietly();
 
-  void setCreateSchema(boolean createSchema);
-
-  void setIndexPrefix(String indexPrefix);
-
-  void setDefaultIndexPrefix();
+  void refresh(final String indexPattern);
 }

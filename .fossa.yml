@@ -1,0 +1,144 @@
+version: 3
+
+project:
+  id: camunda/camunda
+  labels:
+  - camunda
+  policy: Camunda8 Distribution
+  url: https://github.com/camunda/camunda
+
+paths:
+  exclude:
+  - .github/optimize/scripts/healthStatusReport
+  - c8run/e2e_tests
+  - qa/core-application-e2e-test-suite
+  - tasklist/qa/backup-restore-tests
+
+maven:
+  scope-exclude:
+  - import
+  - provided
+  - system
+  - test
+
+targets:
+  exclude:
+  # qa
+  - type: maven
+    path: bom/
+    target: io.camunda:camunda-qa
+  - type: maven
+    path: bom/
+    target: io.camunda:camunda-qa-acceptance-tests
+  - type: maven
+    path: bom/
+    target: io.camunda:camunda-qa-util
+  # testing
+  - type: maven
+    path: bom/
+    target: io.camunda:camunda-process-test-spring
+  # operate
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-backup-restore-tests
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-data-generator
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-it-tests
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-performance-test
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-parent
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-test-fixture-110
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-test-fixture-120
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-test-fixture-130
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-test-fixture-800
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-test-fixture-810
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-test-fixture-820
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-test-fixture-830
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-test-fixture-840
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-migration-tests-test-fixture-850
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-query-performance-tests
+  - type: maven
+    path: bom/
+    target: io.camunda:operate-qa-util
+  # tasklist
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-qa
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-qa-backup-restore-tests
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-qa-migration-tests
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-qa-migration-tests-parent
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-qa-migration-tests-test-fixture-810
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-qa-migration-tests-test-fixture-820
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-qa-migration-tests-test-fixture-830
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-qa-migration-tests-test-fixture-840
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-qa-migration-tests-test-fixture-850
+  - type: maven
+    path: bom/
+    target: io.camunda:tasklist-test-coverage
+  # zeebe
+  - type: maven
+    path: bom/
+    target: io.camunda:zeebe-qa
+  - type: maven
+    path: bom/
+    target: io.camunda:zeebe-qa-integration-tests
+  - type: maven
+    path: bom/
+    target: io.camunda:zeebe-qa-update-tests
+  - type: maven
+    path: bom/
+    target: io.camunda:zeebe-qa-util
+  - type: maven
+    path: bom/
+    target: io.camunda:zeebe-protocol-test-util
+  - type: maven
+    path: bom/
+    target: io.camunda:zeebe-test-util

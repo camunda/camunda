@@ -21,10 +21,10 @@ import {
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TargetDiagram} from '../TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {Wrapper} from './mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Target Diagram', () => {
   it('should display initial state in the diagram header and diagram panel', async () => {
@@ -52,7 +52,7 @@ describe('Target Diagram', () => {
 
   it('should render process and version components according to the step number', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     await processesStore.fetchProcesses();
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
@@ -110,7 +110,7 @@ describe('Target Diagram', () => {
 
   it('should render diagram on selection and re-render on version change', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     await processesStore.fetchProcesses();
 
@@ -125,7 +125,9 @@ describe('Target Diagram', () => {
     expect(screen.getByRole('button', {name: /zoom in diagram/i}));
     expect(screen.getByRole('button', {name: /zoom out diagram/i}));
 
-    mockFetchProcessXML().withDelay(mockProcessWithInputOutputMappingsXML);
+    mockFetchProcessDefinitionXml().withDelay(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
     await user.click(screen.getByRole('combobox', {name: 'Target Version'}));
     await user.click(screen.getByRole('option', {name: '2'}));
@@ -139,7 +141,7 @@ describe('Target Diagram', () => {
 
   it('should display error message on selection if diagram could not be fetched', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withServerError();
+    mockFetchProcessDefinitionXml().withServerError();
     await processesStore.fetchProcesses();
 
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
@@ -155,7 +157,7 @@ describe('Target Diagram', () => {
 
   it('should render flow node overlays', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     await processesStore.fetchProcesses();
     await processStatisticsStore.fetchProcessStatistics();

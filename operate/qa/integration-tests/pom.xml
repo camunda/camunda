@@ -412,12 +412,6 @@
     </dependency>
 
     <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
       <scope>test</scope>
@@ -432,6 +426,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-schema-manager</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -544,6 +544,7 @@
           </systemPropertyVariables>
           <environmentVariables>
             <CAMUNDA_OPERATE_DATABASE>${itDatabase}</CAMUNDA_OPERATE_DATABASE>
+            <CAMUNDA_DATABASE_TYPE>${itDatabase}</CAMUNDA_DATABASE_TYPE>
           </environmentVariables>
         </configuration>
         <executions>

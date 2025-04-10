@@ -13,7 +13,7 @@ Contents:
 
                     this is a local environment folder that contains configuration properties,
                     which can be used to overwrite default values of Optimize configuration. Also the logging
-                    level can be configured here.
+                    system can be configured here, by adding a Log4j2 config file named "environment-log4j2.xml".
 
         upgrade/
 
@@ -21,7 +21,7 @@ Contents:
 
         optimize-startup.sh (unix) or optimize-startup.bat (windows)
 
-                    a script to start elasticsearch and optimize in embedded Jetty container.
+                    a script to start Optimize in embedded Tomcat container.
 
 ==================
 

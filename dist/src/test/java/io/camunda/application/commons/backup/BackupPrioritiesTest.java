@@ -45,16 +45,16 @@ class BackupPrioritiesTest {
 
   @Test
   public void allImplementationsContainIndicesFromAllApps() {
-    final var operate =
+    final var index =
         ALL_IMPLEMENTATIONS.stream()
-            .filter(clz -> clz.getPackage().getName().contains("operate"))
+            .filter(clz -> clz.getPackage().getName().contains("index"))
             .toList();
-    assertThat(operate).isNotEmpty();
-    final var tasklist =
+    assertThat(index).isNotEmpty();
+    final var template =
         ALL_IMPLEMENTATIONS.stream()
-            .filter(clz -> clz.getPackage().getName().contains("tasklist"))
+            .filter(clz -> clz.getPackage().getName().contains("template"))
             .toList();
-    assertThat(tasklist).isNotEmpty();
+    assertThat(template).isNotEmpty();
   }
 
   @Test
@@ -176,9 +176,11 @@ class BackupPrioritiesTest {
         .containsExactlyInAnyOrder(
             "operate-decision-requirements-8.3.0_",
             "operate-metric-8.3.0_",
+            "operate-user-1.2.0_",
             "operate-process-8.3.0_",
             "tasklist-form-8.4.0_",
             "tasklist-metric-8.3.0_",
+            "tasklist-user-1.4.0_",
             "camunda-authorization-8.8.0_",
             "camunda-group-8.8.0_",
             "camunda-mapping-8.8.0_",

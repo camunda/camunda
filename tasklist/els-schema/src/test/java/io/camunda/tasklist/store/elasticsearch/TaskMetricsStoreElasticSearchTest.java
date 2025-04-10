@@ -10,9 +10,9 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.ASSIGNEE;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.EVENT_TASK_COMPLETED_BY_ASSIGNEE;
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT_TIME;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -26,9 +26,9 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -150,7 +150,8 @@ public class TaskMetricsStoreElasticSearchTest {
     assertThat(result).isEmpty();
   }
 
-  private SearchRequest buildSearchRequest(OffsetDateTime now, OffsetDateTime oneHourBefore) {
+  private SearchRequest buildSearchRequest(
+      final OffsetDateTime now, final OffsetDateTime oneHourBefore) {
     final BoolQueryBuilder rangeQuery =
         boolQuery()
             .must(QueryBuilders.termsQuery(EVENT, EVENT_TASK_COMPLETED_BY_ASSIGNEE))

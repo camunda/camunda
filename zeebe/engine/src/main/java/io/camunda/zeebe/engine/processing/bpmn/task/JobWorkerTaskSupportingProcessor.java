@@ -55,11 +55,20 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
   }
 
   @Override
-  public void onTerminate(final T element, final BpmnElementContext context) {
+  public TransitionOutcome onTerminate(final T element, final BpmnElementContext context) {
     if (isJobBehavior(element, context)) {
-      delegate.onTerminate(element, context);
+      return delegate.onTerminate(element, context);
     } else {
-      onTerminateInternal(element, context);
+      return onTerminateInternal(element, context);
+    }
+  }
+
+  @Override
+  public void finalizeTermination(final T element, final BpmnElementContext context) {
+    if (isJobBehavior(element, context)) {
+      delegate.finalizeTermination(element, context);
+    } else {
+      onFinalizeTerminationInternal(element, context);
     }
   }
 
@@ -81,5 +90,8 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
     return SUCCESS;
   }
 
-  protected abstract void onTerminateInternal(final T element, final BpmnElementContext context);
+  protected abstract TransitionOutcome onTerminateInternal(
+      final T element, final BpmnElementContext context);
+
+  protected void onFinalizeTerminationInternal(final T element, final BpmnElementContext context) {}
 }

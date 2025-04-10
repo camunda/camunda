@@ -15,6 +15,7 @@ public class ErrorMessages {
   public static final String ERROR_FAILED_GET_REQUEST = "Failed to execute get request";
   public static final String ERROR_FAILED_INDEX_REQUEST = "Failed to execute index request";
   public static final String ERROR_FAILED_SEARCH_QUERY = "Failed to execute search query";
+  public static final String ERROR_FAILED_AGGREGATE_QUERY = "Failed to execute aggregate query";
 
   public static final String ERROR_NOT_FOUND_AD_HOC_SUBPROCESS =
       "Failed to find Ad-Hoc Subprocess with ID '%s'";
@@ -22,8 +23,7 @@ public class ErrorMessages {
   public static final String ERROR_NOT_FOUND_FORM_BY_KEY = "Form with formKey %d not found";
   public static final String ERROR_NOT_FOUND_GROUP_BY_KEY = "Group with groupKey %d not found";
   public static final String ERROR_NOT_FOUND_GROUP_BY_NAME = "Group with group name %s not found";
-  public static final String ERROR_NOT_FOUND_MAPPING_BY_KEY =
-      "Mapping with mappingKey %d not found";
+  public static final String ERROR_NOT_FOUND_MAPPING_BY_ID = "Mapping with mappingId %s not found";
   public static final String ERROR_NOT_FOUND_ROLE_BY_KEY = "Role with roleKey %d not found";
   public static final String ERROR_NOT_FOUND_TENANT = "Tenant matching %s not found";
 

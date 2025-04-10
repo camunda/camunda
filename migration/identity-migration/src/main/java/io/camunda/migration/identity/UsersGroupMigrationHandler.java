@@ -16,7 +16,6 @@ import io.camunda.search.entities.MappingEntity;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -77,7 +76,9 @@ public class UsersGroupMigrationHandler extends MigrationHandler<UserGroups> {
 
   private void assignMemberToGroup(final long groupKey, final long mappingKey) {
     try {
-      groupServices.assignMember(groupKey, mappingKey, EntityType.MAPPING).join();
+      // TODO: revisit this while implementing the migration
+      // https://github.com/camunda/camunda/issues/26973
+      // groupServices.assignMember(groupKey, mappingKey, EntityType.MAPPING).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         throw e;

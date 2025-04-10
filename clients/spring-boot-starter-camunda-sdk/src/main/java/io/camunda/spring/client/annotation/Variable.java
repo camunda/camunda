@@ -28,4 +28,6 @@ public @interface Variable {
 
   @AliasFor("name")
   String value() default "";
+
+  boolean optional() default true;
 }

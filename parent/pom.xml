@@ -83,7 +83,7 @@
     <version.protobuf>4.30.1</version.protobuf>
     <version.protobuf-common>2.54.1</version.protobuf-common>
     <version.micrometer>1.14.5</version.micrometer>
-    <version.rocksdbjni>9.4.0</version.rocksdbjni>
+    <version.rocksdbjni>9.10.0</version.rocksdbjni>
     <version.sbe>1.34.1</version.sbe>
     <version.scala>2.13.16</version.scala>
     <version.slf4j>2.0.17</version.slf4j>
@@ -890,6 +890,18 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-schema-manager</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-test-utils</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- camunda java client -->
 
       <dependency>
@@ -1532,7 +1544,6 @@
         <groupId>org.opensearch</groupId>
         <artifactId>opensearch-testcontainers</artifactId>
         <version>${version.opensearch.testcontainers}</version>
-        <scope>test</scope>
       </dependency>
 
       <dependency>

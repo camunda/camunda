@@ -7,7 +7,7 @@
  */
 package io.camunda.migration.process.util;
 
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader.StartFormLink;
 import java.util.regex.Pattern;

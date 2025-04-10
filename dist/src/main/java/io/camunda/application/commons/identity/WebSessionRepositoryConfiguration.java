@@ -18,7 +18,7 @@ import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.PersistentWebSessionSearchImpl;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import jakarta.servlet.http.HttpServletRequest;

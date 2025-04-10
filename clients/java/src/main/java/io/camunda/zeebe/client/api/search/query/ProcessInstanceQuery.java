@@ -21,7 +21,7 @@ import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.ProcessInstanceQuery}
+ *     io.camunda.client.api.search.request.ProcessInstanceSearchRequest}
  */
 @Deprecated
 public interface ProcessInstanceQuery

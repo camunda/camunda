@@ -42,10 +42,29 @@ public class RawProcessDataResultDtoMapper {
       final Map<String, Long> instanceIdsToUserTaskCount,
       final Map<String, Map<String, Long>> processInstanceIdsToFlowNodeDurations,
       final Map<String, String> flowNodeIdsToFlowNodeNames) {
+    return mapFrom(
+        processInstanceDtos,
+        objectMapper,
+        allVariableNames,
+        instanceIdsToUserTaskCount,
+        processInstanceIdsToFlowNodeDurations,
+        flowNodeIdsToFlowNodeNames,
+        true);
+  }
+
+  public List<RawDataProcessInstanceDto> mapFrom(
+      final List<ProcessInstanceDto> processInstanceDtos,
+      final ObjectMapper objectMapper,
+      final Set<String> allVariableNames,
+      final Map<String, Long> instanceIdsToUserTaskCount,
+      final Map<String, Map<String, Long>> processInstanceIdsToFlowNodeDurations,
+      final Map<String, String> flowNodeIdsToFlowNodeNames,
+      final boolean suppressObjectVariableValues) {
     final List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
     processInstanceDtos.forEach(
         processInstanceDto -> {
-          final Map<String, Object> variables = getVariables(processInstanceDto, objectMapper);
+          final Map<String, Object> variables =
+              getVariables(processInstanceDto, objectMapper, suppressObjectVariableValues);
           allVariableNames.addAll(variables.keySet());
           final RawDataProcessInstanceDto dataEntry =
               convertToRawDataEntry(
@@ -116,15 +135,21 @@ public class RawProcessDataResultDtoMapper {
   }
 
   private Map<String, Object> getVariables(
-      final ProcessInstanceDto processInstanceDto, final ObjectMapper objectMapper) {
+      final ProcessInstanceDto processInstanceDto,
+      final ObjectMapper objectMapper,
+      final boolean suppressObjectVariableValues) {
     final Map<String, Object> result = new TreeMap<>();
 
     for (final SimpleProcessVariableDto variableInstance : processInstanceDto.getVariables()) {
       if (variableInstance.getName() != null) {
         if (VariableType.OBJECT.getId().equalsIgnoreCase(variableInstance.getType())) {
-          // Object variable value is available on demand in FE so that large values don't distort
-          // raw data tables
-          result.put(variableInstance.getName(), OBJECT_VARIABLE_VALUE_PLACEHOLDER);
+          if (suppressObjectVariableValues) {
+            // Object variable value is available on demand in FE so that large values don't distort
+            // raw data tables
+            result.put(variableInstance.getName(), OBJECT_VARIABLE_VALUE_PLACEHOLDER);
+          } else {
+            result.put(variableInstance.getName(), variableInstance.getValue());
+          }
         } else {
           // Convert strings to join list entries for neater display in raw data report UI, or use
           // empty space if null

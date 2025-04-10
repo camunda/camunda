@@ -103,14 +103,14 @@ public class TenantController {
             userQuery -> searchUsersInTenant(tenantId, userQuery));
   }
 
-  @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingKey}")
+  @CamundaPutMapping(path = "/{tenantId}/mappings/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
-      @PathVariable final String tenantId, @PathVariable final long mappingKey) {
+      @PathVariable final String tenantId, @PathVariable final String mappingId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantId, EntityType.MAPPING, mappingKey));
+                .addMember(tenantId, EntityType.MAPPING, mappingId));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupKey}")
@@ -143,14 +143,14 @@ public class TenantController {
                 .removeMember(tenantId, EntityType.USER, username));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingKey}")
+  @CamundaDeleteMapping(path = "/{tenantId}/mappings/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
-      @PathVariable final String tenantId, @PathVariable final long mappingKey) {
+      @PathVariable final String tenantId, @PathVariable final String mappingId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(tenantId, EntityType.MAPPING, mappingKey));
+                .removeMember(tenantId, EntityType.MAPPING, mappingId));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupKey}")

@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.SearchRequestBuilders}
+ *     io.camunda.client.api.search.request.SearchRequestBuilders}
  */
 @Deprecated
 public final class SearchRequestBuilders {

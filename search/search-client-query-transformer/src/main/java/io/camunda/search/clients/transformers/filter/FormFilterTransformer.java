@@ -10,8 +10,8 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.BPMN_ID;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.FormIndex.BPMN_ID;
+import static io.camunda.webapps.schema.descriptors.index.FormIndex.KEY;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.FormFilter;

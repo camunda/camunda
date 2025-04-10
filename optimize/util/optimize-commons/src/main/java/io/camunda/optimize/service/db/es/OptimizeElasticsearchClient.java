@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionInde
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.util.WorkaroundUtil.replaceNullWithNanInAggregations;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED;
 import static java.util.stream.Collectors.groupingBy;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
@@ -83,6 +82,7 @@ import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
 import co.elastic.clients.elasticsearch.tasks.ListRequest;
 import co.elastic.clients.elasticsearch.tasks.ListResponse;
 import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.DefaultTransportOptions;
@@ -104,6 +104,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import io.camunda.search.connect.plugin.PluginRepository;
+import jakarta.json.spi.JsonProvider;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -239,11 +240,13 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         b -> {
           try {
             return b.withJson(
-                new StringReader(
-                    OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED.writeValueAsString(
-                        responseContentAsMap)));
+                JsonProvider.provider()
+                    .createParser(
+                        new StringReader(OPTIMIZE_MAPPER.writeValueAsString(responseContentAsMap))),
+                SimpleJsonpMapper.INSTANCE);
           } catch (final JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new OptimizeRuntimeException(
+                "An error occurred during retrieval of old index settings.", e);
           }
         });
   }
@@ -918,30 +921,38 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           return;
         }
         if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-          final Set<String> failedItemIds =
+          final Map<String, List<String>> failedNestedDocLimitItemIdsByIndexName =
               bulkResponse.items().stream()
-                  .filter(b -> b.error() != null && b.error().reason() != null)
+                  .filter(b -> b.error() != null && b.error().reason() != null && b.id() != null)
                   .filter(
                       responseItem ->
                           responseItem.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
-                  .map(BulkResponseItem::id)
+                  .collect(
+                      Collectors.groupingBy(
+                          BulkResponseItem::index,
+                          Collectors.mapping(BulkResponseItem::id, Collectors.toList())));
+
+          final Set<String> failedOperationIds =
+              failedNestedDocLimitItemIdsByIndexName.values().stream()
+                  .flatMap(Collection::stream)
                   .collect(Collectors.toSet());
           LOG.warn(
               "There were failures while performing bulk on {} due to the nested document limit being reached."
                   + " Removing {} failed items and retrying",
               itemName,
-              failedItemIds.size());
+              failedOperationIds.size());
+          LOG.debug("Failed operation IDs by Index: {}", failedNestedDocLimitItemIdsByIndexName);
           final List<BulkOperation> bulkOperations = new ArrayList<>(bulkRequest.operations());
           bulkOperations.removeIf(
               request -> {
                 if (request.isCreate()) {
-                  return failedItemIds.contains(request.create().id());
+                  return failedOperationIds.contains(request.create().id());
                 } else if (request.isUpdate()) {
-                  return failedItemIds.contains(request.update().id());
+                  return failedOperationIds.contains(request.update().id());
                 } else if (request.isDelete()) {
-                  return failedItemIds.contains(request.delete().id());
+                  return failedOperationIds.contains(request.delete().id());
                 } else if (request.isIndex()) {
-                  return failedItemIds.contains(request.index().id());
+                  return failedOperationIds.contains(request.index().id());
                 }
                 return false;
               });

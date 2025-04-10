@@ -8,13 +8,13 @@
 package io.camunda.exporter.config;
 
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import java.util.HashMap;
-import java.util.Map;
+import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.config.RetentionConfiguration;
 
 public class ExporterConfiguration {
 
   private ConnectConfiguration connect = new ConnectConfiguration();
-  private IndexSettings index = new IndexSettings();
+  private IndexConfiguration index = new IndexConfiguration();
   private BulkConfiguration bulk = new BulkConfiguration();
   private HistoryConfiguration history = new HistoryConfiguration();
   private CacheConfiguration processCache = new CacheConfiguration();
@@ -31,11 +31,11 @@ public class ExporterConfiguration {
     this.connect = connect;
   }
 
-  public IndexSettings getIndex() {
+  public IndexConfiguration getIndex() {
     return index;
   }
 
-  public void setIndex(final IndexSettings index) {
+  public void setIndex(final IndexConfiguration index) {
     this.index = index;
   }
 
@@ -117,151 +117,6 @@ public class ExporterConfiguration {
         + '}';
   }
 
-  public static final class IndexSettings {
-    public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
-    private String prefix = "";
-    private String zeebeIndexPrefix = "zeebe-record";
-
-    private Integer numberOfShards = 1;
-    private Integer numberOfReplicas = 0;
-
-    private Map<String, Integer> replicasByIndexName = new HashMap<>();
-    private Map<String, Integer> shardsByIndexName = new HashMap<>();
-
-    private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
-
-    private boolean shouldWaitForImporters = true;
-
-    public String getPrefix() {
-      return prefix;
-    }
-
-    public void setPrefix(final String prefix) {
-      this.prefix = prefix;
-    }
-
-    public Integer getNumberOfShards() {
-      return numberOfShards;
-    }
-
-    public void setNumberOfShards(final Integer numberOfShards) {
-      this.numberOfShards = numberOfShards;
-    }
-
-    public Integer getNumberOfReplicas() {
-      return numberOfReplicas;
-    }
-
-    public void setNumberOfReplicas(final Integer numberOfReplicas) {
-      this.numberOfReplicas = numberOfReplicas;
-    }
-
-    public Integer getVariableSizeThreshold() {
-      return variableSizeThreshold;
-    }
-
-    public void setVariableSizeThreshold(final Integer variableSizeThreshold) {
-      this.variableSizeThreshold = variableSizeThreshold;
-    }
-
-    public boolean shouldWaitForImporters() {
-      return shouldWaitForImporters;
-    }
-
-    public String getZeebeIndexPrefix() {
-      return zeebeIndexPrefix;
-    }
-
-    public void setZeebeIndexPrefix(final String zeebeIndexPrefix) {
-      this.zeebeIndexPrefix = zeebeIndexPrefix;
-    }
-
-    public void setShouldWaitForImporters(final boolean shouldWaitForImporters) {
-      this.shouldWaitForImporters = shouldWaitForImporters;
-    }
-
-    @Override
-    public String toString() {
-      return "IndexSettings{"
-          + "prefix='"
-          + prefix
-          + '\''
-          + ", numberOfShards="
-          + numberOfShards
-          + ", numberOfReplicas="
-          + numberOfReplicas
-          + ", replicasByIndexName="
-          + replicasByIndexName
-          + ", shardsByIndexName="
-          + shardsByIndexName
-          + ", variableSizeThreshold="
-          + variableSizeThreshold
-          + ", zeebeIndexPrefix='"
-          + zeebeIndexPrefix
-          + '}';
-    }
-
-    public Map<String, Integer> getReplicasByIndexName() {
-      return replicasByIndexName;
-    }
-
-    public void setReplicasByIndexName(final Map<String, Integer> replicasByIndexName) {
-      this.replicasByIndexName = replicasByIndexName;
-    }
-
-    public Map<String, Integer> getShardsByIndexName() {
-      return shardsByIndexName;
-    }
-
-    public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
-      this.shardsByIndexName = shardsByIndexName;
-    }
-  }
-
-  public static final class RetentionConfiguration {
-    private boolean enabled = false;
-    private String minimumAge = "30d";
-    private String policyName;
-
-    public boolean isEnabled() {
-      return enabled;
-    }
-
-    public void setEnabled(final boolean enabled) {
-      this.enabled = enabled;
-    }
-
-    public String getMinimumAge() {
-      return minimumAge;
-    }
-
-    public void setMinimumAge(final String minimumAge) {
-      this.minimumAge = minimumAge;
-    }
-
-    public String getPolicyName() {
-      return policyName;
-    }
-
-    public void setPolicyName(final String policyName) {
-      this.policyName = policyName;
-    }
-
-    @Override
-    public String toString() {
-      return "RetentionConfiguration{"
-          + "enabled="
-          + enabled
-          + ", minimumAge='"
-          + minimumAge
-          + '\''
-          + ", policyName='"
-          + policyName
-          + '\''
-          + '}';
-    }
-  }
-
   public static class BulkConfiguration {
     // delay before forced flush
     private int delay = 5;
@@ -292,7 +147,6 @@ public class ExporterConfiguration {
 
   public static class HistoryConfiguration {
     private String elsRolloverDateFormat = "date";
-    private String rolloverInterval = "1d";
     private int rolloverBatchSize = 100;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
@@ -305,14 +159,6 @@ public class ExporterConfiguration {
 
     public void setElsRolloverDateFormat(final String elsRolloverDateFormat) {
       this.elsRolloverDateFormat = elsRolloverDateFormat;
-    }
-
-    public String getRolloverInterval() {
-      return rolloverInterval;
-    }
-
-    public void setRolloverInterval(final String rolloverInterval) {
-      this.rolloverInterval = rolloverInterval;
     }
 
     public String getArchivingTimePoint() {
@@ -364,9 +210,6 @@ public class ExporterConfiguration {
       return "ArchiverConfiguration{"
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
-          + '\''
-          + ", rolloverInterval='"
-          + rolloverInterval
           + '\''
           + ", rolloverBatchSize="
           + rolloverBatchSize

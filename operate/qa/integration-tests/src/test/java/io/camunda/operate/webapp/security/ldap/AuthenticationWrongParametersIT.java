@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
@@ -42,6 +43,7 @@ import org.springframework.util.MultiValueMap;
     classes = {
       EmbeddedLdapAutoConfiguration.class,
       LdapAutoConfiguration.class,
+      DatabaseInfo.class,
       OperateProperties.class,
       TestApplicationWithNoBeans.class,
       AuthenticationRestService.class,
@@ -86,7 +88,7 @@ public class AuthenticationWrongParametersIT implements AuthenticationTestable {
     assertThat(userInfo.getUserId()).isEqualTo("bob");
   }
 
-  protected ResponseEntity<?> loginAs(String user, String password) {
+  protected ResponseEntity<?> loginAs(final String user, final String password) {
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 

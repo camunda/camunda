@@ -49,11 +49,13 @@ public class RemoveEntityGroupMultiPartitionTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
-    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
+    final var groupId = "123";
+    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     engine
         .group()
-        .removeEntity(groupKey)
+        .removeEntity(groupId)
         .withEntityKey(userKey)
         .withEntityType(EntityType.USER)
         .remove();
@@ -117,11 +119,13 @@ public class RemoveEntityGroupMultiPartitionTest {
             .create()
             .getKey();
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
-    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
+    final var groupId = "123";
+    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     engine
         .group()
-        .removeEntity(groupKey)
+        .removeEntity(groupId)
         .withEntityKey(userKey)
         .withEntityType(EntityType.USER)
         .remove();
@@ -153,11 +157,13 @@ public class RemoveEntityGroupMultiPartitionTest {
 
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
-    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
+    final var groupId = "123";
+    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     engine
         .group()
-        .removeEntity(groupKey)
+        .removeEntity(groupId)
         .withEntityKey(userKey)
         .withEntityType(EntityType.USER)
         .remove();

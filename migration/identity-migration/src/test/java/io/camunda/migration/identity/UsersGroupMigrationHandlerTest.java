@@ -9,7 +9,6 @@ package io.camunda.migration.identity;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.doThrow;
@@ -39,12 +38,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@Disabled("https://github.com/camunda/camunda/issues/26973")
 @ExtendWith(MockitoExtension.class)
 final class UsersGroupMigrationHandlerTest {
 
@@ -62,7 +63,7 @@ final class UsersGroupMigrationHandlerTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 new GroupRecord().setGroupKey(UUID.randomUUID().getMostSignificantBits())));
-    when(groupServices.assignMember(anyLong(), anyLong(), any()))
+    when(groupServices.assignMember(anyString(), anyString(), any()))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
     when(mappingServices.createMapping(any()))
         .thenReturn(CompletableFuture.completedFuture(new MappingRecord()));
@@ -87,7 +88,7 @@ final class UsersGroupMigrationHandlerTest {
         .thenReturn(new GroupEntity(1L, "", Collections.emptySet()));
     when(mappingServices.createMapping(any()))
         .thenReturn(CompletableFuture.completedFuture(new MappingRecord()));
-    when(groupServices.assignMember(anyLong(), anyLong(), any(EntityType.class)))
+    when(groupServices.assignMember(anyString(), anyString(), any(EntityType.class)))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
 
     // when
@@ -96,7 +97,7 @@ final class UsersGroupMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchUserGroups(anyInt());
     verify(groupServices, times(4)).getGroupByName(any());
-    verify(groupServices, times(4)).assignMember(anyLong(), anyLong(), any(EntityType.class));
+    verify(groupServices, times(4)).assignMember(anyString(), anyString(), any(EntityType.class));
     verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
   }
 
@@ -156,7 +157,7 @@ final class UsersGroupMigrationHandlerTest {
             new BrokerRejectionException(
                 new BrokerRejection(GroupIntent.ADD_ENTITY, -1, RejectionType.ALREADY_EXISTS, "")))
         .when(groupServices)
-        .assignMember(anyLong(), anyLong(), any(EntityType.class));
+        .assignMember(anyString(), anyString(), any(EntityType.class));
 
     // when
     migrationHandler.migrate();
@@ -164,7 +165,7 @@ final class UsersGroupMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchUserGroups(anyInt());
     verify(groupServices, times(4)).getGroupByName(any());
-    verify(groupServices, times(4)).assignMember(anyLong(), anyLong(), any(EntityType.class));
+    verify(groupServices, times(4)).assignMember(anyString(), anyString(), any(EntityType.class));
     verify(mappingServices, times(2)).createMapping(any());
     verify(managementIdentityClient, times(2))
         .updateMigrationStatus(

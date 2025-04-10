@@ -7,24 +7,24 @@
  */
 package io.camunda.operate.it.store;
 
-import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
-import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setKey(2251799813685248L)
             .setId("2251799813685248")
             .setBpmnProcessId("demoProcess")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setName("Demo process")
             .setBpmnXml(resourceXml);
 
@@ -68,7 +68,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setKey(2251799813685249L)
             .setId("2251799813685249")
             .setBpmnProcessId("demoProcess-1")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setName("Demo process 1")
             .setBpmnXml(resourceXml);
 
@@ -91,7 +91,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setBpmnProcessId("demoProcess")
             .setState(ProcessInstanceState.ACTIVE)
             .setTreePath("PI_4503599627370497")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
 
     secondProcessInstance =
@@ -105,7 +105,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setBpmnProcessId("demoProcess-1")
             .setState(ProcessInstanceState.COMPLETED)
             .setTreePath("PI_2251799813685251")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setIncident(false)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
 
@@ -120,7 +120,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setBpmnProcessId("demoProcess-1")
             .setState(ProcessInstanceState.ACTIVE)
             .setTreePath("PI_2251799813685252")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setIncident(true)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
 
@@ -169,7 +169,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   public void testGetProcessesGrouped() {
     final Map<ProcessStore.ProcessKey, List<ProcessEntity>> results =
         processStore.getProcessesGrouped(
-            DEFAULT_TENANT_ID,
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER,
             Set.of(
                 firstProcessDefinition.getBpmnProcessId(),
                 secondProcessDefinition.getBpmnProcessId(),
@@ -180,14 +180,16 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             results
                 .get(
                     new ProcessStore.ProcessKey(
-                        firstProcessDefinition.getBpmnProcessId(), DEFAULT_TENANT_ID))
+                        firstProcessDefinition.getBpmnProcessId(),
+                        TenantOwned.DEFAULT_TENANT_IDENTIFIER))
                 .size())
         .isEqualTo(1);
     assertThat(
             results
                 .get(
                     new ProcessStore.ProcessKey(
-                        secondProcessDefinition.getBpmnProcessId(), DEFAULT_TENANT_ID))
+                        secondProcessDefinition.getBpmnProcessId(),
+                        TenantOwned.DEFAULT_TENANT_IDENTIFIER))
                 .size())
         .isEqualTo(1);
   }
@@ -243,7 +245,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setKey(processKey)
             .setId(String.valueOf(processKey))
             .setBpmnProcessId("fakeProcess")
-            .setTenantId(DEFAULT_TENANT_ID));
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     searchContainerManager.refreshIndices("*operate-list*");
 
@@ -346,14 +348,14 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
         new ProcessEntity()
             .setKey(2251799813685298L)
             .setBpmnProcessId("testProcess1")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setName("Test process 1"));
     testSearchRepository.createOrUpdateDocumentFromObject(
         processDefinitionIndex.getFullQualifiedName(),
         new ProcessEntity()
             .setKey(2251799813685299L)
             .setBpmnProcessId("testProcess2")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setName("Test process 2"));
     searchContainerManager.refreshIndices("*operate-process*");
 
@@ -373,7 +375,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setKey(processKey)
             .setId(String.valueOf(processKey))
             .setBpmnProcessId("fakeProcess")
-            .setTenantId(DEFAULT_TENANT_ID));
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     testSearchRepository.createOrUpdateDocumentFromObject(
         getFullIndexNameForDependant(FlowNodeInstanceTemplate.INDEX_NAME),

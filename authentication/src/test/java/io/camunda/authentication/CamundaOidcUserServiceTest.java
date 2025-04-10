@@ -14,6 +14,9 @@ import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
@@ -49,13 +52,26 @@ public class CamundaOidcUserServiceTest {
   @Mock private RoleServices roleServices;
   @Mock private GroupServices groupServices;
   @Mock private AuthorizationServices authorizationServices;
+  @Mock private SecurityConfiguration securityConfiguration;
+  @Mock private AuthenticationConfiguration authenticationConfiguration;
+  @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
 
   @BeforeEach
   public void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
+
+    when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
+    when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+    when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("sub");
+
     camundaOidcUserService =
         new CamundaOidcUserService(
-            mappingServices, tenantServices, roleServices, groupServices, authorizationServices);
+            mappingServices,
+            tenantServices,
+            roleServices,
+            groupServices,
+            authorizationServices,
+            securityConfiguration);
   }
 
   @Test
@@ -70,8 +86,8 @@ public class CamundaOidcUserServiceTest {
     when(mappingServices.getMatchingMappings(claims))
         .thenReturn(
             List.of(
-                new MappingEntity(5L, "role", "R1", "role-r1"),
-                new MappingEntity(7L, "group", "G1", "group-g1")));
+                new MappingEntity("test-id", 5L, "role", "R1", "role-r1"),
+                new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
 
     final var roleR1 = new RoleEntity(8L, "Role R1");
     when(roleServices.getRolesByMemberKeys(Set.of(5L, 7L))).thenReturn(List.of(roleR1));
@@ -87,7 +103,9 @@ public class CamundaOidcUserServiceTest {
     final var camundaUser = (CamundaOidcUser) oidcUser;
     assertThat(camundaUser.getEmail()).isEqualTo("foo@camunda.test");
     assertThat(camundaUser.getMappingKeys()).isEqualTo(Set.of(5L, 7L));
+    assertThat(camundaUser.getMappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
+    assertThat(authenticationContext.username()).isEqualTo("test|foo@camunda.test");
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
     assertThat(authenticationContext.groups()).isEmpty();
     assertThat(authenticationContext.tenants()).isEmpty();

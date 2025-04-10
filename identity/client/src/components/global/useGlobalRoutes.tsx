@@ -6,45 +6,55 @@ import Roles from "src/pages/roles";
 import Tenants from "src/pages/tenants";
 import Mappings from "src/pages/mappings";
 import Authorizations from "src/pages/authorizations";
+import { isOIDC } from "src/configuration";
+import { Paths } from "src/components/global/routePaths";
 
 export const useGlobalRoutes = () => {
   const { t } = useTranslate();
   const { pathname } = useLocation();
+
+  const authTypeDependentRoutes = isOIDC
+    ? [
+        {
+          path: `${Paths.mappings()}/*`,
+          key: Paths.mappings(),
+          label: t("mappings"),
+          element: <Mappings />,
+        },
+      ]
+    : [
+        {
+          path: `${Paths.users()}/*`,
+          key: Paths.users(),
+          label: t("users"),
+          element: <Users />,
+        },
+      ];
+
   const routes = [
+    ...authTypeDependentRoutes,
     {
-      path: "/users/*",
-      key: "/users",
-      label: t("Users"),
-      element: <Users />,
-    },
-    {
-      path: "/groups/*",
-      key: "/groups",
-      label: t("Groups"),
+      path: `${Paths.groups()}/*`,
+      key: Paths.groups(),
+      label: t("groups"),
       element: <Groups />,
     },
     {
-      path: "/roles/*",
-      key: "/roles",
-      label: t("Roles"),
+      path: `${Paths.roles()}/*`,
+      key: Paths.roles(),
+      label: t("roles"),
       element: <Roles />,
     },
     {
-      path: "/tenants/*",
-      key: "/tenants",
-      label: t("Tenants"),
+      path: `${Paths.tenants()}/*`,
+      key: Paths.tenants(),
+      label: t("tenants"),
       element: <Tenants />,
     },
     {
-      path: "/mappings/*",
-      key: "/mappings",
-      label: t("Mappings"),
-      element: <Mappings />,
-    },
-    {
-      path: "/authorizations/*",
-      key: "/authorizations",
-      label: t("Authorizations"),
+      path: `${Paths.authorizations()}/*`,
+      key: Paths.authorizations(),
+      label: t("authorizations"),
       element: <Authorizations />,
     },
   ];

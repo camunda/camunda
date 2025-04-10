@@ -9,11 +9,13 @@ package io.camunda.exporter.utils;
 
 import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.config.ConnectionTypes.OPENSEARCH;
-import static io.camunda.exporter.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static java.util.Arrays.asList;
 
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.search.test.utils.SearchClientAdapter;
+import io.camunda.search.test.utils.SearchDBExtension;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -120,7 +122,7 @@ public class CamundaExporterITTemplateExtension
   protected ExporterConfiguration getConfigWithConnectionDetails(
       final ConnectionTypes connectionType) {
     final var config = new ExporterConfiguration();
-    config.getIndex().setPrefix(SearchDBExtension.CUSTOM_PREFIX);
+    config.getConnect().setIndexPrefix(SearchDBExtension.CUSTOM_PREFIX);
     config.getBulk().setSize(1); // force flushing on the first record
     if (connectionType == ELASTICSEARCH) {
       config.getConnect().setUrl(extension.esUrl());

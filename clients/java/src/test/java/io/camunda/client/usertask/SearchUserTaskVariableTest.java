@@ -28,7 +28,7 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
     final long userTaskKey = 1L;
 
     // when
-    client.newUserTaskVariableQuery(userTaskKey).send().join();
+    client.newUserTaskVariableSearchRequest(userTaskKey).send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -41,7 +41,11 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
     final String variableName = "variableName";
 
     // when
-    client.newUserTaskVariableQuery(userTaskKey).filter(f -> f.name(variableName)).send().join();
+    client
+        .newUserTaskVariableSearchRequest(userTaskKey)
+        .filter(f -> f.name(variableName))
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -55,7 +59,7 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
 
     // when
     client
-        .newUserTaskVariableQuery(userTaskKey)
+        .newUserTaskVariableSearchRequest(userTaskKey)
         .filter(f -> f.name(b -> b.like(variableName)))
         .send()
         .join();
@@ -73,7 +77,7 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
 
     // When
     client
-        .newUserTaskVariableQuery(userTaskKey)
+        .newUserTaskVariableSearchRequest(userTaskKey)
         .filter(f -> f.name(b -> b.in(variableName)))
         .send()
         .join();

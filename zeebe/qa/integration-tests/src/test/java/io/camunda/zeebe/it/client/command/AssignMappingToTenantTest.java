@@ -29,7 +29,7 @@ class AssignMappingToTenantTest {
   private static final String CLAIM_NAME = "claimName";
   private static final String CLAIM_VALUE = "claimValue";
   private static final String NAME = "name";
-  private static final String ID = "123456789";
+  private static final String ID = "mapping-id";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =
@@ -37,7 +37,7 @@ class AssignMappingToTenantTest {
 
   @AutoClose private CamundaClient client;
 
-  private long mappingKey;
+  private String mappingId;
 
   @BeforeEach
   void initClientAndInstances() {
@@ -47,23 +47,22 @@ class AssignMappingToTenantTest {
     client.newCreateTenantCommand().tenantId(TENANT_ID).name("Initial Tenant Name").send().join();
 
     // Create Mapping
-    mappingKey =
-        client
-            .newCreateMappingCommand()
-            .claimName(CLAIM_NAME)
-            .claimValue(CLAIM_VALUE)
-            .name(NAME)
-            .id(ID)
-            .send()
-            .join()
-            .getMappingKey();
+
+    client
+        .newCreateMappingCommand()
+        .claimName(CLAIM_NAME)
+        .claimValue(CLAIM_VALUE)
+        .name(NAME)
+        .mappingId(ID)
+        .send()
+        .join();
+    mappingId = ID;
   }
 
   @Test
   void shouldAssignMappingToTenant() {
     // When
-    // TODO remove the Long parsing once Mappings are migrated to work with ids instead of keys
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingKey(Long.parseLong(ID)).send().join();
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
@@ -85,7 +84,7 @@ class AssignMappingToTenantTest {
             () ->
                 client
                     .newAssignMappingToTenantCommand(invalidTenantId)
-                    .mappingKey(mappingKey)
+                    .mappingId(mappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -98,20 +97,35 @@ class AssignMappingToTenantTest {
   @Test
   void shouldRejectAssignIfMappingDoesNotExist() {
     // Given
-    final long invalidMappingKey = 99999L;
+    final String invalidMappingId = "invalid-id";
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
                     .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingKey(invalidMappingKey)
+                    .mappingId(invalidMappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with id '%d' to tenant with tenantId '%s', but the entity doesn't exist."
-                .formatted(invalidMappingKey, TENANT_ID));
+            "Expected to add mapping with id '%s' to tenant with id '%s', but the mapping doesn't exist."
+                .formatted(invalidMappingId, TENANT_ID));
+  }
+
+  @Test
+  void shouldRejectAssignIfTenantAlreadyAssignedToMapping() {
+    // given
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
+
+    // When / Then
+    assertThatThrownBy(
+            () -> client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
+        .hasMessageContaining(
+            "Expected to add mapping with id '%s' to tenant with id '%s', but the mapping is already assigned to the tenant."
+                .formatted(ID, TENANT_ID));
   }
 }

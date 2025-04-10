@@ -22,11 +22,11 @@ public interface AssignMappingToTenantCommandStep1
     extends FinalCommandStep<AssignMappingToTenantResponse> {
 
   /**
-   * Sets the mapping key for the assignment.
+   * Sets the mapping id for the assignment. Sets the mapping ID for the assignment.
    *
-   * @param mappingKey the key of the mapping
+   * @param mappingId the id of the mapping
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  AssignMappingToTenantCommandStep1 mappingKey(long mappingKey);
+  AssignMappingToTenantCommandStep1 mappingId(String mappingId);
 }

@@ -9,23 +9,30 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BATCH_OPERATION_IDS;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.END_DATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_NAME;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_VERSION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_VERSION_TAG;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.START_DATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PARTITION_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_IDS;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_NAME;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION_TAG;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.START_DATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -83,10 +90,53 @@ public final class ProcessInstanceFilterTransformer
       queries.add(processVariableQuery);
     }
 
+    if (filter.errorMessageOperations() != null && !filter.errorMessageOperations().isEmpty()) {
+      ofNullable(
+              stringMatchWithHasChildOperations(
+                  ERROR_MSG,
+                  filter.errorMessageOperations(),
+                  ACTIVITIES_JOIN_RELATION,
+                  SearchMatchQueryOperator.AND))
+          .ifPresent(queries::addAll);
+    }
+
     ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
         .ifPresent(queries::addAll);
 
+    ofNullable(geHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
+
+    if (filter.flowNodeIdOperations() != null && !filter.flowNodeIdOperations().isEmpty()) {
+      final var flowNodeInstanceQuery = getFlowNodeInstanceQuery(filter, queries);
+      queries.add(flowNodeInstanceQuery);
+    }
+
+    if (filter.partitionId() != null) {
+      queries.add(term(PARTITION_ID, filter.partitionId()));
+    }
+
     return and(queries);
+  }
+
+  private static SearchQuery getFlowNodeInstanceQuery(
+      final ProcessInstanceFilter filter, final ArrayList<SearchQuery> queries) {
+    final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
+
+    ofNullable(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
+        .ifPresent(flowNodeInstanceQueries::addAll);
+    ofNullable(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
+        .ifPresent(flowNodeInstanceQueries::addAll);
+    ofNullable(filter.hasFlowNodeInstanceIncident())
+        .ifPresent(incident -> flowNodeInstanceQueries.add((term(INCIDENT, incident))));
+
+    return hasChildQuery(ACTIVITIES_JOIN_RELATION, and(flowNodeInstanceQueries));
+  }
+
+  private SearchQuery geHasRetriesLeftQuery(final Boolean hasRetriesLeft) {
+    if (hasRetriesLeft != null) {
+      return hasChildQuery(
+          ACTIVITIES_JOIN_RELATION, term(JOB_FAILED_WITH_RETRIES_LEFT, hasRetriesLeft));
+    }
+    return null;
   }
 
   private SearchQuery getIsProcessInstanceQuery() {

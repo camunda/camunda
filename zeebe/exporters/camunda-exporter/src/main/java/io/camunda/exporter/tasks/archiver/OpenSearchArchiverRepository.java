@@ -9,12 +9,12 @@ package io.camunda.exporter.tasks.archiver;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
+import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
@@ -31,10 +31,7 @@ import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
-import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
 import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
-import org.opensearch.client.opensearch._types.aggregations.DateHistogramBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
@@ -52,9 +49,6 @@ import org.slf4j.Logger;
 
 public final class OpenSearchArchiverRepository extends OpensearchRepository
     implements ArchiverRepository {
-  private static final String DATES_AGG = "datesAgg";
-  private static final String INSTANCES_AGG = "instancesAgg";
-  private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
   private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
@@ -67,7 +61,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final String batchOperationIndex;
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
-  private final CalendarInterval rolloverInterval;
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -90,31 +83,28 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     this.metrics = metrics;
 
     genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
-    rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-    final var aggregation =
-        createFinishedEntityAggregation(ListViewTemplate.END_DATE, ListViewTemplate.ID);
-    final var request = createFinishedInstancesSearchRequest(aggregation);
+    final var request = createFinishedInstancesSearchRequest();
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(request, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(this::createArchiveBatch, executor);
+        .thenApplyAsync(
+            (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE), executor);
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
-    final var aggregation =
-        createFinishedEntityAggregation(BatchOperationTemplate.END_DATE, BatchOperationTemplate.ID);
-    final var searchRequest = createFinishedBatchOperationsSearchRequest(aggregation);
+    final var searchRequest = createFinishedBatchOperationsSearchRequest();
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(this::createArchiveBatch, executor);
+        .thenApplyAsync(
+            (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
   @Override
@@ -233,7 +223,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             executor);
   }
 
-  private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
+  private SearchRequest createFinishedBatchOperationsSearchRequest() {
     final var endDateQ =
         QueryBuilders.range()
             .field(BatchOperationTemplate.END_DATE)
@@ -241,27 +231,24 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .build();
 
     return createSearchRequest(
-        batchOperationIndex, endDateQ.toQuery(), aggregation, BatchOperationTemplate.END_DATE);
+        batchOperationIndex, endDateQ.toQuery(), BatchOperationTemplate.END_DATE);
   }
 
-  private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {
-    final var aggregation = search.aggregations().get(DATES_AGG);
-    if (aggregation == null) {
-      return null;
+  private ArchiveBatch createArchiveBatch(final SearchResponse<?> response, final String field) {
+    final var hits = response.hits().hits();
+    if (hits.isEmpty()) {
+      return new ArchiveBatch(null, List.of());
     }
-
-    final List<DateHistogramBucket> buckets = aggregation.dateHistogram().buckets().array();
-    if (buckets.isEmpty()) {
-      return null;
-    }
-
-    final var bucket = buckets.getFirst();
-    final var finishDate = bucket.keyAsString();
-    final List<String> ids =
-        bucket.aggregations().get(INSTANCES_AGG).topHits().hits().hits().stream()
+    final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
+    final var ids =
+        hits.stream()
+            .takeWhile(
+                hit -> hit.fields().get(field).toJson().asJsonArray().getString(0).equals(endDate))
             .map(Hit::id)
             .toList();
-    return new ArchiveBatch(finishDate, ids);
+
+    metrics.recordArchivingBatchSize(ids.size());
+    return new ArchiveBatch(endDate, ids);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
@@ -289,7 +276,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     }
   }
 
-  private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
+  private SearchRequest createFinishedInstancesSearchRequest() {
     final var endDateQ =
         QueryBuilders.range()
             .field(ListViewTemplate.END_DATE)
@@ -311,44 +298,16 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .build();
 
     return createSearchRequest(
-        processInstanceIndex, combinedQuery.toQuery(), aggregation, ListViewTemplate.END_DATE);
-  }
-
-  private Aggregation createFinishedEntityAggregation(final String endDate, final String id) {
-    final var dateAggregation =
-        AggregationBuilders.dateHistogram()
-            .field(endDate)
-            .calendarInterval(rolloverInterval)
-            .format(config.getElsRolloverDateFormat())
-            .keyed(false) // get result as an array (not a map)
-            .build();
-    final var sortAggregation =
-        AggregationBuilders.bucketSort()
-            .sort(sort -> sort.field(b -> b.field("_key")))
-            .size(1) // we want to get only one bucket at a time
-            .build();
-    final var instanceAggregation =
-        AggregationBuilders.topHits()
-            .size(config.getRolloverBatchSize())
-            .sort(sort -> sort.field(b -> b.field(id).order(SortOrder.Asc)))
-            .source(source -> source.filter(filter -> filter.includes(id)))
-            .build();
-    return new Aggregation.Builder()
-        .dateHistogram(dateAggregation)
-        .aggregations(DATES_SORTED_AGG, Aggregation.of(b -> b.bucketSort(sortAggregation)))
-        .aggregations(INSTANCES_AGG, Aggregation.of(b -> b.topHits(instanceAggregation)))
-        .build();
+        processInstanceIndex, combinedQuery.toQuery(), ListViewTemplate.END_DATE);
   }
 
   private SearchRequest createSearchRequest(
-      final String indexName,
-      final Query filterQuery,
-      final Aggregation aggregation,
-      final String sortField) {
+      final String indexName, final Query filterQuery, final String sortField) {
     logger.trace(
-        "Finished entities for archiving request: \n{}\n and aggregation: \n{}",
+        "Create search request against index '{}', with filter '{}' and sortField '{}'",
+        indexName,
         filterQuery.toString(),
-        aggregation.toString());
+        sortField);
 
     return new SearchRequest.Builder()
         .index(indexName)
@@ -356,10 +315,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .allowNoIndices(true)
         .ignoreUnavailable(true)
         .source(source -> source.fetch(false))
-        .query(query -> query.constantScore(q -> q.filter(filterQuery)))
-        .aggregations(DATES_AGG, aggregation)
+        .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
+        .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
-        .size(0)
+        .size(config.getRolloverBatchSize())
         .build();
   }
 

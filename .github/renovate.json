@@ -42,6 +42,17 @@
       "enabled": false
     },
     {
+      "description": "Allow minor and patch updates for Spring and Spring-boot for our maintenance branches. Since Spring has a 1-year support cycle while C8 is supported for 18 months, we allow minor updates to help mitigate security risks.",
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/",
+        "stable/operate-8.5"
+      ],
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["org.springframework"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "enabled": true
+    },
+    {
       "matchManagers": ["maven"],
       "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
       "matchUpdateTypes": ["minor", "major"],
@@ -108,7 +119,7 @@
       "additionalBranchPrefix": "fe-"
     },
     {
-      "description": "Exclude frontend deps until Optimize migrates to react-router v6",
+      "description": "Exclude frontend deps until Optimize migrates to react-router v6 & remove enzyme",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["optimize/**"],
       "matchPackagePatterns": [
@@ -116,7 +127,9 @@
         "old-bpmn-js",
         "react-router",
         "react-router-dom",
-        "@types/react-router-dom"
+        "@types/react-router-dom",
+        "react-18",
+        "react-dom-18"
       ],
       "enabled": false
     },
@@ -130,6 +143,14 @@
         "io.camunda:zeebe-client-java",
         "io.camunda:zeebe-protocol",
         "ant-contrib:ant-contrib"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Exclude Maven packages detected as parent root",
+      "matchManagers": ["maven"],
+      "matchDepTypes": [
+        "parent-root"
       ],
       "enabled": false
     },

@@ -59,4 +59,6 @@ public interface MutableDecisionState extends DecisionState {
    * @param record the record of the decision requirements
    */
   void deleteDecisionRequirements(DecisionRequirementsRecord record);
+
+  void setMissingDeploymentKey(String tenantId, long decisionKey, long deploymentKey);
 }

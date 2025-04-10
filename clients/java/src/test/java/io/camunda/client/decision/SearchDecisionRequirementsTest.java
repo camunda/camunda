@@ -29,7 +29,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionRequirements() {
     // when
-    client.newDecisionRequirementsQuery().send().join();
+    client.newDecisionRequirementsSearchRequest().send().join();
 
     // then
     final DecisionRequirementsSearchQuery request =
@@ -40,7 +40,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionRequirementsByVersion() {
     // when
-    client.newDecisionRequirementsQuery().filter(f -> f.version(1)).send().join();
+    client.newDecisionRequirementsSearchRequest().filter(f -> f.version(1)).send().join();
 
     // then
     final DecisionRequirementsSearchQuery request =
@@ -51,7 +51,11 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionRequirementsByKey() {
     // when
-    client.newDecisionRequirementsQuery().filter(f -> f.decisionRequirementsKey(0L)).send().join();
+    client
+        .newDecisionRequirementsSearchRequest()
+        .filter(f -> f.decisionRequirementsKey(0L))
+        .send()
+        .join();
 
     // then
     final DecisionRequirementsSearchQuery request =
@@ -63,7 +67,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   void shouldSearchDecisionRequirementsByName() {
     // when
     client
-        .newDecisionRequirementsQuery()
+        .newDecisionRequirementsSearchRequest()
         .filter(f -> f.decisionRequirementsName("name"))
         .send()
         .join();
@@ -78,7 +82,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   void shouldSearchDecisionRequirementsBynameAndVersion() {
     // when
     client
-        .newDecisionRequirementsQuery()
+        .newDecisionRequirementsSearchRequest()
         .filter(f -> f.decisionRequirementsName("name").version(1))
         .send()
         .join();
@@ -95,7 +99,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   void shouldSortDecisionRequirements() {
     // when
     client
-        .newDecisionRequirementsQuery()
+        .newDecisionRequirementsSearchRequest()
         .sort(
             s ->
                 s.decisionRequirementsKey()

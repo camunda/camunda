@@ -356,6 +356,7 @@ public final class SearchQueryBuilders {
           case LOWER_THAN_EQUALS ->
               rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(op.value()));
           case IN -> queries.add(intTerms(field, op.values()));
+          case NOT_IN -> queries.add(mustNot(intTerms(field, op.values())));
           default -> throw unexpectedOperation("Integer", op.operator());
         }
       }
@@ -392,6 +393,7 @@ public final class SearchQueryBuilders {
           case LOWER_THAN_EQUALS ->
               rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(op.value()));
           case IN -> queries.add(longTerms(field, op.values()));
+          case NOT_IN -> queries.add(mustNot(longTerms(field, op.values())));
           default -> throw unexpectedOperation("Long", op.operator());
         }
       }
@@ -420,12 +422,68 @@ public final class SearchQueryBuilders {
                   case EXISTS -> exists(field);
                   case NOT_EXISTS -> mustNot(exists(field));
                   case IN -> stringTerms(field, op.values());
+                  case NOT_IN -> mustNot(stringTerms(field, op.values()));
                   case LIKE -> wildcardQuery(field, op.value());
                   default -> throw unexpectedOperation("String", op.operator());
                 });
           });
       return searchQueries;
     }
+  }
+
+  public static <C extends List<Operation<String>>>
+      List<SearchQuery> stringMatchWithHasChildOperations(
+          final String field,
+          final C operations,
+          final String childType,
+          final SearchMatchQueryOperator matchQueryOperator) {
+
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    }
+
+    return operations.stream()
+        .map(
+            op ->
+                switch (op.operator()) {
+                  case EQUALS ->
+                      hasChildQuery(childType, match(field, op.value(), matchQueryOperator));
+
+                  case NOT_EQUALS ->
+                      hasChildQuery(
+                          childType,
+                          bool(b ->
+                                  b.must(List.of(exists(field)))
+                                      .mustNot(
+                                          List.of(match(field, op.value(), matchQueryOperator))))
+                              .toSearchQuery());
+
+                  case EXISTS ->
+                      hasChildQuery(
+                          childType, bool(b -> b.must(List.of(exists(field)))).toSearchQuery());
+
+                  case NOT_EXISTS ->
+                      hasChildQuery(
+                          childType,
+                          bool(b -> b.must(List.of(exists(field))).mustNot(List.of(exists(field))))
+                              .toSearchQuery());
+
+                  case IN ->
+                      hasChildQuery(
+                          childType,
+                          or(
+                              op.values().stream()
+                                  .map(value -> match(field, value, matchQueryOperator))
+                                  .toList()));
+
+                  case LIKE ->
+                      hasChildQuery(
+                          childType,
+                          wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase()));
+
+                  default -> throw unexpectedOperation("String", op.operator());
+                })
+        .toList();
   }
 
   private static String formatDate(final OffsetDateTime dateTime) {

@@ -1,5 +1,7 @@
 name: Camunda Helm Chart Integration Test
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   schedule:
     - cron: "0 5 * * 1-5"  # Mondays to Fridays, to keep it actionable
@@ -8,6 +10,9 @@ on:
       - ".github/workflows/camunda-helm-integration.yml"
   workflow_dispatch:
 
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
 jobs:
   helm-deploy:
     name: Helm chart Integration Tests
@@ -15,7 +20,7 @@ jobs:
     secrets: inherit
     with:
       identifier: camunda-helm-int
-      camunda-helm-dir: camunda-platform-alpha-8.8
+      camunda-helm-dir: camunda-platform-8.8
       test-enabled: true
       caller-git-ref: main
       extra-values: |
@@ -83,3 +88,13 @@ jobs:
                 }
               ]
             }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

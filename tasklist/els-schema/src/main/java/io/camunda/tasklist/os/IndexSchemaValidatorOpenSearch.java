@@ -7,58 +7,42 @@
  */
 package io.camunda.tasklist.os;
 
-import static io.camunda.tasklist.util.CollectionUtil.map;
-import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
-import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
-
+import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
-import io.camunda.tasklist.schema.manager.SchemaManager;
-import io.camunda.tasklist.util.IndexSchemaValidatorUtil;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import java.io.IOException;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.*;
-import java.util.stream.Collectors;
-import org.opensearch.client.opensearch.indices.IndexSettings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
-    implements IndexSchemaValidator {
+public class IndexSchemaValidatorOpenSearch implements IndexSchemaValidator, CloseableSilently {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(IndexSchemaValidatorOpenSearch.class);
+  private final OpensearchEngineClient searchEngineClient;
+  private final SchemaManager schemaManager;
+  private final TasklistProperties tasklistProperties;
 
-  @Autowired Set<IndexDescriptor> indexDescriptors;
-
-  @Autowired TasklistProperties tasklistProperties;
-
-  @Autowired RetryOpenSearchClient retryOpenSearchClient;
-
-  @Autowired SchemaManager schemaManager;
-
-  private Set<String> getAllIndexNamesForIndex(final IndexDescriptor index) {
-    final String indexPattern = getTasklistIndexPattern();
-    LOGGER.debug("Getting all indices for {}", indexPattern);
-    final Set<String> indexNames = retryOpenSearchClient.getIndexNames(indexPattern);
-    // since we have indices with similar names, we need to additionally filter index names
-    // e.g. task and task-variable
-    final String patternWithVersion = index.getAllVersionsIndexNameRegexPattern();
-    return indexNames.stream()
-        .filter(n -> n.matches(patternWithVersion))
-        .collect(Collectors.toSet());
-  }
-
-  private String getTasklistIndexPattern() {
-    return formatIndexPrefix(getIndexPrefix()) + TASK_LIST + "*";
+  public IndexSchemaValidatorOpenSearch(
+      final SearchEngineConfiguration configuration, final TasklistProperties tasklistProperties) {
+    final var connector = new OpensearchConnector(configuration.connect());
+    final IndexDescriptors indexDescriptors =
+        new IndexDescriptors(configuration.connect().getIndexPrefix(), false);
+    searchEngineClient =
+        new OpensearchEngineClient(connector.createClient(), connector.objectMapper());
+    schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            indexDescriptors.indices(),
+            indexDescriptors.templates(),
+            configuration,
+            connector.objectMapper());
+    this.tasklistProperties = tasklistProperties;
   }
 
   @Override
@@ -67,103 +51,12 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
   }
 
   @Override
-  public boolean hasAnyTasklistIndices() {
-    final Set<String> indices =
-        retryOpenSearchClient.getIndexNames(
-            tasklistProperties.getOpenSearch().getIndexPrefix() + "*");
-    return !indices.isEmpty();
-  }
-
-  @Override
   public boolean schemaExists() {
-    try {
-      final Set<String> indices =
-          retryOpenSearchClient.getIndexNames(
-              tasklistProperties.getOpenSearch().getIndexPrefix() + "*");
-      final List<String> allIndexNames =
-          map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
-      return indices.containsAll(allIndexNames) && validateNumberOfReplicas(allIndexNames);
-    } catch (final Exception e) {
-      LOGGER.error("Check for existing schema failed", e);
-      return false;
-    }
+    return schemaManager.isAllIndicesExist();
   }
 
   @Override
-  public void validateIndexVersions() {
-    if (!hasAnyTasklistIndices()) {
-      return;
-    }
-    final Set<String> errors = new HashSet<>();
-    indexDescriptors.forEach(
-        indexDescriptor -> {
-          final Set<String> oldVersions =
-              olderVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
-          final Set<String> newerVersions =
-              newerVersionsForIndex(indexDescriptor, versionsForIndex(indexDescriptor));
-          if (oldVersions.size() > 1) {
-            errors.add(
-                String.format(
-                    "More than one older version for %s (%s) found: %s",
-                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), oldVersions));
-          }
-          if (!newerVersions.isEmpty()) {
-            errors.add(
-                String.format(
-                    "Newer version(s) for %s (%s) already exists: %s",
-                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), newerVersions));
-          }
-        });
-    if (!errors.isEmpty()) {
-      throw new TasklistRuntimeException("Error(s) in index schema: " + String.join(";", errors));
-    }
-  }
-
-  /**
-   * Validates existing indices mappings against schema files defined in codebase.
-   *
-   * @return newFields map with the new field definitions per index
-   * @throws TasklistRuntimeException in case some fields would need to be deleted or have different
-   *     settings
-   */
-  @Override
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings()
-      throws IOException {
-    return validateIndexMappings(indexDescriptors);
-  }
-
-  @Override
-  public Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor) {
-    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor);
-    return olderVersionsForIndex(indexDescriptor, versions);
-  }
-
-  @Override
-  public Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor) {
-    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor);
-    return newerVersionsForIndex(indexDescriptor, versions);
-  }
-
-  private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
-    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor);
-    return allIndexNames.stream()
-        .map(this::getVersionFromIndexName)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .collect(Collectors.toSet());
-  }
-
-  public boolean validateNumberOfReplicas(final List<String> indexes) {
-    for (final String index : indexes) {
-      final IndexSettings response =
-          retryOpenSearchClient.getIndexSettingsFor(
-              index, RetryOpenSearchClient.NUMBERS_OF_REPLICA);
-      if (!response
-          .numberOfReplicas()
-          .equals(String.valueOf(tasklistProperties.getOpenSearch().getNumberOfReplicas()))) {
-        return false;
-      }
-    }
-    return true;
+  public void close() {
+    searchEngineClient.close();
   }
 }

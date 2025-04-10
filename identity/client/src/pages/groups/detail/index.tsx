@@ -31,6 +31,7 @@ import {
 import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
 import Mappings from "src/pages/groups/detail/mappings";
+import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -105,7 +106,7 @@ const Details: FC = () => {
                     ? [
                         {
                           key: "users",
-                          label: t("Users"),
+                          label: t("users"),
                           content: <Members groupId={group?.groupKey} />,
                         },
                       ]
@@ -114,16 +115,16 @@ const Details: FC = () => {
                     ? [
                         {
                           key: "roles",
-                          label: t("Roles"),
+                          label: t("roles"),
                           content: <Roles groupId={group?.groupKey} />,
                         },
                       ]
                     : []),
-                  ...(IS_GROUP_MAPPINGS_SUPPORTED
+                  ...(IS_GROUP_MAPPINGS_SUPPORTED && isOIDC
                     ? [
                         {
                           key: "mappings",
-                          label: t("Mappings"),
+                          label: t("mappings"),
                           content: <Mappings groupId={group?.groupKey} />,
                         },
                       ]

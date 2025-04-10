@@ -209,6 +209,7 @@
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(255)"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT" />
       <column name="ERROR_MESSAGE" type="VARCHAR(4000)" />
+      <column name="ERROR_MESSAGE_HASH" type="INT" />
       <column name="ERROR_TYPE" type="VARCHAR(100)" />
       <column name="STATE" type="VARCHAR(20)" />
       <column name="CREATION_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
@@ -466,6 +467,85 @@
       <column name="OWNER_TYPE"/>
       <column name="RESOURCE_TYPE"/>
     </createIndex>
+  </changeSet>
+
+  <changeSet id="create_batch_operation_table" author="pwunderlich">
+    <createTable tableName="${prefix}BATCH_OPERATION">
+      <column name="BATCH_OPERATION_KEY" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="STATE" type="VARCHAR(255)"/>
+      <column name="OPERATION_TYPE" type="VARCHAR(255)"/>
+      <column name="START_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="END_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="OPERATIONS_TOTAL_COUNT" type="INT"/>
+      <column name="OPERATIONS_FAILED_COUNT" type="INT"/>
+      <column name="OPERATIONS_COMPLETED_COUNT" type="INT"/>
+    </createTable>
+
+    <createTable tableName="${prefix}BATCH_OPERATION_ITEM">
+      <column name="BATCH_OPERATION_KEY" type="BIGINT">
+        <constraints
+          foreignKeyName="${prefix}FK_BATCH_OPERATION_ITEM_BATCH_OPERATION"
+          referencedTableName="${prefix}BATCH_OPERATION"
+          referencedColumnNames="BATCH_OPERATION_KEY"
+          deleteCascade="true"/>
+        />
+      </column>
+      <column name="ITEM_KEY" type="BIGINT"/>
+      <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM"
+      indexName="${prefix}IDX_BATCH_OPERATION_ITEM_KEY">
+      <column name="BATCH_OPERATION_KEY"/>
+    </createIndex>
+
+    <modifySql dbms="mariadb">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+  </changeSet>
+
+  <changeSet id="migrate_mapping_id_from_key" author="Oleksii Ivanov">
+    <!-- Step 1: Add ID column -->
+    <addColumn tableName="${prefix}MAPPINGS">
+      <column name="MAPPING_ID" type="VARCHAR(255)">
+        <constraints nullable="true"/>
+      </column>
+    </addColumn>
+
+    <!-- Step 2: Copy values from MAPPING_KEY to ID as string -->
+    <update tableName="${prefix}MAPPINGS">
+      <column name="MAPPING_ID" valueComputed="CAST(MAPPING_KEY AS CHAR(255))"/>
+    </update>
+
+    <!-- Step 3: Set ID as NOT NULL (after it's populated) -->
+    <addNotNullConstraint tableName="${prefix}MAPPINGS" columnName="MAPPING_ID" columnDataType="VARCHAR(255)"/>
+
+    <!-- Step 4: Drop old PK on MAPPING_KEY -->
+    <dropPrimaryKey tableName="${prefix}MAPPINGS"/>
+
+    <!-- Step 5: Make ID the new PK -->
+    <addPrimaryKey tableName="${prefix}MAPPINGS" columnNames="MAPPING_ID" constraintName="${prefix}PK_MAPPINGS_ID"/>
+  </changeSet>
+
+  <changeSet id="create_job_table" author="tsedekey">
+  <createTable tableName="${prefix}JOB">
+    <column name="JOB_KEY" type="BIGINT">
+      <constraints primaryKey="true"/>
+    </column>
+    <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+    <column name="RETRIES" type="SMALLINT"/>
+    <column name="STATE" type="VARCHAR(20)"/>
+    <column name="PARTITION_ID" type="NUMBER"/>
+    <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
+  </createTable>
+
+    <modifySql dbms="mariadb">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
   </changeSet>
 
 </databaseChangeLog>

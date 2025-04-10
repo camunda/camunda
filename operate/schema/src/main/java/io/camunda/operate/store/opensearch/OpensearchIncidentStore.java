@@ -19,10 +19,10 @@ import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperati
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.entities.incident.ErrorType;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

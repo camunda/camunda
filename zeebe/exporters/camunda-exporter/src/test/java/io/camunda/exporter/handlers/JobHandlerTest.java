@@ -7,27 +7,27 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.CUSTOM_HEADERS;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_CODE;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_MESSAGE;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DEADLINE;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DENIED;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DENIED_REASON;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_STATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_WORKER;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.PROCESS_DEFINITION_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.RETRIES;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.TIME;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.CUSTOM_HEADERS;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_CODE;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_MESSAGE;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_DEADLINE;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_DENIED;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_DENIED_REASON;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_WORKER;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.RETRIES;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
-import io.camunda.webapps.schema.entities.operate.JobEntity;
+import io.camunda.webapps.schema.descriptors.template.JobTemplate;
+import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;

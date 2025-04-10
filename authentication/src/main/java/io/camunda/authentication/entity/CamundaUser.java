@@ -188,7 +188,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
           password,
           email,
           authorities,
-          new AuthenticationContext(roles, authorizedApplications, tenants, groups),
+          new AuthenticationContext(username, roles, authorizedApplications, tenants, groups),
           salesPlanType,
           c8Links,
           canLogout);

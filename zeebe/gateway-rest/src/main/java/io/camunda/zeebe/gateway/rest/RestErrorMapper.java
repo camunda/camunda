@@ -222,6 +222,10 @@ public class RestErrorMapper {
             "Partition in target broker is currently unavailable: {}", error, rootError);
         yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, message, title);
       }
+      case MALFORMED_REQUEST -> {
+        REST_GATEWAY_LOGGER.debug("Malformed request: {}", error, rootError);
+        yield createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
+      }
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not
         // expected
@@ -319,7 +323,7 @@ public class RestErrorMapper {
     return mapProblemToResponse(mapDocumentHandlingExceptionToProblem(e));
   }
 
-  public static ProblemDetail mapCamundaSearchExceptionToProblem(CamundaSearchException cse) {
+  public static ProblemDetail mapCamundaSearchExceptionToProblem(final CamundaSearchException cse) {
     final CamundaSearchException.Reason reason = cse.getReason();
     final String title = reason.name();
     final String errorMessage = cse.getMessage();

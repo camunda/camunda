@@ -20,6 +20,10 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {AppHeader} from 'App/Layout/AppHeader';
 import {Processes} from '../';
 import {useEffect} from 'react';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {open} from 'modules/mocks/diagrams';
 
 jest.mock('App/Processes/ListView', () => {
   const ListView: React.FC = () => {
@@ -39,33 +43,35 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
     }, []);
 
     return (
-      <HistoryRouter
-        history={createMemoryHistory({
-          initialEntries: [initialPath],
-        })}
-        basename={contextPath ?? ''}
-      >
-        <Routes>
-          <Route
-            path={Paths.processes()}
-            element={
-              <>
-                <AppHeader />
-                {children}
-              </>
-            }
-          />
-          <Route
-            path={Paths.dashboard()}
-            element={
-              <>
-                <AppHeader />
-                dashboard page
-              </>
-            }
-          />
-        </Routes>
-      </HistoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <HistoryRouter
+          history={createMemoryHistory({
+            initialEntries: [initialPath],
+          })}
+          basename={contextPath ?? ''}
+        >
+          <Routes>
+            <Route
+              path={Paths.processes()}
+              element={
+                <>
+                  <AppHeader />
+                  {children}
+                </>
+              }
+            />
+            <Route
+              path={Paths.dashboard()}
+              element={
+                <>
+                  <AppHeader />
+                  dashboard page
+                </>
+              }
+            />
+          </Routes>
+        </HistoryRouter>
+      </QueryClientProvider>
     );
   };
   return Wrapper;
@@ -86,6 +92,10 @@ describe('MigrationView', () => {
       window.clientConfig = {
         contextPath,
       };
+      mockFetchProcessDefinitionXml({contextPath}).withSuccess(
+        open('orderProcess.bpmn'),
+      );
+      processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
       mockFetchGroupedProcesses(contextPath).withSuccess([]);
 
       const {user} = render(<Processes />, {
@@ -150,6 +160,10 @@ describe('MigrationView', () => {
       window.clientConfig = {
         contextPath,
       };
+      mockFetchProcessDefinitionXml({contextPath}).withSuccess(
+        open('orderProcess.bpmn'),
+      );
+      processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
       mockFetchGroupedProcesses(contextPath).withSuccess([]);
 
       const {user} = render(<Processes />, {

@@ -44,6 +44,7 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
@@ -67,6 +69,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
@@ -118,12 +121,14 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static List<ProcessDefinitionFlowNodeStatisticsResult>
-      toProcessDefinitionFlowNodeStatisticsResults(
+  public static ProcessDefinitionFlowNodeStatisticsQueryResult
+      toProcessDefinitionFlowNodeStatisticsQueryResult(
           final List<ProcessDefinitionFlowNodeStatisticsEntity> result) {
-    return result.stream()
-        .map(SearchQueryResponseMapper::toProcessDefinitionFlowNodeStatisticsResult)
-        .toList();
+    return new ProcessDefinitionFlowNodeStatisticsQueryResult()
+        .items(
+            result.stream()
+                .map(SearchQueryResponseMapper::toProcessDefinitionFlowNodeStatisticsResult)
+                .toList());
   }
 
   private static ProcessDefinitionFlowNodeStatisticsResult
@@ -339,8 +344,8 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
     return new BatchOperationResponse()
         .batchOperationKey(entity.batchOperationKey().toString())
-        .status(BatchOperationResponse.StatusEnum.fromValue(entity.status().name()))
-        .batchOperationType(entity.operationType())
+        .state(BatchOperationResponse.StateEnum.fromValue(entity.state().name()))
+        .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType()))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
         .operationsTotalCount(entity.operationsTotalCount())
@@ -360,7 +365,7 @@ public final class SearchQueryResponseMapper {
     return new BatchOperationItemResponse()
         .batchOperationKey(entity.batchOperationKey().toString())
         .itemKey(entity.itemKey().toString())
-        .status(BatchOperationItemResponse.StatusEnum.fromValue(entity.status().name()));
+        .state(BatchOperationItemResponse.StateEnum.fromValue(entity.state().name()));
   }
 
   private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
@@ -404,6 +409,7 @@ public final class SearchQueryResponseMapper {
         .mappingKey(KeyUtil.keyToString(mappingEntity.mappingKey()))
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
+        .mappingId(mappingEntity.mappingId())
         .name(mappingEntity.name());
   }
 
@@ -445,7 +451,7 @@ public final class SearchQueryResponseMapper {
         .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
-        .state(FlowNodeInstanceResult.StateEnum.fromValue(instance.state().name()))
+        .state(FlowNodeInstanceStateEnum.fromValue(instance.state().name()))
         .type(FlowNodeInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }

@@ -1,6 +1,8 @@
 ---
 name: CI
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   push:
     branches:
@@ -28,6 +30,7 @@ defaults:
 
 env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+  GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
   detect-changes:
@@ -177,30 +180,60 @@ jobs:
 
   java-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [detect-changes]
-    runs-on: gcp-perf-core-16-default
-    timeout-minutes: 30
+    name: "[UT] ${{ matrix.name }}"
+    needs: [ detect-changes ]
+    timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [ general, zeebe, client ]
+        include:
+          - group: general
+            name: "General Unit Tests"
+            # Here we exclude all modules that are separated in extra jobs below
+            # Example: '[-+]<groupId>:artifactId' -> '-' excludes
+            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: gcp-perf-core-16-default
+          - group: zeebe
+            name: "Zeebe Big Unit Tests"
+            maven-modules: "':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: gcp-perf-core-16-default
+          - group: client
+            name: "Camunda API Big Unit Tests"
+            maven-modules: "':camunda-process-test-java',':zeebe-gateway-rest',':camunda-client-java',':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: gcp-perf-core-16-default
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
+          maven-cache-key-modifier: ut-${{ matrix.group }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          ./mvnw -T2 -B --no-snapshot-updates
+          ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
+          -D forkCount=${{ matrix.maven-test-fork-count }}
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
+          -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -213,12 +246,13 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "unit tests"
+          name: "[UT] ${{ matrix.name }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "java-unit-tests/${{ matrix.group }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -227,11 +261,12 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] Elasticsearch"
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
@@ -292,7 +327,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=es
-          -pl 'qa/integration-tests'
+          -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -314,6 +349,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -389,7 +425,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=os
-          -pl 'qa/integration-tests'
+          -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -411,6 +447,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -453,7 +490,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=rdbms
-          -pl 'qa/integration-tests'
+          -pl 'qa/acceptance-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -475,6 +512,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -492,37 +530,57 @@ jobs:
         group: [ root, modules, qa-integration, qa-update ]
         include:
           - group: root
-            name: "Root Integration Tests"
-            maven-modules: "'qa/integration-tests'"
+            name: "Root Acceptance Tests"
+            maven-modules: "'qa/acceptance-tests'"
             maven-build-threads: 2
             maven-test-fork-count: 3
             runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
           - group: modules
             name: "Zeebe Module Integration Tests"
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-longrunning
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
           - group: qa-integration
             name: "Zeebe QA - Integration Tests"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
           - group: qa-migration-integration
             name: "Migration QA - Integration Tests"
             maven-modules: "migration/process-migration"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
           - group: qa-update
             name: "Zeebe QA - Update Tests"
             maven-modules: "zeebe/qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+          - group: qa-camunda-process-test
+            name: "Camunda Process Test"
+            maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example"
+            maven-build-threads: 1
+            maven-test-fork-count: 3
+            runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+      CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
+      DOCKER_IMAGE_TAG: current-test
     services:
       registry:
         image: registry:2
@@ -542,8 +600,9 @@ jobs:
           maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
-          repository: localhost:5000/camunda/zeebe
-          version: current-test
+          repository: ${{ matrix.docker-repository }}
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          dockerfile: ${{ matrix.docker-file }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
@@ -555,6 +614,9 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}"
+          -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}"
+          -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify

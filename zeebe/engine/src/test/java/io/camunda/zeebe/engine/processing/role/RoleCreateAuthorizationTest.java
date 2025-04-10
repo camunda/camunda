@@ -46,40 +46,40 @@ public class RoleCreateAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToCreateRoleWithDefaultUser() {
     // given
-    final var roleName = UUID.randomUUID().toString();
+    final var roleId = UUID.randomUUID().toString();
 
     // when
-    engine.role().newRole(roleName).create(DEFAULT_USER.getUsername());
+    engine.role().newRole(roleId).create(DEFAULT_USER.getUsername());
 
     // then
-    assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withName(roleName).exists())
+    assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withRoleId(roleId).exists())
         .isTrue();
   }
 
   @Test
   public void shouldBeAuthorizedToCreateRoleWithPermissions() {
     // given
-    final var roleName = UUID.randomUUID().toString();
+    final var roleId = UUID.randomUUID().toString();
     final var user = createUser();
     addPermissionsToUser(user, AuthorizationResourceType.ROLE, PermissionType.CREATE);
 
     // when
-    engine.role().newRole(roleName).create(user.getUsername());
+    engine.role().newRole(roleId).create(user.getUsername());
 
     // then
-    assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withName(roleName).exists())
+    assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withRoleId(roleId).exists())
         .isTrue();
   }
 
   @Test
   public void shouldBeUnAuthorizedToCreateRoleWithoutPermissions() {
     // given
-    final var roleName = UUID.randomUUID().toString();
+    final var roleId = UUID.randomUUID().toString();
     final var user = createUser();
 
     // when
     final var rejection =
-        engine.role().newRole(roleName).expectRejection().create(user.getUsername());
+        engine.role().newRole(roleId).expectRejection().create(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)

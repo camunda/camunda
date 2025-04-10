@@ -14,10 +14,7 @@ import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.AggregationBuilders;
 import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
-import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
@@ -31,12 +28,12 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
+import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.Arrays;
 import java.util.List;
@@ -48,9 +45,6 @@ import org.slf4j.Logger;
 
 public final class ElasticsearchArchiverRepository extends ElasticsearchRepository
     implements ArchiverRepository {
-  private static final String DATES_AGG = "datesAgg";
-  private static final String INSTANCES_AGG = "instancesAgg";
-  private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final String ALL_INDICES = "*";
   private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
 
@@ -65,8 +59,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final String processInstanceIndex;
   private final String batchOperationIndex;
   private final CamundaExporterMetrics metrics;
-
-  private final CalendarInterval rolloverInterval;
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -87,34 +79,30 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.metrics = metrics;
-
-    rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-    final var aggregation =
-        createFinishedEntityAggregation(ListViewTemplate.END_DATE, ListViewTemplate.ID);
-    final var searchRequest = createFinishedInstancesSearchRequest(aggregation);
+    final var searchRequest = createFinishedInstancesSearchRequest();
 
     final var timer = Timer.start();
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(this::createArchiveBatch, executor);
+        .thenApplyAsync(
+            (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE), executor);
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
-    final var aggregation =
-        createFinishedEntityAggregation(BatchOperationTemplate.END_DATE, BatchOperationTemplate.ID);
-    final var searchRequest = createFinishedBatchOperationsSearchRequest(aggregation);
+    final var searchRequest = createFinishedBatchOperationsSearchRequest();
 
     final var timer = Timer.start();
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(this::createArchiveBatch, executor);
+        .thenApplyAsync(
+            (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
   @Override
@@ -199,7 +187,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             executor);
   }
 
-  private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
+  private SearchRequest createFinishedInstancesSearchRequest() {
     final var endDateQ =
         QueryBuilders.range(
             q ->
@@ -214,9 +202,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
     final var combinedQuery =
         QueryBuilders.bool(q -> q.must(endDateQ, isProcessInstanceQ, partitionQ));
-
-    return createSearchRequest(
-        processInstanceIndex, combinedQuery, aggregation, ListViewTemplate.END_DATE);
+    return createSearchRequest(processInstanceIndex, combinedQuery, ListViewTemplate.END_DATE);
   }
 
   private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
@@ -238,24 +224,21 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
   }
 
-  private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {
-    final var aggregate = search.aggregations().get(DATES_AGG);
-    if (aggregate == null) {
-      return null;
+  private ArchiveBatch createArchiveBatch(final SearchResponse<?> response, final String field) {
+    final var hits = response.hits().hits();
+    if (hits.isEmpty()) {
+      return new ArchiveBatch(null, List.of());
     }
-
-    final List<DateHistogramBucket> buckets = aggregate.dateHistogram().buckets().array();
-    if (buckets.isEmpty()) {
-      return null;
-    }
-
-    final var bucket = buckets.getFirst();
-    final var finishDate = bucket.keyAsString();
-    final List<String> ids =
-        bucket.aggregations().get(INSTANCES_AGG).topHits().hits().hits().stream()
+    final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
+    final var ids =
+        hits.stream()
+            .takeWhile(
+                hit -> hit.fields().get(field).toJson().asJsonArray().getString(0).equals(endDate))
             .map(Hit::id)
             .toList();
-    return new ArchiveBatch(finishDate, ids);
+
+    metrics.recordArchivingBatchSize(ids.size());
+    return new ArchiveBatch(endDate, ids);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
@@ -273,33 +256,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .orElseThrow();
   }
 
-  private Aggregation createFinishedEntityAggregation(final String endDate, final String id) {
-    final var dateAggregation =
-        AggregationBuilders.dateHistogram()
-            .field(endDate)
-            .calendarInterval(rolloverInterval)
-            .format(config.getElsRolloverDateFormat())
-            .keyed(false) // get result as an array (not a map)
-            .build();
-    final var sortAggregation =
-        AggregationBuilders.bucketSort()
-            .sort(sort -> sort.field(b -> b.field("_key")))
-            .size(1) // we want to get only one bucket at a time
-            .build();
-    final var instanceAggregation =
-        AggregationBuilders.topHits()
-            .size(config.getRolloverBatchSize())
-            .sort(sort -> sort.field(b -> b.field(id).order(SortOrder.Asc)))
-            .source(source -> source.filter(filter -> filter.includes(id)))
-            .build();
-    return new Aggregation.Builder()
-        .dateHistogram(dateAggregation)
-        .aggregations(DATES_SORTED_AGG, Aggregation.of(b -> b.bucketSort(sortAggregation)))
-        .aggregations(INSTANCES_AGG, Aggregation.of(b -> b.topHits(instanceAggregation)))
-        .build();
-  }
-
-  private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
+  private SearchRequest createFinishedBatchOperationsSearchRequest() {
     final var endDateQ =
         QueryBuilders.range(
             q ->
@@ -308,19 +265,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                         d.field(BatchOperationTemplate.END_DATE)
                             .lte(config.getArchivingTimePoint())));
 
-    return createSearchRequest(
-        batchOperationIndex, endDateQ, aggregation, BatchOperationTemplate.END_DATE);
+    return createSearchRequest(batchOperationIndex, endDateQ, BatchOperationTemplate.END_DATE);
   }
 
   private SearchRequest createSearchRequest(
-      final String indexName,
-      final Query filterQuery,
-      final Aggregation aggregation,
-      final String sortField) {
+      final String indexName, final Query filterQuery, final String sortField) {
     logger.trace(
-        "Finished entities for archiving request: \n{}\n and aggregation: \n{}",
+        "Create search request against index '{}', with filter '{}' and sortField '{}'",
+        indexName,
         filterQuery.toString(),
-        aggregation.toString());
+        sortField);
 
     return new SearchRequest.Builder()
         .index(indexName)
@@ -328,10 +282,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .allowNoIndices(true)
         .ignoreUnavailable(true)
         .source(source -> source.fetch(false))
-        .query(query -> query.constantScore(q -> q.filter(filterQuery)))
-        .aggregations(DATES_AGG, aggregation)
+        .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
+        .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
-        .size(0)
+        .size(config.getRolloverBatchSize())
         .build();
   }
 }

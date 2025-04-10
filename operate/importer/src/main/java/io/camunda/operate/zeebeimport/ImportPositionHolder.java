@@ -10,7 +10,7 @@ package io.camunda.operate.zeebeimport;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ImportStore;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -29,7 +29,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
+@DependsOn("searchEngineSchemaInitializer")
 public class ImportPositionHolder {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ImportPositionHolder.class);
@@ -126,12 +126,24 @@ public class ImportPositionHolder {
                 .setCompleted(lastProcessedPosition.getCompleted());
           }
           inflightImportPositions.put(key, importPosition);
+
+          if (importPositionIsNotCompleted(key) && lastProcessedPosition.getCompleted()) {
+            LOGGER.info(
+                "Import position [{}] for partition [{}] completed for operate",
+                aliasName,
+                partition);
+          }
+
           mostRecentProcessedImportPositions.merge(
               key,
               importPosition.getCompleted(),
               (oldCompleted, newCompleted) -> oldCompleted || newCompleted);
         },
         "record last loaded pos");
+  }
+
+  private boolean importPositionIsNotCompleted(final String key) {
+    return !mostRecentProcessedImportPositions.getOrDefault(key, false);
   }
 
   private void registerRecordReaderCompletedGauge(final int partition, final String aliasName) {

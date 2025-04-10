@@ -70,6 +70,7 @@ public class BackupConfig {
     executor.setMaxPoolSize(8);
     executor.setKeepAliveSeconds(60);
     executor.setThreadNamePrefix("webapps_backup_");
+    executor.setStrictEarlyShutdown(true);
     executor.setQueueCapacity(4096);
     executor.initialize();
     return executor;

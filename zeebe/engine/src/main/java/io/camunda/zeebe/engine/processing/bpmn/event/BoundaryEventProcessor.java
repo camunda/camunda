@@ -66,7 +66,8 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onTerminate(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+  public TransitionOutcome onTerminate(
+      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -76,5 +77,6 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
+    return TransitionOutcome.CONTINUE;
   }
 }

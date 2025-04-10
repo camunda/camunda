@@ -407,7 +407,9 @@ public final class Gateway implements CloseableSilently {
       final var handler =
           switch (securityConfiguration.getAuthentication().getMethod()) {
             case BASIC -> new AuthenticationHandler.BasicAuth(userServices, passwordEncoder);
-            case OIDC -> new AuthenticationHandler.Oidc(jwtDecoder);
+            case OIDC ->
+                new AuthenticationHandler.Oidc(
+                    jwtDecoder, securityConfiguration.getAuthentication().getOidc());
           };
       interceptors.add(new AuthenticationInterceptor(handler));
     }

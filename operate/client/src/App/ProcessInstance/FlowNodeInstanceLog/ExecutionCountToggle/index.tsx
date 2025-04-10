@@ -8,12 +8,12 @@
 
 import {observer} from 'mobx-react';
 import {Toggle} from '@carbon/react';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {useEffect} from 'react';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 
 const ExecutionCountToggle: React.FC = observer(() => {
-  const {status: diagramStatus} = processInstanceDetailsDiagramStore.state;
   const {
     state: {isExecutionCountVisible},
     toggleExecutionCountVisibility,
@@ -21,7 +21,9 @@ const ExecutionCountToggle: React.FC = observer(() => {
 
   useEffect(() => executionCountToggleStore.reset, []);
 
-  const isDisabled = diagramStatus !== 'fetched';
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {isSuccess} = useProcessInstanceXml({processDefinitionKey});
+
   return (
     <Toggle
       aria-label={`${isExecutionCountVisible ? 'Hide' : 'Show'} Execution Count`}
@@ -29,7 +31,7 @@ const ExecutionCountToggle: React.FC = observer(() => {
       labelA="Show Execution Count"
       labelB="Hide Execution Count"
       onClick={toggleExecutionCountVisibility}
-      disabled={isDisabled}
+      disabled={!isSuccess}
       size="sm"
       toggled={isExecutionCountVisible}
     />

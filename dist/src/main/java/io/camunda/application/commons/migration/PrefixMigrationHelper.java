@@ -7,38 +7,37 @@
  */
 package io.camunda.application.commons.migration;
 
-import io.camunda.exporter.schema.PrefixMigrationClient;
-import io.camunda.exporter.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
-import io.camunda.exporter.schema.opensearch.OpensearchPrefixMigrationClient;
-import io.camunda.exporter.utils.CloneResult;
-import io.camunda.exporter.utils.ReindexResult;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.PrefixMigrationClient;
+import io.camunda.search.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
+import io.camunda.search.schema.opensearch.OpensearchPrefixMigrationClient;
+import io.camunda.search.schema.utils.CloneResult;
+import io.camunda.search.schema.utils.ReindexResult;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import java.io.IOException;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -84,17 +83,8 @@ public final class PrefixMigrationHelper {
   public static void runPrefixMigration(
       final OperateProperties operateProperties,
       final TasklistProperties tasklistProperties,
-      final ConnectConfiguration connectConfiguration)
-      throws IOException {
+      final ConnectConfiguration connectConfiguration) {
     final var isElasticsearch = connectConfiguration.getTypeEnum() == DatabaseType.ELASTICSEARCH;
-
-    LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
-
-    final var clientAdapter = SchemaManagerHelper.createClientAdapter(connectConfiguration);
-
-    SchemaManagerHelper.createSchema(connectConfiguration, clientAdapter);
-
-    LOG.info("... finished creating/updating schema for Camunda");
 
     LOG.info("Migrating runtime indices");
 
@@ -128,8 +118,6 @@ public final class PrefixMigrationHelper {
         executor);
 
     LOG.info("... finished migrating historic indices");
-
-    clientAdapter.close();
   }
 
   private static PrefixMigrationClient getPrefixMigrationClient(

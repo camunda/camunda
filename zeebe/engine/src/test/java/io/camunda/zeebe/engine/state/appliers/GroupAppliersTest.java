@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -18,8 +20,10 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +36,7 @@ public class GroupAppliersTest {
   private MutableGroupState groupState;
   private MutableUserState userState;
   private MutableMappingState mappingState;
+  private MutableMembershipState membershipState;
 
   private GroupCreatedApplier groupCreatedApplier;
   private GroupUpdatedApplier groupUpdatedApplier;
@@ -44,6 +49,7 @@ public class GroupAppliersTest {
     groupState = processingState.getGroupState();
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
+    membershipState = processingState.getMembershipState();
 
     groupCreatedApplier = new GroupCreatedApplier(groupState);
     groupUpdatedApplier = new GroupUpdatedApplier(groupState);
@@ -55,43 +61,43 @@ public class GroupAppliersTest {
   @Test
   void shouldCreateGroup() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
 
     // when
     groupCreatedApplier.applyState(groupKey, groupRecord);
 
     // then
-    final var group = groupState.get(groupKey);
+    final var group = groupState.get(groupId);
     assertThat(group.isPresent()).isTrue();
     final var persistedGroup = group.get();
-    assertThat(persistedGroup.getGroupKey()).isEqualTo(groupKey);
     assertThat(persistedGroup.getName()).isEqualTo(groupName);
+    assertThat(persistedGroup.getGroupId()).isEqualTo(groupId);
   }
 
   @Test
   void shouldUpdateGroup() {
     // given
-    final var groupKey = 1L;
+    final var groupId = UUID.randomUUID().toString();
     final var groupName = "group";
     final var updatedGroupName = "updatedGroup";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
-    groupState.create(groupKey, groupRecord);
-    final var persistedGroup = groupState.get(groupKey);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    groupState.create(groupRecord);
+    final var persistedGroup = groupState.get(groupId);
     assertThat(persistedGroup.isPresent()).isTrue();
     assertThat(persistedGroup.get().getName()).isEqualTo(groupName);
-    final var updatedGroupRecord =
-        new GroupRecord().setGroupKey(groupKey).setName(updatedGroupName);
+    final var updatedGroupRecord = new GroupRecord().setGroupId(groupId).setName(updatedGroupName);
 
     // when
-    groupUpdatedApplier.applyState(groupKey, updatedGroupRecord);
+    groupUpdatedApplier.applyState(1L, updatedGroupRecord);
 
     // then
-    final var group = groupState.get(groupKey);
+    final var group = groupState.get(groupId);
     assertThat(group.isPresent()).isTrue();
     final var persistedUpdatedGroup = group.get();
-    assertThat(persistedUpdatedGroup.getGroupKey()).isEqualTo(groupKey);
+    assertThat(persistedUpdatedGroup.getGroupId()).isEqualTo(groupId);
     assertThat(persistedUpdatedGroup.getName()).isEqualTo(updatedGroupRecord.getName());
   }
 
@@ -107,21 +113,21 @@ public class GroupAppliersTest {
             .setPassword("password")
             .setEmail("test@example.com");
     userState.create(userRecord);
-    final var groupKey = 2L;
+    final var groupId = "123";
     final var groupName = "group";
     final var entityType = EntityType.USER;
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
-    groupState.create(groupKey, groupRecord);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    groupState.create(groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
 
     // when
-    groupEntityAddedApplier.applyState(groupKey, groupRecord);
+    groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // then
-    final var entitiesByType = groupState.getEntitiesByType(groupKey);
-    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityKey)));
-    final var persistedUser = userState.getUser(entityKey).get();
-    assertThat(persistedUser.getGroupKeysList()).containsExactly(groupKey);
+    assertThat(
+            membershipState.getMemberships(
+                EntityType.USER, Long.toString(entityKey), RelationType.GROUP))
+        .containsExactly(groupId);
   }
 
   @Test
@@ -134,21 +140,19 @@ public class GroupAppliersTest {
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
-    final var groupKey = 2L;
+    final var groupId = "123";
     final var groupName = "group";
     final var entityType = EntityType.MAPPING;
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
-    groupState.create(groupKey, groupRecord);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    groupState.create(groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
 
     // when
-    groupEntityAddedApplier.applyState(groupKey, groupRecord);
+    groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // then
-    final var entitiesByType = groupState.getEntitiesByType(groupKey);
+    final var entitiesByType = groupState.getEntitiesByType(groupId);
     assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityKey)));
-    final var persistedMapping = mappingState.get(entityKey).get();
-    assertThat(persistedMapping.getGroupKeysList()).containsExactly(groupKey);
   }
 
   @Test
@@ -163,22 +167,22 @@ public class GroupAppliersTest {
             .setPassword("password")
             .setEmail("test@example.com");
     userState.create(userRecord);
-    final var groupKey = 2L;
+    final var groupId = "123";
     final var groupName = "group";
     final var entityType = EntityType.USER;
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
-    groupState.create(groupKey, groupRecord);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    groupState.create(groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
-    groupEntityAddedApplier.applyState(groupKey, groupRecord);
+    groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // when
-    groupEntityRemovedApplier.applyState(groupKey, groupRecord);
+    groupEntityRemovedApplier.applyState(1L, groupRecord);
 
     // then
-    final var entitiesByType = groupState.getEntitiesByType(groupKey);
-    assertThat(entitiesByType).isEmpty();
-    final var persistedUser = userState.getUser(entityKey).get();
-    assertThat(persistedUser.getGroupKeysList()).isEmpty();
+    assertThat(
+            membershipState.getMemberships(
+                EntityType.USER, Long.toString(entityKey), RelationType.GROUP))
+        .isEmpty();
   }
 
   @Test
@@ -191,19 +195,19 @@ public class GroupAppliersTest {
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
-    final var groupKey = 2L;
+    final var groupId = "123";
     final var groupName = "group";
     final var entityType = EntityType.MAPPING;
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
-    groupState.create(groupKey, groupRecord);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    groupState.create(groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
-    groupEntityAddedApplier.applyState(groupKey, groupRecord);
+    groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // when
-    groupEntityRemovedApplier.applyState(groupKey, groupRecord);
+    groupEntityRemovedApplier.applyState(1L, groupRecord);
 
     // then
-    final var entitiesByType = groupState.getEntitiesByType(groupKey);
+    final var entitiesByType = groupState.getEntitiesByType(groupId);
     assertThat(entitiesByType).isEmpty();
     final var persistedMapping = mappingState.get(entityKey).get();
     assertThat(persistedMapping.getGroupKeysList()).isEmpty();
@@ -212,22 +216,18 @@ public class GroupAppliersTest {
   @Test
   void shouldDeleteGroup() {
     // given
-    // a group
-    final var groupKey = 1L;
+    final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
-    groupCreatedApplier.applyState(groupKey, groupRecord);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    groupCreatedApplier.applyState(1L, groupRecord);
 
     // when
-    groupDeletedApplier.applyState(groupKey, groupRecord);
+    groupDeletedApplier.applyState(1L, groupRecord);
 
     // then
-    // the group state is cleaned up
-    final var group = groupState.get(groupKey);
+    final var group = groupState.get(groupId);
     assertThat(group.isPresent()).isFalse();
-    final var groupKeyByName = groupState.getGroupKeyByName(groupName);
-    assertThat(groupKeyByName.isPresent()).isFalse();
-    final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
+    final var entitiesByGroup = groupState.getEntitiesByType(groupId);
     assertThat(entitiesByGroup).isEmpty();
   }
 }

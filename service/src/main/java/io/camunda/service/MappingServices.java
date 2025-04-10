@@ -74,7 +74,7 @@ public class MappingServices
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setId(request.id()));
+            .setMappingId(request.mappingId()));
   }
 
   public CompletableFuture<MappingRecord> updateMapping(final MappingDTO request) {
@@ -83,21 +83,21 @@ public class MappingServices
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setId(request.id()));
+            .setMappingId(request.mappingId()));
   }
 
-  public MappingEntity getMapping(final Long mappingKey) {
-    return findMapping(mappingKey)
+  public MappingEntity getMapping(final String mappingId) {
+    return findMapping(mappingId)
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_KEY.formatted(mappingKey),
+                    ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_ID.formatted(mappingId),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
-  public Optional<MappingEntity> findMapping(final Long mappingKey) {
+  public Optional<MappingEntity> findMapping(final String mappingId) {
     return search(
-            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingKey(mappingKey)).build())
+            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingId(mappingId)).build())
         .items()
         .stream()
         .findFirst();
@@ -114,8 +114,8 @@ public class MappingServices
         .findFirst();
   }
 
-  public CompletableFuture<MappingRecord> deleteMapping(final long mappingKey) {
-    return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingKey(mappingKey));
+  public CompletableFuture<MappingRecord> deleteMapping(final String mappingId) {
+    return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingId(mappingId));
   }
 
   public List<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
@@ -139,5 +139,5 @@ public class MappingServices
     return Stream.of(String.valueOf(value));
   }
 
-  public record MappingDTO(String claimName, String claimValue, String name, String id) {}
+  public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}
 }

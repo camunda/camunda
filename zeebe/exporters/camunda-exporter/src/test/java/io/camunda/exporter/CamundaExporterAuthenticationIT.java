@@ -7,16 +7,18 @@
  */
 package io.camunda.exporter;
 
+import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
+import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -39,11 +41,11 @@ public class CamundaExporterAuthenticationIT {
   private final ExporterTestController controller = new ExporterTestController();
 
   @BeforeEach
-  void beforeEach() {
+  void beforeEach() throws IOException {
     CONFIG.getConnect().setUsername("elastic");
     CONFIG.getConnect().setPassword(ELASTIC_PASSWORD);
     CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    CONFIG.setCreateSchema(true);
+    createSchemas(CONFIG);
   }
 
   @Test
@@ -77,7 +79,7 @@ public class CamundaExporterAuthenticationIT {
 
     // then
     assertThatThrownBy(() -> exporter.open(controller))
-        .isInstanceOf(ElasticsearchExporterException.class)
+        .isInstanceOf(SearchEngineException.class)
         .cause()
         .hasMessageContaining("unable to authenticate user");
   }

@@ -69,6 +69,7 @@
       <validValue name="BATCH_OPERATION_EXECUTION">51</validValue>
       <validValue name="BATCH_OPERATION_CHUNK">52</validValue>
       <validValue name="AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION">53</validValue>
+      <validValue name="BATCH_OPERATION_LIFECYCLE_MANAGEMENT">54</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="REDISTRIBUTION">252</validValue>

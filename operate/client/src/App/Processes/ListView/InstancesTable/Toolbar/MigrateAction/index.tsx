@@ -14,8 +14,6 @@ import {Restricted} from 'modules/components/Restricted';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processStatisticsStore as processStatisticsMigrationSourceStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
@@ -25,6 +23,8 @@ import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {HelperModal} from 'modules/components/HelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 
 const localStorageKey = 'hideMigrationHelperModal';
 
@@ -39,7 +39,9 @@ const MigrateAction: React.FC = observer(() => {
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
-  const hasXmlError = processXmlStore.state.status === 'error';
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const processDefinition = useListViewXml({processDefinitionKey});
+  const hasXmlError = processDefinition?.isError;
 
   const isDisabled =
     batchModificationStore.state.isEnabled ||
@@ -62,7 +64,13 @@ const MigrateAction: React.FC = observer(() => {
   };
 
   const handleSubmit = () => {
-    processXmlMigrationSourceStore.setProcessXml(processXmlStore.state.xml);
+    processInstanceMigrationStore.setSourceProcessDefinitionKey(
+      processesStore.getProcessId({
+        process,
+        tenant,
+        version,
+      }),
+    );
 
     const requestFilterParameters = {
       ...getProcessInstancesRequestFilters(),

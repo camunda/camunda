@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PARTITION_ID;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,10 +19,10 @@ import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.operate.TreePath;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -160,6 +161,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setProcessVersionTag("versionTag")
             .setProcessDefinitionKey(444L)
             .setBpmnProcessId("bpmnProcessId")
+            .setPartitionId(12)
             .setPosition(123L)
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
@@ -177,6 +179,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
     expectedUpdateFields.put(ListViewTemplate.START_DATE, inputEntity.getStartDate());
     expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
+    expectedUpdateFields.put(PARTITION_ID, 12);
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
@@ -196,6 +199,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setProcessVersion(2)
             .setProcessDefinitionKey(444L)
             .setBpmnProcessId("bpmnProcessId")
+            .setPartitionId(12)
             .setPosition(123L)
             .setState(ProcessInstanceState.ACTIVE);
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -206,6 +210,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
     expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
     expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
+    expectedUpdateFields.put(PARTITION_ID, 12);
     expectedUpdateFields.put(POSITION, 123L);
 
     // when

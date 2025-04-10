@@ -7,8 +7,13 @@
  */
 package io.camunda.operate.qa.util;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.zeebe.util.retry.RetryDecorator;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -18,41 +23,49 @@ import org.springframework.stereotype.Component;
 @Component("schemaManager")
 @Conditional(ElasticsearchCondition.class)
 @Profile("test")
-public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
-    implements TestSchemaManager {
+public class TestElasticsearchSchemaManager implements TestSchemaManager, AutoCloseable {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
-  @Override
-  public void deleteSchema() {
-    final String prefix = this.operateProperties.getElasticsearch().getIndexPrefix();
-    LOGGER.info("Removing indices {}*", prefix);
-    retryElasticsearchClient.deleteIndicesFor(prefix + "*");
-    retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
+  private final ElasticsearchClient client;
+
+  private final SearchEngineConfiguration configuration;
+
+  private final RetryDecorator retryDecorator;
+
+  public TestElasticsearchSchemaManager(final SearchEngineConfiguration configuration) {
+    client = new ElasticsearchConnector(configuration.connect()).createClient();
+    this.configuration = configuration;
+    retryDecorator =
+        new RetryDecorator().withRetryOnExceptions(ElasticsearchException.class, IOException.class);
+  }
+
+  private void deleteSchema() throws IOException {
+    final String prefix = configuration.connect().getIndexPrefix();
+    LOGGER.info("Removing indices " + prefix + "*");
+    client.indices().delete(r -> r.index(prefix + "*"));
+    client.indices().deleteTemplate(r -> r.name(prefix + "*"));
   }
 
   @Override
   public void deleteSchemaQuietly() {
     try {
       deleteSchema();
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.debug(t.getMessage());
     }
   }
 
   @Override
-  public void setCreateSchema(boolean createSchema) {
-    operateProperties.getElasticsearch().setCreateSchema(createSchema);
+  public void refresh(final String indexPattern) {
+    retryDecorator.decorateCheckedRunnable(
+        "refresh indices: '%s'".formatted(indexPattern),
+        () -> client.indices().refresh(r -> r.index(indexPattern)));
   }
 
   @Override
-  public void setIndexPrefix(String indexPrefix) {
-    operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-  }
-
-  @Override
-  public void setDefaultIndexPrefix() {
-    operateProperties.getElasticsearch().setDefaultIndexPrefix();
+  public void close() throws Exception {
+    client.close();
   }
 }

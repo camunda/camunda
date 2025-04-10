@@ -29,6 +29,7 @@ import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
+import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
@@ -63,6 +64,8 @@ import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.BatchOperationGetRequest;
+import io.camunda.client.api.fetch.BatchOperationItemsGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -80,17 +83,18 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
-import io.camunda.client.api.search.query.DecisionDefinitionQuery;
-import io.camunda.client.api.search.query.DecisionInstanceQuery;
-import io.camunda.client.api.search.query.DecisionRequirementsQuery;
-import io.camunda.client.api.search.query.FlownodeInstanceQuery;
-import io.camunda.client.api.search.query.IncidentQuery;
-import io.camunda.client.api.search.query.ProcessDefinitionQuery;
-import io.camunda.client.api.search.query.ProcessInstanceQuery;
-import io.camunda.client.api.search.query.UserTaskQuery;
-import io.camunda.client.api.search.query.UserTaskVariableQuery;
-import io.camunda.client.api.search.query.VariableQuery;
+import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
+import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
+import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
+import io.camunda.client.api.search.request.FlownodeInstanceSearchRequest;
+import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
+import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.UserTaskSearchRequest;
+import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
+import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionFlowNodeStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
@@ -775,16 +779,33 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long processDefinitionKey = ...;
    *
    * camundaClient
-   *  .newProcessDefinitionQuery()
+   *  .newProcessDefinitionSearchRequest()
    *  .filter((f) -> f.processDefinitionKey(processDefinitionKey))
    *  .sort((s) -> s.name().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @return a builder for the process definition query
+   * @return a builder for the process definition search request
    */
-  ProcessDefinitionQuery newProcessDefinitionQuery();
+  ProcessDefinitionSearchRequest newProcessDefinitionSearchRequest();
+
+  /**
+   * Executes a search request to query process definition flow node statistics.
+   *
+   * <pre>
+   * long processDefinitionKey = ...;
+   *
+   * camundaClient
+   *  .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+   *  .filter((f) -> f.processInstanceKey(processInstanceKey))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process definition statistics
+   */
+  ProcessDefinitionFlowNodeStatisticsRequest newProcessDefinitionFlowNodeStatisticsRequest(
+      final long processDefinitionKey);
 
   /**
    * Retrieves a process instance by key.
@@ -808,16 +829,16 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long processInstanceKey = ...;
    *
    * camundaClient
-   *  .newProcessInstanceQuery()
+   *  .newProcessInstanceSearchRequest()
    *  .filter((f) -> f.processInstanceKeys(processInstanceKey))
    *  .sort((s) -> s.startDate().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @return a builder for the process instance query
+   * @return a builder for the process instance search request
    */
-  ProcessInstanceQuery newProcessInstanceQuery();
+  ProcessInstanceSearchRequest newProcessInstanceSearchRequest();
 
   /**
    * Executes a search request to query flow node instances.
@@ -826,16 +847,16 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long flownodeInstanceKey = ...;
    *
    * camundaClient
-   *  .newFlownodeInstanceQuery()
+   *  .newFlownodeInstanceSearchRequest()
    *  .filter((f) -> f.processInstanceKeys(processInstanceKey))
    *  .sort((s) -> s.flowNodeName().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @return a builder for the process instance query
+   * @return a builder for the process instance search request
    */
-  FlownodeInstanceQuery newFlownodeInstanceQuery();
+  FlownodeInstanceSearchRequest newFlownodeInstanceSearchRequest();
 
   /**
    * Gets a flow node instance by key.
@@ -864,7 +885,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * String adHocSubprocessId = ...;
    *
    * camundaClient
-   *  .newAdHocSubprocessActivityQuery()
+   *  .newAdHocSubprocessActivitySearchRequest()
    *  .filter((f) -> f
    *     .processDefinitionKey(processDefinitionKey)
    *     .adHocSubprocessId(adHocSubprocessId)
@@ -872,10 +893,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity query
+   * @return a builder for the ad-hoc subprocess activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery();
+  AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest();
 
   /**
    * Executes a search request to query activities within ad-hoc subprocesses.
@@ -888,17 +909,17 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * String adHocSubprocessId = ...;
    *
    * camundaClient
-   *  .newAdHocSubprocessActivityQuery(
+   *  .newAdHocSubprocessActivitySearchRequest(
    *    processDefinitionKey,
    *    adHocSubprocessId
    *  )
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity query
+   * @return a builder for the ad-hoc subprocess activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery(
+  AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest(
       long processDefinitionKey, String adHocSubprocessId);
 
   /**
@@ -925,32 +946,32 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newUserTaskQuery()
+   *  .newUserTaskSearchRequest()
    *  .filter((f) -> f.userTaskKey(userTaskKey))
    *  .sort((s) -> s.creationDate().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @return a builder for the user task query
+   * @return a builder for the user task search request
    */
-  UserTaskQuery newUserTaskQuery();
+  UserTaskSearchRequest newUserTaskSearchRequest();
 
   /**
    * Executes a search request to query Decision Requirements.
    *
    * <pre>
    *   camundaClient
-   *   .newDecisionRequirementsQuery()
+   *   .newDecisionRequirementsSearchRequest()
    *   .filter((f) -> f.decisionRequirementsKey(decisionRequirementsKey))
    *   .sort((s) -> s.version().asc())
    *   .page((p) -> p.limit(100))
    *   .send();
    *   </pre>
    *
-   * @return a builder for the decision requirements query
+   * @return a builder for the decision requirements search request
    */
-  DecisionRequirementsQuery newDecisionRequirementsQuery();
+  DecisionRequirementsSearchRequest newDecisionRequirementsSearchRequest();
 
   /*
    * Executes a search request to query decision definitions.
@@ -966,9 +987,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the decision definition query
+   * @return a builder for the decision definition search request
    */
-  DecisionDefinitionQuery newDecisionDefinitionQuery();
+  DecisionDefinitionSearchRequest newDecisionDefinitionSearchRequest();
 
   /**
    * Gets a decision definition by key.
@@ -1009,16 +1030,16 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long decisionInstanceKey = ...;
    *
    * camundaClient
-   *  .newDecisionInstanceQuery()
+   *  .newDecisionInstanceSearchRequest()
    *  .filter((f) -> f.decisionInstanceKey(decisionInstanceKey))
    *  .sort((s) -> s.decisionInstanceKey().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @return a builder for the decision instance query
+   * @return a builder for the decision instance search request
    */
-  DecisionInstanceQuery newDecisionInstanceQuery();
+  DecisionInstanceSearchRequest newDecisionInstanceSearchRequest();
 
   /**
    * Retrieves a decision instance by id.
@@ -1043,16 +1064,16 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long decisionDefinitionKey = ...;
    *
    * camundaClient
-   *  .newIncidentQuery()
+   *  .newIncidentSearchRequest()
    *  .filter((f) -> f.processInstanceKey(processInstanceKey))
    *  .sort((s) -> s.processDefinitionKey().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @return a builder for the incident query
+   * @return a builder for the incident search request
    */
-  IncidentQuery newIncidentQuery();
+  IncidentSearchRequest newIncidentSearchRequest();
 
   /**
    * Gets an incident by key.
@@ -1206,6 +1227,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .newCreateMappingCommand()
    *  .claimName(claimName)
    *  .claimValue(claimValue)
+   *  .mappingId(mappingId)
    *  .name(name)
    *  .send();
    * </pre>
@@ -1286,15 +1308,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newVariableQuery()
+   *  .newVariableSearchRequest()
    *  .filter((f) -> f.variableKey(variableKey))
    *  .sort((s) -> s.value().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    *
-   * @return a builder for the variable query
+   * @return a builder for the variable search request
    */
-  VariableQuery newVariableQuery();
+  VariableSearchRequest newVariableSearchRequest();
 
   /**
    * Gets a variable by key.
@@ -1312,21 +1334,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   VariableGetRequest newVariableGetRequest(long variableKey);
 
   /**
-   * Gets a variabes associated to a User Task key.
+   * Executes a search request to query variables related to a user task.
    *
    * <pre>
    *   long variableKey = ...;
    *
    *  camundaClient
-   * .newUserTaskVariableQuery(variableKey)
-   *  .sort((s) -> s.value().asc())
-   *  .page((p) -> p.limit(100))
-   * .send();
+   *   .newUserTaskVariableSearchRequest(variableKey)
+   *   .sort((s) -> s.value().asc())
+   *   .page((p) -> p.limit(100))
+   *   .send();
    *
    *  @param userTaskKey the key of the user task
-   *  @return a builder for the request to get the variables
+   *  @return a builder for the user task variable search request
    */
-  UserTaskVariableQuery newUserTaskVariableQuery(long userTaskKey);
+  UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(long userTaskKey);
 
   /**
    * <strong>Experimental: This method is under development. The respective API on compatible
@@ -1722,4 +1744,51 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the update authorization command
    */
   UpdateAuthorizationCommandStep1 newUpdateAuthorizationCommand(long authorizationKey);
+
+  /**
+   * Command to create a batch operation
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newCreateBatchOperationCommand()
+   *   .processInstanceCancel()
+   *   .filter(filter)
+   *   .send();
+   * </pre>
+   *
+   * @return a builder to configure and send the create batch operation command
+   */
+  CreateBatchOperationCommandStep1 newCreateBatchOperationCommand();
+
+  /**
+   * Request to get a single batch operation by batch operation key.
+   *
+   * <pre>
+   * camundaClient
+   *  .newBatchOperationGetRequest(batchOperationKey)
+   *  .send();
+   * </pre>
+   *
+   * @param batchOperationKey the key which identifies the corresponding batch operation
+   * @return a builder for the request
+   */
+  BatchOperationGetRequest newBatchOperationGetRequest(Long batchOperationKey);
+
+  /**
+   * Request to get all items for a batch operation by batch operation key. This request is will
+   * return <b>ALL</b> items of the batch operation. Depending on the number of elements, this may
+   * be a large set of items.
+   *
+   * <pre>
+   * camundaClient
+   *  .newBatchOperationItemsGetRequest(batchOperationKey)
+   *  .send();
+   * </pre>
+   *
+   * @param batchOperationKey the key which identifies the corresponding batch operation
+   * @return a builder for the request
+   */
+  BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(Long batchOperationKey);
 }

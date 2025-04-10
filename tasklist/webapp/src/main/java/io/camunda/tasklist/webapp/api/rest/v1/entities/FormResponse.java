@@ -8,8 +8,8 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.tasklist.FormEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -48,7 +48,7 @@ public class FormResponse {
     return id;
   }
 
-  public FormResponse setId(String id) {
+  public FormResponse setId(final String id) {
     this.id = id;
     return this;
   }
@@ -57,7 +57,7 @@ public class FormResponse {
     return processDefinitionKey;
   }
 
-  public FormResponse setProcessDefinitionKey(String processDefinitionKey) {
+  public FormResponse setProcessDefinitionKey(final String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -67,8 +67,8 @@ public class FormResponse {
     return title;
   }
 
-  public FormResponse setTitle(String processName) {
-    this.title = processName;
+  public FormResponse setTitle(final String processName) {
+    title = processName;
     return this;
   }
 
@@ -76,7 +76,7 @@ public class FormResponse {
     return schema;
   }
 
-  public FormResponse setSchema(String schema) {
+  public FormResponse setSchema(final String schema) {
     this.schema = schema;
     return this;
   }
@@ -85,7 +85,7 @@ public class FormResponse {
     return version;
   }
 
-  public FormResponse setVersion(Long version) {
+  public FormResponse setVersion(final Long version) {
     this.version = version;
     return this;
   }
@@ -94,7 +94,7 @@ public class FormResponse {
     return tenantId;
   }
 
-  public FormResponse setTenantId(String tenantId) {
+  public FormResponse setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -103,26 +103,18 @@ public class FormResponse {
     return isDeleted;
   }
 
-  public FormResponse setIsDeleted(Boolean isDeleted) {
+  public FormResponse setIsDeleted(final Boolean isDeleted) {
     this.isDeleted = isDeleted;
     return this;
   }
 
   @Override
-  public String toString() {
-    return new StringJoiner(", ", FormResponse.class.getSimpleName() + "[", "]")
-        .add("id='" + id + "'")
-        .add("processDefinitionKey='" + processDefinitionKey + "'")
-        .add("title='" + title + "'")
-        .add("schema='" + schema + "'")
-        .add("version='" + version + "'")
-        .add("tenantId='" + tenantId + "'")
-        .add("isDeleted='" + isDeleted + "'")
-        .toString();
+  public int hashCode() {
+    return Objects.hash(id, processDefinitionKey, title, schema, version, tenantId, isDeleted);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -140,11 +132,19 @@ public class FormResponse {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(id, processDefinitionKey, title, schema, version, tenantId, isDeleted);
+  public String toString() {
+    return new StringJoiner(", ", FormResponse.class.getSimpleName() + "[", "]")
+        .add("id='" + id + "'")
+        .add("processDefinitionKey='" + processDefinitionKey + "'")
+        .add("title='" + title + "'")
+        .add("schema='" + schema + "'")
+        .add("version='" + version + "'")
+        .add("tenantId='" + tenantId + "'")
+        .add("isDeleted='" + isDeleted + "'")
+        .toString();
   }
 
-  public static FormResponse fromFormEntity(FormEntity form) {
+  public static FormResponse fromFormEntity(final FormEntity form) {
     return new FormResponse()
         .setId(form.getFormId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())
@@ -154,7 +154,8 @@ public class FormResponse {
         .setIsDeleted(form.getIsDeleted());
   }
 
-  public static FormResponse fromFormEntity(FormEntity form, ProcessEntity processEntity) {
+  public static FormResponse fromFormEntity(
+      final FormEntity form, final ProcessEntity processEntity) {
     return new FormResponse()
         .setId(form.getFormId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())

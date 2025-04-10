@@ -45,7 +45,8 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   private MigrationStatusUpdateRequest processTask(final Group group) {
     try {
-      groupServices.createGroup(group.name()).join();
+      // TODO: Revisit this part with https://github.com/camunda/camunda/issues/26973
+      //      groupServices.createGroup(group.name()).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         return managementIdentityTransformer.toMigrationStatusUpdateRequest(group, e);

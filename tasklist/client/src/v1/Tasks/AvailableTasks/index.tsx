@@ -10,12 +10,12 @@ import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {Search} from '@carbon/react/icons';
-import {useTaskFilters} from 'common/tasks/filters/useTaskFilters';
+import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import type {Task as TaskType} from 'v1/api/types';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
-import {Task} from './Task';
-import {Skeleton} from './Skeleton';
-import styles from './styles.module.scss';
+import {AvailableTaskItem} from 'common/tasks/available-tasks/AvailableTaskItem';
+import {AvailableTasksSkeleton} from 'common/tasks/available-tasks/AvailableTasksSkeleton';
+import styles from 'common/tasks/available-tasks/styles.module.scss';
 import cn from 'classnames';
 
 type Props = {
@@ -51,7 +51,7 @@ const AvailableTasks: React.FC<Props> = ({
       title={t('availableTasksTitle')}
     >
       {isLoading ? (
-        <Skeleton />
+        <AvailableTasksSkeleton className={styles.listContainer} />
       ) : (
         <>
           {tasks.length > 0 && (
@@ -82,12 +82,12 @@ const AvailableTasks: React.FC<Props> = ({
             >
               {tasks.map((task, i) => {
                 return (
-                  <Task
+                  <AvailableTaskItem
                     ref={taskRef}
                     key={task.id}
                     taskId={task.id}
-                    name={task.name}
-                    processName={task.processName}
+                    displayName={task.name}
+                    processDisplayName={task.processName}
                     context={task.context}
                     assignee={task.assignee}
                     creationDate={task.creationDate}

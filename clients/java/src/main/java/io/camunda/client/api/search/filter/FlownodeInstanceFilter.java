@@ -15,9 +15,11 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
-import io.camunda.client.api.search.response.FlowNodeInstanceType;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.FlowNodeInstanceType;
+import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
+import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
 public interface FlownodeInstanceFilter extends SearchRequestFilter {
 
@@ -68,6 +70,9 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   FlownodeInstanceFilter state(final FlowNodeInstanceState value);
+
+  /** Filter by state using {@link FlowNodeInstanceStateProperty} consumer */
+  FlownodeInstanceFilter state(final Consumer<FlowNodeInstanceStateProperty> fn);
 
   /**
    * Filters flow node instances by type.

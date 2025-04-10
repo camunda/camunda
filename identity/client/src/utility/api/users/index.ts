@@ -4,6 +4,8 @@ import { EntityData } from "src/components/entityList/EntityList";
 
 export const USERS_ENDPOINT = "/users";
 
+export type UserKeys = "key" | "name" | "username" | "password" | "email";
+
 export type User = EntityData & {
   key: number;
   name: string;

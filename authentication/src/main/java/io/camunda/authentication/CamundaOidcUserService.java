@@ -11,6 +11,7 @@ import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
@@ -20,6 +21,7 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,18 +42,21 @@ public class CamundaOidcUserService extends OidcUserService {
   private final RoleServices roleServices;
   private final GroupServices groupServices;
   private final AuthorizationServices authorizationServices;
+  private final String usernameClaim;
 
   public CamundaOidcUserService(
       final MappingServices mappingServices,
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
-      final AuthorizationServices authorizationServices) {
+      final AuthorizationServices authorizationServices,
+      final SecurityConfiguration securityConfiguration) {
     this.mappingServices = mappingServices;
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
     this.authorizationServices = authorizationServices;
+    usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
   }
 
   @Override
@@ -62,9 +67,8 @@ public class CamundaOidcUserService extends OidcUserService {
     final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
     final Set<Long> mappingKeys =
         mappings.stream().map(MappingEntity::mappingKey).collect(Collectors.toSet());
-    // TODO remove mapping when refactoring to IDs
     final Set<String> mappingIds =
-        mappingKeys.stream().map(String::valueOf).collect(Collectors.toSet());
+        mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
     if (mappingKeys.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
@@ -74,7 +78,9 @@ public class CamundaOidcUserService extends OidcUserService {
     return new CamundaOidcUser(
         oidcUser,
         mappingKeys,
+        mappingIds,
         new AuthenticationContext(
+            getUsernameFromClaims(claims),
             assignedRoles,
             authorizationServices.getAuthorizedApplications(
                 Stream.concat(
@@ -88,5 +94,15 @@ public class CamundaOidcUserService extends OidcUserService {
             groupServices.getGroupsByMemberKeys(mappingKeys).stream()
                 .map(GroupEntity::name)
                 .toList()));
+  }
+
+  private String getUsernameFromClaims(final Map<String, Object> claims) {
+    return Optional.ofNullable(claims.get(usernameClaim))
+        .map(Object::toString)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Configured username claim %s not found in claims. Please check your OIDC configuration."
+                        .formatted(usernameClaim)));
   }
 }

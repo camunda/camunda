@@ -16,8 +16,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
@@ -55,6 +57,7 @@ public final class IdentitySetupInitializeProcessor
   private final MappingState mappingState;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedCommandWriter commandWriter;
+  private final MembershipState membershipState;
 
   public IdentitySetupInitializeProcessor(
       final ProcessingState processingState,
@@ -65,6 +68,7 @@ public final class IdentitySetupInitializeProcessor
     userState = processingState.getUserState();
     tenantState = processingState.getTenantState();
     mappingState = processingState.getMappingState();
+    membershipState = processingState.getMembershipState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
@@ -102,9 +106,9 @@ public final class IdentitySetupInitializeProcessor
     final var createdNewEntities = new MutableBoolean(false);
     final var role = record.getDefaultRole();
     roleState
-        .getRoleKeyByName(role.getName())
+        .getRole(role.getRoleId())
         .ifPresentOrElse(
-            role::setRoleKey,
+            persistedRole -> role.setRoleKey(persistedRole.getRoleKey()),
             () -> {
               createdNewEntities.set(true);
               final long roleKey = keyGenerator.nextKey();
@@ -148,6 +152,13 @@ public final class IdentitySetupInitializeProcessor
                           final long userKey = keyGenerator.nextKey();
                           user.setUserKey(userKey);
                           createUser(user, role.getRoleKey(), tenant);
+                          // TODO temporarily add all permission to the user directly
+                          // this is required since roles are in the progress of refactoring to be
+                          // id-based
+                          // and as a result we cannot find the permissions of the role of the user.
+                          // This will be removed again with:
+                          // https://github.com/camunda/camunda/issues/30116
+                          addAllPermissions(userKey, user.getUsername());
                         }));
 
     record.getMappings().stream()
@@ -159,14 +170,15 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         persistedMapping -> {
                           mapping.setMappingKey(persistedMapping.getMappingKey());
-                          mapping.setId(persistedMapping.getId());
+                          mapping.setMappingId(persistedMapping.getMappingId());
                           if (assignEntityToRole(
                               role.getRoleKey(),
                               persistedMapping.getMappingKey(),
                               EntityType.MAPPING)) {
                             createdNewEntities.set(true);
                           }
-                          if (assignEntityToTenant(tenant, mapping.getId(), EntityType.MAPPING)) {
+                          if (assignEntityToTenant(
+                              tenant, mapping.getMappingId(), EntityType.MAPPING)) {
                             createdNewEntities.set(true);
                           }
                         },
@@ -175,10 +187,17 @@ public final class IdentitySetupInitializeProcessor
                           final long mappingKey = keyGenerator.nextKey();
                           mapping.setMappingKey(mappingKey);
                           // TODO: Remove null checks after migrating fully to mapping ID #27820
-                          if (mapping.getId() == null || mapping.getId().isBlank()) {
-                            mapping.setId(String.valueOf(mappingKey));
+                          if (mapping.getMappingId() == null || mapping.getMappingId().isBlank()) {
+                            mapping.setMappingId(String.valueOf(mappingKey));
                           }
                           createMapping(mapping, role.getRoleKey(), tenant);
+                          // TODO temporarily add all permission to the mapping directly
+                          // this is required since roles are in the progress of refactoring to be
+                          // id-based
+                          // and as a result we cannot find the permissions of the role of the user.
+                          // This will be removed again with:
+                          // https://github.com/camunda/camunda/issues/30116
+                          addAllPermissions(mappingKey, mapping.getMappingId());
                         }));
     return createdNewEntities.get();
   }
@@ -221,7 +240,7 @@ public final class IdentitySetupInitializeProcessor
                               role.getRoleKey(),
                               persistedMapping.getMappingKey(),
                               EntityType.MAPPING);
-                          assignEntityToTenant(tenant, mapping.getId(), EntityType.MAPPING);
+                          assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
                         },
                         () -> createMapping(mapping, role.getRoleKey(), tenant)));
   }
@@ -244,12 +263,22 @@ public final class IdentitySetupInitializeProcessor
       final MappingRecord mapping, final long roleKey, final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
     assignEntityToRole(roleKey, mapping.getMappingKey(), EntityType.MAPPING);
-    assignEntityToTenant(tenant, mapping.getId(), EntityType.MAPPING);
+    assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
   }
 
   private boolean assignEntityToRole(
       final long roleKey, final long entityKey, final EntityType entityType) {
-    final var isAlreadyAssigned = roleState.getEntityType(roleKey, entityKey).isPresent();
+
+    final var isAlreadyAssigned =
+        switch (entityType) {
+          case USER ->
+              membershipState.hasRelation(
+                  EntityType.USER,
+                  Long.toString(entityKey),
+                  RelationType.ROLE,
+                  Long.toString(roleKey));
+          default -> roleState.getEntityType(roleKey, entityKey).isPresent();
+        };
     if (isAlreadyAssigned) {
       return false;
     }
@@ -263,10 +292,16 @@ public final class IdentitySetupInitializeProcessor
   private boolean assignEntityToTenant(
       final TenantRecord tenant, final String entityId, final EntityType entityType) {
     final var isAlreadyAssigned =
-        tenantState
-            .getEntitiesByType(tenant.getTenantId())
-            .getOrDefault(entityType, Collections.emptyList())
-            .contains(entityId);
+        switch (entityType) {
+          case USER ->
+              membershipState.hasRelation(
+                  EntityType.USER, entityId, RelationType.TENANT, tenant.getTenantId());
+          default ->
+              tenantState
+                  .getEntitiesByType(tenant.getTenantId())
+                  .getOrDefault(entityType, Collections.emptyList())
+                  .contains(entityId);
+        };
     if (isAlreadyAssigned) {
       return false;
     }
@@ -282,7 +317,11 @@ public final class IdentitySetupInitializeProcessor
     return true;
   }
 
-  private void addAllPermissions(final long roleKey) {
+  private void addAllPermissions(final long key) {
+    addAllPermissions(key, String.valueOf(key));
+  }
+
+  private void addAllPermissions(final long key, final String id) {
 
     for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
       if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
@@ -293,13 +332,13 @@ public final class IdentitySetupInitializeProcessor
       // TODO: refactor when Roles use String IDs as unique identifiers
       final var record =
           new AuthorizationRecord()
-              .setOwnerId(String.valueOf(roleKey))
+              .setOwnerId(id)
               .setOwnerType(AuthorizationOwnerType.ROLE)
               .setResourceType(resourceType)
               .setResourceId(WILDCARD_PERMISSION)
               .setPermissionTypes(resourceType.getSupportedPermissionTypes());
 
-      commandWriter.appendFollowUpCommand(roleKey, AuthorizationIntent.CREATE, record);
+      commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATE, record);
     }
   }
 }

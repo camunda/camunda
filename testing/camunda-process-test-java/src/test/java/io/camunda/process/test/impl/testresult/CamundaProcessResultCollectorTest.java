@@ -18,13 +18,11 @@ package io.camunda.process.test.impl.testresult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.IncidentErrorType;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.FlowNodeInstanceBuilder;
@@ -65,19 +63,6 @@ public class CamundaProcessResultCollectorTest {
   void shouldReturnEmptyResult() {
     // given
     when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
-
-    // when
-    final ProcessTestResult result = resultCollector.collect();
-
-    // then
-    assertThat(result).isNotNull();
-    assertThat(result.getProcessInstanceTestResults()).isEmpty();
-  }
-
-  @Test
-  void shouldReturnEmptyResultIfDataSourceThrowsException() {
-    // given
-    doThrow(new ClientException("expected failure")).when(camundaDataSource).findProcessInstances();
 
     // when
     final ProcessTestResult result = resultCollector.collect();
@@ -139,6 +124,31 @@ public class CamundaProcessResultCollectorTest {
     assertThat(result.getProcessInstanceTestResults().get(1).getVariables())
         .hasSize(1)
         .containsEntry("var-3", "3");
+  }
+
+  @Test
+  void shouldPassIfProcessInstanceVariablesContainsNullValues() {
+    // given
+    when(camundaDataSource.findProcessInstances())
+        .thenReturn(Collections.singletonList(PROCESS_INSTANCE_1));
+
+    when(camundaDataSource.findVariablesByProcessInstanceKey(
+            PROCESS_INSTANCE_1.getProcessInstanceKey()))
+        .thenReturn(
+            Arrays.asList(
+                VariableBuilder.newVariable("var-1", "1").build(),
+                VariableBuilder.newVariable("var-2", null).build(),
+                VariableBuilder.newVariable("var-3", null).build()));
+
+    // when
+    final ProcessTestResult result = resultCollector.collect();
+
+    // then
+    assertThat(result.getProcessInstanceTestResults().get(0).getVariables())
+        .hasSize(3)
+        .containsEntry("var-1", "1")
+        .containsEntry("var-2", null)
+        .containsEntry("var-3", null);
   }
 
   @Test

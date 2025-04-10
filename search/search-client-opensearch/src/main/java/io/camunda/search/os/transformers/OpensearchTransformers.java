@@ -7,6 +7,10 @@
  */
 package io.camunda.search.os.transformers;
 
+import io.camunda.search.clients.aggregator.SearchChildrenAggregator;
+import io.camunda.search.clients.aggregator.SearchFilterAggregator;
+import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
+import io.camunda.search.clients.aggregator.SearchParentAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
@@ -35,7 +39,11 @@ import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.clients.types.TypedValue;
-import io.camunda.search.os.transformers.aggregator.TermsAggregationTransformer;
+import io.camunda.search.os.transformers.aggregator.SearchChildrenAggregatorTransformer;
+import io.camunda.search.os.transformers.aggregator.SearchFilterAggregatorTransformer;
+import io.camunda.search.os.transformers.aggregator.SearchFiltersAggregatorTransformer;
+import io.camunda.search.os.transformers.aggregator.SearchParentAggregatorTransformer;
+import io.camunda.search.os.transformers.aggregator.SearchTermsAggregatorTransformer;
 import io.camunda.search.os.transformers.query.BoolQueryTransformer;
 import io.camunda.search.os.transformers.query.ConstantScoreQueryTransformer;
 import io.camunda.search.os.transformers.query.ExistsQueryTransformer;
@@ -68,6 +76,7 @@ import io.camunda.search.sort.SearchFieldSort;
 import io.camunda.search.sort.SearchSortOptions;
 import java.util.HashMap;
 import java.util.Map;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 
 public final class OpensearchTransformers {
 
@@ -79,6 +88,11 @@ public final class OpensearchTransformers {
   }
 
   public <T, R> SearchTransfomer<T, R> getTransformer(final Class<?> cls) {
+    return (SearchTransfomer<T, R>) transformers.get(cls);
+  }
+
+  public <T, R extends Aggregation> SearchTransfomer<T, R> getSearchAggregationTransformer(
+      final Class<?> cls) {
     return (SearchTransfomer<T, R>) transformers.get(cls);
   }
 
@@ -117,7 +131,13 @@ public final class OpensearchTransformers {
     mappers.put(SearchTermsQuery.class, new TermsQueryTransformer(mappers));
     mappers.put(SearchWildcardQuery.class, new WildcardQueryTransformer(mappers));
     mappers.put(SearchHasParentQuery.class, new HasParentQueryTransformer(mappers));
-    mappers.put(SearchTermsAggregator.class, new TermsAggregationTransformer(mappers));
+
+    // aggregations
+    mappers.put(SearchFilterAggregator.class, new SearchFilterAggregatorTransformer(mappers));
+    mappers.put(SearchFiltersAggregator.class, new SearchFiltersAggregatorTransformer(mappers));
+    mappers.put(SearchTermsAggregator.class, new SearchTermsAggregatorTransformer(mappers));
+    mappers.put(SearchChildrenAggregator.class, new SearchChildrenAggregatorTransformer(mappers));
+    mappers.put(SearchParentAggregator.class, new SearchParentAggregatorTransformer(mappers));
 
     // sort
     mappers.put(SearchSortOptions.class, new SortOptionsTransformer(mappers));

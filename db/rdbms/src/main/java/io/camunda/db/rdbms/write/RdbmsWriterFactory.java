@@ -8,10 +8,12 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
+import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
@@ -33,6 +35,8 @@ public class RdbmsWriterFactory {
   private final UserTaskMapper userTaskMapper;
   private final VariableMapper variableMapper;
   private final RdbmsWriterMetrics metrics;
+  private final BatchOperationReader batchOperationReader;
+  private final JobMapper jobMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -45,7 +49,9 @@ public class RdbmsWriterFactory {
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
-      final RdbmsWriterMetrics metrics) {
+      final RdbmsWriterMetrics metrics,
+      final BatchOperationReader batchOperationReader,
+      final JobMapper jobMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -56,7 +62,9 @@ public class RdbmsWriterFactory {
     this.purgeMapper = purgeMapper;
     this.userTaskMapper = userTaskMapper;
     this.variableMapper = variableMapper;
+    this.jobMapper = jobMapper;
     this.metrics = metrics;
+    this.batchOperationReader = batchOperationReader;
   }
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
@@ -75,6 +83,8 @@ public class RdbmsWriterFactory {
         purgeMapper,
         userTaskMapper,
         variableMapper,
-        vendorDatabaseProperties);
+        vendorDatabaseProperties,
+        batchOperationReader,
+        jobMapper);
   }
 }

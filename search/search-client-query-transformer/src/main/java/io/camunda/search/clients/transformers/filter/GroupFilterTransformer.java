@@ -12,14 +12,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.MEMBER_KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.GroupIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.GroupIndex.MEMBER_KEY;
+import static io.camunda.webapps.schema.descriptors.index.GroupIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
+import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
 public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> {

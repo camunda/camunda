@@ -63,8 +63,6 @@ jobs:
       matrix:
         branch:
           - 'main'
-          # TODO: remove this line after 8.7 has been released
-          - 'stable/8.7'
           - ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
           - ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
           - ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
@@ -72,12 +70,10 @@ jobs:
         include:
           - branch: 'main'
             generation_template: 'Zeebe SNAPSHOT'
-          - branch: 'stable/8.7'
-            generation_template: 'Camunda 8.7.0-alpha4'
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
             generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.latest-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.second-last-version) }}
+            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.second-last-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.third-last-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.fourth-last-version) }}

@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
@@ -40,6 +42,7 @@ public class RoleAppliersTest {
   private RoleDeletedApplier roleDeletedApplier;
   private RoleEntityAddedApplier roleEntityAddedApplier;
   private RoleEntityRemovedApplier roleEntityRemovedApplier;
+  private MutableMembershipState membershipState;
 
   @BeforeEach
   public void setup() {
@@ -47,6 +50,7 @@ public class RoleAppliersTest {
     userState = processingState.getUserState();
     authorizationState = processingState.getAuthorizationState();
     mappingState = processingState.getMappingState();
+    membershipState = processingState.getMembershipState();
     roleDeletedApplier = new RoleDeletedApplier(processingState.getRoleState());
     roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);
     roleEntityRemovedApplier = new RoleEntityRemovedApplier(processingState);
@@ -72,10 +76,11 @@ public class RoleAppliersTest {
     roleEntityAddedApplier.applyState(roleKey, roleRecord);
 
     // then
-    assertThat(roleState.getEntitiesByType(roleKey).get(EntityType.USER))
-        .containsExactly(entityKey);
-    final var persistedUser = userState.getUser(entityKey).get();
-    assertThat(persistedUser.getRoleKeysList()).containsExactly(roleKey);
+    assertThat(
+            membershipState.getMemberships(
+                EntityType.USER, Long.toString(entityKey), RelationType.ROLE))
+        .singleElement()
+        .isEqualTo(Long.toString(roleKey));
   }
 
   @Test
@@ -149,19 +154,20 @@ public class RoleAppliersTest {
             .setEmail("foo@bar.com")
             .setPassword("password"));
     final long roleKey = 11L;
-    userState.addRole(username, roleKey);
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
     roleRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
-    roleState.addEntity(roleRecord);
+    roleEntityAddedApplier.applyState(roleKey, roleRecord);
 
     // when
     roleEntityRemovedApplier.applyState(roleKey, roleRecord);
 
     // then
     assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    final var persistedUser = userState.getUser(username).get();
-    assertThat(persistedUser.getRoleKeysList()).isEmpty();
+    assertThat(
+            membershipState.getMemberships(
+                EntityType.USER, Long.toString(userKey), RelationType.ROLE))
+        .isEmpty();
   }
 
   @Test

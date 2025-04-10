@@ -20,6 +20,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
@@ -45,6 +46,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchOperateZeebeRuleProvider.class);
   @Autowired public OperateProperties operateProperties;
+  @Autowired public SearchEngineConfiguration searchEngineConfiguration;
   @Autowired protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
   protected ZeebeContainer zeebeContainer;
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -61,6 +63,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     LOGGER.info("Starting Camunda Exporter with prefix: {}", prefix);
     operateProperties.getZeebeOpensearch().setPrefix(prefix);
     operateProperties.getOpensearch().setIndexPrefix(prefix);
+    searchEngineConfiguration.connect().setIndexPrefix(prefix);
 
     startZeebe();
   }

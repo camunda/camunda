@@ -12,11 +12,11 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex.DECISION_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex.DECISION_REQUIREMENTS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex.DECISION_REQUIREMENTS_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex.VERSION;
+import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_ID;
+import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_REQUIREMENTS_ID;
+import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_REQUIREMENTS_KEY;
+import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.VERSION;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionDefinitionFilter;

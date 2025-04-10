@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstancesStatisticsDto} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas/operate';
 
 function getInstancesCount(
-  data: ProcessInstancesStatisticsDto[],
-  flowNodeId: string | undefined,
+  data: ProcessDefinitionStatistic[],
+  flowNodeId?: string,
 ) {
   const flowNodeStatistics = data.find(
     (statistics) => statistics.flowNodeId === flowNodeId,
@@ -25,22 +25,11 @@ function getInstancesCount(
 }
 
 const getProcessInstanceKey = () => {
-  const {
-    selectedProcessInstanceIds,
-    excludedProcessInstanceIds,
-    state: {selectionMode},
-  } = processInstancesSelectionStore;
-
-  const ids = ['EXCLUDE', 'ALL'].includes(selectionMode)
-    ? []
-    : selectedProcessInstanceIds;
-
-  return {
-    $in: ids,
-    ...(excludedProcessInstanceIds.length > 0 && {
-      $nin: excludedProcessInstanceIds,
-    }),
-  };
+  return processInstancesSelectionStore.checkedProcessInstanceIds.length > 0
+    ? {
+        $in: processInstancesSelectionStore.checkedProcessInstanceIds,
+      }
+    : undefined;
 };
 
 export {getInstancesCount, getProcessInstanceKey};

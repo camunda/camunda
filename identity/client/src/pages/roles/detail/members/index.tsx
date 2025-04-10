@@ -16,6 +16,8 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/roles/detail/members/AssignMembersModal";
 import DeleteModal from "src/pages/roles/detail/members/DeleteModal";
+import { isOIDC } from "src/configuration";
+import { UserKeys } from "src/utility/api/users";
 
 type MembersProps = {
   roleId: string;
@@ -78,15 +80,24 @@ const Members: FC<MembersProps> = ({ roleId }) => {
       </>
     );
 
+  type MembersListHeaders = {
+    header: string;
+    key: UserKeys;
+  }[];
+
+  const membersListHeaders: MembersListHeaders = isOIDC
+    ? [{ header: t("username"), key: "username" }]
+    : [
+        { header: t("username"), key: "username" },
+        { header: t("name"), key: "name" },
+        { header: t("email"), key: "email" },
+      ];
+
   return (
     <>
       <EntityList
         data={users?.items}
-        headers={[
-          { header: t("username"), key: "username" },
-          { header: t("name"), key: "name" },
-          { header: t("email"), key: "email" },
-        ]}
+        headers={membersListHeaders}
         sortProperty="username"
         loading={loading}
         addEntityLabel={t("assignUser")}

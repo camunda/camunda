@@ -62,7 +62,8 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
   }
 
   @Override
-  public void onTerminate(final ExecutableActivity element, final BpmnElementContext context) {
+  public TransitionOutcome onTerminate(
+      final ExecutableActivity element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -71,5 +72,6 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);
+    return TransitionOutcome.CONTINUE;
   }
 }

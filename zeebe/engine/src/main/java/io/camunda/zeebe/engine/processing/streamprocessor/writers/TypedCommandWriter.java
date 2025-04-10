@@ -35,6 +35,17 @@ public interface TypedCommandWriter {
   void appendFollowUpCommand(long key, Intent intent, RecordValue value);
 
   /**
+   * Append a follow up command to the result builder
+   *
+   * @param intent the intent of the command
+   * @param value the record of the command
+   * @param operationReference the operation reference of the command
+   * @throws ExceededBatchRecordSizeException if the appended command doesn't fit into the
+   *     RecordBatch
+   */
+  void appendFollowUpCommand(long key, Intent intent, RecordValue value, long operationReference);
+
+  /**
    * @param commandLength the length of the command that will be written
    * @return true if a command of the given length can be written
    */

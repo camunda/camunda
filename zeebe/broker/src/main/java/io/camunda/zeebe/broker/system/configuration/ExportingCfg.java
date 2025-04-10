@@ -7,43 +7,24 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
-import java.util.Objects;
+import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DEFAULT_DISTRIBUTION_INTERVAL;
+
+import java.time.Duration;
 import java.util.Set;
 
 /**
  * Exporting component configuration. This configuration pertains to configurations that are common
  * to all exporters.
  */
-public final class ExportingCfg implements ConfigurationEntry {
-  private Set<Long> skipRecords;
+public record ExportingCfg(Set<Long> skipRecords, Duration distributionInterval) {
 
-  public Set<Long> getSkipRecords() {
-    return skipRecords != null ? skipRecords : Set.of();
+  public ExportingCfg(final Set<Long> skipRecords, final Duration distributionInterval) {
+    this.skipRecords = skipRecords == null ? Set.of() : skipRecords;
+    this.distributionInterval =
+        distributionInterval == null ? DEFAULT_DISTRIBUTION_INTERVAL : distributionInterval;
   }
 
-  public void setSkipRecords(final Set<Long> skipRecords) {
-    this.skipRecords = skipRecords;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(skipRecords);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final ExportingCfg that = (ExportingCfg) o;
-    return Objects.equals(skipRecords, that.skipRecords);
-  }
-
-  @Override
-  public String toString() {
-    return "ExporterCfg{" + "skipRecords='" + skipRecords + '}';
+  public static ExportingCfg defaultExportingCfg() {
+    return new ExportingCfg(null, null);
   }
 }

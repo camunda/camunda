@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -175,7 +177,7 @@ public final class EventAppliers implements EventApplier {
     register(
         DeploymentIntent.FULLY_DISTRIBUTED,
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
-    register(DeploymentIntent.RECONSTRUCTED, NOOP_EVENT_APPLIER);
+    register(DeploymentIntent.RECONSTRUCTED, new DeploymentReconstructedApplier(state));
     register(
         DeploymentIntent.RECONSTRUCTED_ALL,
         new DeploymentReconstructedAllApplier(state.getDeploymentState()));
@@ -440,8 +442,11 @@ public final class EventAppliers implements EventApplier {
 
   private void registerUserTaskAppliers(final MutableProcessingState state) {
     register(UserTaskIntent.CREATING, new UserTaskCreatingApplier(state));
+    register(UserTaskIntent.CREATING, 2, new UserTaskCreatingV2Applier(state));
     register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state));
-    register(UserTaskIntent.CANCELING, new UserTaskCancelingApplier(state));
+    register(UserTaskIntent.CREATED, 2, new UserTaskCreatedV2Applier(state));
+    register(UserTaskIntent.CANCELING, 1, new UserTaskCancelingV1Applier(state));
+    register(UserTaskIntent.CANCELING, 2, new UserTaskCancelingV2Applier(state));
     register(UserTaskIntent.CANCELED, new UserTaskCanceledApplier(state));
     register(UserTaskIntent.COMPLETING, 1, new UserTaskCompletingV1Applier(state));
     register(UserTaskIntent.COMPLETING, 2, new UserTaskCompletingV2Applier(state));
@@ -585,6 +590,29 @@ public final class EventAppliers implements EventApplier {
     register(
         BatchOperationIntent.CREATED,
         new BatchOperationCreatedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationIntent.STARTED,
+        new BatchOperationStartedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationIntent.FAILED,
+        new BatchOperationFailedApplier(state.getBatchOperationState()));
+
+    register(
+        BatchOperationChunkIntent.CREATED,
+        new BatchOperationChunkCreatedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.EXECUTING,
+        new BatchOperationExecutingApplier(state.getBatchOperationState()));
+    register(BatchOperationExecutionIntent.EXECUTED, NOOP_EVENT_APPLIER);
+    register(
+        BatchOperationIntent.CANCELED,
+        new BatchOperationCanceledApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationIntent.PAUSED,
+        new BatchOperationPausedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.COMPLETED,
+        new BatchOperationCompletedApplier(state.getBatchOperationState()));
   }
 
   private void registerIdentitySetupAppliers() {

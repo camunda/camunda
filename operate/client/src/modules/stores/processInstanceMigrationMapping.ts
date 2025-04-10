@@ -7,14 +7,13 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
-import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
 import {hasType} from 'modules/bpmn-js/utils/hasType';
 import {getEventType} from 'modules/bpmn-js/utils/getEventType';
 import {getEventSubProcessType} from 'modules/bpmn-js/utils/getEventSubProcessType';
 import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {getMultiInstanceType} from 'modules/bpmn-js/utils/getMultiInstanceType';
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 type State = {
   isMappedFilterEnabled: boolean;
@@ -28,45 +27,21 @@ class ProcessInstanceMigrationMappingStore {
   state: State = {...DEFAULT_STATE};
 
   constructor() {
-    makeAutoObservable(this, {isAutoMappable: false});
-  }
-
-  /**
-   * Returns flow nodes which are contained in both source diagram and target diagram.
-   *
-   * A flow node is auto-mappable when
-   * - the flow node id is contained in source and target diagram
-   * - the bpmn type is matching in source and target diagram
-   */
-  get autoMappableFlowNodes() {
-    return processXmlMigrationSourceStore.selectableFlowNodes
-      .filter((sourceFlowNode) => {
-        const targetFlowNode =
-          processXmlMigrationTargetStore.selectableFlowNodes.find(
-            (flowNode) => flowNode.id === sourceFlowNode.id,
-          );
-
-        return (
-          targetFlowNode !== undefined &&
-          sourceFlowNode.$type === targetFlowNode.$type
-        );
-      })
-      .map(({id, $type}) => {
-        return {id, type: $type};
-      });
+    makeAutoObservable(this);
   }
 
   /**
    * Returns an array of source flow nodes which each contains an array of mappable target flow nodes.
    */
-  get mappableFlowNodes() {
-    const {selectableFlowNodes: selectableSourceFlowNodes} =
-      processXmlMigrationSourceStore;
+  getMappableFlowNodes(
+    selectableSourceFlowNodes?: BusinessObject[],
+    selectableTargetFlowNodes?: BusinessObject[],
+  ) {
+    if (!selectableTargetFlowNodes) {
+      return [];
+    }
 
-    const {selectableFlowNodes: selectableTargetFlowNodes} =
-      processXmlMigrationTargetStore;
-
-    const sourceFlowNodeMappings = selectableSourceFlowNodes.map(
+    const sourceFlowNodeMappings = selectableSourceFlowNodes?.map(
       (sourceFlowNode) => {
         return {
           sourceFlowNode: {id: sourceFlowNode.id, name: sourceFlowNode.name},
@@ -141,22 +116,11 @@ class ProcessInstanceMigrationMappingStore {
       },
     );
 
-    return sourceFlowNodeMappings;
+    return sourceFlowNodeMappings ?? [];
   }
 
   toggleMappedFilter = () => {
     this.state.isMappedFilterEnabled = !this.state.isMappedFilterEnabled;
-  };
-
-  /**
-   * Returns true if the flow node with flowNodeId is auto-mappable
-   */
-  isAutoMappable = (flowNodeId: string) => {
-    return (
-      this.autoMappableFlowNodes.find(({id}) => {
-        return flowNodeId === id;
-      }) !== undefined
-    );
   };
 
   reset = () => {

@@ -89,7 +89,8 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
 
   @Test
   public void shouldQueryByState() {
-    final var filter = FilterBuilders.flowNodeInstance(f -> f.states(FlowNodeState.COMPLETED));
+    final var filter =
+        FilterBuilders.flowNodeInstance(f -> f.states(FlowNodeState.COMPLETED.name()));
     // when
     final var searchRequest = transformQuery(filter);
 

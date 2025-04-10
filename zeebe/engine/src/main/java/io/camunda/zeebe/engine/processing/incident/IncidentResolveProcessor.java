@@ -45,8 +45,6 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       "Expected to resolve incident with key '%d', but no such incident was found";
   private static final String ELEMENT_NOT_IN_SUPPORTED_STATE_MSG =
       "Expected incident to refer to element in state ELEMENT_ACTIVATING or ELEMENT_COMPLETING, but element is in state %s";
-  private static final String LIFECYCLE_STATE_CONVERSION_NOT_SUPPORTED_MSG =
-      "Conversion from '%s' user task lifecycle state to failed user task command is not yet supported";
   private static final String UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG =
       "Unexpected user task lifecycle state: '%s' encountered during conversion to failed user task command.";
 
@@ -223,12 +221,12 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private Either<String, UserTaskIntent> getFailedUserTaskCommandIntent(
       final LifecycleState lifecycleState) {
     return switch (lifecycleState) {
+      case CREATING -> Either.right(UserTaskIntent.CREATE);
       case ASSIGNING -> Either.right(UserTaskIntent.ASSIGN);
       case CLAIMING -> Either.right(UserTaskIntent.CLAIM);
       case UPDATING -> Either.right(UserTaskIntent.UPDATE);
       case COMPLETING -> Either.right(UserTaskIntent.COMPLETE);
-      case CREATING, CANCELING ->
-          Either.left(String.format(LIFECYCLE_STATE_CONVERSION_NOT_SUPPORTED_MSG, lifecycleState));
+      case CANCELING -> Either.right(UserTaskIntent.CANCEL);
       default ->
           Either.left(String.format(UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG, lifecycleState));
     };

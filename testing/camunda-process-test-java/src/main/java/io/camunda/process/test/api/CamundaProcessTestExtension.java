@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
@@ -26,26 +27,33 @@ import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.junit.platform.commons.util.ReflectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A JUnit extension that provides the runtime for process tests.
  *
+ * <p>The container runtime starts before any tests have run.
+ *
  * <p>Before each test method:
  *
  * <ul>
- *   <li>Start the runtime
  *   <li>Inject a {@link CamundaClient} to a field in the test class
  *   <li>Inject a {@link CamundaProcessTestContext} to a field in the test class
  * </ul>
@@ -54,10 +62,13 @@ import org.junit.platform.commons.util.ReflectionUtils;
  *
  * <ul>
  *   <li>Close created {@link CamundaClient}s
- *   <li>Stop the runtime
+ *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
+ *
+ * <p>The container runtime is closed once all tests have run.
  */
-public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEachCallback {
+public class CamundaProcessTestExtension
+    implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback {
 
   /** The JUnit extension namespace to store the runtime and context. */
   public static final Namespace NAMESPACE = Namespace.create(CamundaProcessTestExtension.class);
@@ -68,6 +79,8 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
+
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
@@ -75,6 +88,9 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
   private CamundaContainerRuntime containerRuntime;
   private CamundaProcessTestResultCollector processTestResultCollector;
+
+  private CamundaManagementClient camundaManagementClient;
+  private CamundaProcessTestContext camundaProcessTestContext;
 
   CamundaProcessTestExtension(
       final CamundaContainerRuntimeBuilder containerRuntimeBuilder,
@@ -103,16 +119,36 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   }
 
   @Override
-  public void beforeEach(final ExtensionContext context) throws Exception {
+  public void beforeAll(final ExtensionContext context) {
     // create runtime
     containerRuntime = containerRuntimeBuilder.build();
     containerRuntime.start();
 
-    final CamundaProcessTestContext camundaProcessTestContext =
+    camundaManagementClient =
+        new CamundaManagementClient(
+            containerRuntime.getCamundaContainer().getMonitoringApiAddress(),
+            containerRuntime.getCamundaContainer().getRestApiAddress());
+
+    camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             containerRuntime.getCamundaContainer(),
             containerRuntime.getConnectorsContainer(),
-            createdClients::add);
+            createdClients::add,
+            camundaManagementClient);
+
+    // put in store
+    final Store store = context.getStore(NAMESPACE);
+    store.put(STORE_KEY_RUNTIME, containerRuntime);
+    store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
+  }
+
+  @Override
+  public void beforeEach(final ExtensionContext context) throws Exception {
+    if (containerRuntime == null) {
+      throw new IllegalStateException(
+          "The CamundaProcessTestExtension failed to start because the runtime is not created. "
+              + "Make sure that you registering the extension on a static field.");
+    }
 
     // inject fields
     try {
@@ -124,11 +160,6 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
       containerRuntime.close();
       throw e;
     }
-
-    // put in store
-    final Store store = context.getStore(NAMESPACE);
-    store.put(STORE_KEY_RUNTIME, containerRuntime);
-    store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
 
     // initialize assertions
     final CamundaDataSource dataSource =
@@ -171,21 +202,57 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   }
 
   @Override
-  public void afterEach(final ExtensionContext extensionContext) throws Exception {
-    // collect test results
-    final ProcessTestResult testResult = processTestResultCollector.collect();
-
-    // reset assertions
-    CamundaAssert.reset();
-    // close all created clients
-    closeCreatedClients();
-    // close the runtime
-    containerRuntime.close();
-
-    // print test results
-    if (isTestFailed(extensionContext)) {
-      processTestResultPrinter.print(testResult);
+  public void afterEach(final ExtensionContext extensionContext) {
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
     }
+
+    if (isTestFailed(extensionContext)) {
+      printTestResults();
+    }
+    CamundaAssert.reset();
+    closeCreatedClients();
+    // final step: delete data
+    deleteRuntimeData();
+  }
+
+  private void printTestResults() {
+    try {
+      // collect test results
+      final ProcessTestResult testResult = processTestResultCollector.collect();
+      // print test results
+      processTestResultPrinter.print(testResult);
+    } catch (final Throwable t) {
+      LOG.warn("Failed to collect test results, skipping.", t);
+    }
+  }
+
+  private void deleteRuntimeData() {
+    try {
+      LOG.debug("Deleting the runtime data");
+      final Instant startTime = Instant.now();
+
+      camundaManagementClient.purgeCluster();
+      final Instant endTime = Instant.now();
+      final Duration duration = Duration.between(startTime, endTime);
+      LOG.debug("Runtime data deleted in {}", duration);
+
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Failed to delete the runtime data, skipping. Check the runtime for details. "
+              + "Note that a dirty runtime may cause failures in other test cases.",
+          t);
+    }
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext context) throws Exception {
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
+    }
+    containerRuntime.close();
   }
 
   private static boolean isTestFailed(final ExtensionContext extensionContext) {
@@ -321,9 +388,13 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     return this;
   }
 
-  private void closeCreatedClients() throws Exception {
+  private void closeCreatedClients() {
     for (final AutoCloseable client : createdClients) {
-      client.close();
+      try {
+        client.close();
+      } catch (final Exception e) {
+        LOG.debug("Failed to close client, continue.", e);
+      }
     }
   }
 }

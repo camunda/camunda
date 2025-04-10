@@ -49,8 +49,8 @@
     <camunda.maven.artifacts.version>7.22.0</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.6.0</zeebe.version>
-    <identity.version>8.6.0</identity.version>
+    <zeebe.version>8.7.0</zeebe.version>
+    <identity.version>8.7.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
 
@@ -86,7 +86,6 @@
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.0</quartz.version>
-    <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
 
     <!-- remove these versions.anything properties once we inherit from zeebe-parent -->
     <version.node>v20.9.0</version.node>
@@ -111,6 +110,7 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
     <spring-boot.version>3.4.3</spring-boot.version>
   </properties>
 
@@ -284,7 +284,6 @@
 
               <!-- test dependencies -->
               <dep>com.sun.mail:jakarta.mail</dep>
-              <dep>io.camunda:zeebe-build-tools</dep>
               <dep>io.camunda.optimize:optimize-backend</dep>
               <dep>io.camunda.optimize:optimize-backend:test-jar</dep>
               <dep>io.camunda.optimize:upgrade-optimize</dep>
@@ -306,7 +305,6 @@
               <dep>org.mockito:mockito-inline</dep>
               <dep>org.mockito:mockito-junit-jupiter</dep>
               <dep>org.springframework.boot:spring-boot-starter-test</dep>
-              <dep>org.glassfish.jersey.core:jersey-client</dep>
               <dep>org.glassfish.jersey.media:jersey-media-json-jackson</dep>
             </ignoredUnusedDeclaredDependencies>
             <ignoredNonTestScopedDependencies combine.children="append">
@@ -335,6 +333,19 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>3.4.2</version>
+          <executions>
+            <execution>
+              <id>empty-javadoc-jar</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <phase>package</phase>
+              <configuration>
+                <classifier>javadoc</classifier>
+                <classesDirectory>${basedir}/javadoc</classesDirectory>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -513,13 +524,11 @@
   </build>
 
   <profiles>
-
     <!-- release profile-->
     <profile>
       <id>release</id>
       <properties>
         <skip.docker>true</skip.docker>
-        <maven.javadoc.skip>true</maven.javadoc.skip>
       </properties>
       <build>
         <plugins>

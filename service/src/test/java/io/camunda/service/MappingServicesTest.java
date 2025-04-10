@@ -116,7 +116,7 @@ public class MappingServicesTest {
     when(client.searchMappings(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findMapping(1L);
+    final var searchQueryResult = services.findMapping("mappingId");
 
     // then
     assertThat(searchQueryResult).contains(entity);
@@ -125,11 +125,10 @@ public class MappingServicesTest {
   @Test
   public void shouldReturnEmptyWhenNotFoundByFind() {
     // given
-    final var key = 100L;
     when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
-    assertThat(services.findMapping(key)).isEmpty();
+    assertThat(services.findMapping("mappingId")).isEmpty();
   }
 
   @Test
@@ -138,7 +137,8 @@ public class MappingServicesTest {
     when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
-    final var exception = assertThrows(CamundaSearchException.class, () -> services.getMapping(1L));
+    final var exception =
+        assertThrows(CamundaSearchException.class, () -> services.getMapping("mappingId"));
     assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
   }
 
@@ -153,17 +153,17 @@ public class MappingServicesTest {
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
     final var mappingRecord = new MappingRecord();
-    mappingRecord.setMappingKey(1234L);
+    mappingRecord.setMappingId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
     //  when
-    testMappingServices.deleteMapping(1234L);
+    testMappingServices.deleteMapping("id");
 
     // then
     verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
     final var request = mappingDeleteRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingKey()).isEqualTo(1234L);
+    assertThat(request.getRequestWriter().getMappingId()).isEqualTo("id");
   }
 
   @Test
@@ -177,13 +177,13 @@ public class MappingServicesTest {
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
     final var mappingRecord = new MappingRecord();
-    mappingRecord.setId("id");
+    mappingRecord.setMappingId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
     final var mappingDTO =
         new MappingDTO(
-            "newClaimName", "newClaimValue", "newMappingRuleName", mappingRecord.getId());
+            "newClaimName", "newClaimValue", "newMappingRuleName", mappingRecord.getMappingId());
 
     //  when
     testMappingServices.updateMapping(mappingDTO);
@@ -191,7 +191,7 @@ public class MappingServicesTest {
     // then
     verify(mockBrokerClient).sendRequest(mappingUpdateRequestArgumentCaptor.capture());
     final var request = mappingUpdateRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getId()).isEqualTo(mappingDTO.id());
+    assertThat(request.getRequestWriter().getMappingId()).isEqualTo(mappingDTO.mappingId());
     assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(request.getRequestWriter().getClaimValue()).isEqualTo(mappingDTO.claimValue());
     assertThat(request.getRequestWriter().getName()).isEqualTo(mappingDTO.name());

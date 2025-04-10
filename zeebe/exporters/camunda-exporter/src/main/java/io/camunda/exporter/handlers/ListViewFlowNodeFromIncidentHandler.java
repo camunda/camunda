@@ -8,11 +8,11 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ERROR_MSG;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT_POSITION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT_POSITION;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;

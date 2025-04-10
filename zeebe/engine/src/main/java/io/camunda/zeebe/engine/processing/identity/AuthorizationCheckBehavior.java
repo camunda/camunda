@@ -10,20 +10,24 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +55,8 @@ public final class AuthorizationCheckBehavior {
   private final UserState userState;
   private final MappingState mappingState;
   private final GroupState groupState;
+  private final MembershipState membershipState;
+
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
 
@@ -60,7 +66,7 @@ public final class AuthorizationCheckBehavior {
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
     groupState = processingState.getGroupState();
-    processingState.getTenantState();
+    membershipState = processingState.getMembershipState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isEnabled();
   }
@@ -92,11 +98,21 @@ public final class AuthorizationCheckBehavior {
     }
 
     final var username = getUsername(request);
+
+    // TODO: remove this check when username retrieval is supported in JWT modes
     if (username.isPresent()) {
-      return isUserAuthorized(request, username.get());
-    } else {
-      return isMappingAuthorized(request);
+      final var userAuthorized = isUserAuthorized(request, username.get());
+      if (userAuthorized.isRight()) {
+        return userAuthorized;
+      }
     }
+
+    final var mappingAuthorized = isMappingAuthorized(request);
+    if (mappingAuthorized.isLeft()) {
+      return Either.left(mappingAuthorized.getLeft());
+    }
+
+    return Either.right(null);
   }
 
   /**
@@ -190,11 +206,15 @@ public final class AuthorizationCheckBehavior {
   private boolean isUserAuthorizedForTenant(
       final AuthorizationRequest request, final PersistedUser user) {
     final var tenantId = request.tenantId;
-    if (user.getTenantIdsList().contains(tenantId)) {
+    if (membershipState.hasRelation(
+        EntityType.USER, user.getUsername(), RelationType.TENANT, tenantId)) {
       return true;
     }
+    final var groupIds =
+        membershipState.getMemberships(
+            EntityType.USER, Long.toString(user.getUserKey()), RelationType.GROUP);
 
-    return areGroupsAuthorizedForTenant(user.getGroupKeysList(), tenantId);
+    return areGroupsAuthorizedForTenant(groupIds, tenantId);
   }
 
   private boolean isMappingAuthorizedForTenant(
@@ -211,33 +231,33 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
-    final var groupKeys =
+    final var groupIds =
         persistedMappings.stream()
             .flatMap(persistedMapping -> persistedMapping.getGroupKeysList().stream())
+            // TODO: Use actual group id instead of key
+            .map(key -> Long.toString(key))
             .collect(Collectors.toSet());
 
-    return areGroupsAuthorizedForTenant(groupKeys, tenantId);
+    return areGroupsAuthorizedForTenant(groupIds, tenantId);
   }
 
-  private boolean areGroupsAuthorizedForTenant(final List<Long> groupKeys, final String tenantId) {
-    return areGroupsAuthorizedForTenant(new HashSet<>(groupKeys), tenantId);
+  private boolean areGroupsAuthorizedForTenant(
+      final Collection<String> groupIds, final String tenantId) {
+    for (final var groupId : groupIds) {
+      if (membershipState.hasRelation(EntityType.GROUP, groupId, RelationType.TENANT, tenantId)) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  private boolean areGroupsAuthorizedForTenant(final Set<Long> groupKeys, final String tenantId) {
-    return getTenantIdsForGroups(groupKeys).contains(tenantId);
-  }
-
-  private Set<String> getTenantIdsForGroups(final List<Long> groupKeys) {
-    return getTenantIdsForGroups(new HashSet<>(groupKeys));
-  }
-
-  private Set<String> getTenantIdsForGroups(final Set<Long> groupKeys) {
-    return groupKeys.stream()
-        .map(groupState::get)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .flatMap(group -> group.getTenantIdsList().stream())
-        .collect(Collectors.toSet());
+  private Set<String> getTenantIdsForGroups(final Collection<String> groupIds) {
+    final var tenantIds = new HashSet<String>();
+    for (final var groupId : groupIds) {
+      tenantIds.addAll(
+          membershipState.getMemberships(EntityType.GROUP, groupId, RelationType.TENANT));
+    }
+    return tenantIds;
   }
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
@@ -290,13 +310,25 @@ public final class AuthorizationCheckBehavior {
         authorizationState.getResourceIdentifiers(
             AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
     // Get resource identifiers for the user's roles
+    final var roleIds =
+        membershipState.getMemberships(
+            EntityType.USER,
+            // TODO: Use username instead of userKey when roles are id-based
+            Long.toString(user.getUserKey()),
+            RelationType.ROLE);
     final var roleAuthorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiersForOwnerKeys(
-            AuthorizationOwnerType.ROLE, user.getRoleKeysList(), resourceType, permissionType);
+        getAuthorizedResourceIdentifiersForOwners(
+            AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
     // Get resource identifiers for the user's groups
+    final var groupIds =
+        membershipState.getMemberships(
+            EntityType.USER,
+            // TODO: Use username instead of userKey when groups are id-based
+            Long.toString(user.getUserKey()),
+            RelationType.GROUP);
     final var groupAuthorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiersForOwnerKeys(
-            AuthorizationOwnerType.GROUP, user.getGroupKeysList(), resourceType, permissionType);
+        getAuthorizedResourceIdentifiersForOwners(
+            AuthorizationOwnerType.GROUP, groupIds, resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
         Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
@@ -317,7 +349,7 @@ public final class AuthorizationCheckBehavior {
             (mapping, stream) -> {
               getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.MAPPING,
-                      List.of(mapping.getId()),
+                      List.of(mapping.getMappingId()),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
@@ -417,8 +449,14 @@ public final class AuthorizationCheckBehavior {
           .getUser(username.get())
           .map(
               user -> {
-                final List<String> tenantIds = user.getTenantIdsList();
-                tenantIds.addAll(getTenantIdsForGroups(user.getGroupKeysList()));
+                final var tenantIds =
+                    new ArrayList<>(
+                        membershipState.getMemberships(
+                            EntityType.USER, user.getUsername(), RelationType.TENANT));
+                final var groupIds =
+                    membershipState.getMemberships(
+                        EntityType.USER, Long.toString(user.getUserKey()), RelationType.GROUP);
+                tenantIds.addAll(getTenantIdsForGroups(groupIds));
                 return tenantIds;
               })
           .filter(t -> !t.isEmpty())
@@ -431,7 +469,11 @@ public final class AuthorizationCheckBehavior {
             .flatMap(
                 mapping -> {
                   final var tenantIdsList = mapping.getTenantIdsList();
-                  tenantIdsList.addAll(getTenantIdsForGroups(mapping.getGroupKeysList()));
+                  final var groupIds =
+                      mapping.getGroupKeysList().stream()
+                          .map(key -> Long.toString(key))
+                          .collect(Collectors.toSet());
+                  tenantIdsList.addAll(getTenantIdsForGroups(groupIds));
                   return tenantIdsList.stream();
                 })
             .toList();

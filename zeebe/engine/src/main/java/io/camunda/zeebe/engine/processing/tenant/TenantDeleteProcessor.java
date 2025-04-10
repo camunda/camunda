@@ -16,8 +16,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
@@ -38,13 +40,14 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       "Expected to delete tenant with id '%s', but no tenant with this id exists.";
   private final TenantState tenantState;
   private final AuthorizationState authorizationState;
+  private final UserState userState;
+  private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final UserState userState;
 
   public TenantDeleteProcessor(
       final ProcessingState state,
@@ -55,6 +58,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
     userState = state.getUserState();
+    membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -141,32 +145,26 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
 
   private void removeAssignedEntities(final TenantRecord record) {
     final var tenant = tenantState.getTenantById(record.getTenantId()).orElseThrow();
-    tenantState
-        .getEntitiesByType(tenant.getTenantId())
-        .forEach(
-            (entityType, entityIds) -> {
-              switch (entityType) {
-                case USER ->
-                    entityIds.forEach(
-                        username -> {
-                          final var entityRecord =
-                              new TenantRecord()
-                                  .setTenantId(tenant.getTenantId())
-                                  .setEntityId(username)
-                                  .setEntityType(entityType);
-                          stateWriter.appendFollowUpEvent(
-                              tenant.getTenantKey(), TenantIntent.ENTITY_REMOVED, entityRecord);
-                        });
-                default ->
-                    throw new UnsupportedOperationException(
-                        String.format(
-                            "Expected to remove entity with id %s and type %s from tenant %s, but type %s is not supported.",
-                            record.getEntityId(),
-                            record.getEntityType(),
-                            tenant.getTenantId(),
-                            entityType));
-              }
-            });
+    final var tenantId = tenant.getTenantId();
+    final var tenantKey = tenant.getTenantKey();
+
+    membershipState.forEachMember(
+        RelationType.TENANT,
+        tenantId,
+        (type, id) -> {
+          switch (type) {
+            case USER ->
+                stateWriter.appendFollowUpEvent(
+                    tenantKey,
+                    TenantIntent.ENTITY_REMOVED,
+                    new TenantRecord().setTenantId(tenantId).setEntityId(id).setEntityType(type));
+            default ->
+                throw new UnsupportedOperationException(
+                    String.format(
+                        "Expected to remove entity with id %s and type %s from tenant %s, but the type is not supported.",
+                        id, type, tenantId));
+          }
+        });
   }
 
   private void deleteAuthorizations(final TenantRecord record) {

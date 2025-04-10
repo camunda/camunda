@@ -8,7 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 import io.camunda.exporter.cache.ExporterEntityCache;
@@ -16,9 +16,9 @@ import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.operate.TreePath;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -164,6 +164,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     updateFields.put(ListViewTemplate.PROCESS_VERSION, entity.getProcessVersion());
     updateFields.put(ListViewTemplate.PROCESS_KEY, entity.getProcessDefinitionKey());
     updateFields.put(ListViewTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+    updateFields.put(PARTITION_ID, entity.getPartitionId());
     updateFields.put(POSITION, entity.getPosition());
     if (entity.getState() != null) {
       updateFields.put(ListViewTemplate.STATE, entity.getState());

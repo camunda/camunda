@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
 import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse.AdHocSubprocessActivity;
-import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse.AdHocSubprocessActivity.AdHocSubprocessActivityType;
 import io.camunda.client.protocol.rest.AdHocSubprocessActivityResult;
 import io.camunda.client.protocol.rest.AdHocSubprocessActivityResult.TypeEnum;
 import io.camunda.client.protocol.rest.AdHocSubprocessActivitySearchQuery;
@@ -70,7 +69,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
     // when
     final AdHocSubprocessActivityResponse response =
         client
-            .newAdHocSubprocessActivityQuery(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
+            .newAdHocSubprocessActivitySearchRequest(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
             .send()
             .join();
 
@@ -99,7 +98,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 AD_HOC_SUBPROCESS_ID,
                 "task1",
                 "Task #1",
-                AdHocSubprocessActivityType.SERVICE_TASK,
+                io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType.SERVICE_TASK,
                 "The first task in the ad-hoc subprocess",
                 "<default>"),
             tuple(
@@ -108,7 +107,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 AD_HOC_SUBPROCESS_ID,
                 "task2",
                 "Task #2",
-                AdHocSubprocessActivityType.USER_TASK,
+                io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType.USER_TASK,
                 "The second task in the ad-hoc subprocess",
                 "<default>"));
   }
@@ -136,7 +135,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
     // when
     final AdHocSubprocessActivityResponse response =
         client
-            .newAdHocSubprocessActivityQuery(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
+            .newAdHocSubprocessActivitySearchRequest(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
             .send()
             .join();
 
@@ -159,7 +158,8 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 AD_HOC_SUBPROCESS_ID,
                 "unknownTask",
                 "Unknown Task",
-                AdHocSubprocessActivityType.UNKNOWN_ENUM_VALUE,
+                io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType
+                    .UNKNOWN_ENUM_VALUE,
                 null,
                 "<default>"));
   }

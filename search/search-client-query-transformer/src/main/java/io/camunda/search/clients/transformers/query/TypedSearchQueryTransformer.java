@@ -9,6 +9,8 @@ package io.camunda.search.clients.transformers.query;
 
 import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 
+import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.source.SearchSourceConfig;
@@ -20,12 +22,14 @@ import io.camunda.search.clients.transformers.sort.SortingTransformer;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.result.QueryResultConfig;
+import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Optional;
 
-public final class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOption>
+public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOption>
     implements ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> {
 
   private final ServiceTransformers transformers;
@@ -47,9 +51,11 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
         searchRequest().index(indices).query(searchQueryFilter).from(page.from()).size(page.size());
 
     final var sort = query.sort();
-    final var sorting = toSearchSortOptions(sort, reverse);
-    if (!sorting.isEmpty()) {
-      builder.sort(query.retainValidSortings(sorting));
+    if (!(sort instanceof NoSort)) {
+      final var sorting = toSearchSortOptions(sort, reverse);
+      if (!sorting.isEmpty()) {
+        builder.sort(query.retainValidSortings(sorting));
+      }
     }
 
     final var searchAfter = page.startNextPageAfter();
@@ -62,6 +68,9 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
     if (searchQuerySourceConfig != null) {
       builder.source(searchQuerySourceConfig);
     }
+
+    Optional.ofNullable(query.aggregation())
+        .ifPresent(aggregation -> builder.aggregations(toAggregations(aggregation)));
 
     return builder.build();
   }
@@ -81,6 +90,10 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
 
   private List<String> toIndices(final F filter) {
     return List.of(getFilterTransformer(filter).getIndex().getAlias());
+  }
+
+  protected List<SearchAggregator> toAggregations(final AggregationBase aggregation) {
+    return transformers.getAggregationTransformer(aggregation.getClass()).apply(aggregation);
   }
 
   private List<SearchSortOptions> toSearchSortOptions(final S sort, final boolean reverse) {

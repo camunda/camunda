@@ -11,6 +11,7 @@ import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.source.SearchSourceConfig;
@@ -25,6 +26,7 @@ import java.util.function.Function;
 public record SearchQueryRequest(
     List<String> index,
     SearchQuery query,
+    List<SearchAggregator> aggregations,
     List<SearchSortOptions> sort,
     Object[] searchAfter,
     Integer from,
@@ -40,6 +42,7 @@ public record SearchQueryRequest(
     return new Builder()
         .index(index)
         .query(query)
+        .aggregations(aggregations)
         .sort(sort)
         .searchAfter(searchAfter)
         .from(from)
@@ -51,6 +54,7 @@ public record SearchQueryRequest(
 
     private List<String> index;
     private SearchQuery query;
+    private List<SearchAggregator> aggregations;
     private List<SearchSortOptions> sort;
     private Object[] searchAfter;
     private Integer from;
@@ -109,6 +113,15 @@ public record SearchQueryRequest(
       return this;
     }
 
+    public Builder aggregations(final List<SearchAggregator> values) {
+      aggregations = addValuesToList(aggregations, values);
+      return this;
+    }
+
+    public Builder aggregations(final SearchAggregator value, final SearchAggregator... values) {
+      return aggregations(collectValues(value, values));
+    }
+
     public Builder source(
         final Function<SearchSourceConfig.Builder, ObjectBuilder<SearchSourceConfig>> fn) {
       return source(SourceConfigBuilders.sourceConfig(fn));
@@ -120,6 +133,7 @@ public record SearchQueryRequest(
           Objects.requireNonNull(
               index, "Expected to create request for index, but given index was null."),
           query,
+          aggregations,
           sort,
           searchAfter,
           from,

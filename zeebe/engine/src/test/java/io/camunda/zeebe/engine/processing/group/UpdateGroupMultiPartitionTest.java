@@ -39,11 +39,11 @@ public class UpdateGroupMultiPartitionTest {
   public void shouldDistributeGroupUpdateCommand() {
     // given
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupId = UUID.randomUUID().toString();
+    engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when
-    final var groupKey = groupRecord.getKey();
-    engine.group().updateGroup(groupKey).withName("updated-" + name).update();
+    engine.group().updateGroup(groupId).withName("updated-" + name).update();
 
     assertThat(
             RecordingExporter.records()
@@ -95,8 +95,9 @@ public class UpdateGroupMultiPartitionTest {
   public void shouldDistributeInIdentityQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getKey();
-    engine.group().updateGroup(groupKey).withName(name + "-updated").update();
+    final var groupId = UUID.randomUUID().toString();
+    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().updateGroup(groupId).withName(name + "-updated").update();
 
     // then
     assertThat(
@@ -113,11 +114,12 @@ public class UpdateGroupMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptGroupCommandForPartition(partitionId, GroupIntent.CREATE);
     }
-    final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
+    final var groupId = UUID.randomUUID().toString();
+    engine.group().newGroup(UUID.randomUUID().toString()).withGroupId(groupId).create().getKey();
 
     // when
     final var name = UUID.randomUUID().toString();
-    engine.group().updateGroup(groupKey).withName("updated-" + name).update();
+    engine.group().updateGroup(groupId).withName("updated-" + name).update();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

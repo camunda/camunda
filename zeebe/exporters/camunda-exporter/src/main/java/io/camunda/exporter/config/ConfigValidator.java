@@ -43,12 +43,12 @@ public final class ConfigValidator {
           e);
     }
 
-    if (configuration.getIndex().getPrefix() != null
-        && configuration.getIndex().getPrefix().contains("_")) {
+    if (configuration.getConnect().getIndexPrefix() != null
+        && configuration.getConnect().getIndexPrefix().contains("_")) {
       throw new ExporterException(
           String.format(
               "CamundaExporter index.prefix must not contain underscore. Current value: %s",
-              configuration.getIndex().getPrefix()));
+              configuration.getConnect().getIndexPrefix()));
     }
 
     final Integer numberOfShards = configuration.getIndex().getNumberOfShards();
@@ -73,14 +73,6 @@ public final class ConfigValidator {
           String.format(
               "CamundaExporter retention.minimumAge '%s' must match pattern '%s', but didn't.",
               minimumAge, PATTERN_MIN_AGE_FORMAT));
-    }
-
-    final String rolloverInterval = configuration.getHistory().getRolloverInterval();
-    if (rolloverInterval != null && !CHECK_DATE_INTERVAL.test(rolloverInterval)) {
-      throw new ExporterException(
-          String.format(
-              "CamundaExporter archiver.rolloverInterval '%s' must match pattern '%s', but didn't.",
-              rolloverInterval, PATTERN_DATE_INTERVAL_FORMAT));
     }
 
     final String waitPeriodBeforeArchiving =

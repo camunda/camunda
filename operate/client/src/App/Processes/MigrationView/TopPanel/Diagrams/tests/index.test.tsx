@@ -10,16 +10,19 @@ import {render, screen} from 'modules/testing-library';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.migration';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 import {Wrapper} from './mocks';
 import {Diagrams} from '..';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Target Diagram', () => {
   it('should set correct targetProcessDefinitionKey', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    // This is mocked twice for source and target process definition xml.
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     await processesStore.fetchProcesses();
     const {user} = render(<Diagrams />, {wrapper: Wrapper});
@@ -33,21 +36,24 @@ describe('Target Diagram', () => {
       'demoProcess3',
     );
 
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     await user.click(screen.getByRole('combobox', {name: 'Target Version'}));
     await user.click(screen.getByRole('option', {name: '2'}));
     expect(processInstanceMigrationStore.state.targetProcessDefinitionKey).toBe(
       'demoProcess2',
     );
 
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     await user.click(screen.getByRole('combobox', {name: 'Target Version'}));
     await user.click(screen.getByRole('option', {name: '1'}));
     expect(processInstanceMigrationStore.state.targetProcessDefinitionKey).toBe(
       'demoProcess1',
     );
 
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     await user.click(screen.getByRole('combobox', {name: 'Target Version'}));
     await user.click(screen.getByRole('option', {name: '3'}));
     expect(processInstanceMigrationStore.state.targetProcessDefinitionKey).toBe(

@@ -36,8 +36,6 @@ import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -103,8 +101,6 @@ import org.springframework.web.client.RestTemplate;
       RolePermissionService.class,
       OperateURIs.class,
       OperateProperties.class,
-      RetryElasticsearchClient.class,
-      ElasticsearchTaskStore.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
       RichOpenSearchClient.class,

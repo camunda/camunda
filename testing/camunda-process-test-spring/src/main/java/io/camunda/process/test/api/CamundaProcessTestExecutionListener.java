@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
@@ -33,9 +34,13 @@ import io.camunda.spring.client.event.CamundaClientCreatedEvent;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
@@ -43,10 +48,11 @@ import org.springframework.test.context.TestExecutionListener;
 /**
  * A Spring test execution listener that provides the runtime for process tests.
  *
+ * <p>The container runtime starts before any tests have run.
+ *
  * <p>Before each test method:
  *
  * <ul>
- *   <li>Start the runtime
  *   <li>Create a {@link CamundaClient} to inject in the test class
  *   <li>Create a {@link CamundaProcessTestContext} to inject in the test class
  *   <li>Publish a {@link CamundaClientCreatedEvent}
@@ -57,10 +63,15 @@ import org.springframework.test.context.TestExecutionListener;
  * <ul>
  *   <li>Publish a {@link CamundaClientClosingEvent}
  *   <li>Close created {@link CamundaClient}s
- *   <li>Stop the runtime
+ *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
+ *
+ * <p>The container runtime is closed once all tests have run.
  */
 public class CamundaProcessTestExecutionListener implements TestExecutionListener, Ordered {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(CamundaProcessTestExecutionListener.class);
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
@@ -68,6 +79,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private CamundaContainerRuntime containerRuntime;
   private CamundaProcessTestResultCollector processTestResultCollector;
+  private CamundaProcessTestContext camundaProcessTestContext;
+  private CamundaManagementClient camundaManagementClient;
   private CamundaClient client;
   private ZeebeClient zeebeClient;
 
@@ -83,17 +96,26 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   }
 
   @Override
-  public void beforeTestMethod(final TestContext testContext) throws Exception {
+  public void beforeTestClass(final TestContext testContext) {
     // create runtime
     containerRuntime = buildRuntime(testContext);
     containerRuntime.start();
 
-    final CamundaProcessTestContext camundaProcessTestContext =
+    camundaManagementClient =
+        new CamundaManagementClient(
+            containerRuntime.getCamundaContainer().getMonitoringApiAddress(),
+            containerRuntime.getCamundaContainer().getRestApiAddress());
+
+    camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             containerRuntime.getCamundaContainer(),
             containerRuntime.getConnectorsContainer(),
-            createdClients::add);
+            createdClients::add,
+            camundaManagementClient);
+  }
 
+  @Override
+  public void beforeTestMethod(final TestContext testContext) {
     client = createClient(testContext, camundaProcessTestContext);
     zeebeClient = createZeebeClient(testContext, camundaProcessTestContext);
 
@@ -121,21 +143,23 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
-    // collect test results
-    final ProcessTestResult testResult = processTestResultCollector.collect();
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
+    }
 
+    if (isTestFailed(testContext)) {
+      printTestResults();
+    }
     // reset assertions
     CamundaAssert.reset();
-
     // close Zeebe clients
     testContext.getApplicationContext().publishEvent(new CamundaClientClosingEvent(this, client));
     testContext
         .getApplicationContext()
         .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));
 
-    for (final var createdClient : createdClients) {
-      createdClient.close();
-    }
+    closeCreatedClients();
 
     // clean up proxies
     testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeClient();
@@ -145,12 +169,55 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .getBean(CamundaProcessTestContextProxy.class)
         .removeContext();
 
-    // close runtime
-    containerRuntime.close();
+    // final step: delete data
+    deleteRuntimeData();
+  }
 
-    // print test results
-    if (isTestFailed(testContext)) {
+  @Override
+  public void afterTestClass(final TestContext testContext) throws Exception {
+    if (containerRuntime == null) {
+      // Skip if the runtime is not created.
+      return;
+    }
+    containerRuntime.close();
+  }
+
+  private void printTestResults() {
+    try {
+      // collect test results
+      final ProcessTestResult testResult = processTestResultCollector.collect();
+      // print test results
       processTestResultPrinter.print(testResult);
+    } catch (final Throwable t) {
+      LOG.warn("Failed to collect test results, skipping.", t);
+    }
+  }
+
+  private void deleteRuntimeData() {
+    try {
+      LOG.debug("Deleting the runtime data");
+      final Instant startTime = Instant.now();
+
+      camundaManagementClient.purgeCluster();
+      final Instant endTime = Instant.now();
+      final Duration duration = Duration.between(startTime, endTime);
+      LOG.debug("Runtime data deleted in {}", duration);
+
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Failed to delete the runtime data, skipping. Check the runtime for details. "
+              + "Note that a dirty runtime may cause failures in other test cases.",
+          t);
+    }
+  }
+
+  private void closeCreatedClients() {
+    for (final AutoCloseable client : createdClients) {
+      try {
+        client.close();
+      } catch (final Exception e) {
+        LOG.debug("Failed to close client, continue.", e);
+      }
     }
   }
 

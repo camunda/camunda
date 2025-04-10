@@ -99,6 +99,11 @@
       <artifactId>httpcore5</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
     <!--  test scope  -->
 
     <dependency>

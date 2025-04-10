@@ -7,10 +7,13 @@
  */
 package io.camunda.exporter;
 
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,10 +23,10 @@ import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.exporter.utils.TestObjectMapper;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -41,7 +44,8 @@ final class CamundaExporterTest {
   private final MockedStatic<ClientAdapter> mockedClientAdapterFactory =
       Mockito.mockStatic(ClientAdapter.class);
 
-  private final ExporterResourceProvider resourceProvider = new DefaultExporterResourceProvider();
+  private final ExporterResourceProvider resourceProvider =
+      spy(new DefaultExporterResourceProvider());
   private final ExporterConfiguration configuration = new ExporterConfiguration();
   private final ExporterTestContext testContext =
       new ExporterTestContext()
@@ -57,8 +61,10 @@ final class CamundaExporterTest {
   void beforeEach() {
     stubbedClientAdapterInUse = new StubClientAdapter();
     mockedClientAdapterFactory
-        .when(() -> ClientAdapter.of(configuration))
+        .when(() -> ClientAdapter.of(configuration.getConnect()))
         .thenReturn(stubbedClientAdapterInUse);
+    doReturn(emptyList()).when(resourceProvider).getIndexDescriptors();
+    doReturn(emptyList()).when(resourceProvider).getIndexTemplateDescriptors();
   }
 
   @AfterEach

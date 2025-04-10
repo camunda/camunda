@@ -26,134 +26,108 @@ import java.util.Optional;
 
 public class DbRoleState implements MutableRoleState {
 
-  private final DbLong roleKey;
+  private final DbString roleId;
   private final PersistedRole persistedRole = new PersistedRole();
-  private final ColumnFamily<DbLong, PersistedRole> roleColumnFamily;
+  private final ColumnFamily<DbString, PersistedRole> roleColumnFamily;
 
-  private final DbForeignKey<DbLong> fkRoleKey;
+  private final DbForeignKey<DbString> fkRoleId;
   private final DbLong entityKey;
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> fkRoleKeyAndEntityKey;
+  private final DbCompositeKey<DbForeignKey<DbString>, DbLong> fkRoleIdAndEntityKey;
   private final EntityTypeValue entityTypeValue = new EntityTypeValue();
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, EntityTypeValue>
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbString>, DbLong>, EntityTypeValue>
       entityTypeByRoleColumnFamily;
-
-  private final DbString roleName;
-  private final ColumnFamily<DbString, DbForeignKey<DbLong>> roleByNameColumnFamily;
 
   public DbRoleState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    roleKey = new DbLong();
+    roleId = new DbString();
     roleColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ROLES, transactionContext, roleKey, new PersistedRole());
+            ZbColumnFamilies.ROLES, transactionContext, roleId, new PersistedRole());
 
-    fkRoleKey = new DbForeignKey<>(roleKey, ZbColumnFamilies.ROLES);
+    fkRoleId = new DbForeignKey<>(roleId, ZbColumnFamilies.ROLES);
     entityKey = new DbLong();
-    fkRoleKeyAndEntityKey = new DbCompositeKey<>(fkRoleKey, entityKey);
+    fkRoleIdAndEntityKey = new DbCompositeKey<>(fkRoleId, entityKey);
     entityTypeByRoleColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ENTITY_BY_ROLE,
             transactionContext,
-            fkRoleKeyAndEntityKey,
+            fkRoleIdAndEntityKey,
             entityTypeValue);
-
-    roleName = new DbString();
-    roleByNameColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ROLE_BY_NAME, transactionContext, roleName, fkRoleKey);
   }
 
   @Override
   public void create(final RoleRecord roleRecord) {
-    final var key = roleRecord.getRoleKey();
-    final var name = roleRecord.getName();
-    roleKey.wrapLong(key);
-    persistedRole.setRoleKey(key);
-    persistedRole.setName(name);
-    roleColumnFamily.insert(roleKey, persistedRole);
-
-    roleName.wrapString(name);
-    roleByNameColumnFamily.insert(roleName, fkRoleKey);
+    // TODO replace with roleId (https://github.com/camunda/camunda/issues/30116)
+    roleId.wrapString(String.valueOf(roleRecord.getRoleKey()));
+    persistedRole.from(roleRecord);
+    roleColumnFamily.insert(roleId, persistedRole);
   }
 
   @Override
   public void update(final RoleRecord roleRecord) {
     // retrieve record from the state
-    roleKey.wrapLong(roleRecord.getRoleKey());
-    final var persistedRole = roleColumnFamily.get(roleKey);
+    roleId.wrapString(String.valueOf(roleRecord.getRoleKey()));
+    final var persistedRole = roleColumnFamily.get(roleId);
 
-    // remove old record from ROLE_BY_NAME cf
-    roleName.wrapString(persistedRole.getName());
-    roleByNameColumnFamily.deleteExisting(roleName);
-
-    // add new record to ROLE_BY_NAME cf
-    roleName.wrapString(roleRecord.getName());
-    roleByNameColumnFamily.insert(roleName, fkRoleKey);
-
-    persistedRole.setRoleKey(roleRecord.getRoleKey());
-    persistedRole.setName(roleRecord.getName());
-    roleColumnFamily.update(roleKey, persistedRole);
+    persistedRole.setRoleKey(roleRecord.getRoleKey()).setName(roleRecord.getName());
+    roleColumnFamily.update(roleId, persistedRole);
   }
 
   @Override
   public void addEntity(final RoleRecord roleRecord) {
-    roleKey.wrapLong(roleRecord.getRoleKey());
+    roleId.wrapString(String.valueOf(roleRecord.getRoleKey()));
     entityKey.wrapLong(roleRecord.getEntityKey());
     entityTypeValue.setEntityType(roleRecord.getEntityType());
-    entityTypeByRoleColumnFamily.insert(fkRoleKeyAndEntityKey, entityTypeValue);
+    entityTypeByRoleColumnFamily.insert(fkRoleIdAndEntityKey, entityTypeValue);
   }
 
   @Override
   public void removeEntity(final long roleKey, final long entityKey) {
-    this.roleKey.wrapLong(roleKey);
+    roleId.wrapString(String.valueOf(roleKey));
     this.entityKey.wrapLong(entityKey);
-    entityTypeByRoleColumnFamily.deleteExisting(fkRoleKeyAndEntityKey);
+    entityTypeByRoleColumnFamily.deleteExisting(fkRoleIdAndEntityKey);
   }
 
   @Override
   public void delete(final RoleRecord roleRecord) {
-    roleKey.wrapLong(roleRecord.getRoleKey());
-    roleName.wrapString(roleRecord.getName());
-    // remove the role from the role by name column family
-    roleByNameColumnFamily.deleteExisting(roleName);
+    roleId.wrapString(String.valueOf(roleRecord.getRoleKey()));
     // remove all entities associated with the role
     entityTypeByRoleColumnFamily.whileEqualPrefix(
-        fkRoleKey,
+        fkRoleId,
         (compositeKey, entityTypeValue) -> {
           entityTypeByRoleColumnFamily.deleteExisting(compositeKey);
         });
     // remove the role
-    roleColumnFamily.deleteExisting(roleKey);
+    roleColumnFamily.deleteExisting(roleId);
+  }
+
+  // TODO remove this method after the key > id refactoring
+  @Override
+  public Optional<PersistedRole> getRole(final long roleKey) {
+    return getRole(String.valueOf(roleKey));
   }
 
   @Override
-  public Optional<PersistedRole> getRole(final long roleKey) {
-    this.roleKey.wrapLong(roleKey);
-    final var persistedRole = roleColumnFamily.get(this.roleKey);
+  public Optional<PersistedRole> getRole(final String roleId) {
+    this.roleId.wrapString(roleId);
+    final var persistedRole = roleColumnFamily.get(this.roleId);
     return Optional.ofNullable(persistedRole);
   }
 
   @Override
-  public Optional<Long> getRoleKeyByName(final String roleName) {
-    this.roleName.wrapString(roleName);
-    final var fkRoleKey = roleByNameColumnFamily.get(this.roleName);
-    return fkRoleKey != null ? Optional.of(fkRoleKey.inner().getValue()) : Optional.empty();
-  }
-
-  @Override
   public Optional<EntityType> getEntityType(final long roleKey, final long entityKey) {
-    this.roleKey.wrapLong(roleKey);
+    roleId.wrapString(String.valueOf(roleKey));
     this.entityKey.wrapLong(entityKey);
-    final var result = entityTypeByRoleColumnFamily.get(fkRoleKeyAndEntityKey);
+    final var result = entityTypeByRoleColumnFamily.get(fkRoleIdAndEntityKey);
     return Optional.ofNullable(result).map(EntityTypeValue::getEntityType);
   }
 
   @Override
   public Map<EntityType, List<Long>> getEntitiesByType(final long roleKey) {
     final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
-    this.roleKey.wrapLong(roleKey);
+    roleId.wrapString(String.valueOf(roleKey));
     entityTypeByRoleColumnFamily.whileEqualPrefix(
-        fkRoleKey,
+        fkRoleId,
         (compositeKey, entityTypeValue) -> {
           final var entityType = entityTypeValue.getEntityType();
           final var entityKey = compositeKey.second().getValue();

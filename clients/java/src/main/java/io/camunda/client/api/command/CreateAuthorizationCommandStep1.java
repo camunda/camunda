@@ -16,9 +16,9 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateAuthorizationResponse;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 
 public interface CreateAuthorizationCommandStep1 {
 
@@ -38,7 +38,7 @@ public interface CreateAuthorizationCommandStep1 {
      * @param ownerType the type of the owner of the permissions
      * @return the builder for this command
      */
-    CreateAuthorizationCommandStep3 ownerType(OwnerTypeEnum ownerType);
+    CreateAuthorizationCommandStep3 ownerType(OwnerType ownerType);
   }
 
   interface CreateAuthorizationCommandStep3 {
@@ -60,7 +60,7 @@ public interface CreateAuthorizationCommandStep1 {
      * @param resourceType the type of the resource
      * @return the builder for this command
      */
-    CreateAuthorizationCommandStep5 resourceType(ResourceTypeEnum resourceType);
+    CreateAuthorizationCommandStep5 resourceType(ResourceType resourceType);
   }
 
   interface CreateAuthorizationCommandStep5 {
@@ -71,7 +71,7 @@ public interface CreateAuthorizationCommandStep1 {
      * @param permissionTypes the permission types
      * @return the builder for this command
      */
-    CreateAuthorizationCommandStep6 permissionTypes(PermissionTypeEnum... permissionTypes);
+    CreateAuthorizationCommandStep6 permissionTypes(PermissionType... permissionTypes);
   }
 
   interface CreateAuthorizationCommandStep6

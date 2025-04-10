@@ -90,7 +90,7 @@ public class IntermediateThrowEventProcessor
   }
 
   @Override
-  public void onTerminate(
+  public TransitionOutcome onTerminate(
       final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {
     eventBehaviorOf(element).onTerminate(element, terminating);
 
@@ -103,6 +103,7 @@ public class IntermediateThrowEventProcessor
         stateTransitionBehavior.transitionToTerminated(terminating, element.getEventType());
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);
+    return TransitionOutcome.CONTINUE;
   }
 
   private IntermediateThrowEventBehavior eventBehaviorOf(

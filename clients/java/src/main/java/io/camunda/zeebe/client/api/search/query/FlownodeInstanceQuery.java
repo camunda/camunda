@@ -21,7 +21,7 @@ import io.camunda.zeebe.client.api.search.sort.FlownodeInstanceSort;
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.FlownodeInstanceQuery}
+ *     io.camunda.client.api.search.request.FlownodeInstanceSearchRequest}
  */
 @Deprecated
 public interface FlownodeInstanceQuery

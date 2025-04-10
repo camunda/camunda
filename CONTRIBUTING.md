@@ -54,6 +54,20 @@ improve
 - A problem, how we can reproduce it, and what the expected behavior would be
 - A change and the intention of how this would improve the system
 
+Severity and Likelihood (bugs):
+To help us prioritize, please also determine the severity and likelihood of the bug. To help you with this, here are the definitions for the options:
+
+Severity:
+- *Low:* Having little to no noticeable impact on usage for the user (e.g. log noise)
+- *Mid:* Having a noticeable impact on production usage, which does not lead to data loss, or for which there is a known configuration workaround.
+- *High:* Having a noticeable impact on production usage, which does not lead to data loss, but for which there is no known workaround, or the workaround is very complex. Examples include issues which lead to regular crashes and break the availability SLA.
+- *Critical:* Stop-the-world issue with a high impact that can lead to data loss (e.g. corruption, deletion, inconsistency, etc.), unauthorized privileged actions (e.g. remote code execution, data exposure, etc.), and for which there is no existing configuration workaround.
+
+Likelihood:
+- *Low:* rarely observed issue/ rather unlikely edge-case
+- *Mid:* occasionally observed
+- *High:* recurring issue
+
 ### Starting on an issue
 
 The `main` branch contains the current in-development state of the project. To work on an issue, follow these steps:
@@ -119,7 +133,7 @@ This is a small overview of the contents of this repository:
 > [!NOTE]
 > All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: camunda-client-java, camunda-process-test-java, zeebe-bpmn-model, zeebe-build-tools, camunda-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol, and zeebe-protocol-jackson which use language level 8.
 
-* **Quick build:** To **quickly** build all components for development, run the command: `mvn clean install -Dquickly` in the root folder.
+* **Quick build:** To **quickly** build all components for development, run the command: `mvn clean install -Dquickly` in the root folder. This flag is also used to skip Optimize, when building Camunda.
 * **Full build:** To build the full distribution for local usage (skipping tests and checks), run the command `mvn clean install -DskipChecks -DskipTests`.
 * **Full build without frontends:** To build the full distribution for local usage without frontends (skipping tests), run the command `mvn clean install -DskipChecks -DskipTests -PskipFrontendBuild`.
 * **Full build and test:** To fully build and test the Camunda distribution, run the command: `mvn clean install` in the root folder.
@@ -248,7 +262,7 @@ _Inspired by [Microsoft's emoji code](https://devblogs.microsoft.com/appcenter/h
 
 ### Stale pull requests
 
-If there has not been any activity in your PR after a month, it is automatically marked as stale. If it remains inactive, we may decide to close the PR.
+If there has not been any activity in your PR after a month, we may decide to close the PR.
 When this happens and you're still interested in contributing, please feel free to reopen it.
 
 ## Backporting changes

@@ -13,10 +13,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.security.configuration.ConfiguredMapping;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -191,7 +191,7 @@ public class OidcAuthOverGrpcIT {
     final var claimValue = UUID.randomUUID().toString();
     defaultMappingClient
         .newCreateMappingCommand()
-        .id(UUID.randomUUID().toString())
+        .mappingId(UUID.randomUUID().toString())
         .claimName(claimName)
         .claimValue(claimValue)
         .name(claimValue)
@@ -221,7 +221,7 @@ public class OidcAuthOverGrpcIT {
     final var processId = Strings.newRandomValidBpmnId();
     defaultMappingClient
         .newCreateMappingCommand()
-        .id(RESTRICTED_USER_ID)
+        .mappingId(RESTRICTED_USER_ID)
         .claimName(USER_ID_CLAIM_NAME)
         .claimValue(RESTRICTED_USER_ID)
         .name(RESTRICTED_USER_ID)
@@ -230,10 +230,10 @@ public class OidcAuthOverGrpcIT {
     defaultMappingClient
         .newCreateAuthorizationCommand()
         .ownerId(RESTRICTED_USER_ID)
-        .ownerType(OwnerTypeEnum.MAPPING)
+        .ownerType(OwnerType.MAPPING)
         .resourceId("*")
-        .resourceType(ResourceTypeEnum.RESOURCE)
-        .permissionTypes(PermissionTypeEnum.CREATE)
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(PermissionType.CREATE)
         .send()
         .join();
 

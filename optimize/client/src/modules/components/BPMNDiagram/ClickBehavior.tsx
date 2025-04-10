@@ -32,10 +32,6 @@ interface ClickBehaviorProps {
 }
 
 export default class ClickBehavior extends Component<ClickBehaviorProps> {
-  static defaultProps = {
-    nodeTypes: ['FlowNode'],
-  };
-
   render() {
     return null;
   }
@@ -120,8 +116,10 @@ export default class ClickBehavior extends Component<ClickBehaviorProps> {
     });
   };
 
-  isValid = (element: RegistryElement) =>
-    this.props.nodeTypes?.some((type) => element.businessObject.$instanceOf('bpmn:' + type));
+  isValid = (element: RegistryElement) => {
+    const {nodeTypes = ['FlowNode']} = this.props;
+    return nodeTypes.some((type) => element.businessObject.$instanceOf('bpmn:' + type));
+  };
 
   onClick = ({element}: RegistryEvent) => {
     if (this.isValid(element)) {

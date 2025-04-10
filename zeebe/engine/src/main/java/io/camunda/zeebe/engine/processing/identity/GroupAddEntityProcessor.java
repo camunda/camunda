@@ -14,9 +14,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -29,11 +32,12 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
   private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
-      "Expected to add entity with key '%s' to group with key '%s', but the entity is already assigned to this group.";
+      "Expected to add entity with key '%s' to group with ID '%s', but the entity is already assigned to this group.";
 
   private final GroupState groupState;
   private final UserState userState;
   private final MappingState mappingState;
+  private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -42,9 +46,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public GroupAddEntityProcessor(
-      final GroupState groupState,
-      final UserState userState,
-      final MappingState mappingState,
+      final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
@@ -52,9 +54,10 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
-    this.groupState = groupState;
-    this.userState = userState;
-    this.mappingState = mappingState;
+    groupState = processingState.getGroupState();
+    userState = processingState.getUserState();
+    membershipState = processingState.getMembershipState();
+    mappingState = processingState.getMappingState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -63,20 +66,9 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var groupKey = record.getGroupKey();
-    final var persistedRecord = groupState.get(groupKey);
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to update group with key '%s', but a group with this key does not exist."
-              .formatted(groupKey);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
-            .addResourceId(record.getName());
+            .addResourceId(record.getGroupId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
@@ -85,12 +77,24 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       return;
     }
 
+    final var groupId = record.getGroupId();
+    final var persistedRecord = groupState.get(groupId);
+    if (persistedRecord.isEmpty()) {
+      final var errorMessage =
+          "Expected to update group with ID '%s', but a group with this ID does not exist."
+              .formatted(groupId);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
+    final var groupKey = persistedRecord.get().getGroupKey();
     final var entityKey = record.getEntityKey();
     final var entityType = record.getEntityType();
     if (!isEntityPresent(entityKey, entityType)) {
       final var errorMessage =
-          "Expected to add an entity with key '%s' and type '%s' to group with key '%d', but the entity does not exist."
-              .formatted(entityKey, entityType, groupKey);
+          "Expected to add an entity with key '%s' and type '%s' to group with ID '%s', but the entity does not exist."
+              .formatted(entityKey, entityType, groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -99,7 +103,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     if (isEntityAssigned(record)) {
       final var errorMessage =
           ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
-              record.getEntityKey(), record.getGroupKey());
+              record.getEntityKey(), record.getGroupId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
@@ -121,7 +125,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     if (isEntityAssigned(record)) {
       final var errorMessage =
           ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
-              record.getEntityKey(), record.getGroupKey());
+              record.getEntityKey(), record.getGroupId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
     } else {
       stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.ENTITY_ADDED, record);
@@ -139,6 +143,15 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   }
 
   private boolean isEntityAssigned(final GroupRecord record) {
-    return groupState.getEntityType(record.getGroupKey(), record.getEntityKey()).isPresent();
+    return switch (record.getEntityType()) {
+      case USER ->
+          membershipState.hasRelation(
+              EntityType.USER,
+              // TODO: Use entity id instead of key
+              Long.toString(record.getEntityKey()),
+              RelationType.GROUP,
+              record.getGroupId());
+      default -> groupState.getEntityType(record.getGroupId(), record.getEntityKey()).isPresent();
+    };
   }
 }

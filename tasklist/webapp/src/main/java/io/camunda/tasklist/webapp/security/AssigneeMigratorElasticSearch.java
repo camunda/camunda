@@ -7,12 +7,12 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.VALUE;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import java.io.IOException;
 import java.util.Collections;
 import org.elasticsearch.client.RequestOptions;
@@ -46,7 +46,7 @@ public class AssigneeMigratorElasticSearch implements AssigneeMigrator {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Override
-  public void migrateUsageMetrics(String newAssignee) {
+  public void migrateUsageMetrics(final String newAssignee) {
     if (!tasklistProperties.isFixUsernames()) {
       LOGGER.debug("Migration of usernames is disabled.");
       return;
@@ -84,7 +84,7 @@ public class AssigneeMigratorElasticSearch implements AssigneeMigrator {
           new UpdateByQueryRequest(indexPattern).setQuery(query).setScript(updateScript);
       final BulkByScrollResponse response = esClient.updateByQuery(request, RequestOptions.DEFAULT);
       return response.getTotal();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(
           "Error while trying to update entities for query " + query);
     }

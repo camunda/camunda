@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.RESOURCE_NAME;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.VERSION;
+import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
+import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.RESOURCE_NAME;
+import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.VERSION;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -21,8 +21,8 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;

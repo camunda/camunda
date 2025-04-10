@@ -48,7 +48,7 @@ const v1Routes = createRoutesFromElements(
       path="new/:bpmnProcessId"
       lazy={() => import('./v1/StartProcessFromForm')}
     />
-    <Route path="/" lazy={() => import('./v1/Layout')}>
+    <Route path="/" lazy={() => import('./common/components/Layout')}>
       <Route path="forbidden" element={<Forbidden />} />
       <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
         <Route index lazy={() => import('./v1/Processes')} />
@@ -64,7 +64,7 @@ const v1Routes = createRoutesFromElements(
       >
         <Route
           index
-          lazy={() => import('./v1/Tasks/EmptyPage')}
+          lazy={() => import('./common/tasks/EmptyPage')}
           ErrorBoundary={ErrorWithinLayout}
         />
         <Route
@@ -85,8 +85,26 @@ const v1Routes = createRoutesFromElements(
 
 const v2Routes = createRoutesFromElements(
   <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-    <Route path="forbidden" element={<Forbidden />} />
     <Route path="login" lazy={() => import('common/auth/Login')} />
+    <Route path="/" lazy={() => import('./common/components/Layout')}>
+      <Route path="forbidden" element={<Forbidden />} />
+      <Route
+        path="processes"
+        ErrorBoundary={ErrorWithinLayout}
+        Component={null}
+      />
+      <Route
+        path="/"
+        lazy={() => import('./v2/Tasks')}
+        ErrorBoundary={ErrorWithinLayout}
+      >
+        <Route
+          index
+          lazy={() => import('./common/tasks/EmptyPage')}
+          ErrorBoundary={ErrorWithinLayout}
+        />
+      </Route>
+    </Route>
   </Route>,
 );
 

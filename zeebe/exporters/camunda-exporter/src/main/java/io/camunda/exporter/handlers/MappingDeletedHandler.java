@@ -41,7 +41,7 @@ public class MappingDeletedHandler implements ExportHandler<MappingEntity, Mappi
 
   @Override
   public List<String> generateIds(final Record<MappingRecordValue> record) {
-    return List.of(String.valueOf(record.getValue().getId()));
+    return List.of(String.valueOf(record.getValue().getMappingId()));
   }
 
   @Override
@@ -54,7 +54,7 @@ public class MappingDeletedHandler implements ExportHandler<MappingEntity, Mappi
     final MappingRecordValue value = record.getValue();
     entity
         .setKey(value.getMappingKey())
-        .setId(value.getId())
+        .setId(value.getMappingId())
         .setClaimName(value.getClaimName())
         .setClaimValue(value.getClaimValue());
   }

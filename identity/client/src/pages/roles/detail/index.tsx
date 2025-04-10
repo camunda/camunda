@@ -28,6 +28,7 @@ import {
 } from "src/feature-flags";
 import Members from "src/pages/roles/detail/members";
 import Mappings from "src/pages/roles/detail/mappings";
+import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -85,30 +86,34 @@ const Details: FC = () => {
         </Stack>
         {(IS_ROLES_USERS_SUPPORTED || IS_ROLES_MAPPINGS_SUPPORTED) && role && (
           <Section>
-            <Tabs
-              tabs={[
-                ...(IS_ROLES_USERS_SUPPORTED
-                  ? [
-                      {
-                        key: "users",
-                        label: t("Users"),
-                        content: <Members roleId={role.roleKey} />,
-                      },
-                    ]
-                  : []),
-                ...(IS_ROLES_MAPPINGS_SUPPORTED
-                  ? [
-                      {
-                        key: "mappings",
-                        label: t("Mappings"),
-                        content: <Mappings roleId={role.roleKey} />,
-                      },
-                    ]
-                  : []),
-              ]}
-              selectedTabKey={tab}
-              path={`../${id}`}
-            />
+            {!isOIDC ? (
+              <Members roleId={role.roleKey} />
+            ) : (
+              <Tabs
+                tabs={[
+                  ...(IS_ROLES_USERS_SUPPORTED
+                    ? [
+                        {
+                          key: "users",
+                          label: t("users"),
+                          content: <Members roleId={role.roleKey} />,
+                        },
+                      ]
+                    : []),
+                  ...(IS_ROLES_MAPPINGS_SUPPORTED
+                    ? [
+                        {
+                          key: "mappings",
+                          label: t("mappings"),
+                          content: <Mappings roleId={role.roleKey} />,
+                        },
+                      ]
+                    : []),
+                ]}
+                selectedTabKey={tab}
+                path={`../${id}`}
+              />
+            )}
           </Section>
         )}
       </>

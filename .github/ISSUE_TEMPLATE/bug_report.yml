@@ -1,0 +1,130 @@
+name: Bug Report
+description: Report a problem and help us fix it.
+labels: ["kind/bug"]
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: Component
+      description: In which component did the issue occur?
+      options:
+        - Not sure-
+        - Operate-
+        - Optimize-
+        - Tasklist-
+        - Identity-
+        - Zeebe-
+        - C8Run-
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: <a href="https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#starting-on-an-issue"> What is the severity of the bug?
+      options:
+        - Low-
+        - Medium-
+        - High-
+        - Critical-
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: likelihood
+    attributes:
+      label: Likelihood
+      description: <a href="https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#starting-on-an-issue"> How likely is it to occur?
+      options:
+        - Unknown_
+        - Low_
+        - Medium_
+        - High_
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: steps-reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Clear steps that allow us to reproduce the error.
+      value: |
+             1. do this
+             2. do that
+             3. now this happens
+    validations:
+      required: true
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current behavior
+      description: A clear and concise description of what is currently happening. 
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen. 
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: The environment on which this error was observed.
+      options:
+        - SM
+        - SaaS
+        - SaaS & SM
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Version
+      description: Version of the component where the bug was observed.
+      value: |
+             - Component Version: [e.g. 2.0.0]
+    validations:
+      required: true
+  - type: textarea
+    id: rootcause
+    attributes:
+      label: Rootcause
+      description: Required on prioritization
+    validations:
+      required: false
+  - type: textarea
+    id: solution-ideas
+    attributes:
+      label: Solution ideas
+      description: Describe possible solution ideas you might have.
+    validations:
+      required: false
+  - type: textarea
+    id: dev-qa-handover
+    attributes:
+      label: Dev -> QA handover
+      value: |
+             - Resources:
+             - Versions to validate:
+             - Release version (in which version this feature will be released):
+    validations:
+      required: false
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: Add the support ticket- or other links here if applicable.
+    validations:
+      required: false

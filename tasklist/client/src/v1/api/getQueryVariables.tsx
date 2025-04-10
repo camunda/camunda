@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {TaskFilters} from 'common/tasks/filters/useTaskFilters';
+import type {TaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import type {TasksSearchBody} from 'v1/api/types';
 import {getStateLocally} from 'common/local-storage';
 import {formatRFC3339} from 'date-fns';

@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 
 public enum ProcessInstanceStateDto {
   ACTIVE,
@@ -17,7 +17,7 @@ public enum ProcessInstanceStateDto {
   UNKNOWN,
   UNSPECIFIED;
 
-  public static ProcessInstanceStateDto getState(ProcessInstanceState state) {
+  public static ProcessInstanceStateDto getState(final ProcessInstanceState state) {
     if (state == null) {
       return UNSPECIFIED;
     }

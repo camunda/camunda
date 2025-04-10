@@ -31,16 +31,17 @@ import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.schema.MappingSource;
-import io.camunda.exporter.schema.SchemaManager;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
 import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
+import io.camunda.search.schema.MappingSource;
+import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -98,7 +99,7 @@ public class CamundaExporter implements Exporter {
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
-    clientAdapter = ClientAdapter.of(configuration);
+    clientAdapter = ClientAdapter.of(configuration.getConnect());
     if (metadata == null) {
       metadata = new ExporterMetadata(clientAdapter.objectMapper());
     }
@@ -129,9 +130,11 @@ public class CamundaExporter implements Exporter {
     searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager = createSchemaManager();
 
-    schemaManager.startup();
+    if (!schemaManager.isSchemaReadyForUse()) {
+      throw new IllegalStateException("Schema is not ready for use");
+    }
 
-    writer = createBatchWriter();
+    writer = createBatchWriter(); // move before schemaManager.isSchemaReadyForUse()?
 
     checkImportersCompletedAndReschedule();
     controller.readMetadata().ifPresent(metadata::deserialize);
@@ -261,7 +264,11 @@ public class CamundaExporter implements Exporter {
         searchEngineClient,
         provider.getIndexDescriptors(),
         provider.getIndexTemplateDescriptors(),
-        configuration,
+        SearchEngineConfiguration.of(
+            b ->
+                b.connect(configuration.getConnect())
+                    .index(configuration.getIndex())
+                    .retention(configuration.getHistory().getRetention())),
         clientAdapter.objectMapper());
   }
 
@@ -272,7 +279,7 @@ public class CamundaExporter implements Exporter {
 
   private List<String> prefixedNames(final String... names) {
     final var indexPrefix =
-        AbstractIndexDescriptor.formatIndexPrefix(configuration.getIndex().getPrefix());
+        AbstractIndexDescriptor.formatIndexPrefix(configuration.getConnect().getIndexPrefix());
     return Arrays.stream(names).map(s -> indexPrefix + s).toList();
   }
 

@@ -9,7 +9,10 @@ package io.camunda.tasklist.webapp.tenant;
 
 import static org.mockito.Mockito.*;
 
+import io.camunda.authentication.entity.AuthenticationContext;
+import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.security.tenant.TenantServiceImpl;
 import java.util.ArrayList;
@@ -20,6 +23,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -71,9 +77,23 @@ public class TenantServiceTest {
   }
 
   private void prepareMocksTenants() {
+    // prepare list of tenant IDs
     final List<String> listOfTenants = new ArrayList<>();
     listOfTenants.add("A");
     listOfTenants.add("B");
-    when(instance.tenantsIds()).thenReturn(listOfTenants);
+
+    // Mock Authentication
+    final Authentication auth = mock(Authentication.class);
+    final CamundaUser camundaUser = mock(CamundaUser.class);
+    final AuthenticationContext authenticationContext = mock(AuthenticationContext.class);
+    when(auth.getPrincipal()).thenReturn(camundaUser);
+    when(camundaUser.getAuthenticationContext()).thenReturn(authenticationContext);
+    when(authenticationContext.tenants())
+        .thenReturn(
+            listOfTenants.stream().map(tenantId -> new TenantDTO(1L, tenantId, "", "")).toList());
+
+    // Mock SecurityContextHolder
+    final SecurityContext securityContext = mock(SecurityContext.class);
+    SecurityContextHolder.getContext().setAuthentication(auth);
   }
 }

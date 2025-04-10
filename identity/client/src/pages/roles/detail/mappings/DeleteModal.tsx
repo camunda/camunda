@@ -38,7 +38,7 @@ const DeleteModal: FC<RemoveRoleMappingModalProps> = ({
     if (roleId && mapping) {
       const { success } = await callUnassignMapping({
         roleId,
-        id: mapping.id,
+        mappingId: mapping.mappingId,
       });
 
       if (success) {
@@ -64,10 +64,10 @@ const DeleteModal: FC<RemoveRoleMappingModalProps> = ({
       <p>
         <Translate
           i18nKey="removeMappingFromRole"
-          values={{ mappingId: mapping.id }}
+          values={{ mappingId: mapping.mappingId }}
         >
-          Are you sure you want to remove <strong>{mapping.id}</strong> from
-          this role?
+          Are you sure you want to remove <strong>{mapping.mappingId}</strong>{" "}
+          from this role?
         </Translate>
       </p>
     </Modal>

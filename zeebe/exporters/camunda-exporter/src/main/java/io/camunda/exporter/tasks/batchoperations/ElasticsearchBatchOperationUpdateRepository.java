@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
-import static io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate.END_DATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.BATCH_OPERATION_ID;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
 import static io.camunda.webapps.schema.entities.operation.OperationState.COMPLETED;
 import static io.camunda.webapps.schema.entities.operation.OperationState.FAILED;
 
@@ -25,7 +25,7 @@ import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.time.OffsetDateTime;
 import java.util.Collection;

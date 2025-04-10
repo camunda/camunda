@@ -13,8 +13,8 @@ import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolderAbstract;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +39,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("tasklistSchemaStartup")
+@DependsOn("searchEngineSchemaInitializer")
 @Conditional(OpenSearchCondition.class)
 public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
     implements ImportPositionHolder {

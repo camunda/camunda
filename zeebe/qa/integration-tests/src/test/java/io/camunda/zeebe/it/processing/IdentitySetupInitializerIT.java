@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -128,6 +129,7 @@ final class IdentitySetupInitializerIT {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/30109")
   void shouldNotRecreateEntitiesOnRestart(@TempDir final Path tempDir) {
     // given a broker with authorization enabled
     createBroker(true, 1, tempDir);

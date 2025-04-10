@@ -13,18 +13,18 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gteLte;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.or;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.EVENT;
-import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.EVENT_TIME;
-import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.MetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.index.MetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.MetricIndex.VALUE;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.index.MetricIndex;
+import io.camunda.webapps.schema.entities.MetricEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -44,7 +44,7 @@ public class OpensearchMetricsStore implements MetricsStore {
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   private AggregationResult searchWithAggregation(
-      SearchRequest.Builder requestBuilder, String aggregationName) {
+      final SearchRequest.Builder requestBuilder, final String aggregationName) {
     final Aggregate aggregate;
 
     try {
@@ -54,7 +54,7 @@ public class OpensearchMetricsStore implements MetricsStore {
               .search(requestBuilder, Object.class)
               .aggregations()
               .get(aggregationName);
-    } catch (OperateRuntimeException e) {
+    } catch (final OperateRuntimeException e) {
       return new AggregationResult(true, null, null);
     }
 
@@ -82,7 +82,8 @@ public class OpensearchMetricsStore implements MetricsStore {
   }
 
   @Override
-  public Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime) {
+  public Long retrieveProcessInstanceCount(
+      final OffsetDateTime startTime, final OffsetDateTime endTime) {
     final int limit = 1; // limiting to one, as we just care about the total documents number
 
     final var searchRequestBuilder =
@@ -118,10 +119,10 @@ public class OpensearchMetricsStore implements MetricsStore {
 
   @Override
   public void registerProcessInstanceStartEvent(
-      String processInstanceKey,
-      String tenantId,
-      OffsetDateTime timestamp,
-      BatchRequest batchRequest)
+      final String processInstanceKey,
+      final String tenantId,
+      final OffsetDateTime timestamp,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     final MetricEntity metric =
         createProcessInstanceStartedKey(processInstanceKey, tenantId, timestamp);
@@ -131,9 +132,9 @@ public class OpensearchMetricsStore implements MetricsStore {
   @Override
   public void registerDecisionInstanceCompleteEvent(
       final String decisionInstanceKey,
-      String tenantId,
+      final String tenantId,
       final OffsetDateTime timestamp,
-      BatchRequest batchRequest)
+      final BatchRequest batchRequest)
       throws PersistenceException {
     final MetricEntity metric =
         createDecisionsInstanceEvaluatedKey(decisionInstanceKey, tenantId, timestamp);
@@ -141,7 +142,7 @@ public class OpensearchMetricsStore implements MetricsStore {
   }
 
   private MetricEntity createProcessInstanceStartedKey(
-      String processInstanceKey, String tenantId, OffsetDateTime timestamp) {
+      final String processInstanceKey, final String tenantId, final OffsetDateTime timestamp) {
     return new MetricEntity()
         .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
         .setValue(processInstanceKey)
@@ -150,7 +151,7 @@ public class OpensearchMetricsStore implements MetricsStore {
   }
 
   private MetricEntity createDecisionsInstanceEvaluatedKey(
-      String decisionInstanceKey, String tenantId, OffsetDateTime timestamp) {
+      final String decisionInstanceKey, final String tenantId, final OffsetDateTime timestamp) {
     return new MetricEntity()
         .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
         .setValue(decisionInstanceKey)

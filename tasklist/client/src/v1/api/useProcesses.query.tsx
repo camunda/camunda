@@ -35,7 +35,7 @@ function useProcesses(
     queryKey: ['processes', query, tenantId, isStartedByForm],
     queryFn: async () => {
       const {response, error} = await request(
-        api.v1.getProcesses({query, tenantId, isStartedByForm}),
+        api.getProcesses({query, tenantId, isStartedByForm}),
       );
 
       if (response !== null) {

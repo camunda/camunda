@@ -8,6 +8,7 @@
 !.idea/copyright/profiles_settings.xml
 !.idea/copyright/Zeebe_1_1.xml
 !.idea/scopes/apache_license_scope.xml
+.vs
 target
 .classpath
 .checkstyle

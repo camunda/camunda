@@ -11,7 +11,10 @@ import static io.camunda.zeebe.engine.processing.processinstance.migration.Migra
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPauseProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
@@ -43,6 +46,7 @@ import io.camunda.zeebe.engine.processing.tenant.TenantUpdateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserCreateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserDeleteProcessor;
 import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
+import io.camunda.zeebe.engine.search.NoopSearchClientsProxy;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -70,6 +74,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -81,6 +86,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -111,7 +117,10 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class CommandDistributionIdempotencyTest {
-  @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(2);
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.multiplePartition(2).withSearchClientsProxy(new NoopSearchClientsProxy());
 
   private static final Set<Class<?>> DISTRIBUTING_PROCESSORS =
       new HashSet<>(
@@ -215,7 +224,7 @@ public class CommandDistributionIdempotencyTest {
 
                   return ENGINE.authorization().updateAuthorization(key).update();
                 }),
-            BatchOperationCreateProcessor.class
+            AuthorizationUpdateProcessor.class
           },
           {
             "BatchOperation.CREATE is idempotent",
@@ -225,13 +234,45 @@ public class CommandDistributionIdempotencyTest {
                 () ->
                     ENGINE
                         .batchOperation()
-                        .ofType(BatchOperationType.PROCESS_CANCELLATION)
+                        .newCreation(BatchOperationType.PROCESS_CANCELLATION)
                         .withFilter(
                             new UnsafeBuffer(
                                 MsgPackConverter.convertToMsgPack(
-                                    "{\"processInstanceKeys\": [1, 2, 3]}")))
+                                    new ProcessInstanceFilter.Builder()
+                                        .processInstanceKeys(1L, 3L, 8L)
+                                        .build())))
                         .create()),
-            AuthorizationUpdateProcessor.class
+            BatchOperationCreateProcessor.class
+          },
+          {
+            "BatchOperation.CANCEL is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+                BatchOperationIntent.CANCEL,
+                () -> {
+                  final var batchOperation = createBatchOperation();
+                  return ENGINE
+                      .batchOperation()
+                      .newLifecycle()
+                      .withBatchOperationKey(batchOperation.getKey())
+                      .cancel();
+                }),
+            BatchOperationCancelProcessor.class
+          },
+          {
+            "BatchOperation.PAUSE is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+                BatchOperationIntent.PAUSE,
+                () -> {
+                  final var batchOperation = createBatchOperation();
+                  return ENGINE
+                      .batchOperation()
+                      .newLifecycle()
+                      .withBatchOperationKey(batchOperation.getKey())
+                      .pause();
+                }),
+            BatchOperationPauseProcessor.class
           },
           {
             "Clock.RESET is idempotent",
@@ -251,7 +292,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.GROUP,
                 GroupIntent.CREATE,
-                CommandDistributionIdempotencyTest::createGroup),
+                () -> createGroup(Strings.newRandomValidIdentityId())),
             GroupCreateProcessor.class
           },
           {
@@ -260,8 +301,9 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.DELETE,
                 () -> {
-                  final var group = createGroup();
-                  return ENGINE.group().deleteGroup(group.getKey()).delete();
+                  final var groupId = UUID.randomUUID().toString();
+                  createGroup(groupId);
+                  return ENGINE.group().deleteGroup(groupId).delete();
                 }),
             GroupDeleteProcessor.class
           },
@@ -271,10 +313,11 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.UPDATE,
                 () -> {
-                  final var group = createGroup();
+                  final var groupId = UUID.randomUUID().toString();
+                  createGroup(groupId);
                   return ENGINE
                       .group()
-                      .updateGroup(group.getKey())
+                      .updateGroup(groupId)
                       .withName(UUID.randomUUID().toString())
                       .update();
                 }),
@@ -286,11 +329,13 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.ADD_ENTITY,
                 () -> {
-                  final var group = createGroup();
+                  // TODO: refactor with https://github.com/camunda/camunda/issues/30091
+                  final var groupId = "321";
+                  createGroup(groupId);
                   final var user = createUser();
                   return ENGINE
                       .group()
-                      .addEntity(group.getKey())
+                      .addEntity(groupId)
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .add();
@@ -303,17 +348,19 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.REMOVE_ENTITY,
                 () -> {
-                  final var group = createGroup();
+                  // TODO: refactor with https://github.com/camunda/camunda/issues/30091
+                  final var groupId = "654";
+                  createGroup(groupId);
                   final var user = createUser();
                   ENGINE
                       .group()
-                      .addEntity(group.getKey())
+                      .addEntity(groupId)
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .add();
                   return ENGINE
                       .group()
-                      .removeEntity(group.getKey())
+                      .removeEntity(groupId)
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .remove();
@@ -335,7 +382,7 @@ public class CommandDistributionIdempotencyTest {
                 MappingIntent.UPDATE,
                 () -> {
                   final var mapping = createMapping();
-                  return ENGINE.mapping().updateMapping(mapping.getValue().getId()).update();
+                  return ENGINE.mapping().updateMapping(mapping.getValue().getMappingId()).update();
                 }),
             MappingUpdateProcessor.class
           },
@@ -346,7 +393,7 @@ public class CommandDistributionIdempotencyTest {
                 MappingIntent.DELETE,
                 () -> {
                   final var mapping = createMapping();
-                  return ENGINE.mapping().deleteMapping(mapping.getValue().getId()).delete();
+                  return ENGINE.mapping().deleteMapping(mapping.getValue().getMappingId()).delete();
                 }),
             MappingDeleteProcessor.class
           },
@@ -589,7 +636,7 @@ public class CommandDistributionIdempotencyTest {
                         .withMapping(
                             new MappingRecord()
                                 .setMappingKey(4)
-                                .setId("id")
+                                .setMappingId("id")
                                 .setClaimName("claimName")
                                 .setClaimValue("claimValue"))
                         .initialize()),
@@ -652,6 +699,17 @@ public class CommandDistributionIdempotencyTest {
         .isTrue();
   }
 
+  private static Record<BatchOperationCreationRecordValue> createBatchOperation() {
+    return ENGINE
+        .batchOperation()
+        .newCreation(BatchOperationType.PROCESS_CANCELLATION)
+        .withFilter(
+            new UnsafeBuffer(
+                MsgPackConverter.convertToMsgPack(
+                    new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build())))
+        .create();
+  }
+
   private static Record<UserRecordValue> createUser() {
     return ENGINE
         .user()
@@ -662,8 +720,8 @@ public class CommandDistributionIdempotencyTest {
         .create();
   }
 
-  private static Record<GroupRecordValue> createGroup() {
-    return ENGINE.group().newGroup(UUID.randomUUID().toString()).create();
+  private static Record<GroupRecordValue> createGroup(final String groupId) {
+    return ENGINE.group().newGroup(UUID.randomUUID().toString()).withGroupId(groupId).create();
   }
 
   private static Record<RoleRecordValue> createRole() {
@@ -684,7 +742,7 @@ public class CommandDistributionIdempotencyTest {
         .mapping()
         .newMapping(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())
-        .withId(UUID.randomUUID().toString())
+        .withMappingId(UUID.randomUUID().toString())
         .create();
   }
 

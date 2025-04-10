@@ -4,7 +4,7 @@
    - from the space of `tasklist/` folder run:
 
      ```shell
-     mvn clean install -DskipTests=true
+     ../mvnw clean install -DskipTests=true
      ```
 2. Prepare your local env:
    - up `Zeebe` and `ElasticSearch` minimum required dependencies

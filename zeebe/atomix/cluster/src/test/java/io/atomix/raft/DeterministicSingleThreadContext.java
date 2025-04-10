@@ -17,6 +17,7 @@ package io.atomix.raft;
 
 import static org.junit.Assert.fail;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ScheduledFutureImpl;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 public final class DeterministicSingleThreadContext implements ThreadContext {
 
@@ -33,17 +35,20 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
       LoggerFactory.getLogger(DeterministicSingleThreadContext.class);
 
   private final DeterministicScheduler deterministicScheduler;
+  private final MemberId memberId;
 
-  public DeterministicSingleThreadContext(final DeterministicScheduler executor) {
+  public DeterministicSingleThreadContext(
+      final DeterministicScheduler executor, final MemberId memberId) {
     deterministicScheduler = executor;
+    this.memberId = memberId;
   }
 
   public DeterministicScheduler getDeterministicScheduler() {
     return deterministicScheduler;
   }
 
-  public static ThreadContext createContext() {
-    return new DeterministicSingleThreadContext(new DeterministicScheduler());
+  public static ThreadContext createContext(final MemberId memberId) {
+    return new DeterministicSingleThreadContext(new DeterministicScheduler(), memberId);
   }
 
   @Override
@@ -100,7 +105,7 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
     // do nothing
   }
 
-  static final class WrappedRunnable implements Runnable {
+  private final class WrappedRunnable implements Runnable {
 
     private final Runnable command;
 
@@ -110,7 +115,7 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
 
     @Override
     public void run() {
-      try {
+      try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
         command.run();
       } catch (final Exception e) {
         LOGGER.error("Uncaught exception", e);

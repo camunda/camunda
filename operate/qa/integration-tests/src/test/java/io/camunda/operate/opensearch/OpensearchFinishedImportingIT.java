@@ -11,15 +11,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestSupport;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.opensearch.OpensearchRecordsReader;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -53,7 +52,6 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   private static final OpensearchExporterConfiguration CONFIG =
       new OpensearchExporterConfiguration();
 
-  @Autowired public SchemaManager schemaManager;
   @Autowired private OperateProperties operateProperties;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   @Autowired private ImportPositionIndex importPositionIndex;
@@ -64,7 +62,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   @Before
   public void beforeEach() {
     operateProperties.getImporter().setImportPositionUpdateInterval(1000);
-
+    CONFIG.setExportLegacyRecords(true);
     CONFIG.index.prefix = operateProperties.getZeebeOpensearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
     CONFIG.index.setNumberOfReplicas(0);

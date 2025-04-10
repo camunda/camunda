@@ -7,36 +7,38 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.GroupIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
+import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.RoleIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
+import io.camunda.webapps.schema.descriptors.index.TenantIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
@@ -65,6 +67,8 @@ public class IndexDescriptors {
                 new ListViewTemplate(indexPrefix, isElasticsearch),
                 new MappingIndex(indexPrefix, isElasticsearch),
                 new MetricIndex(indexPrefix, isElasticsearch),
+                // OperateUserIndex should be deleted once harmonized with UserIndex
+                new OperateUserIndex(indexPrefix, isElasticsearch),
                 new OperationTemplate(indexPrefix, isElasticsearch),
                 new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch),
                 new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
@@ -75,6 +79,8 @@ public class IndexDescriptors {
                 new TaskTemplate(indexPrefix, isElasticsearch),
                 new TasklistImportPositionIndex(indexPrefix, isElasticsearch),
                 new TasklistMetricIndex(indexPrefix, isElasticsearch),
+                // TasklistUserIndex should be deleted once harmonized with UserIndex
+                new TasklistUserIndex(indexPrefix, isElasticsearch),
                 new TenantIndex(indexPrefix, isElasticsearch),
                 new UserIndex(indexPrefix, isElasticsearch),
                 new VariableTemplate(indexPrefix, isElasticsearch),

@@ -66,7 +66,7 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
 
   @Override
   protected String getZeebeExporterIndexPrefixConfigParameterName() {
-    return "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX";
+    return "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX";
   }
 
   @Override
@@ -78,10 +78,14 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
         ConnectionTypes.ELASTICSEARCH.name(),
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE",
         "1",
-        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX",
         indexPrefix,
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
-        "io.camunda.exporter.CamundaExporter");
+        "io.camunda.exporter.CamundaExporter",
+        "CAMUNDA_DATABASE_URL",
+        "http://host.testcontainers.internal:9200",
+        "CAMUNDA_DATABASE_INDEXPREFIX",
+        indexPrefix);
   }
 
   @Override

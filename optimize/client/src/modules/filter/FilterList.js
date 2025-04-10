@@ -48,7 +48,13 @@ export default class FilterList extends React.Component {
   createOperator = (name) => <span> {name} </span>;
 
   render() {
-    const {data, definitions, deleteFilter, openEditFilterModal, variables} = this.props;
+    const {
+      data,
+      definitions,
+      deleteFilter = () => {},
+      openEditFilterModal = () => {},
+      variables,
+    } = this.props;
     const list = [];
 
     for (let i = 0; i < data.length; i++) {
@@ -371,11 +377,6 @@ export default class FilterList extends React.Component {
     return <ul className="FilterList">{list}</ul>;
   }
 }
-
-FilterList.defaultProps = {
-  openEditFilterModal: () => {},
-  deleteFilter: () => {},
-};
 
 function getProcessVariableLabel(name, type, variables) {
   const {label} =

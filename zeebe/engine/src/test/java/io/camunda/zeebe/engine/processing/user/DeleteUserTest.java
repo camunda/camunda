@@ -51,6 +51,7 @@ public class DeleteUserTest {
   public void shouldCleanupMembership() {
     final var username = UUID.randomUUID().toString();
     final var tenantId = "tenant";
+    final var groupId = "123";
     final var userRecord =
         ENGINE
             .user()
@@ -59,13 +60,13 @@ public class DeleteUserTest {
             .withEmail("foo@bar.com")
             .withPassword("password")
             .create();
-    final var group = ENGINE.group().newGroup("group").create();
+    final var group = ENGINE.group().newGroup("group").withGroupId(groupId).create();
     final var role = ENGINE.role().newRole("role").create();
     final var tenant = ENGINE.tenant().newTenant().withTenantId(tenantId).create();
 
     ENGINE
         .group()
-        .addEntity(group.getKey())
+        .addEntity(groupId)
         .withEntityKey(userRecord.getKey())
         .withEntityType(EntityType.USER)
         .add();
@@ -88,7 +89,7 @@ public class DeleteUserTest {
     // then
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
-                .withGroupKey(group.getKey())
+                .withGroupId(groupId)
                 .withEntityKey(userRecord.getKey())
                 .exists())
         .isTrue();

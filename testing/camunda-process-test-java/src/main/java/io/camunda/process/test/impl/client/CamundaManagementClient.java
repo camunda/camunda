@@ -40,8 +40,8 @@ public class CamundaManagementClient {
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
 
-  private static final String CLUSTER_ENDPOINT = "/actuator/cluster";
-  private static final String CLUSTER_PURGE_ENDPOINT = CLUSTER_ENDPOINT + "/purge";
+  private static final String TOPOLOGY_ENDPOINT = "/v2/topology";
+  private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -49,9 +49,11 @@ public class CamundaManagementClient {
   private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
   private final URI camundaManagementApi;
+  private final URI camundaRestApi;
 
-  public CamundaManagementClient(final URI camundaManagementApi) {
+  public CamundaManagementClient(final URI camundaManagementApi, final URI camundaRestApi) {
     this.camundaManagementApi = camundaManagementApi;
+    this.camundaRestApi = camundaRestApi;
   }
 
   public Instant getCurrentTime() {
@@ -115,11 +117,12 @@ public class CamundaManagementClient {
           .pollInterval(Duration.ofMillis(250))
           .atMost(timeout)
           .until(() -> isPurgeComplete(startPurgeResponse.getChangeId()));
+
     } catch (final ConditionTimeoutException e) {
-      throw new RuntimeException(
-          "Failed to purge the cluster, timeout expired. Try increasing the timeout.", e);
+      throw new RuntimeException("Failed to purge the cluster, timeout expired.", e);
+
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to purge the cluster", e);
+      throw new RuntimeException("Failed to purge the cluster.", e);
     }
   }
 
@@ -134,7 +137,7 @@ public class CamundaManagementClient {
   }
 
   private boolean isPurgeComplete(final long changeId) {
-    final HttpGet clusterStatusRequest = new HttpGet(camundaManagementApi + CLUSTER_ENDPOINT);
+    final HttpGet clusterStatusRequest = new HttpGet(camundaRestApi + TOPOLOGY_ENDPOINT);
 
     try {
       final MinimalTopologyResponseDto minimalTopologyResponse =
@@ -150,8 +153,7 @@ public class CamundaManagementClient {
 
   private <T> T sendRequest(final ClassicHttpRequest request, final Class<T> clazz)
       throws IOException {
-    final String responseBody = sendRequest(request);
-    return objectMapper.readValue(responseBody, clazz);
+    return objectMapper.readValue(sendRequest(request), clazz);
   }
 
   private String sendRequest(final ClassicHttpRequest request) throws IOException {

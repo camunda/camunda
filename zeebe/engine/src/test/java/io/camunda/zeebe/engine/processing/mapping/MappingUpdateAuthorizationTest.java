@@ -56,7 +56,7 @@ public class MappingUpdateAuthorizationTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(id)
         .create(DEFAULT_USER.getUsername());
 
     // when
@@ -84,7 +84,7 @@ public class MappingUpdateAuthorizationTest {
     final var claimValue = UUID.randomUUID().toString();
     final var claimValueNew = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var id = UUID.randomUUID().toString();
+    final var mappingId = UUID.randomUUID().toString();
 
     final var user = createUser();
     addPermissionsToUser(user, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE);
@@ -94,13 +94,13 @@ public class MappingUpdateAuthorizationTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(mappingId)
         .create(DEFAULT_USER.getUsername());
 
     // when
     engine
         .mapping()
-        .updateMapping(id)
+        .updateMapping(mappingId)
         .withClaimValue(claimValue)
         .withClaimValue(claimValueNew)
         .withName(name)
@@ -130,7 +130,7 @@ public class MappingUpdateAuthorizationTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(id)
         .create(DEFAULT_USER.getUsername());
 
     // when

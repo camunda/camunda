@@ -160,6 +160,23 @@ class ProcessInstancesSelection {
     );
   }
 
+  get checkedProcessInstanceIds() {
+    const {selectionMode, selectedProcessInstanceIds} = this.state;
+
+    if (selectionMode === 'INCLUDE') {
+      return selectedProcessInstanceIds;
+    }
+
+    const allProcessInstanceIds =
+      processInstancesStore.state.processInstances.map(
+        (processInstance) => processInstance.id,
+      );
+
+    return allProcessInstanceIds.filter(
+      (id) => !selectedProcessInstanceIds.includes(id),
+    );
+  }
+
   get selectedProcessInstanceIds() {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
 

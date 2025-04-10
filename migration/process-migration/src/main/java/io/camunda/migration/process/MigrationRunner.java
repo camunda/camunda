@@ -17,8 +17,8 @@ import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.camunda.migration.process.util.MetricRegistry;
 import io.camunda.migration.process.util.MigrationUtil;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.List;
@@ -126,7 +126,8 @@ public class MigrationRunner implements Migrator {
   private void delayNextRound() {
     try {
       scheduler
-          .schedule(() -> {}, properties.getMinRetryDelay().toSeconds(), TimeUnit.SECONDS)
+          .schedule(
+              () -> {}, properties.getRetry().getMinRetryDelay().toSeconds(), TimeUnit.SECONDS)
           .get();
     } catch (final InterruptedException | ExecutionException ex) {
       Thread.currentThread().interrupt();

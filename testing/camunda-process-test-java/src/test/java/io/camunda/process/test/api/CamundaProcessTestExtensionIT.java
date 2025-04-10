@@ -20,11 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.UserTask;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -131,9 +134,61 @@ public class CamundaProcessTestExtensionIT {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () ->
-                assertThat(client.newProcessInstanceQuery().send().join().items())
+                assertThat(client.newProcessInstanceSearchRequest().send().join().items())
                     .hasSize(1)
                     .extracting(ProcessInstance::getProcessInstanceKey)
                     .contains(processInstance.getProcessInstanceKey()));
+  }
+
+  @Test
+  void shouldAssertUserTask() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .name("start")
+            .userTask(
+                "task",
+                userTask -> userTask.zeebeUserTask().zeebeAssignee("me").zeebeTaskPriority("60"))
+            .name("task")
+            .endEvent()
+            .name("end")
+            .done();
+
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+    // when
+    final ProcessInstanceEvent processInstance =
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+
+    // then
+    CamundaAssert.assertThat(processInstance).isActive().hasActiveElements(byName("task"));
+
+    final List<UserTask> userTasks =
+        client
+            .newUserTaskSearchRequest()
+            .filter(
+                filter ->
+                    filter
+                        .processInstanceKey(processInstance.getProcessInstanceKey())
+                        .state(UserTaskState.CREATED))
+            .send()
+            .join()
+            .items();
+
+    assertThat(userTasks).isNotEmpty();
+
+    final UserTask userTask = userTasks.get(0);
+
+    assertThat(userTask)
+        .returns("task", UserTask::getName)
+        .returns("me", UserTask::getAssignee)
+        .returns(60, UserTask::getPriority);
+
+    // when: complete the user task
+    client.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
+
+    // then: verify that the user task and the process instance are completed
+    CamundaAssert.assertThat(processInstance).hasCompletedElements(byName("task")).isCompleted();
   }
 }

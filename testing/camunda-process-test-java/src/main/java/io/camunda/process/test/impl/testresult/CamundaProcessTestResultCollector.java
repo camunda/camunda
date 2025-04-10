@@ -15,24 +15,18 @@
  */
 package io.camunda.process.test.impl.testresult;
 
-import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CamundaProcessTestResultCollector {
-
-  private static final Logger LOG =
-      LoggerFactory.getLogger(CamundaProcessTestResultCollector.class);
 
   private final CamundaDataSource dataSource;
 
@@ -43,15 +37,11 @@ public class CamundaProcessTestResultCollector {
   public ProcessTestResult collect() {
     final ProcessTestResult result = new ProcessTestResult();
 
-    try {
-      final List<ProcessInstanceResult> processInstanceResults =
-          dataSource.findProcessInstances().stream()
-              .map(this::collectProcessInstanceResult)
-              .collect(Collectors.toList());
-      result.setProcessInstanceTestResults(processInstanceResults);
-    } catch (final ClientException e) {
-      LOG.warn("Failed to collect the process instance results.", e);
-    }
+    final List<ProcessInstanceResult> processInstanceResults =
+        dataSource.findProcessInstances().stream()
+            .map(this::collectProcessInstanceResult)
+            .collect(Collectors.toList());
+    result.setProcessInstanceTestResults(processInstanceResults);
 
     return result;
   }
@@ -72,7 +62,11 @@ public class CamundaProcessTestResultCollector {
 
   private Map<String, String> collectVariables(final long processInstanceKey) {
     return dataSource.findVariablesByProcessInstanceKey(processInstanceKey).stream()
-        .collect(Collectors.toMap(Variable::getName, Variable::getValue));
+        // We're deliberately switching from the Collectors.toMap collector to a custom
+        // implementation because it's allowed to have Camunda Variables with null values
+        // However, the toMap collector does not allow null values and would throw an exception.
+        // See this Stack Overflow issue for more context: https://stackoverflow.com/a/24634007
+        .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
   }
 
   private List<Incident> collectOpenIncidents(final long processInstanceKey) {

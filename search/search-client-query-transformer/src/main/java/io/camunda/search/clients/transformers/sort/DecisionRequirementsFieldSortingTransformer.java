@@ -8,10 +8,10 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.VERSION;
+import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
+import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.VERSION;
 
 public class DecisionRequirementsFieldSortingTransformer implements FieldSortingTransformer {
 

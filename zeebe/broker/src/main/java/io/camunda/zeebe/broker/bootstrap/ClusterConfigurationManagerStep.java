@@ -40,6 +40,17 @@ public class ClusterConfigurationManagerStep
             (ignore, error) -> {
               if (error == null) {
                 brokerStartupContext.setClusterConfigurationService(clusterConfigurationService);
+                final var brokerInfo = brokerStartupContext.getBrokerInfo();
+                final var clusterConfiguration =
+                    brokerStartupContext
+                        .getBrokerClient()
+                        .getTopologyManager()
+                        .getClusterConfiguration();
+                brokerInfo
+                    .setClusterSize(clusterConfiguration.clusterSize())
+                    .setPartitionsCount(clusterConfiguration.partitionCount())
+                    .setReplicationFactor(clusterConfiguration.minReplicationFactor());
+
                 started.complete(brokerStartupContext);
               } else {
                 started.completeExceptionally(error);

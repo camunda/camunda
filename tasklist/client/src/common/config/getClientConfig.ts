@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {IS_V2_ENABLED} from 'common/featureFlags';
 import {z} from 'zod';
 
 const ClientConfigSchema = z.object({
@@ -14,8 +15,8 @@ const ClientConfigSchema = z.object({
   baseName: z.string().optional().default('/'),
   canLogout: z.boolean().optional().default(true),
   isLoginDelegated: z.boolean().optional().default(false),
-  organizationId: z.string().nullable().optional().default(null),
-  clusterId: z.string().nullable().optional().default(null),
+  organizationId: z.string().min(1).nullable().optional().default(null),
+  clusterId: z.string().min(1).nullable().optional().default(null),
   mixpanelToken: z.string().nullable().optional().default(null),
   mixpanelAPIHost: z.string().nullable().optional().default(null),
   isResourcePermissionsEnabled: z.boolean().nullable().optional().default(null),
@@ -27,7 +28,9 @@ const ClientConfigSchema = z.object({
   clientMode: z.enum(['v1', 'v2']).optional().default('v1'),
 });
 
-const DEFAULT_CLIENT_CONFIG = ClientConfigSchema.safeParse({}).data!;
+const DEFAULT_CLIENT_CONFIG = ClientConfigSchema.safeParse({
+  clientMode: IS_V2_ENABLED ? 'v2' : undefined,
+}).data!;
 
 function getClientConfig() {
   if (typeof window === 'undefined') {
@@ -39,7 +42,10 @@ function getClientConfig() {
   );
 
   if (success) {
-    return data;
+    return {
+      ...data,
+      clientMode: IS_V2_ENABLED ? 'v2' : data.clientMode,
+    };
   }
 
   return DEFAULT_CLIENT_CONFIG;

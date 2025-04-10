@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
-import static io.camunda.exporter.utils.SearchDBExtension.*;
+import static io.camunda.search.test.utils.SearchDBExtension.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
@@ -15,15 +15,15 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
-import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.test.utils.SearchDBExtension;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -63,7 +63,7 @@ abstract class BatchOperationUpdateRepositoryIT {
     config.getConnect().setUrl(databaseUrl);
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
 
-    clientAdapter = ClientAdapter.of(config);
+    clientAdapter = ClientAdapter.of(config.getConnect());
     engineClient = clientAdapter.getSearchEngineClient();
 
     batchOperationTemplate = new BatchOperationTemplate(indexPrefix, isElastic);
@@ -75,8 +75,8 @@ abstract class BatchOperationUpdateRepositoryIT {
     Stream.of(batchOperationTemplate, operationTemplate)
         .forEach(
             template -> {
-              engineClient.createIndexTemplate(template, new IndexSettings(), true);
-              engineClient.createIndex(template, new IndexSettings());
+              engineClient.createIndexTemplate(template, new IndexConfiguration(), true);
+              engineClient.createIndex(template, new IndexConfiguration());
             });
   }
 

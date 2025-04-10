@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -15,18 +14,19 @@ import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
-import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -58,7 +58,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
             .setTreePath("PI_4503599627370497")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);
@@ -101,7 +101,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
             .setTreePath("PI_4503599627370497")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);
@@ -143,7 +143,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
             .setTreePath("PI_4503599627370497")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);

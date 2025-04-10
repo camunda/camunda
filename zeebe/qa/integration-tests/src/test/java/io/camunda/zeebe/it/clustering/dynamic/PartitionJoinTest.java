@@ -75,9 +75,11 @@ final class PartitionJoinTest {
   TestCluster setupCluster(final InitialClusterState conf) {
     return TestCluster.builder()
         .withBrokersCount(conf.clusterSize())
+        .withBrokerConfig(broker -> broker.withCreateSchema(false))
         .withReplicationFactor(conf.replicationFactor())
         .withPartitionsCount(conf.partitionCount())
         .withGatewaysCount(1)
+        .withGatewayConfig(gateway -> gateway.withCreateSchema(false))
         .build()
         .start()
         .awaitCompleteTopology();

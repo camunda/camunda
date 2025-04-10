@@ -19,11 +19,17 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.RoleMemberRequest;
+import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -48,6 +54,27 @@ public class RoleServicesTest {
     services =
         new RoleServices(
             stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
+  }
+
+  @Test
+  public void shouldCreateRole() {
+    // given
+    final var roleId = "roleId";
+    final var roleName = "testRole";
+    final var description = "description";
+
+    // when
+    services.createRole(new CreateRoleRequest(roleId, roleName, description));
+
+    // then
+    final BrokerRoleCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    final RoleRecord record = request.getRequestWriter();
+    Assertions.assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
+    Assertions.assertThat(request.getIntent()).isEqualTo(RoleIntent.CREATE);
+    assertThat(request.getKey()).isEqualTo(-1L);
+    Assertions.assertThat(record).hasRoleId(roleId);
+    Assertions.assertThat(record).hasName(roleName);
+    Assertions.assertThat(record).hasDescription(description);
   }
 
   @Test
@@ -101,56 +128,59 @@ public class RoleServicesTest {
   @Test
   public void shouldUpdateName() {
     // given
-    final var roleKey = 100L;
+    final var roleId = "roleId";
     final var name = "UpdatedName";
+    final var description = "UpdatedDescription";
 
     // when
-    services.updateRole(roleKey, name);
+    services.updateRole(new UpdateRoleRequest(roleId, name, description));
 
     // then
     final BrokerRoleUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.UPDATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
-    assertThat(request.getKey()).isEqualTo(roleKey);
+    assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
     assertThat(brokerRequestValue.getName()).isEqualTo(name);
+    assertThat(brokerRequestValue.getDescription()).isEqualTo(description);
   }
 
   @Test
   public void shouldAddUserToRole() {
     // given
-    final var roleKey = 100L;
-    final var entityKey = 42;
+    final var roleId = "roleId";
+    final var entityId = "entityId";
 
     // when
-    services.addMember(roleKey, EntityType.USER, entityKey);
+    services.addMember(new RoleMemberRequest(roleId, entityId, EntityType.USER));
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.ADD_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getRoleKey()).isEqualTo(roleKey);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 
   @Test
   public void shouldRemoveUserFromRole() {
     // given
-    final var roleKey = 100L;
-    final var entityKey = 42;
+    final var roleId = "100";
+    final var username = "42";
 
     // when
-    services.removeMember(roleKey, EntityType.USER, entityKey);
+    services.removeMember(new RoleMemberRequest(roleId, username, EntityType.USER));
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.REMOVE_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getRoleKey()).isEqualTo(roleKey);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(username);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 

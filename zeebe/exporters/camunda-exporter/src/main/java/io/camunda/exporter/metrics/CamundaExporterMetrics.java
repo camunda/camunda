@@ -24,6 +24,13 @@ public class CamundaExporterMetrics {
   private final AtomicInteger bulkMemorySize = new AtomicInteger(0);
   private final Timer flushLatency;
   private final Counter processInstancesArchived;
+
+  /**
+   * Count of completed process instances that have been found, and are now in progress of
+   * archiving.
+   */
+  private final Counter archivingBatchSize;
+
   private final Counter batchOperationsArchived;
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
@@ -40,6 +47,7 @@ public class CamundaExporterMetrics {
             .publishPercentileHistogram()
             .register(meterRegistry);
     processInstancesArchived = meterRegistry.counter(meterName("archived.process.instances"));
+    archivingBatchSize = meterRegistry.counter(meterName("archived.batch.size"));
     batchOperationsArchived = meterRegistry.counter(meterName("archived.batch.operations"));
     archiverSearchTimer = meterRegistry.timer(meterName("archiver.query"));
     archiverDeleteTimer = meterRegistry.timer(meterName("archiver.delete.query"));
@@ -92,6 +100,10 @@ public class CamundaExporterMetrics {
 
   public void recordProcessInstancesArchived(final int count) {
     processInstancesArchived.increment(count);
+  }
+
+  public void recordArchivingBatchSize(final int count) {
+    archivingBatchSize.increment(count);
   }
 
   public void batchOperationsArchived(final int count) {

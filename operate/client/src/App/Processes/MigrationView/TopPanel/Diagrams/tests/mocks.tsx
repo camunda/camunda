@@ -9,9 +9,9 @@
 import {useEffect} from 'react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
-import {processXmlStore as processXmlSourceStore} from 'modules/stores/processXml/processXml.migration.source';
-import {processXmlStore as processXmlTargetStore} from 'modules/stores/processXml/processXml.migration.target';
 import {processesStore} from 'modules/stores/processes/processes.list';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 type Props = {
   children?: React.ReactNode;
@@ -22,14 +22,12 @@ const Wrapper = ({children}: Props) => {
     return () => {
       processesStore.reset();
       processInstanceMigrationStore.reset();
-      processXmlSourceStore.reset();
-      processXmlTargetStore.reset();
       processStatisticsStore.reset();
     };
   });
 
   return (
-    <>
+    <QueryClientProvider client={getMockQueryClient()}>
       {children}
       <button
         onClick={() => processInstanceMigrationStore.setCurrentStep('summary')}
@@ -53,7 +51,7 @@ const Wrapper = ({children}: Props) => {
       >
         map elements
       </button>
-    </>
+    </QueryClientProvider>
   );
 };
 

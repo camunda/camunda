@@ -22,7 +22,7 @@ import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.UserTaskQuery}
+ *     io.camunda.client.api.search.request.UserTaskSearchRequest}
  */
 @Deprecated
 public interface UserTaskQuery

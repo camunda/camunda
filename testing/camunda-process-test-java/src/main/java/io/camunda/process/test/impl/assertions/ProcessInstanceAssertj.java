@@ -19,18 +19,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
@@ -44,7 +47,9 @@ public class ProcessInstanceAssertj
 
   private final ElementAssertj elementAssertj;
   private final VariableAssertj variableAssertj;
+  private final IncidentAssertj incidentAssertj;
   private final String failureMessagePrefix;
+  private final Function<String, ElementSelector> elementSelector;
 
   private final AtomicReference<ProcessInstance> actualProcessInstance = new AtomicReference<>();
 
@@ -63,8 +68,10 @@ public class ProcessInstanceAssertj
     this.dataSource = dataSource;
     failureMessagePrefix =
         String.format("Process instance [%s]", processInstanceSelector.describe());
-    elementAssertj = new ElementAssertj(dataSource, failureMessagePrefix, elementSelector);
+    this.elementSelector = elementSelector;
+    elementAssertj = new ElementAssertj(dataSource, failureMessagePrefix);
     variableAssertj = new VariableAssertj(dataSource, failureMessagePrefix);
+    incidentAssertj = new IncidentAssertj(dataSource, failureMessagePrefix);
   }
 
   @Override
@@ -101,43 +108,44 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert hasActiveElements(final String... elementIds) {
-    elementAssertj.hasActiveElements(getProcessInstanceKey(), elementIds);
+    elementAssertj.hasActiveElements(getProcessInstanceKey(), toElementSelectors(elementIds));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasActiveElements(final ElementSelector... elementSelectors) {
-    elementAssertj.hasActiveElements(getProcessInstanceKey(), elementSelectors);
+    elementAssertj.hasActiveElements(getProcessInstanceKey(), Arrays.asList(elementSelectors));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasCompletedElements(final String... elementIds) {
-    elementAssertj.hasCompletedElements(getProcessInstanceKey(), elementIds);
+    elementAssertj.hasCompletedElements(getProcessInstanceKey(), toElementSelectors(elementIds));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasCompletedElements(final ElementSelector... elementSelectors) {
-    elementAssertj.hasCompletedElements(getProcessInstanceKey(), elementSelectors);
+    elementAssertj.hasCompletedElements(getProcessInstanceKey(), Arrays.asList(elementSelectors));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasTerminatedElements(final String... elementIds) {
-    elementAssertj.hasTerminatedElements(getProcessInstanceKey(), elementIds);
+    elementAssertj.hasTerminatedElements(getProcessInstanceKey(), toElementSelectors(elementIds));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasTerminatedElements(final ElementSelector... elementSelectors) {
-    elementAssertj.hasTerminatedElements(getProcessInstanceKey(), elementSelectors);
+    elementAssertj.hasTerminatedElements(getProcessInstanceKey(), Arrays.asList(elementSelectors));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasActiveElement(final String elementId, final int times) {
-    elementAssertj.hasActiveElement(getProcessInstanceKey(), elementId, times);
+    elementAssertj.hasActiveElement(
+        getProcessInstanceKey(), elementSelector.apply(elementId), times);
     return this;
   }
 
@@ -150,7 +158,8 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert hasCompletedElement(final String elementId, final int times) {
-    elementAssertj.hasCompletedElement(getProcessInstanceKey(), elementId, times);
+    elementAssertj.hasCompletedElement(
+        getProcessInstanceKey(), elementSelector.apply(elementId), times);
     return this;
   }
 
@@ -163,7 +172,8 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert hasTerminatedElement(final String elementId, final int times) {
-    elementAssertj.hasTerminatedElement(getProcessInstanceKey(), elementId, times);
+    elementAssertj.hasTerminatedElement(
+        getProcessInstanceKey(), elementSelector.apply(elementId), times);
     return this;
   }
 
@@ -176,37 +186,40 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert hasNotActivatedElements(final String... elementIds) {
-    elementAssertj.hasNotActivatedElements(getProcessInstanceKey(), elementIds);
+    elementAssertj.hasNotActivatedElements(getProcessInstanceKey(), toElementSelectors(elementIds));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasNotActivatedElements(final ElementSelector... elementSelectors) {
-    elementAssertj.hasNotActivatedElements(getProcessInstanceKey(), elementSelectors);
+    elementAssertj.hasNotActivatedElements(
+        getProcessInstanceKey(), Arrays.asList(elementSelectors));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasNoActiveElements(final String... elementIds) {
-    elementAssertj.hasNoActiveElements(getProcessInstanceKey(), elementIds);
+    elementAssertj.hasNoActiveElements(getProcessInstanceKey(), toElementSelectors(elementIds));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasNoActiveElements(final ElementSelector... elementSelectors) {
-    elementAssertj.hasNoActiveElements(getProcessInstanceKey(), elementSelectors);
+    elementAssertj.hasNoActiveElements(getProcessInstanceKey(), Arrays.asList(elementSelectors));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasActiveElementsExactly(final String... elementIds) {
-    elementAssertj.hasActiveElementsExactly(getProcessInstanceKey(), elementIds);
+    elementAssertj.hasActiveElementsExactly(
+        getProcessInstanceKey(), toElementSelectors(elementIds));
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasActiveElementsExactly(final ElementSelector... elementSelectors) {
-    elementAssertj.hasActiveElementsExactly(getProcessInstanceKey(), elementSelectors);
+    elementAssertj.hasActiveElementsExactly(
+        getProcessInstanceKey(), Arrays.asList(elementSelectors));
     return this;
   }
 
@@ -225,6 +238,18 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
     variableAssertj.hasVariables(getProcessInstanceKey(), variables);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasNoActiveIncidents() {
+    incidentAssertj.hasNoActiveIncidents(getProcessInstanceKey());
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasActiveIncidents() {
+    incidentAssertj.hasActiveIncidents(getProcessInstanceKey());
     return this;
   }
 
@@ -305,5 +330,9 @@ public class ProcessInstanceAssertj
     } else {
       return state.name().toLowerCase();
     }
+  }
+
+  private List<ElementSelector> toElementSelectors(final String[] elementIds) {
+    return Arrays.stream(elementIds).map(elementSelector).collect(Collectors.toList());
   }
 }

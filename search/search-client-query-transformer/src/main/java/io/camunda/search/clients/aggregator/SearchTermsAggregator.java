@@ -8,15 +8,38 @@
 package io.camunda.search.clients.aggregator;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.List;
 import java.util.Objects;
 
-public record SearchTermsAggregator(String field, Integer size, Integer minDocCount) {
+public record SearchTermsAggregator(
+    String name,
+    String field,
+    Integer size,
+    Integer minDocCount,
+    List<SearchAggregator> aggregations)
+    implements SearchAggregator {
 
-  public static final class Builder implements ObjectBuilder<SearchTermsAggregator> {
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public List<SearchAggregator> getAggregations() {
+    return aggregations;
+  }
+
+  public static final class Builder extends SearchAggregator.AbstractBuilder<Builder>
+      implements ObjectBuilder<SearchTermsAggregator> {
 
     private String field;
     private Integer size = 10; // Default to 10 buckets
     private Integer minDocCount = 1; // Default to showing at least 1 document
+
+    @Override
+    protected Builder self() {
+      return this;
+    }
 
     public Builder field(final String value) {
       field = value;
@@ -40,9 +63,11 @@ public record SearchTermsAggregator(String field, Integer size, Integer minDocCo
     @Override
     public SearchTermsAggregator build() {
       return new SearchTermsAggregator(
-          Objects.requireNonNull(field, "Expected non-null field for terms aggregation."),
+          Objects.requireNonNull(name, "Expected non-null field for name."),
+          Objects.requireNonNull(field, "Expected non-null field for field."),
           size,
-          minDocCount);
+          minDocCount,
+          aggregations);
     }
   }
 }

@@ -13,6 +13,7 @@ export class Diagram {
   readonly diagram: Locator;
   readonly popover: Locator;
   readonly resetDiagramZoomButton: Locator;
+  readonly diagramSpinner: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -21,6 +22,7 @@ export class Diagram {
     this.resetDiagramZoomButton = this.page.getByRole('button', {
       name: /Reset diagram zoom/i,
     });
+    this.diagramSpinner = page.getByTestId('diagram-spinner');
   }
 
   async moveCanvasHorizontally(dx: number) {

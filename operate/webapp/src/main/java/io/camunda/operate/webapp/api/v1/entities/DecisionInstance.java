@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import java.util.List;
 import java.util.Objects;
 
@@ -52,7 +52,7 @@ public class DecisionInstance {
     return id;
   }
 
-  public DecisionInstance setId(String id) {
+  public DecisionInstance setId(final String id) {
     this.id = id;
     return this;
   }
@@ -61,7 +61,7 @@ public class DecisionInstance {
     return key;
   }
 
-  public DecisionInstance setKey(long key) {
+  public DecisionInstance setKey(final long key) {
     this.key = key;
     return this;
   }
@@ -70,7 +70,7 @@ public class DecisionInstance {
     return state;
   }
 
-  public DecisionInstance setState(DecisionInstanceState state) {
+  public DecisionInstance setState(final DecisionInstanceState state) {
     this.state = state;
     return this;
   }
@@ -79,7 +79,7 @@ public class DecisionInstance {
     return evaluationDate;
   }
 
-  public DecisionInstance setEvaluationDate(String evaluationDate) {
+  public DecisionInstance setEvaluationDate(final String evaluationDate) {
     this.evaluationDate = evaluationDate;
     return this;
   }
@@ -88,7 +88,7 @@ public class DecisionInstance {
     return evaluationFailure;
   }
 
-  public DecisionInstance setEvaluationFailure(String evaluationFailure) {
+  public DecisionInstance setEvaluationFailure(final String evaluationFailure) {
     this.evaluationFailure = evaluationFailure;
     return this;
   }
@@ -97,7 +97,7 @@ public class DecisionInstance {
     return processDefinitionKey;
   }
 
-  public DecisionInstance setProcessDefinitionKey(long processDefinitionKey) {
+  public DecisionInstance setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -106,7 +106,7 @@ public class DecisionInstance {
     return processInstanceKey;
   }
 
-  public DecisionInstance setProcessInstanceKey(long processInstanceKey) {
+  public DecisionInstance setProcessInstanceKey(final long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -115,7 +115,7 @@ public class DecisionInstance {
     return decisionId;
   }
 
-  public DecisionInstance setDecisionId(String decisionId) {
+  public DecisionInstance setDecisionId(final String decisionId) {
     this.decisionId = decisionId;
     return this;
   }
@@ -124,7 +124,7 @@ public class DecisionInstance {
     return decisionDefinitionId;
   }
 
-  public DecisionInstance setDecisionDefinitionId(String decisionDefinitionId) {
+  public DecisionInstance setDecisionDefinitionId(final String decisionDefinitionId) {
     this.decisionDefinitionId = decisionDefinitionId;
     return this;
   }
@@ -133,7 +133,7 @@ public class DecisionInstance {
     return decisionName;
   }
 
-  public DecisionInstance setDecisionName(String decisionName) {
+  public DecisionInstance setDecisionName(final String decisionName) {
     this.decisionName = decisionName;
     return this;
   }
@@ -142,7 +142,7 @@ public class DecisionInstance {
     return decisionVersion;
   }
 
-  public DecisionInstance setDecisionVersion(int decisionVersion) {
+  public DecisionInstance setDecisionVersion(final int decisionVersion) {
     this.decisionVersion = decisionVersion;
     return this;
   }
@@ -151,7 +151,7 @@ public class DecisionInstance {
     return decisionType;
   }
 
-  public DecisionInstance setDecisionType(DecisionType decisionType) {
+  public DecisionInstance setDecisionType(final DecisionType decisionType) {
     this.decisionType = decisionType;
     return this;
   }
@@ -160,7 +160,7 @@ public class DecisionInstance {
     return result;
   }
 
-  public DecisionInstance setResult(String result) {
+  public DecisionInstance setResult(final String result) {
     this.result = result;
     return this;
   }
@@ -169,7 +169,7 @@ public class DecisionInstance {
     return evaluatedInputs;
   }
 
-  public DecisionInstance setEvaluatedInputs(List<DecisionInstanceInput> evaluatedInputs) {
+  public DecisionInstance setEvaluatedInputs(final List<DecisionInstanceInput> evaluatedInputs) {
     this.evaluatedInputs = evaluatedInputs;
     return this;
   }
@@ -178,7 +178,7 @@ public class DecisionInstance {
     return evaluatedOutputs;
   }
 
-  public DecisionInstance setEvaluatedOutputs(List<DecisionInstanceOutput> evaluatedOutputs) {
+  public DecisionInstance setEvaluatedOutputs(final List<DecisionInstanceOutput> evaluatedOutputs) {
     this.evaluatedOutputs = evaluatedOutputs;
     return this;
   }
@@ -187,7 +187,7 @@ public class DecisionInstance {
     return tenantId;
   }
 
-  public DecisionInstance setTenantId(String tenantId) {
+  public DecisionInstance setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -214,7 +214,7 @@ public class DecisionInstance {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

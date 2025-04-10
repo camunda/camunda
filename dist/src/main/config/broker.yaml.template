@@ -677,6 +677,13 @@
       # Record positions defined to skip in this definition will be skipped in all exporters.
       # The value is a comma-separated list of records ids to skip. Whitespace is ignored.
       # skipRecords:
+      #
+      # Configures the rate at which exporter positions are distributed to the followers.
+      # This is useful for fail-over and taking snapshots. The follower is able to take snapshots based on
+      # replayed and distributed export position. When a follower takes over it can recover from the snapshot,
+      # it doesn't need to replay and export everything. It can for example can start from the last exported position it has received by the distribution mechanism.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPORTING_DISTRIBUTIONINTERVAL
+      # distributionInterval: 15s
 
     # exporters:
       # Configure exporters below
@@ -912,7 +919,6 @@
         #
         #   history:
         #     elsRolloverDateFormat: "date"
-        #     rolloverInterval: "1d"
         #     rolloverBatchSize: 100
         #     waitPeriodBeforeArchiving: "1h"
         #     delayBetweenRuns: 2000

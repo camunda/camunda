@@ -34,7 +34,7 @@ func Clean(camundaVersion string, elasticsearchVersion string) {
 	}
 }
 
-func downloadAndExtract(filePath, url, extractDir string, authToken string, extractFunc func(string, string) error) error {
+func downloadAndExtract(filePath, url, extractDir string, baseDir string, authToken string, extractFunc func(string, string) error) error {
 	err := archive.DownloadFile(filePath, url, authToken)
 	if err != nil {
 		return fmt.Errorf("downloadAndExtract: failed to download file at url %s\n%w\n%s", url, err, debug.Stack())
@@ -42,7 +42,7 @@ func downloadAndExtract(filePath, url, extractDir string, authToken string, extr
 
 	_, err = os.Stat(extractDir)
 	if errors.Is(err, os.ErrNotExist) {
-		err = extractFunc(filePath, ".")
+		err = extractFunc(filePath, baseDir)
 		if err != nil {
 			return fmt.Errorf("downloadAndExtract: failed to extract from archive at %s\n%w\n%s", filePath, err, debug.Stack())
 		}
@@ -50,31 +50,38 @@ func downloadAndExtract(filePath, url, extractDir string, authToken string, extr
 	return nil
 }
 
-func setOsSpecificValues() (string, string, string, func(string, string) error, error) {
+func setOsSpecificValues() (string, string, string, string, func(string, string) error, error) {
 	var architecture string
 	var osType string = runtime.GOOS
 	var pkgName string
+        var finalOutputExtension string
 	var extractFunc func(string, string) error
 
 	switch osType {
 	case "windows":
 		architecture = "x86_64"
 		pkgName = ".zip"
+                finalOutputExtension = ".zip"
 		extractFunc = archive.UnzipSource
-		return osType, architecture, pkgName, extractFunc, nil
+		return osType, architecture, pkgName, finalOutputExtension, extractFunc, nil
 	case "linux", "darwin":
 		pkgName = ".tar.gz"
+                if osType == "linux" {
+                        finalOutputExtension = ".tar.gz"
+                } else {
+                        finalOutputExtension = ".zip"
+                }
 		extractFunc = archive.ExtractTarGzArchive
 		if runtime.GOARCH == "amd64" {
 			architecture = "x86_64"
 		} else if runtime.GOARCH == "arm64" {
 			architecture = "aarch64"
 		} else {
-			return "", "", "", nil, fmt.Errorf("unsupported architecture: %s", runtime.GOARCH)
+			return "", "", "", "", nil, fmt.Errorf("unsupported architecture: %s", runtime.GOARCH)
 		}
-		return osType, architecture, pkgName, extractFunc, nil
+		return osType, architecture, pkgName, finalOutputExtension, extractFunc, nil
 	default:
-		return "", "", "", nil, fmt.Errorf("unsupported operating system: %s", osType)
+		return "", "", "", "", nil, fmt.Errorf("unsupported operating system: %s", osType)
 	}
 }
 
@@ -155,7 +162,7 @@ func BuildJavaScripts() error {
 }
 
 func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag string) error {
-	var osType, architecture, pkgName, extractFunc, err = setOsSpecificValues()
+	var osType, architecture, pkgName, finalOutputExtension, extractFunc, err = setOsSpecificValues()
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
@@ -167,9 +174,12 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 	camundaUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/camunda-zeebe/" + camundaVersion + "/camunda-zeebe-" + camundaVersion + pkgName
 	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
 	connectorsUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
-	composeUrl := "https://github.com/camunda/camunda-platform/archive/refs/tags/" + composeTag + pkgName
-	composeFilePath := composeTag + pkgName
-	composeExtractionPath := "camunda-platform-" + composeTag
+
+        composeUrl := "https://github.com/camunda/camunda-distributions/releases/download/docker-compose-" + composeTag + "/docker-compose-" + composeTag + ".zip"
+	composeFilePath := "docker-compose-" + composeTag + ".zip"
+        // just a file to check to see if it was already extracted
+	composeExtractionPath := "docker-compose-" + composeTag
+
 	authToken := os.Getenv("GH_TOKEN")
 
 
@@ -187,22 +197,22 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 
 	Clean(camundaVersion, elasticsearchVersion)
 
-	err = downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, "", extractFunc)
+	err = downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, ".", "", extractFunc)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, javaArtifactsToken, extractFunc)
+	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, ".", javaArtifactsToken, extractFunc)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch connectors: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, authToken, extractFunc)
+	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, composeExtractionPath, authToken, archive.UnzipSource)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch compose release %w\n%s", err, debug.Stack())
 	}
@@ -213,10 +223,10 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 	}
 
 	filesToArchive := getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion, composeExtractionPath)
-	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + pkgName
+	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + finalOutputExtension
 	outputPath := filepath.Join("c8run", outputFileName)
 
-	if osType == "linux" || osType == "darwin" {
+	if osType == "linux" {
 		if err := createTarGzArchive(filesToArchive, outputPath); err != nil {
 			return fmt.Errorf("Package %s: %w", osType, err)
 		}

@@ -15,31 +15,31 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
-import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.io.IOException;
@@ -79,6 +79,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
   Map<Class<? extends ExporterEntity>, String> entityToAliasMap;
+  @Autowired private SearchEngineConfiguration searchEngineConfiguration;
   @Autowired private ListViewTemplate listViewTemplate;
 
   @Autowired
@@ -95,7 +96,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
-  @Autowired private SchemaManager schemaManager;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
@@ -111,6 +111,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       indexPrefix =
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
+      searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
     if (operateProperties.getOpensearch().isCreateSchema()) {
       final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, false);
@@ -123,12 +124,14 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void finished(final Description description) {
-    TestUtil.removeIlmPolicy(richOpenSearchClient);
     final String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
     TestUtil.removeAllIndices(
         richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
     operateProperties
         .getOpensearch()
+        .setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
+    searchEngineConfiguration
+        .connect()
         .setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(15);
   }
@@ -162,7 +165,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     try {
       richOpenSearchClient
           .index()
-          .refresh(operateProperties.getOpensearch().getIndexPrefix() + "*");
+          .refresh(searchEngineConfiguration.connect().getIndexPrefix() + "*");
       Thread.sleep(3000); // TODO: Find a way to wait for refresh completion
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Operate Opensearch indices", t);

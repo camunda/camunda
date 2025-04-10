@@ -23,7 +23,7 @@ import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyPro
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;

@@ -31,13 +31,13 @@ public class MappingWriter {
             mapping));
   }
 
-  public void delete(final Long mappingKey) {
+  public void delete(final String mappingId) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.MAPPING,
             WriteStatementType.DELETE,
-            mappingKey,
+            mappingId,
             "io.camunda.db.rdbms.sql.MappingMapper.delete",
-            mappingKey));
+            mappingId));
   }
 }

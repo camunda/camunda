@@ -13,13 +13,15 @@ import {useLocation} from 'react-router-dom';
 import {StateProps} from 'modules/components/ModalStateManager';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
 import {Title, DataTable} from './styled';
 import useOperationApply from '../../useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
+import {getFlowNodeName} from 'modules/utils/flowNodes';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
@@ -33,12 +35,19 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
     const processName = process?.name ?? process?.bpmnProcessId ?? 'Process';
     const {selectedTargetFlowNodeId: targetFlowNodeId} =
       batchModificationStore.state;
-    const sourceFlowNodeName = sourceFlowNodeId
-      ? processXmlStore.getFlowNodeName(sourceFlowNodeId)
-      : undefined;
-    const targetFlowNodeName = targetFlowNodeId
-      ? processXmlStore.getFlowNodeName(targetFlowNodeId)
-      : undefined;
+
+    const processDefinitionKey = useProcessDefinitionKeyContext();
+    const {data: processDefinitionData} = useListViewXml({
+      processDefinitionKey,
+    });
+    const sourceFlowNodeName = getFlowNodeName({
+      diagramModel: processDefinitionData?.diagramModel,
+      flowNodeId: sourceFlowNodeId,
+    });
+    const targetFlowNodeName = getFlowNodeName({
+      diagramModel: processDefinitionData?.diagramModel,
+      flowNodeId: targetFlowNodeId ?? undefined,
+    });
     const instancesCount =
       processStatisticsBatchModificationStore.getInstancesCount(
         sourceFlowNodeId,

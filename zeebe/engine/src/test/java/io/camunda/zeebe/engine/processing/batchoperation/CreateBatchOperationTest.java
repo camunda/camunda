@@ -9,28 +9,23 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
-public final class CreateBatchOperationTest {
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
 
   @Test
   public void shouldRejectWithoutFilter() {
@@ -38,7 +33,7 @@ public final class CreateBatchOperationTest {
     final var batchOperationKey =
         engine
             .batchOperation()
-            .ofType(BatchOperationType.PROCESS_CANCELLATION)
+            .newCreation(BatchOperationType.PROCESS_CANCELLATION)
             .withFilter(new UnsafeBuffer())
             .expectRejection()
             .create()
@@ -62,7 +57,7 @@ public final class CreateBatchOperationTest {
     final var batchOperationKey =
         engine
             .batchOperation()
-            .ofType(BatchOperationType.PROCESS_CANCELLATION)
+            .newCreation(BatchOperationType.PROCESS_CANCELLATION)
             .withFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}")))
             .expectRejection()
             .create()
@@ -81,16 +76,31 @@ public final class CreateBatchOperationTest {
   }
 
   @Test
-  public void shouldCreateBatchOperation() {
+  public void shouldCreateAndInitBatchOperation() {
     // given
-    final String filter = "{\"processInstanceKeys\":[1,3,8]}";
+    final var filterBuffer =
+        convertToBuffer(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
+
+    // given
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(1L),
+                    mockProcessInstanceEntity(2L),
+                    mockProcessInstanceEntity(3L)))
+            .total(3)
+            .build();
+    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(result);
 
     // when
     final long batchOperationKey =
         engine
             .batchOperation()
-            .ofType(BatchOperationType.PROCESS_CANCELLATION)
-            .withFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .newCreation(BatchOperationType.PROCESS_CANCELLATION)
+            .withFilter(filterBuffer)
             .create()
             .getValue()
             .getBatchOperationKey();
@@ -101,13 +111,10 @@ public final class CreateBatchOperationTest {
                 .withBatchOperationKey(batchOperationKey))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.CREATED);
+
     assertThat(
-            RecordingExporter.batchOperationCreationRecords()
-                .withBatchOperationKey(batchOperationKey)
-                .withIntent(BatchOperationIntent.CREATED)
-                .getFirst()
-                .getValue()
-                .getEntityFilter())
-        .isEqualTo(filter);
+            RecordingExporter.batchOperationChunkRecords().withBatchOperationKey(batchOperationKey))
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationChunkIntent.CREATE, BatchOperationChunkIntent.CREATED);
   }
 }

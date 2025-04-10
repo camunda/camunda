@@ -18,7 +18,22 @@ import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.GroupCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.GroupEntityAddedApplier;
+import io.camunda.zeebe.engine.state.appliers.MappingCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.RoleCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.RoleEntityAddedApplier;
+import io.camunda.zeebe.engine.state.appliers.TenantCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.TenantEntityAddedApplier;
+import io.camunda.zeebe.engine.state.appliers.UserCreatedApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -28,33 +43,55 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestWatcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-public class AuthorizationCheckBehaviorTest {
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
-  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+@ExtendWith(ProcessingStateExtension.class)
+final class AuthorizationCheckBehaviorTest {
+
+  @SuppressWarnings("unused") // injected by the extension
+  private MutableProcessingState processingState;
+
   private AuthorizationCheckBehavior authorizationCheckBehavior;
+  private UserCreatedApplier userCreatedApplier;
+  private MappingCreatedApplier mappingCreatedApplier;
+  private AuthorizationCreatedApplier authorizationCreatedApplier;
+  private GroupCreatedApplier groupCreatedApplier;
+  private GroupEntityAddedApplier groupEntityAddedApplier;
+  private TenantCreatedApplier tenantCreatedApplier;
+  private TenantEntityAddedApplier tenantEntityAddedApplier;
+  private RoleCreatedApplier roleCreatedApplier;
+  private RoleEntityAddedApplier roleEntityAddedApplier;
+  private final Random random = new Random();
 
-  @Before
+  @BeforeEach
   public void before() {
-    final var processingState = engine.getProcessingState();
     final var securityConfig = new SecurityConfiguration();
     final var authConfig = new AuthorizationsConfiguration();
     authConfig.setEnabled(true);
     securityConfig.setAuthorizations(authConfig);
     authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
+
+    userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
+    mappingCreatedApplier = new MappingCreatedApplier(processingState.getMappingState());
+    authorizationCreatedApplier =
+        new AuthorizationCreatedApplier(processingState.getAuthorizationState());
+    groupCreatedApplier = new GroupCreatedApplier(processingState.getGroupState());
+    groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
+    tenantCreatedApplier = new TenantCreatedApplier(processingState.getTenantState());
+    tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
+    roleCreatedApplier = new RoleCreatedApplier(processingState.getRoleState());
+    roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);
   }
 
   @Test
-  public void shouldBeAuthorizedWhenUserHasPermission() {
+  void shouldBeAuthorizedWhenUserHasPermission() {
     // given
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -67,14 +104,14 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorized = runTaskInActor(() -> authorizationCheckBehavior.isAuthorized(request));
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
     assertThat(authorized.isRight()).isTrue();
   }
 
   @Test
-  public void shouldNotBeAuthorizedWhenUserHasNoPermission() {
+  void shouldNotBeAuthorizedWhenUserHasNoPermission() {
     // given
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -92,7 +129,7 @@ public class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  public void shouldGetResourceIdentifiersWhenUserHasPermissions() {
+  void shouldGetResourceIdentifiersWhenUserHasPermissions() {
     // given
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -118,7 +155,7 @@ public class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  public void shouldGetEmptySetWhenUserHasNoPermissions() {
+  void shouldGetEmptySetWhenUserHasNoPermissions() {
     // given
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -135,10 +172,10 @@ public class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  public void shouldBeAuthorizedWhenRoleHasPermissions() {
+  void shouldBeAuthorizedWhenRoleHasPermissions() {
     // given
     final var user = createUser();
-    final var roleKey = createRole(user.getUserKey());
+    final var roleKey = createRole(user.getUserKey(), EntityType.USER);
     final var roleId = String.valueOf(roleKey);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
@@ -156,10 +193,10 @@ public class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  public void shouldGetResourceIdentifiersWhenRoleHasPermissions() {
+  void shouldGetResourceIdentifiersWhenRoleHasPermissions() {
     // given
     final var user = createUser();
-    final var roleKey = createRole(user.getUserKey());
+    final var roleKey = createRole(user.getUserKey(), EntityType.USER);
     final var roleId = String.valueOf(roleKey);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
@@ -205,7 +242,7 @@ public class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  public void shouldGetResourceIdentifiersWhenGroupHasPermissions() {
+  void shouldGetResourceIdentifiersWhenGroupHasPermissions() {
     // given
     final var user = createUser();
     final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
@@ -233,7 +270,7 @@ public class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  public void shouldBeAuthorizedWhenAnonymousAuthenticationProvided() {
+  void shouldBeAuthorizedWhenAnonymousAuthenticationProvided() {
     // given
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -246,175 +283,137 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorized = runTaskInActor(() -> authorizationCheckBehavior.isAuthorized(request));
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
     assertThat(authorized.isRight()).isTrue();
   }
 
   @Test
-  public void shouldBeAuthorizedWhenMappingHasPermission() {
+  void shouldBeAuthorizedWhenMappingHasPermission() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mapping =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    final var mapping = createMapping(claimName, claimValue);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getId(), AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+        mapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorized = runTaskInActor(() -> authorizationCheckBehavior.isAuthorized(request));
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
     EitherAssert.assertThat(authorized).isRight();
   }
 
   @Test
-  public void shouldBeAuthorizedWhenMappingIsAuthorizedThroughGroup() {
+  void shouldBeAuthorizedWhenMappingIsAuthorizedThroughGroup() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingKey =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getKey();
-    final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
-    engine
-        .group()
-        .addEntity(groupKey)
-        .withEntityType(EntityType.MAPPING)
-        .withEntityKey(mappingKey)
-        .add();
+    final var mappingKey = createMapping(claimName, claimValue).getMappingKey();
+    final var groupKey = createGroup(mappingKey, EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    engine
-        .authorization()
-        .newAuthorization()
-        .withPermissions(permissionType)
-        .withOwnerId(String.valueOf(groupKey))
-        .withOwnerType(AuthorizationOwnerType.GROUP)
-        .withResourceType(resourceType)
-        .withResourceId(resourceId)
-        .create();
+    addPermission(
+        String.valueOf(groupKey),
+        AuthorizationOwnerType.GROUP,
+        resourceType,
+        permissionType,
+        resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorized = runTaskInActor(() -> authorizationCheckBehavior.isAuthorized(request));
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
     EitherAssert.assertThat(authorized).isRight();
   }
 
   @Test
-  public void shouldBeAuthorizedWhenMappingIsAuthorizedThroughRole() {
+  void shouldBeAuthorizedWhenMappingIsAuthorizedThroughRole() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingKey =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getKey();
-    final var roleKey = engine.role().newRole("role").create().getKey();
-    engine
-        .role()
-        .addEntity(roleKey)
-        .withEntityType(EntityType.MAPPING)
-        .withEntityKey(mappingKey)
-        .add();
+    final var mappingKey = createMapping(claimName, claimValue).getMappingKey();
+    final var roleKey = createRole(mappingKey, EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    engine
-        .authorization()
-        .newAuthorization()
-        .withOwnerId(String.valueOf(roleKey))
-        .withOwnerType(AuthorizationOwnerType.ROLE)
-        .withResourceType(resourceType)
-        .withResourceId(resourceId)
-        .withPermissions(permissionType)
-        .create();
+    addPermission(
+        String.valueOf(roleKey),
+        AuthorizationOwnerType.ROLE,
+        resourceType,
+        permissionType,
+        resourceId);
+
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
-    final var authorized = runTaskInActor(() -> authorizationCheckBehavior.isAuthorized(request));
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
     EitherAssert.assertThat(authorized).isRight();
   }
 
   @Test
-  public void shouldNotBeAuthorizedWhenMappingHasNoPermission() {
+  void shouldNotBeAuthorizedWhenMappingHasNoPermission() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    createMapping(claimName, claimValue);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     final var request =
         new AuthorizationRequest(command, AuthorizationResourceType.RESOURCE, PermissionType.DELETE)
             .addResourceId(UUID.randomUUID().toString());
-    final var authorized = runTaskInActor(() -> authorizationCheckBehavior.isAuthorized(request));
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
     EitherAssert.assertThat(authorized).isLeft();
   }
 
   @Test
-  public void shouldBeAuthorizedThroughMultipleMappings() {
+  void shouldBeAuthorizedThroughMultipleMappings() {
     // given
     final var firstClaimName = UUID.randomUUID().toString();
     final var firstClaimValue = UUID.randomUUID().toString();
-    final var firstMappingId =
-        engine
-            .mapping()
-            .newMapping(firstClaimName)
-            .withClaimValue(firstClaimValue)
-            .withId(UUID.randomUUID().toString())
-            .create()
-            .getValue()
-            .getId();
+    final var firstMapping = createMapping(firstClaimName, firstClaimValue);
     final var secondClaimName = UUID.randomUUID().toString();
     final var secondClaimValue = UUID.randomUUID().toString();
-    final var secondMappingId =
-        engine
-            .mapping()
-            .newMapping(secondClaimName)
-            .withClaimValue(secondClaimValue)
-            .withId(UUID.randomUUID().toString())
-            .create()
-            .getValue()
-            .getId();
+    final var secondMapping = createMapping(secondClaimName, secondClaimValue);
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var firstResourceId = UUID.randomUUID().toString();
     final var secondResourceId = UUID.randomUUID().toString();
-    engine
-        .authorization()
-        .newAuthorization()
-        .withOwnerId(String.valueOf(firstMappingId))
-        .withOwnerType(AuthorizationOwnerType.MAPPING)
-        .withResourceType(resourceType)
-        .withPermissions(permissionType)
-        .withResourceId(firstResourceId)
-        .create();
-    engine
-        .authorization()
-        .newAuthorization()
-        .withOwnerId(String.valueOf(secondMappingId))
-        .withOwnerType(AuthorizationOwnerType.MAPPING)
-        .withResourceType(resourceType)
-        .withPermissions(permissionType)
-        .withResourceId(secondResourceId)
-        .create();
+    addPermission(
+        String.valueOf(firstMapping.getMappingId()),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        firstResourceId);
+    addPermission(
+        String.valueOf(secondMapping.getMappingId()),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        secondResourceId);
 
     // when
     final var command = mock(TypedRecord.class);
@@ -429,68 +428,42 @@ public class AuthorizationCheckBehaviorTest {
 
     // then
     EitherAssert.assertThat(
-            runTaskInActor(
-                () ->
-                    authorizationCheckBehavior.isAuthorized(
-                        new AuthorizationRequest(command, resourceType, permissionType)
-                            .addResourceId(firstResourceId))))
+            authorizationCheckBehavior.isAuthorized(
+                new AuthorizationRequest(command, resourceType, permissionType)
+                    .addResourceId(firstResourceId)))
         .isRight();
     EitherAssert.assertThat(
-            runTaskInActor(
-                () ->
-                    authorizationCheckBehavior.isAuthorized(
-                        new AuthorizationRequest(command, resourceType, permissionType)
-                            .addResourceId(secondResourceId))))
+            authorizationCheckBehavior.isAuthorized(
+                new AuthorizationRequest(command, resourceType, permissionType)
+                    .addResourceId(secondResourceId)))
         .isRight();
   }
 
   @Test
-  public void shouldBeAuthorizedThroughMappingWithMultipleClaimValues() {
+  void shouldBeAuthorizedThroughMappingWithMultipleClaimValues() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var firstClaimValue = UUID.randomUUID().toString();
-    final var firstMappingId =
-        engine
-            .mapping()
-            .newMapping(claimName)
-            .withClaimValue(firstClaimValue)
-            .withId(UUID.randomUUID().toString())
-            .create()
-            .getValue()
-            .getId();
+    final var firstMapping = createMapping(claimName, firstClaimValue);
     final var secondClaimValue = UUID.randomUUID().toString();
-    final var secondMappingId =
-        engine
-            .mapping()
-            .newMapping(claimName)
-            .withClaimValue(secondClaimValue)
-            .withId(UUID.randomUUID().toString())
-            .create()
-            .getValue()
-            .getId();
+    final var secondMapping = createMapping(claimName, secondClaimValue);
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var firstResourceId = UUID.randomUUID().toString();
     final var secondResourceId = UUID.randomUUID().toString();
-    engine
-        .authorization()
-        .newAuthorization()
-        .withOwnerId(String.valueOf(firstMappingId))
-        .withOwnerType(AuthorizationOwnerType.MAPPING)
-        .withResourceType(resourceType)
-        .withPermissions(permissionType)
-        .withResourceId(firstResourceId)
-        .create();
-    engine
-        .authorization()
-        .newAuthorization()
-        .withOwnerId(String.valueOf(secondMappingId))
-        .withOwnerType(AuthorizationOwnerType.MAPPING)
-        .withResourceType(resourceType)
-        .withPermissions(permissionType)
-        .withResourceId(secondResourceId)
-        .create();
+    addPermission(
+        firstMapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        firstResourceId);
+    addPermission(
+        secondMapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        secondResourceId);
 
     // when
     final var command = mock(TypedRecord.class);
@@ -502,107 +475,97 @@ public class AuthorizationCheckBehaviorTest {
 
     // then
     EitherAssert.assertThat(
-            runTaskInActor(
-                () ->
-                    authorizationCheckBehavior.isAuthorized(
-                        new AuthorizationRequest(command, resourceType, permissionType)
-                            .addResourceId(firstResourceId))))
+            authorizationCheckBehavior.isAuthorized(
+                new AuthorizationRequest(command, resourceType, permissionType)
+                    .addResourceId(firstResourceId)))
         .isRight();
     EitherAssert.assertThat(
-            runTaskInActor(
-                () ->
-                    authorizationCheckBehavior.isAuthorized(
-                        new AuthorizationRequest(command, resourceType, permissionType)
-                            .addResourceId(secondResourceId))))
+            authorizationCheckBehavior.isAuthorized(
+                new AuthorizationRequest(command, resourceType, permissionType)
+                    .addResourceId(secondResourceId)))
         .isRight();
   }
 
   @Test
-  public void shouldGetAuthorizationsForMapping() {
+  void shouldGetAuthorizationsForMapping() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mapping =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    final var mapping = createMapping(claimName, claimValue);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getId(), AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+        mapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
     final var authorizations =
-        runTaskInActor(
-            () -> authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request));
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
   }
 
   @Test
-  public void shouldGetAuthorizationsForMappingThroughAssignedRole() {
+  void shouldGetAuthorizationsForMappingThroughAssignedRole() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mapping =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    final var mapping = createMapping(claimName, claimValue);
     final var mappingKey = mapping.getMappingKey();
-    final var roleKey = engine.role().newRole(UUID.randomUUID().toString()).create().getKey();
-    final var roleId = String.valueOf(roleKey);
-    engine
-        .role()
-        .addEntity(roleKey)
-        .withEntityType(EntityType.MAPPING)
-        .withEntityKey(mappingKey)
-        .add();
+    final var roleKey = createRole(mappingKey, EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    addPermission(roleId, AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+    addPermission(
+        String.valueOf(roleKey),
+        AuthorizationOwnerType.ROLE,
+        resourceType,
+        permissionType,
+        resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
     final var authorizations =
-        runTaskInActor(
-            () -> authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request));
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
   }
 
   @Test
-  public void shouldGetAuthorizationsForMappingThroughAssignedGroup() {
+  void shouldGetAuthorizationsForMappingThroughAssignedGroup() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mapping =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    final var mapping = createMapping(claimName, claimValue);
     final var mappingKey = mapping.getMappingKey();
-    final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
-    final var groupId = String.valueOf(groupKey);
-    engine
-        .group()
-        .addEntity(groupKey)
-        .withEntityType(EntityType.MAPPING)
-        .withEntityKey(mappingKey)
-        .add();
+    final var groupKey = createGroup(mappingKey, EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    addPermission(groupId, AuthorizationOwnerType.GROUP, resourceType, permissionType, resourceId);
+    addPermission(
+        String.valueOf(groupKey),
+        AuthorizationOwnerType.GROUP,
+        resourceType,
+        permissionType,
+        resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
     final var authorizations =
-        runTaskInActor(
-            () -> authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request));
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
@@ -617,46 +580,60 @@ public class AuthorizationCheckBehaviorTest {
   }
 
   private UserRecordValue createUser() {
-    return engine
-        .user()
-        .newUser(UUID.randomUUID().toString())
-        .withName(UUID.randomUUID().toString())
-        .withEmail(UUID.randomUUID().toString())
-        .withPassword(UUID.randomUUID().toString())
-        .create()
-        .getValue();
+    final var userKey = random.nextLong();
+    final var user =
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(Strings.newRandomValidUsername())
+            .setName(UUID.randomUUID().toString())
+            .setEmail(UUID.randomUUID().toString())
+            .setPassword(UUID.randomUUID().toString());
+    userCreatedApplier.applyState(userKey, user);
+    return user;
   }
 
-  private long createRole(final long userKey) {
-    final var roleKey = engine.role().newRole(UUID.randomUUID().toString()).create().getKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+  private long createRole(final long entityKey, final EntityType entityType) {
+    final var roleKey = random.nextLong();
+    final var role =
+        new RoleRecord()
+            .setRoleKey(roleKey)
+            .setRoleId(Strings.newRandomValidIdentityId())
+            .setName(UUID.randomUUID().toString())
+            .setDescription(UUID.randomUUID().toString())
+            .setEntityKey(entityKey)
+            .setEntityType(entityType);
+    roleCreatedApplier.applyState(roleKey, role);
+    roleEntityAddedApplier.applyState(roleKey, role);
     return roleKey;
   }
 
   private long createGroup(final long entityKey, final EntityType entityType) {
-    final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
-    engine.group().addEntity(groupKey).withEntityKey(entityKey).withEntityType(entityType).add();
+    final var groupKey = random.nextLong();
+    final var groupId = String.valueOf(groupKey);
+    final var group =
+        new GroupRecord()
+            .setGroupKey(groupKey)
+            .setGroupId(groupId)
+            .setName(UUID.randomUUID().toString())
+            .setDescription(UUID.randomUUID().toString())
+            .setEntityKey(entityKey)
+            .setEntityType(entityType);
+    groupCreatedApplier.applyState(groupKey, group);
+    groupEntityAddedApplier.applyState(groupKey, group);
     return groupKey;
   }
 
   private MappingRecordValue createMapping(final String claimName, final String claimValue) {
-    return engine
-        .mapping()
-        .newMapping(claimName)
-        .withClaimValue(claimValue)
-        .withId(Strings.newRandomValidIdentityId())
-        .create()
-        .getValue();
-  }
-
-  // TODO remove this method once Mappings and Groups are migrated to work with ids instead of
-  private void addPermission(
-      final Long ownerKey,
-      final AuthorizationOwnerType ownerType,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String... resourceIds) {
-    addPermission(String.valueOf(ownerKey), ownerType, resourceType, permissionType, resourceIds);
+    final var mappingKey = random.nextLong();
+    final var mapping =
+        new MappingRecord()
+            .setMappingKey(mappingKey)
+            .setMappingId(Strings.newRandomValidIdentityId())
+            .setName(Strings.newRandomValidUsername())
+            .setClaimName(claimName)
+            .setClaimValue(claimValue);
+    mappingCreatedApplier.applyState(mappingKey, mapping);
+    return mapping;
   }
 
   private void addPermission(
@@ -666,15 +643,16 @@ public class AuthorizationCheckBehaviorTest {
       final PermissionType permissionType,
       final String... resourceIds) {
     for (final String resourceId : resourceIds) {
-      engine
-          .authorization()
-          .newAuthorization()
-          .withPermissions(permissionType)
-          .withOwnerId(ownerId)
-          .withOwnerType(ownerType)
-          .withResourceType(resourceType)
-          .withResourceId(resourceId)
-          .create();
+      final var authorizationKey = random.nextLong();
+      final var authorization =
+          new AuthorizationRecord()
+              .setAuthorizationKey(authorizationKey)
+              .setOwnerId(ownerId)
+              .setOwnerType(ownerType)
+              .setResourceId(resourceId)
+              .setResourceType(resourceType)
+              .setPermissionTypes(Set.of(permissionType));
+      authorizationCreatedApplier.applyState(authorizationKey, authorization);
     }
   }
 
@@ -690,9 +668,5 @@ public class AuthorizationCheckBehaviorTest {
     when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_ANONYMOUS_USER, true));
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
-  }
-
-  private <A> A runTaskInActor(final Supplier<A> supplier) {
-    return engine.getStreamProcessor(1).call(supplier::get).join();
   }
 }

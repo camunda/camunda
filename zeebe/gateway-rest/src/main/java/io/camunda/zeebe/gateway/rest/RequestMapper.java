@@ -39,8 +39,6 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.entity.CamundaPrincipal;
-import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.filter.AdHocSubprocessActivityFilter;
@@ -54,6 +52,7 @@ import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
+import io.camunda.service.GroupServices.CreateGroupRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MappingServices.MappingDTO;
@@ -65,6 +64,9 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.RoleMemberRequest;
+import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
@@ -87,6 +89,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
@@ -119,6 +122,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
@@ -302,31 +306,52 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
-      final RoleUpdateRequest roleUpdateRequest, final long roleKey) {
+      final RoleUpdateRequest roleUpdateRequest, final String roleId) {
     return getResult(
         RoleRequestValidator.validateUpdateRequest(roleUpdateRequest),
-        () -> new UpdateRoleRequest(roleKey, roleUpdateRequest.getChangeset().getName()));
+        () ->
+            new UpdateRoleRequest(
+                roleId, roleUpdateRequest.getName(), roleUpdateRequest.getDescription()));
   }
 
   public static Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
       final RoleCreateRequest roleCreateRequest) {
     return getResult(
         RoleRequestValidator.validateCreateRequest(roleCreateRequest),
-        () -> new CreateRoleRequest(roleCreateRequest.getName()));
+        () ->
+            new CreateRoleRequest(
+                roleCreateRequest.getRoleId(),
+                roleCreateRequest.getName(),
+                roleCreateRequest.getDescription()));
+  }
+
+  public static Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
+      final String roleId, final String memberId, final EntityType entityType) {
+    return getResult(
+        RoleRequestValidator.validateMemberRequest(roleId, memberId, entityType),
+        () -> new RoleMemberRequest(roleId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
       final GroupCreateRequest groupCreateRequest) {
     return getResult(
         GroupRequestValidator.validateCreateRequest(groupCreateRequest),
-        () -> new CreateGroupRequest(groupCreateRequest.getName()));
+        () ->
+            new CreateGroupRequest(
+                groupCreateRequest.getGroupId(),
+                groupCreateRequest.getName(),
+                groupCreateRequest.getDescription()));
   }
 
   public static Either<ProblemDetail, UpdateGroupRequest> toGroupUpdateRequest(
-      final GroupUpdateRequest groupUpdateRequest, final long groupKey) {
+      final GroupUpdateRequest groupUpdateRequest, final String groupId) {
     return getResult(
         GroupRequestValidator.validateUpdateRequest(groupUpdateRequest),
-        () -> new UpdateGroupRequest(groupKey, groupUpdateRequest.getChangeset().getName()));
+        () ->
+            new UpdateGroupRequest(
+                groupId,
+                groupUpdateRequest.getChangeset().getName(),
+                groupUpdateRequest.getChangeset().getDescription()));
   }
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
@@ -460,7 +485,16 @@ public class RequestMapper {
                 request.getClaimName(),
                 request.getClaimValue(),
                 request.getName(),
-                request.getId()));
+                request.getMappingId()));
+  }
+
+  public static Either<ProblemDetail, MappingDTO> toMappingDTO(
+      final String mappingId, final MappingRuleUpdateRequest request) {
+    return getResult(
+        validateMappingRequest(request),
+        () ->
+            new MappingDTO(
+                request.getClaimName(), request.getClaimValue(), request.getName(), mappingId));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -564,24 +598,24 @@ public class RequestMapper {
 
   public static Authentication getAuthentication() {
     String authenticatedUsername = null;
+    final Map<String, Object> claims = new HashMap<>();
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
-    final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
+    final List<String> authenticatedTenantIds = new ArrayList<>();
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
-
-    final Map<String, Object> claims = new HashMap<>();
-
     if (requestAuthentication != null) {
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaPrincipal authenticatedPrincipal) {
+        final var authenticationContext = authenticatedPrincipal.getAuthenticationContext();
+
         authenticatedRoleKeys.addAll(
-            authenticatedPrincipal.getAuthenticationContext().roles().stream()
-                .map(RoleEntity::roleKey)
-                .toList());
-        if (authenticatedPrincipal instanceof final CamundaUser user) {
-          authenticatedUsername = user.getUsername();
-          claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
-        }
+            authenticationContext.roles().stream().map(RoleEntity::roleKey).toList());
+
+        authenticatedTenantIds.addAll(
+            authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
+
+        authenticatedUsername = authenticationContext.username();
+        claims.put(Authorization.AUTHORIZED_USERNAME, authenticationContext.username());
       }
 
       if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
@@ -595,7 +629,7 @@ public class RequestMapper {
         .claims(claims)
         .user(authenticatedUsername)
         .roleKeys(authenticatedRoleKeys)
-        .tenants(authorizedTenants)
+        .tenants(authenticatedTenantIds)
         .build();
   }
 
@@ -997,11 +1031,5 @@ public class RequestMapper {
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
 
-  public record CreateRoleRequest(String name) {}
-
-  public record UpdateRoleRequest(long roleKey, String name) {}
-
-  public record CreateGroupRequest(String name) {}
-
-  public record UpdateGroupRequest(long groupKey, String name) {}
+  public record UpdateGroupRequest(String groupId, String name, String description) {}
 }

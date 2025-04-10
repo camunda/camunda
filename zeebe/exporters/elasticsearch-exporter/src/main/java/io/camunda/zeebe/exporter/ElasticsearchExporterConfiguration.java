@@ -29,6 +29,7 @@ public class ElasticsearchExporterConfiguration {
   public final RetentionConfiguration retention = new RetentionConfiguration();
   public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+  private boolean exportLegacyRecords = false;
 
   public boolean hasAuthenticationPresent() {
     return getAuthentication().isPresent();
@@ -69,93 +70,80 @@ public class ElasticsearchExporterConfiguration {
   }
 
   public boolean shouldIndexValueType(final ValueType valueType) {
-    switch (valueType) {
-      case DEPLOYMENT:
-        return index.deployment;
-      case PROCESS:
-        return index.process;
-      case ERROR:
-        return index.error;
-      case INCIDENT:
-        return index.incident;
-      case JOB:
-        return index.job;
-      case JOB_BATCH:
-        return index.jobBatch;
-      case MESSAGE:
-        return index.message;
-      case MESSAGE_BATCH:
-        return index.messageBatch;
-      case MESSAGE_SUBSCRIPTION:
-        return index.messageSubscription;
-      case VARIABLE:
-        return index.variable;
-      case VARIABLE_DOCUMENT:
-        return index.variableDocument;
-      case PROCESS_INSTANCE:
-        return index.processInstance;
-      case PROCESS_INSTANCE_BATCH:
-        return index.processInstanceBatch;
-      case PROCESS_INSTANCE_CREATION:
-        return index.processInstanceCreation;
-      case PROCESS_INSTANCE_MIGRATION:
-        return index.processInstanceMigration;
-      case PROCESS_INSTANCE_MODIFICATION:
-        return index.processInstanceModification;
-      case PROCESS_MESSAGE_SUBSCRIPTION:
-        return index.processMessageSubscription;
-      case DECISION_REQUIREMENTS:
-        return index.decisionRequirements;
-      case DECISION:
-        return index.decision;
-      case DECISION_EVALUATION:
-        return index.decisionEvaluation;
-      case CHECKPOINT:
-        return index.checkpoint;
-      case TIMER:
-        return index.timer;
-      case MESSAGE_START_EVENT_SUBSCRIPTION:
-        return index.messageStartEventSubscription;
-      case PROCESS_EVENT:
-        return index.processEvent;
-      case DEPLOYMENT_DISTRIBUTION:
-        return index.deploymentDistribution;
-      case ESCALATION:
-        return index.escalation;
-      case SIGNAL:
-        return index.signal;
-      case SIGNAL_SUBSCRIPTION:
-        return index.signalSubscription;
-      case RESOURCE_DELETION:
-        return index.resourceDeletion;
-      case COMMAND_DISTRIBUTION:
-        return index.commandDistribution;
-      case FORM:
-        return index.form;
-      case USER_TASK:
-        return index.userTask;
-      case COMPENSATION_SUBSCRIPTION:
-        return index.compensationSubscription;
-      case MESSAGE_CORRELATION:
-        return index.messageCorrelation;
-      case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION:
-        return index.adHocSubProcessActivityActivation;
-      default:
-        return false;
-    }
+    return switch (valueType) {
+      case DEPLOYMENT -> index.deployment;
+      case PROCESS -> index.process;
+      case ERROR -> index.error;
+      case INCIDENT -> index.incident;
+      case JOB -> index.job;
+      case JOB_BATCH -> index.jobBatch;
+      case MESSAGE -> index.message;
+      case MESSAGE_BATCH -> index.messageBatch;
+      case MESSAGE_SUBSCRIPTION -> index.messageSubscription;
+      case VARIABLE -> index.variable;
+      case VARIABLE_DOCUMENT -> index.variableDocument;
+      case PROCESS_INSTANCE -> index.processInstance;
+      case PROCESS_INSTANCE_BATCH -> index.processInstanceBatch;
+      case PROCESS_INSTANCE_CREATION -> index.processInstanceCreation;
+      case PROCESS_INSTANCE_MIGRATION -> index.processInstanceMigration;
+      case PROCESS_INSTANCE_MODIFICATION -> index.processInstanceModification;
+      case PROCESS_MESSAGE_SUBSCRIPTION -> index.processMessageSubscription;
+      case DECISION_REQUIREMENTS -> index.decisionRequirements;
+      case DECISION -> index.decision;
+      case DECISION_EVALUATION -> index.decisionEvaluation;
+      case CHECKPOINT -> index.checkpoint;
+      case TIMER -> index.timer;
+      case MESSAGE_START_EVENT_SUBSCRIPTION -> index.messageStartEventSubscription;
+      case PROCESS_EVENT -> index.processEvent;
+      case DEPLOYMENT_DISTRIBUTION -> index.deploymentDistribution;
+      case ESCALATION -> index.escalation;
+      case SIGNAL -> index.signal;
+      case SIGNAL_SUBSCRIPTION -> index.signalSubscription;
+      case RESOURCE_DELETION -> index.resourceDeletion;
+      case COMMAND_DISTRIBUTION -> index.commandDistribution;
+      case FORM -> index.form;
+      case USER_TASK -> index.userTask;
+      case COMPENSATION_SUBSCRIPTION -> index.compensationSubscription;
+      case MESSAGE_CORRELATION -> index.messageCorrelation;
+      case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION -> index.adHocSubProcessActivityActivation;
+      default -> false;
+    };
+  }
+
+  /**
+   * Only Optimize consumed records are considered required for 8.8 and later. For the {@link
+   * ElasticsearchExporter}
+   *
+   * @param valueType the value type of the record
+   * @return true if the record should be indexed, false otherwise
+   */
+  public boolean shouldIndexRequiredValueType(final ValueType valueType) {
+    return switch (valueType) {
+      case DEPLOYMENT -> index.deployment;
+      case PROCESS -> index.process;
+      case INCIDENT -> index.incident;
+      case VARIABLE -> index.variable;
+      case PROCESS_INSTANCE -> index.processInstance;
+      case USER_TASK -> index.userTask;
+      default -> false;
+    };
   }
 
   public boolean shouldIndexRecordType(final RecordType recordType) {
-    switch (recordType) {
-      case EVENT:
-        return index.event;
-      case COMMAND:
-        return index.command;
-      case COMMAND_REJECTION:
-        return index.rejection;
-      default:
-        return false;
-    }
+    return switch (recordType) {
+      case EVENT -> index.event;
+      case COMMAND -> index.command;
+      case COMMAND_REJECTION -> index.rejection;
+      default -> false;
+    };
+  }
+
+  public boolean getIsExportLegacyRecords() {
+    return exportLegacyRecords;
+  }
+
+  public void setExportLegacyRecords(final boolean exportLegacyRecords) {
+    this.exportLegacyRecords = exportLegacyRecords;
   }
 
   public static class IndexConfiguration {
@@ -223,6 +211,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean batchOperationCreation = false;
     public boolean batchOperationChunk = false;
     public boolean batchOperationExecution = false;
+    public boolean batchOperationLifecycleManagement = false;
 
     // index settings
     private Integer numberOfShards = null;

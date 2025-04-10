@@ -10,14 +10,14 @@ import {waitFor} from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
-import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('decisionInstanceDetailsStore', () => {
   it('should initialize and reset ', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 
     expect(decisionInstanceDetailsStore.state.status).toBe('initial');
 

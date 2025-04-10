@@ -8,8 +8,8 @@
 package io.camunda.exporter.cache.form;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
-import io.camunda.webapps.schema.entities.tasklist.FormEntity;
+import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.SortOptionsBuilders;

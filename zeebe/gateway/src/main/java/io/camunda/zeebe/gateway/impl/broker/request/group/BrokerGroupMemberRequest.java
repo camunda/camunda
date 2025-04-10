@@ -18,22 +18,24 @@ public class BrokerGroupMemberRequest extends BrokerExecuteCommand<GroupRecord> 
 
   private final GroupRecord requestDto = new GroupRecord();
 
-  public BrokerGroupMemberRequest(final long groupKey, final GroupIntent intent) {
+  public BrokerGroupMemberRequest(final String groupId, final GroupIntent intent) {
     super(ValueType.GROUP, intent);
-    request.setKey(groupKey);
-    requestDto.setGroupKey(groupKey);
+    final var key = Long.parseLong(groupId);
+    request.setKey(key);
+    requestDto.setGroupKey(key);
   }
 
-  public static BrokerGroupMemberRequest createAddRequest(final long groupKey) {
-    return new BrokerGroupMemberRequest(groupKey, GroupIntent.ADD_ENTITY);
+  public static BrokerGroupMemberRequest createAddRequest(final String groupId) {
+    return new BrokerGroupMemberRequest(groupId, GroupIntent.ADD_ENTITY);
   }
 
-  public static BrokerGroupMemberRequest createRemoveRequest(final long groupKey) {
-    return new BrokerGroupMemberRequest(groupKey, GroupIntent.REMOVE_ENTITY);
+  public static BrokerGroupMemberRequest createRemoveRequest(final String groupId) {
+    return new BrokerGroupMemberRequest(groupId, GroupIntent.REMOVE_ENTITY);
   }
 
-  public BrokerGroupMemberRequest setMemberKey(final Long memberKey) {
-    requestDto.setEntityKey(memberKey);
+  public BrokerGroupMemberRequest setMemberId(final String memberKey) {
+    // TODO: remove this after https://github.com/camunda/camunda/issues/29902 is implemented
+    requestDto.setEntityKey(Long.parseLong(memberKey));
     return this;
   }
 

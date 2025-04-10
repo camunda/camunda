@@ -16,7 +16,6 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -74,8 +73,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.OperationTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StatusEnum;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StateEnum;
 import io.camunda.zeebe.gateway.rest.util.GenericVariable;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
@@ -545,9 +543,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getBatchOperationKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::batchOperationKeys);
-      ofNullable(filter.getStatus()).map(StatusEnum::toString).ifPresent(builder::status);
+      ofNullable(filter.getState()).map(StateEnum::toString).ifPresent(builder::state);
       ofNullable(filter.getOperationType())
-          .map(OperationTypeEnum::toString)
+          .map(BatchOperationTypeEnum::toString)
           .ifPresent(builder::operationTypes);
     }
 
@@ -563,7 +561,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case BATCH_OPERATION_KEY -> builder.batchOperationKey();
-        case STATUS -> builder.status();
+        case STATE -> builder.state();
         case OPERATION_TYPE -> builder.operationType();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
@@ -639,6 +637,19 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
+      ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
+      ofNullable(filter.getFlowNodeId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getHasFlowNodeInstanceIncident())
+          .ifPresent(builder::hasFlowNodeInstanceIncident);
+      ofNullable(filter.getFlowNodeInstanceState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeInstanceStateOperations);
+      ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFiltersForProcessInstance(filter.getVariables());
@@ -668,6 +679,8 @@ public final class SearchQueryRequestMapper {
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
+      ofNullable(filter.getName()).ifPresent(builder::name);
+      ofNullable(filter.getMappingId()).ifPresent(builder::mappingId);
     }
     return builder.build();
   }
@@ -731,7 +744,8 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessDefinitionId())
                   .ifPresent(builder::processDefinitionIds);
               Optional.ofNullable(f.getState())
-                  .ifPresent(s -> builder.states(FlowNodeState.valueOf(s.getValue())));
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::stateOperations);
               Optional.ofNullable(f.getType())
                   .ifPresent(
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));

@@ -29,6 +29,7 @@
     <module>webapps-backup</module>
     <module>authentication</module>
     <module>db</module>
+    <module>schema-manager</module>
     <module>search</module>
     <module>service</module>
     <module>clients/java</module>
@@ -38,7 +39,6 @@
     <module>document</module>
     <module>security</module>
     <module>migration</module>
-    <module>optimize</module>
   </modules>
 
   <scm>
@@ -91,6 +91,19 @@
       </activation>
       <modules>
         <module>qa</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>include-optimize</id>
+      <activation>
+        <property>
+          <name>quickly</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <modules>
+        <module>optimize</module>
       </modules>
     </profile>
   </profiles>

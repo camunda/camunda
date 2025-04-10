@@ -13,13 +13,12 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestSupport;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.elasticsearch.ElasticsearchRecordsReader;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -52,7 +51,6 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   private static final ElasticsearchExporterConfiguration CONFIG =
       new ElasticsearchExporterConfiguration();
 
-  @Autowired public SchemaManager schemaManager;
   @Autowired private OperateProperties operateProperties;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   @Autowired private ImportPositionIndex importPositionIndex;
@@ -64,6 +62,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Before
   public void beforeEach() {
     operateProperties.getImporter().setImportPositionUpdateInterval(5000);
+    CONFIG.setExportLegacyRecords(true);
     CONFIG.index.prefix = operateProperties.getZeebeElasticsearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
     CONFIG.index.setNumberOfReplicas(0);

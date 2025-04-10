@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstancesStatisticsDto} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockPostRequest} from '../../mockRequest';
+import {GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 
 const mockFetchProcessInstancesStatistics = () =>
-  mockPostRequest<ProcessInstancesStatisticsDto[]>(
-    '/v2/process-instances/statistics',
+  mockPostRequest<GetProcessDefinitionStatisticsResponseBody>(
+    '/v2/process-definitions/:processDefinitionKey/statistics/flownode-instances',
   );
 
 export {mockFetchProcessInstancesStatistics};

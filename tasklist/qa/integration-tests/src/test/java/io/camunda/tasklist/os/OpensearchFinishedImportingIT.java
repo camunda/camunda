@@ -22,8 +22,8 @@ import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
 import io.camunda.tasklist.zeebeimport.os.RecordsReaderOpenSearch;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -78,6 +78,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   @BeforeEach
   public void beforeEach() throws IOException {
     tasklistProperties.getImporter().setImportPositionUpdateInterval(1000);
+    CONFIG.setExportLegacyRecords(true);
     CONFIG.url = tasklistProperties.getOpenSearch().getUrl();
     CONFIG.index.prefix = tasklistProperties.getZeebeOpenSearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);

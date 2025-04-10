@@ -15,16 +15,14 @@
  */
 package io.camunda.client.incident;
 
-import static io.camunda.client.api.search.response.IncidentErrorType.CALLED_DECISION_ERROR;
-import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.response.IncidentErrorType;
-import io.camunda.client.api.search.response.IncidentState;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.impl.search.request.SearchRequestSort;
+import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
@@ -54,7 +52,7 @@ public class SearchIncidentTest extends ClientRestTest {
   @Test
   public void shouldSearchIncidentWithEmptyQuery() {
     // when
-    client.newIncidentQuery().send().join();
+    client.newIncidentSearchRequest().send().join();
 
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
@@ -65,19 +63,19 @@ public class SearchIncidentTest extends ClientRestTest {
   public void shouldSearchIncidentWithFullFilters() {
     // when
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(
             f ->
                 f.incidentKey(1L)
                     .processDefinitionKey(2L)
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
-                    .errorType(CALLED_DECISION_ERROR)
+                    .errorType(IncidentErrorType.CALLED_DECISION_ERROR)
                     .errorMessage("Can't decide")
                     .flowNodeId("flowNode")
                     .flowNodeInstanceKey(4L)
                     .creationTime("2024-05-23T23:05:00.000+000")
-                    .state(ACTIVE)
+                    .state(IncidentState.ACTIVE)
                     .jobKey(5L)
                     .tenantId("tenant"))
         .send()
@@ -103,7 +101,7 @@ public class SearchIncidentTest extends ClientRestTest {
   void shouldSearchIncidentWithFullSorting() {
     // when
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .sort(
             s ->
                 s.incidentKey()
@@ -131,8 +129,8 @@ public class SearchIncidentTest extends ClientRestTest {
 
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
-    final List<SearchQuerySortRequest> sorts =
-        SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(
+    final List<SearchRequestSort> sorts =
+        SearchRequestSortMapper.fromIncidentSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(10);
     assertSort(sorts.get(0), "incidentKey", SortOrderEnum.ASC);
@@ -151,7 +149,7 @@ public class SearchIncidentTest extends ClientRestTest {
   void shouldSearchWithFullPagination() {
     // when
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .page(
             p ->
                 p.from(23)
@@ -170,55 +168,6 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(pageRequest.getSearchAfter()).isEqualTo(Arrays.asList("a"));
   }
 
-  @Test
-  public void shouldConvertIncidentState() {
-
-    for (final IncidentState value : IncidentState.values()) {
-      final IncidentFilter.StateEnum protocolValue = IncidentState.toProtocolState(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == IncidentState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue).isEqualTo(IncidentFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final IncidentResult.StateEnum protocolValue : IncidentResult.StateEnum.values()) {
-      final IncidentState value = IncidentState.fromProtocolState(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == IncidentResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(IncidentState.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
-  @Test
-  public void shouldConvertIncidentErrorType() {
-
-    for (final IncidentErrorType value : IncidentErrorType.values()) {
-      final IncidentFilter.ErrorTypeEnum protocolValue =
-          IncidentErrorType.toProtocolErrorType(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == IncidentErrorType.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue).isEqualTo(IncidentFilter.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final IncidentResult.ErrorTypeEnum protocolValue : IncidentResult.ErrorTypeEnum.values()) {
-      final IncidentErrorType value = IncidentErrorType.fromProtocolErrorType(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == IncidentResult.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(IncidentErrorType.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
   /*
    * This test is parameterized to test all possible values of the Zeebe Protocol ErrorType enum.
    * The goal is to catch any Zeebe Protocol error types not implemented in the Java client.
@@ -231,7 +180,7 @@ public class SearchIncidentTest extends ClientRestTest {
 
     // when
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(f -> f.incidentKey(1L).errorType(incidentErrorType))
         .send()
         .join();
@@ -244,7 +193,7 @@ public class SearchIncidentTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String name, final SortOrderEnum order) {
+      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
   }

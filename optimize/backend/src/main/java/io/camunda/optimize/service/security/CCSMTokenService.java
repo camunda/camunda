@@ -10,7 +10,6 @@ package io.camunda.optimize.service.security;
 import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static io.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
-import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
@@ -34,6 +33,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import jakarta.servlet.http.Cookie;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -66,53 +66,35 @@ public class CCSMTokenService {
     this.identity = identity;
   }
 
-  public List<Cookie> createOptimizeAuthCookies(
+  public List<Cookie> createOptimizeAuthNewCookies(
       final Tokens tokens, final AccessToken accessToken, final String scheme) {
-    final Cookie optimizeAuthCookie =
-        authCookieService.createCookie(
-            OPTIMIZE_AUTHORIZATION,
-            accessToken.getToken().getToken(),
-            accessToken.getToken().getExpiresAtAsInstant(),
-            scheme);
-
+    LOG.trace("Creating Optimize service authorization cookie(s).");
+    final String tokenValue = accessToken.getToken().getToken();
+    final List<Cookie> cookies =
+        new ArrayList<>(
+            authCookieService.createOptimizeAuthCookies(
+                tokenValue, accessToken.getToken().getExpiresAtAsInstant(), scheme));
     final Date refreshTokenExpirationDate = getRefreshTokenExpirationDate(tokens.getRefreshToken());
-
     final Cookie optimizeRefreshCookie =
         authCookieService.createCookie(
             OPTIMIZE_REFRESH_TOKEN,
             tokens.getRefreshToken(),
             Optional.ofNullable(refreshTokenExpirationDate).map(Date::toInstant).orElse(null),
             scheme);
-    return List.of(optimizeAuthCookie, optimizeRefreshCookie);
-  }
-
-  public List<Cookie> createOptimizeAuthNewCookies(
-      final Tokens tokens, final AccessToken accessToken, final String scheme) {
-    final Cookie optimizeAuthCookie =
-        authCookieService.createCookie(
-            OPTIMIZE_AUTHORIZATION,
-            accessToken.getToken().getToken(),
-            accessToken.getToken().getExpiresAt(),
-            scheme);
-    final Cookie optimizeRefreshCookie =
-        authCookieService.createCookie(
-            OPTIMIZE_REFRESH_TOKEN,
-            tokens.getRefreshToken(),
-            getRefreshTokenExpirationDate(tokens.getRefreshToken()),
-            scheme);
-    return List.of(optimizeAuthCookie, optimizeRefreshCookie);
+    cookies.add(optimizeRefreshCookie);
+    return cookies;
   }
 
   public List<Cookie> createOptimizeDeleteAuthCookies() {
-    return List.of(
-        authCookieService.createDeleteOptimizeAuthCookie(),
-        authCookieService.createDeleteOptimizeRefreshCookie());
+    final List<Cookie> cookies = authCookieService.createDeleteOptimizeAuthCookies();
+    cookies.add(authCookieService.createDeleteOptimizeRefreshCookie());
+    return cookies;
   }
 
   public List<Cookie> createOptimizeDeleteAuthNewCookies() {
-    return List.of(
-        authCookieService.createDeleteOptimizeAuthNewCookie(true),
-        authCookieService.createDeleteOptimizeRefreshNewCookie(true));
+    final List<Cookie> cookies = authCookieService.createDeleteOptimizeAuthNewCookie(true);
+    cookies.add(authCookieService.createDeleteOptimizeRefreshNewCookie(true));
+    return cookies;
   }
 
   public URI buildAuthorizeUri(final String redirectUri) {

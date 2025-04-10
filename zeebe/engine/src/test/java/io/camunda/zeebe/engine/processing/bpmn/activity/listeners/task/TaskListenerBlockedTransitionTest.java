@@ -175,6 +175,24 @@ public class TaskListenerBlockedTransitionTest {
   }
 
   @Test
+  public void shouldCreateFirstCreatingTaskListenerJob() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithCreatingTaskListeners(listenerType + "_creating"));
+
+    // then: expect a job to be activated for the first `creating` listener
+    helper.assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_creating",
+        job -> {
+          assertThat(job.getJobListenerEventType())
+              .describedAs("Expect job to have job listener type 'CREATING'")
+              .isEqualTo(JobListenerEventType.CREATING);
+        });
+  }
+
+  @Test
   public void shouldAssignUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
@@ -359,9 +377,9 @@ public class TaskListenerBlockedTransitionTest {
 
     final Predicate<Record<?>> isUserTaskOrVariableDocumentWithElementInstanceKey =
         r -> {
-          if (r.getValue() instanceof UserTaskRecord utr) {
+          if (r.getValue() instanceof final UserTaskRecord utr) {
             return utr.getElementInstanceKey() == userTaskElementInstanceKey;
-          } else if (r.getValue() instanceof VariableDocumentRecord vdr) {
+          } else if (r.getValue() instanceof final VariableDocumentRecord vdr) {
             return vdr.getScopeKey() == userTaskElementInstanceKey;
           }
           return false;
@@ -507,6 +525,28 @@ public class TaskListenerBlockedTransitionTest {
                 99,
                 "escalate",
                 List.of(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY)));
+  }
+
+  @Test
+  public void shouldCreateFirstCancelingTaskListenerJob() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.canceling, listenerType));
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+
+    // then
+    helper.assertActivatedJob(
+        processInstanceKey,
+        listenerType,
+        job ->
+            Assertions.assertThat(job)
+                .describedAs("Expect activated job to be 'CANCELLING' task listener job")
+                .hasJobKind(JobKind.TASK_LISTENER)
+                .hasJobListenerEventType(JobListenerEventType.CANCELING));
   }
 
   @Test
@@ -664,7 +704,7 @@ public class TaskListenerBlockedTransitionTest {
             r -> r.getValue().getAction(),
             r -> r.getValue().getChangedAttributes())
         .containsExactly(
-            tuple(UserTaskIntent.CREATING, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
             tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
             tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),

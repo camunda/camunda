@@ -109,18 +109,6 @@ describe('stores/processInstanceDiagram', () => {
     });
   });
 
-  it('should get areDiagramDefinitionsAvailable', async () => {
-    expect(
-      processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable,
-    ).toBe(false);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
-
-    expect(
-      processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable,
-    ).toBe(true);
-  });
-
   it('should reset store', async () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 

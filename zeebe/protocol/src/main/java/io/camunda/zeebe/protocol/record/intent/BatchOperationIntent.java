@@ -17,7 +17,17 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum BatchOperationIntent implements Intent {
   CREATE((short) 0),
-  CREATED((short) 1);
+  CREATED((short) 1),
+  START((short) 2),
+  STARTED((short) 3),
+  FAIL((short) 4),
+  FAILED((short) 5),
+  CANCEL((short) 6),
+  CANCELED((short) 7),
+  PAUSE((short) 8),
+  PAUSED((short) 9),
+  RESUME((short) 10);
+  // RESUMED((short) 11);
 
   private final short value;
 
@@ -35,6 +45,24 @@ public enum BatchOperationIntent implements Intent {
         return CREATE;
       case 1:
         return CREATED;
+      case 2:
+        return START;
+      case 3:
+        return STARTED;
+      case 4:
+        return FAIL;
+      case 5:
+        return FAILED;
+      case 6:
+        return CANCEL;
+      case 7:
+        return CANCELED;
+      case 8:
+        return PAUSE;
+      case 9:
+        return PAUSED;
+      case 10:
+        return RESUME;
 
       default:
         return Intent.UNKNOWN;
@@ -50,6 +78,10 @@ public enum BatchOperationIntent implements Intent {
   public boolean isEvent() {
     switch (this) {
       case CREATED:
+      case STARTED:
+      case FAILED:
+      case PAUSED:
+      case CANCELED:
         return true;
       default:
         return false;

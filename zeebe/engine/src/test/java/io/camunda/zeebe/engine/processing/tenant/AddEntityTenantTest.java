@@ -113,7 +113,9 @@ public class AddEntityTenantTest {
   public void shouldAddGroupToTenant() {
     // given
     final var entityType = GROUP;
-    final var entityKey = createGroup();
+    final var groupId = "123";
+    final var entityKey = Long.parseLong(groupId);
+    createGroup(groupId);
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine
@@ -163,30 +165,6 @@ public class AddEntityTenantTest {
   }
 
   @Test
-  public void shouldRejectIfEntityIsNotPresentWhileAddingToTenant() {
-    // given
-    final var tenantId = UUID.randomUUID().toString();
-    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
-
-    // when try adding a non-existent entity to the tenant
-    final var notPresentUpdateRecord =
-        engine
-            .tenant()
-            .addEntity(tenantId)
-            .withEntityId("does-not-exist")
-            .withEntityType(USER)
-            .expectRejection()
-            .add();
-
-    // then assert that the rejection is for entity not found
-    assertThat(notPresentUpdateRecord)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to add user 'does-not-exist' to tenant '%s', but the user doesn't exist."
-                .formatted(tenantId));
-  }
-
-  @Test
   public void shouldRejectIfEntityIsAlreadyAssignedToTenant() {
     // given
     final var user = createUser();
@@ -207,9 +185,9 @@ public class AddEntityTenantTest {
 
     // then assert that the rejection is for entity not found
     assertThat(alreadyAssignedRecord)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to add user '%s' to tenant '%s', but the user is already assigned to the tenant."
+            "Expected to add user with id '%s' to tenant with id '%s', but the user is already assigned to the tenant."
                 .formatted(username, tenantId));
   }
 
@@ -224,8 +202,14 @@ public class AddEntityTenantTest {
         .getValue();
   }
 
-  private long createGroup() {
-    return engine.group().newGroup("groupName").create().getValue().getGroupKey();
+  private long createGroup(final String groupId) {
+    return engine
+        .group()
+        .newGroup("groupName")
+        .withGroupId(groupId)
+        .create()
+        .getValue()
+        .getGroupKey();
   }
 
   private String createMapping() {
@@ -233,9 +217,9 @@ public class AddEntityTenantTest {
         .mapping()
         .newMapping("mappingName")
         .withClaimValue("claimValue")
-        .withId(Strings.newRandomValidIdentityId())
+        .withMappingId(Strings.newRandomValidIdentityId())
         .create()
         .getValue()
-        .getId();
+        .getMappingId();
   }
 }

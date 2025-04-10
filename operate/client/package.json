@@ -16,6 +16,7 @@
     "@tanstack/react-query": "5.67.2",
     "@tanstack/react-query-devtools": "^5.67.1",
     "@types/loadable__component": "5.13.9",
+    "@vzeta/camunda-api-zod-schemas": "0.0.2-beta.28",
     "bpmn-js": "18.3.1",
     "bpmn-moddle": "9.0.1",
     "date-fns": "4.1.0",
@@ -57,7 +58,7 @@
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/main --watchAll=false --passWithNoTests",
     "analyze-bundle": "react-app-rewired build && source-map-explorer 'build/static/js/*.js'",
     "playwright": "playwright test",
-    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.47.2 /bin/bash",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.51.1 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "cross-env REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build",
     "extract-sbom": "cross-env GENERATE_SOURCEMAP=false react-app-rewired build"
@@ -71,7 +72,7 @@
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@camunda8/sdk": "^8.6.8",
     "@cyclonedx/webpack-plugin": "4.0.1",
-    "@playwright/test": "1.47.2",
+    "@playwright/test": "1.51.1",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.2.0",
     "@testing-library/react-hooks": "8.0.1",
@@ -103,7 +104,8 @@
     "react-test-renderer": "18.3.1",
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
-    "typescript": "5.8.2"
+    "typescript": "5.8.2",
+    "zod": "3.24.1"
   },
   "lint-staged": {
     "*": [

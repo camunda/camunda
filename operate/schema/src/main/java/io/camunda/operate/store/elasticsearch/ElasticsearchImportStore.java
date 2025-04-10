@@ -17,8 +17,8 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -48,8 +48,6 @@ public class ElasticsearchImportStore implements ImportStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchImportStore.class);
   @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RestHighLevelClient esClient;
-
-  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
   @Autowired
   @Qualifier("operateObjectMapper")

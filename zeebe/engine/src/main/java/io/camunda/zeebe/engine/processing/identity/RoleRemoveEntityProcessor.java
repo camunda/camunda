@@ -14,8 +14,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -33,6 +36,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   private final RoleState roleState;
   private final UserState userState;
   private final MappingState mappingState;
+  private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -41,16 +45,15 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public RoleRemoveEntityProcessor(
-      final RoleState roleState,
-      final UserState userState,
-      final MappingState mappingState,
+      final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.roleState = roleState;
-    this.userState = userState;
-    this.mappingState = mappingState;
+    roleState = processingState.getRoleState();
+    userState = processingState.getUserState();
+    mappingState = processingState.getMappingState();
+    membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -108,19 +111,28 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
-    roleState
-        .getEntityType(record.getRoleKey(), record.getEntityKey())
-        .ifPresentOrElse(
-            entityType ->
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), RoleIntent.ENTITY_REMOVED, command.getValue()),
-            () -> {
-              final var errorMessage =
-                  ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(
-                      record.getEntityKey(), record.getRoleKey());
-              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-            });
+    final var isAssigned =
+        switch (record.getEntityType()) {
+          case USER ->
+              membershipState.hasRelation(
+                  EntityType.USER,
+                  // TODO: Use entity id instead of key
+                  Long.toString(record.getEntityKey()),
+                  RelationType.ROLE,
+                  // TODO: Use role id instead of key
+                  Long.toString(record.getRoleKey()));
+          default ->
+              roleState.getEntityType(record.getRoleKey(), record.getEntityKey()).isPresent();
+        };
 
+    if (isAssigned) {
+      stateWriter.appendFollowUpEvent(
+          command.getKey(), RoleIntent.ENTITY_REMOVED, command.getValue());
+    } else {
+      final var errorMessage =
+          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), record.getRoleKey());
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+    }
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

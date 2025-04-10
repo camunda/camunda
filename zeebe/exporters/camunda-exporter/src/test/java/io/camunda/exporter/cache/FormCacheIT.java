@@ -7,22 +7,29 @@
  */
 package io.camunda.exporter.cache;
 
-import static io.camunda.exporter.utils.SearchDBExtension.FORM_INDEX;
-import static io.camunda.exporter.utils.SearchDBExtension.IDX_FORM_PREFIX;
-import static io.camunda.exporter.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.search.test.utils.SearchDBExtension.FORM_INDEX;
+import static io.camunda.search.test.utils.SearchDBExtension.IDX_FORM_PREFIX;
+import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
+import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.cache.ExporterEntityCache.CacheLoaderFailedException;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
-import io.camunda.exporter.utils.SearchDBExtension;
-import io.camunda.webapps.schema.entities.tasklist.FormEntity;
+import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
+import io.camunda.search.test.utils.SearchDBExtension;
+import io.camunda.webapps.schema.entities.form.FormEntity;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,6 +40,20 @@ import org.opensearch.client.opensearch._types.Refresh;
 class FormCacheIT {
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+
+  @BeforeEach
+  void setup() {
+    new ElasticsearchEngineClient(searchDB.esClient(), searchDB.objectMapper())
+        .createIndex(FORM_INDEX, new IndexConfiguration());
+    new OpensearchEngineClient(searchDB.osClient(), searchDB.objectMapper())
+        .createIndex(FORM_INDEX, new IndexConfiguration());
+  }
+
+  @AfterEach
+  void cleanup() throws IOException {
+    searchDB.esClient().indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+    searchDB.osClient().indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+  }
 
   @ParameterizedTest
   @MethodSource("provideFormCache")
@@ -99,7 +120,8 @@ class FormCacheIT {
         new ExporterEntityCacheImpl<>(
             10,
             new ElasticSearchFormCacheLoader(searchDB.esClient(), indexName),
-            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
+            new CaffeineCacheStatsCounter(
+                DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
         FormCacheIT::indexInElasticSearch);
   }
 
@@ -108,7 +130,8 @@ class FormCacheIT {
         new ExporterEntityCacheImpl<>(
             10,
             new OpenSearchFormCacheLoader(searchDB.osClient(), indexName),
-            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
+            new CaffeineCacheStatsCounter(
+                DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
         FormCacheIT::indexInOpenSearch);
   }
 

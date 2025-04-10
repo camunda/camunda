@@ -216,6 +216,14 @@ public final class MsgPackConverter {
     }
   }
 
+  /**
+   * Please be aware that this method may not thread-safe depending on the object that gets
+   * serialized.
+   *
+   * @param buffer the buffer to be serialized
+   * @param clazz the class of the object to be deserialized
+   * @return the deserialized object
+   */
   public static <T> T convertToObject(final DirectBuffer buffer, final Class<T> clazz) {
     final byte[] msgpackBytes = BufferUtil.bufferAsArray(buffer);
 

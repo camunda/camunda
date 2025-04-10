@@ -21,6 +21,10 @@ public enum JobListenerEventType {
   /** Default */
   UNSPECIFIED,
 
+  // ---------------------------------------------------------------------------
+  // Execution Listener event types
+  // ---------------------------------------------------------------------------
+
   /**
    * Represents the `start` event for an execution listener. This event type is used to indicate
    * that the listener should be triggered at the start of an execution, such as the beginning of a
@@ -35,12 +39,17 @@ public enum JobListenerEventType {
    */
   END,
 
+  // ---------------------------------------------------------------------------
+  // User Task Listener event types
+  // ---------------------------------------------------------------------------
+
   /**
-   * Represents the `completing` event for a task listener. This event type is used to indicate that
-   * the listener should be triggered when a user task is completing. It allows to execute custom
-   * logic before the task is completed, to correct user task data, and to deny the completion.
+   * Represents the `creating` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered during the creation of a user task. It allows executing custom
+   * logic before the task becomes available to users, including setting or correcting task
+   * attributes. The user task creation can't be denied by a listener of this type.
    */
-  COMPLETING,
+  CREATING,
 
   /**
    * Represents the `assigning` event for a task listener. This event type is used to indicate that
@@ -56,5 +65,21 @@ public enum JobListenerEventType {
    * `priority`. It allows executing custom logic before the task is updated, to correct user task
    * data, and to deny the update.
    */
-  UPDATING
+  UPDATING,
+
+  /**
+   * Represents the `completing` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is completing. It allows to execute custom
+   * logic before the task is completed, to correct user task data, and to deny the completion.
+   */
+  COMPLETING,
+
+  /**
+   * Represents the `canceling` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is being canceled, such as due to an
+   * interrupting boundary event, event sub-process, or process instance termination. It allows
+   * executing custom logic before the task is fully canceled. The user task cancellation can't be
+   * denied by a listener of this type.
+   */
+  CANCELING
 }

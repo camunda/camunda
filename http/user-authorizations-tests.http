@@ -1,0 +1,302 @@
+###
+# @name test-create-user-unathorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "sergii",
+  "username": "sergii",
+  "name": "sergii",
+  "email": "sergii@camunda.com"
+}
+
+> {%
+  client.test("User creation should be unauthorized", function () {
+    client.assert(response.status === 401, "Response status is not 401");
+  });
+%}
+
+###
+# @name test-create-user-athorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "sergii",
+  "username": "sergii",
+  "name": "sergii",
+  "email": "sergii@camunda.com"
+}
+
+> {%
+  client.test("User creation should be authorized", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+  });
+%}
+
+###
+# @name test-user-update
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/sergii
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "newStrongPassword123",
+  "name": "Sergii Updated",
+  "email": "sergii.updated@camunda.com"
+}
+
+> {%
+  client.test("User update should be authorized", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+
+###
+# @name test-user-search
+< {%
+  import {wait} from "js/wait"
+  wait(3)
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "username",
+      "order": "ASC"
+    }
+  ],
+  "filter": {
+    "username": "sergii"
+  },
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("User search should be authorized", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+  client.test("Response should contain updated user data", function () {
+    client.assert(response.body.items[0].username === "sergii", "Username was not updated correctly");
+    client.assert(response.body.items[0].name === "Sergii Updated", "Name was not updated correctly");
+    client.assert(response.body.items[0].email === "sergii.updated@camunda.com", "Email was not updated correctly");
+  });
+%}
+
+###
+# @name test-delete-user-athorized
+< {%
+  import {wait} from "js/wait"
+  wait(4)
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/sergii
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+
+> {%
+  client.test("The user was deleted successfully.", function () {
+    client.assert(response.status === 204, "Response status is not 201");
+  });
+%}
+
+###
+# @name test-delete-fake-user-athorized
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/fake
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+
+> {%
+  client.test("The user was not found.", function () {
+    client.assert(response.status === 404, "Response status is not 201");
+    client.assert(response.body.detail === "Command 'DELETE' rejected with code 'NOT_FOUND': Expected to delete user with username fake, but a user with this username does not exist", "Error message is wrong");
+  });
+%}
+
+###
+# @name create-authorization-positive
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "READ_USER_TASK",
+    "DELETE_PROCESS_INSTANCE",
+    "CREATE_PROCESS_INSTANCE",
+    "UPDATE_PROCESS_INSTANCE",
+    "READ_PROCESS_INSTANCE",
+    "READ_PROCESS_DEFINITION",
+    "UPDATE_USER_TASK"
+  ],
+  "ownerType": "USER",
+  "ownerId": "test-user",
+  "resourceType": "PROCESS_DEFINITION",
+  "resourceId": "test-resource"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Authorization key should not be empty", function () {
+    client.assert(response.body.authorizationKey !== "", "Authorization key is empty");
+    client.global.set("AUTHORIZATION_KEY", response.body.authorizationKey);
+  });
+%}
+
+###
+# @name create-authorization-missing-fields
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "ownerId": "test-user"
+}
+
+> {%
+  client.test("Authorization creation should fail due to missing fields", function () {
+    client.assert(response.status === 400, "Response status is not 400");
+    client.assert(response.body.detail === "No ownerType provided. No resourceId provided. No resourceType provided. No permissionTypes provided.");
+  });
+%}
+
+###
+# @name create-authorization-unauthorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic invalid_token
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "READ_USER_TASK"
+  ],
+  "ownerType": "USER",
+  "ownerId": "test-user",
+  "resourceType": "PROCESS_DEFINITION",
+  "resourceId": "test-resource"
+}
+
+> {%
+  client.test("Authorization creation should be unauthorized", function () {
+    client.assert(response.status === 401, "Response status is not 401");
+  });
+%}
+
+###
+# @name test-authorization-search
+< {%
+  import {wait} from "js/wait";
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "resourceId",
+      "order": "ASC"
+    }
+  ],
+  "filter": {
+    "ownerId": "test-user"
+  },
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("Authorization search should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+    console.log(response.headers);
+  });
+
+  client.test("Response should contain authorizations for the specified ownerId", function () {
+    const authorizations = response.body.items;
+    client.assert(Array.isArray(authorizations), "Response items are not an array");
+    client.assert(authorizations.length > 0, "No authorizations found for the specified ownerId");
+    authorizations.forEach(auth => {
+      client.assert(auth.ownerId === "test-user", `Authorization ownerId mismatch: expected 'test-user', got '${auth.ownerId}'`);
+    });
+  });
+%}
+
+###
+# @name update-authorization-positive
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/{{AUTHORIZATION_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "READ_USER_TASK",
+    "UPDATE_USER_TASK"
+  ],
+  "ownerType": "USER",
+  "ownerId": "test-user",
+  "resourceType": "PROCESS_DEFINITION",
+  "resourceId": "test-resource"
+}
+
+> {%
+  client.test("Authorization update should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.body === "" || response.body === null, "Response body is not empty");
+  });
+%}
+
+###
+# @name delete-authorization-positive
+< {%
+  import {wait} from "js/wait";
+  wait(4);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/{{AUTHORIZATION_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Authorization update should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.body === "" || response.body === null, "Response body is not empty");
+  });
+%}

@@ -66,8 +66,12 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         brokerClient, securityContextProvider, groupSearchClient, authentication);
   }
 
-  public CompletableFuture<GroupRecord> createGroup(final String name) {
-    return sendBrokerRequest(new BrokerGroupCreateRequest().setName(name));
+  public CompletableFuture<GroupRecord> createGroup(final CreateGroupRequest createGroupRequest) {
+    return sendBrokerRequest(
+        new BrokerGroupCreateRequest()
+            .setGroupId(createGroupRequest.groupId)
+            .setName(createGroupRequest.name)
+            .setDescription(createGroupRequest.description));
   }
 
   public GroupEntity getGroup(final Long groupKey) {
@@ -114,27 +118,35 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         .findFirst();
   }
 
-  public CompletableFuture<GroupRecord> updateGroup(final long groupKey, final String name) {
-    return sendBrokerRequest(new BrokerGroupUpdateRequest(groupKey).setName(name));
+  public CompletableFuture<GroupRecord> updateGroup(
+      final String groupId, final String name, final String description) {
+    return sendBrokerRequest(
+        new BrokerGroupUpdateRequest(Long.parseLong(groupId))
+            .setGroupId(groupId)
+            .setName(name)
+            .setDescription(description));
   }
 
-  public CompletableFuture<GroupRecord> deleteGroup(final long groupKey) {
-    return sendBrokerRequest(new BrokerGroupDeleteRequest(groupKey));
+  public CompletableFuture<GroupRecord> deleteGroup(final String groupId) {
+    return sendBrokerRequest(
+        new BrokerGroupDeleteRequest(Long.parseLong(groupId)).setGroupId(groupId));
   }
 
   public CompletableFuture<GroupRecord> assignMember(
-      final long groupKey, final long memberKey, final EntityType memberType) {
+      final String groupId, final String username, final EntityType memberType) {
     return sendBrokerRequest(
-        BrokerGroupMemberRequest.createAddRequest(groupKey)
-            .setMemberKey(memberKey)
+        BrokerGroupMemberRequest.createAddRequest(groupId)
+            .setMemberId(username)
             .setMemberType(memberType));
   }
 
   public CompletableFuture<GroupRecord> removeMember(
-      final long groupKey, final long memberKey, final EntityType memberType) {
+      final String groupId, final String username, final EntityType memberType) {
     return sendBrokerRequest(
-        BrokerGroupMemberRequest.createRemoveRequest(groupKey)
-            .setMemberKey(memberKey)
+        BrokerGroupMemberRequest.createRemoveRequest(groupId)
+            .setMemberId(username)
             .setMemberType(memberType));
   }
+
+  public record CreateGroupRequest(String groupId, String name, String description) {}
 }

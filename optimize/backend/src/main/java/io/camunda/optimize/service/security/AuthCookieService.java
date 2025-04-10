@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.security;
 
 import static io.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
-import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION_PREFIX;
 import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
 import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_SERVICE_TOKEN;
 import static io.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_FLAG;
@@ -24,12 +24,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.stereotype.Component;
@@ -44,23 +48,35 @@ public class AuthCookieService {
     this.configurationService = configurationService;
   }
 
-  public jakarta.servlet.http.Cookie createDeleteOptimizeAuthCookie() {
-    LOG.trace("Deleting Optimize authentication cookie.");
-    return createDeleteCookie(OPTIMIZE_AUTHORIZATION, "", "https");
+  public List<Cookie> createDeleteOptimizeAuthCookies() {
+    LOG.trace("Deleting Optimize authentication cookie(s).");
+    // We don't know how many cookies need deleting here is depends on token size, so we just delete
+    // a sensible default of 5.
+    final List<Cookie> cookies = new ArrayList<>();
+    for (int i = 0; i < 5; i++) {
+      cookies.add(createDeleteCookie(getAuthorizationCookieNameWithSuffix(i), "", "https"));
+    }
+    return cookies;
   }
 
-  public Cookie createDeleteOptimizeAuthNewCookie(final boolean secure) {
+  public List<Cookie> createDeleteOptimizeAuthNewCookie(final boolean secure) {
     LOG.trace("Deleting Optimize authentication cookie.");
-    final Cookie cookie = new Cookie(OPTIMIZE_AUTHORIZATION, "");
-    cookie.setPath(getCookiePath());
-    cookie.setDomain(null);
-    cookie.setMaxAge(0);
-    cookie.setSecure(secure);
-    cookie.setHttpOnly(true);
-    return cookie;
+    // We don't know how many cookies need deleting here is depends on token size, so we just delete
+    // a sensible default of 5.
+    final List<Cookie> cookies = new ArrayList<>();
+    for (int i = 0; i < 5; i++) {
+      final Cookie cookie = new Cookie(getAuthorizationCookieNameWithSuffix(i), "");
+      cookie.setPath(getCookiePath());
+      cookie.setDomain(null);
+      cookie.setMaxAge(0);
+      cookie.setSecure(secure);
+      cookie.setHttpOnly(true);
+      cookies.add(cookie);
+    }
+    return cookies;
   }
 
-  public jakarta.servlet.http.Cookie createDeleteOptimizeRefreshCookie() {
+  public Cookie createDeleteOptimizeRefreshCookie() {
     LOG.trace("Deleting Optimize refresh cookie.");
     return createDeleteCookie(OPTIMIZE_REFRESH_TOKEN, "", "https");
   }
@@ -86,17 +102,30 @@ public class AuthCookieService {
                     getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES));
   }
 
-  public jakarta.servlet.http.Cookie createDeleteCookie(
+  public Cookie createDeleteCookie(
       final String cookieName, final String cookieValue, final String requestScheme) {
     return createCookie(cookieName, cookieValue, Instant.now(), requestScheme, true);
   }
 
-  public jakarta.servlet.http.Cookie createOptimizeAuthCookie(
+  public List<Cookie> createOptimizeAuthCookies(
       final String cookieValue, final Instant expiresAt, final String requestScheme) {
-    return createCookie(OPTIMIZE_AUTHORIZATION, cookieValue, expiresAt, requestScheme, false);
+    final int maxCookieLength =
+        configurationService.getAuthConfiguration().getCookieConfiguration().getMaxSize();
+    final int numberOfCookies = (int) Math.ceil((double) cookieValue.length() / maxCookieLength);
+    final List<Cookie> cookies = new ArrayList<>();
+    for (int i = 0; i < numberOfCookies; i++) {
+      cookies.add(
+          createCookie(
+              getAuthorizationCookieNameWithSuffix(i),
+              extractTokenisedCookieValue(i, numberOfCookies, maxCookieLength, cookieValue),
+              expiresAt,
+              requestScheme,
+              false));
+    }
+    return cookies;
   }
 
-  public jakarta.servlet.http.Cookie createCookie(
+  public Cookie createCookie(
       final String cookieName,
       final String cookieValue,
       final Instant expiresAt,
@@ -104,7 +133,7 @@ public class AuthCookieService {
     return createCookie(cookieName, cookieValue, expiresAt, requestScheme, false);
   }
 
-  public List<jakarta.servlet.http.Cookie> createOptimizeServiceTokenCookies(
+  public List<Cookie> createOptimizeServiceTokenCookies(
       final OAuth2AccessToken accessToken, final Instant expiresAt, final String requestScheme) {
     LOG.trace("Creating Optimize service token cookie(s).");
     final String tokenValue = accessToken.getTokenValue();
@@ -116,46 +145,33 @@ public class AuthCookieService {
       cookies.add(
           createCookie(
               getServiceCookieNameWithSuffix(i),
-              /* creates a substring of the cookie token value based on the index 'i' and the maximum cookie length
-               'maxCookieLength'. If the current index 'i' is equal to the number of cookies minus one, it takes the
-               remaining characters of the token value from the current index multiplied by the maximum cookie length
-               until the end of the string, otherwise it takes a substring starting from the current index multiplied by
-               the maximum cookie length with a length of the maximum cookie length.
-              */
-              i == (numberOfCookies - 1)
-                  ? tokenValue.substring((i * maxCookieLength))
-                  : tokenValue.substring(
-                      (i * maxCookieLength), ((i * maxCookieLength) + maxCookieLength)),
+              extractTokenisedCookieValue(i, numberOfCookies, maxCookieLength, tokenValue),
               expiresAt,
               requestScheme));
     }
     return cookies;
   }
 
-  public Cookie createCookie(
-      final String cookieName,
-      final String cookieValue,
-      final Date expiresAt,
-      final String requestScheme) {
-    final String cookiePath = getCookiePath();
-    final int maxAge = (int) (expiresAt.toInstant().toEpochMilli() - System.currentTimeMillis());
-    final Cookie cookie = new Cookie(cookieName, cookieValue);
-    cookie.setPath(cookiePath);
-    cookie.setDomain(null);
-    cookie.setMaxAge(maxAge);
-    cookie.setSecure(isSecureScheme(requestScheme));
-    cookie.setHttpOnly(true);
-    if (getAuthConfiguration().getCookieConfiguration().isSameSiteFlagEnabled()) {
-      cookie.setAttribute(SAME_SITE_COOKIE_FLAG, SAME_SITE_COOKIE_STRICT_VALUE);
-    }
-    return cookie;
-  }
-
   public static Optional<String> getAuthCookieToken(final HttpServletRequest servletRequest) {
-    return Optional.ofNullable((String) servletRequest.getAttribute(OPTIMIZE_AUTHORIZATION))
-        .or(() -> extractAuthorizationValueFromCookies(servletRequest))
-        .or(() -> extractAuthorizationValueFromCookieHeader(servletRequest))
-        .flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
+    final String authCookieValues =
+        Collections.list(servletRequest.getAttributeNames()).stream()
+            .filter(name -> name.startsWith(OPTIMIZE_AUTHORIZATION_PREFIX))
+            .sorted(
+                Comparator.comparingInt(s -> Integer.parseInt(s.substring(s.lastIndexOf('_') + 1))))
+            .map(servletRequest::getAttribute)
+            .map(String.class::cast)
+            .collect(Collectors.joining());
+    if (!authCookieValues.isEmpty()) {
+      return Optional.of(authCookieValues);
+    } else {
+      final List<Cookie> cookies =
+          Optional.ofNullable(servletRequest.getCookies())
+              .map(Arrays::asList)
+              .orElse(Collections.emptyList());
+      return extractJoinedCookieValueFromCookies(cookies)
+          .or(() -> extractAuthorizationValueFromCookieHeader(servletRequest))
+          .flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
+    }
   }
 
   public static Optional<String> getServiceAccessToken(final HttpServletRequest servletRequest) {
@@ -191,6 +207,10 @@ public class AuthCookieService {
 
   public static String createOptimizeAuthCookieValue(final String tokenValue) {
     return AUTH_COOKIE_TOKEN_VALUE_PREFIX + tokenValue;
+  }
+
+  public static String getAuthorizationCookieNameWithSuffix(final int suffix) {
+    return OPTIMIZE_AUTHORIZATION_PREFIX + suffix;
   }
 
   private String getCookiePath() {
@@ -235,7 +255,22 @@ public class AuthCookieService {
     return Optional.ofNullable(authCookieValue);
   }
 
-  private jakarta.servlet.http.Cookie createCookie(
+  public static Optional<String> extractJoinedCookieValueFromCookies(final List<Cookie> cookies) {
+    final String cookieValue =
+        cookies.stream()
+            .filter(cookie -> cookie.getName().startsWith(OPTIMIZE_AUTHORIZATION_PREFIX))
+            .sorted(
+                Comparator.comparingInt(
+                    s -> Integer.parseInt(s.getName().substring(s.getName().lastIndexOf('_') + 1))))
+            .map(Cookie::getValue)
+            .collect(Collectors.joining());
+    if (cookieValue.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(cookieValue);
+  }
+
+  private Cookie createCookie(
       final String cookieName,
       final String cookieValue,
       final Instant expiresAt,
@@ -260,19 +295,6 @@ public class AuthCookieService {
     return cookie;
   }
 
-  private static Optional<String> extractAuthorizationValueFromCookies(
-      final HttpServletRequest servletRequest) {
-    final jakarta.servlet.http.Cookie[] cookies = servletRequest.getCookies();
-    if (cookies != null) {
-      for (final jakarta.servlet.http.Cookie cookie : cookies) {
-        if (OPTIMIZE_AUTHORIZATION.equals(cookie.getName())) {
-          return Optional.of(cookie.getValue());
-        }
-      }
-    }
-    return Optional.empty();
-  }
-
   private static Optional<String> extractAuthorizationValueFromCookieHeader(
       final HttpServletRequest servletRequest) {
     final String cookieHeader = servletRequest.getHeader("Cookie");
@@ -281,7 +303,7 @@ public class AuthCookieService {
       final String[] cookiePairs = cookieHeader.split(";");
       for (final String cookiePair : cookiePairs) {
         // We are looking for "foo" in something like X-Optimize-Authorization=foo
-        final Pattern pattern = Pattern.compile("\\s*" + OPTIMIZE_AUTHORIZATION + "\\s*=\\s*(.*)");
+        final Pattern pattern = Pattern.compile(OPTIMIZE_AUTHORIZATION_PREFIX + "\\d+=([^;]+)");
         final Matcher matcher = pattern.matcher(cookiePair);
         if (matcher.find()) {
           // We found it, so now we extract the value
@@ -292,5 +314,18 @@ public class AuthCookieService {
       }
     }
     return Optional.empty();
+  }
+
+  private static String extractTokenisedCookieValue(
+      final int i, final int numberOfCookies, final int maxCookieLength, final String cookieValue) {
+    /* creates a substring of the cookie token value based on the index 'i' and the maximum cookie length
+     'maxCookieLength'. If the current index 'i' is equal to the number of cookies minus one, it takes the
+     remaining characters of the token value from the current index multiplied by the maximum cookie length
+     until the end of the string, otherwise it takes a substring starting from the current index multiplied by
+     the maximum cookie length with a length of the maximum cookie length.
+    */
+    return i == (numberOfCookies - 1)
+        ? cookieValue.substring((i * maxCookieLength))
+        : cookieValue.substring((i * maxCookieLength), ((i * maxCookieLength) + maxCookieLength));
   }
 }

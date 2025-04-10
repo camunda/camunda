@@ -1,0 +1,157 @@
+---
+name: Core Application E2E Tests On Demand
+
+# owner: @camunda/qa-engineering
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Select the branch to test"
+        required: true
+        default: "main"
+        type: choice
+        options:
+          - main
+          - stable/8.6
+          - stable/8.7
+
+permissions:
+  contents: read
+
+jobs:
+  core-e2e-component-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
+
+      - name: Start Tasklist and Operate
+        run: |
+          DATABASE=elasticsearch docker compose up -d tasklist operate
+        working-directory: qa/core-application-e2e-test-suite/config
+
+      - name: List running Docker containers
+        run: docker ps -a
+        working-directory: qa/core-application-e2e-test-suite/config
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        run: |
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..90}; do
+            if ! nc -zv localhost 8080; then
+              echo "Port 8080 is not open yet..."
+            fi
+
+            if ! nc -zv localhost 8081; then
+              echo "Port 8081 is not open yet..."
+            fi
+
+            # Check if tasklist page is available (adjust the URL based on your service)
+            tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+            operate_status=$(curl -s -m 5 http://localhost:8081/operate || echo "Failed")
+
+            # Check if tasklist is up (you can adjust this condition based on actual response)
+            if [[ "$tasklist_status" != "Failed" ]] && [[ "$operate_status" != "Failed" ]]; then
+              echo "Services are ready!"
+              ready=true
+              break
+            fi
+
+            echo "Waiting for services... ($i/90)"
+            echo "Response from tasklist: $tasklist_status"
+            echo "Response from operate: $operate_status"
+            sleep 10
+          done
+
+          if [ "$ready" == "true" ]; then
+            echo "ready=true" >> $GITHUB_OUTPUT
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+
+      - name: Print Docker logs before failing
+        if: failure()
+        run: |
+          docker compose logs tasklist
+          docker compose logs operate
+        working-directory: qa/core-application-e2e-test-suite/config
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: qa/core-application-e2e-test-suite/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          echo "Installing dependencies..."
+          npm ci --verbose
+        working-directory: qa/core-application-e2e-test-suite
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+
+      - name: Install Playwright Browsers
+        shell: bash
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/core-application-e2e-test-suite
+
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run tests
+        shell: bash
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_TASKLIST_URL: http://localhost:8080
+          CORE_APPLICATION_OPERATE_URL: http://localhost:8081
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          ZEEBE_REST_ADDRESS: "http://localhost:8089"
+        run: npm run test -- --project=chromium
+        working-directory: qa/core-application-e2e-test-suite
+
+      - name: Publish test results to TestRail
+        if: always()
+        shell: bash
+        env:
+          TESTRAIL_HOST: "https://camunda.testrail.com/"
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
+          JUNIT_RESULTS_FILE: "qa/core-application-e2e-test-suite/test-results/junit-report.xml"
+        run: |
+          pip install trcli
+          trcli -y -h $TESTRAIL_HOST \
+            --project 'Core Application' \
+            --username $TESTRAIL_USERNAME \
+            --key $TESTRAIL_KEY \
+            parse_junit --title "On Demand Core Application Test Run Results -  ${{ github.event.inputs.branch }}" \
+            --close-run \
+            -f $JUNIT_RESULTS_FILE
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Core Application E2E Test Result
+          path: qa/core-application-e2e-test-suite/html-report
+          retention-days: 10

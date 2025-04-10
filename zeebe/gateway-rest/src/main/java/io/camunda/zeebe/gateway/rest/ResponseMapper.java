@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationCreatedResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirementsResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionResult;
@@ -45,12 +46,15 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResult;
@@ -480,8 +484,9 @@ public final class ResponseMapper {
     final var response =
         new BatchOperationCreatedResult()
             .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
-            .batchOperationType(brokerResponse.getBatchOperationType().toString());
-    return new ResponseEntity<>(response, HttpStatus.CREATED);
+            .batchOperationType(
+                BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
+    return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
   }
 
   public static ResponseEntity<Object> toSignalBroadcastResponse(
@@ -513,14 +518,42 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toRoleCreateResponse(final RoleRecord roleRecord) {
     final var response =
-        new RoleCreateResult().roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()));
+        new RoleCreateResult()
+            .roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()))
+            .roleId(roleRecord.getRoleId())
+            .name(roleRecord.getName())
+            .description(roleRecord.getDescription());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toRoleUpdateResponse(final RoleRecord roleRecord) {
+    final var response =
+        new RoleUpdateResult()
+            .roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()))
+            .roleId(roleRecord.getRoleId())
+            .description(roleRecord.getDescription())
+            .name(roleRecord.getName());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toGroupCreateResponse(final GroupRecord groupRecord) {
     final var response =
-        new GroupCreateResult().groupKey(KeyUtil.keyToString(groupRecord.getGroupKey()));
+        new GroupCreateResult()
+            .groupKey(KeyUtil.keyToString(groupRecord.getGroupKey()))
+            .name(groupRecord.getName())
+            .groupId(groupRecord.getGroupId())
+            .description(groupRecord.getDescription());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toGroupUpdateResponse(final GroupRecord groupRecord) {
+    final var response =
+        new GroupUpdateResult()
+            .groupKey(KeyUtil.keyToString(groupRecord.getGroupKey()))
+            .groupId(groupRecord.getGroupId())
+            .description(groupRecord.getDescription())
+            .name(groupRecord.getName());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toTenantCreateResponse(final TenantRecord record) {
@@ -549,8 +582,20 @@ public final class ResponseMapper {
             .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
+            .mappingId(record.getMappingId())
             .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toMappingUpdateResponse(final MappingRecord record) {
+    final var response =
+        new MappingRuleUpdateResult()
+            .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
+            .claimName(record.getClaimName())
+            .claimValue(record.getClaimValue())
+            .mappingId(record.getMappingId())
+            .name(record.getName());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toEvaluateDecisionResponse(

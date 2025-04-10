@@ -10,8 +10,9 @@ import {observer} from 'mobx-react';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {IncidentBanner, Section} from './styled';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
-import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
+import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
+import {useQuery} from '@tanstack/react-query';
 
 const DecisionPanel: React.FC = observer(() => {
   const {decisionInstance} = decisionInstanceDetailsStore.state;
@@ -23,11 +24,22 @@ const DecisionPanel: React.FC = observer(() => {
     ),
   ).filter((item) => item !== undefined);
 
+  const {
+    data: decisionDefinitionXml,
+    isFetching,
+    isError,
+  } = useQuery(
+    useDecisionDefinitionXmlOptions({
+      decisionDefinitionKey: decisionInstance?.decisionDefinitionId,
+      enabled: !!decisionInstance?.decisionId,
+    }),
+  );
+
   const getStatus = () => {
-    if (decisionXmlStore.state.status === 'fetching') {
+    if (isFetching) {
       return 'loading';
     }
-    if (decisionXmlStore.state.status === 'error') {
+    if (isError) {
       return 'error';
     }
     return 'content';
@@ -46,7 +58,7 @@ const DecisionPanel: React.FC = observer(() => {
       )}
       <DiagramShell status={getStatus()}>
         <DecisionViewer
-          xml={decisionXmlStore.state.xml}
+          xml={decisionDefinitionXml ?? null}
           decisionViewId={decisionInstance?.decisionId ?? null}
           highlightableRules={highlightableRules}
         />

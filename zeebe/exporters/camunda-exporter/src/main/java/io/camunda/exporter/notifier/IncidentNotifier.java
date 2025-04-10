@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

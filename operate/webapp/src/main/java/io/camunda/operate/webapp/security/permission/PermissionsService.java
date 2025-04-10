@@ -15,6 +15,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.*;
@@ -219,6 +220,20 @@ public class PermissionsService {
     return Collections.emptyList();
   }
 
+  private List<String> getAuthenticatedUserTenantIds() {
+    final Authentication requestAuthentication =
+        SecurityContextHolder.getContext().getAuthentication();
+    if (requestAuthentication != null) {
+      final Object principal = requestAuthentication.getPrincipal();
+      if (principal instanceof final CamundaPrincipal authenticatedPrincipal) {
+        return authenticatedPrincipal.getAuthenticationContext().tenants().stream()
+            .map(TenantDTO::tenantId)
+            .toList();
+      }
+    }
+    return Collections.emptyList();
+  }
+
   private boolean isAuthorizedFor(
       final String resourceId,
       final AuthorizationResourceType resourceType,
@@ -235,12 +250,12 @@ public class PermissionsService {
   private io.camunda.security.auth.Authentication getAuthentication() {
     final var authenticatedUsername = getAuthenticatedUsername();
     final List<Long> authenticatedRoleKeys = getAuthenticatedUserRoleKeys();
-    final List<String> authorizedTenants = tenantService.tenantIds();
+    final List<String> authenticatedTenantIds = getAuthenticatedUserTenantIds();
     // groups  will come later
     return new io.camunda.security.auth.Authentication.Builder()
         .user(authenticatedUsername)
         .roleKeys(authenticatedRoleKeys)
-        .tenants(authorizedTenants)
+        .tenants(authenticatedTenantIds)
         .build();
   }
 

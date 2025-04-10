@@ -22,6 +22,6 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
 
   @Override
   public void applyState(final long key, final MappingRecord value) {
-    mappingState.delete(value.getId());
+    mappingState.delete(value.getMappingId());
   }
 }

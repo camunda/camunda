@@ -18,12 +18,15 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.GroupChangeset;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.response.UpdateGroupResponse;
+import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.protocol.rest.GroupChangeset;
+import io.camunda.client.impl.response.UpdateGroupResponseImpl;
 import io.camunda.client.protocol.rest.GroupUpdateRequest;
+import io.camunda.client.protocol.rest.GroupUpdateResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -47,13 +50,13 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
 
   @Override
   public UpdateGroupCommandStep1 update(final GroupChangeset groupChangeset) {
-    request.setChangeset(groupChangeset);
+    request.setChangeset(RequestMapper.toProtocolObject(groupChangeset));
     return this;
   }
 
   @Override
   public UpdateGroupCommandStep1 updateName(final String name) {
-    getChangesetEnsureInitialized().name(name);
+    getChangesetEnsureInitialized().setName(name);
     return this;
   }
 
@@ -66,15 +69,22 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
   @Override
   public CamundaFuture<UpdateGroupResponse> send() {
     final HttpCamundaFuture<UpdateGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.patch(
-        "/groups/" + groupKey, jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    final UpdateGroupResponseImpl response = new UpdateGroupResponseImpl();
+
+    httpClient.put(
+        "/groups/" + groupKey,
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        GroupUpdateResult.class,
+        response::setResponse,
+        result);
     return result;
   }
 
-  private GroupChangeset getChangesetEnsureInitialized() {
-    GroupChangeset changeset = request.getChangeset();
+  private io.camunda.client.protocol.rest.GroupChangeset getChangesetEnsureInitialized() {
+    io.camunda.client.protocol.rest.GroupChangeset changeset = request.getChangeset();
     if (changeset == null) {
-      changeset = new GroupChangeset();
+      changeset = new io.camunda.client.protocol.rest.GroupChangeset();
       request.setChangeset(changeset);
     }
     return changeset;

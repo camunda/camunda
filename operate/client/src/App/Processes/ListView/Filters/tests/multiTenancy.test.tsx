@@ -9,7 +9,6 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {
   createUser,
   groupedProcessesMock,
@@ -19,13 +18,13 @@ import {
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {
   selectProcess,
   selectTenant,
 } from 'modules/testUtils/selectComboBoxOption';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {authenticationStore} from 'modules/stores/authentication';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -33,7 +32,7 @@ describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
         tenants: [
@@ -45,7 +44,6 @@ describe('Filters', () => {
     );
     processesStore.fetchProcesses();
     await authenticationStore.authenticate();
-    await processXmlStore.fetchProcessXml('bigVarProcess');
   });
 
   it('should load values from the URL when multi tenancy is enabled', async () => {
@@ -131,7 +129,7 @@ describe('Filters', () => {
     });
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,

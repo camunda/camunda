@@ -16,9 +16,9 @@
 package io.camunda.client.impl.search.sort;
 
 import io.camunda.client.api.search.sort.UserTaskSort;
-import io.camunda.client.impl.search.query.SearchQuerySortBase;
+import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public class UserTaskSortImpl extends SearchQuerySortBase<UserTaskSort> implements UserTaskSort {
+public class UserTaskSortImpl extends SearchRequestSortBase<UserTaskSort> implements UserTaskSort {
 
   @Override
   public UserTaskSort creationDate() {

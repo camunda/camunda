@@ -9,8 +9,8 @@ package io.camunda.tasklist.store;
 
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.views.TaskSearchView;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.util.List;
 import java.util.Map;
 

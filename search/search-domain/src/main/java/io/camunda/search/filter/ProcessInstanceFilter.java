@@ -13,6 +13,7 @@ import static io.camunda.util.CollectionUtil.collectValues;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -32,7 +33,14 @@ public record ProcessInstanceFilter(
     Boolean hasIncident,
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
-    List<Operation<String>> batchOperationIdOperations)
+    List<Operation<String>> errorMessageOperations,
+    List<Operation<String>> batchOperationIdOperations,
+    Boolean hasRetriesLeft,
+    List<Operation<String>> flowNodeIdOperations,
+    Boolean hasFlowNodeInstanceIncident,
+    List<Operation<String>> flowNodeInstanceStateOperations,
+    List<Integer> incidentErrorHashCodes,
+    Integer partitionId)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -51,7 +59,8 @@ public record ProcessInstanceFilter(
         .hasIncident(hasIncident)
         .tenantIdOperations(tenantIdOperations)
         .variables(variableFilters)
-        .batchOperationIdOperations(batchOperationIdOperations);
+        .batchOperationIdOperations(batchOperationIdOperations)
+        .partitionId(partitionId);
   }
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
@@ -70,7 +79,14 @@ public record ProcessInstanceFilter(
     private Boolean hasIncident;
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
+    private List<Operation<String>> errorMessageOperations;
     private List<Operation<String>> batchOperationIdOperations;
+    private Boolean hasRetriesLeft;
+    private List<Operation<String>> flowNodeIdOperations;
+    private Boolean hasFlowNodeInstanceIncident;
+    private List<Operation<String>> flowNodeInstanceStateOperations;
+    private List<Integer> incidentErrorHashCodes;
+    private Integer partitionId;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -79,6 +95,11 @@ public record ProcessInstanceFilter(
 
     public Builder processInstanceKeys(final Long value, final Long... values) {
       return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder replaceProcessInstanceKeyOperations(final List<Operation<Long>> operations) {
+      processInstanceKeyOperations = new ArrayList<>(operations);
+      return this;
     }
 
     @SafeVarargs
@@ -275,6 +296,76 @@ public record ProcessInstanceFilter(
       return batchOperationIdOperations(collectValues(operation, operations));
     }
 
+    public Builder errorMessages(final String value, final String... values) {
+      return errorMessageOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder errorMessageOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return errorMessageOperations(collectValues(operation, operations));
+    }
+
+    public Builder errorMessageOperations(final List<Operation<String>> operations) {
+      errorMessageOperations = addValuesToList(errorMessageOperations, operations);
+      return this;
+    }
+
+    public Builder hasRetriesLeft(final Boolean value) {
+      hasRetriesLeft = value;
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder flowNodeIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return flowNodeIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder flowNodeIdOperations(final List<Operation<String>> values) {
+      flowNodeIdOperations = addValuesToList(flowNodeIdOperations, values);
+      return this;
+    }
+
+    public Builder flowNodeIds(final String value, final String... values) {
+      return flowNodeIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder hasFlowNodeInstanceIncident(final Boolean value) {
+      hasFlowNodeInstanceIncident = value;
+      return this;
+    }
+
+    public Builder flowNodeInstanceStateOperations(final List<Operation<String>> operations) {
+      flowNodeInstanceStateOperations =
+          addValuesToList(flowNodeInstanceStateOperations, operations);
+      return this;
+    }
+
+    public Builder flowNodeInstanceState(final String value, final String... values) {
+      return flowNodeInstanceStateOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder flowNodeInstanceStateOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return flowNodeInstanceStateOperations(collectValues(operation, operations));
+    }
+
+    public Builder incidentErrorHashCodes(final Integer value, final Integer... values) {
+      return incidentErrorHashCodes(collectValues(value, values));
+    }
+
+    public Builder incidentErrorHashCodes(final List<Integer> values) {
+      incidentErrorHashCodes = addValuesToList(incidentErrorHashCodes, values);
+      return this;
+    }
+
+    public Builder partitionId(final Integer value) {
+      partitionId = value;
+      return this;
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -293,7 +384,14 @@ public record ProcessInstanceFilter(
           hasIncident,
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
-          Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
+          hasRetriesLeft,
+          Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
+          hasFlowNodeInstanceIncident,
+          Objects.requireNonNullElse(flowNodeInstanceStateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(incidentErrorHashCodes, Collections.emptyList()),
+          partitionId);
     }
   }
 }

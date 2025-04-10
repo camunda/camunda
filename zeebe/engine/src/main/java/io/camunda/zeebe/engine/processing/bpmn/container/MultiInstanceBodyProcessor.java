@@ -119,7 +119,7 @@ public final class MultiInstanceBodyProcessor
   }
 
   @Override
-  public void onTerminate(
+  public TransitionOutcome onTerminate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
@@ -128,6 +128,7 @@ public final class MultiInstanceBodyProcessor
     if (noActiveChildInstances) {
       terminate(element, context);
     }
+    return TransitionOutcome.CONTINUE;
   }
 
   @Override

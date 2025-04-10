@@ -9,8 +9,8 @@ package io.camunda.operate.util.searchrepository;
 
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.requestOptions;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -23,9 +23,9 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,9 +54,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.index.reindex.ReindexRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -298,23 +295,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public void reindex(
-      final String srcIndex,
-      final String dstIndex,
-      final String script,
-      final Map<String, Object> scriptParams)
-      throws IOException {
-    final ReindexRequest reindexRequest =
-        new ReindexRequest()
-            .setSourceIndices(srcIndex)
-            .setDestIndex(dstIndex)
-            .setScript(
-                new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, scriptParams));
-
-    esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
-  }
-
-  @Override
   public boolean ilmPolicyExists(final String policyName) throws IOException {
     final var request = new GetLifecyclePolicyRequest(policyName);
     return esClient
@@ -323,19 +303,6 @@ public class TestElasticSearchRepository implements TestSearchRepository {
             .getPolicies()
             .get(policyName)
         != null;
-  }
-
-  @Override
-  public IndexSettings getIndexSettings(final String indexName) throws IOException {
-    final var settings =
-        esClient
-            .indices()
-            .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT)
-            .getSettings()
-            .get(indexName);
-    return new IndexSettings(
-        settings.getAsInt("index.number_of_shards", null),
-        settings.getAsInt("index.number_of_replicas", null));
   }
 
   @Override

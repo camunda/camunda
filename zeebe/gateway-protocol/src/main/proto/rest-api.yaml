@@ -542,7 +542,7 @@ paths:
       tags:
         - Tenant
       operationId: searchUsersForTenant
-      summary: Query users for tenant
+      summary: Search users for tenant
       description: Retrieves a filtered and sorted list of users for a specified tenant.
       parameters:
         - name: tenantId
@@ -565,7 +565,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
 
-  /tenants/{tenantId}/mapping-rules/{mappingKey}:
+  /tenants/{tenantId}/mappings/{mappingId}:
     put:
       tags:
         - Tenant
@@ -579,7 +579,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: mappingKey
+        - name: mappingId
           in: path
           required: true
           description: The unique identifier of the mapping rule.
@@ -614,7 +614,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: mappingKey
+        - name: mappingId
           in: path
           required: true
           description: The unique identifier of the mapping rule.
@@ -712,7 +712,7 @@ paths:
       tags:
         - Tenant
       operationId: searchTenants
-      summary: Query tenants
+      summary: Search tenants
       description: Retrieves a filtered and sorted list of tenants.
       requestBody:
         required: false
@@ -988,8 +988,8 @@ paths:
     post:
       tags:
         - User task
-      operationId: findUserTasks
-      summary: Query user tasks
+      operationId: searchUserTasks
+      summary: Search user tasks
       description: |
         Search for user tasks based on given criteria.
       requestBody:
@@ -1019,8 +1019,8 @@ paths:
     post:
       tags:
         - User task
-      operationId: findUserTaskVariables
-      summary: Query user task variables
+      operationId: searchUserTaskVariables
+      summary: Search user task variables
       description: |
         Search for user task variables based on given criteria.
       parameters:
@@ -1053,8 +1053,8 @@ paths:
     post:
       tags:
         - Variable
-      operationId: findVariables
-      summary: Query variables
+      operationId: searchVariables
+      summary: Search variables
       description: |
         Search for process and local variables based on given criteria.
       requestBody:
@@ -1169,8 +1169,8 @@ paths:
     post:
       tags:
         - Process definition
-      operationId: findProcessDefinitions
-      summary: Query process definitions
+      operationId: searchProcessDefinitions
+      summary: Search process definitions
       description: |
         Search for process definitions based on given criteria.
       requestBody:
@@ -1353,9 +1353,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsResult"
+                $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsQueryResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -1460,8 +1458,8 @@ paths:
     post:
       tags:
         - Process instance
-      operationId: findProcessInstances
-      summary: Query process instances
+      operationId: searchProcessInstances
+      summary: Search process instances
       description: |
         Search for process instances based on given criteria.
       requestBody:
@@ -1641,8 +1639,8 @@ paths:
     post:
       tags:
         - Flow node instance
-      operationId: findFlowNodeInstances
-      summary: Query flow node instances
+      operationId: searchFlowNodeInstances
+      summary: Search flow node instances
       description: |
         Search for flow node instances based on given criteria.
       requestBody:
@@ -1712,8 +1710,8 @@ paths:
     post:
       tags:
         - Decision definition
-      operationId: findDecisionDefinitions
-      summary: Query decision definitions
+      operationId: searchDecisionDefinitions
+      summary: Search decision definitions
       description: |
         Search for decision definitions based on given criteria.
       requestBody:
@@ -1823,8 +1821,8 @@ paths:
     post:
       tags:
         - Decision requirements
-      operationId: findDecisionRequirements
-      summary: Query decision requirements
+      operationId: searchDecisionRequirements
+      summary: Search decision requirements
       description: |
         Search for decision requirements based on given criteria.
       requestBody:
@@ -1934,8 +1932,8 @@ paths:
     post:
       tags:
         - Decision instance
-      operationId: findDecisionInstances
-      summary: Query decision instances
+      operationId: searchDecisionInstances
+      summary: Search decision instances
       description: |
         Search for decision instances based on given criteria.
       requestBody:
@@ -2146,10 +2144,10 @@ paths:
     post:
       tags:
         - Authorization
-      summary: Query authorizations
+      summary: Search authorizations
       description: |
         Search for authorizations based on given criteria.
-      operationId: findAuthorizations
+      operationId: searchAuthorizations
       requestBody:
         content:
           application/json:
@@ -2181,7 +2179,7 @@ paths:
       description: |
         Create a new role.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         content:
@@ -2204,22 +2202,22 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /roles/{roleKey}:
+  /roles/{roleId}:
     get:
       tags:
         - Role
       operationId: getRole
       summary: Get role (Work-in-Progress)
       description: |
-        Get a role by its key.
+        Get a role by its ID.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: roleKey
+        - name: roleId
           in: path
           required: true
-          description: The role key.
+          description: The role ID.
           schema:
             type: string
       responses:
@@ -2234,28 +2232,28 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The role with the given key was not found.
+          description: The role with the given ID was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-    patch:
+    put:
       tags:
         - Role
       operationId: updateRole
       summary: Update role (Work-in-Progress)
       description: |
-        Update a role with the given key.
+        Update a role with the given ID.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: roleKey
+        - name: roleId
           in: path
           required: true
-          description: The key of the role to update.
+          description: The ID of the role to update.
           schema:
             type: string
       requestBody:
@@ -2265,14 +2263,18 @@ paths:
             schema:
               $ref: "#/components/schemas/RoleUpdateRequest"
       responses:
-        "204":
+        "200":
           description: The role was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleUpdateResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The role with the roleKey is not found.
+          description: The role with the ID is not found.
           content:
             application/problem+json:
               schema:
@@ -2285,15 +2287,15 @@ paths:
       operationId: deleteRole
       summary: Delete role (Work-in-Progress)
       description: |
-        Deletes the role with the given key.
+        Deletes the role with the given ID.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: roleKey
+        - name: roleId
           in: path
           required: true
-          description: The key of the role to delete.
+          description: The ID of the role to delete.
           schema:
             type: string
       responses:
@@ -2302,7 +2304,90 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The role with the roleKey was not found.
+          description: The role with the ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /roles/{roleId}/users/{username}:
+    put:
+      tags:
+        - Role
+      operationId: addUserToRole
+      summary: Assign a user to a role (Work-in-Progress)
+      description: |
+        Assigns a user to a role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          description: The user username.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The user was assigned successfully to the role.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role or user with the given ID or username was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: The user with the given ID is already assigned to the role.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Role
+      operationId: removeUserFromRole
+      summary: Unassign a user from a role (Work-in-Progress)
+      description: |
+        Unassigns a user from a role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          description: The user username.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The user was unassigned successfully from the role.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role or user with the given ID or username was not found.
           content:
             application/problem+json:
               schema:
@@ -2314,11 +2399,11 @@ paths:
       tags:
         - Role
       operationId: searchRoles
-      summary: Query roles (Work-in-Progress)
+      summary: Search roles (Work-in-Progress)
       description: |
         Search for roles based on given criteria.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         required: false
@@ -2355,7 +2440,7 @@ paths:
       description: |
         Create a new group.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         content:
@@ -2377,22 +2462,22 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /groups/{groupKey}:
+  /groups/{groupId}:
     get:
       tags:
         - Group
       operationId: getGroup
       summary: Get group (Work-in-Progress)
       description: |
-        Get a group by its key.
+        Get a group by its ID.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
-          description: The group key.
+          description: The group ID.
           schema:
             type: string
       responses:
@@ -2407,28 +2492,28 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The group with the given key was not found.
+          description: The group with the given ID was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-    patch:
+    put:
       tags:
         - Group
       operationId: updateGroup
       summary: Update group (Work-in-Progress)
       description: |
-        Update a group with the given key.
+        Update a group with the given ID.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
-          description: The key of the group to update.
+          description: The ID of the group to update.
           schema:
             type: string
       requestBody:
@@ -2438,14 +2523,18 @@ paths:
             schema:
               $ref: "#/components/schemas/GroupUpdateRequest"
       responses:
-        "204":
+        "200":
           description: The group was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupUpdateResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The group with the groupKey is not found.
+          description: The group with the given ID was not found.
           content:
             application/problem+json:
               schema:
@@ -2458,15 +2547,15 @@ paths:
       operationId: deleteGroup
       summary: Delete group (Work-in-Progress)
       description: |
-        Deletes the group with the given key.
+        Deletes the group with the given ID.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
-          description: The key of the group to delete.
+          description: The ID of the group to delete.
           schema:
             type: string
       responses:
@@ -2475,15 +2564,15 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The group with the groupKey was not found.
+          description: The group with the given ID was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /groups/{groupKey}/users/{userKey}:
-    post:
+  /groups/{groupId}/users/{username}:
+    put:
       tags:
         - Group
       operationId: addUserToGroup
@@ -2491,19 +2580,19 @@ paths:
       description: |
         Assigns a user to a group.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
-          description: The group key.
+          description: The group ID.
           schema:
             type: string
-        - name: userKey
+        - name: username
           in: path
           required: true
-          description: The user key.
+          description: The user username.
           schema:
             type: string
       responses:
@@ -2514,13 +2603,13 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The group or user with the given key was not found.
+          description: The group or user with the given ID or username was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The user with the given key is already assigned to the group.
+          description: The user with the given ID is already assigned to the group.
           content:
             application/problem+json:
               schema:
@@ -2535,19 +2624,19 @@ paths:
       description: |
         Unassigns a user from a group.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
-          description: The group key.
+          description: The group ID.
           schema:
             type: string
-        - name: userKey
+        - name: username
           in: path
           required: true
-          description: The user key.
+          description: The user username.
           schema:
             type: string
       responses:
@@ -2558,7 +2647,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The group or user with the given key was not found, or the user is not assigned to this group.
+          description: The group or user with the given ID was not found, or the user is not assigned to this group.
           content:
             application/problem+json:
               schema:
@@ -2570,11 +2659,11 @@ paths:
       tags:
         - Group
       operationId: searchGroups
-      summary: Query groups (Work-in-Progress)
+      summary: Search groups (Work-in-Progress)
       description: |
         Search for groups based on given criteria.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         required: false
@@ -2640,7 +2729,51 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /mapping-rules/{mappingKey}:
+  /mapping-rules/{mappingId}:
+    put:
+      tags:
+        - Mapping rule
+      operationId: updateMappingRule
+      summary: Update mapping rule
+      description: |
+        Update a mapping rule.
+      parameters:
+        - name: mappingId
+          in: path
+          required: true
+          description: The id of the mapping rule to update.
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingRuleUpdateRequest"
+      responses:
+        "200":
+          description: The mapping rule was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingRuleUpdateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          description: |
+            The request to update a mapping rule was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The request to update a mapping rule was denied.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     delete:
       tags:
         - Mapping rule
@@ -2649,10 +2782,10 @@ paths:
       description: |
         Deletes the mapping rule with the given key.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: mappingKey
+        - name: mappingId
           in: path
           required: true
           description: The key of the mapping rule to delete.
@@ -2671,17 +2804,47 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    get:
+      tags:
+        - Mapping rule
+      operationId: getMappingRule
+      summary: Get a mapping rule (Work-in-Progress)
+      description: |
+        Gets the mapping rule with the given ID.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
+      parameters:
+        - name: mappingId
+          in: path
+          required: true
+          description: The ID of the mapping rule to get.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The mapping rule was returned successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The mapping rule with the mappingId was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /mapping-rules/search:
     post:
       tags:
         - Mapping rule
-      operationId: findMappings
-      summary: Query mappings (Work-in-Progress)
+      operationId: searchMappings
+      summary: Search mappings (Work-in-Progress)
       description: |
         Search for mapping rules based on given criteria.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         content:
@@ -2781,12 +2944,12 @@ paths:
       description: |
         Upload a document to the Camunda 8 cluster.
 
-        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
       parameters:
         - name: storeId
           in: query
           required: false
-          description: The ID of the document store to upload the document to.
+          description: The ID of the document store to upload the documents to. Currently, only a single document store is supported per cluster. However, this attribute is included to allow for potential future support of multiple document stores.
           schema:
             type: string
         - name: documentId
@@ -2841,12 +3004,12 @@ paths:
         each of which contains the file name of the document that failed to upload and the reason for the failure.
         The client can choose to retry the whole batch or individual documents based on the response.
 
-        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
       parameters:
         - name: storeId
           in: query
           required: false
-          description: The ID of the document store to upload the documents to.
+          description: The ID of the document store to upload the documents to. Currently, only a single document store is supported per cluster. However, this attribute is included to allow for potential future support of multiple document stores.
           schema:
             type: string
       requestBody:
@@ -2879,9 +3042,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DocumentCreationBatchResponse"
+                $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "207":
           description: >
             Not all documents were uploaded successfully. More details are provided in the response body.
@@ -2900,7 +3061,7 @@ paths:
       description: |
         Download a document from the Camunda 8 cluster.
 
-        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
       parameters:
         - name: documentId
           in: path
@@ -2922,8 +3083,7 @@ paths:
           description: >
             The hash of the document content that was computed by the document store during upload.
             The hash is part of the document reference that is returned when uploading a document.
-            This header is required when hash verification is enabled for the document store.
-            If hash verification is enabled and the client fails to provide the correct hash, the request will be rejected.
+            If the client fails to provide the correct hash, the request will be rejected.
       responses:
         "200":
           description: The document was downloaded successfully.
@@ -2950,7 +3110,7 @@ paths:
       description: |
         Delete a document from the Camunda 8 cluster.
 
-        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
       parameters:
         - name: documentId
           in: path
@@ -3008,8 +3168,7 @@ paths:
           description: >
             The hash of the document content that was computed by the document store during upload.
             The hash is part of the document reference that is returned when uploading a document.
-            This header is required when hash verification is enabled for the document store.
-            If hash verification is enabled and the client fails to provide the correct hash, the request will be rejected.
+            If the client fails to provide the correct hash, the request will be rejected.
       requestBody:
         required: false
         content:
@@ -3067,8 +3226,8 @@ paths:
     post:
       tags:
         - User
-      operationId: findUsers
-      summary: Query users
+      operationId: searchUsers
+      summary: Search users
       description: |
         Search for users based on given criteria.
       requestBody:
@@ -3161,8 +3320,8 @@ paths:
     post:
       tags:
         - Incident
-      operationId: findIncidents
-      summary: Query incidents
+      operationId: searchIncidents
+      summary: Search incidents
       description: |
         Search for incidents based on given criteria.
       requestBody:
@@ -3445,8 +3604,8 @@ paths:
     post:
       tags:
         - Ad-hoc subprocess
-      operationId: findAdHocSubprocessActivities
-      summary: Query activatable activities (alpha)
+      operationId: searchAdHocSubprocessActivities
+      summary: Search activatable activities (alpha)
       description: |
         Search for activatable activities within ad-hoc subprocesses based on given criteria.
 
@@ -3654,6 +3813,123 @@ paths:
                 $ref: "#/components/schemas/BatchOperationSearchQueryResult"
         "400":
           description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /batch-operations/{batchOperationKey}/cancel:
+    put:
+      tags:
+        - Batch operation
+      operationId: cancelBatchOperation
+      summary: Cancel Batch operation
+      description: Cancels a running batch operation.
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation.
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+        required: false
+      responses:
+        "202":
+          description: The batch operation cancel request was accepted.
+          content: { }
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The batch operation was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /batch-operations/{batchOperationKey}/pause:
+    put:
+      tags:
+        - Batch operation
+      operationId: pauseBatchOperation
+      summary: Pause Batch operation
+      description: Pauses a running batch operation.
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation.
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+        required: false
+      responses:
+        "202":
+          description: The batch operation pause request was accepted.
+          content: { }
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The batch operation was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /batch-operations/{batchOperationKey}/resume:
+    put:
+      tags:
+        - Batch operation
+      operationId: resumeBatchOperation
+      summary: Resume Batch operation
+      description: Resumes a paused batch operation.
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation.
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+        required: false
+      responses:
+        "202":
+          description: The batch operation resume request was accepted.
+          content: { }
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The batch operation was not found.
           content:
             application/problem+json:
               schema:
@@ -4346,6 +4622,11 @@ components:
           type: array
           items:
             type: string
+        $notIn:
+          description: Checks if the property matches none of the provided values.
+          type: array
+          items:
+            type: string
     AdvancedStringFilter:
       title: Advanced filter
       description: Advanced string filter.
@@ -4385,6 +4666,38 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
+          type: string
+    AdvancedFlowNodeInstanceStateFilter:
+      title: Advanced filter
+      description: Advanced FlowNodeInstanceStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
         $like:
           description: |
             Checks if the property matches the provided like value.
@@ -4460,6 +4773,16 @@ components:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceStateEnum"
         - $ref: "#/components/schemas/AdvancedProcessInstanceStateFilter"
+    FlowNodeInstanceStateFilterProperty:
+      description: FlowNodeInstanceStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+        - $ref: "#/components/schemas/AdvancedFlowNodeInstanceStateFilter"
     DateTimeFilterProperty:
       description: Date-time property with full advanced search capabilities.
       type: object
@@ -4539,6 +4862,28 @@ components:
           description: The batch operation ID.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+        errorMessage:
+          description: The error message related to the process.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        hasRetriesLeft:
+          description: Whether the process has failed jobs with retries left.
+          type: boolean
+        flowNodeInstanceState:
+          description: The state of the flow node instances associated with the process instance.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateFilterProperty"
+        flowNodeId:
+          description: The flow node ID associated with the process instance.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        hasFlowNodeInstanceIncident:
+          description:  Whether the flow node instance has an incident or not.
+          type: boolean
+        incidentErrorHashCode:
+          description: The incident error hash code, associated with this process.
+          type: integer
+          format: int32
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
@@ -4615,6 +4960,12 @@ components:
         - ACTIVE
         - COMPLETED
         - TERMINATED
+    FlowNodeInstanceStateEnum:
+      description: Flow node states, one of ACTIVE, COMPLETED, TERMINATED.
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - TERMINATED
     ProcessDefinitionFlowNodeStatisticsQuery:
       description: Process definition flow node statistics request.
       type: object
@@ -4623,6 +4974,15 @@ components:
           description: The process instance search filters.
           allOf:
             - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+    ProcessDefinitionFlowNodeStatisticsQueryResult:
+      description: Process definition flow node statistics query response.
+      type: object
+      properties:
+        items:
+          description: The flow node statistics.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsResult"
     ProcessDefinitionFlowNodeStatisticsResult:
       description: Process definition flow node statistics response.
       type: object
@@ -4703,11 +5063,8 @@ components:
           type: string
         state:
           description: State of flow node instance as defined set of values.
-          type: string
-          enum:
-            - ACTIVE
-            - COMPLETED
-            - TERMINATED
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateFilterProperty"
         type:
           description: Type of flow node as defined set of values.
           type: string
@@ -4824,11 +5181,8 @@ components:
             - UNKNOWN
         state:
           description: State of flow node instance as defined set of values.
-          type: string
-          enum:
-            - ACTIVE
-            - COMPLETED
-            - TERMINATED
+          allOf:
+            - "$ref": "#/components/schemas/FlowNodeInstanceStateEnum"
         hasIncident:
           description: Shows whether this flow node instance has an incident. If true also an incidentKey is provided.
           type: boolean
@@ -5295,7 +5649,7 @@ components:
           items:
             type: string
             allOf:
-             - $ref: "#/components/schemas/PermissionTypeEnum"
+              - $ref: "#/components/schemas/PermissionTypeEnum"
       required:
         - ownerId
         - ownerType
@@ -5510,6 +5864,9 @@ components:
         name:
           type: string
           description: The name of the mapping.
+        mappingId:
+          type: string
+          description: The ID of the mapping.
     CamundaUserResult:
       type: object
       properties:
@@ -5610,31 +5967,60 @@ components:
     RoleCreateRequest:
       type: "object"
       properties:
+        roleId:
+          type: "string"
+          description: The ID of the new role.
         name:
           type: "string"
           description: The display name of the new role.
+        description:
+          type: "string"
+          description: The description of the new role.
+      required:
+        - roleId
+        - name
     RoleCreateResult:
       type: object
       properties:
         roleKey:
           description: The key of the created role.
           type: string
+        roleId:
+          description: The ID of the created role.
+          type: string
+        name:
+          description: The display name of the created role.
+          type: string
+        description:
+          description: The description of the created role.
+          type: string
     RoleUpdateRequest:
       type: object
       properties:
-        changeset:
-          description: The set of changed role attributes.
-          allOf:
-            - $ref: "#/components/schemas/RoleChangeset"
+        name:
+          type: "string"
+          description: The display name of the new role.
+        description:
+          type: "string"
+          description: The description of the new role.
       required:
-        - changeset
-    RoleChangeset:
-      description: A set of changed role attributes.
+        - name
+        - description
+    RoleUpdateResult:
       type: object
       properties:
+        roleKey:
+          type: string
+          description: The key of the updated role.
         name:
           type: string
-          description: The updated display name of the role.
+          description: The display name of the updated role.
+        description:
+          type: string
+          description: The description of the updated role.
+        roleId:
+          type: string
+          description: The ID of the updated role.
     RoleResult:
       description: Role search response item.
       type: object
@@ -5689,14 +6075,32 @@ components:
     GroupCreateRequest:
       type: "object"
       properties:
+        groupId:
+            type: "string"
+            description: The ID of the new group.
         name:
           type: "string"
           description: The display name of the new group.
+        description:
+          type: "string"
+          description: The description of the new group.
+      required:
+        - groupId
+        - name
     GroupCreateResult:
       type: object
       properties:
         groupKey:
           description: The key of the created group.
+          type: string
+        groupId:
+          description: The ID of the created group.
+          type: string
+        name:
+          description: The display name of the created group.
+          type: string
+        description:
+          description: The description of the created group.
           type: string
     GroupUpdateRequest:
       type: object
@@ -5714,6 +6118,24 @@ components:
         name:
           type: string
           description: The updated display name of the group.
+        description:
+          type: string
+          description: The updated description of the group.
+    GroupUpdateResult:
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: The unique external group ID.
+        name:
+          type: string
+          description: The name of the group.
+        description:
+          type: string
+          description: The description of the group.
+        groupKey:
+          type: string
+          description: The unique system-generated internal group key.
     GroupResult:
       description: Group search response item.
       type: object
@@ -5775,8 +6197,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GroupResult"
-
-    MappingRuleCreateRequest:
+    MappingRuleCreateUpdateRequest:
       type: object
       properties:
         claimName:
@@ -5788,15 +6209,25 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        id:
-          type: string
-          description: The unique external id of the mapping.
       required:
         - claimName
         - claimValue
         - name
-        - id
-    MappingRuleCreateResult:
+    MappingRuleCreateRequest:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateUpdateRequest"
+      properties:
+        mappingId:
+          type: string
+          description: The unique external id of the mapping.
+      required:
+        - mappingId
+    MappingRuleUpdateRequest:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateUpdateRequest"
+    MappingRuleCreateUpdateResult:
       type: object
       properties:
         claimName:
@@ -5808,12 +6239,20 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        id:
+        mappingId:
           type: string
           description: The unique external id of the mapping.
         mappingKey:
           description: The key of the created mapping rule.
           type: string
+    MappingRuleCreateResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateUpdateResult"
+    MappingRuleUpdateResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateUpdateResult"
     MappingSearchQueryResult:
       type: object
       allOf:
@@ -5836,6 +6275,9 @@ components:
         name:
           type: string
           description: The name of the mapping.
+        mappingId:
+          type: string
+          description: The ID of the mapping.
         mappingKey:
           description: The key of the created mapping rule.
           type: string
@@ -7450,6 +7892,11 @@ components:
         resourceKey:
           description: The unique key of this resource.
           type: string
+    BatchOperationTypeEnum:
+      description: The type of the batch operation.
+      type: string
+      enum:
+      - PROCESS_CANCELLATION
     BatchOperationCreatedResult:
       type: object
       properties:
@@ -7457,9 +7904,7 @@ components:
           description: Key of the batch operation.
           type: string
         batchOperationType:
-          description: The type of the batch operation.
-          type: string
-          example: PROCESS_CANCELLATION
+          $ref: "#/components/schemas/BatchOperationTypeEnum"
     BatchOperationSearchQuerySortRequest:
       type: object
       properties:
@@ -7469,7 +7914,7 @@ components:
           enum:
             - batchOperationKey
             - operationType
-            - status
+            - state
             - startDate
             - endDate
         order:
@@ -7499,13 +7944,10 @@ components:
           description: The batch operation key.
           type: string
         operationType:
+          $ref: "#/components/schemas/BatchOperationTypeEnum"
+        state:
           type: string
-          description: The operation type of the batch operation.
-          enum:
-            - PROCESS_CANCELLATION
-        status:
-          type: string
-          description: The status of the batch operation.
+          description: The state of the batch operation.
           enum:
             - CREATED
             - ACTIVE
@@ -7529,8 +7971,8 @@ components:
         batchOperationKey:
           description: Key of the batch operation.
           type: string
-        status:
-          description: The status of the batch operation.
+        state:
+          description: The state of the batch operation.
           type: string
           enum:
             - CREATED
@@ -7540,9 +7982,7 @@ components:
             - COMPLETED_WITH_ERRORS
             - CANCELED
         batchOperationType:
-          description: The type of the batch operation.
-          type: string
-          example: PROCESS_CANCELLATION
+          $ref: "#/components/schemas/BatchOperationTypeEnum"
         startDate:
           type: string
           description: The start date of the batch operation.
@@ -7582,12 +8022,13 @@ components:
         itemKey:
           description: Key of the item, e.g. a process instance key.
           type: string
-        status:
-          description: Status of the item.
+        state:
+          description: State of the item.
           type: string
           enum:
             - ACTIVE
             - COMPLETED
+            - CANCELED
             - FAILED
   responses:
     InternalServerError:

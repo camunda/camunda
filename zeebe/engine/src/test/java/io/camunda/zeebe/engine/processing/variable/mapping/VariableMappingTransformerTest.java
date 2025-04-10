@@ -120,6 +120,22 @@ public final class VariableMappingTransformerTest {
             "{tab:\"Hello\tWorld\",newline:\"Hello\nWorld\",carriageReturn:\"Hello\rWorld\",doubleQoutes:\"\\\"My Name is \\\"Zeebe\\\", nice to meet you\\\"\",encodedQuotes:\"My Name is &#34;Zeebe&#34;, nice to meet you\"}");
   }
 
+  @Test
+  public void shouldHandleNullSource() {
+    // given
+    final var mappings = List.of(mapping(null, "a"));
+    final var expression = transformer.transformInputMappings(mappings, expressionLanguage);
+
+    // when
+    final var result = expressionLanguage.evaluateExpression(expression, name -> null);
+
+    // then
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+    assertThat(result.getExpression()).isEqualTo("{a:null}");
+  }
+
   private static ZeebeMapping mapping(final String source, final String target) {
     return new ZeebeMapping() {
       @Override

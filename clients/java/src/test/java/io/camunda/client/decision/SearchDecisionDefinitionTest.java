@@ -28,7 +28,7 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionDefinition() {
     // when
-    client.newDecisionDefinitionQuery().send().join();
+    client.newDecisionDefinitionSearchRequest().send().join();
 
     // then
     final DecisionDefinitionSearchQuery request =
@@ -40,7 +40,7 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
   void shouldSearchDecisionDefinitionWithFullFilters() {
     // when
     client
-        .newDecisionDefinitionQuery()
+        .newDecisionDefinitionSearchRequest()
         .filter(
             f ->
                 f.decisionDefinitionKey(1L)
@@ -69,7 +69,7 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
   void shouldSearchDecisionDefinitionWithFullSorting() {
     // when
     client
-        .newDecisionDefinitionQuery()
+        .newDecisionDefinitionSearchRequest()
         .sort(
             s ->
                 s.decisionDefinitionKey()

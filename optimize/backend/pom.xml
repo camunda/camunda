@@ -94,6 +94,7 @@
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- IDENTITY-->
@@ -434,7 +435,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>8.8.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>
@@ -620,7 +620,6 @@
       <artifactId>spring-core</artifactId>
     </dependency>
 
-    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>

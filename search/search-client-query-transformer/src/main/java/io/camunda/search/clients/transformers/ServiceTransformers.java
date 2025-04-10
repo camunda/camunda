@@ -7,8 +7,18 @@
  */
 package io.camunda.search.clients.transformers;
 
+import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
+import io.camunda.search.aggregation.result.AggregationResultBase;
+import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
+import io.camunda.search.clients.aggregator.SearchAggregator;
+import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.aggregation.AggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.AggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionDefinitionEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
@@ -39,6 +49,7 @@ import io.camunda.search.clients.transformers.filter.GroupFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
+import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.RoleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantFilterTransformer;
@@ -81,6 +92,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.filter.TenantFilter;
@@ -98,6 +110,7 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
@@ -129,35 +142,34 @@ import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.UsageMetricsEntity;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.tasklist.FormEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.GroupIndex;
+import io.camunda.webapps.schema.descriptors.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.RoleIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.TenantIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.UsageMetricsEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.form.FormEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
@@ -165,7 +177,9 @@ import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -191,6 +205,18 @@ public final class ServiceTransformers {
   public <F extends FilterBase> FilterTransformer<F> getFilterTransformer(final Class<?> cls) {
     final ServiceTransformer<F, SearchQuery> transformer = getTransformer(cls);
     return (FilterTransformer<F>) transformer;
+  }
+
+  public <A extends AggregationResultBase>
+      AggregationResultTransformer<A> getSearchAggregationResultTransformer(final Class<A> cls) {
+    final ServiceTransformer<Map<String, AggregationResult>, A> transformer = getTransformer(cls);
+    return (AggregationResultTransformer<A>) transformer;
+  }
+
+  public <A extends AggregationBase> AggregationTransformer<A> getAggregationTransformer(
+      final Class<?> cls) {
+    final ServiceTransformer<A, List<SearchAggregator>> transformer = getTransformer(cls);
+    return (AggregationTransformer<A>) transformer;
   }
 
   public FieldSortingTransformer getFieldSortingTransformer(final Class<?> cls) {
@@ -226,6 +252,7 @@ public final class ServiceTransformers {
             IncidentQuery.class,
             MappingQuery.class,
             ProcessDefinitionQuery.class,
+            ProcessDefinitionFlowNodeStatisticsQuery.class,
             ProcessInstanceQuery.class,
             RoleQuery.class,
             TenantQuery.class,
@@ -328,6 +355,10 @@ public final class ServiceTransformers {
         new UsageMetricsFilterTransformer(
             indexDescriptors.get(TasklistMetricIndex.class),
             indexDescriptors.get(MetricIndex.class)));
+    mappers.put(
+        ProcessDefinitionStatisticsFilter.class,
+        new ProcessDefinitionStatisticsFilterTransformer(
+            mappers, indexDescriptors.get(ListViewTemplate.class)));
 
     // result config -> source config
     mappers.put(
@@ -337,5 +368,15 @@ public final class ServiceTransformers {
         new DecisionRequirementsResultConfigTransformer());
     mappers.put(
         ProcessInstanceQueryResultConfig.class, new ProcessInstanceResultConfigTransformer());
+
+    // aggregation
+    mappers.put(
+        ProcessDefinitionFlowNodeStatisticsAggregation.class,
+        new ProcessDefinitionFlowNodeStatisticsAggregationTransformer());
+
+    // aggregation result
+    mappers.put(
+        ProcessDefinitionFlowNodeStatisticsAggregationResult.class,
+        new ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer());
   }
 }

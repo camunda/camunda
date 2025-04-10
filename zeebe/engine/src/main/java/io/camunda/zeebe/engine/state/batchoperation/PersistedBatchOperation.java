@@ -9,11 +9,15 @@ package io.camunda.zeebe.engine.state.batchoperation;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.util.Comparator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -21,18 +25,42 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   private final LongProperty keyProp = new LongProperty("key");
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
-      new EnumProperty<>(
-          "batchOperationType", BatchOperationType.class, BatchOperationType.UNSPECIFIED);
+      new EnumProperty<>("batchOperationType", BatchOperationType.class);
   private final EnumProperty<BatchOperationStatus> statusProp =
       new EnumProperty<>("status", BatchOperationStatus.class);
   private final BinaryProperty entityFilterProp = new BinaryProperty("entityFilter");
+  private final ArrayProperty<LongValue> chunkKeysProp =
+      new ArrayProperty<>("chunkKeys", LongValue::new);
 
   public PersistedBatchOperation() {
-    super(4);
+    super(5);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
-        .declareProperty(entityFilterProp);
+        .declareProperty(entityFilterProp)
+        .declareProperty(chunkKeysProp);
+  }
+
+  public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
+    setKey(record.getBatchOperationKey());
+    setBatchOperationType(record.getBatchOperationType());
+    setEntityFilter(record.getEntityFilterBuffer());
+    return this;
+  }
+
+  public boolean canCancel() {
+    return getStatus() == BatchOperationStatus.CREATED
+        || getStatus() == BatchOperationStatus.STARTED
+        || getStatus() == BatchOperationStatus.PAUSED;
+  }
+
+  public boolean canPause() {
+    return getStatus() == BatchOperationStatus.CREATED
+        || getStatus() == BatchOperationStatus.STARTED;
+  }
+
+  public boolean isPaused() {
+    return getStatus() == BatchOperationStatus.PAUSED;
   }
 
   public long getKey() {
@@ -72,11 +100,51 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public <T> T getEntityFilter(final Class<T> clazz) {
+    return MsgPackConverter.convertToObject(entityFilterProp.getValue(), clazz);
+  }
+
+  public long nextChunkKey() {
+    return getMaxChunkKey() + 1;
+  }
+
+  public PersistedBatchOperation addChunkKey(final Long chunkKey) {
+    chunkKeysProp.add().setValue(chunkKey);
+    return this;
+  }
+
+  public PersistedBatchOperation removeChunkKey(final Long chunkKey) {
+    final var newKeys =
+        chunkKeysProp.stream().map(LongValue::getValue).filter(k -> !k.equals(chunkKey)).toList();
+
+    chunkKeysProp.reset();
+
+    for (final var key : newKeys) {
+      chunkKeysProp.add().setValue(key);
+    }
+
+    return this;
+  }
+
+  public long getMinChunkKey() {
+    return chunkKeysProp.stream()
+        .min(Comparator.comparing(LongValue::getValue))
+        .map(LongValue::getValue)
+        .orElse(-1L);
+  }
+
+  public long getMaxChunkKey() {
+    return chunkKeysProp.stream()
+        .max(Comparator.comparing(LongValue::getValue))
+        .map(LongValue::getValue)
+        .orElse(-1L);
+  }
+
   public enum BatchOperationStatus {
     CREATED,
-    ACTIVATED,
+    STARTED,
     PAUSED,
     CANCELED,
-    COMPLETED
+    FAILED
   }
 }

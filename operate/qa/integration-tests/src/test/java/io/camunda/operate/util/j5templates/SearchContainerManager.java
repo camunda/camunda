@@ -10,7 +10,8 @@ package io.camunda.operate.util.j5templates;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.qa.util.TestSchemaManager;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +19,16 @@ import org.slf4j.LoggerFactory;
 public abstract class SearchContainerManager {
   protected static final Logger LOGGER = LoggerFactory.getLogger(SearchContainerManager.class);
 
+  protected final SearchEngineConfiguration searchEngineConfiguration;
   protected final OperateProperties operateProperties;
-  protected final SchemaManager schemaManager;
+  protected final TestSchemaManager schemaManager;
   protected String indexPrefix;
 
   public SearchContainerManager(
-      final OperateProperties operateProperties, final SchemaManager schemaManager) {
+      final SearchEngineConfiguration searchEngineConfiguration,
+      final OperateProperties operateProperties,
+      final TestSchemaManager schemaManager) {
+    this.searchEngineConfiguration = searchEngineConfiguration;
     this.operateProperties = operateProperties;
     this.schemaManager = schemaManager;
   }

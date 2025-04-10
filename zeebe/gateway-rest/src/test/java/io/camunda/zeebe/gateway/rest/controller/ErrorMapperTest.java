@@ -156,7 +156,6 @@ public class ErrorMapperTest extends RestControllerTest {
         "INTERNAL_ERROR",
         "UNSUPPORTED_MESSAGE",
         "INVALID_CLIENT_VERSION",
-        "MALFORMED_REQUEST",
         "INVALID_MESSAGE_TEMPLATE",
         "INVALID_DEPLOYMENT_PARTITION",
         "SBE_UNKNOWN",
@@ -552,6 +551,35 @@ public class ErrorMapperTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldYieldMaxMessageSizeExceededWhenRequestIsTooLarge() {
+    // given
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerError(ErrorCode.MALFORMED_REQUEST, "max size error"))));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "max size error");
+    expectedBody.setTitle(ErrorCode.MALFORMED_REQUEST.name());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.BAD_REQUEST)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
   }

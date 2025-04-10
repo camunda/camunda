@@ -8,74 +8,67 @@
 package io.camunda.operate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 import io.camunda.operate.management.IndicesCheck;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.qa.util.TestSchemaManager;
-import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.UserService;
-import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import io.camunda.operate.util.TestUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(
-    classes = {
-      TestApplication.class,
-      OAuth2WebConfigurer.class,
-      TestElasticsearchSchemaManager.class
-    },
-    properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-      "spring.profiles.active=consolidated-auth,test"
-    })
-public class ProbesTestIT {
+class ProbesTestIT {
 
-  @Autowired private OperateProperties operateProperties;
+  @Nested
+  @ExtendWith(SpringExtension.class)
+  @SpringBootTest(
+      classes = TestApplication.class,
+      webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+  class SchemaExistsTest {
+    @Autowired private IndicesCheck indicesCheck;
 
-  @Autowired private TestSchemaManager schemaManager;
+    @Autowired private TestSchemaManager testSchemaManager;
 
-  @Autowired private IndicesCheck probes;
+    @DynamicPropertySource
+    static void setProperties(final DynamicPropertyRegistry registry) {
+      registry.add("camunda.database.indexPrefix", () -> TestUtil.createRandomString(10));
+      registry.add("camunda.database.schema-manager.createSchema", () -> true);
+    }
 
-  @Autowired private IndexPrefixHolder indexPrefixHolder;
+    @Test
+    public void testIsReady() {
+      assertThat(indicesCheck.indicesArePresent()).isTrue();
+    }
 
-  @MockBean private UserService userService;
-
-  @Before
-  public void before() {
-    when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId("testuser"));
-    schemaManager.setIndexPrefix(indexPrefixHolder.createNewIndexPrefix());
+    @AfterEach
+    public void after() {
+      testSchemaManager.deleteSchemaQuietly();
+    }
   }
 
-  @After
-  public void after() {
-    schemaManager.deleteSchemaQuietly();
-    schemaManager.setDefaultIndexPrefix();
-  }
+  @Nested
+  @ExtendWith(SpringExtension.class)
+  @SpringBootTest(
+      classes = TestApplication.class,
+      webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+  class SchemaNotExistsTest {
+    @Autowired private IndicesCheck indicesCheck;
 
-  @Test
-  public void testIsReady() {
-    assertThat(probes.indicesArePresent()).isFalse();
-    schemaManager.setCreateSchema(true);
-    schemaManager.createSchema();
-    assertThat(probes.indicesArePresent()).isTrue();
-  }
+    @DynamicPropertySource
+    static void setProperties(final DynamicPropertyRegistry registry) {
+      registry.add("camunda.database.indexPrefix", () -> TestUtil.createRandomString(10));
+      registry.add("camunda.database.schema-manager.createSchema", () -> false);
+    }
 
-  @Test
-  public void testIsNotReady() {
-    schemaManager.setCreateSchema(false);
-    assertThat(probes.indicesArePresent()).isFalse();
+    @Test
+    public void testIsNotReady() {
+      assertThat(indicesCheck.indicesArePresent()).isFalse();
+    }
   }
 }

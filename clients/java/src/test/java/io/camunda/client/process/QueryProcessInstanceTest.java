@@ -15,15 +15,14 @@
  */
 package io.camunda.client.process;
 
-import static io.camunda.client.api.search.response.ProcessInstanceState.ACTIVE;
+import static io.camunda.client.api.search.enums.ProcessInstanceState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
-import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.impl.search.request.SearchRequestSort;
+import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -48,7 +47,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   public void shouldSearchProcessInstanceWithEmptyQuery() {
     // when
-    client.newProcessInstanceQuery().send().join();
+    client.newProcessInstanceSearchRequest().send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -68,12 +67,12 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         Arrays.asList(
             new ProcessInstanceVariableFilterRequest()
                 .name("n1")
-                .value(new StringPropertyImpl().eq("v1").build()),
+                .value(new StringFilterProperty().$eq("v1")),
             new ProcessInstanceVariableFilterRequest()
                 .name("n2")
-                .value(new StringPropertyImpl().eq("v2").build()));
+                .value(new StringFilterProperty().$eq("v2")));
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(
             f ->
                 f.processInstanceKey(123L)
@@ -89,7 +88,13 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .state(ACTIVE)
                     .hasIncident(true)
                     .tenantId("tenant")
-                    .variables(variablesMap))
+                    .variables(variablesMap)
+                    .errorMessage("Error message")
+                    .hasRetriesLeft(true)
+                    .flowNodeId("flowNodeId")
+                    .flowNodeInstanceState(FlowNodeInstanceState.ACTIVE)
+                    .hasFlowNodeInstanceIncident(true)
+                    .incidentErrorHashCode(123456789))
         .send()
         .join();
     // then
@@ -107,17 +112,25 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo("30");
     assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
     assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
-    assertThat(filter.getState().get$Eq()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(filter.getState().get$Eq())
+        .isEqualTo(io.camunda.client.protocol.rest.ProcessInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
+    assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
+    assertThat(filter.getHasRetriesLeft()).isEqualTo(true);
+    assertThat(filter.getFlowNodeId().get$Eq()).isEqualTo("flowNodeId");
+    assertThat(filter.getFlowNodeInstanceState().get$Eq())
+        .isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
+    assertThat(filter.getHasFlowNodeInstanceIncident()).isEqualTo(true);
+    assertThat(filter.getIncidentErrorHashCode()).isEqualTo(123456789);
   }
 
   @Test
-  void shouldSearchProcessInstanceByProcessInstanceKeyLongFilter() {
+  void shouldSearchProcessInstanceByProcessInstanceKeyLongInFilter() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
         .send()
         .join();
@@ -133,10 +146,29 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSearchProcessInstanceByProcessInstanceKeyLongNinFilter() {
+    // when
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.processInstanceKey(b -> b.notIn(1L, 10L)))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    assertThat(processInstanceKey).isNotNull();
+    assertThat(processInstanceKey.get$NotIn()).isEqualTo(Arrays.asList("1", "10"));
+  }
+
+  @Test
   void shouldSearchProcessInstanceByProcessDefinitionIdStringFilter() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(b -> b.like("string")))
         .send()
         .join();
@@ -155,7 +187,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceByStartDateDateTimeFilter() {
     // when
     final OffsetDateTime now = OffsetDateTime.now();
-    client.newProcessInstanceQuery().filter(f -> f.startDate(b -> b.gt(now))).send().join();
+    client.newProcessInstanceSearchRequest().filter(f -> f.startDate(b -> b.gt(now))).send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -177,13 +209,13 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         Arrays.asList(
             new ProcessInstanceVariableFilterRequest()
                 .name("n1")
-                .value(new StringPropertyImpl().eq("v1").build()),
+                .value(new StringFilterProperty().$eq("v1")),
             new ProcessInstanceVariableFilterRequest()
                 .name("n2")
-                .value(new StringPropertyImpl().eq("v2").build()));
+                .value(new StringFilterProperty().$eq("v2")));
 
     // when
-    client.newProcessInstanceQuery().filter(f -> f.variables(variablesMap)).send().join();
+    client.newProcessInstanceSearchRequest().filter(f -> f.variables(variablesMap)).send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -197,7 +229,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceWithFullSorting() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .sort(
             s ->
                 s.processInstanceKey()
@@ -232,8 +264,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // then
     final ProcessInstanceSearchQuery request =
         gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
-    final List<SearchQuerySortRequest> sorts =
-        SearchQuerySortRequestMapper.fromProcessInstanceSearchQuerySortRequest(
+    final List<SearchRequestSort> sorts =
+        SearchRequestSortMapper.fromProcessInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(13);
     assertSort(sorts.get(0), "processInstanceKey", SortOrderEnum.ASC);
@@ -255,7 +287,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchWithFullPagination() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .page(
             p ->
                 p.from(23)
@@ -276,32 +308,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList("a"));
   }
 
-  @Test
-  public void shouldConvertProcessInstanceState() {
-
-    for (final ProcessInstanceState value : ProcessInstanceState.values()) {
-      final ProcessInstanceStateEnum protocolValue = ProcessInstanceState.toProtocolState(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == ProcessInstanceState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue).isEqualTo(ProcessInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final ProcessInstanceStateEnum protocolValue : ProcessInstanceStateEnum.values()) {
-      final ProcessInstanceState value = ProcessInstanceState.fromProtocolState(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == ProcessInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(ProcessInstanceState.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
   private void assertSort(
-      final SearchQuerySortRequest sort, final String name, final SortOrderEnum order) {
+      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
   }

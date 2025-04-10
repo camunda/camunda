@@ -7,17 +7,17 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT_TIME;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.VALUE;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.OpenSearchUtil;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -58,7 +58,7 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
   private OpenSearchClient openSearchClient;
 
   @Override
-  public void registerTaskCompleteEvent(TaskEntity task) {
+  public void registerTaskCompleteEvent(final TaskEntity task) {
     final MetricEntity metric = createTaskCompleteEvent(task);
     final boolean inserted = insert(metric);
     if (!inserted) {
@@ -68,24 +68,9 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
     }
   }
 
-  private boolean insert(MetricEntity entity) {
-    try {
-      final IndexRequest<MetricEntity> request =
-          IndexRequest.of(
-              builder ->
-                  builder.index(index.getFullQualifiedName()).id(entity.getId()).document(entity));
-
-      final IndexResponse response = openSearchClient.index(request);
-      return Result.Created.equals(response.result());
-    } catch (IOException | OpenSearchException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity);
-    }
-  }
-
   @Override
   public List<String> retrieveDistinctAssigneesBetweenDates(
-      OffsetDateTime startTime, OffsetDateTime endTime) {
+      final OffsetDateTime startTime, final OffsetDateTime endTime) {
 
     final Query rangeQuery =
         OpenSearchUtil.joinWithAnd(
@@ -131,14 +116,29 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
 
       final List<StringTermsBucket> buckets = aggregate.sterms().buckets().array();
       return buckets.stream().map(StringTermsBucket::key).toList();
-    } catch (IOException | OpenSearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       LOGGER.error("Error while retrieving assigned users between dates from index: " + index, e);
       final String message = "Error while retrieving assigned users between dates";
       throw new TasklistRuntimeException(message);
     }
   }
 
-  private MetricEntity createTaskCompleteEvent(TaskEntity task) {
+  private boolean insert(final MetricEntity entity) {
+    try {
+      final IndexRequest<MetricEntity> request =
+          IndexRequest.of(
+              builder ->
+                  builder.index(index.getFullQualifiedName()).id(entity.getId()).document(entity));
+
+      final IndexResponse response = openSearchClient.index(request);
+      return Result.Created.equals(response.result());
+    } catch (final IOException | OpenSearchException e) {
+      LOGGER.error(e.getMessage(), e);
+      throw new TasklistRuntimeException("Error while trying to upsert entity: " + entity);
+    }
+  }
+
+  private MetricEntity createTaskCompleteEvent(final TaskEntity task) {
     return new MetricEntity()
         .setEvent(EVENT_TASK_COMPLETED_BY_ASSIGNEE)
         .setValue(task.getAssignee())

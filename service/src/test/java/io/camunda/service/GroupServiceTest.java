@@ -19,6 +19,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.GroupServices.CreateGroupRequest;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
@@ -56,10 +57,13 @@ public class GroupServiceTest {
   @Test
   public void shouldCreateGroup() {
     // given
+    final var groupId = "groupId";
     final var groupName = "testGroup";
+    final var description = "description";
 
     // when
-    services.createGroup(groupName);
+    final var createGroupRequest = new CreateGroupRequest(groupId, groupName, description);
+    services.createGroup(createGroupRequest);
 
     // then
     final BrokerGroupCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -68,6 +72,8 @@ public class GroupServiceTest {
     assertThat(request.getIntent()).isEqualTo(GroupIntent.CREATE);
     assertThat(request.getKey()).isEqualTo(-1L);
     assertThat(record).hasName(groupName);
+    assertThat(record).hasGroupId(groupId);
+    assertThat(record).hasDescription(description);
   }
 
   @Test
@@ -138,10 +144,12 @@ public class GroupServiceTest {
   public void shouldUpdateGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 100L);
+    final var groupId = String.valueOf(groupKey);
     final var name = "UpdatedName";
+    final var description = "UpdatedDescription";
 
     // when
-    services.updateGroup(groupKey, name);
+    services.updateGroup(groupId, name, description);
 
     // then
     final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -152,15 +160,17 @@ public class GroupServiceTest {
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasName(name);
     assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasDescription(description);
   }
 
   @Test
   public void shouldDeleteGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123L);
+    final var groupId = String.valueOf(groupKey);
 
     // when
-    services.deleteGroup(groupKey);
+    services.deleteGroup(groupId);
 
     // then
     final BrokerGroupDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -170,17 +180,19 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasGroupId(groupId);
   }
 
   @Test
   public void shouldAddMemberToGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123);
-    final var memberKey = 456L;
+    final var groupId = String.valueOf(groupKey);
+    final var memberId = "456";
     final var memberType = EntityType.USER;
 
     // when
-    services.assignMember(groupKey, memberKey, memberType);
+    services.assignMember(groupId, memberId, memberType);
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -190,7 +202,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
-    assertThat(record).hasEntityKey(memberKey);
+    assertThat(record).hasEntityKey(Long.parseLong(memberId));
     assertThat(record).hasEntityType(EntityType.USER);
   }
 
@@ -198,11 +210,13 @@ public class GroupServiceTest {
   public void shouldRemoveMemberFromGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123L);
+    final var groupId = String.valueOf(groupKey);
     final var memberKey = 456L;
+    final var username = String.valueOf(memberKey);
     final var memberType = EntityType.USER;
 
     // when
-    services.removeMember(groupKey, memberKey, memberType);
+    services.removeMember(groupId, username, memberType);
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();

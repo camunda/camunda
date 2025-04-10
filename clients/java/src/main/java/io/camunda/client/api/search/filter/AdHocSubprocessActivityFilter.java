@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
 
 public interface AdHocSubprocessActivityFilter extends SearchRequestFilter {
 
@@ -40,5 +40,5 @@ public interface AdHocSubprocessActivityFilter extends SearchRequestFilter {
    *
    * @return the API filter object
    */
-  io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter getRequestFilter();
+  AdHocSubprocessActivityRequestFilter getRequestFilter();
 }

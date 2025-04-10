@@ -28,6 +28,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
+import {TopPanel as TopPanelV2} from './TopPanel/v2';
 import {BottomPanel, ModificationFooter, Buttons} from './styled';
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 import {Button, Modal} from '@carbon/react';
@@ -41,6 +42,8 @@ import {Forbidden} from 'modules/components/Forbidden';
 import {notificationsStore} from 'modules/stores/notifications';
 import {Frame} from 'modules/components/Frame';
 import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
+import {IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
   variablesStore.startPolling(processInstanceId, {runImmediately: true});
@@ -171,6 +174,10 @@ const ProcessInstance: React.FC = observer(() => {
   }, []);
 
   const {
+    state: {processInstance},
+  } = processInstanceDetailsStore;
+
+  const {
     isModificationModeEnabled,
     state: {modifications, status: modificationStatus},
   } = modificationsStore;
@@ -191,7 +198,7 @@ const ProcessInstance: React.FC = observer(() => {
   }
 
   return (
-    <>
+    <ProcessDefinitionKeyContext.Provider value={processInstance?.processId}>
       <VisuallyHiddenH1>
         {`Operate Process Instance${
           isModificationModeEnabled ? ' - Modification Mode' : ''
@@ -215,7 +222,13 @@ const ProcessInstance: React.FC = observer(() => {
             ) : undefined
           }
           header={<ProcessInstanceHeader />}
-          topPanel={<TopPanel />}
+          topPanel={
+            IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED ? (
+              <TopPanelV2 />
+            ) : (
+              <TopPanel />
+            )
+          }
           bottomPanel={
             <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
               <FlowNodeInstanceLog />
@@ -319,7 +332,7 @@ const ProcessInstance: React.FC = observer(() => {
           </p>
         </Modal>
       )}
-    </>
+    </ProcessDefinitionKeyContext.Provider>
   );
 });
 

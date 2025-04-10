@@ -8,31 +8,29 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
-import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
-import static io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.webapps.schema.entities.incident.ErrorType.JOB_NO_RETRIES;
 
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.webapps.operate.TreePath;
-import io.camunda.webapps.schema.entities.operate.EventEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.IncidentState;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceInputEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
-import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
-import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceInputEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceOutputEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.dmn.DecisionType;
+import io.camunda.webapps.schema.entities.event.EventEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentState;
+import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -48,7 +46,6 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indexlifecycle.DeleteLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -497,25 +494,6 @@ public abstract class TestUtil {
       LOGGER.info("Removing indices");
       indexOperations.deleteIndicesWithRetries(prefix + "*");
       templateOperations.deleteTemplatesWithRetries(prefix + "*");
-    } catch (final Exception ex) {
-      LOGGER.error(ex.getMessage(), ex);
-    }
-  }
-
-  public static void removeIlmPolicy(final RestHighLevelClient esClient) {
-    try {
-      LOGGER.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
-      final var request = new DeleteLifecyclePolicyRequest(OPERATE_DELETE_ARCHIVED_INDICES);
-      esClient.indexLifecycle().deleteLifecyclePolicy(request, RequestOptions.DEFAULT);
-    } catch (final ElasticsearchStatusException | IOException ex) {
-      LOGGER.error(ex.getMessage(), ex);
-    }
-  }
-
-  public static void removeIlmPolicy(final RichOpenSearchClient richOpenSearchClient) {
-    try {
-      LOGGER.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
-      richOpenSearchClient.ism().deletePolicy(OPERATE_DELETE_ARCHIVED_INDICES);
     } catch (final Exception ex) {
       LOGGER.error(ex.getMessage(), ex);
     }

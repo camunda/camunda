@@ -9,12 +9,10 @@
 import {renderHook} from '@testing-library/react-hooks';
 import {useFilters} from 'modules/hooks/useFilters';
 import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
-import {
-  ProcessInstancesStatisticsRequest,
-  ProcessInstanceState,
-} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstanceFilters} from './useProcessInstancesFilters';
 import {processesStore} from 'modules/stores/processes/processes.list';
+import {GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 
 jest.mock('modules/hooks/useFilters');
 jest.mock('modules/stores/processes/processes.list');
@@ -54,35 +52,34 @@ describe('useProcessInstanceFilters', () => {
       getFilters: () => mockFilters,
     });
 
-    const expectedRequest: ProcessInstancesStatisticsRequest = {
-      startDate: {
-        $gt: '2023-01-01',
-        $lt: '2023-01-31',
+    const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
+      filter: {
+        startDate: {
+          $gt: '2023-01-01T00:00:00.000Z',
+          $lt: '2023-01-31T00:00:00.000Z',
+        },
+        endDate: {
+          $gt: '2023-02-01T00:00:00.000Z',
+          $lt: '2023-02-28T00:00:00.000Z',
+        },
+        processInstanceKey: {
+          $in: ['id1', 'id2'],
+        },
+        state: {
+          $in: [
+            ProcessInstanceState.ACTIVE,
+            ProcessInstanceState.COMPLETED,
+            ProcessInstanceState.TERMINATED,
+          ],
+        },
+        hasIncident: true,
+        parentProcessInstanceKey: {
+          $eq: 'parent1',
+        },
+        tenantId: {
+          $eq: 'tenant1',
+        },
       },
-      endDate: {
-        $gt: '2023-02-01',
-        $lt: '2023-02-28',
-      },
-      processDefinitionKey: {
-        $in: ['processId1', 'processId2'],
-      },
-      processInstanceKey: {
-        $in: ['id1', 'id2'],
-      },
-      state: {
-        $in: [
-          ProcessInstanceState.RUNNING,
-          ProcessInstanceState.INCIDENT,
-          ProcessInstanceState.COMPLETED,
-          ProcessInstanceState.CANCELED,
-        ],
-      },
-      parentProcessInstanceKey: 'parent1',
-      tenantId: 'tenant1',
-      hasRetriesLeft: true,
-      batchOperationKey: 'operation1',
-      flowNodeId: 'flowNode1',
-      errorMessage: 'some error message',
     };
 
     const {result} = renderHook(() => useProcessInstanceFilters());
@@ -96,7 +93,9 @@ describe('useProcessInstanceFilters', () => {
       getFilters: () => mockFilters,
     });
 
-    const expectedRequest: ProcessInstancesStatisticsRequest = {};
+    const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
+      filter: {},
+    };
 
     const {result} = renderHook(() => useProcessInstanceFilters());
     expect(result.current).toEqual(expectedRequest);
@@ -112,12 +111,14 @@ describe('useProcessInstanceFilters', () => {
       getFilters: () => mockFilters,
     });
 
-    const expectedRequest: ProcessInstancesStatisticsRequest = {
-      startDate: {
-        $gt: '2023-01-01',
-      },
-      state: {
-        $in: [ProcessInstanceState.RUNNING],
+    const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
+      filter: {
+        startDate: {
+          $gt: '2023-01-01T00:00:00.000Z',
+        },
+        state: {
+          $in: [ProcessInstanceState.ACTIVE],
+        },
       },
     };
 
@@ -143,11 +144,12 @@ describe('useProcessInstanceFilters', () => {
       ],
     };
 
-    const expectedRequest: ProcessInstancesStatisticsRequest = {
-      processDefinitionKey: {
-        $in: ['processId1', 'processId2'],
+    const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
+      filter: {
+        tenantId: {
+          $eq: 'tenant1',
+        },
       },
-      tenantId: 'tenant1',
     };
 
     const {result} = renderHook(() => useProcessInstanceFilters());

@@ -8,7 +8,6 @@
 package io.camunda.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.cache.ExporterCacheMetrics;
 import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -74,30 +73,32 @@ import io.camunda.exporter.notifier.M2mTokenManager;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.GroupIndex;
+import io.camunda.webapps.schema.descriptors.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.RoleIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.TenantIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.net.http.HttpClient;
 import java.util.Collection;
@@ -112,8 +113,8 @@ import java.util.function.BiConsumer;
  * template descriptors available
  */
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
+  public static final String NAMESPACE = "zeebe.camunda.exporter.cache";
   private IndexDescriptors indexDescriptors;
-
   private Set<ExportHandler<?, ?>> exportHandlers;
 
   private ExporterMetadata exporterMetadata;
@@ -127,7 +128,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       final MeterRegistry meterRegistry,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper) {
-    final var globalPrefix = configuration.getIndex().getPrefix();
+    final var globalPrefix = configuration.getConnect().getIndexPrefix();
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
     indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);
@@ -138,14 +139,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
-            new ExporterCacheMetrics("process", meterRegistry));
+            new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry));
 
     final var formCache =
         new ExporterEntityCacheImpl<>(
             configuration.getFormCache().getMaxCacheSize(),
             entityCacheProvider.getFormCacheLoader(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
-            new ExporterCacheMetrics("form", meterRegistry));
+            new CaffeineCacheStatsCounter(NAMESPACE, "form", meterRegistry));
 
     final M2mTokenManager m2mTokenManager =
         new M2mTokenManager(configuration.getNotifier(), HttpClient.newHttpClient(), objectMapper);
@@ -287,6 +288,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public Collection<IndexDescriptor> getIndexDescriptors() {
     return indexDescriptors.indices();
+  }
+
+  @VisibleForTesting
+  void setIndexDescriptors(final IndexDescriptors indexDescriptors) {
+    this.indexDescriptors = indexDescriptors;
   }
 
   @Override

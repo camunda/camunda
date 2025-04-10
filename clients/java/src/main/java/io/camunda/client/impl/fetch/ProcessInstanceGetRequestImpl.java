@@ -20,7 +20,7 @@ import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchResponseMapper;
+import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

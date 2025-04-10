@@ -12,7 +12,7 @@ import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithOr;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
 import static org.apache.lucene.search.join.ScoreMode.None;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -31,11 +31,11 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -258,7 +258,7 @@ public class QueryHelper {
     return null;
   }
 
-  private QueryBuilder createIncidentErrorHashCodeQuery(ListViewQueryDto query) {
+  private QueryBuilder createIncidentErrorHashCodeQuery(final ListViewQueryDto query) {
     final Integer incidentErrorHashCode = query.getIncidentErrorHashCode();
     if (incidentErrorHashCode == null) {
       return null;
@@ -275,7 +275,7 @@ public class QueryHelper {
     }
 
     final BoolQueryBuilder errorMessagesQuery = boolQuery();
-    for (String error : errors) {
+    for (final String error : errors) {
       errorMessagesQuery.should(QueryBuilders.matchPhraseQuery(ERROR_MSG, error));
     }
     errorMessagesQuery.minimumShouldMatch(1);

@@ -13,10 +13,6 @@ import {getDiagramElementsBetween} from 'services';
 import './PartHighlight.scss';
 
 export default class PartHighlight extends React.Component {
-  static defaultProps = {
-    setHasPath: () => {},
-  };
-
   render() {
     const {nodes, viewer} = this.props;
     let reachableNodes = [];
@@ -24,7 +20,7 @@ export default class PartHighlight extends React.Component {
     // only if start and end are selected and are resolved to bpmn-js objects
     if (nodes.length === 2 && typeof nodes[0] === 'object') {
       reachableNodes = getDiagramElementsBetween(nodes[0], nodes[1], viewer);
-      this.props.setHasPath(reachableNodes.length > 0);
+      this.props.setHasPath?.(reachableNodes.length > 0);
     }
 
     const canvas = viewer.get('canvas');

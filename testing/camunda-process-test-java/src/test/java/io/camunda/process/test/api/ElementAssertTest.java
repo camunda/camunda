@@ -22,9 +22,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.FlowNodeInstanceBuilder;
@@ -323,8 +323,6 @@ public class ElementAssertTest {
                   + "\t- 'B': completed\n"
                   + "\t- 'C': terminated",
               PROCESS_INSTANCE_KEY);
-
-      verify(camundaDataSource).findFlowNodeInstances(any());
     }
 
     @Test
@@ -461,8 +459,6 @@ public class ElementAssertTest {
               "Process instance [key: %d] should have completed elements ['A', 'B'] but the following elements were not completed:\n"
                   + "\t- 'B': terminated",
               PROCESS_INSTANCE_KEY);
-
-      verify(camundaDataSource).findFlowNodeInstances(any());
     }
 
     @Test
@@ -599,8 +595,6 @@ public class ElementAssertTest {
               "Process instance [key: %d] should have terminated elements ['A', 'B'] but the following elements were not terminated:\n"
                   + "\t- 'A': completed",
               PROCESS_INSTANCE_KEY);
-
-      verify(camundaDataSource).findFlowNodeInstances(any());
     }
 
     @Test
@@ -757,15 +751,38 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNumberIsZero() {
+    void shouldHasZeroActiveElements() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(newCompletedFlowNodeInstance("A"), newTerminatedFlowNodeInstance("B")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasActiveElement("A", 0)
+          .hasActiveElement("B", 0)
+          .hasActiveElement("C", 0);
+    }
+
+    @Test
+    void shouldFailIfExpectedZero() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Collections.singletonList(newActiveFlowNodeInstance("A")));
+
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 0))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("The amount must be greater than zero.");
+          .hasMessage(
+              "Process instance [key: %d] should have active element 'A' 0 times but was 1. Element instances:\n"
+                  + "\t- 'A': active",
+              PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -777,7 +794,7 @@ public class ElementAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", -1))
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("The amount must be greater than zero.");
+          .hasMessage("The amount must be greater than or equal to zero.");
     }
 
     @Test
@@ -919,15 +936,38 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNumberIsZero() {
+    void shouldHasZeroCompletedElements() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(newActiveFlowNodeInstance("A"), newTerminatedFlowNodeInstance("B")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasCompletedElement("A", 0)
+          .hasCompletedElement("B", 0)
+          .hasCompletedElement("C", 0);
+    }
+
+    @Test
+    void shouldFailIfExpectedZero() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Collections.singletonList(newCompletedFlowNodeInstance("A")));
+
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 0))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("The amount must be greater than zero.");
+          .hasMessage(
+              "Process instance [key: %d] should have completed element 'A' 0 times but was 1. Element instances:\n"
+                  + "\t- 'A': completed",
+              PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -939,7 +979,7 @@ public class ElementAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", -1))
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("The amount must be greater than zero.");
+          .hasMessage("The amount must be greater than or equal to zero.");
     }
 
     @Test
@@ -1081,15 +1121,38 @@ public class ElementAssertTest {
     }
 
     @Test
-    void shouldFailIfNumberIsZero() {
+    void shouldHasZeroCompletedElements() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(newActiveFlowNodeInstance("A"), newCompletedFlowNodeInstance("B")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasTerminatedElement("A", 0)
+          .hasTerminatedElement("B", 0)
+          .hasTerminatedElement("C", 0);
+    }
+
+    @Test
+    void shouldFailIfExpectedZero() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Collections.singletonList(newTerminatedFlowNodeInstance("A")));
+
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 0))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("The amount must be greater than zero.");
+          .hasMessage(
+              "Process instance [key: %d] should have terminated element 'A' 0 times but was 1. Element instances:\n"
+                  + "\t- 'A': terminated",
+              PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -1101,7 +1164,7 @@ public class ElementAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", -1))
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("The amount must be greater than zero.");
+          .hasMessage("The amount must be greater than or equal to zero.");
     }
 
     @Test

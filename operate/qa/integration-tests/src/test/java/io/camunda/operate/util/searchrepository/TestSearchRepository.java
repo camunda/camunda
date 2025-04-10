@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.util.searchrepository;
 
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
 import java.util.List;
@@ -68,12 +68,7 @@ public interface TestSearchRepository {
 
   List<VariableEntity> getVariablesByProcessInstanceKey(String index, Long processInstanceKey);
 
-  void reindex(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams)
-      throws IOException;
-
   boolean ilmPolicyExists(String policyName) throws IOException;
-
-  IndexSettings getIndexSettings(String indexName) throws IOException;
 
   List<BatchOperationEntity> getBatchOperationEntities(String indexName, List<String> ids)
       throws IOException;

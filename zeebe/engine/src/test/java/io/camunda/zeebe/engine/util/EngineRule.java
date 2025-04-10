@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
@@ -112,6 +113,7 @@ public final class EngineRule extends ExternalResource {
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
   private Consumer<SecurityConfiguration> securityConfigModifier = cfg -> {};
   private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
+  private SearchClientsProxy searchClientsProxy;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -204,6 +206,11 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withSearchClientsProxy(final SearchClientsProxy searchClientsProxy) {
+    this.searchClientsProxy = searchClientsProxy;
+    return this;
+  }
+
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
 
@@ -223,7 +230,8 @@ public final class EngineRule extends ExternalResource {
                         new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                         interPartitionCommandSender,
                         featureFlags,
-                        jobStreamer)
+                        jobStreamer,
+                        searchClientsProxy)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

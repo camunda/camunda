@@ -12,13 +12,12 @@ import io.camunda.search.entities.DecisionDefinitionEntity;
 
 public class DecisionDefinitionEntityTransformer
     implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity,
+        io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity,
         DecisionDefinitionEntity> {
 
   @Override
   public DecisionDefinitionEntity apply(
-      final io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity
-          source) {
+      final io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity source) {
     return new DecisionDefinitionEntity(
         source.getKey(),
         source.getDecisionId(),

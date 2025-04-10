@@ -33,7 +33,7 @@ function useTask(
     ...options,
     queryKey: getUseTaskQueryKey(id),
     queryFn: async () => {
-      const {response, error} = await request(api.v1.getTask(id));
+      const {response, error} = await request(api.getTask(id));
 
       if (response !== null) {
         return response.json();

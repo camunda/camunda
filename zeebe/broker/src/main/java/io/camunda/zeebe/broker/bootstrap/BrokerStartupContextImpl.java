@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -64,6 +65,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final SearchClientsProxy searchClientsProxy;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -94,7 +96,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder) {
+      final JwtDecoder jwtDecoder,
+      final SearchClientsProxy searchClientsProxy) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -111,6 +114,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.searchClientsProxy = searchClientsProxy;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -147,7 +151,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         securityConfiguration,
         userServices,
         passwordEncoder,
-        jwtDecoder);
+        jwtDecoder,
+        null);
   }
 
   @Override
@@ -192,6 +197,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerHealthCheckService getHealthCheckService() {
     return healthCheckService;
+  }
+
+  @Override
+  public SearchClientsProxy getSearchClientsProxy() {
+    return searchClientsProxy;
   }
 
   @Override

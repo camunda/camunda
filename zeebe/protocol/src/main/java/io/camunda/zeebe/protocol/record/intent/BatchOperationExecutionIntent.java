@@ -17,19 +17,9 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum BatchOperationExecutionIntent implements Intent {
   EXECUTE((short) 0),
-  //  EXECUTING((short) 1),
-  //  EXECUTED((short) 2),
-
-  //  COMPLETED((short) 3),
-
-  CANCEL((short) 4),
-  //  CANCELED((short) 5),
-
-  PAUSE((short) 6),
-  //  PAUSED((short) 7),
-
-  RESUME((short) 8);
-  //  RESUMED((short) 9),
+  EXECUTING((short) 1),
+  EXECUTED((short) 2),
+  COMPLETED((short) 3);
 
   private final short value;
 
@@ -45,12 +35,12 @@ public enum BatchOperationExecutionIntent implements Intent {
     switch (value) {
       case 0:
         return EXECUTE;
-      case 4:
-        return CANCEL;
-      case 6:
-        return PAUSE;
-      case 8:
-        return RESUME;
+      case 1:
+        return EXECUTING;
+      case 2:
+        return EXECUTED;
+      case 3:
+        return COMPLETED;
 
       default:
         return Intent.UNKNOWN;
@@ -65,6 +55,10 @@ public enum BatchOperationExecutionIntent implements Intent {
   @Override
   public boolean isEvent() {
     switch (this) {
+      case EXECUTING:
+      case EXECUTED:
+      case COMPLETED:
+        return true;
       default:
         return false;
     }

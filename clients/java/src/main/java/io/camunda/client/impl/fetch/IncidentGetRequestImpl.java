@@ -21,7 +21,7 @@ import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchResponseMapper;
+import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.IncidentResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

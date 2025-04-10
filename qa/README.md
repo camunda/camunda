@@ -1,6 +1,6 @@
 # Acceptance tests
 
-This module contains acceptance tests for the whole Camunda 8 platform, covering multiple or even all components at the same time in an integrated manner.
+This module contains acceptance tests (ATs) for the whole Camunda 8 platform, covering multiple or even all components at the same time in an integrated manner.
 
 In the following document, we shortly highlight general recommendations and how-tos/examples of how to write them.
 This ensures we consistently write such tests and cover all necessary supported environments.
@@ -15,19 +15,31 @@ This ensures we consistently write such tests and cover all necessary supported 
 
 ## How to write acceptance tests
 
+With the `@MultiDbTest` annotation, we provide a consistent and easy way to write acceptance tests.
+
+* This reduces the barrier for engineers to write ATs, which is less repetitive and has less boilerplate (especially regarding setup code).
+* Tests are executed against multiple supported environments, transparent to the engineer.
+* Engineers can fully focus on business logic to test.
+* Tests using the `@MultiDbTest` annotation usually execute faster, as they start dependencies just once and cleanly reuse them.
+
+While we want to make it as easy as possible for engineers to write ATs, this comes with some cost and complexity in the related extension.
+Additionally, the solution is meant to be composable, reusable, and configurable to cover several use cases or even make it possible to support advanced use cases. For example, to configure secondary storage on its own (if necessary) or handle the test application lifecycle.
+
+This means the test application and MultiDb configuration in the extension are separated on purpose (to configure different secondary storages).
+
 ### For simple cases:
 
 * Make use of the `@MultiDbTest` annotation (if possible).
 * By default, it will use the `TestStandaloneBroker` class to reduce the scope to a minimum.
-* The `@MutliDbTest` annotation will ensure that your test is tagged as a test that should be executed against multiple secondary storage, such as Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
-* The `@MutliDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
+* The `@MultiDbTest` annotation will ensure that your test is tagged as a test that should be executed against multiple secondary storage, such as Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
+* The `@MultiDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
 * The execution against different secondary storage is done on our CI.yml GitHub workflow, where separate jobs exist. A specific test property is set for the database type, allowing the extension to configure the test application correctly (specific Exporter, etc.).
 
 ### For advanced cases:
 
-* Advanced cases might apply when you want to run the complete platform or need to configure the broker test application.
+* Advanced cases might apply when you want to run the complete platform, need to configure the broker test application, or have to control the application lifecycle on your own.
 * To run the complete platform, you can use `TestSimpleCamundaApplication`, which bundles all components together.
-* With that, you can use `@RegisterExtension` and `CamundaMultiDBExtension` directly.
+* With that, you can use `@RegisterExtension` and `CamundaMultiDBExtension` directly or annotate the test application with `@MultiDbTestApplication`
 * This might also be necessary for more sophisticated broker configurations, such as testing different or specific authentications.
 
 ### For special cases:
@@ -63,11 +75,11 @@ public class ProcessDefinitionQueryTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newProcessDefinitionQuery().send().join();
+    final var resultAll = camundaClient.newProcessDefinitionSearchRequest().send().join();
     final var thirdKey = resultAll.items().get(2).getProcessDefinitionKey();
 
     final var resultSearchFrom =
-        camundaClient.newProcessDefinitionQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient.newProcessDefinitionSearchRequest().page(p -> p.limit(2).from(2)).send().join();
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
@@ -80,31 +92,30 @@ public class ProcessDefinitionQueryTest {
 
 **Need:**
 
-* We need to configure the broker for specific authentication
-* We need to make use of the `@RegisterExtension` to pass in the Broker, pre-configured
-* We need to make sure that the test is tagged with `@Tag("multi-db-test")`
+* We need to configure the broker for specific authentication. For that, we need to make use of `TestStandaloneBroker` or `TestSimpleCamundaApplication`.
+* We need to annotate the test applications with `MultiDbTestApplication` to mark the application managed by `CamundaMultiDbExtension`.
 
 **Optional:**
 
 * We might not want to run the test for all secondary storage, as it is not yet supported. We can use the `@DisabledIfSystemProperty` annotation
+* We might want to disable the lifecycle management of the annotated test application. This can be done via `@MultiDbTestApplication(managedLifecycle = false)`.
+  * This is especially useful if we want to start and stop the test application inside the test (to validate restarts or something similar)
 
 ```java
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class SomeIT {
 
+  @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
-
-  @RegisterExtension
-  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static CamundaClient camundaClient; // <- will be injected
 
   @Test
   void someTest() {
     // when
-    final var processDefinitions = client.newProcessDefinitionQuery().send().join().items();
+    final var processDefinitions = client.newProcessDefinitionSearchRequest().send().join().items();
 
     // then
     assertThat(processDefinitions).hasSize(2);
@@ -116,26 +127,22 @@ class SomeIT {
 
 ##### Authentication E2E tests
 
-We should highlight some special features for the authentication tests here.
+We want to highlight some special features for the authentication tests here.
 
-* For the tests, users (that are used in tests) can be predefined and annotated with `@UserDefinition`. As such, they are created, and an authenticated client is created later.
+* For authentication-related tests, users (who are used in tests) can be predefined and annotated with `@UserDefinition`. This allows the extension to collect the related user definitions.
 * Authenticated clients can be created via `@Authenticated` annotation, specifying a user to be used.
-* Mostly, authentication tests can't use the `@MultiDbTest` annotation as of now, as they need to configure the broker or Camunda application specifically
-  * As a consequence, they need to be tagged with `@Tag("multi-db-test")` separately to ensure we run tests against all environments
-  * They need to use the `@RegisterExtension` to pass in the Broker, pre-configured
+  * When a client annotated with `Authenticated` is injected (as field or parameter), the respective/referenced user is created.
 
 **Example:**
 
 ```java
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class ProcessAuthorizationIT {
 
+  @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
-
-  @RegisterExtension
-  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
@@ -172,7 +179,7 @@ class ProcessAuthorizationIT {
   void searchShouldReturnAuthorizedProcessDefinitions(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
-    final var processDefinitions = userClient.newProcessDefinitionQuery().send().join().items();
+    final var processDefinitions = userClient.newProcessDefinitionSearchRequest().send().join().items();
 
     // then
     assertThat(processDefinitions).hasSize(2);

@@ -9,11 +9,11 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.VAR_NAME;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.VAR_VALUE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_NAME;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_VALUE;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;

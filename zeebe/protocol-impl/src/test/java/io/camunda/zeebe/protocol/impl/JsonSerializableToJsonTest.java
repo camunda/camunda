@@ -2827,14 +2827,20 @@ final class JsonSerializableToJsonTest {
             () ->
                 new RoleRecord()
                     .setRoleKey(1L)
+                    .setRoleId("id")
                     .setName("role")
+                    .setDescription("description")
                     .setEntityKey(2L)
+                    .setEntityId("entityId")
                     .setEntityType(EntityType.USER),
         """
         {
           "roleKey": 1,
+          "roleId": "id",
           "name": "role",
+          "description": "description",
           "entityKey": 2,
+          "entityId": "entityId",
           "entityType": "USER"
         }
         """
@@ -2848,8 +2854,11 @@ final class JsonSerializableToJsonTest {
         """
         {
           "roleKey": -1,
+          "roleId": "",
           "name": "",
+          "description": "",
           "entityKey": -1,
+          "entityId": "",
           "entityType": "UNSPECIFIED"
         }
         """
@@ -2960,13 +2969,17 @@ final class JsonSerializableToJsonTest {
             () ->
                 new GroupRecord()
                     .setGroupKey(1L)
+                    .setGroupId("groupId")
                     .setName("group")
+                    .setDescription("description")
                     .setEntityKey(2L)
                     .setEntityType(EntityType.USER),
         """
       {
         "groupKey": 1,
+        "groupId": "groupId",
         "name": "group",
+        "description": "description",
         "entityKey": 2,
         "entityType": "USER"
       }
@@ -2981,7 +2994,9 @@ final class JsonSerializableToJsonTest {
         """
       {
         "groupKey": -1,
+        "groupId": "",
         "name": "",
+        "description": "",
         "entityKey": -1,
         "entityType": "UNSPECIFIED"
       }
@@ -2998,14 +3013,14 @@ final class JsonSerializableToJsonTest {
                     .setMappingKey(1L)
                     .setClaimName("claimName")
                     .setClaimValue("claimValue")
-                    .setId("id1")
+                    .setMappingId("id1")
                     .setName("name"),
         """
       {
         "mappingKey": 1,
         "claimName": "claimName",
         "claimValue": "claimValue",
-        "id": "id1",
+        "mappingId": "id1",
         "name": "name"
       }
       """
@@ -3021,7 +3036,7 @@ final class JsonSerializableToJsonTest {
         "mappingKey": -1,
         "claimName": "",
         "claimValue": "",
-        "id": "",
+        "mappingId": "",
         "name": ""
       }
       """
@@ -3037,8 +3052,11 @@ final class JsonSerializableToJsonTest {
                     .setDefaultRole(
                         new RoleRecord()
                             .setRoleKey(1)
+                            .setRoleId("id")
                             .setName("roleName")
+                            .setDescription("description")
                             .setEntityKey(2)
+                            .setEntityId("entityId")
                             .setEntityType(EntityType.USER))
                     .addUser(
                         new UserRecord()
@@ -3059,14 +3077,14 @@ final class JsonSerializableToJsonTest {
                     .addMapping(
                         new MappingRecord()
                             .setMappingKey(6)
-                            .setId("id1")
+                            .setMappingId("id1")
                             .setClaimName("claim1")
                             .setClaimValue("value1")
                             .setName("Claim 1"))
                     .addMapping(
                         new MappingRecord()
                             .setMappingKey(7)
-                            .setId("id2")
+                            .setMappingId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
                             .setName("Claim 2")),
@@ -3074,8 +3092,11 @@ final class JsonSerializableToJsonTest {
       {
         "defaultRole": {
           "roleKey": 1,
+          "roleId": "id",
           "name": "roleName",
+          "description": "description",
           "entityKey": 2,
+          "entityId": "entityId",
           "entityType": "USER"
         },
         "users": [
@@ -3105,14 +3126,14 @@ final class JsonSerializableToJsonTest {
         "mappings": [
           {
             "mappingKey": 6,
-            "id": "id1",
+            "mappingId": "id1",
             "claimName": "claim1",
             "claimValue": "value1",
             "name": "Claim 1"
           },
           {
             "mappingKey": 7,
-            "id": "id2",
+            "mappingId": "id2",
             "claimName": "claim2",
             "claimValue": "value2",
             "name": "Claim 2"
@@ -3131,8 +3152,11 @@ final class JsonSerializableToJsonTest {
       {
           "defaultRole": {
               "roleKey": -1,
+              "roleId": "",
               "name": "",
+              "description": "",
               "entityKey": -1,
+              "entityId": "",
               "entityType": "UNSPECIFIED"
           },
           "users": [],

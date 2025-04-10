@@ -9,7 +9,6 @@
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {
   groupedProcessesMock,
   mockProcessStatistics,
@@ -18,7 +17,6 @@ import {
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 import {
   selectFlowNode,
@@ -26,6 +24,7 @@ import {
   selectProcessVersion,
 } from 'modules/testUtils/selectComboBoxOption';
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.setTimeout(10000);
 jest.unmock('modules/utils/date/formatDate');
@@ -36,9 +35,8 @@ describe('Filters', () => {
       groupedProcessesMock.filter(({tenantId}) => tenantId === '<default>'),
     );
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     processesStore.fetchProcesses();
-    await processXmlStore.fetchProcessXml('bigVarProcess');
     jest.useFakeTimers();
   });
 
@@ -517,15 +515,23 @@ describe('Filters', () => {
       ),
     });
 
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText(/version/i, {
+          selector: 'button',
+        }),
+      ).toBeEnabled(),
+    );
+
     await user.click(
       screen.getByLabelText(/version/i, {
         selector: 'button',
       }),
     );
 
-    const versionDropdownList = screen.queryByLabelText(/version/i, {
+    const versionDropdownList = screen.getByLabelText(/version/i, {
       selector: 'ul',
-    })!;
+    });
 
     expect(
       within(versionDropdownList).getByRole('option', {

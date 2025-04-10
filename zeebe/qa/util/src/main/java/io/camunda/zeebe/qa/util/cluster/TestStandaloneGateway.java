@@ -31,6 +31,9 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
     //noinspection resource
     withBean("config", config, GatewayBasedProperties.class).withAdditionalProfile(Profile.GATEWAY);
+    // by default, we don't want to create the schema as ES/OS containers may not be used in the
+    // current test
+    withCreateSchema(false);
   }
 
   @Override

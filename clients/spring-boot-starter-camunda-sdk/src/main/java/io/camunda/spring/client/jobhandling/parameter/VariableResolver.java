@@ -23,19 +23,29 @@ public class VariableResolver implements ParameterResolver {
   private final String variableName;
   private final Class<?> variableType;
   private final JsonMapper jsonMapper;
+  private final boolean optional;
 
   public VariableResolver(
-      final String variableName, final Class<?> variableType, final JsonMapper jsonMapper) {
+      final String variableName,
+      final Class<?> variableType,
+      final JsonMapper jsonMapper,
+      final boolean optional) {
     this.variableName = variableName;
     this.variableType = variableType;
     this.jsonMapper = jsonMapper;
+    this.optional = optional;
   }
 
   @Override
   public Object resolve(final JobClient jobClient, final ActivatedJob job) {
     final Object variableValue = getVariable(job);
     if (variableValue == null) {
-      return null;
+      if (optional) {
+        return null;
+      } else {
+        throw new IllegalStateException(
+            "Variable " + variableName + " is mandatory, but no value was found");
+      }
     }
     try {
       return mapZeebeVariable(variableValue);

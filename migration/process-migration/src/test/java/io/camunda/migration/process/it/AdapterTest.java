@@ -21,9 +21,6 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.migration.process.MigrationRunner;
 import io.camunda.migration.process.TestData;
 import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
@@ -32,10 +29,13 @@ import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -88,8 +88,8 @@ public abstract class AdapterTest {
   public static void configure() {
     properties = new ProcessMigrationProperties();
     properties.setBatchSize(5);
-    properties.setMinRetryDelay(Duration.ofMillis(100));
-    properties.setMaxRetryDelay(Duration.ofMillis(500));
+    properties.getRetry().setMinRetryDelay(Duration.ofMillis(100));
+    properties.getRetry().setMaxRetryDelay(Duration.ofMillis(500));
     properties.setImporterFinishedTimeout(Duration.ofSeconds(1));
     ES_CONFIGURATION.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
     OS_CONFIGURATION.setType("opensearch");
@@ -112,10 +112,10 @@ public abstract class AdapterTest {
         new MigrationRepositoryIndex(ES_CONFIGURATION.getIndexPrefix(), false);
     importPositionIndex = new ImportPositionIndex(ES_CONFIGURATION.getIndexPrefix(), false);
     misconfiguredProcessIndex = new TestData.MisconfiguredProcessIndex(MISCONFIGURED_PREFIX, false);
-    osEngine.createIndex(processIndex, new IndexSettings());
-    osEngine.createIndex(migrationRepositoryIndex, new IndexSettings());
-    osEngine.createIndex(importPositionIndex, new IndexSettings());
-    osEngine.createIndex(misconfiguredProcessIndex, new IndexSettings());
+    osEngine.createIndex(processIndex, new IndexConfiguration());
+    osEngine.createIndex(migrationRepositoryIndex, new IndexConfiguration());
+    osEngine.createIndex(importPositionIndex, new IndexConfiguration());
+    osEngine.createIndex(misconfiguredProcessIndex, new IndexConfiguration());
 
     final ElasticsearchEngineClient esEngine =
         new ElasticsearchEngineClient(esClient, esObjectMapper);
@@ -124,10 +124,10 @@ public abstract class AdapterTest {
         new MigrationRepositoryIndex(ES_CONFIGURATION.getIndexPrefix(), true);
     importPositionIndex = new ImportPositionIndex(ES_CONFIGURATION.getIndexPrefix(), true);
     misconfiguredProcessIndex = new TestData.MisconfiguredProcessIndex(MISCONFIGURED_PREFIX, true);
-    esEngine.createIndex(processIndex, new IndexSettings());
-    esEngine.createIndex(migrationRepositoryIndex, new IndexSettings());
-    esEngine.createIndex(importPositionIndex, new IndexSettings());
-    esEngine.createIndex(misconfiguredProcessIndex, new IndexSettings());
+    esEngine.createIndex(processIndex, new IndexConfiguration());
+    esEngine.createIndex(migrationRepositoryIndex, new IndexConfiguration());
+    esEngine.createIndex(importPositionIndex, new IndexConfiguration());
+    esEngine.createIndex(misconfiguredProcessIndex, new IndexConfiguration());
   }
 
   @AfterEach

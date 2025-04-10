@@ -195,14 +195,6 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     safeScrollWith(requestBuilder, entityClass, hitsConsumer);
   }
 
-  public <R> void scrollWith(
-      final SearchRequest.Builder requestBuilder,
-      final Class<R> entityClass,
-      final Consumer<List<Hit<R>>> hitsConsumer,
-      final Consumer<HitsMetadata<R>> hitsMetadataConsumer) {
-    safeScrollWith(requestBuilder, entityClass, hitsConsumer, hitsMetadataConsumer);
-  }
-
   public <R> AggregatedResult<R> scrollValuesAndAggregations(
       final SearchRequest.Builder requestBuilder, final Class<R> entityClass) {
     return safe(
@@ -299,15 +291,6 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return result;
   }
 
-  // TODO check unused
-  public boolean documentExistsWithGivenRetries(final String name, final String id) {
-    return executeWithGivenRetries(
-        10,
-        format("Exists document from %s with id %s", name, id),
-        () -> openSearchClient.exists(e -> e.index(name).id(id)).value(),
-        null);
-  }
-
   public <R> Optional<R> getWithRetries(
       final String index, final String id, final Class<R> entitiyClass) {
     return executeWithRetries(
@@ -334,16 +317,6 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         e -> defaultDeleteErrorMessage(index));
   }
 
-  public boolean deleteWithRetries(final String index, final Query query) {
-    return executeWithRetries(
-        () -> {
-          final DeleteByQueryRequest request =
-              deleteByQueryRequestBuilder(index).query(query).build();
-          final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
-          return response.failures().isEmpty() && response.deleted() > 0;
-        });
-  }
-
   public long deleteByQuery(final String index, final Query query) {
     return executeWithRetries(
         () -> {
@@ -352,13 +325,6 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
           final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
           return response.deleted();
         });
-  }
-
-  public boolean deleteWithRetries(final String index, final String id) {
-    return executeWithRetries(
-        () ->
-            openSearchClient.delete(deleteRequestBuilder(index, id).build()).result()
-                == Result.Deleted);
   }
 
   public <A> IndexResponse index(final IndexRequest.Builder<A> requestBuilder) {

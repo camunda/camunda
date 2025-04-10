@@ -23,11 +23,13 @@ public enum ContextType {
   USER(false),
   USER_TASK(true),
   FORM(false),
-  MAPPING(false);
+  MAPPING(false),
+  BATCH_OPERATION(false),
+  JOB(false);
 
   private final boolean preserveOrder;
 
-  ContextType(boolean preserveOrder) {
+  ContextType(final boolean preserveOrder) {
     this.preserveOrder = preserveOrder;
   }
 

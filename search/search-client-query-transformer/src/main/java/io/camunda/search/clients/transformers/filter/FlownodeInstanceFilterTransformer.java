@@ -9,25 +9,27 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.INCIDENT;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.INCIDENT_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TREE_PATH;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TYPE;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.INCIDENT_KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TREE_PATH;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TYPE;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.ArrayList;
 import java.util.List;
 
 public class FlownodeInstanceFilterTransformer
@@ -39,22 +41,21 @@ public class FlownodeInstanceFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final FlowNodeInstanceFilter filter) {
-    return and(
-        longTerms(KEY, filter.flowNodeInstanceKeys()),
-        longTerms(PROCESS_INSTANCE_KEY, filter.processInstanceKeys()),
-        longTerms(PROCESS_DEFINITION_KEY, filter.processDefinitionKeys()),
-        stringTerms(BPMN_PROCESS_ID, filter.processDefinitionIds()),
-        getStateQuery(filter.states()),
-        getTypeQuery(filter.types()),
-        stringTerms(FLOW_NODE_ID, filter.flowNodeIds()),
-        stringTerms(TREE_PATH, filter.treePaths()),
-        filter.hasIncident() != null ? term(INCIDENT, filter.hasIncident()) : null,
-        longTerms(INCIDENT_KEY, filter.incidentKeys()),
-        stringTerms(TENANT_ID, filter.tenantIds()));
-  }
-
-  private SearchQuery getStateQuery(final List<FlowNodeState> states) {
-    return stringTerms(STATE, states != null ? states.stream().map(Enum::name).toList() : null);
+    final var queries = new ArrayList<SearchQuery>();
+    ofNullable(longTerms(KEY, filter.flowNodeInstanceKeys())).ifPresent(queries::add);
+    ofNullable(longTerms(PROCESS_INSTANCE_KEY, filter.processInstanceKeys()))
+        .ifPresent(queries::add);
+    ofNullable(longTerms(PROCESS_DEFINITION_KEY, filter.processDefinitionKeys()))
+        .ifPresent(queries::add);
+    ofNullable(stringTerms(BPMN_PROCESS_ID, filter.processDefinitionIds())).ifPresent(queries::add);
+    ofNullable(getTypeQuery(filter.types())).ifPresent(queries::add);
+    ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
+    ofNullable(stringTerms(FLOW_NODE_ID, filter.flowNodeIds())).ifPresent(queries::add);
+    ofNullable(longTerms(INCIDENT_KEY, filter.incidentKeys())).ifPresent(queries::add);
+    ofNullable(stringTerms(TREE_PATH, filter.treePaths())).ifPresent(queries::add);
+    ofNullable(filter.hasIncident()).ifPresent(f -> queries.add(term(INCIDENT, f)));
+    ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
+    return and(queries);
   }
 
   private SearchQuery getTypeQuery(final List<FlowNodeType> types) {

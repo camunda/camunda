@@ -7,19 +7,34 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.StandaloneSchemaManager.SchemaManagerConnectConfiguration;
 import io.camunda.application.commons.migration.PrefixMigrationHelper;
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import java.io.IOException;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ConfigurableApplicationContext;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
-public class StandalonePrefixMigration {
+public class StandalonePrefixMigration implements CommandLineRunner {
+
+  private final ConnectConfiguration connectConfiguration;
+  private final TasklistProperties tasklistProperties;
+  private final OperateProperties operateProperties;
+
+  public StandalonePrefixMigration(
+      final ConnectConfiguration connectConfiguration,
+      final TasklistProperties tasklistProperties,
+      final OperateProperties operateProperties) {
+    this.connectConfiguration = connectConfiguration;
+    this.tasklistProperties = tasklistProperties;
+    this.operateProperties = operateProperties;
+  }
+
   public static void main(final String[] args) throws IOException {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     MainSupport.putSystemPropertyIfAbsent(
@@ -30,23 +45,21 @@ public class StandalonePrefixMigration {
             .logStartupInfo(true)
             .web(WebApplicationType.NONE)
             .sources(
-                StandaloneSchemaManager.class,
-                SchemaManagerConnectConfiguration.class,
+                StandalonePrefixMigration.class,
+                SearchEngineDatabaseConfiguration.class,
                 TasklistProperties.class,
                 OperateProperties.class)
             .addCommandLineProperties(true)
             .build(args);
 
-    final ConfigurableApplicationContext applicationContext = application.run(args);
-
-    final var operateProperties = applicationContext.getBean(OperateProperties.class);
-    final var tasklistProperties = applicationContext.getBean(TasklistProperties.class);
-    final SchemaManagerConnectConfiguration connectConfiguration =
-        applicationContext.getBean(SchemaManagerConnectConfiguration.class);
-
-    PrefixMigrationHelper.runPrefixMigration(
-        operateProperties, tasklistProperties, connectConfiguration);
+    application.run(args);
 
     System.exit(0);
+  }
+
+  @Override
+  public void run(final String... args) throws Exception {
+    PrefixMigrationHelper.runPrefixMigration(
+        operateProperties, tasklistProperties, connectConfiguration);
   }
 }

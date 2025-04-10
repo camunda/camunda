@@ -26,6 +26,7 @@ import {
   IS_TENANT_ROLES_SUPPORTED,
   IS_TENANT_MAPPINGS_SUPPORTED,
 } from "src/feature-flags";
+import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
   const { t } = useTranslate("tenants");
@@ -91,7 +92,7 @@ const Details: FC = () => {
                   ? [
                       {
                         key: "groups",
-                        label: t("Groups"),
+                        label: t("groups"),
                         content: <Groups tenantId={tenant.tenantId} />,
                       },
                     ]
@@ -105,7 +106,7 @@ const Details: FC = () => {
                       },
                     ]
                   : []),
-                ...(IS_TENANT_MAPPINGS_SUPPORTED
+                ...(IS_TENANT_MAPPINGS_SUPPORTED && isOIDC
                   ? [
                       {
                         key: "mappings",

@@ -21,9 +21,12 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.Use
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.Collections;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
@@ -86,7 +89,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
             ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()))
         .thenDo(
             result -> {
-              if (result.hasAssigneeProp()) {
+              if (result.lifecycleState == LifecycleState.CREATED && result.hasAssigneeProp()) {
                 assignUserTask(element, context, result.task(), result.getAssigneeProp());
               }
             });
@@ -114,18 +117,42 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   }
 
   @Override
-  protected void onTerminateInternal(
+  protected TransitionOutcome onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     if (element.hasExecutionListeners() || element.hasTaskListeners()) {
       jobBehavior.cancelJob(context);
     }
 
-    userTaskBehavior.cancelUserTask(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final Optional<UserTaskRecord> cancelingUserTask =
+        userTaskBehavior.userTaskCanceling(elementInstance);
+    if (cancelingUserTask.isPresent()) {
+      final var cancelingListeners = element.getTaskListeners(ZeebeTaskListenerEventType.canceling);
+      if (!cancelingListeners.isEmpty()) {
+        jobBehavior.createNewTaskListenerJob(
+            context,
+            cancelingUserTask.get(),
+            cancelingListeners.getFirst(),
+            Collections.emptyList());
+        return TransitionOutcome.AWAIT;
+      } else {
+        userTaskBehavior.userTaskCanceled(cancelingUserTask.get());
+        return TransitionOutcome.CONTINUE;
+      }
+    } else {
+      return TransitionOutcome.CONTINUE;
+    }
+  }
+
+  @Override
+  public void onFinalizeTerminationInternal(
+      final ExecutableUserTask element, final BpmnElementContext context) {
+
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior
         .findEventTrigger(context)
         .filter(eventTrigger -> flowScopeInstance.isActive())
@@ -153,8 +180,20 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       final UserTaskProperties userTaskProperties) {
     final var userTaskRecord =
         userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
-    userTaskBehavior.userTaskCreated(userTaskRecord);
-    return new UserTaskCreationResult(userTaskProperties, userTaskRecord);
+
+    final LifecycleState lifecycleState;
+    final var creatingListeners = element.getTaskListeners(ZeebeTaskListenerEventType.creating);
+    if (!creatingListeners.isEmpty()) {
+      jobBehavior.createNewTaskListenerJob(
+          context, userTaskRecord, creatingListeners.getFirst(), Collections.emptyList());
+      lifecycleState = LifecycleState.CREATING;
+    } else {
+      userTaskRecord.unsetAssignee();
+      userTaskBehavior.userTaskCreated(userTaskRecord);
+      lifecycleState = LifecycleState.CREATED;
+    }
+
+    return new UserTaskCreationResult(userTaskProperties, userTaskRecord, lifecycleState);
   }
 
   private void assignUserTask(
@@ -172,7 +211,8 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
             () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
   }
 
-  private record UserTaskCreationResult(UserTaskProperties props, UserTaskRecord task) {
+  private record UserTaskCreationResult(
+      UserTaskProperties props, UserTaskRecord task, LifecycleState lifecycleState) {
 
     public String getAssigneeProp() {
       return props.getAssignee();

@@ -7,25 +7,32 @@
  */
 package io.camunda.exporter.cache;
 
-import static io.camunda.exporter.utils.SearchDBExtension.PROCESS_INDEX;
-import static io.camunda.exporter.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.search.test.utils.SearchDBExtension.PROCESS_INDEX;
+import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static io.camunda.zeebe.model.bpmn.Bpmn.convertToString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
+import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.cache.ExporterEntityCache.CacheLoaderFailedException;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
-import io.camunda.exporter.utils.SearchDBExtension;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
+import io.camunda.search.test.utils.SearchDBExtension;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,6 +42,20 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ProcessCacheImplIT {
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
+
+  @BeforeEach
+  void setup() {
+    new ElasticsearchEngineClient(SEARCH_DB.esClient(), SEARCH_DB.objectMapper())
+        .createIndex(PROCESS_INDEX, new IndexConfiguration());
+    new OpensearchEngineClient(SEARCH_DB.osClient(), SEARCH_DB.objectMapper())
+        .createIndex(PROCESS_INDEX, new IndexConfiguration());
+  }
+
+  @AfterEach
+  void cleanup() throws IOException {
+    SEARCH_DB.esClient().indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
+    SEARCH_DB.osClient().indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
+  }
 
   @ParameterizedTest
   @MethodSource("provideProcessCache")
@@ -49,8 +70,7 @@ class ProcessCacheImplIT {
 
   @ParameterizedTest
   @MethodSource("provideProcessCache")
-  void shouldLoadProcessEntityFromBackend(final ProcessCacheArgument processCacheArgument)
-      throws IOException {
+  void shouldLoadProcessEntityFromBackend(final ProcessCacheArgument processCacheArgument) {
     // given
     final var processEntity =
         new ProcessEntity()
@@ -122,19 +142,21 @@ class ProcessCacheImplIT {
 
   static ProcessCacheArgument getESProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ExporterEntityCacheImpl(
+        new ExporterEntityCacheImpl<>(
             10,
             new ElasticSearchProcessCacheLoader(SEARCH_DB.esClient(), indexName),
-            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
+            new CaffeineCacheStatsCounter(
+                DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInElasticSearch);
   }
 
   static ProcessCacheArgument getOSProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ExporterEntityCacheImpl(
+        new ExporterEntityCacheImpl<>(
             10,
             new OpenSearchProcessCacheLoader(SEARCH_DB.osClient(), indexName),
-            new ExporterCacheMetrics("OS", new SimpleMeterRegistry())),
+            new CaffeineCacheStatsCounter(
+                DefaultExporterResourceProvider.NAMESPACE, "OS", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInOpenSearch);
   }
 

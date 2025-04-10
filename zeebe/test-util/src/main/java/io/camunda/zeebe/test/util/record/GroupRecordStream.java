@@ -23,6 +23,10 @@ public class GroupRecordStream extends ExporterRecordStream<GroupRecordValue, Gr
     return new GroupRecordStream(wrappedStream);
   }
 
+  public GroupRecordStream withGroupId(final String groupId) {
+    return valueFilter(v -> v.getGroupId().equals(groupId));
+  }
+
   public GroupRecordStream withGroupKey(final long groupKey) {
     return valueFilter(v -> v.getGroupKey() == groupKey);
   }

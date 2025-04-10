@@ -112,7 +112,7 @@ public final class ScriptTaskProcessor
   }
 
   @Override
-  protected void onTerminateInternal(
+  protected TransitionOutcome onTerminateInternal(
       final ExecutableScriptTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
@@ -140,6 +140,7 @@ public final class ScriptTaskProcessor
                   stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
+    return TransitionOutcome.CONTINUE;
   }
 
   private void triggerProcessEventWithResultVariable(

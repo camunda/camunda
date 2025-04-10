@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import java.util.List;
 import java.util.Optional;
 
 public class DbUserState implements UserState, MutableUserState {
@@ -65,60 +64,6 @@ public class DbUserState implements UserState, MutableUserState {
   public void delete(final String username) {
     this.username.wrapString(username);
     usersColumnFamily.deleteExisting(this.username);
-  }
-
-  @Override
-  public void addRole(final String username, final long roleKey) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    persistedUser.addRoleKey(roleKey);
-    usersColumnFamily.update(this.username, persistedUser);
-  }
-
-  @Override
-  public void removeRole(final String username, final long roleKey) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    final List<Long> roleKeys = persistedUser.getRoleKeysList();
-    roleKeys.remove(roleKey);
-    persistedUser.setRoleKeysList(roleKeys);
-    usersColumnFamily.update(this.username, persistedUser);
-  }
-
-  @Override
-  public void addTenantId(final String username, final String tenantId) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    persistedUser.addTenantId(tenantId);
-    usersColumnFamily.update(this.username, persistedUser);
-  }
-
-  @Override
-  public void removeTenant(final String username, final String tenantId) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    final List<String> tenantIds = persistedUser.getTenantIdsList();
-    tenantIds.remove(tenantId);
-    persistedUser.setTenantIdsList(tenantIds);
-    usersColumnFamily.update(this.username, persistedUser);
-  }
-
-  @Override
-  public void addGroup(final String username, final long groupKey) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    persistedUser.addGroupKey(groupKey);
-    usersColumnFamily.update(this.username, persistedUser);
-  }
-
-  @Override
-  public void removeGroup(final String username, final long groupKey) {
-    this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-    final List<Long> groupKeys = persistedUser.getGroupKeysList();
-    groupKeys.remove(groupKey);
-    persistedUser.setGroupKeysList(groupKeys);
-    usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override

@@ -75,12 +75,19 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         brokerClient, securityContextProvider, roleSearchClient, authentication);
   }
 
-  public CompletableFuture<RoleRecord> createRole(final String name) {
-    return sendBrokerRequest(new BrokerRoleCreateRequest().setName(name));
+  public CompletableFuture<RoleRecord> createRole(final CreateRoleRequest request) {
+    return sendBrokerRequest(
+        new BrokerRoleCreateRequest()
+            .setRoleId(request.roleId())
+            .setName(request.name())
+            .setDescription(request.description()));
   }
 
-  public CompletableFuture<RoleRecord> updateRole(final long roleKey, final String name) {
-    return sendBrokerRequest(new BrokerRoleUpdateRequest(roleKey).setName(name));
+  public CompletableFuture<RoleRecord> updateRole(final UpdateRoleRequest updateRoleRequest) {
+    return sendBrokerRequest(
+        new BrokerRoleUpdateRequest(updateRoleRequest.roleId())
+            .setName(updateRoleRequest.name())
+            .setDescription(updateRoleRequest.description()));
   }
 
   public RoleEntity getRole(final Long roleKey) {
@@ -106,23 +113,27 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .findFirst();
   }
 
-  public CompletableFuture<RoleRecord> deleteRole(final long roleKey) {
-    return sendBrokerRequest(new BrokerRoleDeleteRequest(roleKey));
+  public CompletableFuture<RoleRecord> deleteRole(final String roleId) {
+    return sendBrokerRequest(new BrokerRoleDeleteRequest(roleId));
   }
 
-  public CompletableFuture<?> addMember(
-      final Long roleKey, final EntityType entityType, final long entityKey) {
+  public CompletableFuture<?> addMember(final RoleMemberRequest request) {
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createAddRequest()
-            .setRoleKey(roleKey)
-            .setEntity(entityType, entityKey));
+            .setRoleId(request.roleId())
+            .setEntity(request.entityType(), request.entityId()));
   }
 
-  public CompletableFuture<?> removeMember(
-      final Long roleKey, final EntityType entityType, final long entityKey) {
+  public CompletableFuture<?> removeMember(final RoleMemberRequest request) {
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createRemoveRequest()
-            .setRoleKey(roleKey)
-            .setEntity(entityType, entityKey));
+            .setRoleId(request.roleId())
+            .setEntity(request.entityType(), request.entityId()));
   }
+
+  public record CreateRoleRequest(String roleId, String name, String description) {}
+
+  public record UpdateRoleRequest(String roleId, String name, String description) {}
+
+  public record RoleMemberRequest(String roleId, String entityId, EntityType entityType) {}
 }

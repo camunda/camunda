@@ -9,11 +9,11 @@ package io.camunda.operate.opensearch.client;
 
 import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OpensearchOperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import java.util.function.Function;
 import org.junit.After;
 import org.junit.Before;
@@ -25,8 +25,8 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = DatabaseCondition.DATABASE_PROPERTY + "=opensearch")
 public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbstractIT {
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
-  @Autowired protected SchemaManager schemaManager;
   @Autowired protected OperateProperties operateProperties;
+  @Autowired protected SearchEngineConfiguration searchEngineConfiguration;
   @Autowired protected OpensearchTestDataHelper opensearchTestDataHelper;
   protected String indexPrefix;
 
@@ -37,6 +37,7 @@ public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbs
   public void setUp() {
     final var indexPrefix = "test-opensearch-operation-" + TestUtil.createRandomString(5);
     operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
+    searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, false);
     schemaExporterHelper.createSchema();
   }

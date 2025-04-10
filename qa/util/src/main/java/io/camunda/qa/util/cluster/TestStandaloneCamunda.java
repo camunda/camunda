@@ -81,14 +81,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         TasklistModuleConfiguration.class,
         WebappsModuleConfiguration.class,
         BrokerModuleConfiguration.class,
-        // test overrides - to control data clean up; (and some components are not installed on
-        // Tests)
-        TestOperateElasticsearchSchemaManager.class,
-        TestOperateOpensearchSchemaManager.class,
-        TestTasklistElasticsearchSchemaManager.class,
-        TestTasklistOpensearchSchemaManager.class,
-        TestOperateSchemaStartup.class,
-        TestTasklistSchemaStartup.class,
         IndexTemplateDescriptorsConfigurator.class);
 
     brokerProperties = new BrokerBasedProperties();

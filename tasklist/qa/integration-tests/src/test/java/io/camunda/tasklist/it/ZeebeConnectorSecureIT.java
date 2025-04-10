@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.it;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -72,7 +73,9 @@ public class ZeebeConnectorSecureIT {
                     "ZEEBE_BROKER_GATEWAY_SECURITY_PRIVATEKEYPATH",
                     "/usr/local/zeebe/certs/" + PRIVATE_KEY_FILE,
                     "ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED",
-                    "true"))
+                    "true",
+                    CREATE_SCHEMA_ENV_VAR,
+                    "false"))
             // Can't use connection wait strategy because of TLS
             .waitingFor(
                 new LogMessageWaitStrategy()

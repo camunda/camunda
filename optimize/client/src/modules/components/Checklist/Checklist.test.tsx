@@ -8,6 +8,7 @@
 
 import {ReactElement} from 'react';
 import {runLastEffect} from '__mocks__/react';
+import {TableRow} from '@carbon/react';
 import {mount, shallow} from 'enzyme';
 
 import Checklist from './Checklist';
@@ -34,9 +35,10 @@ beforeEach(() => props.onChange.mockClear());
 
 it('should display checklist properly', () => {
   const node = shallow(<Checklist {...props} />);
+
   const dataTable = node.find('Table').dive().find('DataTable').dive();
   const selectAll = dataTable.find('TableHeader').at(0).dive().find('TableSelectAll');
-  const rows = dataTable.find('TableRow');
+  const rows = dataTable.find(TableRow);
 
   expect(selectAll).toExist();
   expect(rows).toHaveLength(4);
@@ -53,7 +55,7 @@ it('should invoke onSelect with the updated selected items', () => {
 
   const dataTable = node.find('Table').dive().find('DataTable').dive();
   dataTable
-    .find('TableRow')
+    .find(TableRow)
     .find({cell: {value: 'item 1'}})
     .parent()
     .simulate('click');
@@ -61,7 +63,7 @@ it('should invoke onSelect with the updated selected items', () => {
   expect(props.onChange).toHaveBeenCalledWith([]);
 
   dataTable
-    .find('TableRow')
+    .find(TableRow)
     .find({cell: {value: 'item 2'}})
     .parent()
     .simulate('click');
@@ -103,8 +105,8 @@ it('should filter items based on search', () => {
   const dataTable = node.find('Table').dive().find('DataTable').dive();
 
   expect(props.onSearch).toHaveBeenCalledWith('item 1');
-  expect(dataTable.find('TableRow').find({cell: {value: 'item 1'}})).toExist();
-  expect(dataTable.find('TableRow').find({cell: {value: 'item 2'}})).not.toExist();
+  expect(dataTable.find(TableRow).find({cell: {value: 'item 1'}})).toExist();
+  expect(dataTable.find(TableRow).find({cell: {value: 'item 2'}})).not.toExist();
 });
 
 it('should display the id if the label is null', () => {
@@ -116,7 +118,7 @@ it('should display the id if the label is null', () => {
 
   const dataTable = node.find('Table').dive().find('DataTable').dive();
 
-  expect(dataTable.find('TableRow').find({cell: {value: 'item1'}})).toExist();
+  expect(dataTable.find(TableRow).find({cell: {value: 'item1'}})).toExist();
 });
 
 it('should select all items in view', () => {
@@ -128,7 +130,7 @@ it('should select all items in view', () => {
   const dataTable = node.find('Table').dive().find('DataTable').dive();
 
   dataTable
-    .find('TableRow')
+    .find(TableRow)
     .find({cell: {value: 'Select all in view'}})
     .parent()
     .simulate('click');
@@ -146,7 +148,7 @@ it('should prepend items to the checklist', () => {
   const node = mount(<Checklist {...props} preItems={['label']} />);
   const dataTable = node.find('Table').find('DataTable');
 
-  expect(dataTable.find('TableRow').find({cell: {value: 'label'}})).toExist();
+  expect(dataTable.find(TableRow).find({cell: {value: 'label'}})).toExist();
 });
 
 it('should allow overwriting the selectAll button with a custom header', () => {

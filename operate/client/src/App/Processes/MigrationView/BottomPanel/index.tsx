@@ -6,13 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
+import {useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {SelectItem, Stack, Tag, Toggle} from '@carbon/react';
 
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
-import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
 import {processInstanceMigrationMappingStore} from 'modules/stores/processInstanceMigrationMapping';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {
@@ -27,6 +25,9 @@ import {
   ArrowRight,
   ToggleContainer,
 } from './styled';
+import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
+import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
+import {processesStore} from 'modules/stores/processes/processes.migration';
 
 const TOGGLE_LABEL = 'Show only not mapped';
 
@@ -39,21 +40,31 @@ const BottomPanel: React.FC = observer(() => {
   const {
     updateFlowNodeMapping,
     clearFlowNodeMapping,
-    state: {flowNodeMapping},
+    state: {flowNodeMapping, sourceProcessDefinitionKey},
   } = processInstanceMigrationStore;
 
   const {
-    autoMappableFlowNodes,
-    isAutoMappable,
     toggleMappedFilter,
     state: {isMappedFilterEnabled},
-    mappableFlowNodes,
+    getMappableFlowNodes,
   } = processInstanceMigrationMappingStore;
 
-  const {hasSelectableFlowNodes: hasSelectableSourceFlowNodes} =
-    processXmlMigrationSourceStore;
+  const {selectedTargetProcessId} = processesStore;
+  const isTargetSelected = !!selectedTargetProcessId;
 
-  const {isTargetSelected} = processXmlMigrationTargetStore;
+  const {data: sourceData} = useMigrationSourceXml({
+    processDefinitionKey: sourceProcessDefinitionKey ?? undefined,
+    bpmnProcessId: processesStore.getSelectedProcessDetails().bpmnProcessId,
+  });
+
+  const {data: targetData} = useMigrationTargetXml({
+    processDefinitionKey: selectedTargetProcessId,
+  });
+
+  const mappableFlowNodes = getMappableFlowNodes(
+    sourceData?.selectableFlowNodes,
+    targetData?.selectableFlowNodes,
+  );
 
   const filteredSourceFlowNodeMappings = mappableFlowNodes.filter(
     ({sourceFlowNode}) => {
@@ -63,6 +74,47 @@ const BottomPanel: React.FC = observer(() => {
       );
     },
   );
+
+  /**
+   * Flow nodes which are contained in both source diagram and target diagram.
+   *
+   * A flow node is auto-mappable when
+   * - the flow node id is contained in source and target diagram
+   * - the bpmn type is matching in source and target diagram
+   */
+  const autoMappableFlowNodes = useMemo(() => {
+    if (sourceData === undefined || targetData === undefined) return [];
+
+    return sourceData.selectableFlowNodes
+      .filter((sourceFlowNode) => {
+        const targetFlowNode = targetData.selectableFlowNodes.find(
+          (flowNode) => flowNode.id === sourceFlowNode.id,
+        );
+
+        return (
+          targetFlowNode !== undefined &&
+          sourceFlowNode.$type === targetFlowNode.$type
+        );
+      })
+      .map(({id, $type}) => {
+        return {id, type: $type};
+      });
+  }, [sourceData, targetData]);
+
+  /**
+   * Returns true if the flow node with flowNodeId is auto-mappable
+   */
+  const isAutoMappable = (flowNodeId: string) => {
+    return (
+      autoMappableFlowNodes.find(({id}) => {
+        return flowNodeId === id;
+      }) !== undefined
+    );
+  };
+
+  const hasSelectableSourceFlowNodes =
+    sourceData?.selectableFlowNodes &&
+    sourceData.selectableFlowNodes.length > 0;
 
   // Automatically map flow nodes with same id and type in source and target diagrams
   useEffect(() => {

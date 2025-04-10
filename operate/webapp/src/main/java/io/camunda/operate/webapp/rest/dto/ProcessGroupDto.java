@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.rest.dto;
 
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;

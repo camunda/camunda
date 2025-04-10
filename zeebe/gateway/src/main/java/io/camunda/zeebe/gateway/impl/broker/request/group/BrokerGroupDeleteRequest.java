@@ -23,6 +23,13 @@ public class BrokerGroupDeleteRequest extends BrokerExecuteCommand<GroupRecord> 
     requestDto.setGroupKey(groupKey);
   }
 
+  // TODO: remove this method and provide the group ID through the constructor once the engine is
+  // implemented https://github.com/camunda/camunda/issues/29902
+  public BrokerGroupDeleteRequest setGroupId(final String groupId) {
+    requestDto.setGroupId(groupId);
+    return this;
+  }
+
   @Override
   public GroupRecord getRequestWriter() {
     return requestDto;

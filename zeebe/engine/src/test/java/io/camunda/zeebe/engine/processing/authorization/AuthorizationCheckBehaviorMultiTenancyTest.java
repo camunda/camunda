@@ -20,7 +20,20 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.GroupCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.GroupEntityAddedApplier;
+import io.camunda.zeebe.engine.state.appliers.MappingCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.TenantCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.TenantEntityAddedApplier;
+import io.camunda.zeebe.engine.state.appliers.UserCreatedApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -31,24 +44,33 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestWatcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-public class AuthorizationCheckBehaviorMultiTenancyTest {
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
-  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+@ExtendWith(ProcessingStateExtension.class)
+final class AuthorizationCheckBehaviorMultiTenancyTest {
+
+  @SuppressWarnings("unused") // injected by the extension
+  private MutableProcessingState processingState;
+
   private AuthorizationCheckBehavior authorizationCheckBehavior;
+  private UserCreatedApplier userCreatedApplier;
+  private MappingCreatedApplier mappingCreatedApplier;
+  private AuthorizationCreatedApplier authorizationCreatedApplier;
+  private GroupCreatedApplier groupCreatedApplier;
+  private GroupEntityAddedApplier groupEntityAddedApplier;
+  private TenantCreatedApplier tenantCreatedApplier;
+  private TenantEntityAddedApplier tenantEntityAddedApplier;
+  private final Random random = new Random();
 
-  @Before
-  public void before() {
-    final var processingState = engine.getProcessingState();
+  @BeforeEach
+  void before() {
     final var securityConfig = new SecurityConfiguration();
     final var authConfig = new AuthorizationsConfiguration();
     authConfig.setEnabled(true);
@@ -57,10 +79,19 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
     multiTenancyConfig.setEnabled(true);
     securityConfig.setMultiTenancy(multiTenancyConfig);
     authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
+
+    userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
+    mappingCreatedApplier = new MappingCreatedApplier(processingState.getMappingState());
+    authorizationCreatedApplier =
+        new AuthorizationCreatedApplier(processingState.getAuthorizationState());
+    groupCreatedApplier = new GroupCreatedApplier(processingState.getGroupState());
+    groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
+    tenantCreatedApplier = new TenantCreatedApplier(processingState.getTenantState());
+    tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
   }
 
   @Test
-  public void shouldBeAuthorizedForUserTenant() {
+  void shouldBeAuthorizedForUserTenant() {
     // given
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -82,7 +113,7 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldBeAuthorizedForUserTenantThroughGroup() {
+  void shouldBeAuthorizedForUserTenantThroughGroup() {
     // given
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -105,11 +136,11 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldBeAuthorizedForMappingTenant() {
+  void shouldBeAuthorizedForMappingTenant() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = createMapping(claimName, claimValue).getId();
+    final var mappingId = createMapping(claimName, claimValue).getMappingId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -129,7 +160,7 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldBeAuthorizedForMappingTenantThroughGroup() {
+  void shouldBeAuthorizedForMappingTenantThroughGroup() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -138,7 +169,11 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getId(), AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+        mapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        resourceId);
     final var groupKey = createGroup(mapping.getMappingKey(), EntityType.MAPPING);
     final var tenantId = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var command = mockCommandWithMapping(claimName, claimValue);
@@ -154,7 +189,7 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldGetUserAuthorizedTenantIds() {
+  void shouldGetUserAuthorizedTenantIds() {
     // given
     final var user = createUser();
     final var tenantId1 = createAndAssignTenant(user.getUsername(), EntityType.USER);
@@ -162,8 +197,7 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
     final var command = mockCommand(user.getUsername());
 
     // when
-    final var authorizedTenantIds =
-        runTaskInActor(() -> authorizationCheckBehavior.getAuthorizedTenantIds(command));
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
 
     // then
     assertThat(authorizedTenantIds.getAuthorizedTenantIds())
@@ -177,18 +211,17 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldGetMappingAuthorizedTenantIds() {
+  void shouldGetMappingAuthorizedTenantIds() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = createMapping(claimName, claimValue).getId();
+    final var mappingId = createMapping(claimName, claimValue).getMappingId();
     final var tenantId1 = createAndAssignTenant(mappingId, EntityType.MAPPING);
     final var tenantId2 = createAndAssignTenant(mappingId, EntityType.MAPPING);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
-    final var authorizedTenantIds =
-        runTaskInActor(() -> authorizationCheckBehavior.getAuthorizedTenantIds(command));
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
 
     // then
     assertThat(authorizedTenantIds.getAuthorizedTenantIds())
@@ -202,7 +235,7 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldGetUserAuthorizedTenantIdsThroughGroup() {
+  void shouldGetUserAuthorizedTenantIdsThroughGroup() {
     // given
     final var user = createUser();
     final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
@@ -211,8 +244,7 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
     final var command = mockCommand(user.getUsername());
 
     // when
-    final var authorizedTenantIds =
-        runTaskInActor(() -> authorizationCheckBehavior.getAuthorizedTenantIds(command));
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
 
     // then
     assertThat(authorizedTenantIds.getAuthorizedTenantIds())
@@ -226,7 +258,7 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldGetMappingAuthorizedTenantIdsThroughGroup() {
+  void shouldGetMappingAuthorizedTenantIdsThroughGroup() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -237,8 +269,7 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
-    final var authorizedTenantIds =
-        runTaskInActor(() -> authorizationCheckBehavior.getAuthorizedTenantIds(command));
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
 
     // then
     assertThat(authorizedTenantIds.getAuthorizedTenantIds())
@@ -252,30 +283,25 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldGetDefaultAuthorizedTenantIdsIfUserKeyIsNotPresent() {
+  void shouldGetDefaultAuthorizedTenantIdsIfUserKeyIsNotPresent() {
     // given
     final var command = mock(TypedRecord.class);
 
     // when
     final var authorizedTenantIds =
-        runTaskInActor(
-            () ->
-                authorizationCheckBehavior
-                    .getAuthorizedTenantIds(command)
-                    .getAuthorizedTenantIds());
+        authorizationCheckBehavior.getAuthorizedTenantIds(command).getAuthorizedTenantIds();
 
     // then
     assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
-  public void shouldGetDefaultAuthorizedTenantIdsIfUserIsNotPresent() {
+  void shouldGetDefaultAuthorizedTenantIdsIfUserIsNotPresent() {
     // given
     final var command = mockCommand("not-exists");
 
     // when
-    final var authorizedTenantIds =
-        runTaskInActor(() -> authorizationCheckBehavior.getAuthorizedTenantIds(command));
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
 
     // then
     assertThat(authorizedTenantIds.getAuthorizedTenantIds())
@@ -290,43 +316,39 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldBeAuthorizedWhenMappingIsNotAssignedToRequestedTenant() {
+  void shouldBeAuthorizedWhenMappingIsNotAssignedToRequestedTenant() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mapping =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
-    final var tenantId = "tenant";
-    engine.tenant().newTenant().withTenantId(tenantId).create();
-    engine
-        .tenant()
-        .addEntity(tenantId)
-        .withEntityType(EntityType.MAPPING)
-        .withEntityId(mapping.getId())
-        .add();
+    final var mapping = createMapping(claimName, claimValue);
+    createAndAssignTenant(mapping.getMappingId(), EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getId(), AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+        mapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType, "anotherTenantId")
             .addResourceId(resourceId);
-    final var authorized = runTaskInActor(() -> authorizationCheckBehavior.isAuthorized(request));
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
     EitherAssert.assertThat(authorized).isLeft();
   }
 
   @Test
-  public void shouldBeUnauthorizedForMappingTenant() {
+  void shouldBeUnauthorizedForMappingTenant() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = createMapping(claimName, claimValue).getId();
+    final var mappingId = createMapping(claimName, claimValue).getMappingId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -340,14 +362,14 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType, anotherTenantId)
             .addResourceId(resourceId);
-    final var authorized = runTaskInActor(() -> authorizationCheckBehavior.isAuthorized(request));
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
     assertThat(authorized.isRight()).isFalse();
   }
 
   @Test
-  public void shouldBeUnauthorizedForUserTenant() {
+  void shouldBeUnauthorizedForUserTenant() {
     // given
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -370,94 +392,71 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  public void shouldGetAuthorizedTenantsForMapping() {
+  void shouldGetAuthorizedTenantsForMapping() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    engine
-        .mapping()
-        .newMapping(claimName)
-        .withClaimValue(claimValue)
-        .withId(mappingId)
-        .create()
-        .getValue();
-    final var tenantId = "tenant";
-    engine.tenant().newTenant().withTenantId(tenantId).create();
-    final var command = mockCommandWithMapping(claimName, claimValue);
+    final var mapping = createMapping(claimName, claimValue);
 
     // when
-    engine
-        .tenant()
-        .addEntity(tenantId)
-        .withEntityType(EntityType.MAPPING)
-        .withEntityId(mappingId)
-        .add();
+    final var tenantId = createAndAssignTenant(mapping.getMappingId(), EntityType.MAPPING);
+    final var command = mockCommandWithMapping(claimName, claimValue);
 
     // then
-    assertThat(
-            runTaskInActor(() -> authorizationCheckBehavior.getAuthorizedTenantIds(command))
-                .getAuthorizedTenantIds())
+    assertThat(authorizationCheckBehavior.getAuthorizedTenantIds(command).getAuthorizedTenantIds())
         .singleElement()
         .isEqualTo(tenantId);
   }
 
   @Test
-  public void shouldGetDefaultAuthorizedTenantForMapping() {
+  void shouldGetDefaultAuthorizedTenantForMapping() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    createMapping(claimName, claimValue);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     // then
-    assertThat(
-            runTaskInActor(() -> authorizationCheckBehavior.getAuthorizedTenantIds(command))
-                .getAuthorizedTenantIds())
+    assertThat(authorizationCheckBehavior.getAuthorizedTenantIds(command).getAuthorizedTenantIds())
         .singleElement()
         .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Test
-  public void shouldReturnAnonymousAuthorizedTenants() {
+  void shouldReturnAnonymousAuthorizedTenants() {
     // given
     final var command = mockCommandWithAnonymousUser();
 
     // when
-    final var authorizedTenants =
-        runTaskInActor(() -> authorizationCheckBehavior.getAuthorizedTenantIds(command));
+    final var authorizedTenants = authorizationCheckBehavior.getAuthorizedTenantIds(command);
 
     assertThat(authorizedTenants).isEqualTo(AuthorizedTenants.ANONYMOUS);
   }
 
   @Test
-  public void shouldBeAuthorizedWhenMappingIsAssignedToRequestedTenant() {
+  void shouldBeAuthorizedWhenMappingIsAssignedToRequestedTenant() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mapping =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
-    final var tenantId = "tenant";
-    engine.tenant().newTenant().withTenantId(tenantId).create();
-    engine
-        .tenant()
-        .addEntity(tenantId)
-        .withEntityType(EntityType.MAPPING)
-        .withEntityId(mapping.getId())
-        .add();
+    final var mapping = createMapping(claimName, claimValue);
+    final var tenantId = createAndAssignTenant(mapping.getMappingId(), EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getId(), AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+        mapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     final var request =
         new AuthorizationRequest(command, resourceType, permissionType, tenantId)
             .addResourceId(resourceId);
-    final var authorized = runTaskInActor(() -> authorizationCheckBehavior.isAuthorized(request));
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
     EitherAssert.assertThat(authorized).isRight();
@@ -472,24 +471,29 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   private UserRecordValue createUser() {
-    return engine
-        .user()
-        .newUser(UUID.randomUUID().toString())
-        .withName(UUID.randomUUID().toString())
-        .withEmail(UUID.randomUUID().toString())
-        .withPassword(UUID.randomUUID().toString())
-        .create()
-        .getValue();
+    final var userKey = random.nextLong();
+    final var user =
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(Strings.newRandomValidUsername())
+            .setName(UUID.randomUUID().toString())
+            .setEmail(UUID.randomUUID().toString())
+            .setPassword(UUID.randomUUID().toString());
+    userCreatedApplier.applyState(userKey, user);
+    return user;
   }
 
   private MappingRecordValue createMapping(final String claimName, final String claimValue) {
-    return engine
-        .mapping()
-        .newMapping(claimName)
-        .withClaimValue(claimValue)
-        .withId(Strings.newRandomValidIdentityId())
-        .create()
-        .getValue();
+    final var mappingKey = random.nextLong();
+    final var mapping =
+        new MappingRecord()
+            .setMappingKey(mappingKey)
+            .setMappingId(Strings.newRandomValidIdentityId())
+            .setName(Strings.newRandomValidUsername())
+            .setClaimName(claimName)
+            .setClaimValue(claimValue);
+    mappingCreatedApplier.applyState(mappingKey, mapping);
+    return mapping;
   }
 
   private void addPermission(
@@ -499,21 +503,32 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
       final PermissionType permissionType,
       final String... resourceIds) {
     for (final String resourceId : resourceIds) {
-      engine
-          .authorization()
-          .newAuthorization()
-          .withPermissions(permissionType)
-          .withOwnerId(ownerId)
-          .withOwnerType(ownerType)
-          .withResourceType(resourceType)
-          .withResourceId(resourceId)
-          .create();
+      final var authorizationKey = random.nextLong();
+      final var authorization =
+          new AuthorizationRecord()
+              .setAuthorizationKey(authorizationKey)
+              .setOwnerId(ownerId)
+              .setOwnerType(ownerType)
+              .setResourceId(resourceId)
+              .setResourceType(resourceType)
+              .setPermissionTypes(Set.of(permissionType));
+      authorizationCreatedApplier.applyState(authorizationKey, authorization);
     }
   }
 
   private long createGroup(final long entityKey, final EntityType entityType) {
-    final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
-    engine.group().addEntity(groupKey).withEntityKey(entityKey).withEntityType(entityType).add();
+    final var groupKey = random.nextLong();
+    final var groupId = String.valueOf(groupKey);
+    final var group =
+        new GroupRecord()
+            .setGroupKey(groupKey)
+            .setGroupId(groupId)
+            .setName(UUID.randomUUID().toString())
+            .setDescription(UUID.randomUUID().toString())
+            .setEntityKey(entityKey)
+            .setEntityType(entityType);
+    groupCreatedApplier.applyState(groupKey, group);
+    groupEntityAddedApplier.applyState(groupKey, group);
     return groupKey;
   }
 
@@ -522,11 +537,23 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
     return createAndAssignTenant(String.valueOf(entityKey), entityType);
   }
 
+  private TenantRecord createTenant() {
+    final var tenantKey = random.nextLong();
+    final var tenant =
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setTenantId(Strings.newRandomValidIdentityId())
+            .setName(UUID.randomUUID().toString())
+            .setDescription(UUID.randomUUID().toString());
+    tenantCreatedApplier.applyState(tenantKey, tenant);
+    return tenant;
+  }
+
   private String createAndAssignTenant(final String entityId, final EntityType entityType) {
-    final var tenantId = UUID.randomUUID().toString();
-    engine.tenant().newTenant().withTenantId(tenantId).create();
-    engine.tenant().addEntity(tenantId).withEntityId(entityId).withEntityType(entityType).add();
-    return tenantId;
+    final var tenant = createTenant();
+    tenant.setEntityId(entityId).setEntityType(entityType);
+    tenantEntityAddedApplier.applyState(tenant.getTenantKey(), tenant);
+    return tenant.getTenantId();
   }
 
   private TypedRecord<?> mockCommand(final String username) {
@@ -541,9 +568,5 @@ public class AuthorizationCheckBehaviorMultiTenancyTest {
     when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_ANONYMOUS_USER, true));
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
-  }
-
-  private <A> A runTaskInActor(final Supplier<A> supplier) {
-    return engine.getStreamProcessor(1).call(supplier::get).join();
   }
 }

@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@DependsOn("schemaStartup")
+@DependsOn("searchEngineSchemaInitializer")
 public class ZeebeImporter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeImporter.class);

@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.util.DateUtil;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +67,7 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
         .state(IncidentState.ACTIVE)
         .errorType(mapErrorType(value.getErrorType()))
         .errorMessage(value.getErrorMessage())
+        .errorMessageHash(Optional.of(value.getErrorMessage()).map(String::hashCode).orElse(0))
         .creationDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .jobKey(mapIfGreaterZero(value.getJobKey()))
         .treePath(

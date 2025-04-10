@@ -190,6 +190,8 @@ public interface Intent {
         return BatchOperationExecutionIntent.from(intent);
       case BATCH_OPERATION_CHUNK:
         return BatchOperationChunkIntent.from(intent);
+      case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
+        return BatchOperationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -295,6 +297,8 @@ public interface Intent {
         return BatchOperationExecutionIntent.valueOf(intent);
       case BATCH_OPERATION_CHUNK:
         return BatchOperationChunkIntent.valueOf(intent);
+      case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
+        return BatchOperationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

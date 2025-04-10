@@ -17,11 +17,10 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.reindexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.CollectionUtil.toSafeArrayOfStrings;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,11 +28,9 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
-import io.camunda.operate.util.Convertable;
-import io.camunda.operate.util.MapPath;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
 import java.util.Arrays;
@@ -304,37 +301,8 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public void reindex(
-      final String srcIndex,
-      final String dstIndex,
-      final String script,
-      final Map<String, Object> scriptParams)
-      throws IOException {
-    final var request = reindexRequestBuilder(srcIndex, dstIndex, script, scriptParams).build();
-    richOpenSearchClient.index().reindexWithRetries(request);
-  }
-
-  @Override
   public boolean ilmPolicyExists(final String policyName) {
     return !richOpenSearchClient.ism().getPolicy(policyName).isEmpty();
-  }
-
-  @Override
-  public IndexSettings getIndexSettings(final String indexName) throws IOException {
-    final var settings = new MapPath(richOpenSearchClient.index().getIndexSettings(indexName));
-    final String shards =
-        settings
-            .getByPath("settings", "index", "number_of_shards")
-            .flatMap(Convertable::<String>to)
-            .orElse(null);
-    final String replicas =
-        settings
-            .getByPath("settings", "index", "number_of_replicas")
-            .flatMap(Convertable::<String>to)
-            .orElse(null);
-    return new IndexSettings(
-        shards == null ? null : Integer.parseInt(shards),
-        replicas == null ? null : Integer.parseInt(replicas));
   }
 
   @Override

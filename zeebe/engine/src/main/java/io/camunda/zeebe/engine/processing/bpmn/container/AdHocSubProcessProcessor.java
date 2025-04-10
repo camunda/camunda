@@ -105,7 +105,7 @@ public class AdHocSubProcessProcessor
   }
 
   @Override
-  public void onTerminate(
+  public TransitionOutcome onTerminate(
       final ExecutableAdHocSubProcess element, final BpmnElementContext terminating) {
 
     if (element.hasExecutionListeners()) {
@@ -120,6 +120,7 @@ public class AdHocSubProcessProcessor
     if (noActiveChildInstances) {
       terminate(element, terminating);
     }
+    return TransitionOutcome.CONTINUE;
   }
 
   private void terminate(

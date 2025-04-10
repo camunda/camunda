@@ -23,6 +23,7 @@ import static io.camunda.spring.client.annotation.AnnotationUtil.isVariablesAsTy
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.spring.client.annotation.value.VariableValue;
 import io.camunda.spring.client.bean.ParameterInfo;
 
 public class DefaultParameterResolverStrategy implements ParameterResolverStrategy {
@@ -64,8 +65,10 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
       return new ActivatedJobParameterResolver();
     } else if (isVariable(parameterInfo)) {
       // get() can be used savely here as isVariable() verifies that an annotation is present
-      final String variableName = getVariableValue(parameterInfo).get().getName();
-      return new VariableResolver(variableName, parameterType, jsonMapper);
+      final VariableValue variableValue = getVariableValue(parameterInfo).get();
+      final String variableName = variableValue.getName();
+      final boolean optional = variableValue.isOptional();
+      return new VariableResolver(variableName, parameterType, jsonMapper, optional);
     } else if (isVariablesAsType(parameterInfo)) {
       return new VariablesAsTypeResolver(parameterType);
     } else if (isCustomHeaders(parameterInfo)) {

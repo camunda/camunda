@@ -9,7 +9,7 @@
     "@camunda/camunda-composite-components": "^0.17.0",
     "@camunda/camunda-optimize-composite-components": "^0.0.16",
     "@carbon/icons-react": "^11.41.0",
-    "@carbon/react": "^1.55.0",
+    "@carbon/react": "^1.77.0",
     "@lexical/react": "^0.27.0",
     "@ungap/structured-clone": "^1.2.0",
     "bpmn-js": "18.3.1",
@@ -25,9 +25,9 @@
     "heatmap.js": "^2.0.5",
     "immutability-helper": "^3.1.1",
     "lexical": "^0.27.0",
-    "react": "^18.3.1",
+    "react": "^19.0.0",
     "react-date-range": "^2.0.0-alpha.3",
-    "react-dom": "^18.3.1",
+    "react-dom": "^19.0.0",
     "react-full-screen": "^1.1.1",
     "react-grid-layout": "^1.4.1",
     "react-router": "5.3.4",
@@ -116,6 +116,9 @@
     "opn": "^6.0.0",
     "patch-package": "^8.0.0",
     "prettier": "^3.3.3",
+    "react-18": "npm:react@^18.3.1",
+    "react-dom-18": "npm:react-dom@^18.3.1",
+    "react-is-18": "npm:react-is@^18.3.1",
     "react-scripts": "5.0.1",
     "rollup-plugin-license": "3.6.0",
     "sass": "^1.77.2",
@@ -132,7 +135,8 @@
   },
   "resolutions": {
     "**/jpeg-js": "^0.4.0",
-    "**/kind-of": "^6.0.3"
+    "**/kind-of": "^6.0.3",
+    "react-is": "^19.0.0"
   },
   "jest": {
     "resetMocks": false,
@@ -140,7 +144,10 @@
       "/node_modules/(?!(@camunda/camunda-.*?|date-fns))"
     ],
     "moduleNameMapper": {
-      "\\.(css|scss)$": "<rootDir>/src/__mocks__/styleMock.js"
+      "\\.(css|scss)$": "<rootDir>/src/__mocks__/styleMock.js",
+      "^react-dom((\\/.*)?)$": "react-dom-18$1",
+      "^react((\\/.*)?)$": "react-18$1",
+      "^react-is((\\/.*)?)$": "react-is-18$1"
     }
   },
   "browserslist": [

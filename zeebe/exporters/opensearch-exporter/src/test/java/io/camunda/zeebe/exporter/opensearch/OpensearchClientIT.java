@@ -79,7 +79,8 @@ public class OpensearchClientIT {
     searchDB.client().putIndexTemplate(valueType);
 
     // then
-    final var templateWrapper = searchDB.testClient().getIndexTemplate(valueType);
+    final var templateWrapper =
+        searchDB.testClient().getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
     assertThat(templateWrapper)
         .as("should have created template for value type %s", valueType)
         .isPresent()

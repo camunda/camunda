@@ -2,6 +2,7 @@ zeebe:
   broker:
     exporting:
       skipRecords: 112233, 445566
+      distributionInterval: 5s
     exporters:
       elasticsearch:
         className: io.camunda.zeebe.exporter.ElasticsearchExporter

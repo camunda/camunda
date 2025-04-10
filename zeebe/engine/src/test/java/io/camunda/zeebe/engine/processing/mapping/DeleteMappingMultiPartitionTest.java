@@ -41,9 +41,14 @@ public class DeleteMappingMultiPartitionTest {
     // when
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var id = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
-    engine.mapping().deleteMapping(id).delete();
+    final var mappingId = UUID.randomUUID().toString();
+    engine
+        .mapping()
+        .newMapping(claimName)
+        .withClaimValue(claimValue)
+        .withMappingId(mappingId)
+        .create();
+    engine.mapping().deleteMapping(mappingId).delete();
 
     // then
     assertThat(
@@ -91,9 +96,14 @@ public class DeleteMappingMultiPartitionTest {
     // when
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var id = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
-    engine.mapping().deleteMapping(id).delete();
+    final var mappingId = UUID.randomUUID().toString();
+    engine
+        .mapping()
+        .newMapping(claimName)
+        .withClaimValue(claimValue)
+        .withMappingId(mappingId)
+        .create();
+    engine.mapping().deleteMapping(mappingId).delete();
 
     // then
     assertThat(
@@ -112,10 +122,15 @@ public class DeleteMappingMultiPartitionTest {
     }
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var id = UUID.randomUUID().toString();
+    final var mappingId = UUID.randomUUID().toString();
 
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
-    engine.mapping().deleteMapping(id).delete();
+    engine
+        .mapping()
+        .newMapping(claimName)
+        .withClaimValue(claimValue)
+        .withMappingId(mappingId)
+        .create();
+    engine.mapping().deleteMapping(mappingId).delete();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

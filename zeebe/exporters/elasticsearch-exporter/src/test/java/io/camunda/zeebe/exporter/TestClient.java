@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -80,14 +79,11 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  Optional<IndexTemplateWrapper> getIndexTemplate(final ValueType valueType) {
+  Optional<IndexTemplateWrapper> getIndexTemplate(final ValueType valueType, final String version) {
     try {
       final var request =
           new Request(
-              "GET",
-              "/_index_template/"
-                  + indexRouter.indexPrefixForValueType(
-                      valueType, VersionUtil.getVersionLowerCase()));
+              "GET", "/_index_template/" + indexRouter.indexPrefixForValueType(valueType, version));
       final var response = restClient.performRequest(request);
       final var templates =
           MAPPER.readValue(response.getEntity().getContent(), IndexTemplatesDto.class);
@@ -125,6 +121,15 @@ final class TestClient implements CloseableSilently {
   void deleteIndices() {
     try {
       final var request = new Request("DELETE", config.index.prefix + "*");
+      restClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  void deleteIndexTemplates() {
+    try {
+      final var request = new Request("DELETE", "/_index_template/*");
       restClient.performRequest(request);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
