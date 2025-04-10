@@ -13,12 +13,14 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
 
 import io.camunda.application.Profile;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -38,9 +40,13 @@ public class IdentityDefaultEntitiesIT {
   private static final GenericContainer<?> IDENTITY =
       IdentityMigrationTestUtil.getManagementIdentity(POSTGRES, KEYCLOAK);
 
+  @Container
+  private static final ElasticsearchContainer ELASTICSEARCH =
+      TestSearchContainers.createDefeaultElasticsearchContainer();
+
   @TestZeebe(autoStart = false)
-  final TestStandaloneCamunda camunda =
-      new TestStandaloneCamunda()
+  final TestSimpleCamundaApplication camunda =
+      new TestSimpleCamundaApplication()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
 
   @Test
@@ -49,6 +55,7 @@ public class IdentityDefaultEntitiesIT {
     // when -- Camunda is started with identity migration profile
     camunda
         .withAdditionalProfile(Profile.IDENTITY_MIGRATION)
+        .withProperty("camunda.database.url", "http://" + ELASTICSEARCH.getHttpHostAddress())
         .withProperty("camunda.migration.identity.zeebe.gatewayAddress", camunda.restAddress())
         .withProperty(
             "camunda.migration.identity.managementIdentity.baseUrl", externalIdentityUrl(IDENTITY))
