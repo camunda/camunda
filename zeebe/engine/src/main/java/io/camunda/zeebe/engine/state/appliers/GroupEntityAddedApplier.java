@@ -40,10 +40,7 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
     switch (entityType) {
       case USER ->
           membershipState.insertRelation(
-              EntityType.USER,
-              entityId,
-              RelationType.GROUP,
-              value.getGroupId());
+              EntityType.USER, entityId, RelationType.GROUP, value.getGroupId());
       case MAPPING -> {
         groupState.addEntity(value);
         mappingState.addGroup(entityId, groupKey);

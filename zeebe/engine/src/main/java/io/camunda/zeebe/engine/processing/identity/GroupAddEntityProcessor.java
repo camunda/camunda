@@ -146,10 +146,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     return switch (record.getEntityType()) {
       case USER ->
           membershipState.hasRelation(
-              EntityType.USER,
-              record.getEntityId(),
-              RelationType.GROUP,
-              record.getGroupId());
+              EntityType.USER, record.getEntityId(), RelationType.GROUP, record.getGroupId());
       default -> groupState.getEntityType(record.getGroupId(), record.getEntityId()).isPresent();
     };
   }

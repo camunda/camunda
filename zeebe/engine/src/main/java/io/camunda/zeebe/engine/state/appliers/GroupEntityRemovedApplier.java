@@ -40,15 +40,10 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
     // https://github.com/camunda/camunda/issues/30091
     final var groupId = value.getGroupId();
     final var groupKey = Long.parseLong(value.getGroupId());
-    groupState.removeEntity(groupId, entityId);
 
     switch (entityType) {
       case USER ->
-          membershipState.deleteRelation(
-              EntityType.USER,
-              entityId,
-              RelationType.GROUP,
-              groupId);
+          membershipState.deleteRelation(EntityType.USER, entityId, RelationType.GROUP, groupId);
       case MAPPING -> {
         groupState.removeEntity(groupId, entityId);
         mappingState.removeGroup(entityId, groupKey);

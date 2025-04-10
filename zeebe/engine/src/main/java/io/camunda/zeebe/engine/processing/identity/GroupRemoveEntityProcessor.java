@@ -119,10 +119,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
         switch (record.getEntityType()) {
           case USER ->
               membershipState.hasRelation(
-                  EntityType.USER,
-                  record.getEntityId(),
-                  RelationType.GROUP,
-                  groupId);
+                  EntityType.USER, record.getEntityId(), RelationType.GROUP, groupId);
           default -> groupState.getEntityType(groupId, record.getEntityId()).isPresent();
         };
 

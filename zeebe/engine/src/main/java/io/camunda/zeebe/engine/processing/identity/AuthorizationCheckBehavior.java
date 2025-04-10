@@ -211,8 +211,7 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
     final var groupIds =
-        membershipState.getMemberships(
-            EntityType.USER, Long.toString(user.getUserKey()), RelationType.GROUP);
+        membershipState.getMemberships(EntityType.USER, user.getUsername(), RelationType.GROUP);
 
     return areGroupsAuthorizedForTenant(groupIds, tenantId);
   }
@@ -322,10 +321,7 @@ public final class AuthorizationCheckBehavior {
     // Get resource identifiers for the user's groups
     final var groupIds =
         membershipState.getMemberships(
-            EntityType.USER,
-            // TODO: Use username instead of userKey when groups are id-based
-            Long.toString(user.getUserKey()),
-            RelationType.GROUP);
+            EntityType.USER, user.getUser().getUsername(), RelationType.GROUP);
     final var groupAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
             AuthorizationOwnerType.GROUP, groupIds, resourceType, permissionType);
@@ -455,7 +451,7 @@ public final class AuthorizationCheckBehavior {
                             EntityType.USER, user.getUsername(), RelationType.TENANT));
                 final var groupIds =
                     membershipState.getMemberships(
-                        EntityType.USER, Long.toString(user.getUserKey()), RelationType.GROUP);
+                        EntityType.USER, user.getUsername(), RelationType.GROUP);
                 tenantIds.addAll(getTenantIdsForGroups(groupIds));
                 return tenantIds;
               })

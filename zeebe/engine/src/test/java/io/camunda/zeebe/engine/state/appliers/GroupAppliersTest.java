@@ -124,9 +124,7 @@ public class GroupAppliersTest {
     groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // then
-    assertThat(
-            membershipState.getMemberships(
-                EntityType.USER, username, RelationType.GROUP))
+    assertThat(membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP))
         .containsExactly(groupId);
   }
 
@@ -180,9 +178,7 @@ public class GroupAppliersTest {
     groupEntityRemovedApplier.applyState(1L, groupRecord);
 
     // then
-    assertThat(
-            membershipState.getMemberships(
-                EntityType.USER, username, RelationType.GROUP))
+    assertThat(membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP))
         .isEmpty();
   }
 

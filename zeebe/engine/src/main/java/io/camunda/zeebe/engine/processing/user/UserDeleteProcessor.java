@@ -166,10 +166,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     }
 
     for (final var groupId :
-        membershipState.getMemberships(
-            EntityType.USER,
-            username,
-            RelationType.GROUP)) {
+        membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP)) {
       final var group = groupState.get(groupId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           group.getGroupKey(),
