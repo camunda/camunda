@@ -12,6 +12,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCreat
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationExecutionCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleCanceledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecyclePausedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleResumeRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationProcessCancelledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationProcessCancelledRecord;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -145,6 +146,30 @@ class RdbmsExporterBatchOperationsIT {
     final var batchOperation =
         rdbmsService.getBatchOperationReader().findOne(batchOperationKey).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.PAUSED);
+  }
+
+  @Test
+  public void shouldResumeBatchOperation() {
+    // given
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationPauseRecord =
+        getBatchOperationLifecyclePausedRecord(batchOperationKey, 3L);
+    final var batchOperationResumeRecord =
+        getBatchOperationLifecycleResumeRecord(batchOperationKey, 4L);
+
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+    exporter.export(batchOperationPauseRecord);
+
+    // when we resume it
+    exporter.export(batchOperationResumeRecord);
+
+    // then it should be canceled
+    final var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(batchOperationKey).get();
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
   }
 
   @Test

@@ -499,6 +499,26 @@ public class RecordFixtures {
         .build();
   }
 
+  protected static ImmutableRecord<RecordValue> getBatchOperationLifecycleResumeRecord(
+      final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(BatchOperationIntent.RESUMED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+                .from(
+                    (ImmutableBatchOperationLifecycleManagementRecordValue)
+                        recordValueRecord.getValue())
+                .withBatchOperationKey(batchOperationKey)
+                .build())
+        .build();
+  }
+
   protected static ImmutableRecord<RecordValue> getBatchOperationProcessCancelledRecord(
       final Long processInstanceKey, final Long batchOperationKey, final Long position) {
     final Record<RecordValue> recordValueRecord =
