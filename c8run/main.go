@@ -139,6 +139,61 @@ func GetJavaHome(javaBinary string) (string, error) {
 	return javaHomeOutput, nil
 }
 
+func resolveJavaHomeAndBinary() (string, string, error) {
+	javaHome := os.Getenv("JAVA_HOME")
+	javaBinary := "java"
+	var javaHomeAfterSymlink string
+	var err error
+	if javaHome != "" {
+		javaHomeAfterSymlink, err = filepath.EvalSymlinks(javaHome)
+		if err != nil {
+			fmt.Println("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
+			javaHome = ""
+		} else {
+			javaHome = javaHomeAfterSymlink
+		}
+	}
+	if javaHome == "" {
+		javaHome, err = GetJavaHome(javaBinary)
+		if err != nil {
+			return "", "", fmt.Errorf("Failed to get JAVA_HOME")
+		}
+	}
+
+	if javaHome != "" {
+		err = filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
+			_, filename := filepath.Split(path)
+			if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
+				javaBinary = path
+				return filepath.SkipAll
+			}
+			return nil
+		})
+		if err != nil {
+			return "", "", err
+		}
+		// fallback to bin/java.exe
+		if javaBinary == "" {
+			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+				javaBinary = filepath.Join(javaHome, "bin", "java")
+			} else if runtime.GOOS == "windows" {
+				javaBinary = filepath.Join(javaHome, "bin", "java.exe")
+			}
+		}
+	} else {
+		path, err := exec.LookPath("java")
+		if err != nil {
+			return "", "", fmt.Errorf("Failed to find JAVA_HOME or java program.")
+		}
+
+		// go up 2 directories since it's not guaranteed that java is in a bin folder
+		javaHome = filepath.Dir(filepath.Dir(path))
+		javaBinary = path
+	}
+
+	return javaHome, javaBinary, nil
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -169,53 +224,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	javaHome := os.Getenv("JAVA_HOME")
-	javaBinary := "java"
-	var javaHomeAfterSymlink string
-	if javaHome != "" {
-		javaHomeAfterSymlink, err = filepath.EvalSymlinks(javaHome)
-		if err != nil {
-			fmt.Println("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
-			javaHome = ""
-		} else {
-			javaHome = javaHomeAfterSymlink
-		}
-	}
-	if javaHome == "" {
-		javaHome, err = GetJavaHome(javaBinary)
-		if err != nil {
-			fmt.Println("Failed to get JAVA_HOME")
-			os.Exit(1)
-		}
-	}
-
-	if javaHome != "" {
-		filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
-			_, filename := filepath.Split(path)
-			if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
-				javaBinary = path
-				return filepath.SkipAll
-			}
-			return nil
-		})
-		// fallback to bin/java.exe
-		if javaBinary == "" {
-			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-				javaBinary = filepath.Join(javaHome, "bin", "java")
-			} else if runtime.GOOS == "windows" {
-				javaBinary = filepath.Join(javaHome, "bin", "java.exe")
-			}
-		}
-	} else {
-		path, err := exec.LookPath("java")
-		if err != nil {
-			fmt.Println("Failed to find JAVA_HOME or java program.")
-			os.Exit(1)
-		}
-
-		// go up 2 directories since it's not guaranteed that java is in a bin folder
-		javaHome = filepath.Dir(filepath.Dir(path))
-		javaBinary = path
+	// Rresolve JAVA_HOME and javaBinary
+	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	err = overrides.SetEnvVars(javaHome)
