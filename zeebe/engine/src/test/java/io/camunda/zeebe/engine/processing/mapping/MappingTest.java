@@ -232,9 +232,9 @@ public class MappingTest {
         .hasFieldOrPropertyWithValue("mappingId", mappingId);
   }
 
-  @Ignore("https://github.com/camunda/camunda/issues/30092")
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
+  @Ignore(
+      "https://github.com/camunda/camunda/issues/30117 and https://github.com/camunda/camunda/issues/30092")
   public void shouldCleanupGroupAndRoleMembership() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
