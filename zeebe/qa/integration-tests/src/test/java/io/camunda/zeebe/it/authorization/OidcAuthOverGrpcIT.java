@@ -37,6 +37,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -54,6 +55,10 @@ public class OidcAuthOverGrpcIT {
   private static final String USER_ID_CLAIM_NAME = "sub";
 
   @Container
+  private static final ElasticsearchContainer CONTAINER =
+      TestSearchContainers.createDefeaultElasticsearchContainer();
+
+  @Container
   private static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();
 
   @AutoClose private static CamundaClient defaultMappingClient;
@@ -64,6 +69,7 @@ public class OidcAuthOverGrpcIT {
       new TestStandaloneBroker()
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
+          .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
