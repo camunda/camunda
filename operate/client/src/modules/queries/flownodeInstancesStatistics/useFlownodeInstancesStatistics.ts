@@ -6,36 +6,36 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  skipToken,
-  useQuery,
-  UseQueryOptions,
-  UseQueryResult,
-} from '@tanstack/react-query';
+import {skipToken, useQuery, UseQueryResult} from '@tanstack/react-query';
 import {RequestError} from 'modules/request';
 import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 import {fetchFlownodeInstancesStatistics} from 'modules/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {isEmpty} from 'lodash';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from '../processDefinitions/useProcessInstanceXml';
 
 function getQueryKey(processInstanceKey?: string) {
   return ['flownodeInstancesStatistics', processInstanceKey];
 }
 
-function getFlownodeInstancesStatisticsOptions<
+const useFlownodeInstancesStatistics = <
   T = GetProcessInstanceStatisticsResponseBody,
 >(
-  processInstanceId?: string,
   select?: (data: GetProcessInstanceStatisticsResponseBody) => T,
   enabled: boolean = true,
-): UseQueryOptions<GetProcessInstanceStatisticsResponseBody, RequestError, T> {
-  return {
+): UseQueryResult<T, RequestError> => {
+  const {processInstanceId} = useProcessInstancePageParams();
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const businessObjects =
+    useProcessInstanceXml({
+      processDefinitionKey: processDefinitionKey,
+    }).data?.businessObjects ?? {};
+
+  return useQuery({
     queryKey: getQueryKey(processInstanceId),
     queryFn:
-      enabled &&
-      !!processInstanceId &&
-      !isEmpty(processInstanceDetailsDiagramStore.businessObjects)
+      enabled && !!processInstanceId && !isEmpty(businessObjects)
         ? async () => {
             const {response, error} =
               await fetchFlownodeInstancesStatistics(processInstanceId);
@@ -48,20 +48,7 @@ function getFlownodeInstancesStatisticsOptions<
           }
         : skipToken,
     select,
-  };
-}
-
-const useFlownodeInstancesStatistics = <
-  T = GetProcessInstanceStatisticsResponseBody,
->(
-  select?: (data: GetProcessInstanceStatisticsResponseBody) => T,
-  enabled: boolean = true,
-): UseQueryResult<T, RequestError> => {
-  const {processInstanceId} = useProcessInstancePageParams();
-
-  return useQuery(
-    getFlownodeInstancesStatisticsOptions(processInstanceId, select, enabled),
-  );
+  });
 };
 
 export {useFlownodeInstancesStatistics};

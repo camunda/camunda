@@ -15,13 +15,15 @@ import {
   useWillAllFlowNodesBeCanceled,
 } from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 
 describe('modifications hooks', () => {
   const getWrapper = (
@@ -38,13 +40,15 @@ describe('modifications hooks', () => {
       }, []);
 
       return (
-        <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter initialEntries={initialEntries}>
-            <Routes>
-              <Route path={Paths.processInstance()} element={children} />
-            </Routes>
-          </MemoryRouter>
-        </QueryClientProvider>
+        <ProcessDefinitionKeyContext.Provider value="123">
+          <QueryClientProvider client={getMockQueryClient()}>
+            <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+              <Routes>
+                <Route path={Paths.processInstance()} element={children} />
+              </Routes>
+            </MemoryRouter>
+          </QueryClientProvider>
+        </ProcessDefinitionKeyContext.Provider>
       );
     };
     return Wrapper;
@@ -58,26 +62,6 @@ describe('modifications hooks', () => {
     beforeEach(() => {
       jest.clearAllMocks();
       modificationsStore.reset();
-    });
-
-    it('should return false if there are ADD_TOKEN or MOVE_TOKEN modifications', async () => {
-      modificationsStore.addModification({
-        type: 'token',
-        payload: {
-          operation: 'ADD_TOKEN',
-          flowNode: {id: 'node1', name: 'Node 1'},
-          affectedTokenCount: 1,
-          visibleAffectedTokenCount: 1,
-          scopeId: 'scope1',
-          parentScopeIds: {},
-        },
-      });
-
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
-        wrapper: getWrapper(),
-      });
-
-      expect(result.current).toBe(false);
     });
 
     it('should return true if all flow nodes are canceled', async () => {
@@ -101,8 +85,9 @@ describe('modifications hooks', () => {
       };
 
       mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
-      mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-      await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
         wrapper: getWrapper(),
@@ -111,6 +96,26 @@ describe('modifications hooks', () => {
       await waitFor(() => {
         expect(result.current).toBe(true);
       });
+    });
+
+    it('should return false if there are ADD_TOKEN or MOVE_TOKEN modifications', async () => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {id: 'node1', name: 'Node 1'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'scope1',
+          parentScopeIds: {},
+        },
+      });
+
+      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+        wrapper: getWrapper(),
+      });
+
+      expect(result.current).toBe(false);
     });
 
     it('should return false if there are active flow nodes', async () => {
@@ -211,7 +216,7 @@ describe('modifications hooks', () => {
       });
     });
 
-    it('should handle CANCEL_TOKEN operations', () => {
+    it('should handle CANCEL_TOKEN operations', async () => {
       modificationsStore.addModification({
         type: 'token',
         payload: {
@@ -226,6 +231,9 @@ describe('modifications hooks', () => {
         wrapper: getWrapper(),
       });
 
+      mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
+      await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+
       expect(result.current).toEqual({
         node1: {
           newTokens: 0,
@@ -237,7 +245,7 @@ describe('modifications hooks', () => {
       });
     });
 
-    it('should handle MOVE_TOKEN operations', () => {
+    it('should handle MOVE_TOKEN operations', async () => {
       modificationsStore.addModification({
         type: 'token',
         payload: {
@@ -254,6 +262,8 @@ describe('modifications hooks', () => {
       const {result} = renderHook(() => useModificationsByFlowNode(), {
         wrapper: getWrapper(),
       });
+      mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
+      await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
 
       expect(result.current).toEqual({
         node1: {

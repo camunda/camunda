@@ -39,6 +39,8 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -65,13 +67,15 @@ type Props = {
 
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
-    <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
   );
 };
 
@@ -87,6 +91,9 @@ describe('TopPanel', () => {
   });
 
   beforeEach(() => {
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
+    );
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     mockFetchProcessInstance().withSuccess(
