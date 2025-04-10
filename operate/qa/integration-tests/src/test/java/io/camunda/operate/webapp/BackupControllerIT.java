@@ -655,7 +655,7 @@ public class BackupControllerIT {
         assertThrows(
             OperateRuntimeException.class,
             () -> {
-              backupController.getBackups(true);
+              backupController.getBackups(true, null);
             });
 
     final String expectedMessage =
@@ -675,7 +675,7 @@ public class BackupControllerIT {
                 SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    assertThat(backupController.getBackups(true)).isEmpty();
+    assertThat(backupController.getBackups(true, null)).isEmpty();
   }
 
   @Test
@@ -686,7 +686,7 @@ public class BackupControllerIT {
         assertThrows(
             OperateElasticsearchConnectionException.class,
             () -> {
-              backupController.getBackups(true);
+              backupController.getBackups(true, null);
             });
     final String expectedMessage =
         String.format(
@@ -748,7 +748,7 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true);
+    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true, null);
     assertThat(backups).hasSize(3);
 
     final GetBackupStateResponseDto backup3 =
@@ -811,7 +811,7 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true);
+    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true, null);
     assertThat(backups).hasSize(1);
     final GetBackupStateResponseDto backup1 = backups.get(0);
     assertThat(backup1.getState()).isEqualTo(COMPLETED);
@@ -846,7 +846,7 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final var backups = backupController.getBackups(false);
+    final var backups = backupController.getBackups(false, null);
     assertThat(backups)
         .allSatisfy(
             backupState -> {
