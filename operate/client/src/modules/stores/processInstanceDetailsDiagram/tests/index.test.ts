@@ -491,29 +491,4 @@ describe('stores/processInstanceDiagram', () => {
       }),
     ).toBe(true);
   });
-
-  it('should get parent flow node', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
-    expect(
-      processInstanceDetailsDiagramStore.getParentFlowNode(
-        'subprocess-service-task',
-      ),
-    ).toEqual({
-      $type: 'bpmn:SubProcess',
-      flowElements: [
-        {$type: 'bpmn:StartEvent', id: 'subprocess-start-1'},
-        {$type: 'bpmn:SequenceFlow', id: 'Flow_1vur7mf'},
-        {$type: 'bpmn:EndEvent', id: 'subprocess-end-task'},
-        {$type: 'bpmn:SequenceFlow', id: 'Flow_0r3hsrs'},
-        {$type: 'bpmn:ServiceTask', id: 'subprocess-service-task'},
-      ],
-      id: 'multi-instance-subprocess',
-      loopCharacteristics: {$type: 'bpmn:MultiInstanceLoopCharacteristics'},
-    });
-  });
 });

@@ -29,6 +29,7 @@ import {
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {getParentElement} from 'modules/bpmn-js/utils/getParentElement';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -101,11 +102,14 @@ const ModificationDropdown: React.FC<Props> = observer(
                         size="sm"
                         renderIcon={Add}
                         onClick={() => {
+                          const parentElement = getParentElement(
+                            processDefinitionData?.businessObjects?.[
+                              flowNodeId
+                            ],
+                          );
                           if (
                             processInstanceDetailsDiagramStore.hasMultipleScopes(
-                              processInstanceDetailsDiagramStore.getParentFlowNode(
-                                flowNodeId,
-                              ),
+                              parentElement,
                             )
                           ) {
                             modificationsStore.startAddingToken(flowNodeId);
