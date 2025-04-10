@@ -72,7 +72,7 @@
     <!--the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
     <!--The least supported elasticsearch version we should test against-->
-    <elasticsearch.test.version>8.13.4</elasticsearch.test.version>
+    <elasticsearch.test.version>8.16.6</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>8.13.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
