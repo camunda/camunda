@@ -241,7 +241,7 @@ public class MappingTest {
         engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
     final var groupId = "123";
     final var groupKey = Long.parseLong(groupId);
-    engine.group().newGroup("group").withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName("group").create();
     final var role = engine.role().newRole("role").create();
     engine
         .group()

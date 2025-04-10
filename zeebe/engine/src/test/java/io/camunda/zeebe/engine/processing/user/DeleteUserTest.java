@@ -62,7 +62,7 @@ public class DeleteUserTest {
             .withEmail("foo@bar.com")
             .withPassword("password")
             .create();
-    final var group = ENGINE.group().newGroup("group").withGroupId(groupId).create();
+    final var group = ENGINE.group().newGroup(groupId).withName("group").create();
     final var role = ENGINE.role().newRole("role").create();
     final var tenant = ENGINE.tenant().newTenant().withTenantId(tenantId).create();
 

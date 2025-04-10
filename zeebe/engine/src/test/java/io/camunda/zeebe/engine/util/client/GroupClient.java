@@ -63,14 +63,14 @@ public class GroupClient {
     private final GroupRecord groupRecord;
     private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public GroupCreateClient(final CommandWriter writer, final String name) {
+    public GroupCreateClient(final CommandWriter writer, final String groupId) {
       this.writer = writer;
       groupRecord = new GroupRecord();
-      groupRecord.setName(name);
+      groupRecord.setGroupId(groupId);
     }
 
-    public GroupCreateClient withGroupId(final String groupId) {
-      groupRecord.setGroupId(groupId);
+    public GroupCreateClient withName(final String name) {
+      groupRecord.setName(name);
       return this;
     }
 

@@ -744,7 +744,7 @@ public class CommandDistributionIdempotencyTest {
   }
 
   private static Record<GroupRecordValue> createGroup(final String groupId) {
-    return ENGINE.group().newGroup(UUID.randomUUID().toString()).withGroupId(groupId).create();
+    return ENGINE.group().newGroup(groupId).withName(UUID.randomUUID().toString()).create();
   }
 
   private static Record<RoleRecordValue> createRole() {

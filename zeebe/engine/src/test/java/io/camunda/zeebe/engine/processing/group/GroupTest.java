@@ -32,7 +32,7 @@ public class GroupTest {
   public void shouldCreateGroup() {
     final var name = UUID.randomUUID().toString();
     final var groupId = Strings.newRandomValidIdentityId();
-    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
+    final var groupRecord = engine.group().newGroup(groupId).withName(name).create();
 
     final var createdGroup = groupRecord.getValue();
     assertThat(createdGroup).hasName(name);
@@ -44,11 +44,11 @@ public class GroupTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var groupId = Strings.newRandomValidIdentityId();
-    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
+    final var groupRecord = engine.group().newGroup(groupId).withName(name).create();
 
     // when
     final var duplicatedGroupRecord =
-        engine.group().newGroup(name).withGroupId(groupId).expectRejection().create();
+        engine.group().newGroup(groupId).withName(name).expectRejection().create();
 
     final var createdGroup = groupRecord.getValue();
     Assertions.assertThat(createdGroup).isNotNull().hasFieldOrPropertyWithValue("name", name);
@@ -66,7 +66,7 @@ public class GroupTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var groupId = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
 
     // when
     final var updatedName = name + "-updated";
@@ -109,7 +109,7 @@ public class GroupTest {
             .getValue()
             .getUsername();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create().getValue().getGroupKey();
+    engine.group().newGroup(groupId).withName(name).create().getValue().getGroupKey();
 
     // when
     final var updatedGroup =
@@ -145,7 +145,7 @@ public class GroupTest {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
+    final var groupRecord = engine.group().newGroup(groupId).withName(name).create();
     final var notPresentEntityId = Strings.newRandomValidIdentityId();
 
     // when
@@ -174,7 +174,7 @@ public class GroupTest {
     // TODO: revisit with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
     final var username =
         engine
             .user()
@@ -221,7 +221,7 @@ public class GroupTest {
             .getValue()
             .getUsername();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
     engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // when
@@ -262,7 +262,7 @@ public class GroupTest {
     final var groupId = Strings.newRandomValidIdentityId();
     final var notPresentEntityId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
+    final var groupRecord = engine.group().newGroup(groupId).withName(name).create();
 
     // when
     final var createdGroup = groupRecord.getValue();
@@ -289,7 +289,7 @@ public class GroupTest {
     // given
     final var groupId = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
 
     // when
     final var deletedGroup = engine.group().deleteGroup(groupId).delete().getValue();
@@ -314,7 +314,7 @@ public class GroupTest {
             .getValue()
             .getUsername();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
     engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // when
