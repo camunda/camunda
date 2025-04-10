@@ -33,6 +33,22 @@ const totalRunningInstancesForFlowNodesParser =
     }, {});
   };
 
+const totalRunningInstancesByFlowNodeParser = (
+  response: GetProcessInstanceStatisticsResponseBody,
+): Record<string, number> => {
+  const statistics = getStatisticsByFlowNode(response.items);
+
+  return Object.keys(statistics).reduce<Record<string, number>>(
+    (acc, flowNodeId) => {
+      const active = statistics[flowNodeId]?.active ?? 0;
+      const incidents = statistics[flowNodeId]?.incidents ?? 0;
+      acc[flowNodeId] = active + incidents;
+      return acc;
+    },
+    {},
+  );
+};
+
 const totalRunningInstancesVisibleForFlowNodeParser =
   (flowNodeId?: string) =>
   (response: GetProcessInstanceStatisticsResponseBody) => {
@@ -69,7 +85,11 @@ const useTotalRunningInstancesForFlowNodes = (flowNodeIds: string[]) => {
   );
 };
 
-const useTotalRunningInstancesVisibleForFlowNode = (flowNodeId: string) => {
+const useTotalRunningInstancesByFlowNode = () => {
+  return useFlownodeInstancesStatistics(totalRunningInstancesByFlowNodeParser);
+};
+
+const useTotalRunningInstancesVisibleForFlowNode = (flowNodeId?: string) => {
   return useFlownodeInstancesStatistics(
     totalRunningInstancesVisibleForFlowNodeParser(flowNodeId),
   );
@@ -84,6 +104,7 @@ const useTotalRunningInstancesVisibleForFlowNodes = (flowNodeIds: string[]) => {
 export {
   useTotalRunningInstancesForFlowNode,
   useTotalRunningInstancesForFlowNodes,
+  useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesVisibleForFlowNode,
   useTotalRunningInstancesVisibleForFlowNodes,
 };
