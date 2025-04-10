@@ -144,6 +144,7 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void shouldForwardSnapshotPatternFlagToOpensearch() {
+    // given
     final var metadata =
         new Metadata().setBackupId(5L).setVersion("1").setPartNo(1).setPartCount(3);
     final var snapshotInfos =
@@ -155,7 +156,11 @@ class OpensearchBackupRepositoryTest {
     mockObjectMapperForMetadata(metadata);
     when(openSearchSnapshotOperations.get(any())).thenReturn(response);
     mockSynchronSnapshotOperations();
+
+    // when
     repository.getBackups("repo", false, "2023*");
+
+    // then
     verify(openSearchSnapshotOperations)
         .get(argThat(req -> req.snapshot().contains("camunda_operate_2023*")));
   }
