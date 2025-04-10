@@ -31,7 +31,7 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
-    final var entityKey = value.getEntityKey();
+    final var entityId = value.getEntityId();
     final var entityType = value.getEntityType();
 
     // get the record key from the GroupRecord, as the key argument
@@ -43,21 +43,16 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
 
     switch (entityType) {
       case USER ->
-          membershipState.deleteRelation(
-              EntityType.USER,
-              // TODO: Use entity id instead of key
-              Long.toString(entityKey),
-              RelationType.GROUP,
-              groupId);
+          membershipState.deleteRelation(EntityType.USER, entityId, RelationType.GROUP, groupId);
       case MAPPING -> {
-        groupState.removeEntity(groupId, entityKey);
-        mappingState.removeGroup(entityKey, groupKey);
+        groupState.removeEntity(groupId, entityId);
+        mappingState.removeGroup(entityId, groupKey);
       }
       default ->
           throw new IllegalStateException(
               String.format(
-                  "Expected to remove entity '%d' from group with ID '%s', but entities of type '%s' cannot be removed from groups.",
-                  entityKey, groupId, entityType));
+                  "Expected to remove entity '%s' from group with ID '%s', but entities of type '%s' cannot be removed from groups.",
+                  entityId, groupId, entityType));
     }
   }
 }

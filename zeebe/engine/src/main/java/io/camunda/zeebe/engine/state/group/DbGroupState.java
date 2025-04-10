@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.authorization.EntityTypeValue;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
@@ -32,10 +31,10 @@ public class DbGroupState implements MutableGroupState {
   private final ColumnFamily<DbString, PersistedGroup> groupColumnFamily;
 
   private final DbForeignKey<DbString> fkGroupId;
-  private final DbLong entityKey;
-  private final DbCompositeKey<DbForeignKey<DbString>, DbLong> fkGroupIdAndEntityKey;
+  private final DbString entityId;
+  private final DbCompositeKey<DbForeignKey<DbString>, DbString> fkGroupIdAndEntityId;
   private final EntityTypeValue entityTypeValue = new EntityTypeValue();
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbString>, DbLong>, EntityTypeValue>
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbString>, DbString>, EntityTypeValue>
       entityTypeByGroupColumnFamily;
 
   public DbGroupState(
@@ -47,13 +46,13 @@ public class DbGroupState implements MutableGroupState {
             ZbColumnFamilies.GROUPS, transactionContext, groupId, new PersistedGroup());
 
     fkGroupId = new DbForeignKey<>(groupId, ZbColumnFamilies.GROUPS);
-    entityKey = new DbLong();
-    fkGroupIdAndEntityKey = new DbCompositeKey<>(fkGroupId, entityKey);
+    entityId = new DbString();
+    fkGroupIdAndEntityId = new DbCompositeKey<>(fkGroupId, entityId);
     entityTypeByGroupColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ENTITY_BY_GROUP,
             transactionContext,
-            fkGroupIdAndEntityKey,
+            fkGroupIdAndEntityId,
             entityTypeValue);
   }
 
@@ -77,16 +76,16 @@ public class DbGroupState implements MutableGroupState {
   @Override
   public void addEntity(final GroupRecord group) {
     groupId.wrapString(group.getGroupId());
-    entityKey.wrapLong(group.getEntityKey());
+    entityId.wrapString(String.valueOf(group.getEntityId()));
     entityTypeValue.setEntityType(group.getEntityType());
-    entityTypeByGroupColumnFamily.insert(fkGroupIdAndEntityKey, entityTypeValue);
+    entityTypeByGroupColumnFamily.insert(fkGroupIdAndEntityId, entityTypeValue);
   }
 
   @Override
-  public void removeEntity(final String groupId, final long entityKey) {
+  public void removeEntity(final String groupId, final String entityId) {
     this.groupId.wrapString(groupId);
-    this.entityKey.wrapLong(entityKey);
-    entityTypeByGroupColumnFamily.deleteExisting(fkGroupIdAndEntityKey);
+    this.entityId.wrapString(entityId);
+    entityTypeByGroupColumnFamily.deleteExisting(fkGroupIdAndEntityId);
   }
 
   @Override
@@ -118,23 +117,23 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public Optional<EntityType> getEntityType(final String groupId, final long entityKey) {
+  public Optional<EntityType> getEntityType(final String groupId, final String entityId) {
     this.groupId.wrapString(groupId);
-    this.entityKey.wrapLong(entityKey);
-    final var entityType = entityTypeByGroupColumnFamily.get(fkGroupIdAndEntityKey);
+    this.entityId.wrapString(entityId);
+    final var entityType = entityTypeByGroupColumnFamily.get(fkGroupIdAndEntityId);
     return Optional.ofNullable(entityType).map(EntityTypeValue::getEntityType);
   }
 
   @Override
-  public Map<EntityType, List<Long>> getEntitiesByType(final String groupId) {
+  public Map<EntityType, List<String>> getEntitiesByType(final String groupId) {
     this.groupId.wrapString(groupId);
-    final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
+    final Map<EntityType, List<String>> entitiesMap = new HashMap<>();
     entityTypeByGroupColumnFamily.whileEqualPrefix(
         fkGroupId,
         (compositeKey, value) -> {
           final var entityType = value.getEntityType();
-          final var entityKey = compositeKey.second().getValue();
-          entitiesMap.computeIfAbsent(entityType, k -> new ArrayList<>()).add(entityKey);
+          final var entityId = compositeKey.second().toString();
+          entitiesMap.computeIfAbsent(entityType, k -> new ArrayList<>()).add(entityId);
         });
     return entitiesMap;
   }

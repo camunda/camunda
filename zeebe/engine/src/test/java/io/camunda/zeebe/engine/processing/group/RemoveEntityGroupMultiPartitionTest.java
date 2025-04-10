@@ -39,7 +39,7 @@ public class RemoveEntityGroupMultiPartitionTest {
   @Test
   public void shouldDistributeGroupRemoveEntityCommand() {
     // when
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -47,16 +47,17 @@ public class RemoveEntityGroupMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
+    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
         .group()
         .removeEntity(groupId)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
 
@@ -109,7 +110,7 @@ public class RemoveEntityGroupMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -117,16 +118,17 @@ public class RemoveEntityGroupMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
+    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
         .group()
         .removeEntity(groupId)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
 
@@ -145,7 +147,7 @@ public class RemoveEntityGroupMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -153,18 +155,19 @@ public class RemoveEntityGroupMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
 
     // when
     final var name = UUID.randomUUID().toString();
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
+    // TODO: revisit with https://github.com/camunda/camunda/issues/30091
     final var groupId = "123";
     engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
         .group()
         .removeEntity(groupId)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
 

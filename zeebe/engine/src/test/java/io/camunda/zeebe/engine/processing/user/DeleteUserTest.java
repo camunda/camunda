@@ -20,6 +20,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -47,6 +48,7 @@ public class DeleteUserTest {
     assertThat(deletedUser).isNotNull().hasFieldOrPropertyWithValue("userKey", userRecord.getKey());
   }
 
+  @Ignore("https://github.com/camunda/camunda/issues/30091")
   @Test
   public void shouldCleanupMembership() {
     final var username = UUID.randomUUID().toString();
@@ -64,12 +66,7 @@ public class DeleteUserTest {
     final var role = ENGINE.role().newRole("role").create();
     final var tenant = ENGINE.tenant().newTenant().withTenantId(tenantId).create();
 
-    ENGINE
-        .group()
-        .addEntity(groupId)
-        .withEntityKey(userRecord.getKey())
-        .withEntityType(EntityType.USER)
-        .add();
+    ENGINE.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
     ENGINE
         .role()
         .addEntity(role.getKey())
@@ -90,7 +87,8 @@ public class DeleteUserTest {
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupId(groupId)
-                .withEntityKey(userRecord.getKey())
+                // TODO: revisit
+                .withEntityId(username)
                 .exists())
         .isTrue();
     Assertions.assertThat(

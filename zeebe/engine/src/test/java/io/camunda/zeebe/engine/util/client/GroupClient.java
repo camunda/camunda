@@ -156,8 +156,8 @@ public class GroupClient {
       groupRecord.setGroupId(groupId);
     }
 
-    public GroupAddEntityClient withEntityKey(final long entityKey) {
-      groupRecord.setEntityKey(entityKey);
+    public GroupAddEntityClient withEntityId(final String entityId) {
+      groupRecord.setEntityId(entityId);
       return this;
     }
 
@@ -204,8 +204,8 @@ public class GroupClient {
       groupRecord.setGroupId(groupId);
     }
 
-    public GroupRemoveEntityClient withEntityKey(final long entityKey) {
-      groupRecord.setEntityKey(entityKey);
+    public GroupRemoveEntityClient withEntityId(final String entityId) {
+      groupRecord.setEntityId(entityId);
       return this;
     }
 

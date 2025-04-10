@@ -441,7 +441,8 @@ public final class ZeebeAssertHelper {
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.ENTITY_ADDED)
             .withGroupKey(groupKey)
-            .withEntityKey(userKey)
+            // TODO: revisit
+            .withEntityId(String.valueOf(userKey))
             .getFirst()
             .getValue();
 
@@ -455,7 +456,8 @@ public final class ZeebeAssertHelper {
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.ENTITY_REMOVED)
             .withGroupKey(groupKey)
-            .withEntityKey(userKey)
+            // TODO: revisit
+            .withEntityId(String.valueOf(userKey))
             .getFirst()
             .getValue();
 

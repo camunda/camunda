@@ -32,7 +32,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
   private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
-      "Expected to add entity with key '%s' to group with ID '%s', but the entity is already assigned to this group.";
+      "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group.";
 
   private final GroupState groupState;
   private final UserState userState;
@@ -89,12 +89,12 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     }
 
     final var groupKey = persistedRecord.get().getGroupKey();
-    final var entityKey = record.getEntityKey();
+    final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
+    if (!isEntityPresent(entityId, entityType)) {
       final var errorMessage =
-          "Expected to add an entity with key '%s' and type '%s' to group with ID '%s', but the entity does not exist."
-              .formatted(entityKey, entityType, groupId);
+          "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
+              .formatted(entityId, entityType, groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -103,7 +103,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     if (isEntityAssigned(record)) {
       final var errorMessage =
           ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
-              record.getEntityKey(), record.getGroupId());
+              record.getEntityId(), record.getGroupId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
@@ -125,7 +125,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     if (isEntityAssigned(record)) {
       final var errorMessage =
           ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
-              record.getEntityKey(), record.getGroupId());
+              record.getEntityId(), record.getGroupId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
     } else {
       stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.ENTITY_ADDED, record);
@@ -134,10 +134,10 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
+  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
-      case EntityType.USER -> userState.getUser(entityKey).isPresent();
-      case EntityType.MAPPING -> mappingState.get(entityKey).isPresent();
+      case EntityType.USER -> userState.getUser(entityId).isPresent();
+      case EntityType.MAPPING -> mappingState.get(entityId).isPresent();
       default -> false;
     };
   }
@@ -146,12 +146,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     return switch (record.getEntityType()) {
       case USER ->
           membershipState.hasRelation(
-              EntityType.USER,
-              // TODO: Use entity id instead of key
-              Long.toString(record.getEntityKey()),
-              RelationType.GROUP,
-              record.getGroupId());
-      default -> groupState.getEntityType(record.getGroupId(), record.getEntityKey()).isPresent();
+              EntityType.USER, record.getEntityId(), RelationType.GROUP, record.getGroupId());
+      default -> groupState.getEntityType(record.getGroupId(), record.getEntityId()).isPresent();
     };
   }
 }

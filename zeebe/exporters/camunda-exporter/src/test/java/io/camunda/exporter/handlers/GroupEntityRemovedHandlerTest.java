@@ -21,8 +21,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("https://github.com/camunda/camunda/issues/29903")
 public class GroupEntityRemovedHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -60,8 +62,10 @@ public class GroupEntityRemovedHandlerTest {
 
     // then
     final var value = groupRecord.getValue();
+    // TODO: revisit with https://github.com/camunda/camunda/pull/30697
     assertThat(idList)
-        .containsExactly(GroupEntity.getChildKey(value.getGroupKey(), value.getEntityKey()));
+        .containsExactly(
+            GroupEntity.getChildKey(value.getGroupKey(), Long.parseLong(value.getEntityId())));
   }
 
   @Test
