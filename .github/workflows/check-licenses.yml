@@ -26,7 +26,7 @@ jobs:
             -DskipQaBuild=true
         - name: single-app
           path: ./
-          maven-config: >
+          maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
     timeout-minutes: 15
@@ -61,7 +61,7 @@ jobs:
     - name: Setup fossa-cli
       uses: camunda/infra-global-github-actions/fossa/setup@32470949e549396aa5f2c5def890de831b8ca107
     - name: Adjust pom.xml files for FOSSA
-      if: matrix.project.name == 'single-app'
+      if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
       run: |
         # The bom/pom.xml must be the actual root, otherwise, FOSSA won't detect the hierarchy correctly
         yq -i \
