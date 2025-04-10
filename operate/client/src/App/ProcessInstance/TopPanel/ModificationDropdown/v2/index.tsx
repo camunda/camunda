@@ -36,6 +36,9 @@ import {
 import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 import {generateParentScopeIds} from 'modules/utils/modifications';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {getFlowNodeName} from 'modules/utils/flowNodes';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -60,6 +63,11 @@ const ModificationDropdown: React.FC<Props> = observer(
       selectedRunningInstanceCount,
     );
     const canBeModified = useCanBeModified();
+
+    const processDefinitionKey = useProcessDefinitionKeyContext();
+    const {data: processDefinitionData} = useProcessInstanceXml({
+      processDefinitionKey,
+    });
 
     if (
       flowNodeId === undefined ||
@@ -133,8 +141,11 @@ const ModificationDropdown: React.FC<Props> = observer(
                                   flowNode: {
                                     id: flowNodeId,
                                     name:
-                                      businessObjects[flowNodeId]?.name ||
-                                      flowNodeId,
+                                      getFlowNodeName({
+                                        diagramModel:
+                                          processDefinitionData?.diagramModel,
+                                        flowNodeId,
+                                      }) ?? '',
                                   },
                                   affectedTokenCount: 1,
                                   visibleAffectedTokenCount: 1,
