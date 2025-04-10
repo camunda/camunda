@@ -57,7 +57,7 @@ jobs:
           # * https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html
           # * https://explainshell.com/explain?cmd=set+-euox+pipefail
           #
-          set -euox pipefail
+          # set -euox pipefail
 
           ./zcl generate --label version:${{ inputs.releaseVersion }} --token=${{ secrets.GITHUB_TOKEN }}
 
@@ -81,7 +81,7 @@ jobs:
       - name: Create Github release
         uses: ncipollo/release-action@v1
         with:
-          name: ${{ inputs.releaseVersion }}
+          name: "8.5.16-test"
 #          artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
           draft: true
