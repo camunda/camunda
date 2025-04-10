@@ -14,17 +14,16 @@ import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
-import * as pageParamsModule from 'App/ProcessInstance/useProcessInstancePageParams';
 import {act} from 'react';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {
-    jest
-      .spyOn(pageParamsModule, 'useProcessInstancePageParams')
-      .mockReturnValue({processInstanceId: 'processInstanceId123'});
-
     mockFetchProcessXML().withSuccess(open('multipleInstanceSubProcess.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('multipleInstanceSubProcess.bpmn'),
+    );
     modificationsStore.enableModificationMode();
   });
 

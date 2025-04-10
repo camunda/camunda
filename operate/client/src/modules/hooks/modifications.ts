@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import isNil from 'lodash/isNil';
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {TOKEN_OPERATIONS} from 'modules/constants';
@@ -15,7 +16,6 @@ import {
   useTotalRunningInstancesVisibleForFlowNodes,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   ModificationOption,
@@ -31,7 +31,6 @@ import {
   useCancellableFlowNodes,
   useNonModifiableFlowNodes,
 } from './processInstanceDetailsDiagram';
-import {isNil} from 'lodash';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 
 const useWillAllFlowNodesBeCanceled = () => {
@@ -260,7 +259,7 @@ const useAvailableModifications = (selectedRunningInstanceCount: number) => {
   const isSingleOperationAllowed =
     !isNil(modificationRulesStore.selectedFlowNodeInstanceId) &&
     selectedRunningInstanceCount === 1 &&
-    isSubProcess(businessObjects?.[modificationRulesStore.selectedFlowNodeId]);
+    !isSubProcess(businessObjects?.[modificationRulesStore.selectedFlowNodeId]);
 
   if (isSingleOperationAllowed) {
     options.push('cancel-instance');

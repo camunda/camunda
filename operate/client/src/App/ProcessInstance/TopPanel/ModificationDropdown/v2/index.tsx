@@ -13,7 +13,6 @@ import {Add, ArrowRight, Error} from '@carbon/react/icons';
 import isNil from 'lodash/isNil';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {tracking} from 'modules/tracking';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
@@ -35,6 +34,8 @@ import {
   useCanBeModified,
 } from 'modules/hooks/modifications';
 import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
+import {generateParentScopeIds} from 'modules/utils/modifications';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -47,6 +48,7 @@ const ModificationDropdown: React.FC<Props> = observer(
     const flowNodeInstanceId =
       flowNodeSelectionStore.state.selection?.flowNodeInstanceId ??
       flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
+    const {data: businessObjects} = useBusinessObjects();
     const {data: totalRunningInstances} =
       useTotalRunningInstancesForFlowNode(flowNodeId);
     const {data: totalRunningInstancesByFlowNode} =
@@ -102,55 +104,54 @@ const ModificationDropdown: React.FC<Props> = observer(
                     </SelectedInstanceCount>
                   )}
                   <Stack gap={2}>
-                    {availableModifications.includes('add') && (
-                      <Button
-                        kind="ghost"
-                        title="Add single flow node instance"
-                        aria-label="Add single flow node instance"
-                        size="sm"
-                        renderIcon={Add}
-                        onClick={() => {
-                          if (
-                            hasMultipleScopes(
-                              processInstanceDetailsDiagramStore.getParentFlowNode(
-                                flowNodeId,
-                              ),
-                              totalRunningInstancesByFlowNode,
-                            )
-                          ) {
-                            modificationsStore.startAddingToken(flowNodeId);
-                          } else {
-                            tracking.track({
-                              eventName: 'add-token',
-                            });
+                    {availableModifications.includes('add') &&
+                      businessObjects && (
+                        <Button
+                          kind="ghost"
+                          title="Add single flow node instance"
+                          aria-label="Add single flow node instance"
+                          size="sm"
+                          renderIcon={Add}
+                          onClick={() => {
+                            if (
+                              hasMultipleScopes(
+                                businessObjects[flowNodeId]?.$parent,
+                                totalRunningInstancesByFlowNode,
+                              )
+                            ) {
+                              modificationsStore.startAddingToken(flowNodeId);
+                            } else {
+                              tracking.track({
+                                eventName: 'add-token',
+                              });
 
-                            modificationsStore.addModification({
-                              type: 'token',
-                              payload: {
-                                operation: 'ADD_TOKEN',
-                                scopeId: generateUniqueID(),
-                                flowNode: {
-                                  id: flowNodeId,
-                                  name: processInstanceDetailsDiagramStore.getFlowNodeName(
+                              modificationsStore.addModification({
+                                type: 'token',
+                                payload: {
+                                  operation: 'ADD_TOKEN',
+                                  scopeId: generateUniqueID(),
+                                  flowNode: {
+                                    id: flowNodeId,
+                                    name:
+                                      businessObjects[flowNodeId]?.name ||
+                                      flowNodeId,
+                                  },
+                                  affectedTokenCount: 1,
+                                  visibleAffectedTokenCount: 1,
+                                  parentScopeIds: generateParentScopeIds(
+                                    businessObjects,
                                     flowNodeId,
                                   ),
                                 },
-                                affectedTokenCount: 1,
-                                visibleAffectedTokenCount: 1,
-                                parentScopeIds:
-                                  modificationsStore.generateParentScopeIds(
-                                    flowNodeId,
-                                  ),
-                              },
-                            });
-                          }
+                              });
+                            }
 
-                          flowNodeSelectionStore.clearSelection();
-                        }}
-                      >
-                        Add
-                      </Button>
-                    )}
+                            flowNodeSelectionStore.clearSelection();
+                          }}
+                        >
+                          Add
+                        </Button>
+                      )}
 
                     {availableModifications.includes('cancel-instance') &&
                       !isNil(flowNodeInstanceId) && (
