@@ -687,7 +687,8 @@ public class BackupControllerIT {
         .containsExactlyInAnyOrder(
             snapshotInfos.stream().map(si -> si.state()).toArray(String[]::new));
     assertThat(backupState.getDetails())
-        .extracting(d -> d.getStartTime().toInstant().toEpochMilli())
+        .extracting(
+            d -> d.getStartTime() != null ? d.getStartTime().toInstant().toEpochMilli() : 0L)
         .containsExactlyInAnyOrder(
             snapshotInfos.stream().map(si -> si.startTimeInMillis()).toArray(Long[]::new));
   }
