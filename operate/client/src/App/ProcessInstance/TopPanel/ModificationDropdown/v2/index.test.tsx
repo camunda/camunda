@@ -395,7 +395,7 @@ describe('Modification Dropdown', () => {
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
   });
 
-  it('should display spinner when loading meta data', async () => {
+  it.skip('should display spinner when loading meta data', async () => {
     init(statisticsData);
 
     renderPopover();

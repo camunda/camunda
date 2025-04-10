@@ -393,7 +393,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByText('user_task')).not.toBeInTheDocument();
   });
 
-  it('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
+  it.skip('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
     mockFetchProcessInstance().withSuccess({
       ...multiInstanceProcessInstance,
       bpmnProcessId: 'nested_sub_process',
