@@ -14,6 +14,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.property.FeatureFlagProperties;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.UserReader;
@@ -31,6 +33,7 @@ public class TaskValidatorTest {
   public static final String TEST_USER = "TestUser";
 
   @Mock private UserReader userReader;
+  @Mock private TasklistProperties tasklistProperties;
 
   @InjectMocks private TaskValidator instance;
 
@@ -38,7 +41,8 @@ public class TaskValidatorTest {
   @EnumSource(
       value = TaskState.class,
       names = {"COMPLETED", "CANCELED"})
-  public void userShouldNotBeAbleToPersistDraftTaskVariablesIfTaskIsNotActive(TaskState taskState) {
+  public void userShouldNotBeAbleToPersistDraftTaskVariablesIfTaskIsNotActive(
+      final TaskState taskState) {
     // given
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
 
@@ -107,7 +111,7 @@ public class TaskValidatorTest {
   @EnumSource(
       value = TaskState.class,
       names = {"COMPLETED", "CANCELED"})
-  public void userShouldNotBeAbleToCompleteIfTaskIsNotActive(TaskState taskState) {
+  public void userShouldNotBeAbleToCompleteIfTaskIsNotActive(final TaskState taskState) {
     // given
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
 
@@ -225,7 +229,7 @@ public class TaskValidatorTest {
   @EnumSource(
       value = TaskState.class,
       names = {"COMPLETED", "CANCELED"})
-  public void userShouldNotBeAbleToClaimTaskIfTaskIsNotActive(TaskState taskState) {
+  public void userShouldNotBeAbleToClaimTaskIfTaskIsNotActive(final TaskState taskState) {
     // given
     final TaskEntity task = new TaskEntity().setAssignee("AnotherTestUser").setState(taskState);
 
@@ -238,6 +242,7 @@ public class TaskValidatorTest {
   @Test
   public void nonApiUserShouldNotBeAbleToReassignToAnotherUser() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     final UserDTO user = getTestUser().setApiUser(false);
     when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task =
@@ -253,6 +258,7 @@ public class TaskValidatorTest {
   @Test
   public void nonApiUserShouldNotBeAbleToReassignToAnotherUserWhenOverrideAllowed() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     final UserDTO user = getTestUser().setApiUser(false);
     when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task =
@@ -280,7 +286,7 @@ public class TaskValidatorTest {
   @EnumSource(
       value = TaskState.class,
       names = {"COMPLETED", "CANCELED"})
-  public void userShouldNotBeAbleToUnassignTaskIfTaskIsNotActive(TaskState taskState) {
+  public void userShouldNotBeAbleToUnassignTaskIfTaskIsNotActive(final TaskState taskState) {
     // given
     final TaskEntity task = new TaskEntity().setAssignee("AnotherTestUser").setState(taskState);
 

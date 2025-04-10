@@ -29,6 +29,8 @@ import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.FeatureFlagProperties;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
@@ -74,6 +76,8 @@ class TaskServiceTest {
   @Mock private AssigneeMigrator assigneeMigrator;
   @Mock private TaskValidator taskValidator;
   @Mock private TasklistServicesAdapter tasklistServicesAdapter;
+
+  @Mock private TasklistProperties tasklistProperties;
 
   @InjectMocks private TaskService instance;
 
@@ -278,10 +282,13 @@ class TaskServiceTest {
     final var userA = "userA";
     final var userB = "userB";
     return Stream.of(
-        Arguments.of(null, true, userA, new UserDTO().setUserId(userA), userA),
-        Arguments.of(false, false, userA, new UserDTO().setUserId(userB).setApiUser(true), userA),
-        Arguments.of(true, true, null, new UserDTO().setUserId(userB), userB),
-        Arguments.of(true, true, "", new UserDTO().setUserId(userB), userB));
+        Arguments.of(null, true, userA, new UserDTO().setUserId(userA), userA, false),
+        Arguments.of(
+            false, false, userA, new UserDTO().setUserId(userB).setApiUser(true), userA, false),
+        Arguments.of(true, true, null, new UserDTO().setUserId(userB), userB, false),
+        Arguments.of(true, true, "", new UserDTO().setUserId(userB), userB, false),
+        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), userA, true),
+        Arguments.of(true, true, userA, new UserDTO().setUserId(userB), userA, true));
   }
 
   @ParameterizedTest
@@ -291,9 +298,12 @@ class TaskServiceTest {
       final boolean expectedAllowOverrideAssignment,
       final String providedAssignee,
       final UserDTO user,
-      final String expectedAssignee) {
+      final String expectedAssignee,
+      final boolean allowNonSelfAssignment) {
 
     // Given
+    when(tasklistProperties.getFeatureFlag())
+        .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
@@ -339,6 +349,7 @@ class TaskServiceTest {
   @Test
   public void assignTaskToInvalidTask() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     final var taskId = "123";
     when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
     when(taskStore.getTask(taskId))
@@ -368,6 +379,7 @@ class TaskServiceTest {
   @Test
   public void assignTaskWhenUserTriesToAssignTaskToAnotherAssignee() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     final var taskId = "123";
     when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
 
@@ -499,6 +511,7 @@ class TaskServiceTest {
   @Test
   void assignZeebeUserTaskException() {
     // Given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
     final var user = mock(UserDTO.class);
@@ -529,11 +542,13 @@ class TaskServiceTest {
       final boolean expectedAllowOverrideAssignment,
       final String providedAssignee,
       final UserDTO user,
-      final String expectedAssignee) {
+      final String expectedAssignee,
+      final boolean allowNonSelfAssignment) {
     // Given
+    when(tasklistProperties.getFeatureFlag())
+        .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
-
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
