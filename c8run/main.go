@@ -224,77 +224,11 @@ func main() {
 		os.Exit(1)
 	}
 
-<<<<<<< HEAD
-	javaHome := os.Getenv("JAVA_HOME")
-	javaBinary := "java"
-	var javaHomeAfterSymlink string
-	if javaHome != "" {
-		javaHomeAfterSymlink, err = filepath.EvalSymlinks(javaHome)
-		if err != nil {
-			fmt.Println("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
-			javaHome = ""
-		} else {
-			javaHome = javaHomeAfterSymlink
-		}
-	}
-	if javaHome == "" {
-		javaHome, err = GetJavaHome(javaBinary)
-		if err != nil {
-			fmt.Println("Failed to get JAVA_HOME")
-			os.Exit(1)
-		}
-	}
-
-	if javaHome != "" {
-		filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
-			_, filename := filepath.Split(path)
-			if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
-				javaBinary = path
-				return filepath.SkipAll
-			}
-			return nil
-		})
-		// fallback to bin/java.exe
-		if javaBinary == "" {
-			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-				javaBinary = filepath.Join(javaHome, "bin", "java")
-			} else if runtime.GOOS == "windows" {
-				javaBinary = filepath.Join(javaHome, "bin", "java.exe")
-			}
-		}
-	} else {
-		path, err := exec.LookPath("java")
-		if err != nil {
-			fmt.Println("Failed to find JAVA_HOME or java program.")
-			os.Exit(1)
-		}
-
-		// go up 2 directories since it's not guaranteed that java is in a bin folder
-		javaHome = filepath.Dir(filepath.Dir(path))
-		javaBinary = path
-=======
-	if settings.LogLevel != "" {
-		os.Setenv("ZEEBE_LOG_LEVEL", settings.LogLevel)
-	}
-
-	err = validateKeystore(settings, parentDir)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-
-	err = handleDockerCommand(settings, baseCommand, composeExtractedFolder)
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-
 	// Rresolve JAVA_HOME and javaBinary
 	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
->>>>>>> 2090129fbf2 (refactor: move javaHome code in own function)
 	}
 
 	err = overrides.SetEnvVars(javaHome)
