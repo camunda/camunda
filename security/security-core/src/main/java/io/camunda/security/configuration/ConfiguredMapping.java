@@ -20,6 +20,7 @@ public class ConfiguredMapping {
     ensureNotNullOrEmpty("mappingId", mappingId);
     ensureNotNullOrEmpty("claimName", claimName);
     ensureNotNullOrEmpty("claimValue", claimValue);
+    this.mappingId = mappingId;
     this.claimName = claimName;
     this.claimValue = claimValue;
   }

@@ -80,7 +80,7 @@ public class OidcAuthOverRestIT {
                     .setMappings(
                         List.of(
                             new ConfiguredMapping(
-                                USER_ID_CLAIM_NAME, DEFAULT_MAPPING_ID, DEFAULT_USER_ID)));
+                                DEFAULT_MAPPING_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
               });
 
   @BeforeAll
