@@ -10,6 +10,10 @@ component/identity:
   '(Identity-)'
 component/C8Run:
   '(C8Run-)'
+component/feel-js:
+  - '(Feel-)'
+component/feel-scala:
+  - '(Feel-)'
 needs component label:
   '(Not sure-)'
 severity/critical:
