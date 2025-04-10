@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {TOKEN_OPERATIONS} from 'modules/constants';
@@ -14,11 +15,11 @@ import {
   useTotalRunningInstancesForFlowNodes,
   useTotalRunningInstancesVisibleForFlowNodes,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {
   EMPTY_MODIFICATION,
   modificationsStore,
 } from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {useMemo} from 'react';
 
 const useWillAllFlowNodesBeCanceled = () => {
@@ -48,6 +49,12 @@ const useModificationsByFlowNode = () => {
   const flowNodeIds = modificationsStore.flowNodeModifications.map(
     (modification) => modification.flowNode.id,
   );
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const businessObjects =
+    useProcessInstanceXml({
+      processDefinitionKey: processDefinitionKey,
+    }).data?.businessObjects ?? {};
+
   const {data: flowNodeDataArray} =
     useTotalRunningInstancesForFlowNodes(flowNodeIds);
   const flowNodeData = useMemo(() => {
@@ -60,13 +67,9 @@ const useModificationsByFlowNode = () => {
     );
   }, [flowNodeIds, flowNodeDataArray]);
 
-  const elementIds = useMemo(() => {
-    return flowNodeIds.flatMap((flowNodeId) =>
-      getFlowElementIds(
-        processInstanceDetailsDiagramStore.businessObjects[flowNodeId],
-      ),
-    );
-  }, [flowNodeIds]);
+  const elementIds = flowNodeIds.flatMap((flowNodeId) =>
+    getFlowElementIds(businessObjects[flowNodeId]),
+  );
 
   const {data: elementCancelledTokens} =
     useTotalRunningInstancesForFlowNodes(elementIds);
@@ -135,9 +138,7 @@ const useModificationsByFlowNode = () => {
         ...EMPTY_MODIFICATION,
       };
 
-      targetFlowNode.newTokens += isMultiInstance(
-        processInstanceDetailsDiagramStore.businessObjects[flowNode.id],
-      )
+      targetFlowNode.newTokens += isMultiInstance(businessObjects[flowNode.id])
         ? 1
         : affectedTokenCount;
 
@@ -147,9 +148,7 @@ const useModificationsByFlowNode = () => {
     if (operation === TOKEN_OPERATIONS.CANCEL_TOKEN) {
       if (sourceFlowNode.areAllTokensCanceled) {
         // set cancel token counts for child elements if flow node has any
-        const elementIds = getFlowElementIds(
-          processInstanceDetailsDiagramStore.businessObjects[flowNode.id],
-        );
+        const elementIds = getFlowElementIds(businessObjects?.[flowNode.id]);
 
         let affectedChildTokenCount = 0;
         elementIds.forEach((elementId) => {

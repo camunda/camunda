@@ -6,32 +6,42 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {useTotalRunningInstancesByFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
 const useFlowNodes = () => {
   const {data: statistics} = useFlownodeInstancesStatistics();
-  return Object.values(processInstanceDetailsDiagramStore.businessObjects).map(
-    (flowNode) => {
-      const flowNodeState = statistics?.items.find(
-        ({flowNodeId}) => flowNodeId === flowNode.id,
-      );
+  const {data: totalRunningInstancesByFlowNode} =
+    useTotalRunningInstancesByFlowNode();
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const businessObjects =
+    useProcessInstanceXml({
+      processDefinitionKey: processDefinitionKey,
+    }).data?.businessObjects ?? {};
 
-      return {
-        id: flowNode.id,
-        isCancellable:
-          flowNodeState !== undefined &&
-          (flowNodeState.active > 0 || flowNodeState.incidents > 0),
-        isMoveModificationTarget: isMoveModificationTarget(flowNode),
-        hasMultipleScopes: processInstanceDetailsDiagramStore.hasMultipleScopes(
-          flowNode.$parent,
-        ),
-      };
-    },
-  );
+  return Object.values(businessObjects).map((flowNode) => {
+    const flowNodeState = statistics?.items.find(
+      ({flowNodeId}) => flowNodeId === flowNode.id,
+    );
+
+    return {
+      id: flowNode.id,
+      isCancellable:
+        flowNodeState !== undefined &&
+        (flowNodeState.active > 0 || flowNodeState.incidents > 0),
+      isMoveModificationTarget: isMoveModificationTarget(flowNode),
+      hasMultipleScopes: hasMultipleScopes(
+        flowNode.$parent,
+        totalRunningInstancesByFlowNode,
+      ),
+    };
+  });
 };
 
 const useAppendableFlowNodes = () => {
