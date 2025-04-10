@@ -315,7 +315,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
 
     client
         .newProcessInstanceSearchRequest()
-        .filter(f -> f.or(Arrays.asList(f1 -> f1.state(ACTIVE), f3 -> f3.hasIncident(true))))
+        .filter(
+            f -> f.tenantId("tenant-1").or(f1 -> f1.state(ACTIVE)).or(f3 -> f3.hasIncident(true)))
         .send()
         .join();
 
@@ -324,6 +325,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
     final ProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
+    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant-1");
     assertThat(filter.get$Or()).isNotNull();
     assertThat(filter.get$Or()).hasSize(2);
     assertThat(filter.get$Or().get(0).getState().get$Eq())
