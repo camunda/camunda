@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.net.CookieManager;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -23,6 +24,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
 import java.util.List;
+import org.testcontainers.containers.GenericContainer;
 
 public class TestRestOperateClient implements AutoCloseable {
 
@@ -39,9 +41,31 @@ public class TestRestOperateClient implements AutoCloseable {
     this.password = password;
   }
 
+  public TestRestOperateClient(final GenericContainer<?> camundaContainer) {
+    this(
+        URI.create("http://localhost:" + camundaContainer.getMappedPort(8080) + "/"),
+        "demo",
+        "demo");
+
+    sendRequest(loginRequest());
+  }
+
   public TestRestOperateClient(final URI endpoint) {
     this.endpoint = endpoint;
-    httpClient = HttpClient.newBuilder().build();
+    httpClient = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();
+  }
+
+  private HttpRequest loginRequest() {
+    try {
+      return createBuilder(
+          String.format("%sapi/login?username=%s&password=%s", endpoint, "demo", "demo"))
+          .POST(HttpRequest.BodyPublishers.ofString("{}"))
+          .build();
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+
+
   }
 
   private Either<Exception, HttpRequest> createProcessInstanceRequest(final long key) {
