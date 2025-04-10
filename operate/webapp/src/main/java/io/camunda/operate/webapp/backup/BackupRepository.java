@@ -17,7 +17,7 @@ public interface BackupRepository {
   Pattern BACKUPID_PATTERN = Pattern.compile("^(\\d*)\\*?$");
 
   // Maximum length of a length when converted to a string
-  static final int LONG_MAX_LENGTH_AS_STRING = 19;
+  int LONG_MAX_LENGTH_AS_STRING = 19;
 
   void deleteSnapshot(String repositoryName, String snapshotName);
 
