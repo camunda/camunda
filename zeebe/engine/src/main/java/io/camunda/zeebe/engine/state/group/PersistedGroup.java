@@ -18,16 +18,21 @@ public class PersistedGroup extends UnpackedObject implements DbValue {
 
   private final LongProperty groupKeyProp = new LongProperty("groupKey");
   private final StringProperty groupIdProp = new StringProperty("groupId");
+  private final StringProperty descriptionProp = new StringProperty("description");
   private final StringProperty nameProp = new StringProperty("name");
 
   public PersistedGroup() {
     super(3);
-    declareProperty(groupKeyProp).declareProperty(groupIdProp).declareProperty(nameProp);
+    declareProperty(groupKeyProp)
+        .declareProperty(groupIdProp)
+        .declareProperty(descriptionProp)
+        .declareProperty(nameProp);
   }
 
   public void wrap(final GroupRecord group) {
     groupKeyProp.setValue(group.getGroupKey());
     groupIdProp.setValue(group.getGroupId());
+    descriptionProp.setValue(group.getDescription());
     nameProp.setValue(group.getNameBuffer());
   }
 
@@ -46,6 +51,15 @@ public class PersistedGroup extends UnpackedObject implements DbValue {
 
   public PersistedGroup setGroupId(final String groupId) {
     groupIdProp.setValue(groupId);
+    return this;
+  }
+
+  public String getDescription() {
+    return BufferUtil.bufferAsString(descriptionProp.getValue());
+  }
+
+  public PersistedGroup setDescription(final String description) {
+    descriptionProp.setValue(description);
     return this;
   }
 

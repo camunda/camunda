@@ -37,7 +37,9 @@ public class GroupStateTest {
     // given
     final var groupId = "1";
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    final var description = "description";
+    final var groupRecord =
+        new GroupRecord().setGroupId(groupId).setName(groupName).setDescription(description);
 
     // when
     groupState.create(groupRecord);
@@ -47,6 +49,7 @@ public class GroupStateTest {
     assertThat(group.isPresent()).isTrue();
     final var persistedGroup = group.get();
     assertThat(persistedGroup.getName()).isEqualTo(groupName);
+    assertThat(persistedGroup.getDescription()).isEqualTo(description);
   }
 
   @Test
@@ -81,6 +84,29 @@ public class GroupStateTest {
     final var persistedGroup = group.get();
     assertThat(persistedGroup.getName()).isEqualTo(updatedGroupName);
     assertThat(persistedGroup.getGroupId()).isEqualTo(groupId);
+  }
+
+  @Test
+  void shouldUpdateGroupDescription() {
+    // given
+    final var groupId = "1";
+    final var groupName = "group";
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    groupState.create(groupRecord);
+
+    final var updatedDescription = "updatedDescription";
+    groupRecord.setDescription(updatedDescription);
+
+    // when
+    groupState.update(groupRecord);
+
+    // then
+    final var group = groupState.get(groupId);
+    assertThat(group.isPresent()).isTrue();
+    final var persistedGroup = group.get();
+    assertThat(persistedGroup.getDescription()).isEqualTo(updatedDescription);
+    assertThat(persistedGroup.getGroupId()).isEqualTo(groupId);
+    assertThat(persistedGroup.getName()).isEqualTo(groupName);
   }
 
   @Test
