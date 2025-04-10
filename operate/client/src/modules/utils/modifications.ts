@@ -26,18 +26,6 @@ const cancelAllTokens = (
   });
 };
 
-const cancelAllTokens = (
-  flowNodeId: string,
-  totalRunningInstancesForFlowNode: number,
-  totalRunningInstancesVisibleForFlowNode: number,
-) => {
-  modificationsStore.addCancelModification({
-    flowNodeId,
-    affectedTokenCount: totalRunningInstancesForFlowNode,
-    visibleAffectedTokenCount: totalRunningInstancesVisibleForFlowNode,
-  });
-};
-
 const finishMovingToken = (
   affectedTokenCount: number,
   visibleAffectedTokenCount: number,

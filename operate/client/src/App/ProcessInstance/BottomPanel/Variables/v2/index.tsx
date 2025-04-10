@@ -24,14 +24,7 @@ import {VariablesTable} from '../VariablesTable';
 import {Footer} from '../Footer';
 import {Skeleton} from '../Skeleton';
 import {useDisplayStatus} from 'modules/hooks/variables';
-<<<<<<< HEAD
-<<<<<<< HEAD
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
-=======
->>>>>>> 7318a94e12f (feat: migrate Variables component to v2)
-=======
-import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
->>>>>>> c08f6c6eda5 (fix: migrate remaining store deps)
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -40,18 +33,9 @@ type Props = {
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
     const displayStatus = useDisplayStatus();
-<<<<<<< HEAD
-<<<<<<< HEAD
     const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
       flowNodeSelectionStore.state.selection?.flowNodeId,
     );
-=======
->>>>>>> 7318a94e12f (feat: migrate Variables component to v2)
-=======
-    const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
-      flowNodeSelectionStore.state.selection?.flowNodeId,
-    );
->>>>>>> c08f6c6eda5 (fix: migrate remaining store deps)
     const {
       state: {pendingItem, loadingItemId, status},
     } = variablesStore;
