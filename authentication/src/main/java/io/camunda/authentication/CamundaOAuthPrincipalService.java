@@ -80,7 +80,7 @@ public class CamundaOAuthPrincipalService {
             authorizationServices.getAuthorizedApplications(
                 Stream.concat(
                         assignedRoles.stream().map(r -> r.roleKey().toString()),
-                        mappingKeys.stream().map(Object::toString))
+                        mappingIds.stream())
                     .collect(Collectors.toSet())),
             tenantServices.getTenantsByMemberIds(mappingIds).stream()
                 .map(TenantDTO::fromEntity)
