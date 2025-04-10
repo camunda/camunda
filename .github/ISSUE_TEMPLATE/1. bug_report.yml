@@ -20,6 +20,21 @@ body:
     validations:
       required: true
   - type: dropdown
+    id: affected-version
+    attributes:
+      label: <!-- Affected version -->
+      description: Which version is affected?
+      options:
+        - <!-- -8.3 -->
+        - <!-- -8.4 -->
+        - <!-- -8.5 -->
+        - <!-- -8.6 -->
+        - <!-- -8.7 -->
+        - <!-- -8.8 -->
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
     id: severity
     attributes:
       label: <!-- Severity -->
