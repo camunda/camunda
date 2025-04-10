@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { FC, lazy, ReactNode, Suspense } from "react";
 import { ListPageFallback } from "src/components/fallbacks";
 

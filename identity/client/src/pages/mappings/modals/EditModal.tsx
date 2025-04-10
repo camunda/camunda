@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { FC, useState } from "react";
 import { Stack } from "@carbon/react";
 import { spacing05 } from "@carbon/elements";

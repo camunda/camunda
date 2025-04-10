@@ -30,10 +30,11 @@ export default [
       "target/",
       "playwright.config.ts",
       "vite.config.ts",
+      "dist/",
     ],
   },
   {
-    files: ["**/*.ts"],
+    files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
