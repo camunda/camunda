@@ -29,7 +29,7 @@ public class ZeebeConnector {
   @Autowired private OperateProperties operateProperties;
 
   @Bean // will be closed automatically
-  public CamundaClient operateCamundaClient() {
+  public CamundaClient camundaClient() {
     final var properties = operateProperties.getZeebe();
     return newCamundaClient(properties);
   }
