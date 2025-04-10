@@ -21,7 +21,7 @@ jobs:
           path: ./
           maven-config: |
             -DskipQaBuild=true
-        # To be uncommented when Optimize is fully seperated
+        # TODO: to be uncommented when Optimize is fully seperated
         # Dedicated configs already exist, see optimize/.fossa.yml
         # - name: optimize
         #   path: ./optimize
@@ -55,7 +55,6 @@ jobs:
       run: |
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
     - name: Setup fossa-cli
-      # TODO: use main branch
       uses: camunda/infra-global-github-actions/fossa/setup@32470949e549396aa5f2c5def890de831b8ca107
     - name: Adjust pom.xml files for FOSSA
       if: matrix.project.name == 'single-app'
@@ -72,7 +71,6 @@ jobs:
           'del(.project.modules.module[] | select(. == "bom" or . == "parent"))' \
           pom.xml
     - name: Analyze project
-      # TODO: use main branch
       uses: camunda/infra-global-github-actions/fossa/analyze@32470949e549396aa5f2c5def890de831b8ca107
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
