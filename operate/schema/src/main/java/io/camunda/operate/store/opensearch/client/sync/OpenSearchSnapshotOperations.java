@@ -47,10 +47,10 @@ public class OpenSearchSnapshotOperations extends OpenSearchSyncOperation {
                 e -> format("Failed to get repository %s", repository)));
   }
 
-  public OpenSearchGetSnapshotResponse get(final GetSnapshotRequest.Builder requestBuilder) {
-    final var request = requestBuilder.build();
+  public OpenSearchGetSnapshotResponse get(final GetSnapshotRequest request) {
     final var repository = request.repository();
     final var snapshots = request.snapshot();
+    final var verbose = request.verbose();
     if (snapshots.size() > 1) {
       logger.warn(
           "More than one snapshot names given: {} . Use only first one: {}",
@@ -64,7 +64,10 @@ public class OpenSearchSnapshotOperations extends OpenSearchSyncOperation {
                 safe(
                     () ->
                         extendedOpenSearchClient.arbitraryRequest(
-                            "GET", String.format("/_snapshot/%s/%s", repository, snapshot), "{}"),
+                            "GET",
+                            String.format(
+                                "/_snapshot/%s/%s?verbose=%s", repository, snapshot, verbose),
+                            "{}"),
                     e ->
                         format(
                             "Failed to get snapshot %s in repository %s", snapshot, repository)));

@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp;
 
-import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.elasticsearch.backup.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.COMPLETED;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.FAILED;
@@ -59,6 +58,7 @@ import org.elasticsearch.transport.TransportException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -87,8 +87,8 @@ public class BackupControllerIT {
 
   @Mock private SnapshotClient snapshotClient;
 
-  @MockBean
   @Qualifier("esClient")
+  @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
   private RestHighLevelClient esClient;
 
   @SpyBean private OperateProperties operateProperties;
@@ -268,7 +268,7 @@ public class BackupControllerIT {
   @Test
   public void shouldFailCreateBackupOnBackupIdNotFound() throws IOException {
     final Long backupId = 2L;
-    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, Answers.RETURNS_DEEP_STUBS);
     when(snapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshotName", "uuid"));
     final List<SnapshotInfo> snapshotInfos = asList(new SnapshotInfo[] {snapshotInfo});
     when(snapshotClient.get(any(), any()))
@@ -376,13 +376,13 @@ public class BackupControllerIT {
     final Long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 2, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 3, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
     when(snapshotClient.get(any(), any()))
@@ -402,10 +402,10 @@ public class BackupControllerIT {
     final Long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 2, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotShardFailure failure1 =
         new SnapshotShardFailure(
             "someNodeId1",
@@ -419,7 +419,7 @@ public class BackupControllerIT {
     final List<SnapshotShardFailure> shardFailures = asList(failure1, failure2);
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.FAILED, shardFailures);
+            backupId, 3, 3, UUID.randomUUID().toString(), SnapshotState.FAILED, shardFailures);
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
     when(snapshotClient.get(any(), any()))
@@ -430,7 +430,8 @@ public class BackupControllerIT {
     assertThat(backupState.getState()).isEqualTo(FAILED);
     assertThat(backupState.getBackupId()).isEqualTo(backupId);
     assertThat(backupState.getFailureReason())
-        .isEqualTo("There were failures with the following snapshots: snapshotName3");
+        .isEqualTo(
+            "There were failures with the following snapshots: camunda_operate_2_8.7.0_part_3_of_3");
 
     assertBackupDetails(snapshotInfos, backupState);
 
@@ -449,13 +450,13 @@ public class BackupControllerIT {
     final Long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 2, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.PARTIAL);
+            backupId, 3, 3, UUID.randomUUID().toString(), SnapshotState.PARTIAL, null);
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
     when(snapshotClient.get(any(), any()))
@@ -466,7 +467,7 @@ public class BackupControllerIT {
     assertThat(backupState.getState()).isEqualTo(FAILED);
     assertThat(backupState.getBackupId()).isEqualTo(backupId);
     assertThat(backupState.getFailureReason())
-        .isEqualTo("Some of the snapshots are partial: snapshotName3");
+        .isEqualTo("Some of the snapshots are partial: camunda_operate_2_8.7.0_part_3_of_3");
 
     assertBackupDetails(snapshotInfos, backupState);
   }
@@ -476,16 +477,16 @@ public class BackupControllerIT {
     final Long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 2, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 3, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo4 =
         createSnapshotInfoMock(
-            "snapshotName4", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 4, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3, snapshotInfo4});
     when(snapshotClient.get(any(), any()))
@@ -505,13 +506,13 @@ public class BackupControllerIT {
     final Long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 2, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.INCOMPATIBLE);
+            backupId, 3, 3, UUID.randomUUID().toString(), SnapshotState.INCOMPATIBLE, null);
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
     when(snapshotClient.get(any(), any()))
@@ -532,10 +533,10 @@ public class BackupControllerIT {
     // we have only 2 out of 3 snapshots
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 2, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2});
     when(snapshotClient.get(any(), any()))
@@ -556,13 +557,13 @@ public class BackupControllerIT {
     // we have only 2 out of 3 snapshots
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+            backupId, 2, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
+            backupId, 3, 3, UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS, null);
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
     when(snapshotClient.get(any(), any()))
@@ -583,10 +584,10 @@ public class BackupControllerIT {
     // we have only 2 out of 3 snapshots
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
+            backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS, null);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
+            backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS, null);
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2});
     when(snapshotClient.get(any(), any()))
@@ -654,7 +655,7 @@ public class BackupControllerIT {
         assertThrows(
             OperateRuntimeException.class,
             () -> {
-              backupController.getBackups();
+              backupController.getBackups(true);
             });
 
     final String expectedMessage =
@@ -674,7 +675,7 @@ public class BackupControllerIT {
                 SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    assertThat(backupController.getBackups()).isEmpty();
+    assertThat(backupController.getBackups(true)).isEmpty();
   }
 
   @Test
@@ -685,7 +686,7 @@ public class BackupControllerIT {
         assertThrows(
             OperateElasticsearchConnectionException.class,
             () -> {
-              backupController.getBackups();
+              backupController.getBackups(true);
             });
     final String expectedMessage =
         String.format(
@@ -747,7 +748,7 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupController.getBackups();
+    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true);
     assertThat(backups).hasSize(3);
 
     final GetBackupStateResponseDto backup3 =
@@ -810,7 +811,7 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupController.getBackups();
+    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true);
     assertThat(backups).hasSize(1);
     final GetBackupStateResponseDto backup1 = backups.get(0);
     assertThat(backup1.getState()).isEqualTo(COMPLETED);
@@ -819,8 +820,50 @@ public class BackupControllerIT {
     assertBackupDetails(List.of(snapshotInfo11, snapshotInfo12), backup1);
   }
 
+  @Test
+  public void shouldRespectVerboseFlag() throws IOException {
+    final Long backupId = 2L;
+    // when using verbose=false, ES/OS will return something like this:
+    //    {
+    //      "snapshot": "camunda_operate_20250320000001_8.6.9_part_1_of_6",
+    //        "uuid": "3V4JXZ5GRE2Yy5VnDKTF5w",
+    //        "indices": [
+    //      "operate-import-position-8.3.0_"
+    //        ],
+    //      "data_streams": [],
+    //      "state": "SUCCESS"
+    //    }
+
+    final Metadata metadata =
+        new Metadata().setBackupId(backupId).setVersion("8.8.8").setPartNo(1).setPartCount(1);
+
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, Answers.RETURNS_DEEP_STUBS);
+    when(snapshotInfo.snapshotId())
+        .thenReturn(new SnapshotId(metadata.buildSnapshotName(), "snapshot-uuid"));
+    when(snapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    final List<SnapshotInfo> snapshotInfos = asList(new SnapshotInfo[] {snapshotInfo});
+    when(snapshotClient.get(any(), any()))
+        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+
+    final var backups = backupController.getBackups(false);
+    assertThat(backups)
+        .allSatisfy(
+            backupState -> {
+              assertThat(backupState.getState()).isEqualTo(COMPLETED);
+              assertThat(backupState.getBackupId()).isEqualTo(backupId);
+              assertThat(backupState.getDetails())
+                  .singleElement()
+                  .satisfies(
+                      info -> {
+                        System.out.println(info);
+                        assertThat(info.getState()).isEqualTo("SUCCESS");
+                      });
+            });
+  }
+
   private void assertBackupDetails(
-      List<SnapshotInfo> snapshotInfos, GetBackupStateResponseDto backupState) {
+      final List<SnapshotInfo> snapshotInfos, final GetBackupStateResponseDto backupState) {
     assertThat(backupState.getDetails()).hasSize(snapshotInfos.size());
     assertThat(backupState.getDetails())
         .extracting(GetBackupStateResponseDetailDto::getSnapshotName)
@@ -836,38 +879,37 @@ public class BackupControllerIT {
             snapshotInfos.stream().map(si -> si.startTime()).toArray(Long[]::new));
   }
 
-  private SnapshotInfo createSnapshotInfoMock(String name, String uuid, SnapshotState state) {
-    return createSnapshotInfoMock(null, name, uuid, state, null);
+  private SnapshotInfo createSnapshotInfoMock(
+      final long backupId,
+      final int part,
+      final int count,
+      final String uuid,
+      final SnapshotState state,
+      final List<SnapshotShardFailure> failures) {
+    final var metadata =
+        new Metadata()
+            .setPartNo(part)
+            .setPartCount(count)
+            .setVersion("8.7.0")
+            .setBackupId(backupId);
+    return createSnapshotInfoMock(metadata, uuid, state, failures);
   }
 
-  private SnapshotInfo createSnapshotInfoMock(Metadata metadata, String uuid, SnapshotState state) {
-    return createSnapshotInfoMock(metadata, null, uuid, state, null);
+  private SnapshotInfo createSnapshotInfoMock(
+      final Metadata metadata, final String uuid, final SnapshotState state) {
+    return createSnapshotInfoMock(metadata, uuid, state, null);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
-      String name, String uuid, SnapshotState state, List<SnapshotShardFailure> failures) {
-    return createSnapshotInfoMock(null, name, uuid, state, failures);
-  }
-
-  @NotNull
-  private SnapshotInfo createSnapshotInfoMock(
-      Metadata metadata,
-      String name,
-      String uuid,
-      SnapshotState state,
-      List<SnapshotShardFailure> failures) {
-    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
-    if (metadata != null) {
-      when(snapshotInfo.snapshotId())
-          .thenReturn(new SnapshotId(metadata.buildSnapshotName(), uuid));
-      when(snapshotInfo.userMetadata())
-          .thenReturn(objectMapper.convertValue(metadata, new TypeReference<>() {}));
-    } else {
-      when(snapshotInfo.snapshotId()).thenReturn(new SnapshotId(name, uuid));
-      when(snapshotInfo.userMetadata())
-          .thenReturn(asMap("version", "someVersion", "partNo", 1, "partCount", 3));
-    }
+      final Metadata metadata,
+      final String uuid,
+      final SnapshotState state,
+      final List<SnapshotShardFailure> failures) {
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, Answers.RETURNS_DEEP_STUBS);
+    when(snapshotInfo.snapshotId()).thenReturn(new SnapshotId(metadata.buildSnapshotName(), uuid));
+    when(snapshotInfo.userMetadata())
+        .thenReturn(objectMapper.convertValue(metadata, new TypeReference<>() {}));
     when(snapshotInfo.state()).thenReturn(state);
     when(snapshotInfo.shardFailures()).thenReturn(failures);
     when(snapshotInfo.startTime()).thenReturn(OffsetDateTime.now().toInstant().toEpochMilli());
