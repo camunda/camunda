@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
-import { InlineNotification } from "@carbon/react";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -58,6 +57,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       open={open}
       onClose={onClose}
       loading={loading}
+      error={error}
       submitDisabled={submitDisabled}
       confirmLabel={t("createMapping")}
       onSubmit={handleSubmit}
@@ -99,15 +99,6 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
           </CustomStack>
         </Stack>
       </MappingRuleContainer>
-      {error && (
-        <InlineNotification
-          kind="error"
-          role="alert"
-          lowContrast
-          title={error.title}
-          subtitle={error.detail}
-        />
-      )}
     </FormModal>
   );
 };

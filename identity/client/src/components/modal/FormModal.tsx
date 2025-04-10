@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { FC, FormEvent } from "react";
-import { Form, Stack, Loading } from "@carbon/react";
+import { FC, FormEvent, useState } from "react";
+import { Form, Stack, Loading, InlineNotification } from "@carbon/react";
 import { spacing06, colors } from "@carbon/elements";
 import styled from "styled-components";
+import { ErrorResponse } from "src/utility/api/request";
 import Modal, { ModalProps } from "./Modal";
 
 // carbon element z-indexes can only be imported using scss modules
@@ -30,14 +31,31 @@ const LoadingLabel = styled.div`
   inset-inline-start: 0;
 `;
 
-const FormModal: FC<ModalProps> = ({ children, onSubmit, ...modalProps }) => {
+type FormModalProps = {
+  error?: ErrorResponse<"detailed"> | null;
+} & ModalProps;
+
+const FormModal: FC<FormModalProps> = ({
+  children,
+  onSubmit,
+  error,
+  ...modalProps
+}) => {
+  const [showError, setShowError] = useState(true);
+
   const formSubmitHandler = (e: FormEvent) => {
     e.preventDefault();
     onSubmit?.();
   };
 
   return (
-    <Modal {...modalProps} onSubmit={onSubmit}>
+    <Modal
+      {...modalProps}
+      onSubmit={async (...args) => {
+        setShowError(true);
+        await onSubmit?.(...args);
+      }}
+    >
       {modalProps.loading && (
         <>
           <Loading />
@@ -45,7 +63,21 @@ const FormModal: FC<ModalProps> = ({ children, onSubmit, ...modalProps }) => {
         </>
       )}
       <Form onSubmit={formSubmitHandler}>
-        <Stack gap={spacing06}>{children}</Stack>
+        <Stack gap={spacing06}>
+          <>{children}</>
+          {error && showError && (
+            <InlineNotification
+              kind="error"
+              role="alert"
+              lowContrast
+              title={error.title}
+              subtitle={error.detail}
+              onClose={() => {
+                setShowError(false);
+              }}
+            />
+          )}
+        </Stack>
         <HiddenSubmitButton type="submit" />
       </Form>
     </Modal>

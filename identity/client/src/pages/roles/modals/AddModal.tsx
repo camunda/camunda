@@ -7,7 +7,6 @@
  */
 
 import { FC, useState } from "react";
-import { InlineNotification } from "@carbon/react";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api/hooks";
@@ -49,6 +48,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
+      error={error}
       loadingDescription={t("creatingRole")}
       confirmLabel={t("createRole")}
       submitDisabled={!roleName || !roleId || !isRoleIdValid}
@@ -79,15 +79,6 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         cols={2}
         enableCounter
       />
-      {error && (
-        <InlineNotification
-          kind="error"
-          role="alert"
-          lowContrast
-          title={error.title}
-          subtitle={error.detail}
-        />
-      )}
     </FormModal>
   );
 };
