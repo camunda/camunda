@@ -25,6 +25,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
