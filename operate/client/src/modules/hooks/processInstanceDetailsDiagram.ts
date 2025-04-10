@@ -24,10 +24,6 @@ const useFlowNodes = () => {
     useProcessInstanceXml({
       processDefinitionKey: processDefinitionKey,
     }).data?.businessObjects ?? {};
-  const {data} = useProcessInstanceXml({
-    processDefinitionKey: processDefinitionKey,
-  });
-  console.log('data', data);
 
   return Object.values(businessObjects).map((flowNode) => {
     const flowNodeState = statistics?.items.find(
