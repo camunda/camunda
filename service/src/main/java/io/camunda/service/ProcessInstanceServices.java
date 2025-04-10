@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -79,6 +80,14 @@ public final class ProcessInstanceServices
   public SearchQueryResult<ProcessInstanceEntity> search(
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return search(processInstanceSearchQuery(fn));
+  }
+
+  public List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(final long processInstanceKey) {
+    return processInstanceSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .processInstanceFlowNodeStatistics(processInstanceKey);
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {

@@ -1454,6 +1454,37 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /process-instances/{processInstanceKey}/statistics/flownode-instances:
+    post:
+      tags:
+        - Process instance
+      operationId: getProcessInstanceStatistics
+      summary: Get process instance statistics
+      description: |
+        Get statistics about flow nodes by the process instance key.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The process instance statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceFlowNodeStatisticsQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/search:
     post:
       tags:
@@ -4982,9 +5013,18 @@ components:
           description: The flow node statistics.
           type: array
           items:
-            $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsResult"
-    ProcessDefinitionFlowNodeStatisticsResult:
-      description: Process definition flow node statistics response.
+            $ref: "#/components/schemas/ProcessFlowNodeStatisticsResult"
+    ProcessInstanceFlowNodeStatisticsQueryResult:
+      description: Process definition flow node statistics query response.
+      type: object
+      properties:
+        items:
+          description: The flow node statistics.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessFlowNodeStatisticsResult"
+    ProcessFlowNodeStatisticsResult:
+      description: Process flow node statistics response.
       type: object
       properties:
         flowNodeId:

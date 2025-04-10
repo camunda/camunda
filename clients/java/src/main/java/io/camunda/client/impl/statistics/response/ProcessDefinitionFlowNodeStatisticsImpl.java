@@ -16,7 +16,7 @@
 package io.camunda.client.impl.statistics.response;
 
 import io.camunda.client.api.statistics.response.ProcessDefinitionFlowNodeStatistics;
-import io.camunda.client.protocol.rest.ProcessDefinitionFlowNodeStatisticsResult;
+import io.camunda.client.protocol.rest.ProcessFlowNodeStatisticsResult;
 import java.util.Objects;
 
 public class ProcessDefinitionFlowNodeStatisticsImpl
@@ -28,8 +28,7 @@ public class ProcessDefinitionFlowNodeStatisticsImpl
   private final Long incidents;
   private final Long completed;
 
-  public ProcessDefinitionFlowNodeStatisticsImpl(
-      final ProcessDefinitionFlowNodeStatisticsResult statistics) {
+  public ProcessDefinitionFlowNodeStatisticsImpl(final ProcessFlowNodeStatisticsResult statistics) {
     flowNodeId = statistics.getFlowNodeId();
     active = statistics.getActive();
     canceled = statistics.getCanceled();

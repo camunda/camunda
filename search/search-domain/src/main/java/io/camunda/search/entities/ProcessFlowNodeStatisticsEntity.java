@@ -12,10 +12,10 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record ProcessDefinitionFlowNodeStatisticsEntity(
+public record ProcessFlowNodeStatisticsEntity(
     String flowNodeId, Long active, Long canceled, Long incidents, Long completed) {
 
-  public static class Builder implements ObjectBuilder<ProcessDefinitionFlowNodeStatisticsEntity> {
+  public static class Builder implements ObjectBuilder<ProcessFlowNodeStatisticsEntity> {
 
     private String flowNodeId;
     private long active;
@@ -49,8 +49,8 @@ public record ProcessDefinitionFlowNodeStatisticsEntity(
     }
 
     @Override
-    public ProcessDefinitionFlowNodeStatisticsEntity build() {
-      return new ProcessDefinitionFlowNodeStatisticsEntity(
+    public ProcessFlowNodeStatisticsEntity build() {
+      return new ProcessFlowNodeStatisticsEntity(
           Objects.requireNonNull(flowNodeId, "Expected non-null field for flowNodeId."),
           active,
           canceled,

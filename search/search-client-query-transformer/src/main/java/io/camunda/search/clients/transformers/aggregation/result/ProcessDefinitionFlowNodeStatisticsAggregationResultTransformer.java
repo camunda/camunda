@@ -18,8 +18,8 @@ import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsA
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity.Builder;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity.Builder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -29,8 +29,8 @@ public class ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer
 
   private void processFilter(
       final AggregationResult aggregationResult,
-      final Map<String, ProcessDefinitionFlowNodeStatisticsEntity.Builder> resultMap,
-      final BiConsumer<ProcessDefinitionFlowNodeStatisticsEntity.Builder, Long> resultConsumer) {
+      final Map<String, ProcessFlowNodeStatisticsEntity.Builder> resultMap,
+      final BiConsumer<ProcessFlowNodeStatisticsEntity.Builder, Long> resultConsumer) {
 
     final var group = aggregationResult.aggregations().get(AGGREGATION_GROUP_FLOW_NODE_ID);
     group
@@ -41,8 +41,7 @@ public class ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer
               final var entity =
                   resultMap.getOrDefault(
                       flowNodeId,
-                      new ProcessDefinitionFlowNodeStatisticsEntity.Builder()
-                          .flowNodeId(flowNodeId));
+                      new ProcessFlowNodeStatisticsEntity.Builder().flowNodeId(flowNodeId));
               resultConsumer.accept(entity, parents.docCount());
               resultMap.put(flowNodeId, entity);
             });
