@@ -172,6 +172,16 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<BatchOperationCreationRecord> resolveIncidentsBatchOperationWithResult(
+      final ProcessInstanceFilter filter) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public CompletableFuture<ProcessInstanceMigrationRecord> migrateProcessInstance(
       final ProcessInstanceMigrateRequest request) {
     final var brokerRequest =
