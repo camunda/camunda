@@ -44,3 +44,6 @@ zeebe:
             processMessageSubscription: true
             processInstanceModification: false
             bulkSize: 1
+camunda:
+  database:
+    url: "${DATABASE_URL:http://elasticsearch}:${DATABASE_PORT:9200}"
