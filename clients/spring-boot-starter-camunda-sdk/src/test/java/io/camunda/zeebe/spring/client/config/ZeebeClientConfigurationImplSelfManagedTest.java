@@ -63,7 +63,7 @@ public class ZeebeClientConfigurationImplSelfManagedTest {
   @Test
   void shouldHaveRestAddress() {
     assertThat(zeebeClientConfiguration.getRestAddress().toString())
-        .isEqualTo("http://localhost:8086");
+        .isEqualTo("http://localhost:8088");
   }
 
   @Test
