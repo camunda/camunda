@@ -66,6 +66,9 @@ jobs:
 
           changelog=$(./zcl generate --label version:${{ inputs.releaseVersion }} --token=${{ secrets.GITHUB_TOKEN }})
 
+          echo changelog:
+          echo $changelog
+
           echo 'CHANGELOG<<EOF' >> $GITHUB_OUTPUT
           echo $changelog >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
@@ -81,7 +84,7 @@ jobs:
       - name: Create Github release
         uses: ncipollo/release-action@v1
         with:
-          name: "8.5.16-test"
+          name: "test-28426-changelog"
 #          artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
           draft: true
