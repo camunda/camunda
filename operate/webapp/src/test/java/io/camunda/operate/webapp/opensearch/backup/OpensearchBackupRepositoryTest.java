@@ -12,7 +12,9 @@ import static io.camunda.operate.webapp.opensearch.backup.OpensearchBackupReposi
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -116,6 +118,31 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
+  void shouldForwardVerboseFlagToOpensearch() {
+    final var metadata =
+        new Metadata().setBackupId(5L).setVersion("1").setPartNo(1).setPartCount(3);
+    final var snapshotInfos =
+        List.of(
+            new OpenSearchSnapshotInfo()
+                .setSnapshot("test-snapshot")
+                .setState(SnapshotState.STARTED));
+    final var response = new OpenSearchGetSnapshotResponse(snapshotInfos);
+    mockObjectMapperForMetadata(metadata);
+    when(openSearchSnapshotOperations.get(any())).thenReturn(response);
+    mockSynchronSnapshotOperations();
+    final var snapshotDtoList = repository.getBackups("repo", false);
+    verify(openSearchSnapshotOperations).get(argThat(req -> !req.verbose()));
+
+    assertThat(snapshotDtoList)
+        .singleElement()
+        .satisfies(
+            backup -> {
+              assertThat(backup.getBackupId()).isEqualTo(5L);
+              assertThat(backup.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+            });
+  }
+
+  @Test
   void successForExecuteSnapshotting() {
     mockAsynchronSnapshotOperations();
 
@@ -191,7 +218,7 @@ class OpensearchBackupRepositoryTest {
   @Test
   void getBackupState() {
     mockSynchronSnapshotOperations();
-    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
+    mockObjectMapperForMetadata(new Metadata().setPartNo(1).setVersion("8.7.0").setPartCount(3));
 
     when(openSearchSnapshotOperations.get(any()))
         .thenReturn(

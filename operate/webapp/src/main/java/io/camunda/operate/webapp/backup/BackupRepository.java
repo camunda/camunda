@@ -19,7 +19,11 @@ public interface BackupRepository {
 
   GetBackupStateResponseDto getBackupState(String repositoryName, Long backupId);
 
-  List<GetBackupStateResponseDto> getBackups(String repositoryName);
+  List<GetBackupStateResponseDto> getBackups(String repositoryName, boolean verbose);
+
+  default List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
+    return getBackups(repositoryName, true);
+  }
 
   void executeSnapshotting(
       BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
