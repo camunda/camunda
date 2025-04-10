@@ -7937,6 +7937,7 @@ components:
       type: string
       enum:
       - PROCESS_CANCELLATION
+      - RESOLVE_INCIDENT
     BatchOperationCreatedResult:
       type: object
       properties:

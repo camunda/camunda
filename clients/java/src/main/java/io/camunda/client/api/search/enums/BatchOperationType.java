@@ -17,5 +17,6 @@ package io.camunda.client.api.search.enums;
 
 public enum BatchOperationType {
   PROCESS_CANCELLATION,
+  RESOLVE_INCIDENT,
   UNKNOWN_ENUM_VALUE;
 }
