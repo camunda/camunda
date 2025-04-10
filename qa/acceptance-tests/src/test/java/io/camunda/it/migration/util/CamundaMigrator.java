@@ -161,7 +161,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     camundaClient = camunda.newClientBuilder().build();
     url = URL.formatted(camunda.host(), camunda.mappedPort(TestZeebePort.REST));
     final var uri = URI.create(url + "/");
-    tasklistClient = new TestRestTasklistClient(uri, databaseUrl);
+    tasklistClient = new TestRestTasklistClient(uri);
     operateClient = new TestRestOperateClient(uri, "demo", "demo");
     searchClients =
         databaseType.equals(DatabaseType.ES)
