@@ -316,7 +316,9 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     client
         .newProcessInstanceSearchRequest()
         .filter(
-            f -> f.tenantId("tenant-1").or(f1 -> f1.state(ACTIVE)).or(f3 -> f3.hasIncident(true)))
+            f ->
+                f.tenantId("tenant-1")
+                    .orFilters(Arrays.asList(f1 -> f1.state(ACTIVE), f3 -> f3.hasIncident(true))))
         .send()
         .join();
 
