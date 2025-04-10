@@ -15,6 +15,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPauseProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
@@ -75,6 +76,7 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -273,6 +275,22 @@ public class CommandDistributionIdempotencyTest {
                       .pause();
                 }),
             BatchOperationPauseProcessor.class
+          },
+          {
+            "BatchOperation.RESUME is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+                BatchOperationIntent.RESUME,
+                () -> {
+                  final var batchOperation = createBatchOperation();
+                  pauseBatchOperation(batchOperation.getKey());
+                  return ENGINE
+                      .batchOperation()
+                      .newLifecycle()
+                      .withBatchOperationKey(batchOperation.getKey())
+                      .resume();
+                }),
+            BatchOperationResumeProcessor.class
           },
           {
             "Clock.RESET is idempotent",
@@ -708,6 +726,11 @@ public class CommandDistributionIdempotencyTest {
                 MsgPackConverter.convertToMsgPack(
                     new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build())))
         .create();
+  }
+
+  private static Record<BatchOperationLifecycleManagementRecordValue> pauseBatchOperation(
+      final long batchKey) {
+    return ENGINE.batchOperation().newLifecycle().withBatchOperationKey(batchKey).pause();
   }
 
   private static Record<UserRecordValue> createUser() {
