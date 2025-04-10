@@ -25,7 +25,6 @@ import {
   PROCESS_INSTANCE_ID,
 } from 'modules/mocks/metadata';
 import {createInstance} from 'modules/testUtils';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenceFlows';
@@ -37,8 +36,8 @@ import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {useEffect} from 'react';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -59,20 +58,32 @@ jest.mock('react-transition-group', () => {
   };
 });
 
-type Props = {
-  children?: React.ReactNode;
-};
+const getWrapper = (
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = [Paths.processInstance('1')],
+) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        flowNodeSelectionStore.reset();
+        processInstanceDetailsStore.reset();
+        processInstanceDetailsDiagramStore.reset();
+        modificationsStore.reset();
+      };
+    }, []);
 
-const Wrapper: React.FC<Props> = ({children}) => {
-  return (
-    <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
+    return (
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={initialEntries}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+  return Wrapper;
 };
 
 describe('TopPanel', () => {
@@ -113,20 +124,21 @@ describe('TopPanel', () => {
       ],
     });
     processInstanceDetailsDiagramStore.init();
-    processInstanceDetailsStatisticsStore.init('id');
   });
 
   afterEach(() => {
-    processInstanceDetailsDiagramStore.reset();
     processInstanceDetailsStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
+    processInstanceDetailsDiagramStore.reset();
+    flowNodeSelectionStore.reset();
+    modificationsStore.reset();
+    jest.clearAllMocks();
   });
 
   it('should render spinner while loading', async () => {
     mockFetchProcessInstance().withSuccess(createInstance({id: 'instance_id'}));
 
     render(<TopPanel />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     processInstanceDetailsStore.init({id: 'active_instance'});
@@ -137,7 +149,7 @@ describe('TopPanel', () => {
 
   it('should render incident bar', async () => {
     render(<TopPanel />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
@@ -148,7 +160,7 @@ describe('TopPanel', () => {
     mockFetchProcessXML().withServerError();
 
     render(<TopPanel />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
@@ -166,7 +178,7 @@ describe('TopPanel', () => {
     mockFetchProcessXML().withNetworkError();
 
     render(<TopPanel />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
@@ -180,7 +192,7 @@ describe('TopPanel', () => {
 
   it('should toggle incident bar', async () => {
     const {user} = render(<TopPanel />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     processInstanceDetailsStore.init({id: 'instance_with_incident'});
@@ -204,7 +216,7 @@ describe('TopPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it.skip('should render metadata for default mode and modification dropdown for modification mode', async () => {
+  it('should render metadata for default mode and modification dropdown for modification mode', async () => {
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -214,14 +226,8 @@ describe('TopPanel', () => {
       }),
     );
     render(<TopPanel />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
-
-    await waitFor(() =>
-      expect(processInstanceDetailsStatisticsStore.state.status).toBe(
-        'fetched',
-      ),
-    );
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'service-task-1',
@@ -267,54 +273,13 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should display move token banner in moving mode', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: PROCESS_INSTANCE_ID,
-        state: 'ACTIVE',
-      }),
-    );
-
-    const {user} = render(<TopPanel />, {
-      wrapper: Wrapper,
-    });
-
-    modificationsStore.enableModificationMode();
-
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
-    });
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByText(/select the target flow node in the diagram/i),
-    ).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', {name: /move/i}));
-
-    expect(
-      await screen.findByText(/select the target flow node in the diagram/i),
-    ).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', {name: 'Discard'}));
-
-    expect(
-      screen.queryByText(/select the target flow node in the diagram/i),
-    ).not.toBeInTheDocument();
-  });
-
   it('should display multiple instances banner when a flow node with multiple running instances is selected', async () => {
     processInstanceDetailsStore.init({id: 'active_instance'});
 
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
     render(<TopPanel />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     modificationsStore.enableModificationMode();
@@ -365,6 +330,49 @@ describe('TopPanel', () => {
     );
   });
 
+  it('should display move token banner in moving mode', async () => {
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    const {user} = render(<TopPanel />, {
+      wrapper: getWrapper(),
+    });
+
+    modificationsStore.enableModificationMode();
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-1',
+    });
+
+    expect(
+      await screen.findByText(/Flow Node Modifications/),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/select the target flow node in the diagram/i),
+    ).not.toBeInTheDocument();
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+    await user.click(screen.getByRole('button', {name: /move/i}));
+
+    expect(
+      await screen.findByText(/select the target flow node in the diagram/i),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Discard'}));
+
+    expect(
+      screen.queryByText(/select the target flow node in the diagram/i),
+    ).not.toBeInTheDocument();
+  });
+
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
     'should display parent selection banner when trying to add a token on a flow node that has multiple scopes',
     async () => {
@@ -373,33 +381,10 @@ describe('TopPanel', () => {
       processInstanceDetailsStore.init({id: 'active_instance'});
       processInstanceDetailsDiagramStore.init();
 
-      mockFetchProcessInstanceDetailStatistics().withSuccess([
-        {
-          activityId: 'parent_sub_process',
-          active: 2,
-          canceled: 0,
-          incidents: 0,
-          completed: 0,
-        },
-        {
-          activityId: 'inner_sub_process',
-          active: 2,
-          canceled: 0,
-          incidents: 0,
-          completed: 0,
-        },
-        {
-          activityId: 'user_task',
-          active: 2,
-          canceled: 0,
-          incidents: 0,
-          completed: 0,
-        },
-      ]);
       mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
       const {user} = render(<TopPanel />, {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       });
 
       modificationsStore.enableModificationMode();
