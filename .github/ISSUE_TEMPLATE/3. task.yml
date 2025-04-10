@@ -5,17 +5,17 @@ body:
   - type: dropdown
     id: Component
     attributes:
-      label: Component
+      label: <!-- Component -->
       description: In which component shall the task be carried out?
       options:
-        - Not sure-
-        - Operate-
-        - Optimize-
-        - Tasklist-
-        - Identity-
-        - Zeebe-
-        - C8Run-
-        - Feel-
+        - <!-- Not sure- -->
+        - <!-- Operate- -->
+        - <!-- Optimize- -->
+        - <!-- Tasklist- -->
+        - <!-- Identity- -->
+        - <!-- Zeebe- -->
+        - <!-- C8Run- -->
+        - <!-- Feel- -->
       default: 0
     validations:
       required: true

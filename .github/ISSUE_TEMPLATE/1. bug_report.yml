@@ -5,43 +5,43 @@ body:
   - type: dropdown
     id: Component
     attributes:
-      label: Component
+      label: <!-- Component -->
       description: In which component did the issue occur?
       options:
-        - Not sure-
-        - Operate-
-        - Optimize-
-        - Tasklist-
-        - Identity-
-        - Zeebe-
-        - C8Run-
-        - Feel-
+        - <!-- Not sure- -->
+        - <!-- Operate- -->
+        - <!-- Optimize- -->
+        - <!-- Tasklist- -->
+        - <!-- Identity- -->
+        - <!-- Zeebe- -->
+        - <!-- C8Run- -->
+        - <!-- Feel- -->
       default: 0
     validations:
       required: true
   - type: dropdown
     id: severity
     attributes:
-      label: Severity
+      label: <!-- Severity -->
       description: <a href="https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#starting-on-an-issue"> What is the severity of the bug?
       options:
-        - Low-
-        - Medium-
-        - High-
-        - Critical-
+        - <!-- Low- -->
+        - <!-- Medium- -->
+        - <!-- High- -->
+        - <!-- Critical- -->
       default: 0
     validations:
       required: true
   - type: dropdown
     id: likelihood
     attributes:
-      label: Likelihood
+      label: <!-- Likelihood -->
       description: <a href="https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#starting-on-an-issue"> How likely is it to occur?
       options:
-        - Unknown_
-        - Low_
-        - Medium_
-        - High_
+        - <!-- Unknown_ -->
+        - <!-- Low_ -->
+        - <!-- Medium_ -->
+        - <!-- High_ -->
       default: 0
     validations:
       required: true
