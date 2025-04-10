@@ -478,7 +478,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.or(f2 -> f2.state(ACTIVE)))
+            .filter(f -> f.orFilters(List.of(f2 -> f2.state(ACTIVE))))
             .send()
             .join();
 
@@ -492,7 +492,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.or(f2 -> f2.state(ACTIVE)).or(f3 -> f3.hasIncident(true)))
+            .filter(f -> f.orFilters(List.of(f2 -> f2.state(ACTIVE), f3 -> f3.hasIncident(true))))
             .send()
             .join();
 
@@ -506,7 +506,9 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.endDate(d -> d.exists(false)).or(f2 -> f2.hasIncident(false)))
+            .filter(
+                f ->
+                    f.endDate(d -> d.exists(false)).orFilters(List.of(f2 -> f2.hasIncident(false))))
             .send()
             .join();
 
@@ -533,8 +535,10 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
                                     "child_process_v1",
                                     "manual_process",
                                     "service_tasks_v1"))
-                        .or(f3 -> f3.state(ACTIVE).processDefinitionId("service_tasks_v1"))
-                        .or(f4 -> f4.state(ACTIVE).hasIncident(true)))
+                        .orFilters(
+                            List.of(
+                                f3 -> f3.state(ACTIVE).processDefinitionId("service_tasks_v1"),
+                                (f4 -> f4.state(ACTIVE).hasIncident(true)))))
             .send()
             .join();
 
@@ -552,8 +556,10 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .newProcessInstanceSearchRequest()
             .filter(
                 f ->
-                    f.or(f2 -> f2.state(TERMINATED))
-                        .or(f2 -> f2.processDefinitionId("non-existent")))
+                    f.orFilters(
+                        List.of(
+                            f2 -> f2.state(TERMINATED),
+                            f3 -> f3.processDefinitionId("non-existent"))))
             .send()
             .join();
 
@@ -570,8 +576,9 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .filter(
                 f ->
                     f.tenantId("<default>")
-                        .or(f2 -> f2.state(ACTIVE))
-                        .or(f3 -> f3.state(ACTIVE).hasIncident(true)))
+                        .orFilters(
+                            List.of(
+                                f2 -> f2.state(ACTIVE), f3 -> f3.state(ACTIVE).hasIncident(true))))
             .send()
             .join();
 
@@ -587,7 +594,10 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.hasIncident(false).or(f2 -> f2.state(ACTIVE).hasIncident(true)))
+            .filter(
+                f ->
+                    f.hasIncident(false)
+                        .orFilters(List.of(f2 -> f2.state(ACTIVE).hasIncident(true))))
             .send()
             .join();
 
@@ -603,9 +613,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .newProcessInstanceSearchRequest()
             .filter(
                 f ->
-                    f.or(f2 -> f2.state(ACTIVE))
-                        .or(f3 -> f3.state(ACTIVE))
-                        .or(f4 -> f4.state(ACTIVE)))
+                    f.orFilters(
+                        List.of(
+                            f2 -> f2.state(ACTIVE),
+                            f3 -> f3.state(ACTIVE),
+                            f4 -> f4.state(ACTIVE))))
             .send()
             .join();
     // then
@@ -620,7 +632,9 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(
-                f -> f.state(ACTIVE).or(f2 -> f2.state(COMPLETED)).or(f3 -> f3.state(TERMINATED)))
+                f ->
+                    f.state(ACTIVE)
+                        .orFilters(List.of(f2 -> f2.state(COMPLETED), f3 -> f3.state(TERMINATED))))
             .send()
             .join();
 

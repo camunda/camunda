@@ -323,14 +323,16 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter or(final Consumer<ProcessInstanceFilter> fn) {
-    final ProcessInstanceFilterImpl orFilter = new ProcessInstanceFilterImpl();
-    fn.accept(orFilter);
-    final io.camunda.client.protocol.rest.ProcessInstanceFilter protocolFilter =
-        orFilter.getSearchRequestProperty();
-    final ProcessInstanceFilterFields protocolFilterFields =
-        ProcessInstanceFilterMapper.from(protocolFilter);
-    filter.add$OrItem(protocolFilterFields);
+  public ProcessInstanceFilter orFilters(final List<Consumer<ProcessInstanceFilter>> fns) {
+    for (final Consumer<ProcessInstanceFilter> fn : fns) {
+      final ProcessInstanceFilterImpl orFilter = new ProcessInstanceFilterImpl();
+      fn.accept(orFilter);
+      final io.camunda.client.protocol.rest.ProcessInstanceFilter protocolFilter =
+          orFilter.getSearchRequestProperty();
+      final ProcessInstanceFilterFields protocolFilterFields =
+          ProcessInstanceFilterMapper.from(protocolFilter);
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 
