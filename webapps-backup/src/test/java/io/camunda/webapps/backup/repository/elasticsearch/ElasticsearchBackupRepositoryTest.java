@@ -12,8 +12,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +29,8 @@ import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
@@ -36,7 +40,9 @@ import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.backup.repository.TestSnapshotProvider;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -46,6 +52,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +65,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchBackupRepositoryTest {
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final Executor executor = Runnable::run;
   private final String repositoryName = "repo1";
   private final long backupId = 555;
@@ -104,26 +112,49 @@ public class ElasticsearchBackupRepositoryTest {
   }
 
   @Test
-  public void testWaitingForSnapshotTillCompleted() {
+  public void testWaitingForSnapshotTillCompleted() throws IOException {
     final int timeout = 0;
 
+    final var snapshotInfos = new ArrayList<SnapshotInfo>();
+    final var metadatas = new ArrayList<Metadata>();
+    for (int i = 0; i < 6; i++) {
+      final var metadata = new Metadata(backupId, "8.3.0", 1, 1);
+      metadatas.add(metadata);
+      final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+      when(snapshotInfo.state())
+          .thenReturn(SnapshotState.IN_PROGRESS.name())
+          .thenReturn(SnapshotState.IN_PROGRESS.name())
+          .thenReturn(SnapshotState.SUCCESS.name());
+      when(snapshotInfo.metadata())
+          .thenReturn(MetadataMarshaller.asJson(metadata, new JacksonJsonpMapper(OBJECT_MAPPER)));
+      when(snapshotInfo.snapshot()).thenReturn(snapshotNameProvider.getSnapshotName(metadata));
+      snapshotInfos.add(snapshotInfo);
+    }
+
     // mock calls to `findSnapshot` and `operateProperties`
-    final SnapshotInfo snapshotInfo = Mockito.mock(SnapshotInfo.class, Mockito.RETURNS_DEEP_STUBS);
-    when(snapshotInfo.state())
-        .thenReturn(SnapshotState.IN_PROGRESS.name())
-        .thenReturn(SnapshotState.IN_PROGRESS.name())
-        .thenReturn(SnapshotState.SUCCESS.name());
-    when(snapshotInfo.snapshot()).thenReturn(snapshotName);
-    when(backupProps.snapshotTimeout()).thenReturn(timeout);
-    doReturn(List.of(snapshotInfo))
-        .when(backupRepository)
-        .findSnapshots(ArgumentMatchers.any(), ArgumentMatchers.any());
+    final var snapshotResponse = mock(GetSnapshotResponse.class);
+    when(snapshotResponse.snapshots()).thenReturn(snapshotInfos);
+    when(esClient.snapshot().get(any(GetSnapshotRequest.class))).thenReturn(snapshotResponse);
+    when(esClient.snapshot().create(any(CreateSnapshotRequest.class)))
+        .thenThrow(new SocketTimeoutException());
 
-    final boolean finished =
-        backupRepository.isSnapshotFinishedWithinTimeout(repositoryName, snapshotName);
+    backupRepository.executeSnapshotting(
+        new SnapshotRequest(
+            repositoryName,
+            snapshotName,
+            new SnapshotIndexCollection(List.of("index-example"), List.of()),
+            metadatas.getFirst()),
+        () -> {},
+        () -> {});
 
-    assertThat(finished).isTrue();
     verify(backupRepository, times(3)).findSnapshots(repositoryName, backupId);
+
+    Awaitility.await("backup is completed")
+        .untilAsserted(
+            () -> {
+              final var response = backupRepository.getBackupState(repositoryName, backupId);
+              assertThat(response.getState()).isEqualTo(BackupStateDto.COMPLETED);
+            });
   }
 
   @Test
