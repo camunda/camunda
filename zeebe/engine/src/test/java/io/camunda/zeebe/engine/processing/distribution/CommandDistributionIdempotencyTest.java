@@ -347,8 +347,7 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.ADD_ENTITY,
                 () -> {
-                  // TODO: revisit with https://github.com/camunda/camunda/issues/30091
-                  final var groupId = "123";
+                  final var groupId = Strings.newRandomValidIdentityId();
                   createGroup(groupId);
                   final var username = createUser().getValue().getUsername();
                   return ENGINE
@@ -366,8 +365,7 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.REMOVE_ENTITY,
                 () -> {
-                  // TODO: revisit with https://github.com/camunda/camunda/issues/30091
-                  final var groupId = "456";
+                  final var groupId = Strings.newRandomValidIdentityId();
                   createGroup(groupId);
                   final var username = createUser().getValue().getUsername();
                   ENGINE
