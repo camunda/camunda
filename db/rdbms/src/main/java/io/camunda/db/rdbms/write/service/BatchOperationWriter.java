@@ -121,7 +121,7 @@ public class BatchOperationWriter {
         new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.PAUSED, null));
   }
 
-  public void resumed(final long batchOperationKey) {
+  public void resume(final long batchOperationKey) {
     updateCompleted(
         batchOperationKey,
         new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.ACTIVE, null));
