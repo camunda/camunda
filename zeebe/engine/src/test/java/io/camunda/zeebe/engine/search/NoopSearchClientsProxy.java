@@ -149,6 +149,12 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
+      final long processInstanceKey) {
+    return emptyList();
+  }
+
+  @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
     return SearchQueryResult.empty();
   }

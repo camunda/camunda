@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.statistics.response;
 
-public interface ProcessDefinitionFlowNodeStatistics {
+public interface ProcessFlowNodeStatistics {
 
   String getFlowNodeId();
 

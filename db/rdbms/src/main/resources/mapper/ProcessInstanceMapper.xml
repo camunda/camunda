@@ -251,6 +251,30 @@
 
   </resultMap>
 
+  <select id="flowNodeStatistics"
+    parameterType="java.lang.Long"
+    resultMap="io.camunda.db.rdbms.sql.Commons.flowNodeStatisticsResultMap">
+    SELECT
+      fni.FLOW_NODE_ID,
+      SUM(CASE WHEN fni.STATE = 'ACTIVE' AND
+                    fni.NUM_SUBPROCESS_INCIDENTS = 0 AND
+                    fni.INCIDENT_KEY IS NULL THEN 1 ELSE 0 END)
+        AS COUNT_ACTIVE,
+      SUM(CASE WHEN fni.STATE = 'TERMINATED' THEN 1 ELSE 0 END)
+        AS COUNT_CANCELED,
+      SUM(CASE WHEN fni.STATE = 'COMPLETED' THEN 1 ELSE 0 END)
+        AS COUNT_COMPLETED,
+      SUM(CASE WHEN fni.STATE = 'ACTIVE' AND
+                    (fni.NUM_SUBPROCESS_INCIDENTS > 0 OR
+                     fni.INCIDENT_KEY IS NOT NULL) THEN 1 ELSE 0 END)
+        AS COUNT_INCIDENTS
+    FROM ${prefix}PROCESS_INSTANCE pi
+      JOIN ${prefix}FLOW_NODE_INSTANCE fni ON (pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY)
+    WHERE pi.PROCESS_INSTANCE_KEY = #{processInstanceKey}
+      AND fni.TYPE != 'MULTI_INSTANCE_BODY'
+    GROUP BY fni.FLOW_NODE_ID
+  </select>
+
   <insert
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"

@@ -20,7 +20,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.api.statistics.request.ProcessDefinitionFlowNodeStatisticsRequest;
-import io.camunda.client.api.statistics.response.ProcessDefinitionFlowNodeStatistics;
+import io.camunda.client.api.statistics.response.ProcessFlowNodeStatistics;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
@@ -55,16 +55,15 @@ public class ProcessDefinitionFlowNodeStatisticsRequestImpl
   }
 
   @Override
-  public FinalCommandStep<List<ProcessDefinitionFlowNodeStatistics>> requestTimeout(
+  public FinalCommandStep<List<ProcessFlowNodeStatistics>> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<List<ProcessDefinitionFlowNodeStatistics>> send() {
-    final HttpCamundaFuture<List<ProcessDefinitionFlowNodeStatistics>> result =
-        new HttpCamundaFuture<>();
+  public CamundaFuture<List<ProcessFlowNodeStatistics>> send() {
+    final HttpCamundaFuture<List<ProcessFlowNodeStatistics>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-definitions/" + processDefinitionKey + "/statistics/flownode-instances",
         jsonMapper.toJson(request),

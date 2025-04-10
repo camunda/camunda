@@ -10,9 +10,11 @@ package io.camunda.db.rdbms.read.service;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,5 +45,10 @@ public class ProcessInstanceReader extends AbstractEntityReader<ProcessInstanceE
     final var totalHits = processInstanceMapper.count(dbQuery);
     final var hits = processInstanceMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(final long processInstanceKey) {
+    LOG.trace("[RDBMS DB] Query process instance flow node statistics with {}", processInstanceKey);
+    return processInstanceMapper.flowNodeStatistics(processInstanceKey);
   }
 }
