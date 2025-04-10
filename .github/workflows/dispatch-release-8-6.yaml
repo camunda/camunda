@@ -10,7 +10,7 @@ on:
 jobs:
   run-release:
     name: "Release ${{ github.event.client_payload.releaseVersion }}"
-    uses: ./.github/workflows/camunda-platform-release.yml
+    uses: ./.github/workflows/camunda-platform-release-old.yml
     secrets: inherit
     with:
       releaseVersion: ${{ github.event.client_payload.releaseVersion }}
