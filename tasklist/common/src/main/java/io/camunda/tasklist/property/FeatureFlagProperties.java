@@ -10,13 +10,23 @@ package io.camunda.tasklist.property;
 public class FeatureFlagProperties {
 
   private Boolean processPublicEndpoints = true;
+  private Boolean allowNonSelfAssignment = false;
 
   public Boolean getProcessPublicEndpoints() {
     return processPublicEndpoints;
   }
 
-  public FeatureFlagProperties setProcessPublicEndpoints(Boolean processPublicEndpoints) {
+  public FeatureFlagProperties setProcessPublicEndpoints(final Boolean processPublicEndpoints) {
     this.processPublicEndpoints = processPublicEndpoints;
+    return this;
+  }
+
+  public Boolean getAllowNonSelfAssignment() {
+    return allowNonSelfAssignment;
+  }
+
+  public FeatureFlagProperties setAllowNonSelfAssignment(final Boolean allowNonSelfAssignment) {
+    this.allowNonSelfAssignment = allowNonSelfAssignment;
     return this;
   }
 }
