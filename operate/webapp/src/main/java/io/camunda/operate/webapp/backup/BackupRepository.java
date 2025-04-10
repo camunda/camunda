@@ -16,6 +16,9 @@ public interface BackupRepository {
   // Match all numbers, optionally ending with a *
   Pattern BACKUPID_PATTERN = Pattern.compile("^(\\d*)\\*?$");
 
+  // Maximum length of a length when converted to a string
+  static final int LONG_MAX_LENGTH_AS_STRING = 19;
+
   void deleteSnapshot(String repositoryName, String snapshotName);
 
   void validateRepositoryExists(String repositoryName);
@@ -37,7 +40,8 @@ public interface BackupRepository {
   static Either<Throwable, String> validPattern(final String pattern) {
     if (pattern == null || pattern.isEmpty()) {
       return Either.right("*");
-    } else if (pattern.length() <= 20 && BACKUPID_PATTERN.matcher(pattern).matches()) {
+    } else if (pattern.length() <= (LONG_MAX_LENGTH_AS_STRING + 1)
+        && BACKUPID_PATTERN.matcher(pattern).matches()) {
       return Either.right(pattern);
     } else {
       return Either.left(new IllegalArgumentException("Invalid pattern: " + pattern));
