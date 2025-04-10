@@ -1,0 +1,13 @@
+version: 3
+
+project:
+  id: camunda/camunda@c8run
+  labels:
+  - camunda8
+  - c8run
+  policy: Camunda8 Distribution
+  url: https://github.com/camunda/camunda
+
+paths:
+  exclude:
+  - e2e_tests

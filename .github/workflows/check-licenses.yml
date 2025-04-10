@@ -17,14 +17,17 @@ jobs:
       # The matrix is needed to run separate analyses for the Single-App and Optimize
       matrix:
         project:
+        - name: c8run
+          path: ./c8run
+        - name: optimize
+          path: ./optimize
+          maven-config: >
+            -DskipQaBuild=true
         - name: single-app
           path: ./
-          maven-config: |
+          maven-config: >
+            -Dquickly=true
             -DskipQaBuild=true
-        # TODO: to be uncommented when Optimize is fully seperated
-        # Dedicated configs already exist, see optimize/.fossa.yml
-        # - name: optimize
-        #   path: ./optimize
     timeout-minutes: 15
     steps:
     - uses: actions/checkout@v4
