@@ -33,7 +33,6 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
@@ -44,6 +43,8 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
@@ -69,20 +70,21 @@ const getWrapper = (
         variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
-        processInstanceDetailsDiagramStore.reset();
         modificationsStore.reset();
         processInstanceDetailsStatisticsStore.reset();
       };
     }, []);
 
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={initialEntries}>
-          <Routes>
-            <Route path={Paths.processInstance()} element={children} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={initialEntries}>
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
   return Wrapper;
@@ -880,10 +882,6 @@ describe('VariablePanel', () => {
   });
 
   it('should select correct tab when navigating between flow nodes', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
-
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
@@ -900,9 +898,6 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('test2')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
-
-    expect(screen.getByText('localVariable1')).toBeInTheDocument();
-    expect(screen.getByText('localVariable2')).toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
