@@ -85,7 +85,7 @@ jobs:
 #          artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
           draft: true
-          body: ${{ steps.gen-changelog.outputs.changelog }}
+          body: ${{ steps.gen-changelog.outputs.CHANGELOG }}
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.pre-release.outputs.result }}
           tag: ${{ inputs.releaseVersion }}
