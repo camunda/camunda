@@ -89,4 +89,32 @@ const generateParentScopeIds = (
   );
 };
 
-export {generateParentScopeIds, finishMovingToken};
+const hasPendingCancelOrMoveModification = (
+  flowNodeId: string,
+  flowNodeInstanceKey?: string,
+  modificationsByFlowNode?: {
+    [key: string]: {
+      newTokens: number;
+      cancelledTokens: number;
+      cancelledChildTokens: number;
+      visibleCancelledTokens: number;
+      areAllTokensCanceled: boolean;
+    };
+  },
+) => {
+  if (flowNodeInstanceKey !== undefined) {
+    return modificationsStore.flowNodeModifications.some(
+      (modification) =>
+        modification.operation !== TOKEN_OPERATIONS.ADD_TOKEN &&
+        modification.flowNodeInstanceKey === flowNodeInstanceKey,
+    );
+  }
+
+  return (modificationsByFlowNode?.[flowNodeId]?.cancelledTokens ?? 0) > 0;
+};
+
+export {
+  generateParentScopeIds,
+  finishMovingToken,
+  hasPendingCancelOrMoveModification,
+};
