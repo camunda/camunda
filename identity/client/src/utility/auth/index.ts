@@ -15,10 +15,6 @@ export function getLoginPath(next?: string) {
   return next ? `${LOGIN_PATH}?next=${next}` : LOGIN_PATH;
 }
 
-export function redirectToLogin() {
-  window.location.href = getLoginPath(window.location.pathname);
-}
-
 export function login(
   username: string,
   password: string,
