@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.zeebe.util.FunctionUtil;
+import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -39,7 +40,20 @@ public class BatchOperationArchiverJob implements ArchiverJob {
 
   @Override
   public CompletionStage<Integer> archiveNextBatch() {
-    return repository.getBatchOperationsNextBatch().thenComposeAsync(this::archiveBatch, executor);
+    final var timer = Timer.start();
+    return repository
+        .getBatchOperationsNextBatch()
+        .thenComposeAsync(this::archiveBatch, executor)
+        // we schedule us after the archiveBatch future - to correctly measure
+        // the time it takes all in all, including searching, reindexing, deletion
+        // There is some overhead with the scheduling at the executor, but this should be
+        // negligible
+        .thenComposeAsync(
+            count -> {
+              metrics.measureArchivingDuration(timer);
+              return CompletableFuture.completedFuture(count);
+            },
+            executor);
   }
 
   private CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {

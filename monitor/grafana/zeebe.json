@@ -184,8 +184,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   }
                 ]
               }
@@ -294,8 +293,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -398,8 +396,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -475,8 +472,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -581,8 +577,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -690,8 +685,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -790,8 +784,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -863,8 +856,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "#EAB839",
@@ -972,8 +964,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1046,8 +1037,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1126,8 +1116,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1206,8 +1195,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1312,8 +1300,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent",
-                    "value": null
+                    "color": "transparent"
                   },
                   {
                     "color": "red",
@@ -1407,8 +1394,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1494,8 +1480,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "#EAB839",
@@ -1600,8 +1585,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1767,8 +1751,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   }
                 ]
               }
@@ -1882,8 +1865,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent",
-                    "value": null
+                    "color": "transparent"
                   },
                   {
                     "color": "orange",
@@ -2062,8 +2044,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2162,8 +2143,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2280,8 +2260,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               }
@@ -3973,8 +3952,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -4074,8 +4052,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -4200,8 +4177,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -4308,8 +4284,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -4416,8 +4391,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -4515,8 +4489,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -4615,8 +4588,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -4715,8 +4687,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -4812,8 +4783,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -4909,8 +4879,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -5006,8 +4975,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -8512,7 +8480,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 188
+            "y": 9
           },
           "id": 132,
           "options": {
@@ -8553,7 +8521,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "10.4.0",
           "targets": [
             {
               "datasource": {
@@ -8561,7 +8529,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
+              "expr": "sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "hide": false,
               "interval": "30s",
@@ -8576,7 +8544,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
+              "expr": "sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "hide": false,
               "instant": false,
@@ -8606,7 +8574,6 @@
                 "axisLabel": "seconds",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
-                "barWidthFactor": 0.6,
                 "drawStyle": "line",
                 "fillOpacity": 10,
                 "gradientMode": "none",
@@ -8654,7 +8621,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 188
+            "y": 9
           },
           "id": 222,
           "options": {
@@ -8751,7 +8718,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 196
+            "y": 17
           },
           "id": 133,
           "options": {
@@ -8792,7 +8759,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "10.4.0",
           "targets": [
             {
               "datasource": {
@@ -8851,7 +8818,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 196
+            "y": 17
           },
           "id": 135,
           "options": {
@@ -8892,7 +8859,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "10.4.0",
           "targets": [
             {
               "datasource": {
@@ -8950,7 +8917,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 204
+            "y": 25
           },
           "id": 28,
           "options": {
@@ -8991,7 +8958,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "11.4.0",
+          "pluginVersion": "10.4.0",
           "targets": [
             {
               "datasource": {
@@ -9075,7 +9042,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 211
+            "y": 32
           },
           "id": 593,
           "options": {
@@ -9164,7 +9131,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 221
+            "y": 42
           },
           "id": 233,
           "options": {
@@ -9249,7 +9216,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 221
+            "y": 42
           },
           "id": 269,
           "options": {
@@ -9333,7 +9300,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 228
+            "y": 49
           },
           "id": 420,
           "options": {
@@ -9415,7 +9382,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 228
+            "y": 49
           },
           "id": 419,
           "options": {
@@ -9535,7 +9502,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 235
+            "y": 56
           },
           "id": 310,
           "options": {
@@ -9663,7 +9630,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 235
+            "y": 56
           },
           "id": 311,
           "options": {
@@ -9751,7 +9718,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 242
+            "y": 63
           },
           "id": 235,
           "options": {
@@ -9834,7 +9801,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 242
+            "y": 63
           },
           "id": 234,
           "options": {
@@ -12585,8 +12552,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -12682,8 +12648,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -12780,8 +12745,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -17822,6 +17786,7 @@
                 "axisColorMode": "text",
                 "axisLabel": "",
                 "axisPlacement": "auto",
+                "axisSoftMax": 5,
                 "barAlignment": 0,
                 "drawStyle": "line",
                 "fillOpacity": 10,
@@ -18533,286 +18498,65 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Histogram to show the distribution of the overall archiving duration, which includes searching, reindexing, and deletion.",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
               "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
                 }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "s"
+              }
             },
             "overrides": []
           },
           "gridPos": {
             "h": 8,
-            "w": 8,
+            "w": 24,
             "x": 0,
-            "y": 53
-          },
-          "id": 646,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "min"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_query_seconds_sum{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_camunda_exporter_archiver_query_seconds_count{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (partition)",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "Archiver query avg. duration [p{{partition}}]",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "Time spent in querying (avg)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 8,
-            "y": 53
-          },
-          "id": 645,
-          "options": {
-            "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "min"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_reindex_query_seconds_sum{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_camunda_exporter_archiver_reindex_query_seconds_count{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (partition)",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "Reindex avg. duration [p{{partition}}]",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "Time spent in reindexing (avg)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 16,
             "y": 53
           },
           "id": 647,
           "options": {
+            "calculate": false,
+            "cellGap": 1,
+            "color": {
+              "exponent": 0.5,
+              "fill": "dark-orange",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 64
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
             "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "min"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
             },
             "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
             }
           },
+          "pluginVersion": "10.4.0",
           "targets": [
             {
               "datasource": {
@@ -18820,74 +18564,38 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_delete_query_seconds_sum{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (partition) / sum(rate(zeebe_camunda_exporter_archiver_delete_query_seconds_count{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (partition)",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
               "hide": false,
               "instant": false,
-              "legendFormat": "Archiver delete query avg. duration [p{{partition}}]",
+              "interval": "30",
+              "legendFormat": "{{le}}",
               "range": true,
               "refId": "B"
             }
           ],
-          "title": "Time spent in deleting (avg)",
-          "type": "timeseries"
+          "title": "Archiving duration",
+          "type": "heatmap"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Historgram, to show the distribution of the duration of search requests to find completed entities, which should be archived.",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
               "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
                 }
               },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
+              "fieldMinMax": false
             },
             "overrides": []
           },
@@ -18897,23 +18605,58 @@
             "x": 0,
             "y": 61
           },
-          "id": 650,
+          "id": 646,
           "options": {
+            "calculate": false,
+            "calculation": {
+              "xBuckets": {
+                "mode": "size",
+                "value": ""
+              },
+              "yBuckets": {
+                "scale": {
+                  "log": 2,
+                  "type": "log"
+                }
+              }
+            },
+            "cellGap": 3,
+            "cellValues": {
+              "unit": "s"
+            },
+            "color": {
+              "exponent": 0.5,
+              "fill": "dark-orange",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 64
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
             "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "min"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
             },
             "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
             }
           },
+          "pluginVersion": "10.4.0",
           "targets": [
             {
               "datasource": {
@@ -18921,74 +18664,37 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_query_seconds_count{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (partition)",
+              "exemplar": false,
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", type=\"search\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
               "hide": false,
               "instant": false,
-              "legendFormat": "query [p{{partition}}]",
+              "legendFormat": "{{le}}",
               "range": true,
               "refId": "B"
             }
           ],
-          "title": "Rate of searching completed instances",
-          "type": "timeseries"
+          "title": "Archiving - Search request duration",
+          "type": "heatmap"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Historgram, to show the distribution of durations reindex requests take, to copy data from runtime to dated indices.",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
               "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
                 }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
+              }
             },
             "overrides": []
           },
@@ -18998,23 +18704,43 @@
             "x": 8,
             "y": 61
           },
-          "id": 651,
+          "id": 645,
           "options": {
+            "calculate": false,
+            "cellGap": 1,
+            "color": {
+              "exponent": 0.5,
+              "fill": "dark-orange",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 64
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
             "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "min"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
             },
             "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
             }
           },
+          "pluginVersion": "10.4.0",
           "targets": [
             {
               "datasource": {
@@ -19022,74 +18748,36 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_reindex_query_seconds_count{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (partition)",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", type=\"reindex\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
               "hide": false,
               "instant": false,
-              "legendFormat": "reindex [p{{partition}}]",
+              "legendFormat": "{{le}}",
               "range": true,
               "refId": "B"
             }
           ],
-          "title": "Rate of reindexing completed instances",
-          "type": "timeseries"
+          "title": "Archiving - Reindex request duration",
+          "type": "heatmap"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
+          "description": "Historgram, to show the distribution of durations delete requests take, to delete data from runtime indices.",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
               "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
                 }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "short"
+              }
             },
             "overrides": []
           },
@@ -19099,23 +18787,43 @@
             "x": 16,
             "y": 61
           },
-          "id": 652,
+          "id": 658,
           "options": {
+            "calculate": false,
+            "cellGap": 1,
+            "color": {
+              "exponent": 0.5,
+              "fill": "dark-orange",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 64
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
             "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "min"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
             },
             "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
             }
           },
+          "pluginVersion": "10.4.0",
           "targets": [
             {
               "datasource": {
@@ -19123,16 +18831,17 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_delete_query_seconds_count{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (partition)",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_request_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", type=\"delete\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
               "hide": false,
               "instant": false,
-              "legendFormat": "delete [p{{partition}}]",
+              "legendFormat": "{{le}}",
               "range": true,
               "refId": "B"
             }
           ],
-          "title": "Rate of delete completed instances",
-          "type": "timeseries"
+          "title": "Archiving - Delete request duration",
+          "type": "heatmap"
         }
       ],
       "title": "Camunda Exporter",
