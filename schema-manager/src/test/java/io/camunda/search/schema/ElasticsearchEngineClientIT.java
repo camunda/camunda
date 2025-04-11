@@ -7,7 +7,7 @@
  */
 package io.camunda.search.schema;
 
-import static io.camunda.search.schema.SchemaTestUtil.validateMappings;
+import static io.camunda.search.schema.utils.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
@@ -19,6 +19,7 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;

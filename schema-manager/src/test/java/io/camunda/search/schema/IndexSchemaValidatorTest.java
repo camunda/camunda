@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
+import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import java.io.IOException;
 import java.util.Collections;
