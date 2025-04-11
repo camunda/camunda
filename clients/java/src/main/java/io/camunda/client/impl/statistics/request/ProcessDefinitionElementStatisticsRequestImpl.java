@@ -19,8 +19,8 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
-import io.camunda.client.api.statistics.request.ProcessDefinitionFlowNodeStatisticsRequest;
-import io.camunda.client.api.statistics.response.ProcessFlowNodeStatistics;
+import io.camunda.client.api.statistics.request.ProcessElementStatisticsRequest;
+import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
@@ -35,9 +35,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ProcessDefinitionFlowNodeStatisticsRequestImpl
+public class ProcessDefinitionElementStatisticsRequestImpl
     extends TypedSearchRequestPropertyProvider<ProcessDefinitionElementStatisticsQuery>
-    implements ProcessDefinitionFlowNodeStatisticsRequest {
+    implements ProcessDefinitionElementStatisticsRequest {
 
   private final long processDefinitionKey;
   private final ProcessDefinitionElementStatisticsQuery request;
@@ -45,7 +45,7 @@ public class ProcessDefinitionFlowNodeStatisticsRequestImpl
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public ProcessDefinitionFlowNodeStatisticsRequestImpl(
+  public ProcessDefinitionElementStatisticsRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final long processDefinitionKey) {
     request = new ProcessDefinitionElementStatisticsQuery();
     this.jsonMapper = jsonMapper;
@@ -55,17 +55,18 @@ public class ProcessDefinitionFlowNodeStatisticsRequestImpl
   }
 
   @Override
-  public FinalCommandStep<List<ProcessFlowNodeStatistics>> requestTimeout(
+  public FinalCommandStep<List<ProcessElementStatistics>> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<List<ProcessFlowNodeStatistics>> send() {
-    final HttpCamundaFuture<List<ProcessFlowNodeStatistics>> result = new HttpCamundaFuture<>();
+  public CamundaFuture<List<ProcessElementStatistics>> send() {
+    final HttpCamundaFuture<List<ProcessElementStatistics>> result =
+        new HttpCamundaFuture<>();
     httpClient.post(
-        "/process-definitions/" + processDefinitionKey + "/statistics/flownode-instances",
+        "/process-definitions/" + processDefinitionKey + "/statistics/element-instances",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         ProcessDefinitionElementStatisticsQueryResult.class,
@@ -75,7 +76,7 @@ public class ProcessDefinitionFlowNodeStatisticsRequestImpl
   }
 
   @Override
-  public ProcessDefinitionFlowNodeStatisticsRequest filter(
+  public ProcessDefinitionElementStatisticsRequest filter(
       final ProcessDefinitionStatisticsFilter value) {
     final BaseProcessInstanceFilter filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
@@ -83,7 +84,7 @@ public class ProcessDefinitionFlowNodeStatisticsRequestImpl
   }
 
   @Override
-  public ProcessDefinitionFlowNodeStatisticsRequest filter(
+  public ProcessDefinitionElementStatisticsRequest filter(
       final Consumer<ProcessDefinitionStatisticsFilter> fn) {
     final ProcessDefinitionStatisticsFilter value = new ProcessDefinitionStatisticsFilterImpl();
     fn.accept(value);

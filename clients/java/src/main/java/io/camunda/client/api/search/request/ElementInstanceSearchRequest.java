@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.statistics.request;
+package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
-import io.camunda.client.api.statistics.response.ProcessFlowNodeStatistics;
-import java.util.List;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.client.api.search.sort.ElementInstanceSort;
 
-public interface ProcessDefinitionFlowNodeStatisticsRequest
-    extends StatisticsRequest<
-            ProcessDefinitionStatisticsFilter, ProcessDefinitionFlowNodeStatisticsRequest>,
-        FinalCommandStep<List<ProcessFlowNodeStatistics>> {}
+public interface ElementInstanceSearchRequest
+    extends TypedSearchRequest<
+            ElementInstanceFilter, ElementInstanceSort, ElementInstanceSearchRequest>,
+        FinalSearchRequestStep<ElementInstance> {}

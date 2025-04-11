@@ -13,9 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.fetch;
+package io.camunda.client.api.statistics.response;
 
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+public interface ProcessElementStatistics {
 
-public interface FlowNodeInstanceGetRequest extends FinalCommandStep<FlowNodeInstance> {}
+  String getElementId();
+
+  Long getActive();
+
+  Long getCanceled();
+
+  Long getIncidents();
+
+  Long getCompleted();
+}

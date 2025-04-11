@@ -72,7 +72,7 @@ import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
-import io.camunda.client.api.fetch.FlowNodeInstanceGetRequest;
+import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
@@ -87,15 +87,15 @@ import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
-import io.camunda.client.api.search.request.FlownodeInstanceSearchRequest;
+import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
-import io.camunda.client.api.statistics.request.ProcessDefinitionFlowNodeStatisticsRequest;
-import io.camunda.client.api.statistics.request.ProcessInstanceFlowNodeStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
@@ -792,36 +792,36 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ProcessDefinitionSearchRequest newProcessDefinitionSearchRequest();
 
   /**
-   * Executes a search request to query process definition flow node statistics.
+   * Executes a search request to query process definition element statistics.
    *
    * <pre>
    * long processDefinitionKey = ...;
    *
    * camundaClient
-   *  .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+   *  .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
    *  .filter((f) -> f.processInstanceKey(processInstanceKey))
    *  .send();
    * </pre>
    *
    * @return a builder for the process definition statistics
    */
-  ProcessDefinitionFlowNodeStatisticsRequest newProcessDefinitionFlowNodeStatisticsRequest(
+  ProcessDefinitionElementStatisticsRequest newProcessDefinitionElementStatisticsRequest(
       final long processDefinitionKey);
 
   /**
-   * Executes a search request to query process instance flow node statistics.
+   * Executes a search request to query process instance element statistics.
    *
    * <pre>
    * long processInstanceKey = ...;
    *
    * camundaClient
-   *  .newProcessInstanceFlowNodeStatisticsRequest(processInstanceKey)
+   *  .newProcessInstanceElementStatisticsRequest(processInstanceKey)
    *  .send();
    * </pre>
    *
    * @return a builder for the process instance statistics
    */
-  ProcessInstanceFlowNodeStatisticsRequest newProcessInstanceFlowNodeStatisticsRequest(
+  ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
       final long processInstanceKey);
 
   /**
@@ -858,38 +858,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ProcessInstanceSearchRequest newProcessInstanceSearchRequest();
 
   /**
-   * Executes a search request to query flow node instances.
+   * Executes a search request to query element instances.
    *
    * <pre>
-   * long flownodeInstanceKey = ...;
+   * long elementInstanceKey = ...;
    *
    * camundaClient
-   *  .newFlownodeInstanceSearchRequest()
+   *  .newElementInstanceSearchRequest()
    *  .filter((f) -> f.processInstanceKeys(processInstanceKey))
-   *  .sort((s) -> s.flowNodeName().asc())
+   *  .sort((s) -> s.elementName().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
    * @return a builder for the process instance search request
    */
-  FlownodeInstanceSearchRequest newFlownodeInstanceSearchRequest();
+  ElementInstanceSearchRequest newElementInstanceSearchRequest();
 
   /**
-   * Gets a flow node instance by key.
+   * Gets a element instance by key.
    *
    * <pre>
-   *   long flowNodeInstanceKey = ...;
+   *   long elementInstanceKey = ...;
    *
    *   camundaClient
-   *   .newFlowNodeInstanceGetRequest(flowNodeInstanceKey)
+   *   .newElementInstanceGetRequest(elementInstanceKey)
    *   .send();
    *   </pre>
    *
-   * @param flowNodeInstanceKey the key of the flow node instance
-   * @return a builder for the request to get a flow node instance
+   * @param elementInstanceKey the key of the element instance
+   * @return a builder for the request to get a element instance
    */
-  FlowNodeInstanceGetRequest newFlowNodeInstanceGetRequest(long flowNodeInstanceKey);
+  ElementInstanceGetRequest newElementInstanceGetRequest(long elementInstanceKey);
 
   /**
    * Executes a search request to query activities within ad-hoc subprocesses.

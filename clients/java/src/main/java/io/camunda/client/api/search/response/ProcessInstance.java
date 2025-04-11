@@ -33,7 +33,7 @@ public interface ProcessInstance {
 
   Long getParentProcessInstanceKey();
 
-  Long getParentFlowNodeInstanceKey();
+  Long getParentElementInstanceKey();
 
   String getStartDate();
 

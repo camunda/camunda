@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.flownodeinstance;
+package io.camunda.client.elementinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,11 +23,11 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-public class FlowNodeInstanceTypeTest {
+public class ElementInstanceTypeTest {
 
   @ParameterizedTest
   @EnumSource(BpmnElementType.class)
-  void shouldHaveFlowNodeInstanceFilterType(final BpmnElementType bpmnElementType) {
+  void shouldHaveElementInstanceFilterType(final BpmnElementType bpmnElementType) {
     // when
     final ElementInstanceFilter.TypeEnum filterType =
         ElementInstanceFilter.TypeEnum.fromValue(bpmnElementType.name());
@@ -35,7 +35,7 @@ public class FlowNodeInstanceTypeTest {
     // then
     assertThat(filterType)
         .describedAs(
-            "The enum FlowNodeInstanceFilter should contain a value for: %s. "
+            "The enum ElementInstanceFilter should contain a value for: %s. "
                 + "Probably, the BPMN element is new and need to be added to the REST specification (rest-api.yaml).",
             bpmnElementType)
         .isNotNull()
@@ -44,7 +44,7 @@ public class FlowNodeInstanceTypeTest {
 
   @ParameterizedTest
   @EnumSource(BpmnElementType.class)
-  void shouldHaveFlowNodeInstanceResultType(final BpmnElementType bpmnElementType) {
+  void shouldHaveElementInstanceResultType(final BpmnElementType bpmnElementType) {
     // when
     final ElementInstanceResult.TypeEnum resultType =
         ElementInstanceResult.TypeEnum.fromValue(bpmnElementType.name());

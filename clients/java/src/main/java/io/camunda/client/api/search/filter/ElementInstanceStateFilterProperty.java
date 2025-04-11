@@ -15,31 +15,31 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FlowNodeInstanceStateFilterProperty {
+public class ElementInstanceStateFilterProperty {
 
-  private FlowNodeInstanceState eq;
-  private FlowNodeInstanceState neq;
+  private ElementInstanceState eq;
+  private ElementInstanceState neq;
   private Boolean exists;
-  private List<FlowNodeInstanceState> in = new ArrayList<>();
+  private List<ElementInstanceState> in = new ArrayList<>();
   private String like;
 
-  public FlowNodeInstanceState getEq() {
+  public ElementInstanceState getEq() {
     return eq;
   }
 
-  public void setEq(final FlowNodeInstanceState eq) {
+  public void setEq(final ElementInstanceState eq) {
     this.eq = eq;
   }
 
-  public FlowNodeInstanceState getNeq() {
+  public ElementInstanceState getNeq() {
     return neq;
   }
 
-  public void setNeq(final FlowNodeInstanceState neq) {
+  public void setNeq(final ElementInstanceState neq) {
     this.neq = neq;
   }
 
@@ -51,11 +51,11 @@ public class FlowNodeInstanceStateFilterProperty {
     this.exists = exists;
   }
 
-  public List<FlowNodeInstanceState> getIn() {
+  public List<ElementInstanceState> getIn() {
     return in;
   }
 
-  public void setIn(final List<FlowNodeInstanceState> in) {
+  public void setIn(final List<ElementInstanceState> in) {
     this.in = in;
   }
 

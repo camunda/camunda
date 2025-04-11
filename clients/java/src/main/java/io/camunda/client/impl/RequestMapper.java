@@ -283,7 +283,7 @@ public class RequestMapper {
   }
 
   public static io.camunda.client.protocol.rest.ElementInstanceStateFilterProperty toProtocolObject(
-      final FlowNodeInstanceStateFilterProperty object) {
+      final ElementInstanceStateFilterProperty object) {
     if (object == null) {
       return null;
     }

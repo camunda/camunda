@@ -41,13 +41,13 @@ public class IncidentSortImpl extends SearchRequestSortBase<IncidentSort> implem
   }
 
   @Override
-  public IncidentSort flowNodeId() {
-    return field("flowNodeId");
+  public IncidentSort elementId() {
+    return field("elementId");
   }
 
   @Override
-  public IncidentSort flowNodeInstanceKey() {
-    return field("flowNodeInstanceKey");
+  public IncidentSort elementInstanceKey() {
+    return field("elementInstanceKey");
   }
 
   @Override

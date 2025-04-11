@@ -72,8 +72,8 @@ public class SearchIncidentTest extends ClientRestTest {
                     .processInstanceKey(3L)
                     .errorType(IncidentErrorType.CALLED_DECISION_ERROR)
                     .errorMessage("Can't decide")
-                    .flowNodeId("flowNode")
-                    .flowNodeInstanceKey(4L)
+                    .elementId("element")
+                    .elementInstanceKey(4L)
                     .creationTime("2024-05-23T23:05:00.000+000")
                     .state(IncidentState.ACTIVE)
                     .jobKey(5L)
@@ -89,7 +89,7 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
     assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.CALLED_DECISION_ERROR);
     assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");
-    assertThat(filter.getElementId()).isEqualTo("flowNode");
+    assertThat(filter.getElementId()).isEqualTo("element");
     assertThat(filter.getElementInstanceKey()).isEqualTo("4");
     assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.000+000");
     assertThat(filter.getState()).isEqualTo(StateEnum.ACTIVE);
@@ -114,9 +114,9 @@ public class SearchIncidentTest extends ClientRestTest {
                     .asc()
                     .tenantId()
                     .asc()
-                    .flowNodeInstanceKey()
+                    .elementInstanceKey()
                     .asc()
-                    .flowNodeId()
+                    .elementId()
                     .asc()
                     .state()
                     .asc()
@@ -138,8 +138,8 @@ public class SearchIncidentTest extends ClientRestTest {
     assertSort(sorts.get(2), "processDefinitionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(3), "processInstanceKey", SortOrderEnum.ASC);
     assertSort(sorts.get(4), "tenantId", SortOrderEnum.ASC);
-    assertSort(sorts.get(5), "flowNodeInstanceKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(6), "flowNodeId", SortOrderEnum.ASC);
+    assertSort(sorts.get(5), "elementInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(6), "elementId", SortOrderEnum.ASC);
     assertSort(sorts.get(7), "state", SortOrderEnum.ASC);
     assertSort(sorts.get(8), "jobKey", SortOrderEnum.ASC);
     assertSort(sorts.get(9), "creationTime", SortOrderEnum.DESC);

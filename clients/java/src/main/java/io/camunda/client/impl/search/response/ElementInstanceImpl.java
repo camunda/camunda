@@ -15,49 +15,49 @@
  */
 package io.camunda.client.impl.search.response;
 
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
-import io.camunda.client.api.search.enums.FlowNodeInstanceType;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceType;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ElementInstanceResult;
 import java.util.Objects;
 
-public final class FlowNodeInstanceImpl implements FlowNodeInstance {
+public final class ElementInstanceImpl implements ElementInstance {
 
-  private final Long flowNodeInstanceKey;
+  private final Long elementInstanceKey;
   private final Long processDefinitionKey;
   private final String processDefinitionId;
   private final Long processInstanceKey;
-  private final String flowNodeId;
-  private final String flowNodeName;
+  private final String elementId;
+  private final String elementName;
   private final String startDate;
   private final String endDate;
   private final Boolean incident;
   private final Long incidentKey;
-  private final FlowNodeInstanceState state;
+  private final ElementInstanceState state;
   private final String tenantId;
-  private final FlowNodeInstanceType type;
+  private final ElementInstanceType type;
 
-  public FlowNodeInstanceImpl(final ElementInstanceResult item) {
-    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
+  public ElementInstanceImpl(final ElementInstanceResult item) {
+    elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
-    flowNodeId = item.getElementId();
-    flowNodeName = item.getElementName();
+    elementId = item.getElementId();
+    elementName = item.getElementName();
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     incident = item.getHasIncident();
     incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
-    state = EnumUtil.convert(item.getState(), FlowNodeInstanceState.class);
+    state = EnumUtil.convert(item.getState(), ElementInstanceState.class);
     tenantId = item.getTenantId();
-    type = EnumUtil.convert(item.getType(), FlowNodeInstanceType.class);
+    type = EnumUtil.convert(item.getType(), ElementInstanceType.class);
   }
 
   @Override
-  public Long getFlowNodeInstanceKey() {
-    return flowNodeInstanceKey;
+  public Long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -76,13 +76,13 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public String getFlowNodeId() {
-    return flowNodeId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
-  public String getFlowNodeName() {
-    return flowNodeName;
+  public String getElementName() {
+    return elementName;
   }
 
   @Override
@@ -106,7 +106,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public FlowNodeInstanceState getState() {
+  public ElementInstanceState getState() {
     return state;
   }
 
@@ -116,18 +116,18 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public FlowNodeInstanceType getType() {
+  public ElementInstanceType getType() {
     return type;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        flowNodeInstanceKey,
+        elementInstanceKey,
         processDefinitionKey,
         processInstanceKey,
         processDefinitionId,
-        flowNodeId,
+        elementId,
         startDate,
         endDate,
         incident,
@@ -145,13 +145,13 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final FlowNodeInstanceImpl that = (FlowNodeInstanceImpl) o;
-    return Objects.equals(flowNodeInstanceKey, that.flowNodeInstanceKey)
+    final ElementInstanceImpl that = (ElementInstanceImpl) o;
+    return Objects.equals(elementInstanceKey, that.elementInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
-        && Objects.equals(flowNodeId, that.flowNodeId)
-        && Objects.equals(flowNodeName, that.flowNodeName)
+        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(elementName, that.elementName)
         && Objects.equals(startDate, that.startDate)
         && Objects.equals(endDate, that.endDate)
         && Objects.equals(incident, that.incident)

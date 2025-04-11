@@ -17,8 +17,8 @@ package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.fetch.FlowNodeInstanceGetRequest;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
@@ -27,33 +27,32 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class FlowNodeInstanceGetRequestImpl implements FlowNodeInstanceGetRequest {
+public class ElementInstanceGetRequestImpl implements ElementInstanceGetRequest {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final long flowNodeInstanceKey;
+  private final long elementInstanceKey;
 
-  public FlowNodeInstanceGetRequestImpl(
-      final HttpClient httpClient, final long flowNodeInstanceKey) {
+  public ElementInstanceGetRequestImpl(final HttpClient httpClient, final long elementInstanceKey) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    this.flowNodeInstanceKey = flowNodeInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   @Override
-  public FinalCommandStep<FlowNodeInstance> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<ElementInstance> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<FlowNodeInstance> send() {
-    final HttpCamundaFuture<FlowNodeInstance> result = new HttpCamundaFuture<>();
+  public CamundaFuture<ElementInstance> send() {
+    final HttpCamundaFuture<ElementInstance> result = new HttpCamundaFuture<>();
     httpClient.get(
-        String.format("/flownode-instances/%d", flowNodeInstanceKey),
+        String.format("/element-instances/%d", elementInstanceKey),
         httpRequestConfig.build(),
         ElementInstanceResult.class,
-        SearchResponseMapper::toFlowNodeInstanceGetResponse,
+        SearchResponseMapper::toElementInstanceGetResponse,
         result);
     return result;
   }

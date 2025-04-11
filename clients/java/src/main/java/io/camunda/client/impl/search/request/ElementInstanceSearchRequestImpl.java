@@ -15,24 +15,23 @@
  */
 package io.camunda.client.impl.search.request;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.flowNodeInstanceFilter;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.flowNodeInstanceSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.elementInstanceFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.elementInstanceSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.FlownodeInstanceSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.api.search.sort.FlownodeInstanceSort;
+import io.camunda.client.api.search.sort.ElementInstanceSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.impl.search.sort.FlownodeInstanceSortImpl;
-import io.camunda.client.protocol.rest.ElementInstanceFilter;
+import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
 import io.camunda.client.protocol.rest.ElementInstanceSearchQuery;
 import io.camunda.client.protocol.rest.ElementInstanceSearchQueryResult;
 import java.time.Duration;
@@ -40,16 +39,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class FlowNodeInstanceSearchRequestImpl
+public class ElementInstanceSearchRequestImpl
     extends TypedSearchRequestPropertyProvider<ElementInstanceSearchQuery>
-    implements FlownodeInstanceSearchRequest {
+    implements ElementInstanceSearchRequest {
 
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final ElementInstanceSearchQuery request;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public FlowNodeInstanceSearchRequestImpl(
+  public ElementInstanceSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new ElementInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
@@ -58,59 +57,60 @@ public class FlowNodeInstanceSearchRequestImpl
   }
 
   @Override
-  public FinalSearchRequestStep<FlowNodeInstance> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<ElementInstance> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<SearchResponse<FlowNodeInstance>> send() {
-    final HttpCamundaFuture<SearchResponse<FlowNodeInstance>> result = new HttpCamundaFuture<>();
+  public CamundaFuture<SearchResponse<ElementInstance>> send() {
+    final HttpCamundaFuture<SearchResponse<ElementInstance>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/element-instances/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         ElementInstanceSearchQueryResult.class,
-        SearchResponseMapper::toFlowNodeInstanceSearchResponse,
+        SearchResponseMapper::toElementInstanceSearchResponse,
         result);
     return result;
   }
 
   @Override
-  public FlownodeInstanceSearchRequest filter(final FlownodeInstanceFilter value) {
-    final ElementInstanceFilter filter = provideSearchRequestProperty(value);
+  public ElementInstanceSearchRequest filter(final ElementInstanceFilter value) {
+    final io.camunda.client.protocol.rest.ElementInstanceFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
 
   @Override
-  public FlownodeInstanceSearchRequest filter(final Consumer<FlownodeInstanceFilter> fn) {
-    return filter(flowNodeInstanceFilter(fn));
+  public ElementInstanceSearchRequest filter(final Consumer<ElementInstanceFilter> fn) {
+    return filter(elementInstanceFilter(fn));
   }
 
   @Override
-  public FlownodeInstanceSearchRequest sort(final FlownodeInstanceSort value) {
-    final FlownodeInstanceSortImpl sorting = (FlownodeInstanceSortImpl) value;
+  public ElementInstanceSearchRequest sort(final ElementInstanceSort value) {
+    final ElementInstanceSortImpl sorting = (ElementInstanceSortImpl) value;
     request.setSort(
-        SearchRequestSortMapper.toFlowNodeInstanceSearchQuerySortRequest(
+        SearchRequestSortMapper.toElementInstanceSearchQuerySortRequest(
             sorting.getSearchRequestProperty()));
     return this;
   }
 
   @Override
-  public FlownodeInstanceSearchRequest sort(final Consumer<FlownodeInstanceSort> fn) {
-    return sort(flowNodeInstanceSort(fn));
+  public ElementInstanceSearchRequest sort(final Consumer<ElementInstanceSort> fn) {
+    return sort(elementInstanceSort(fn));
   }
 
   @Override
-  public FlownodeInstanceSearchRequest page(final SearchRequestPage value) {
+  public ElementInstanceSearchRequest page(final SearchRequestPage value) {
     final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
     request.setPage(page.getSearchRequestProperty());
     return this;
   }
 
   @Override
-  public FlownodeInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
+  public ElementInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

@@ -17,27 +17,27 @@ package io.camunda.client.api.search.sort;
 
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestSort;
 
-public interface FlownodeInstanceSort extends SearchRequestSort<FlownodeInstanceSort> {
+public interface ElementInstanceSort extends SearchRequestSort<ElementInstanceSort> {
 
-  FlownodeInstanceSort flowNodeInstanceKey();
+  ElementInstanceSort elementInstanceKey();
 
-  FlownodeInstanceSort processInstanceKey();
+  ElementInstanceSort processInstanceKey();
 
-  FlownodeInstanceSort processDefinitionKey();
+  ElementInstanceSort processDefinitionKey();
 
-  FlownodeInstanceSort processDefinitionId();
+  ElementInstanceSort processDefinitionId();
 
-  FlownodeInstanceSort startDate();
+  ElementInstanceSort startDate();
 
-  FlownodeInstanceSort endDate();
+  ElementInstanceSort endDate();
 
-  FlownodeInstanceSort flowNodeId();
+  ElementInstanceSort elementId();
 
-  FlownodeInstanceSort type();
+  ElementInstanceSort type();
 
-  FlownodeInstanceSort state();
+  ElementInstanceSort state();
 
-  FlownodeInstanceSort incidentKey();
+  ElementInstanceSort incidentKey();
 
-  FlownodeInstanceSort tenantId();
+  ElementInstanceSort tenantId();
 }

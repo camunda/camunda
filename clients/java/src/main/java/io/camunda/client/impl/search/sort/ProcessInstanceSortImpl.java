@@ -57,8 +57,8 @@ public class ProcessInstanceSortImpl extends SearchRequestSortBase<ProcessInstan
   }
 
   @Override
-  public ProcessInstanceSort parentFlowNodeInstanceKey() {
-    return field("parentFlowNodeInstanceKey");
+  public ProcessInstanceSort parentElementInstanceKey() {
+    return field("parentElementInstanceKey");
   }
 
   @Override

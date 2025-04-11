@@ -83,7 +83,7 @@ import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
-import io.camunda.client.api.fetch.FlowNodeInstanceGetRequest;
+import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
@@ -98,15 +98,15 @@ import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
-import io.camunda.client.api.search.request.FlownodeInstanceSearchRequest;
+import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
-import io.camunda.client.api.statistics.request.ProcessDefinitionFlowNodeStatisticsRequest;
-import io.camunda.client.api.statistics.request.ProcessInstanceFlowNodeStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubprocessActivitiesCommandImpl;
@@ -166,7 +166,7 @@ import io.camunda.client.impl.fetch.DecisionInstanceGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
-import io.camunda.client.impl.fetch.FlowNodeInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
 import io.camunda.client.impl.fetch.IncidentGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetFormRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
@@ -181,15 +181,15 @@ import io.camunda.client.impl.search.request.AdHocSubprocessActivitySearchReques
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
-import io.camunda.client.impl.search.request.FlowNodeInstanceSearchRequestImpl;
+import io.camunda.client.impl.search.request.ElementInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
-import io.camunda.client.impl.statistics.request.ProcessDefinitionFlowNodeStatisticsRequestImpl;
-import io.camunda.client.impl.statistics.request.ProcessInstanceFlowNodeStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
@@ -668,16 +668,16 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public ProcessDefinitionFlowNodeStatisticsRequest newProcessDefinitionFlowNodeStatisticsRequest(
+  public ProcessDefinitionElementStatisticsRequest newProcessDefinitionElementStatisticsRequest(
       final long processDefinitionKey) {
-    return new ProcessDefinitionFlowNodeStatisticsRequestImpl(
+    return new ProcessDefinitionElementStatisticsRequestImpl(
         httpClient, jsonMapper, processDefinitionKey);
   }
 
   @Override
-  public ProcessInstanceFlowNodeStatisticsRequest newProcessInstanceFlowNodeStatisticsRequest(
+  public ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
       final long processInstanceKey) {
-    return new ProcessInstanceFlowNodeStatisticsRequestImpl(httpClient, processInstanceKey);
+    return new ProcessInstanceElementStatisticsRequestImpl(httpClient, processInstanceKey);
   }
 
   @Override
@@ -691,13 +691,13 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public FlownodeInstanceSearchRequest newFlownodeInstanceSearchRequest() {
-    return new FlowNodeInstanceSearchRequestImpl(httpClient, jsonMapper);
+  public ElementInstanceSearchRequest newElementInstanceSearchRequest() {
+    return new ElementInstanceSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public FlowNodeInstanceGetRequest newFlowNodeInstanceGetRequest(final long flowNodeInstanceKey) {
-    return new FlowNodeInstanceGetRequestImpl(httpClient, flowNodeInstanceKey);
+  public ElementInstanceGetRequest newElementInstanceGetRequest(final long elementInstanceKey) {
+    return new ElementInstanceGetRequestImpl(httpClient, elementInstanceKey);
   }
 
   @Override

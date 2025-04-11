@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.search.filter.builder;
 
-public enum FlowNodeInstanceState {
-  ACTIVE,
-  COMPLETED,
-  TERMINATED,
-  UNKNOWN_ENUM_VALUE;
-}
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.filter.ElementInstanceStateFilterProperty;
+
+public interface ElementInstanceStateProperty
+    extends LikeProperty<
+        ElementInstanceState,
+        String,
+        ElementInstanceStateFilterProperty,
+        ElementInstanceStateProperty> {}
