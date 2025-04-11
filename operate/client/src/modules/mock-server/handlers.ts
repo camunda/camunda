@@ -63,45 +63,6 @@ const mockEndpoints = [
       return res(ctx.json(mockResponse));
     },
   ),
-  rest.get(
-    '/v2/process-instances/:processInstanceKey/statistics/flownode-instances',
-    async (req: RestRequest<any>, res, ctx) => {
-      return res(
-        ctx.json({
-          items: [
-            {
-              flowNodeId: 'inclGatewayFork',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              flowNodeId: 'lowerTask',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              flowNodeId: 'startEvent',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              flowNodeId: 'upperTask',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-          ],
-        }),
-      );
-    },
-  ),
 ];
 
 const handlers: RequestHandler[] = [...mockEndpoints];
