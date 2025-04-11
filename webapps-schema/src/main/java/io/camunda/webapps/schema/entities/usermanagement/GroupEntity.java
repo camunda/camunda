@@ -12,10 +12,12 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
   private Long key;
+  private String groupId;
   private String name;
-  private Long memberKey;
+  private String description;
+  private String memberId;
 
-  private EntityJoinRelation<Long> join;
+  private EntityJoinRelation<String> join;
 
   public Long getKey() {
     return key;
@@ -23,6 +25,15 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
   public GroupEntity setKey(final Long key) {
     this.key = key;
+    return this;
+  }
+
+  public String getGroupId() {
+    return groupId;
+  }
+
+  public GroupEntity setGroupId(final String groupId) {
+    this.groupId = groupId;
     return this;
   }
 
@@ -35,25 +46,34 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
     return this;
   }
 
-  public Long getMemberKey() {
-    return memberKey;
+  public String getDescription() {
+    return description;
   }
 
-  public GroupEntity setMemberKey(final Long memberKey) {
-    this.memberKey = memberKey;
+  public GroupEntity setDescription(final String description) {
+    this.description = description;
     return this;
   }
 
-  public EntityJoinRelation<Long> getJoin() {
+  public String getMemberId() {
+    return memberId;
+  }
+
+  public GroupEntity setMemberId(final String memberId) {
+    this.memberId = memberId;
+    return this;
+  }
+
+  public EntityJoinRelation<String> getJoin() {
     return join;
   }
 
-  public GroupEntity setJoin(final EntityJoinRelation<Long> join) {
+  public GroupEntity setJoin(final EntityJoinRelation<String> join) {
     this.join = join;
     return this;
   }
 
-  public static String getChildKey(final long groupKey, final long memberKey) {
-    return String.format("%d-%d", groupKey, memberKey);
+  public static String getChildKey(final String groupId, final String memberId) {
+    return String.format("%s-%s", groupId, memberId);
   }
 }
