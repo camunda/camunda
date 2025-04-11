@@ -139,6 +139,16 @@ paths:
       description: |
         Returns a list of all available backups with their state and additional info,
         sorted in descending order of backupId.
+      parameters:
+        - in: query
+          name: verbose
+          schema:
+            type: boolean
+            default: true
+          description: |
+            Set to false to improve the query performance. However, the response will not contain
+            fields startTime, failures, failureReason.
+            This parameter is forwarded to Elasticsearch/Opensearch /_snapshot/ API.
       responses:
         '200':
           description: OK

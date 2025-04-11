@@ -160,7 +160,7 @@ public abstract sealed class BackupControllerTest {
                     .setState(BackupStateDto.FAILED)
                     .setFailureReason("Out of disk space")
                     .setDetails(List.of(DETAIL_DTO))));
-    final var response = backupController.getBackups();
+    final var response = backupController.getBackups(true);
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody()).isEqualTo(List.of(EXPECTED_INFO));
   }
@@ -224,7 +224,7 @@ public abstract sealed class BackupControllerTest {
       // given
       setupMocks.run();
       // when
-      final var response = backupController.getBackups();
+      final var response = backupController.getBackups(true);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
     }

@@ -34,7 +34,7 @@ public interface BackupRepository {
 
   Set<String> checkAllIndicesExist(List<String> indices);
 
-  List<GetBackupStateResponseDto> getBackups(String repositoryName);
+  List<GetBackupStateResponseDto> getBackups(String repositoryName, final boolean verbose);
 
   void executeSnapshotting(SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
 
