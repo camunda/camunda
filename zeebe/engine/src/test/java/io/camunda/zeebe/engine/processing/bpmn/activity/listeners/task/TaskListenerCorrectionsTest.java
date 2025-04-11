@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.Protocol;
@@ -122,6 +121,15 @@ public class TaskListenerCorrectionsTest {
         u -> u,
         pik -> ENGINE.userTask().ofInstance(pik).complete(),
         "complete");
+  }
+
+  @Test
+  public void shouldAppendUserTaskCorrectedWhenCancelingTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.canceling,
+        u -> u,
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
+        "");
   }
 
   private void testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
@@ -362,6 +370,22 @@ public class TaskListenerCorrectionsTest {
             UserTaskIntent.COMPLETED));
   }
 
+  @Test
+  public void shouldPropagateCorrectedDataToCancelingListenerJobHeadersOnTaskCancellation() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
+        ZeebeTaskListenerEventType.canceling,
+        false,
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
+        List.of(
+            UserTaskIntent.CANCELING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CANCELED));
+  }
+
   /**
    * Verifies the propagation of user task data across listener job headers during the task
    * lifecycle.
@@ -519,7 +543,7 @@ public class TaskListenerCorrectionsTest {
   public void
       shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskAssignmentAfterCreation() {
     verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
-        ZeebeTaskListenerEventType.assigning, true, userTask -> {}, UserTaskIntent.ASSIGNED);
+        ZeebeTaskListenerEventType.assigning, true, ignored -> {}, UserTaskIntent.ASSIGNED);
   }
 
   @Test
@@ -527,7 +551,7 @@ public class TaskListenerCorrectionsTest {
     verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
         ZeebeTaskListenerEventType.assigning,
         false,
-        userTask -> userTask.withAssignee("initial_assignee").assign(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("initial_assignee").assign(),
         UserTaskIntent.ASSIGNED);
   }
 
@@ -536,14 +560,17 @@ public class TaskListenerCorrectionsTest {
     verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
         ZeebeTaskListenerEventType.assigning,
         false,
-        userTask -> userTask.withAssignee("initial_assignee").claim(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("initial_assignee").claim(),
         UserTaskIntent.ASSIGNED);
   }
 
   @Test
   public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskUpdate() {
     verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
-        ZeebeTaskListenerEventType.updating, false, UserTaskClient::update, UserTaskIntent.UPDATED);
+        ZeebeTaskListenerEventType.updating,
+        false,
+        pik -> ENGINE.userTask().ofInstance(pik).update(),
+        UserTaskIntent.UPDATED);
   }
 
   @Test
@@ -551,8 +578,17 @@ public class TaskListenerCorrectionsTest {
     verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
         ZeebeTaskListenerEventType.completing,
         false,
-        UserTaskClient::complete,
+        pik -> ENGINE.userTask().ofInstance(pik).complete(),
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskCancellation() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.canceling,
+        false,
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
+        UserTaskIntent.CANCELED);
   }
 
   /**
@@ -573,13 +609,13 @@ public class TaskListenerCorrectionsTest {
    * @param eventType the event type of the user task listener
    * @param isAssigneeConfiguredOnTaskCreation whether the assignee is configured during task
    *     creation
-   * @param userTaskAction the action performed on the user task
+   * @param transitionTrigger the action that triggers user task transition
    * @param terminalActionIntent the final intent for the performed action on the user task
    */
   private void verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
       final ZeebeTaskListenerEventType eventType,
       final boolean isAssigneeConfiguredOnTaskCreation,
-      final Consumer<UserTaskClient> userTaskAction,
+      final Consumer<Long> transitionTrigger,
       final UserTaskIntent terminalActionIntent) {
 
     // given: a process instance with a user task configured with listeners and initial properties
@@ -620,8 +656,8 @@ public class TaskListenerCorrectionsTest {
                     "followUpDate",
                     "priority"));
 
-    // when: performing the user task action
-    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
+    // when: trigger the user task transition
+    transitionTrigger.accept(processInstanceKey);
 
     // First listener fully corrects the user task attributes
     ENGINE
@@ -1186,7 +1222,7 @@ public class TaskListenerCorrectionsTest {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.assigning,
         u -> u.zeebeAssignee("initial_assignee"),
-        userTask -> {},
+        ignored -> {},
         UserTaskIntent.ASSIGNED);
   }
 
@@ -1195,7 +1231,7 @@ public class TaskListenerCorrectionsTest {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.assigning,
         u -> u,
-        userTask -> userTask.withAssignee("initial_assignee").assign(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("initial_assignee").assign(),
         UserTaskIntent.ASSIGNED);
   }
 
@@ -1204,7 +1240,7 @@ public class TaskListenerCorrectionsTest {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.assigning,
         u -> u,
-        userTask -> userTask.withAssignee("initial_assignee").claim(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("initial_assignee").claim(),
         UserTaskIntent.ASSIGNED);
   }
 
@@ -1213,7 +1249,7 @@ public class TaskListenerCorrectionsTest {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.updating,
         u -> u,
-        UserTaskClient::update,
+        pik -> ENGINE.userTask().ofInstance(pik).update(),
         UserTaskIntent.UPDATED);
   }
 
@@ -1222,14 +1258,23 @@ public class TaskListenerCorrectionsTest {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.completing,
         u -> u,
-        UserTaskClient::complete,
+        pik -> ENGINE.userTask().ofInstance(pik).complete(),
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldPersistCorrectedUserTaskDataWhenCancelingTaskListenerCompleted() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.canceling,
+        u -> u,
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
+        UserTaskIntent.CANCELED);
   }
 
   private void testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
-      final Consumer<UserTaskClient> userTaskAction,
+      final Consumer<Long> transitionTrigger,
       final UserTaskIntent expectedUserTaskIntent) {
     // given
     final long processInstanceKey =
@@ -1241,7 +1286,8 @@ public class TaskListenerCorrectionsTest {
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
-    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
+    // when: trigger the user task transition
+    transitionTrigger.accept(processInstanceKey);
 
     // when
     ENGINE

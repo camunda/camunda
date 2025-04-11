@@ -47,12 +47,26 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    */
   COMPLETE_EXECUTION_LISTENER((short) 12),
   /** Represents the intent signaling the migration of an ancestor element instance. */
-  ANCESTOR_MIGRATED((short) 13);
+  ANCESTOR_MIGRATED((short) 13),
+
+  /**
+   * Represents the intent that triggers the continuation of a previously started termination of a
+   * BPMN element.
+   *
+   * <p>This command is typically used after a pause in the termination flow - for example, when a
+   * `canceling` task listener was triggered - to resume and finalize the termination of the user
+   * task element.
+   */
+  CONTINUE_TERMINATING_ELEMENT((short) 14);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
-          ACTIVATE_ELEMENT, COMPLETE_ELEMENT, TERMINATE_ELEMENT, COMPLETE_EXECUTION_LISTENER);
+          ACTIVATE_ELEMENT,
+          COMPLETE_ELEMENT,
+          TERMINATE_ELEMENT,
+          COMPLETE_EXECUTION_LISTENER,
+          CONTINUE_TERMINATING_ELEMENT);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -100,6 +114,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return COMPLETE_EXECUTION_LISTENER;
       case 13:
         return ANCESTOR_MIGRATED;
+      case 14:
+        return CONTINUE_TERMINATING_ELEMENT;
       default:
         return Intent.UNKNOWN;
     }
