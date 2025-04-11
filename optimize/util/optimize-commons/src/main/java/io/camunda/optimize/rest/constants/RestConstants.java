@@ -18,7 +18,7 @@ public class RestConstants {
   public static final String X_OPTIMIZE_CLIENT_TIMEZONE = "X-Optimize-Client-Timezone";
   public static final String X_OPTIMIZE_CLIENT_LOCALE = "X-Optimize-Client-Locale";
   public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
-  public static final String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
+  public static final String OPTIMIZE_AUTHORIZATION_PREFIX = "X-Optimize-Authorization_";
   public static final String OPTIMIZE_REFRESH_TOKEN = "X-Optimize-Refresh-Token";
   public static final String OPTIMIZE_SERVICE_TOKEN = "X-Optimize-Service-Token";
 
