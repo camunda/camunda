@@ -15,6 +15,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Button} from '@carbon/react';
 import {TrashCan} from '@carbon/react/icons';
 import {Operations} from '../../Operations';
+import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
 
 type Props = {
   variableName: string;
@@ -25,12 +26,11 @@ const Operation: React.FC<Props> = ({variableName, onRemove}) => {
   const {
     input: {value: currentId},
   } = useField(createNewVariableFieldName(variableName, 'id'));
+  const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
+    flowNodeSelectionStore.state.selection?.flowNodeId,
+  );
 
-  const scopeId =
-    variablesStore.scopeId ??
-    modificationsStore.getNewScopeIdForFlowNode(
-      flowNodeSelectionStore.state.selection?.flowNodeId,
-    );
+  const scopeId = variablesStore.scopeId ?? newScopeIdForFlowNode;
 
   return (
     <Operations>
