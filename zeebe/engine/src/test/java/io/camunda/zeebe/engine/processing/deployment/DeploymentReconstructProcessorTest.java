@@ -470,7 +470,7 @@ final class DeploymentReconstructProcessorTest {
 
   private TypedRecord<DeploymentRecord> mockedCommand() {
     final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    when(command.getValue()).thenReturn(DeploymentRecord.emptyCommandForReconstruction());
     when(command.getIntent()).thenReturn(DeploymentIntent.RECONSTRUCT);
     return command;
   }
@@ -486,5 +486,139 @@ final class DeploymentReconstructProcessorTest {
   private void assertHasFollowupCommand() {
     final var nextCommand = resultBuilder.getFollowupRecords().get(1);
     assertThat(nextCommand.getRecordType()).isEqualTo(RecordType.COMMAND);
+  }
+
+  @Test
+  public void shouldUseRangeQueriesWhenReconstructing() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var processKey1 = Protocol.encodePartitionId(1, 2);
+    final var processKey2 = Protocol.encodePartitionId(1, 3);
+
+    final var formDeploymentKey = Protocol.encodePartitionId(1, 4);
+    final var formKey = Protocol.encodePartitionId(1, 5);
+
+    final var decisionDeploymentKey = Protocol.encodePartitionId(1, 5);
+    final var decisionKey = Protocol.encodePartitionId(1, 7);
+    final var decisionRequirementsKey = Protocol.encodePartitionId(1, 8);
+
+    int eventIndex = 0;
+    state
+        .getProcessState()
+        .putProcess(
+            processKey1,
+            new ProcessRecord()
+                .setBpmnProcessId("process")
+                .setResourceName("process.bpmn")
+                .setTenantId("tenant-id")
+                .setVersion(1));
+
+    state
+        .getProcessState()
+        .putProcess(
+            processKey2,
+            new ProcessRecord()
+                .setBpmnProcessId("process2")
+                .setResourceName("process2.bpmn")
+                .setTenantId("tenant-id")
+                .setVersion(2));
+    state
+        .getFormState()
+        .storeFormInFormColumnFamily(
+            new FormRecord()
+                .setDeploymentKey(formDeploymentKey)
+                .setFormKey(formKey)
+                .setFormId("form")
+                .setTenantId("form-tenant")
+                .setResourceName("form.form")
+                .setVersion(1));
+    state
+        .getDecisionState()
+        .storeDecisionRequirements(
+            new DecisionRequirementsRecord()
+                .setTenantId("decision-tenant")
+                .setDecisionRequirementsKey(decisionRequirementsKey));
+    state
+        .getDecisionState()
+        .storeDecisionRecord(
+            new DecisionRecord()
+                .setDeploymentKey(decisionDeploymentKey)
+                .setDecisionKey(decisionKey)
+                .setDecisionId("decision2")
+                .setDecisionName("decision2")
+                .setTenantId("decision-tenant")
+                .setDecisionRequirementsKey(decisionRequirementsKey)
+                .setVersion(1));
+    // when
+    processor.processRecord(command);
+
+    // then
+    assertThat(getCommandAt(eventIndex++).getValue())
+        .satisfies(
+            record -> {
+              assertThat(record.processesMetadata())
+                  .singleElement()
+                  .satisfies(el -> assertThat(el.getBpmnProcessId()).isEqualTo("process"));
+              assertThat(record.decisionsMetadata()).isEmpty();
+              assertThat(record.formMetadata()).isEmpty();
+            });
+
+    // when
+    processor.processRecord(getCommandAt(eventIndex++));
+
+    // then
+    assertThat(getCommandAt(eventIndex++).getValue())
+        .satisfies(
+            record -> {
+              assertThat(record.processesMetadata())
+                  .singleElement()
+                  .satisfies(el -> assertThat(el.getBpmnProcessId()).isEqualTo("process2"));
+              assertThat(record.decisionsMetadata()).isEmpty();
+              assertThat(record.formMetadata()).isEmpty();
+            });
+
+    // when
+    processor.processRecord(getCommandAt(eventIndex++));
+
+    // then
+    assertThat(getCommandAt(eventIndex++).getValue())
+        .satisfies(
+            record -> {
+              assertThat(record.processesMetadata()).isEmpty();
+              assertThat(record.decisionsMetadata()).isEmpty();
+              assertThat(record.formMetadata())
+                  .singleElement()
+                  .satisfies(el -> assertThat(el.getFormKey()).isEqualTo(formKey));
+            });
+
+    // when
+    processor.processRecord(getCommandAt(eventIndex++));
+
+    // then
+    assertThat(getCommandAt(eventIndex++).getValue())
+        .satisfies(
+            record -> {
+              assertThat(record.processesMetadata()).isEmpty();
+              assertThat(record.formMetadata()).isEmpty();
+              assertThat(record.decisionsMetadata())
+                  .singleElement()
+                  .satisfies(el -> assertThat(el.getDecisionKey()).isEqualTo(decisionKey));
+            });
+
+    // when
+    // let's run again the processor to make it reach progressState = Done
+    processor.processRecord(getCommandAt(eventIndex++));
+  }
+
+  private TypedRecord<DeploymentRecord> getCommandAt(final int index) {
+    assertThat(resultBuilder.getFollowupRecords()).hasSizeGreaterThanOrEqualTo(index + 1);
+    final var record = resultBuilder.getFollowupRecords().get(index);
+    assertThat(record.getValue()).isInstanceOf(DeploymentRecord.class);
+    final var command = mockedCommand();
+    when(command.getValue()).thenReturn((DeploymentRecord) record.getValue());
+    when(command.getIntent()).thenReturn(record.getIntent());
+    when(command.getRecordType()).thenReturn(record.getRecordType());
+    return command;
   }
 }
