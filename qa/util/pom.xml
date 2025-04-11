@@ -22,18 +22,6 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-elasticsearch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-query-transformer</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-domain</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-qa-util</artifactId>
     </dependency>
     <dependency>
@@ -122,10 +110,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-common</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
