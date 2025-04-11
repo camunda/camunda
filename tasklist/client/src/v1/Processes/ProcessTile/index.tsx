@@ -20,13 +20,14 @@ import {logger} from 'common/utils/logger';
 import {tracking} from 'common/tracking';
 import {useStartProcess} from 'v1/api/useStartProcess.mutation';
 import type {Process, Task} from 'v1/api/types';
-import {FormModal} from './FormModal';
+import {FormModal} from 'common/processes/FormModal';
 import {getProcessDisplayName} from 'v1/utils/getProcessDisplayName';
 import {ProcessTag} from './ProcessTag';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
 import {getClientConfig} from 'common/config/getClientConfig';
+import {useForm} from 'v1/api/useForm.query';
 
 type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
@@ -90,6 +91,10 @@ const ProcessTile: React.FC<Props> = ({
   ...props
 }) => {
   const {t} = useTranslation();
+  const {bpmnProcessId, startEventFormId} = process;
+  const startFormModalRoute = pages.internalStartProcessFromForm(bpmnProcessId);
+  const match = useMatch(startFormModalRoute);
+  const isFormModalOpen = match !== null;
   const {mutateAsync: uploadDocuments} = useUploadDocuments();
   const {mutateAsync: startProcess} = useStartProcess({
     onSuccess(data) {
@@ -111,14 +116,23 @@ const ProcessTile: React.FC<Props> = ({
       });
     },
   });
+  const formQueryResult = useForm(
+    {
+      id: process.startEventFormId!,
+      processDefinitionKey: process.id,
+      version: 'latest',
+    },
+    {
+      enabled: isFormModalOpen && process.startEventFormId !== null,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    },
+  );
   const [status, setStatus] = useState<LoadingStatus>('inactive');
-  const {bpmnProcessId, startEventFormId} = process;
   const displayName = getProcessDisplayName(process);
   const location = useLocation();
   const navigate = useNavigate();
-  const startFormModalRoute = pages.internalStartProcessFromForm(bpmnProcessId);
-  const match = useMatch(startFormModalRoute);
-  const isFormModalOpen = match !== null;
+
   const tags = getTags(process);
 
   return (
@@ -217,7 +231,10 @@ const ProcessTile: React.FC<Props> = ({
       {startEventFormId === null ? null : (
         <FormModal
           key={process.bpmnProcessId}
-          process={process}
+          processDisplayName={getProcessDisplayName(process)}
+          schema={formQueryResult.data?.schema ?? null}
+          fetchStatus={formQueryResult.fetchStatus}
+          status={formQueryResult.status}
           isOpen={isFormModalOpen}
           onClose={() => {
             navigate({
