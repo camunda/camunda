@@ -18,7 +18,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import java.io.IOException;
@@ -46,8 +46,8 @@ class ApplicationAuthorizationIT {
   private static final String PATH_OPERATE_WEBAPP_USER = "/user";
 
   @MultiDbTestApplication
-  private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
-      new TestSimpleCamundaApplication().withBasicAuth().withAuthorizationsEnabled();
+  private static final TestCamundaApplication STANDALONE_CAMUNDA =
+      new TestCamundaApplication().withBasicAuth().withAuthorizationsEnabled();
 
   private static final String RESTRICTED = "restricted";
   private static final String ADMIN = "admin";

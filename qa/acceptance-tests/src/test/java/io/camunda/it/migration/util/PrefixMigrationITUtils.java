@@ -9,7 +9,7 @@ package io.camunda.it.migration.util;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import java.io.IOException;
 import java.net.CookieManager;
@@ -63,10 +63,8 @@ public final class PrefixMigrationITUtils {
   public static CamundaClient startLatestCamunda(
       final String hostAddress, final String indexPrefix, final boolean isElasticsearch) {
 
-    final TestSimpleCamundaApplication testSimpleCamundaApplication =
-        new TestSimpleCamundaApplication();
-    final MultiDbConfigurator multiDbConfigurator =
-        new MultiDbConfigurator(testSimpleCamundaApplication);
+    final TestCamundaApplication testCamundaApplication = new TestCamundaApplication();
+    final MultiDbConfigurator multiDbConfigurator = new MultiDbConfigurator(testCamundaApplication);
 
     if (isElasticsearch) {
       multiDbConfigurator.configureElasticsearchSupport("http://" + hostAddress, indexPrefix);
@@ -74,10 +72,10 @@ public final class PrefixMigrationITUtils {
       multiDbConfigurator.configureOpenSearchSupport(hostAddress, indexPrefix, "admin", "admin");
     }
 
-    testSimpleCamundaApplication.start();
-    testSimpleCamundaApplication.awaitCompleteTopology();
+    testCamundaApplication.start();
+    testCamundaApplication.awaitCompleteTopology();
 
-    return testSimpleCamundaApplication.newClientBuilder().build();
+    return testCamundaApplication.newClientBuilder().build();
   }
 
   public static HttpResponse<String> requestProcessInstanceFromV1(

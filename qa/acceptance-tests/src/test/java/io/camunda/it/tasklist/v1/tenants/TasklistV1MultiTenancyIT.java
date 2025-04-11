@@ -19,7 +19,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -81,8 +81,8 @@ public class TasklistV1MultiTenancyIT {
   private static long processDefinitionKey2;
 
   @MultiDbTestApplication
-  private static final TestSimpleCamundaApplication CAMUNDA_APPLICATION =
-      new TestSimpleCamundaApplication()
+  private static final TestCamundaApplication CAMUNDA_APPLICATION =
+      new TestCamundaApplication()
           .withAuthenticationMethod(AuthenticationMethod.BASIC)
           .withMultiTenancyEnabled();
 

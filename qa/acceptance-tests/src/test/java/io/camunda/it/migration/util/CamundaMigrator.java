@@ -9,9 +9,9 @@ package io.camunda.it.migration.util;
 
 import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -49,7 +49,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   private final Path zeebeDataPath;
   private CamundaClient camundaClient;
   private ZeebeContainer camundaContainer;
-  private TestSimpleCamundaApplication camunda;
+  private TestCamundaApplication camunda;
   private TestRestTasklistClient tasklistClient;
   private TestRestOperateClient operateClient;
   private DocumentBasedSearchClient searchClients;
@@ -126,7 +126,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     camundaContainer.close();
     extractVolume();
     camunda =
-        new TestSimpleCamundaApplication()
+        new TestCamundaApplication()
             .withBasicAuth()
             .withAuthenticatedAccess()
             .withAdditionalProfile(Profile.PROCESS_MIGRATION)
@@ -161,7 +161,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     camundaClient = camunda.newClientBuilder().build();
     url = URL.formatted(camunda.host(), camunda.mappedPort(TestZeebePort.REST));
     final var uri = URI.create(url + "/");
-    tasklistClient = new TestRestTasklistClient(uri, databaseUrl);
+    tasklistClient = new TestRestTasklistClient(uri);
     operateClient = new TestRestOperateClient(uri, "demo", "demo");
     searchClients =
         databaseType.equals(DatabaseType.ES)
