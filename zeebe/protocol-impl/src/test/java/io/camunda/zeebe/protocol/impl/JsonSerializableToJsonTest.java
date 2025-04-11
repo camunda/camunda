@@ -2990,11 +2990,11 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty GroupRecord",
-        (Supplier<GroupRecord>) GroupRecord::new,
+        (Supplier<GroupRecord>) () -> new GroupRecord().setGroupId("groupId"),
         """
       {
         "groupKey": -1,
-        "groupId": "",
+        "groupId": "groupId",
         "name": "",
         "description": "",
         "entityId": "",
