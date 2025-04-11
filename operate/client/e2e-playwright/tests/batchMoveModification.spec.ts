@@ -42,8 +42,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance Batch Modification', () => {
-  // TODO: Unskip after https://github.com/camunda/camunda/issues/24084 is fixed
-  test.skip('Move Operation @roundtrip', async ({
+  test('Move Operation @roundtrip', async ({
     processesPage,
     processesPage: {filtersPanel},
     commonPage,
