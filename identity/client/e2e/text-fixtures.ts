@@ -7,20 +7,24 @@
  */
 
 import { test as base } from "@playwright/test";
-import { Login } from "./pages/Login";
-import { Common } from "./pages/CommonPage";
+import { Header } from "./pages/Header";
+import { LoginPage } from "./pages/LoginPage";
+import { Users } from "./pages/Users";
 
-type Fixture = {
-  resetData: () => Promise<void>;
-  loginPage: Login;
-  commonPage: Common;
+type PlaywrightFixtures = {
+  header: Header;
+  loginPage: LoginPage;
+  usersPage: Users;
 };
 
-export const loginTest = base.extend<Fixture>({
-  commonPage: async ({ page }, use) => {
-    await use(new Common(page));
+export const test = base.extend<PlaywrightFixtures>({
+  header: async ({ page }, use) => {
+    await use(new Header(page));
   },
   loginPage: async ({ page }, use) => {
-    await use(new Login(page));
+    await use(new LoginPage(page));
+  },
+  usersPage: async ({ page }, use) => {
+    await use(new Users(page));
   },
 });
