@@ -15,6 +15,7 @@ import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { useApi } from "src/utility/api";
 import { getAuthentication } from "src/utility/api/authentication";
 import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
+import LateLoading from "src/components/layout/LateLoading";
 import { addHandler, removeHandler } from "src/utility/api/request";
 
 const GlobalStyle = createGlobalStyle`
@@ -64,7 +65,7 @@ const GridMainContent = styled.div`
 `;
 
 const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
-  const { data: camundaUser } = useApi(getAuthentication);
+  const { data: camundaUser, loading } = useApi(getAuthentication);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,6 +83,10 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
       removeHandler(handleResponse);
     };
   }, [navigate]);
+
+  if (loading) {
+    return <LateLoading />;
+  }
 
   if (
     !camundaUser?.authorizedApplications.includes("identity") &&
