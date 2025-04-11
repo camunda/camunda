@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { ChangeEvent, FC, useId } from "react";
 import { PasswordInput, TextArea, TextInput } from "@carbon/react";
 import useTranslate from "src/utility/localization";

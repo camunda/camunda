@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import React, { useEffect, useState } from "react";
 import { Search } from "@carbon/react";
 import ListBox from "@carbon/react/lib/components/ListBox";

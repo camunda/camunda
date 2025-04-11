@@ -81,7 +81,7 @@ type BreadcrumbsProps = {
 export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => {
   const navigate = useNavigate();
   const onClick = (href: string) => (e: MouseEvent<HTMLLIElement>) => {
-    navigate(href);
+    void navigate(href);
     e.preventDefault();
     e.stopPropagation();
   };
