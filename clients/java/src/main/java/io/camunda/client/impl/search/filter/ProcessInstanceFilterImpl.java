@@ -33,6 +33,8 @@ import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.ProcessInstanceFilterMapper;
+import io.camunda.client.protocol.rest.ProcessInstanceFilterFields;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -317,6 +319,20 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode) {
     filter.setIncidentErrorHashCode(incidentErrorHashCode);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter orFilters(final List<Consumer<ProcessInstanceFilter>> fns) {
+    for (final Consumer<ProcessInstanceFilter> fn : fns) {
+      final ProcessInstanceFilterImpl orFilter = new ProcessInstanceFilterImpl();
+      fn.accept(orFilter);
+      final io.camunda.client.protocol.rest.ProcessInstanceFilter protocolFilter =
+          orFilter.getSearchRequestProperty();
+      final ProcessInstanceFilterFields protocolFilterFields =
+          ProcessInstanceFilterMapper.from(protocolFilter);
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 

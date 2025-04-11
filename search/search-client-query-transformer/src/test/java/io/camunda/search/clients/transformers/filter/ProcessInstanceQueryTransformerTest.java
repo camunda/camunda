@@ -604,6 +604,64 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertThat(processInstanceFilter.errorMessageOperations()).isEmpty();
   }
 
+  @Test
+  public void shouldQueryWithOrConditions() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(
+            f ->
+                f.tenantIds("tenant-1")
+                    .addOrOperation(
+                        new ProcessInstanceFilter.Builder()
+                            .states("ACTIVE")
+                            .hasIncident(true)
+                            .build())
+                    .addOrOperation(
+                        new ProcessInstanceFilter.Builder()
+                            .states("COMPLETED")
+                            .hasIncident(false)
+                            .build()));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final SearchBoolQuery outerBool = (SearchBoolQuery) queryVariant;
+
+    // Validate the must clause contains tenantId and the OR conditions
+    assertThat(outerBool.must()).hasSize(3);
+    assertIsSearchTermQuery(
+        outerBool.must().get(0).queryOption(), "joinRelation", "processInstance");
+    assertIsSearchTermQuery(outerBool.must().get(1).queryOption(), "tenantId", "tenant-1");
+
+    assertThat(outerBool.must().get(2).queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            orBool -> {
+              assertThat(orBool.should()).hasSize(2);
+              assertThat(orBool.should().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      orBool2 -> {
+                        assertIsSearchTermQuery(
+                            orBool2.must().get(0).queryOption(), "state", "ACTIVE");
+                        assertIsSearchTermQuery(
+                            orBool2.must().get(1).queryOption(), "incident", true);
+                      });
+              assertThat(orBool.should().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      orBool3 -> {
+                        assertIsSearchTermQuery(
+                            orBool3.must().get(0).queryOption(), "state", "COMPLETED");
+                        assertIsSearchTermQuery(
+                            orBool3.must().get(1).queryOption(), "incident", false);
+                      });
+            });
+  }
+
   private void assertIsSearchTermQuery(
       final SearchQueryOption searchQueryOption,
       final String expectedField,

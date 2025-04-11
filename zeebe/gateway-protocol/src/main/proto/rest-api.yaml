@@ -4899,7 +4899,7 @@ components:
           description: The parent flow node instance key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-    ProcessInstanceFilter:
+    ProcessInstanceFilterFields:
       description: Process instance search filter.
       type: object
       allOf:
@@ -4951,6 +4951,40 @@ components:
           description: The incident error hash code, associated with this process.
           type: integer
           format: int32
+    ProcessInstanceFilter:
+      description: Process instance search filter.
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceFilterFields"
+        - type: object
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+
+                Example:
+                ```json
+                {
+                  "state": "ACTIVE",
+                  "tenantId": 123,
+                  "$or": [
+                    { "processDefinitionId": "process_v1" },
+                    { "processDefinitionId": "process_v2", "hasIncident": true }
+                  ]
+                }
+                ```
+                This matches process instances that:
+                - are in `ACTIVE` state,
+                - have tenant ID equal to `123`,
+                - and match either:
+                  - processDefinitionId is `process_v1`, or
+                  - processDefinitionId is `process_v2` and hasIncident is `true`.
+
+                Note: Using complex `$or` conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              items:
+                $ref: "#/components/schemas/ProcessInstanceFilterFields"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
