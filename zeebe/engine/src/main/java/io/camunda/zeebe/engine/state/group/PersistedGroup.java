@@ -22,7 +22,7 @@ public class PersistedGroup extends UnpackedObject implements DbValue {
   private final StringProperty nameProp = new StringProperty("name");
 
   public PersistedGroup() {
-    super(3);
+    super(4);
     declareProperty(groupKeyProp)
         .declareProperty(groupIdProp)
         .declareProperty(descriptionProp)
