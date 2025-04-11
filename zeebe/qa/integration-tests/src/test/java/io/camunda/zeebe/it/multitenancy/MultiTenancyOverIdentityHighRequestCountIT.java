@@ -110,6 +110,7 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
           .withNetworkAliases("keycloak")
           .withExposedPorts(8080);
 
+
   @Container
   @SuppressWarnings("resource")
   private static final GenericContainer<?> IDENTITY =
