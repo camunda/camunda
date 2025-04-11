@@ -157,6 +157,7 @@ docker build \
 ```
 
 #### Build on macOS with an Apple Silicon chip
+
 > [!NOTE]
 > When building the code on a macOS with a Silicon chip(e.g. M1-M4), The build can fail with protoc errors.
 
@@ -165,6 +166,7 @@ If you are running into protoc issues make sure that you have Rosetta installed 
 Rosetta enables a Mac with Apple silicon to use apps that were built for a Mac with an Intel processor.
 
 If you don't have Rosetta installed locally , you can  install it with the following command :
+
 ```
 softwareupdate --install-rosetta --agree-to-license
 ```
