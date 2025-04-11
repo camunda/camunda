@@ -119,7 +119,7 @@
         AS COUNT_ACTIVE,
       SUM(CASE WHEN fni.STATE = 'TERMINATED' THEN 1 ELSE 0 END)
         AS COUNT_CANCELED,
-      SUM(CASE WHEN fni.STATE = 'COMPLETED' AND fni.TYPE = 'END_EVENT' THEN 1 ELSE 0 END)
+      SUM(CASE WHEN fni.STATE = 'COMPLETED' THEN 1 ELSE 0 END)
         AS COUNT_COMPLETED,
       SUM(CASE WHEN fni.STATE = 'ACTIVE' AND
                     (fni.NUM_SUBPROCESS_INCIDENTS > 0 OR
@@ -130,7 +130,6 @@
       JOIN ${prefix}FLOW_NODE_INSTANCE fni ON (pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY)
 
     WHERE pd.PROCESS_DEFINITION_KEY = #{filter.processDefinitionKey}
-      AND (fni.STATE != 'COMPLETED' OR fni.TYPE = 'END_EVENT')
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.statisticsSearchFilter"/>
     GROUP BY pi.PROCESS_INSTANCE_KEY, fni.FLOW_NODE_ID
   </sql>
