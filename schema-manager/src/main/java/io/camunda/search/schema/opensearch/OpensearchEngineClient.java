@@ -97,10 +97,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
     } catch (final OpenSearchException ose) {
       if ("resource_already_exists_exception".equals(ose.error().type())) {
         // we can ignore already exists exceptions
-        // as this means the index was created by another exporter on a different partition
+        // as this means the index was created by another instance
         final var warnMsg =
             String.format(
-                "Expected to create index [%s], but already exist. Will continue, likely was created by different partition (exporter).",
+                "Expected to create index [%s], but already exist. Will continue, likely was created by a different instance.",
                 indexDescriptor.getFullQualifiedName());
         LOG.debug(warnMsg, ose);
         return;

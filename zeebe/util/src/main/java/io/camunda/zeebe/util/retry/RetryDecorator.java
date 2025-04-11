@@ -97,7 +97,7 @@ public class RetryDecorator {
         .onRetry(
             event ->
                 LOG.warn(
-                    "Retrying operation for `{}`: attempt {}",
+                    "Retrying operation for '{}': attempt {}",
                     message,
                     event.getNumberOfRetryAttempts()));
     return retry;

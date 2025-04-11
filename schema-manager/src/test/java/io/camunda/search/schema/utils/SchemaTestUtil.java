@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.schema;
+package io.camunda.search.schema.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -14,10 +14,18 @@ import static org.mockito.Mockito.when;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -102,6 +110,39 @@ public final class SchemaTestUtil {
       final var expectedMappingsTree =
           TestObjectMapper.objectMapper().readTree(expectedMappingsJson);
       return mappings.equals(expectedMappingsTree.get("mappings"));
+    }
+  }
+
+  public static SchemaManager createSchemaManager(
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Collection<IndexTemplateDescriptor> templateDescriptors,
+      final SearchEngineConfiguration config) {
+    return new SchemaManager(
+        searchEngineClientFromConfig(config),
+        indexDescriptors,
+        templateDescriptors,
+        config,
+        TestObjectMapper.objectMapper());
+  }
+
+  public static SearchEngineClient searchEngineClientFromConfig(
+      final SearchEngineConfiguration config) {
+    switch (config.connect().getTypeEnum()) {
+      case ELASTICSEARCH -> {
+        final var connector = new ElasticsearchConnector(config.connect());
+        final var client = connector.createClient();
+        final var objectMapper = connector.objectMapper();
+        return new ElasticsearchEngineClient(client, objectMapper);
+      }
+      case OPENSEARCH -> {
+        final var connector = new OpensearchConnector(config.connect());
+        final var client = connector.createClient();
+        final var objectMapper = connector.objectMapper();
+        return new OpensearchEngineClient(client, objectMapper);
+      }
+      default ->
+          throw new IllegalArgumentException(
+              "Unknown connection type: " + config.connect().getTypeEnum());
     }
   }
 }
