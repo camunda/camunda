@@ -42,7 +42,7 @@ public class CreateGroupMultiPartitionTest {
     // when
     final var name = UUID.randomUUID().toString();
     final var groupId = Strings.newRandomValidIdentityId();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
 
     assertThat(
             RecordingExporter.records()
@@ -88,7 +88,7 @@ public class CreateGroupMultiPartitionTest {
     // when
     final var name = UUID.randomUUID().toString();
     final var groupId = Strings.newRandomValidIdentityId();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
 
     // then
     assertThat(
@@ -111,7 +111,7 @@ public class CreateGroupMultiPartitionTest {
     // when
     final var name = UUID.randomUUID().toString();
     final var groupId = Strings.newRandomValidIdentityId();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

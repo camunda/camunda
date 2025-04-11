@@ -203,13 +203,7 @@ public class AddEntityTenantTest {
   }
 
   private long createGroup(final String groupId) {
-    return engine
-        .group()
-        .newGroup("groupName")
-        .withGroupId(groupId)
-        .create()
-        .getValue()
-        .getGroupKey();
+    return engine.group().newGroup(groupId).withName("groupName").create().getValue().getGroupKey();
   }
 
   private String createMapping() {

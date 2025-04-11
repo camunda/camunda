@@ -40,7 +40,7 @@ public class UpdateGroupMultiPartitionTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var groupId = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
 
     // when
     engine.group().updateGroup(groupId).withName("updated-" + name).update();
@@ -96,7 +96,7 @@ public class UpdateGroupMultiPartitionTest {
     // when
     final var name = UUID.randomUUID().toString();
     final var groupId = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
     engine.group().updateGroup(groupId).withName(name + "-updated").update();
 
     // then
@@ -115,7 +115,7 @@ public class UpdateGroupMultiPartitionTest {
       interceptGroupCommandForPartition(partitionId, GroupIntent.CREATE);
     }
     final var groupId = UUID.randomUUID().toString();
-    engine.group().newGroup(UUID.randomUUID().toString()).withGroupId(groupId).create().getKey();
+    engine.group().newGroup(groupId).withName(UUID.randomUUID().toString()).create().getKey();
 
     // when
     final var name = UUID.randomUUID().toString();
