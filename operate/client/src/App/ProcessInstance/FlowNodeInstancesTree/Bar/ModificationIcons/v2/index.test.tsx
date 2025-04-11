@@ -10,7 +10,6 @@ import {act, render, screen} from 'modules/testing-library';
 import {ModificationIcons} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {useEffect} from 'react';
 import {open} from 'modules/mocks/diagrams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
@@ -92,10 +91,6 @@ describe('<ModificationIcons />', () => {
   });
 
   it('should show modification planned to be canceled icon if all the running tokens on the flow node is canceled', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     render(
       <ModificationIcons
         flowNodeInstance={{
@@ -123,10 +118,6 @@ describe('<ModificationIcons />', () => {
   });
 
   it('should show modification planned to be canceled icon if one of the running tokens on the flow node is canceled', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     render(
       <ModificationIcons
         flowNodeInstance={{
@@ -150,10 +141,6 @@ describe('<ModificationIcons />', () => {
   });
 
   it('should not show modification planned to be canceled icon if one of the other running tokens on the flow node is canceled', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     render(
       <ModificationIcons
         flowNodeInstance={{
@@ -179,10 +166,6 @@ describe('<ModificationIcons />', () => {
   });
 
   it('should show modification planned to be canceled icon if one of the parent running tokens on the flow node is canceled', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     render(
       <ModificationIcons
         flowNodeInstance={{
@@ -208,10 +191,6 @@ describe('<ModificationIcons />', () => {
   });
 
   it('should show modification planned to be canceled icon if one of the other parent running tokens on the flow node is canceled', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     render(
       <ModificationIcons
         flowNodeInstance={{

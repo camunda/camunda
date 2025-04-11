@@ -23,6 +23,7 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {VariablesTable} from '../VariablesTable';
 import {Footer} from '../Footer';
 import {Skeleton} from '../Skeleton';
+import {useDisplayStatus} from 'modules/hooks/variables';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -30,9 +31,9 @@ type Props = {
 
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
+    const displayStatus = useDisplayStatus();
     const {
       state: {pendingItem, loadingItemId, status},
-      displayStatus,
     } = variablesStore;
 
     const scopeId =

@@ -14,43 +14,51 @@ import {useEffect} from 'react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {variablesStore} from 'modules/stores/variables';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Paths} from 'modules/Routes';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
-type Props = {
-  children?: React.ReactNode;
-};
+const getWrapper = (
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = [Paths.processInstance('1')],
+) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      flowNodeSelectionStore.init();
 
-const Wrapper: React.FC<Props> = ({children}) => {
-  useEffect(() => {
-    flowNodeSelectionStore.init();
+      return () => {
+        processInstanceDetailsStore.reset();
+        variablesStore.reset();
+        flowNodeSelectionStore.reset();
+        modificationsStore.reset();
+      };
+    }, []);
 
-    return () => {
-      processInstanceDetailsStore.reset();
-      variablesStore.reset();
-      flowNodeSelectionStore.reset();
-      processInstanceDetailsStatisticsStore.reset();
-      modificationsStore.reset();
-    };
-  });
-
-  return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      <Routes>
-        <Route
-          path={Paths.processInstance()}
-          element={
-            <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
-              {({handleSubmit}) => {
-                return <form onSubmit={handleSubmit}>{children} </form>;
-              }}
-            </Form>
-          }
-        />
-      </Routes>
-    </MemoryRouter>
-  );
+    return (
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={initialEntries}>
+            <Routes>
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
+                    {({handleSubmit}) => {
+                      return <form onSubmit={handleSubmit}>{children} </form>;
+                    }}
+                  </Form>
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    );
+  };
+  return Wrapper;
 };
 
 const mockVariables: VariableEntity[] = [
@@ -93,4 +101,4 @@ const mockMetaData: MetaDataDto = {
   incidentCount: 0,
 };
 
-export {Wrapper, mockVariables, mockMetaData};
+export {getWrapper, mockVariables, mockMetaData};

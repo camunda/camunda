@@ -12,8 +12,8 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
-import Variables from '../index';
-import {Wrapper, mockVariables, mockMetaData} from './mocks';
+import Variables from './index';
+import {getWrapper, mockVariables, mockMetaData} from './mocks';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 
@@ -29,7 +29,7 @@ describe('Skeleton', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(await screen.findByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();
@@ -44,7 +44,7 @@ describe('Skeleton', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
 
     expect(screen.getByTestId('variables-skeleton')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
