@@ -58,14 +58,12 @@ public class TestRestOperateClient implements AutoCloseable {
   private HttpRequest loginRequest() {
     try {
       return createBuilder(
-          String.format("%sapi/login?username=%s&password=%s", endpoint, "demo", "demo"))
+              String.format("%sapi/login?username=%s&password=%s", endpoint, "demo", "demo"))
           .POST(HttpRequest.BodyPublishers.ofString("{}"))
           .build();
     } catch (final URISyntaxException e) {
       throw new RuntimeException(e);
     }
-
-
   }
 
   private Either<Exception, HttpRequest> createProcessInstanceRequest(final long key) {
