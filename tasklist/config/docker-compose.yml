@@ -276,7 +276,6 @@ services:
       - zeebe_mt
       - identity_mt
     environment:
-      - SPRING_PROFILES_ACTIVE=dev,dev-data,identity-auth
       - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
     env_file:
       - envs/.env.database.${DATABASE}
