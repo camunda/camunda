@@ -247,7 +247,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .map(Hit::id)
             .toList();
 
-    metrics.recordProcessInstancesArchiving(ids.size());
     return new ArchiveBatch(endDate, ids);
   }
 
