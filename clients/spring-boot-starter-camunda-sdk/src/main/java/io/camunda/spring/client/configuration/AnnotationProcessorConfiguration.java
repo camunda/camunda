@@ -16,12 +16,13 @@
 package io.camunda.spring.client.configuration;
 
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
-import io.camunda.spring.client.annotation.processor.CamundaAnnotationProcessorRegistry;
+import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware;
 import io.camunda.spring.client.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.spring.client.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.spring.client.event.CamundaClientEventListener;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import java.util.List;
+import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -29,14 +30,9 @@ import org.springframework.context.annotation.Bean;
 public class AnnotationProcessorConfiguration {
 
   @Bean
-  public static CamundaAnnotationProcessorRegistry camundaAnnotationProcessorRegistry() {
-    return new CamundaAnnotationProcessorRegistry();
-  }
-
-  @Bean
   public CamundaClientEventListener camundaClientEventListener(
-      final CamundaAnnotationProcessorRegistry camundaAnnotationProcessorRegistry) {
-    return new CamundaClientEventListener(camundaAnnotationProcessorRegistry);
+      final Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet) {
+    return new CamundaClientEventListener(camundaClientLifecycleAwareSet);
   }
 
   @Bean
