@@ -29,6 +29,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {getProcessName} from 'modules/utils/instance';
 import {notificationsStore} from 'modules/stores/notifications';
 import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 const handleRefetchSpy = jest.spyOn(
   processInstanceDetailsStore,
@@ -70,6 +71,7 @@ describe('ProcessInstance', () => {
   });
 
   it('should render and set the page title', async () => {
+    mockFetchProcessXML().withSuccess('');
     jest.useFakeTimers();
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
@@ -279,6 +281,7 @@ describe('ProcessInstance', () => {
   });
 
   it('should display forbidden content after polling', async () => {
+    mockFetchProcessXML().withSuccess('');
     jest.useFakeTimers();
     render(<ProcessInstance />, {wrapper: getWrapper()});
 

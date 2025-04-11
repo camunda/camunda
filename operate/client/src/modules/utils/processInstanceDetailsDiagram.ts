@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 const hasMultipleScopes = (
   parentFlowNode?: BusinessObject,
@@ -35,4 +36,42 @@ const hasMultipleScopes = (
   );
 };
 
-export {hasMultipleScopes};
+const getFlowNodesInBetween = (
+  businessObjects: BusinessObjects,
+  fromFlowNodeId: string,
+  toFlowNodeId: string,
+): string[] => {
+  const fromFlowNode = businessObjects[fromFlowNodeId];
+
+  if (
+    fromFlowNode?.$parent === undefined ||
+    fromFlowNode.$parent.id === toFlowNodeId
+  ) {
+    return [];
+  }
+
+  return [
+    fromFlowNode.$parent.id,
+    ...getFlowNodesInBetween(
+      businessObjects,
+      fromFlowNode.$parent.id,
+      toFlowNodeId,
+    ),
+  ];
+};
+
+const getFlowNodeParents = (
+  businessObjects: BusinessObjects,
+  flowNodeId: string,
+): string[] => {
+  const bpmnProcessId =
+    processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
+
+  if (bpmnProcessId === undefined) {
+    return [];
+  }
+
+  return getFlowNodesInBetween(businessObjects, flowNodeId, bpmnProcessId);
+};
+
+export {getFlowNodeParents, hasMultipleScopes};

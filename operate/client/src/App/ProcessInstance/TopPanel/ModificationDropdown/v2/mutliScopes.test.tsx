@@ -12,41 +12,47 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {modificationsStore} from 'modules/stores/modifications';
 import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {act} from 'react';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {
     mockFetchProcessXML().withSuccess(open('multipleInstanceSubProcess.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('multipleInstanceSubProcess.bpmn'),
+    );
     modificationsStore.enableModificationMode();
   });
 
   it('should support add modification for task with multiple scopes', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'OuterSubProcess',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'InnerSubProcess',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'TaskB',
-        active: 10,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          flowNodeId: 'OuterSubProcess',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          flowNodeId: 'InnerSubProcess',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          flowNodeId: 'TaskB',
+          active: 10,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
 
     renderPopover();
 
@@ -73,29 +79,31 @@ describe('Modification Dropdown - Multi Scopes', () => {
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
     'should not support add modification for task with multiple inner parent scopes',
     async () => {
-      mockFetchProcessInstanceDetailStatistics().withSuccess([
-        {
-          activityId: 'OuterSubProcess',
-          active: 1,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-        {
-          activityId: 'InnerSubProcess',
-          active: 10,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-        {
-          activityId: 'TaskB',
-          active: 1,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-      ]);
+      mockFetchFlownodeInstancesStatistics().withSuccess({
+        items: [
+          {
+            flowNodeId: 'OuterSubProcess',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+          {
+            flowNodeId: 'InnerSubProcess',
+            active: 10,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+          {
+            flowNodeId: 'TaskB',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+        ],
+      });
 
       renderPopover();
 
@@ -123,29 +131,31 @@ describe('Modification Dropdown - Multi Scopes', () => {
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
     'should not support add modification for task with multiple outer parent scopes',
     async () => {
-      mockFetchProcessInstanceDetailStatistics().withSuccess([
-        {
-          activityId: 'OuterSubProcess',
-          active: 10,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-        {
-          activityId: 'InnerSubProcess',
-          active: 1,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-        {
-          activityId: 'TaskB',
-          active: 1,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-      ]);
+      mockFetchFlownodeInstancesStatistics().withSuccess({
+        items: [
+          {
+            flowNodeId: 'OuterSubProcess',
+            active: 10,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+          {
+            flowNodeId: 'InnerSubProcess',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+          {
+            flowNodeId: 'TaskB',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+        ],
+      });
 
       renderPopover();
 
@@ -173,29 +183,31 @@ describe('Modification Dropdown - Multi Scopes', () => {
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
     'should render no modifications available',
     async () => {
-      mockFetchProcessInstanceDetailStatistics().withSuccess([
-        {
-          activityId: 'OuterSubProcess',
-          active: 1,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-        {
-          activityId: 'InnerSubProcess',
-          active: 10,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-        {
-          activityId: 'TaskB',
-          active: 1,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-      ]);
+      mockFetchFlownodeInstancesStatistics().withSuccess({
+        items: [
+          {
+            flowNodeId: 'OuterSubProcess',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+          {
+            flowNodeId: 'InnerSubProcess',
+            active: 10,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+          {
+            flowNodeId: 'TaskB',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+        ],
+      });
 
       renderPopover();
 
@@ -228,29 +240,31 @@ describe('Modification Dropdown - Multi Scopes', () => {
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
     'should render add modification for flow nodes that has multiple running scopes',
     async () => {
-      mockFetchProcessInstanceDetailStatistics().withSuccess([
-        {
-          activityId: 'OuterSubProcess',
-          active: 1,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-        {
-          activityId: 'InnerSubProcess',
-          active: 10,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-        {
-          activityId: 'TaskB',
-          active: 1,
-          incidents: 0,
-          completed: 0,
-          canceled: 0,
-        },
-      ]);
+      mockFetchFlownodeInstancesStatistics().withSuccess({
+        items: [
+          {
+            flowNodeId: 'OuterSubProcess',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+          {
+            flowNodeId: 'InnerSubProcess',
+            active: 10,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+          {
+            flowNodeId: 'TaskB',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+        ],
+      });
 
       renderPopover();
 

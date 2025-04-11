@@ -119,3 +119,4 @@ class ModificationRules {
 }
 
 export const modificationRulesStore = new ModificationRules();
+export type {ModificationOption};
