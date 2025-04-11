@@ -170,7 +170,7 @@ public class BatchOperationEntityKeyProvider {
     KeyPage fetchKeys(F filter, Object[] sortValues);
   }
 
-  private class ProcessInstanceKeyPageFetcher implements KeyPageFetcher<ProcessInstanceFilter> {
+  private final class ProcessInstanceKeyPageFetcher implements KeyPageFetcher<ProcessInstanceFilter> {
     @Override
     public KeyPage fetchKeys(final ProcessInstanceFilter filter, final Object[] sortValues) {
       final var page =
@@ -191,7 +191,7 @@ public class BatchOperationEntityKeyProvider {
     }
   }
 
-  private class IncidentKeyPageFetcher implements KeyPageFetcher<IncidentFilter> {
+  private final class IncidentKeyPageFetcher implements KeyPageFetcher<IncidentFilter> {
     @Override
     public KeyPage fetchKeys(final IncidentFilter filter, final Object[] sortValues) {
       final var page =
