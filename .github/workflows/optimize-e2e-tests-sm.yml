@@ -38,7 +38,7 @@ permissions:
 jobs:
   e2e-tests-sm:
     name: E2E tests sm
-    runs-on: gcp-core-4-default
+    runs-on: ubuntu-latest
     timeout-minutes: 120
 
     steps:
@@ -61,6 +61,7 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
 
+<<<<<<< HEAD
       - name: Install firefox deps
         run: |
           sudo apt-get update && sudo apt-get install
@@ -71,6 +72,10 @@ jobs:
 
       - name: Setup Node
         uses: actions/setup-node@v4
+=======
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+>>>>>>> b4ad29b5 (ci: switch e2e tests to run on chrome)
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
 
