@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.search.MeterNotFoundException;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -190,7 +191,8 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldNotMarkedAsCompletedViaMetricsWhenImportingIsNotDone() throws IOException {
+  public void shouldNotMarkedAsCompletedViaMetricsWhenImportingIsNotDone()
+      throws IOException, InterruptedException {
     // given
 
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
@@ -213,7 +215,11 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
               final Gauge partitionOneImportStatus = getGauge(metrics, "1");
+              assertThat(partitionOneImportStatus).isNotNull();
+              
               final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionTwoImportStatus).isNotNull();
+              
               assertThat(partitionOneImportStatus.value()).isEqualTo(0.0);
               assertThat(partitionTwoImportStatus.value()).isEqualTo(0.0);
             });
@@ -262,7 +268,11 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
               final Gauge partitionOneImportStatus = getGauge(metrics, "1");
+              assertThat(partitionOneImportStatus).isNotNull();
+
               final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionTwoImportStatus).isNotNull();
+
               assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
               assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
             });
@@ -270,12 +280,16 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
   @NotNull
   private static Gauge getGauge(final Metrics metrics, final String partition) {
-    return metrics.getGauge(
-        GAUGE_NAME_IMPORT_POSITION_COMPLETED,
-        Metrics.TAG_KEY_PARTITION,
-        partition,
-        Metrics.TAG_KEY_IMPORT_POS_ALIAS,
-        "process-instance");
+    try {
+      return metrics.getGauge(
+          GAUGE_NAME_IMPORT_POSITION_COMPLETED,
+          Metrics.TAG_KEY_PARTITION,
+          partition,
+          Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+          "process-instance");
+    } catch (MeterNotFoundException e) {
+      return null;
+    }
   }
 
   @Test
