@@ -138,7 +138,8 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       return userState.getUser(entityKey).isPresent();
     }
     if (EntityType.MAPPING == entityType) {
-      return mappingState.get(entityKey).isPresent();
+      // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
+      return mappingState.get(String.valueOf(entityKey)).isPresent();
     }
     return false;
   }

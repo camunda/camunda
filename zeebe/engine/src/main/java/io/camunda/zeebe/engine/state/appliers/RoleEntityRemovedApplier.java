@@ -42,7 +42,8 @@ public class RoleEntityRemovedApplier implements TypedEventApplier<RoleIntent, R
               Long.toString(value.getRoleKey()));
       case MAPPING -> {
         roleState.removeEntity(value.getRoleKey(), value.getEntityKey());
-        mappingState.removeRole(value.getEntityKey(), value.getRoleKey());
+        // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
+        mappingState.removeRole(String.valueOf(value.getEntityKey()), value.getRoleKey());
       }
       default ->
           throw new IllegalStateException(

@@ -169,11 +169,12 @@ public final class IdentitySetupInitializeProcessor
                     .get(mapping.getClaimName(), mapping.getClaimValue())
                     .ifPresentOrElse(
                         persistedMapping -> {
-                          mapping.setMappingKey(persistedMapping.getMappingKey());
+                          mapping.setMappingKey(Long.parseLong(persistedMapping.getMappingId()));
                           mapping.setMappingId(persistedMapping.getMappingId());
+                          // todo refactor with https://github.com/camunda/camunda/issues/30094
                           if (assignEntityToRole(
                               role.getRoleKey(),
-                              persistedMapping.getMappingKey(),
+                              Long.parseLong(persistedMapping.getMappingId()),
                               EntityType.MAPPING)) {
                             createdNewEntities.set(true);
                           }
@@ -238,7 +239,7 @@ public final class IdentitySetupInitializeProcessor
                         persistedMapping -> {
                           assignEntityToRole(
                               role.getRoleKey(),
-                              persistedMapping.getMappingKey(),
+                              Long.parseLong(persistedMapping.getMappingId()),
                               EntityType.MAPPING);
                           assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
                         },
