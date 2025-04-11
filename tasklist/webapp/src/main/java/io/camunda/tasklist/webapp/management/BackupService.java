@@ -66,9 +66,10 @@ public class BackupService extends ManagementAPIErrorController {
   @GetMapping
   public List<GetBackupStateResponseDto> getBackups(
       @RequestParam(value = "verbose", defaultValue = "true", required = false)
-          final boolean verbose) {
+          final boolean verbose,
+      @RequestParam(value = "pattern", defaultValue = "*", required = false) final String pattern) {
     validateRepositoryNameIsConfigured();
-    return backupManager.getBackups(verbose);
+    return backupManager.getBackups(verbose, pattern);
   }
 
   @DeleteMapping("/{backupId}")

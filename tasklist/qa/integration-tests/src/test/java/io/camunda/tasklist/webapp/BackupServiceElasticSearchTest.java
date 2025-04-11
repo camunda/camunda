@@ -603,7 +603,7 @@ public class BackupServiceElasticSearchTest {
     when(esClient.snapshot()).thenThrow(elsEx);
 
     final Exception exception =
-        assertThrows(TasklistRuntimeException.class, () -> backupService.getBackups(true));
+        assertThrows(TasklistRuntimeException.class, () -> backupService.getBackups(true, null));
 
     final String expectedMessage =
         String.format("No repository with name [%s] could be found.", repoName);
@@ -623,7 +623,7 @@ public class BackupServiceElasticSearchTest {
                 SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    assertThat(backupService.getBackups(true)).isEmpty();
+    assertThat(backupService.getBackups(true, null)).isEmpty();
   }
 
   @Test
@@ -635,7 +635,8 @@ public class BackupServiceElasticSearchTest {
 
     final Exception exception =
         assertThrows(
-            TasklistElasticsearchConnectionException.class, () -> backupService.getBackups(true));
+            TasklistElasticsearchConnectionException.class,
+            () -> backupService.getBackups(true, null));
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
@@ -697,7 +698,7 @@ public class BackupServiceElasticSearchTest {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupService.getBackups(true);
+    final List<GetBackupStateResponseDto> backups = backupService.getBackups(true, null);
     assertThat(backups).hasSize(3);
     final GetBackupStateResponseDto backup3 = backups.get(0);
     assertThat(backup3.getState()).isEqualTo(IN_PROGRESS);
@@ -746,7 +747,7 @@ public class BackupServiceElasticSearchTest {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupService.getBackups(true);
+    final List<GetBackupStateResponseDto> backups = backupService.getBackups(true, null);
     assertThat(backups).hasSize(1);
     final GetBackupStateResponseDto backup1 = backups.get(0);
     assertThat(backup1.getState()).isEqualTo(COMPLETED);

@@ -133,11 +133,17 @@ public class BackupManagerElasticSearch extends BackupManager {
   }
 
   @Override
-  public List<GetBackupStateResponseDto> getBackups(final boolean verbose) {
+  public List<GetBackupStateResponseDto> getBackups(final boolean verbose, final String pattern) {
+    final var validatedPattern = validPattern(pattern);
+
+    validatedPattern.ifLeft(
+        ex -> {
+          throw new InvalidRequestException(ex.getMessage(), ex);
+        });
     GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(getRepositoryName())
-            .snapshots(new String[] {Metadata.SNAPSHOT_NAME_PREFIX + "*"})
+            .snapshots(new String[] {Metadata.SNAPSHOT_NAME_PREFIX + validatedPattern.get()})
             .verbose(verbose);
     if (verbose) {
       snapshotsStatusRequest =
