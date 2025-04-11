@@ -37,6 +37,7 @@ concurrency:
 jobs:
   test:
     runs-on: gcp-core-4-default
+    timeout-minutes: 15
     services:
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
@@ -112,8 +113,13 @@ jobs:
           ./mvnw -q -B spring-boot:start -pl dist
           -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
           -Dspring-boot.run.fork=true
-          -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=consolidated-auth,broker,identity -Dzeebe.broker.exporters.camundaexporter.classname=io.camunda.exporter.CamundaExporter -Dzeebe.broker.exporters.camundaexporter.args.connect.url=http://localhost:9200 -Dzeebe.broker.exporters.camundaexporter.args.bulk.size=100 -Dzeebe.broker.backpressure.enabled=false -Dzeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters=false"
         env:
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://localhost:9200
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 100
+          ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS: false
+          SPRING_PROFILES_ACTIVE: consolidated-auth,broker,identity
           CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: false
           CAMUNDA_SECURITY_AUTHENTICATION_METHOD: BASIC
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE: elasticsearch
