@@ -132,6 +132,18 @@ public class ProcessInstanceController {
             this::batchOperationCancellation);
   }
 
+  @CamundaPostMapping(path = "/batch-operations/incident-resolution")
+  public CompletableFuture<ResponseEntity<Object>> resolveIncidentsBatchOperation(
+      @RequestBody(required = false) final ProcessInstanceFilter filter) {
+
+    return SearchQueryRequestMapper.toProcessInstanceFilter(filter)
+        .fold(
+            (errors) ->
+                RestErrorMapper.mapProblemToCompletedResponse(
+                    RequestValidator.createProblemDetail(errors).get()),
+            this::batchOperationResolveIncidents);
+  }
+
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
       final ProcessInstanceQuery query) {
     try {
@@ -153,8 +165,17 @@ public class ProcessInstanceController {
             processInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .cancelProcessInstanceBatchOperationWithResult(filter),
-        ResponseMapper
-            ::toCancelProcessInstanceBatchOperationWithResultResponse); // TODO better response
+        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> batchOperationResolveIncidents(
+      final io.camunda.search.filter.ProcessInstanceFilter filter) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            processInstanceServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .resolveIncidentsBatchOperationWithResult(filter),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(

@@ -127,5 +127,14 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
           BatchOperationTypeEnum.PROCESS_CANCELLATION,
           SearchRequestBuilders::processInstanceFilter);
     }
+
+    @Override
+    public CreateBatchOperationCommandStep2<ProcessInstanceFilter> resolveIncident() {
+      return new CreateBatchOperationCommandImpl<>(
+          httpClient,
+          jsonMapper,
+          BatchOperationTypeEnum.RESOLVE_INCIDENT,
+          SearchRequestBuilders::processInstanceFilter);
+    }
   }
 }

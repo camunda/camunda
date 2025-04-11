@@ -1383,4 +1383,43 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     verify(processInstanceServices).flowNodeStatistics(processInstanceKey);
   }
+
+  @Test
+  void shouldResolveIncidentsBatchOperation() throws Exception {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+
+    when(processInstanceServices.resolveIncidentsBatchOperationWithResult(
+            any(ProcessInstanceFilter.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "processDefinitionId": "test-process-definition-id"
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/batch-operations/incident-resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"RESOLVE_INCIDENT"}
+        """);
+
+    verify(processInstanceServices)
+        .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class));
+  }
 }
