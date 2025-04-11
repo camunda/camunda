@@ -46,9 +46,10 @@ public class BatchOperationArchiverJob implements ArchiverJob {
 
     if (archiveBatch != null) {
       logger.trace("Following batch operations are found for archiving: {}", archiveBatch);
+      metrics.recordBatchOperationsArchiving(archiveBatch.ids().size());
 
       return moveBatch(archiveBatch.finishDate(), archiveBatch.ids())
-          .thenApplyAsync(FunctionUtil.peek(metrics::batchOperationsArchived), executor);
+          .thenApplyAsync(FunctionUtil.peek(metrics::recordBatchOperationsArchived), executor);
     }
 
     logger.trace("Nothing to archive");

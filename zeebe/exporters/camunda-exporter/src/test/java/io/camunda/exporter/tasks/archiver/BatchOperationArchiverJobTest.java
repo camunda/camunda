@@ -84,7 +84,16 @@ final class BatchOperationArchiverJobTest {
             + job.archiveNextBatch().toCompletableFuture().join();
 
     // then
-    assertThat(meterRegistry.counter("zeebe.camunda.exporter.archived.batch.operations").count())
+    assertThat(
+            meterRegistry
+                .counter("zeebe.camunda.exporter.archiver.batch.operations", "state", "archiving")
+                .count())
+        .isEqualTo(6)
+        .isEqualTo(count);
+    assertThat(
+            meterRegistry
+                .counter("zeebe.camunda.exporter.archiver.batch.operations", "state", "archived")
+                .count())
         .isEqualTo(6)
         .isEqualTo(count);
   }
