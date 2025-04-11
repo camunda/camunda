@@ -271,11 +271,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return isMultiInstance(businessObject);
   };
 
-  getParentFlowNode = (flowNodeId: string) => {
-    const businessObject = this.businessObjects[flowNodeId];
-    return businessObject?.$parent;
-  };
-
   handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
   };
