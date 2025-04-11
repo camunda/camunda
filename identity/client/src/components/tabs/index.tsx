@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { ReactNode, useEffect } from "react";
 import {
   Tab,
@@ -40,15 +41,11 @@ const Tabs = <T extends { key: string; label: string; content: ReactNode }>({
 
   const selectedTabIndex = tabs.findIndex(({ key }) => key === selectedTabKey);
 
-  useEffect(
-    () => {
-      if (selectedTabIndex === -1) {
-        navigate(`${path}/${tabs[0].key}`, { replace: true });
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [navigate, path, selectedTabIndex],
-  );
+  useEffect(() => {
+    if (selectedTabIndex === -1) {
+      void navigate(`${path}/${tabs[0].key}`, { replace: true });
+    }
+  }, [navigate, path, selectedTabIndex]);
 
   return (
     <CarbonTabs

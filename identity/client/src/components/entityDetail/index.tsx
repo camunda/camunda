@@ -5,5 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 export { default } from "./EntityDetail";
 export { default as EntityDetailSkeleton } from "./Skeleton";
