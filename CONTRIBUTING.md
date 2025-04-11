@@ -156,6 +156,19 @@ docker build \
   .
 ```
 
+#### Build on macOS with an Apple Silicon chip
+> [!NOTE]
+> When building the code on a macOS with a Silicon chip(e.g. M1-M4), The build can fail with protoc errors.
+
+If you are running into protoc issues make sure that you have Rosetta installed locally.
+
+Rosetta enables a Mac with Apple silicon to use apps that were built for a Mac with an Intel processor.
+
+If you don't have Rosetta installed locally , you can  install it with the following command :
+```
+softwareupdate --install-rosetta --agree-to-license
+```
+
 ### Run
 
 Operate, Tasklist, and Optimize use Elasticsearch as its underlying data store. Therefore you have to download and run Elasticsearch. (For information on what version of Elasticsearch is needed, refer to the [Supported Environments documentation](https://docs.camunda.io/docs/next/reference/supported-environments/#component-requirements)).
