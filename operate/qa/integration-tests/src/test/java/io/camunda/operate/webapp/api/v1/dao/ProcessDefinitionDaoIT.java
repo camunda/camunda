@@ -51,6 +51,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Demo process")
             .setVersion(1)
+            .setVersionTag("demoVersionTag")
             .setBpmnProcessId("demoProcess")
             .setBpmnXml(resourceXml));
 
@@ -62,6 +63,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Error process")
             .setVersion(1)
+            .setVersionTag("errorVersionTag")
             .setBpmnProcessId("errorProcess")
             .setBpmnXml(resourceXml));
 
@@ -73,6 +75,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Complex process")
             .setVersion(1)
+            .setVersionTag("complexVersionTag")
             .setBpmnProcessId("complexProcess")
             .setBpmnXml(resourceXml));
 
@@ -194,5 +197,17 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
     assertThat(processDefinitionResults.getItems().get(0).getBpmnProcessId())
         .isEqualTo("complexProcess");
+  }
+
+  @Test
+  public void shouldFilterProcessDefinitionsByVersionTag() {
+    final Results<ProcessDefinition> processDefinitionResults =
+        dao.search(
+            new Query<ProcessDefinition>()
+                .setFilter(new ProcessDefinition().setVersionTag("demoVersionTag")));
+
+    assertThat(processDefinitionResults.getItems().get(0).getVersionTag())
+        .isEqualTo("demoVersionTag");
+    assertThat(processDefinitionResults.getItems()).hasSize(1);
   }
 }
