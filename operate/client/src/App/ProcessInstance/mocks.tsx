@@ -116,26 +116,31 @@ function getWrapper(options?: {
     }, []);
 
     return (
-      <ProcessDefinitionKeyContext.Provider value="123">
-        <QueryClientProvider client={getMockQueryClient()}>
-          <HistoryRouter
-            history={createMemoryHistory({
-              initialEntries: [initialPath],
-            })}
-            basename={contextPath ?? ''}
-          >
-            <Routes>
-              <Route path={Paths.processInstance()} element={children} />
-              <Route path={Paths.processes()} element={<>instances page</>} />
-              <Route path={Paths.dashboard()} element={<>dashboard page</>} />
-            </Routes>
-            {selectableFlowNode && (
-              <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
-            )}
-            <LocationLog />
-          </HistoryRouter>
-        </QueryClientProvider>
-      </ProcessDefinitionKeyContext.Provider>
+      <HistoryRouter
+        history={createMemoryHistory({
+          initialEntries: [initialPath],
+        })}
+        basename={contextPath ?? ''}
+      >
+        <Routes>
+          <Route
+            path={Paths.processInstance()}
+            element={
+              <ProcessDefinitionKeyContext.Provider value="123">
+                <QueryClientProvider client={getMockQueryClient()}>
+                  {children}
+                </QueryClientProvider>
+              </ProcessDefinitionKeyContext.Provider>
+            }
+          />
+          <Route path={Paths.processes()} element={<>instances page</>} />
+          <Route path={Paths.dashboard()} element={<>dashboard page</>} />
+        </Routes>
+        {selectableFlowNode && (
+          <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
+        )}
+        <LocationLog />
+      </HistoryRouter>
     );
   };
 

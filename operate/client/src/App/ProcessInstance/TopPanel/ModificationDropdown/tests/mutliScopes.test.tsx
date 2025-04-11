@@ -16,10 +16,15 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {act} from 'react';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {
     mockFetchProcessXML().withSuccess(open('multipleInstanceSubProcess.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('multipleInstanceSubProcess.bpmn'),
+    );
+
     modificationsStore.enableModificationMode();
   });
 

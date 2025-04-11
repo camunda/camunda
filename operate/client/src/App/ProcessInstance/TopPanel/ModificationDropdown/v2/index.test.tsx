@@ -214,7 +214,7 @@ describe('Modification Dropdown', () => {
     expect(
       await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
@@ -357,6 +357,9 @@ describe('Modification Dropdown', () => {
 
   it('should not support move operation for sub processes', async () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithEventBasedGateway,
+    );
 
     renderPopover();
 

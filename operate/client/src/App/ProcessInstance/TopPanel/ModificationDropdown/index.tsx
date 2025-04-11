@@ -26,6 +26,9 @@ import {
   Button,
   InlineLoading,
 } from './styled';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {getFlowNodeName} from 'modules/utils/flowNodes';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -38,6 +41,11 @@ const ModificationDropdown: React.FC<Props> = observer(
     const flowNodeInstanceId =
       flowNodeSelectionStore.state.selection?.flowNodeInstanceId ??
       flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
+
+    const processDefinitionKey = useProcessDefinitionKeyContext();
+    const {data: processDefinitionData} = useProcessInstanceXml({
+      processDefinitionKey,
+    });
 
     if (
       flowNodeId === undefined ||
@@ -113,9 +121,12 @@ const ModificationDropdown: React.FC<Props> = observer(
                                 scopeId: generateUniqueID(),
                                 flowNode: {
                                   id: flowNodeId,
-                                  name: processInstanceDetailsDiagramStore.getFlowNodeName(
-                                    flowNodeId,
-                                  ),
+                                  name:
+                                    getFlowNodeName({
+                                      diagramModel:
+                                        processDefinitionData?.diagramModel,
+                                      flowNodeId,
+                                    }) ?? '',
                                 },
                                 affectedTokenCount: 1,
                                 visibleAffectedTokenCount: 1,

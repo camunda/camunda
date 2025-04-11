@@ -46,6 +46,8 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
+import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
@@ -54,7 +56,7 @@ const mockRequests = (contextPath: string = '') => {
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
   mockFetchProcessXML(contextPath).withSuccess('');
-  mockFetchProcessDefinitionXml().withSuccess('');
+  mockFetchProcessDefinitionXml({contextPath}).withSuccess('');
   mockFetchSequenceFlows(contextPath).withSuccess(mockSequenceFlows);
   mockFetchFlowNodeInstances(contextPath).withSuccess(
     processInstancesMock.level1,
@@ -74,6 +76,7 @@ const mockRequests = (contextPath: string = '') => {
     count: 2,
   });
   mockFetchProcess(contextPath).withSuccess(mockProcess);
+  mockFetchProcessInstanceListeners(contextPath).withSuccess(noListeners);
 };
 
 type FlowNodeSelectorProps = {

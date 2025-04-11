@@ -23,6 +23,7 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {incidentFlowNodeMetaData} from 'modules/mocks/metadata';
 import {open} from 'modules/mocks/diagrams';
 import {act} from 'react';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Modification Dropdown', () => {
   beforeEach(() => {
@@ -86,6 +87,9 @@ describe('Modification Dropdown', () => {
     ]);
 
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
+    );
     modificationsStore.enableModificationMode();
   });
 
@@ -275,7 +279,9 @@ describe('Modification Dropdown', () => {
     ]);
 
     mockFetchProcessXML().withSuccess(mockProcessWithEventBasedGateway);
-
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithEventBasedGateway,
+    );
     renderPopover();
 
     await waitFor(() =>
