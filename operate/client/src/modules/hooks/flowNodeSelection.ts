@@ -8,7 +8,12 @@
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
-import {useWillAllFlowNodesBeCanceled} from './modifications';
+import {
+  useModificationsByFlowNode,
+  useWillAllFlowNodesBeCanceled,
+} from './modifications';
+import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {TOKEN_OPERATIONS} from 'modules/constants';
 
 const useHasPendingCancelOrMoveModification = () => {
   const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
@@ -39,4 +44,39 @@ const useHasPendingCancelOrMoveModification = () => {
   );
 };
 
-export {useHasPendingCancelOrMoveModification};
+const useHasRunningOrFinishedTokens = () => {
+  const {data: statistics} = useFlownodeInstancesStatistics();
+  const currentFlowNodeSelection = flowNodeSelectionStore.state.selection;
+
+  return (
+    currentFlowNodeSelection?.flowNodeId !== undefined &&
+    statistics?.items.some(
+      ({flowNodeId}) => flowNodeId === currentFlowNodeSelection.flowNodeId,
+    )
+  );
+};
+
+const useNewTokenCountForSelectedNode = () => {
+  const modificationsByFlowNode = useModificationsByFlowNode();
+  const currentFlowNodeSelection = flowNodeSelectionStore.state.selection;
+
+  const flowNodeId = currentFlowNodeSelection?.flowNodeId;
+  if (flowNodeId === undefined) {
+    return 0;
+  }
+
+  return (
+    (modificationsByFlowNode[flowNodeId]?.newTokens ?? 0) +
+    modificationsStore.flowNodeModifications.filter(
+      (modification) =>
+        modification.operation !== TOKEN_OPERATIONS.CANCEL_TOKEN &&
+        Object.keys(modification.parentScopeIds).includes(flowNodeId),
+    ).length
+  );
+};
+
+export {
+  useHasPendingCancelOrMoveModification,
+  useHasRunningOrFinishedTokens,
+  useNewTokenCountForSelectedNode,
+};
