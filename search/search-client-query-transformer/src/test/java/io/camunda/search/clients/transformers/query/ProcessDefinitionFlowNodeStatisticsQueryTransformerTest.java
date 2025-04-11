@@ -17,8 +17,7 @@ import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsA
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_CHILDREN_FN;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,7 +31,6 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.TypedSearchAggregationQuery;
@@ -94,11 +92,7 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
 
     final var filterAgg = (SearchFilterAggregator) childrenAgg.aggregations().getFirst();
     assertThat(filterAgg.name()).isEqualTo(AGGREGATION_FILTER_FLOW_NODES);
-    assertThat(filterAgg.query())
-        .isEqualTo(
-            or(
-                not(term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString())),
-                term(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString())));
+    assertThat(filterAgg.query()).isEqualTo(matchAll());
     assertThat(filterAgg.aggregations()).hasSize(4);
 
     assertThat(filterAgg.aggregations().get(0))
@@ -120,11 +114,7 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
               assertThat(completedFilter.name()).isEqualTo(AGGREGATION_FILTER_COMPLETED);
               assertThat(completedFilter.query())
                   .isEqualTo(
-                      and(
-                          term(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString()),
-                          term(
-                              ListViewTemplate.ACTIVITY_STATE,
-                              FlowNodeState.COMPLETED.toString())));
+                      term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString()));
               assertSubAggregations(completedFilter.aggregations());
             });
     assertThat(filterAgg.aggregations().get(2))
