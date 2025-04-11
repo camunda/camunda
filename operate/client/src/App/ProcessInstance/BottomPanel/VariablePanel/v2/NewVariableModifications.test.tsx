@@ -22,7 +22,6 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {createInstance, createVariable} from 'modules/testUtils';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
@@ -83,7 +82,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       variablesStore.reset();
       flowNodeSelectionStore.reset();
       flowNodeMetaDataStore.reset();
-      processInstanceDetailsDiagramStore.reset();
       modificationsStore.reset();
       processInstanceDetailsStatisticsStore.reset();
     };
