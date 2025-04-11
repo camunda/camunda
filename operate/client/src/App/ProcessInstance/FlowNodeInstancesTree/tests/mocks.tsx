@@ -23,6 +23,9 @@ import {
 import {useEffect} from 'react';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {TreeView} from '@carbon/react';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
   createInstance({
@@ -767,9 +770,13 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
   }, []);
 
   return (
-    <TreeView label={'instance history'} hideLabel>
-      {children}
-    </TreeView>
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        <TreeView label={'instance history'} hideLabel>
+          {children}
+        </TreeView>
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
   );
 };
 

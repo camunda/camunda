@@ -25,11 +25,13 @@ import {createRef} from 'react';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('FlowNodeInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(eventSubprocessProcessInstance);
     mockFetchProcessXML().withSuccess(eventSubProcess);
+    mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
 
@@ -69,7 +71,7 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
     );
 
     await user.type(
-      screen.getByLabelText('Event Subprocess', {
+      await screen.findByLabelText('Event Subprocess', {
         selector: "[aria-expanded='false']",
       }),
       '{arrowright}',

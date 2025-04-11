@@ -24,11 +24,13 @@ import {
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockFetchProcessXML().withSuccess(multiInstanceProcess);
+    mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
   });
@@ -54,7 +56,9 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
       },
     );
 
-    expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Multi-Instance Process'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Peter Fork')).toBeInTheDocument();
     expect(
       screen.getByText('Filter-Map Sub Process (Multi Instance)'),
@@ -92,7 +96,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level2);
 
     await user.type(
-      screen.getByLabelText('Filter-Map Sub Process (Multi Instance)', {
+      await screen.findByLabelText('Filter-Map Sub Process (Multi Instance)', {
         selector: "[aria-expanded='false']",
       }),
       '{arrowright}',

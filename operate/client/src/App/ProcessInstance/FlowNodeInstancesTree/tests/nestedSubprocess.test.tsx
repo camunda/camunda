@@ -24,11 +24,15 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(nestedSubProcessesInstance);
     mockFetchProcessXML().withSuccess(open('NestedSubProcesses.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('NestedSubProcesses.bpmn'),
+    );
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       nestedSubProcessesInstance.bpmnProcessId,
@@ -56,7 +60,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
       },
     );
 
-    expect(screen.getByText('Nested Sub Processes')).toBeInTheDocument();
+    expect(await screen.findByText('Nested Sub Processes')).toBeInTheDocument();
     expect(screen.getByText('Start Event 1')).toBeInTheDocument();
     expect(screen.queryByText('Sub Process 1')).not.toBeInTheDocument();
     expect(screen.queryByText('Sub Process 2')).not.toBeInTheDocument();
@@ -119,7 +123,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
       },
     );
 
-    expect(screen.getByText('Nested Sub Processes')).toBeInTheDocument();
+    expect(await screen.findByText('Nested Sub Processes')).toBeInTheDocument();
     expect(screen.getByText('Start Event 1')).toBeInTheDocument();
     expect(screen.queryByText('Sub Process 1')).not.toBeInTheDocument();
     expect(screen.queryByText('Sub Process 2')).not.toBeInTheDocument();
