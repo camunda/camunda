@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.BatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -16,11 +17,11 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +40,18 @@ public final class BatchOperationExecuteProcessor
   private final int partitionId;
   private final BatchOperationState batchOperationState;
 
+  private final Map<BatchOperationType, BatchOperationExecutor> handlers;
+
   public BatchOperationExecuteProcessor(
-      final Writers writers, final ProcessingState processingState, final int partitionId) {
+      final Writers writers,
+      final ProcessingState processingState,
+      final int partitionId,
+      final Map<BatchOperationType, BatchOperationExecutor> handlers) {
     commandWriter = writers.command();
     stateWriter = writers.state();
     batchOperationState = processingState.getBatchOperationState();
     this.partitionId = partitionId;
+    this.handlers = handlers;
   }
 
   @Override
@@ -81,10 +88,8 @@ public final class BatchOperationExecuteProcessor
 
     appendBatchOperationExecutionExecutingEvent(command.getValue(), Set.copyOf(entityKeys));
 
-    switch (batchOperation.getBatchOperationType()) {
-      case PROCESS_CANCELLATION ->
-          entityKeys.forEach(entityKey -> cancelProcessInstance(entityKey, batchKey));
-    }
+    final var handler = handlers.get(batchOperation.getBatchOperationType());
+    entityKeys.forEach(entityKey -> handler.handle(entityKey, batchKey));
 
     appendBatchOperationExecutionExecutedEvent(command.getValue(), Set.copyOf(entityKeys));
 
@@ -98,15 +103,6 @@ public final class BatchOperationExecuteProcessor
 
   private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
     return batchOperationState.get(batchOperationKey).orElse(null);
-  }
-
-  private void cancelProcessInstance(final long processInstanceKey, final long batchKey) {
-    LOGGER.info("Cancelling process instance with key '{}'", processInstanceKey);
-
-    final var command = new ProcessInstanceRecord();
-    command.setProcessInstanceKey(processInstanceKey);
-    commandWriter.appendFollowUpCommand(
-        processInstanceKey, ProcessInstanceIntent.CANCEL, command, batchKey);
   }
 
   private void appendBatchOperationExecutionExecutingEvent(
