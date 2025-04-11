@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.api.assertions;
 
-import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.response.ElementInstance;
 
 /** A collection of predefined {@link ElementSelector}s. */
 public class ElementSelectors {
@@ -50,8 +50,8 @@ public class ElementSelectors {
     }
 
     @Override
-    public boolean test(final FlowNodeInstance element) {
-      return elementId.equals(element.getFlowNodeId());
+    public boolean test(final ElementInstance element) {
+      return elementId.equals(element.getElementId());
     }
 
     @Override
@@ -60,8 +60,8 @@ public class ElementSelectors {
     }
 
     @Override
-    public void applyFilter(final FlownodeInstanceFilter filter) {
-      filter.flowNodeId(elementId);
+    public void applyFilter(final ElementInstanceFilter filter) {
+      filter.elementId(elementId);
     }
   }
 
@@ -74,8 +74,8 @@ public class ElementSelectors {
     }
 
     @Override
-    public boolean test(final FlowNodeInstance element) {
-      return elementName.equals(element.getFlowNodeName());
+    public boolean test(final ElementInstance element) {
+      return elementName.equals(element.getElementName());
     }
 
     @Override

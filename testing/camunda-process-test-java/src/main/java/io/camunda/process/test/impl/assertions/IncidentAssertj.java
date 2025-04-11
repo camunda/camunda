@@ -110,7 +110,7 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
             i ->
                 String.format(
                     "\t- '%s' [type: %s] \"%s\"",
-                    i.getFlowNodeId(),
+                    i.getElementId(),
                     i.getErrorType(),
                     abbreviate(i.getErrorMessage(), MAX_ERROR_MESSAGE_LENGTH)))
         .collect(Collectors.joining("\n"));
