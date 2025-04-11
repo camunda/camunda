@@ -17,8 +17,6 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 
 describe('useFlownodeStatistics', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
@@ -71,8 +69,9 @@ describe('useFlownodeStatistics', () => {
       wrapper: Wrapper,
     });
 
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 

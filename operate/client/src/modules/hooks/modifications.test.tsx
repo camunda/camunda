@@ -22,8 +22,6 @@ import {Paths} from 'modules/Routes';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 
 describe('modifications hooks', () => {
   const getWrapper = (
@@ -34,7 +32,6 @@ describe('modifications hooks', () => {
     const Wrapper = ({children}: {children: React.ReactNode}) => {
       useEffect(() => {
         return () => {
-          processInstanceDetailsDiagramStore.reset();
           modificationsStore.reset();
         };
       }, []);
@@ -231,8 +228,9 @@ describe('modifications hooks', () => {
         wrapper: getWrapper(),
       });
 
-      mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-      await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       expect(result.current).toEqual({
         node1: {
@@ -262,8 +260,9 @@ describe('modifications hooks', () => {
       const {result} = renderHook(() => useModificationsByFlowNode(), {
         wrapper: getWrapper(),
       });
-      mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-      await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       expect(result.current).toEqual({
         node1: {

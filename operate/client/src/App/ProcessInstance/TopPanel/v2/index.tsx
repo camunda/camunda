@@ -50,6 +50,7 @@ import {
   useTotalRunningInstancesVisibleForFlowNode,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
 import {finishMovingToken} from 'modules/utils/modifications';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -79,6 +80,7 @@ const TopPanel: React.FC = observer(() => {
   const {data: totalRunningInstances} = useTotalRunningInstancesForFlowNode(
     currentSelection?.flowNodeId,
   );
+  const {data: businessObjects} = useBusinessObjects();
 
   const affectedTokenCount =
     (sourceFlowNodeIdForMoveOperation &&
@@ -220,16 +222,21 @@ const TopPanel: React.FC = observer(() => {
           isOpen={incidentsStore.state.isIncidentBarOpen}
         />
       )}
-      {modificationsStore.state.status === 'moving-token' && (
-        <ModificationInfoBanner
-          text="Select the target flow node in the diagram"
-          button={{
-            onClick: () =>
-              finishMovingToken(affectedTokenCount, visibleAffectedTokenCount),
-            label: 'Discard',
-          }}
-        />
-      )}
+      {modificationsStore.state.status === 'moving-token' &&
+        businessObjects && (
+          <ModificationInfoBanner
+            text="Select the target flow node in the diagram"
+            button={{
+              onClick: () =>
+                finishMovingToken(
+                  affectedTokenCount,
+                  visibleAffectedTokenCount,
+                  businessObjects,
+                ),
+              label: 'Discard',
+            }}
+          />
+        )}
       {modificationsStore.isModificationModeEnabled &&
         getSelectedRunningInstanceCount(totalRunningInstances || 0) > 1 && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
@@ -245,7 +252,7 @@ const TopPanel: React.FC = observer(() => {
       )}
       <DiagramPanel>
         <DiagramShell status={getStatus()}>
-          {xml !== null && (
+          {xml !== null && businessObjects && (
             <Diagram
               xml={xml}
               selectableFlowNodes={
@@ -264,6 +271,7 @@ const TopPanel: React.FC = observer(() => {
                   finishMovingToken(
                     affectedTokenCount,
                     visibleAffectedTokenCount,
+                    businessObjects,
                     flowNodeId,
                   );
                 } else {

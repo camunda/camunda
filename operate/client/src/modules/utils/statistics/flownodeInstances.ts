@@ -7,24 +7,23 @@
  */
 
 import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas/operate';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 
 type Statistic = ProcessDefinitionStatistic & {
   filteredActive: number;
   completedEndEvents: number;
 };
 
-const getStatisticsByFlowNode = (data: ProcessDefinitionStatistic[]) => {
+const getStatisticsByFlowNode = (
+  data: ProcessDefinitionStatistic[],
+  businessObjects?: BusinessObjects,
+) => {
   return data.reduce<{
     [key: string]: Omit<Statistic, 'flowNodeId'>;
   }>((statistics, {flowNodeId: id, active, incidents, completed, canceled}) => {
-    // TODO: [OPERATE-V2-MIGRATION] After migrating processInstanceDetailsDiagramStore to a query,
-    // consider passing the resolved flowNode as a parameter to getStatisticsByFlowNode
-    // instead of accessing it directly from processInstanceDetailsDiagramStore.businessObjects.
-    const businessObject =
-      processInstanceDetailsDiagramStore.businessObjects[id];
+    const businessObject = businessObjects?.[id];
 
     if (businessObject === undefined) {
       return statistics;
