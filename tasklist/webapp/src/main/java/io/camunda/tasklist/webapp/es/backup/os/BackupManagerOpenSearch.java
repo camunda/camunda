@@ -134,26 +134,30 @@ public class BackupManagerOpenSearch extends BackupManager {
   }
 
   @Override
-  public List<GetBackupStateResponseDto> getBackups() {
+  public List<GetBackupStateResponseDto> getBackups(final boolean verbose) {
     final GetSnapshotRequest snapshotStatusRequest =
         GetSnapshotRequest.of(
             gsr ->
-                gsr.repository(getRepositoryName()).snapshot(Metadata.SNAPSHOT_NAME_PREFIX + "*"));
+                gsr.repository(getRepositoryName())
+                    .snapshot(Metadata.SNAPSHOT_NAME_PREFIX + "*")
+                    .verbose(verbose));
     final GetCustomSnapshotResponse response;
     try {
       response = getCustomSnapshotResponse(snapshotStatusRequest);
-      final List<SnapshotInfo> snapshots =
-          response.snapshots().stream()
-              .sorted(Comparator.comparing(SnapshotInfo::startTimeInMillis).reversed())
-              .toList();
+      var snapshots = response.snapshots();
+      if (verbose) {
+        snapshots =
+            snapshots.stream()
+                .sorted(Comparator.comparing(SnapshotInfo::startTimeInMillis).reversed())
+                .toList();
+      }
 
       final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
               .collect(
                   groupingBy(
                       si -> {
-                        final var jsonDataMap = si.metadata();
-                        final Metadata metadata = getMetadata(jsonDataMap);
+                        final Metadata metadata = getMetadata(si.metadata(), si.snapshot());
                         Long backupId = metadata.getBackupId();
                         // backward compatibility with v. 8.1
                         if (backupId == null) {
@@ -252,11 +256,11 @@ public class BackupManagerOpenSearch extends BackupManager {
   }
 
   private static boolean isSnapshotMissingException(final Throwable e) {
-    return e.getMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
+    return e.getMessage() != null && e.getMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
   }
 
   private boolean isRepositoryMissingException(final Exception e) {
-    return e.getMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
+    return e.getMessage() != null && e.getMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
   }
 
   private void validateNoDuplicateBackupId(final Long backupId) {
@@ -445,7 +449,7 @@ public class BackupManagerOpenSearch extends BackupManager {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Map<String, JsonData> jsonDataMap = snapshots.get(0).metadata();
-    final Metadata metadata = getMetadata(jsonDataMap);
+    final Metadata metadata = getMetadata(jsonDataMap, snapshots.get(0).snapshot());
     final Integer expectedSnapshotsCount = metadata.getPartCount();
     if (snapshots.size() == expectedSnapshotsCount
         && snapshots.stream().map(SnapshotInfo::state).allMatch("SUCCESS"::equals)) {
@@ -467,11 +471,13 @@ public class BackupManagerOpenSearch extends BackupManager {
     for (final SnapshotInfo snapshot : snapshots) {
       final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.snapshot());
-      detail.setStartTime(
-          OffsetDateTime.ofInstant(
-              Instant.ofEpochMilli(
-                  Long.parseLong(Objects.requireNonNull(snapshot.startTimeInMillis()))),
-              ZoneId.systemDefault()));
+      if (detail.getStartTime() != null) {
+        detail.setStartTime(
+            OffsetDateTime.ofInstant(
+                Instant.ofEpochMilli(
+                    Long.parseLong(Objects.requireNonNull(snapshot.startTimeInMillis()))),
+                ZoneId.systemDefault()));
+      }
       if (snapshot.failures() != null) {
         detail.setFailures(
             snapshot.failures().stream()
@@ -511,12 +517,9 @@ public class BackupManagerOpenSearch extends BackupManager {
     return response;
   }
 
-  private static Metadata getMetadata(final Map<String, JsonData> jsonDataMap) {
-    return new Metadata()
-        .setBackupId(jsonDataMap.get("backupId").to(Long.class))
-        .setPartCount(jsonDataMap.get("partCount").to(Integer.class))
-        .setPartNo(jsonDataMap.get("partNo").to(Integer.class))
-        .setVersion(jsonDataMap.get("version").to(String.class));
+  private static Metadata getMetadata(
+      final Map<String, JsonData> jsonDataMap, final String snapshotName) {
+    return Metadata.extractFromMetadataOrName(Metadata.fromOSJsonData(jsonDataMap), snapshotName);
   }
 
   @Bean("tasklistBackupThreadPoolExecutor")
