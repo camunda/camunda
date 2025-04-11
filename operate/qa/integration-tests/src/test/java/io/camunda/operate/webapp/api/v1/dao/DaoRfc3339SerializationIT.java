@@ -51,6 +51,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       OperateProperties.PREFIX + ".multiTenancy.enabled = false",
       OperateProperties.PREFIX + ".rfc3339ApiDateFormat = true"
