@@ -10,36 +10,33 @@ import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {useSelectableFlowNodes} from './useSelectableFlowNodes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import * as pageParamsModule from 'App/ProcessInstance/useProcessInstancePageParams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {useEffect} from 'react';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 describe('useSelectableFlowNodes', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
-    useEffect(() => {
-      return () => {
-        processInstanceDetailsDiagramStore.reset();
-      };
-    }, []);
-
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        {children}
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
   beforeEach(async () => {
-    jest
-      .spyOn(pageParamsModule, 'useProcessInstancePageParams')
-      .mockReturnValue({processInstanceId: 'processInstanceId123'});
-
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
   });
 
   afterEach(() => {
@@ -78,8 +75,6 @@ describe('useSelectableFlowNodes', () => {
     const {result} = renderHook(() => useSelectableFlowNodes(), {
       wrapper: Wrapper,
     });
-
-    expect(result.current.isLoading).toBe(true);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -131,10 +126,12 @@ describe('useSelectableFlowNodes', () => {
   });
 
   it('should handle loading state', async () => {
+    mockFetchFlownodeInstancesStatistics().withDelay({items: []});
+
     const {result} = renderHook(() => useSelectableFlowNodes(), {
       wrapper: Wrapper,
     });
 
-    expect(result.current.isLoading).toBe(true);
+    await waitFor(() => expect(result.current.isLoading).toBe(true));
   });
 });

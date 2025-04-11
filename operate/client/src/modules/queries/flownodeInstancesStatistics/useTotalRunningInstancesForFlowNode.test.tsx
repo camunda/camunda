@@ -15,36 +15,35 @@ import {
   useTotalRunningInstancesVisibleForFlowNodes,
 } from './useTotalRunningInstancesForFlowNode';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import * as pageParamsModule from 'App/ProcessInstance/useProcessInstancePageParams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
-import {useEffect} from 'react';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {Paths} from 'modules/Routes';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 
 describe('useTotalRunningInstancesForFlowNode hooks', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
-    useEffect(() => {
-      return () => {
-        processInstanceDetailsDiagramStore.reset();
-      };
-    }, []);
-
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        {children}
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
   beforeEach(async () => {
-    jest
-      .spyOn(pageParamsModule, 'useProcessInstancePageParams')
-      .mockReturnValue({processInstanceId: 'processInstanceId123'});
-
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
   });
 
   afterEach(() => {
@@ -71,7 +70,8 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
       {wrapper: Wrapper},
     );
 
-    expect(result.current.isLoading).toBe(true);
+    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
+    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -109,8 +109,6 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
       {wrapper: Wrapper},
     );
 
-    expect(result.current.isLoading).toBe(true);
-
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toStrictEqual({
@@ -138,8 +136,6 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
       () => useTotalRunningInstancesVisibleForFlowNode('StartEvent_1'),
       {wrapper: Wrapper},
     );
-
-    expect(result.current.isLoading).toBe(true);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -176,8 +172,6 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
         ]),
       {wrapper: Wrapper},
     );
-
-    expect(result.current.isLoading).toBe(true);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -229,11 +223,13 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
   });
 
   it('should handle loading state', async () => {
+    mockFetchFlownodeInstancesStatistics().withDelay({items: []});
+
     const {result} = renderHook(
       () => useTotalRunningInstancesForFlowNode('StartEvent_1'),
       {wrapper: Wrapper},
     );
 
-    expect(result.current.isLoading).toBe(true);
+    await waitFor(() => expect(result.current.isLoading).toBe(true));
   });
 });

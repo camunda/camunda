@@ -26,7 +26,6 @@ import {
   createVariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
@@ -44,7 +43,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -1603,8 +1601,9 @@ describe('VariablePanel', () => {
       ],
     };
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -1632,7 +1631,11 @@ describe('VariablePanel', () => {
       modificationsStore.cancelAllTokens('Activity_0qtp1k6');
     });
 
-    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('edit-variable-value'),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it('should display readonly state for existing node if cancel modification is applied on the flow node and one new token is added', async () => {
