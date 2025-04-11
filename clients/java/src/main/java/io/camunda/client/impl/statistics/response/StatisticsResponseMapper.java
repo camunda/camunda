@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl.statistics.response;
 
-import io.camunda.client.api.statistics.response.ProcessDefinitionFlowNodeStatistics;
+import io.camunda.client.api.statistics.response.ProcessDefinitionElementStatistics;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import java.util.Collections;
 import java.util.List;
@@ -23,11 +23,11 @@ import java.util.stream.Collectors;
 
 public class StatisticsResponseMapper {
 
-  public static List<ProcessDefinitionFlowNodeStatistics> toProcessDefinitionStatisticsResponse(
+  public static List<ProcessDefinitionElementStatistics> toProcessDefinitionStatisticsResponse(
       final ProcessDefinitionElementStatisticsQueryResult response) {
     if (response.getItems() != null) {
       return response.getItems().stream()
-          .map(ProcessDefinitionFlowNodeStatisticsImpl::new)
+          .map(ProcessDefinitionElementStatisticsImpl::new)
           .collect(Collectors.toList());
     }
     return Collections.emptyList();

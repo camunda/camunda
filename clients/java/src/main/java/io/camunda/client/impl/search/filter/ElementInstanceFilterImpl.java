@@ -15,73 +15,72 @@
  */
 package io.camunda.client.impl.search.filter;
 
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
-import io.camunda.client.api.search.enums.FlowNodeInstanceType;
-import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
-import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceType;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.impl.RequestMapper;
-import io.camunda.client.impl.search.filter.builder.FlowNodeInstanceStatePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.ElementInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.ElementInstanceFilter;
 import java.util.function.Consumer;
 
-public class FlownodeInstanceFilterImpl
-    extends TypedSearchRequestPropertyProvider<ElementInstanceFilter>
-    implements FlownodeInstanceFilter {
+public class ElementInstanceFilterImpl
+    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.ElementInstanceFilter>
+    implements ElementInstanceFilter {
 
   private final io.camunda.client.protocol.rest.ElementInstanceFilter filter;
 
-  public FlownodeInstanceFilterImpl() {
+  public ElementInstanceFilterImpl() {
     filter = new io.camunda.client.protocol.rest.ElementInstanceFilter();
   }
 
   @Override
-  public FlownodeInstanceFilter flowNodeInstanceKey(final long value) {
+  public ElementInstanceFilter elementInstanceKey(final long value) {
     filter.elementInstanceKey(ParseUtil.keyToString(value));
     return this;
   }
 
   @Override
-  public FlownodeInstanceFilter processDefinitionKey(final long value) {
+  public ElementInstanceFilter processDefinitionKey(final long value) {
     filter.setProcessDefinitionKey(ParseUtil.keyToString(value));
     return this;
   }
 
   @Override
-  public FlownodeInstanceFilter processDefinitionId(final String value) {
+  public ElementInstanceFilter processDefinitionId(final String value) {
     filter.processDefinitionId(value);
     return this;
   }
 
   @Override
-  public FlownodeInstanceFilter processInstanceKey(final long value) {
+  public ElementInstanceFilter processInstanceKey(final long value) {
     filter.setProcessInstanceKey(ParseUtil.keyToString(value));
     return this;
   }
 
   @Override
-  public FlownodeInstanceFilter flowNodeId(final String value) {
+  public ElementInstanceFilter elementId(final String value) {
     filter.setElementId(value);
     return this;
   }
 
   @Override
-  public FlownodeInstanceFilter state(final FlowNodeInstanceState value) {
+  public ElementInstanceFilter state(final ElementInstanceState value) {
     return state(b -> b.eq(value));
   }
 
   @Override
-  public FlownodeInstanceFilter state(final Consumer<FlowNodeInstanceStateProperty> fn) {
-    final FlowNodeInstanceStateProperty property = new FlowNodeInstanceStatePropertyImpl();
+  public ElementInstanceFilter state(final Consumer<ElementInstanceStateProperty> fn) {
+    final ElementInstanceStateProperty property = new ElementInstanceStatePropertyImpl();
     fn.accept(property);
     filter.setState(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
   @Override
-  public FlownodeInstanceFilter type(final FlowNodeInstanceType value) {
+  public ElementInstanceFilter type(final ElementInstanceType value) {
     filter.setType(
         EnumUtil.convert(
             value, io.camunda.client.protocol.rest.ElementInstanceFilter.TypeEnum.class));
@@ -89,19 +88,19 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
-  public FlownodeInstanceFilter hasIncident(final boolean value) {
+  public ElementInstanceFilter hasIncident(final boolean value) {
     filter.hasIncident(value);
     return this;
   }
 
   @Override
-  public FlownodeInstanceFilter incidentKey(final long value) {
+  public ElementInstanceFilter incidentKey(final long value) {
     filter.setIncidentKey(ParseUtil.keyToString(value));
     return this;
   }
 
   @Override
-  public FlownodeInstanceFilter tenantId(final String value) {
+  public ElementInstanceFilter tenantId(final String value) {
     filter.setTenantId(value);
     return this;
   }

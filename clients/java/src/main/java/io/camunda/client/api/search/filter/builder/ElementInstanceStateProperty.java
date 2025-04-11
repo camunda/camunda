@@ -13,9 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.fetch;
+package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.filter.ElementInstanceStateFilterProperty;
 
-public interface FlowNodeInstanceGetRequest extends FinalCommandStep<FlowNodeInstance> {}
+public interface ElementInstanceStateProperty
+    extends LikeProperty<
+        ElementInstanceState,
+        String,
+        ElementInstanceStateFilterProperty,
+        ElementInstanceStateProperty> {}

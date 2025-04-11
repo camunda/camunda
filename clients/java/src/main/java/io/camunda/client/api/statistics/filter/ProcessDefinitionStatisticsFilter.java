@@ -41,11 +41,11 @@ public interface ProcessDefinitionStatisticsFilter extends StatisticsRequestFilt
   /** Filter by parentProcessInstanceKey using {@link BasicLongProperty} consumer */
   ProcessDefinitionStatisticsFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn);
 
-  /** Filter by parentFlowNodeInstanceKey */
-  ProcessDefinitionStatisticsFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
+  /** Filter by parentElementInstanceKey */
+  ProcessDefinitionStatisticsFilter parentElementInstanceKey(final Long parentElementInstanceKey);
 
-  /** Filter by parentFlowNodeInstanceKey using {@link BasicLongProperty} consumer */
-  ProcessDefinitionStatisticsFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn);
+  /** Filter by parentElementInstanceKey using {@link BasicLongProperty} consumer */
+  ProcessDefinitionStatisticsFilter parentElementInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by startDate */
   ProcessDefinitionStatisticsFilter startDate(final OffsetDateTime startDate);

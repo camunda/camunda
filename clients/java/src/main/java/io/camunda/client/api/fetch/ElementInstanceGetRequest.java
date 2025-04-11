@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.fetch;
 
-public enum FlowNodeInstanceState {
-  ACTIVE,
-  COMPLETED,
-  TERMINATED,
-  UNKNOWN_ENUM_VALUE;
-}
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.response.ElementInstance;
+
+public interface ElementInstanceGetRequest extends FinalCommandStep<ElementInstance> {}

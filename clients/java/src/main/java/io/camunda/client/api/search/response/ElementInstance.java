@@ -15,47 +15,47 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
-import io.camunda.client.api.search.enums.FlowNodeInstanceType;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceType;
 
-public interface FlowNodeInstance {
+public interface ElementInstance {
 
   /** key */
-  Long getFlowNodeInstanceKey();
+  Long getElementInstanceKey();
 
-  /** process definition key for flow node instance */
+  /** process definition key for element instance */
   Long getProcessDefinitionKey();
 
-  /** process definition id for flow node instance */
+  /** process definition id for element instance */
   String getProcessDefinitionId();
 
-  /** process instance key for flow node instance */
+  /** process instance key for element instance */
   Long getProcessInstanceKey();
 
-  /** flow node id for flow node instance */
-  String getFlowNodeId();
+  /** element id for element instance */
+  String getElementId();
 
-  /** flow node name for flow node instance */
-  String getFlowNodeName();
+  /** element name for element instance */
+  String getElementName();
 
-  /** start date of flow node instance */
+  /** start date of element instance */
   String getStartDate();
 
-  /** end date of flow node instance */
+  /** end date of element instance */
   String getEndDate();
 
-  /** whether flow node instance has an incident */
+  /** whether element instance has an incident */
   Boolean getIncident();
 
-  /** incident key for flow node instance */
+  /** incident key for element instance */
   Long getIncidentKey();
 
-  /** state of flow node instance */
-  FlowNodeInstanceState getState();
+  /** state of element instance */
+  ElementInstanceState getState();
 
-  /** tenant id for flow node instance */
+  /** tenant id for element instance */
   String getTenantId();
 
-  /** type of flow node instance */
-  FlowNodeInstanceType getType();
+  /** type of element instance */
+  ElementInstanceType getType();
 }

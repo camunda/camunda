@@ -15,69 +15,69 @@
  */
 package io.camunda.client.impl.search.sort;
 
-import io.camunda.client.api.search.sort.FlownodeInstanceSort;
+import io.camunda.client.api.search.sort.ElementInstanceSort;
 import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public class FlownodeInstanceSortImpl extends SearchRequestSortBase<FlownodeInstanceSort>
-    implements FlownodeInstanceSort {
+public class ElementInstanceSortImpl extends SearchRequestSortBase<ElementInstanceSort>
+    implements ElementInstanceSort {
 
   @Override
-  protected FlownodeInstanceSort self() {
+  protected ElementInstanceSort self() {
     return this;
   }
 
   @Override
-  public FlownodeInstanceSort flowNodeInstanceKey() {
-    return field("flowNodeInstanceKey");
+  public ElementInstanceSort elementInstanceKey() {
+    return field("elementInstanceKey");
   }
 
   @Override
-  public FlownodeInstanceSort processInstanceKey() {
+  public ElementInstanceSort processInstanceKey() {
     return field("processInstanceKey");
   }
 
   @Override
-  public FlownodeInstanceSort processDefinitionKey() {
+  public ElementInstanceSort processDefinitionKey() {
     return field("processDefinitionKey");
   }
 
   @Override
-  public FlownodeInstanceSort processDefinitionId() {
+  public ElementInstanceSort processDefinitionId() {
     return field("processDefinitionId");
   }
 
   @Override
-  public FlownodeInstanceSort startDate() {
+  public ElementInstanceSort startDate() {
     return field("startDate");
   }
 
   @Override
-  public FlownodeInstanceSort endDate() {
+  public ElementInstanceSort endDate() {
     return field("endDate");
   }
 
   @Override
-  public FlownodeInstanceSort flowNodeId() {
-    return field("flowNodeId");
+  public ElementInstanceSort elementId() {
+    return field("elementId");
   }
 
   @Override
-  public FlownodeInstanceSort type() {
+  public ElementInstanceSort type() {
     return field("type");
   }
 
   @Override
-  public FlownodeInstanceSort state() {
+  public ElementInstanceSort state() {
     return field("state");
   }
 
   @Override
-  public FlownodeInstanceSort incidentKey() {
+  public ElementInstanceSort incidentKey() {
     return field("incidentKey");
   }
 
   @Override
-  public FlownodeInstanceSort tenantId() {
+  public ElementInstanceSort tenantId() {
     return field("tenantId");
   }
 }

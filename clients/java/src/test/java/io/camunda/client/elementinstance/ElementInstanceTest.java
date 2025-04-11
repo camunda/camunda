@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.flownodeinstance;
+package io.camunda.client.elementinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
-import io.camunda.client.api.search.enums.FlowNodeInstanceType;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
@@ -29,11 +29,11 @@ import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
-public class FlownodeInstanceTest extends ClientRestTest {
+public class ElementInstanceTest extends ClientRestTest {
   @Test
-  void shouldSearchFlownodeInstance() {
+  void shouldSearchElementInstance() {
     // when
-    client.newFlownodeInstanceSearchRequest().send().join();
+    client.newElementInstanceSearchRequest().send().join();
 
     // then
     final ElementInstanceSearchQuery request =
@@ -42,19 +42,19 @@ public class FlownodeInstanceTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchFlownodeInstanceWithFullFilters() {
+  void shouldSearchElementInstanceWithFullFilters() {
     // when
     client
-        .newFlownodeInstanceSearchRequest()
+        .newElementInstanceSearchRequest()
         .filter(
             f ->
-                f.flowNodeInstanceKey(1L)
-                    .type(FlowNodeInstanceType.SERVICE_TASK)
-                    .state(FlowNodeInstanceState.ACTIVE)
+                f.elementInstanceKey(1L)
+                    .type(ElementInstanceType.SERVICE_TASK)
+                    .state(ElementInstanceState.ACTIVE)
                     .processDefinitionKey(2L)
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
-                    .flowNodeId("flowNodeId")
+                    .elementId("elementId")
                     .hasIncident(true)
                     .incidentKey(4L)
                     .tenantId("<default>"))
@@ -70,20 +70,20 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
-    assertThat(filter.getElementId()).isEqualTo("flowNodeId");
+    assertThat(filter.getElementId()).isEqualTo("elementId");
     assertThat(filter.getHasIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo("4");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
   }
 
   @Test
-  void shouldSearchFlownodeInstanceWithFullSorting() {
+  void shouldSearchElementInstanceWithFullSorting() {
     // when
     client
-        .newFlownodeInstanceSearchRequest()
+        .newElementInstanceSearchRequest()
         .sort(
             s ->
-                s.flowNodeInstanceKey()
+                s.elementInstanceKey()
                     .processDefinitionKey()
                     .asc()
                     .processInstanceKey()
@@ -109,7 +109,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
     final ElementInstanceSearchQuery request =
         gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
     final List<SearchRequestSort> sorts =
-        SearchRequestSortMapper.fromFlowNodeInstanceSearchQuerySortRequest(
+        SearchRequestSortMapper.fromElementInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts.size()).isEqualTo(9);
     assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
@@ -124,14 +124,14 @@ public class FlownodeInstanceTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldGetFlownodeInstance() {
+  public void shouldGetElementInstance() {
     // when
-    final long flowNodeInstanceKey = 0xC00L;
-    client.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
+    final long elementInstanceKey = 0xC00L;
+    client.newElementInstanceGetRequest(elementInstanceKey).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/flownode-instances/" + flowNodeInstanceKey);
+    assertThat(request.getUrl()).isEqualTo("/v2/element-instances/" + elementInstanceKey);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 

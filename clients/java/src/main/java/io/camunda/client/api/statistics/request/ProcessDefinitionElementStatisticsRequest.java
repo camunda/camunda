@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.statistics.response;
+package io.camunda.client.api.statistics.request;
 
-public interface ProcessDefinitionFlowNodeStatistics {
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.client.api.statistics.response.ProcessDefinitionElementStatistics;
+import java.util.List;
 
-  String getFlowNodeId();
-
-  Long getActive();
-
-  Long getCanceled();
-
-  Long getIncidents();
-
-  Long getCompleted();
-}
+public interface ProcessDefinitionElementStatisticsRequest
+    extends StatisticsRequest<
+            ProcessDefinitionStatisticsFilter, ProcessDefinitionElementStatisticsRequest>,
+        FinalCommandStep<List<ProcessDefinitionElementStatistics>> {}

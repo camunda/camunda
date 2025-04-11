@@ -15,22 +15,21 @@
  */
 package io.camunda.client.impl.statistics.response;
 
-import io.camunda.client.api.statistics.response.ProcessDefinitionFlowNodeStatistics;
+import io.camunda.client.api.statistics.response.ProcessDefinitionElementStatistics;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsResult;
 import java.util.Objects;
 
-public class ProcessDefinitionFlowNodeStatisticsImpl
-    implements ProcessDefinitionFlowNodeStatistics {
+public class ProcessDefinitionElementStatisticsImpl implements ProcessDefinitionElementStatistics {
 
-  private final String flowNodeId;
+  private final String elementId;
   private final Long active;
   private final Long canceled;
   private final Long incidents;
   private final Long completed;
 
-  public ProcessDefinitionFlowNodeStatisticsImpl(
+  public ProcessDefinitionElementStatisticsImpl(
       final ProcessDefinitionElementStatisticsResult statistics) {
-    flowNodeId = statistics.getElementId();
+    elementId = statistics.getElementId();
     active = statistics.getActive();
     canceled = statistics.getCanceled();
     incidents = statistics.getIncidents();
@@ -38,8 +37,8 @@ public class ProcessDefinitionFlowNodeStatisticsImpl
   }
 
   @Override
-  public String getFlowNodeId() {
-    return flowNodeId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
@@ -64,7 +63,7 @@ public class ProcessDefinitionFlowNodeStatisticsImpl
 
   @Override
   public int hashCode() {
-    return Objects.hash(flowNodeId, active, canceled, incidents, completed);
+    return Objects.hash(elementId, active, canceled, incidents, completed);
   }
 
   @Override
@@ -72,9 +71,8 @@ public class ProcessDefinitionFlowNodeStatisticsImpl
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final ProcessDefinitionFlowNodeStatisticsImpl that =
-        (ProcessDefinitionFlowNodeStatisticsImpl) o;
-    return Objects.equals(flowNodeId, that.flowNodeId)
+    final ProcessDefinitionElementStatisticsImpl that = (ProcessDefinitionElementStatisticsImpl) o;
+    return Objects.equals(elementId, that.elementId)
         && Objects.equals(active, that.active)
         && Objects.equals(canceled, that.canceled)
         && Objects.equals(incidents, that.incidents)
@@ -84,7 +82,7 @@ public class ProcessDefinitionFlowNodeStatisticsImpl
   @Override
   public String toString() {
     return String.format(
-        "ProcessDefinitionFlowNodeStatisticsImpl{flowNodeId='%s', active=%d, canceled=%d, incidents=%d, completed=%d}",
-        flowNodeId, active, canceled, incidents, completed);
+        "ProcessDefinitionElementStatisticsImpl{elementId='%s', active=%d, canceled=%d, incidents=%d, completed=%d}",
+        elementId, active, canceled, incidents, completed);
   }
 }

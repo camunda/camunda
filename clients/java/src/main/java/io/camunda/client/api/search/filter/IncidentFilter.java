@@ -70,20 +70,20 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter errorMessage(final String errorMessage);
 
   /**
-   * Filters incidents by the flow node id.
+   * Filters incidents by the element id.
    *
-   * @param value the id of flow node id.
+   * @param value the id of element id.
    * @return the updated filter
    */
-  IncidentFilter flowNodeId(final String value);
+  IncidentFilter elementId(final String value);
 
   /**
-   * Filters incidents by the flow node instance key.
+   * Filters incidents by the element instance key.
    *
-   * @param value the key of flow node instance.
+   * @param value the key of element instance.
    * @return the updated filter
    */
-  IncidentFilter flowNodeInstanceKey(final Long value);
+  IncidentFilter elementInstanceKey(final Long value);
 
   /**
    * Filters incidents by creation time of incident.

@@ -28,7 +28,7 @@ public interface AdHocSubprocessActivityFilter extends SearchRequestFilter {
   AdHocSubprocessActivityFilter processDefinitionKey(final long processDefinitionKey);
 
   /**
-   * Filters flow node instances by ad-hoc subprocess id.
+   * Filters element instances by ad-hoc subprocess id.
    *
    * @param adHocSubprocessId the id of the ad-hoc subprocess
    * @return the updated filter

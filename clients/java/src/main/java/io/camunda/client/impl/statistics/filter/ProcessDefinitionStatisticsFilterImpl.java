@@ -76,14 +76,14 @@ public class ProcessDefinitionStatisticsFilterImpl
   }
 
   @Override
-  public ProcessDefinitionStatisticsFilterImpl parentFlowNodeInstanceKey(
-      final Long parentFlowNodeInstanceKey) {
-    parentFlowNodeInstanceKey(b -> b.eq(parentFlowNodeInstanceKey));
+  public ProcessDefinitionStatisticsFilterImpl parentElementInstanceKey(
+      final Long parentElementInstanceKey) {
+    parentElementInstanceKey(b -> b.eq(parentElementInstanceKey));
     return this;
   }
 
   @Override
-  public ProcessDefinitionStatisticsFilterImpl parentFlowNodeInstanceKey(
+  public ProcessDefinitionStatisticsFilterImpl parentElementInstanceKey(
       final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);

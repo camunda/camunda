@@ -77,7 +77,7 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
-  public static List<SearchRequestSort> fromFlowNodeInstanceSearchQuerySortRequest(
+  public static List<SearchRequestSort> fromElementInstanceSearchQuerySortRequest(
       final List<ElementInstanceSearchQuerySortRequest> requests) {
     return requests.stream()
         .map(r -> createFrom(r.getField(), r.getOrder()))
@@ -245,8 +245,8 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
-  public static List<ElementInstanceSearchQuerySortRequest>
-      toFlowNodeInstanceSearchQuerySortRequest(final List<SearchRequestSort> requests) {
+  public static List<ElementInstanceSearchQuerySortRequest> toElementInstanceSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
     return requests.stream()
         .map(
             r -> {
