@@ -93,9 +93,9 @@ public class ElasticsearchBackupRepositoryTest {
   @Test
   public void testWaitingForSnapshotTillCompleted() throws IOException {
     final int timeout = 0;
-
+    final int numberOfSnapshots = 6;
     final var snapshotInfos = new ArrayList<SnapshotInfo>();
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < numberOfSnapshots; i++) {
       final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
       when(snapshotInfo.state())
           .thenReturn(SnapshotState.IN_PROGRESS)
@@ -113,16 +113,22 @@ public class ElasticsearchBackupRepositoryTest {
     final var captor = ArgumentCaptor.forClass(ActionListener.class);
     when(esClient.snapshot().createAsync(any(), any(), any())).thenReturn(null);
 
-    backupRepository.executeSnapshotting(
-        new SnapshotRequest(
-            repositoryName,
-            snapshotName,
-            List.of("index-example"),
-            new Metadata().setBackupId(backupId).setPartCount(1).setPartNo(1).setVersion("8.3.0")),
-        () -> {},
-        () -> {});
-
-    verify(esClient.snapshot()).createAsync(any(), any(), captor.capture());
+    for (int i = 0; i < numberOfSnapshots; i++) {
+      backupRepository.executeSnapshotting(
+          new SnapshotRequest(
+              repositoryName,
+              snapshotName,
+              List.of("index-example"),
+              new Metadata()
+                  .setBackupId(backupId)
+                  .setPartCount(i)
+                  .setPartNo(6)
+                  .setVersion("8.3.0")),
+          () -> {},
+          () -> {});
+    }
+    verify(esClient.snapshot(), times(numberOfSnapshots))
+        .createAsync(any(), any(), captor.capture());
     captor.getValue().onFailure(new SocketTimeoutException());
     verify(backupRepository, times(3)).findSnapshots(repositoryName, backupId);
 
