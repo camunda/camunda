@@ -14,62 +14,84 @@ import {
   within,
 } from 'common/testing/testing-library';
 import {FormModal} from '.';
-import {createMockProcess} from 'v1/api/useProcesses.query';
-import {nodeMockServer} from 'common/testing/nodeMockServer';
-import {http, HttpResponse} from 'msw';
-import * as formMocks from 'v1/mocks/form';
-import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'common/testing/getMockQueryClient';
-
-const getWrapper = () => {
-  const mockClient = getMockQueryClient();
-
-  type Props = {
-    children?: React.ReactNode;
-  };
-
-  const Wrapper: React.FC<Props> = ({children}) => {
-    return (
-      <QueryClientProvider client={mockClient}>{children}</QueryClientProvider>
-    );
-  };
-
-  return Wrapper;
-};
+import * as mockFormSchema from 'common/mocks/form-schema';
 
 describe('<FormModal />', () => {
+  it('show a loading skeleton', () => {
+    const {rerender} = render(
+      <FormModal
+        processDisplayName="Process 0"
+        schema={null}
+        fetchStatus="paused"
+        status="pending"
+        isOpen
+        onClose={() => Promise.resolve()}
+        onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
+        isMultiTenancyEnabled={false}
+      />,
+    );
+
+    expect(screen.getByTestId('form-skeleton')).toBeVisible();
+
+    rerender(
+      <FormModal
+        processDisplayName="Process 0"
+        schema={null}
+        fetchStatus="fetching"
+        status="pending"
+        isOpen
+        onClose={() => Promise.resolve()}
+        onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
+        isMultiTenancyEnabled={false}
+      />,
+    );
+
+    expect(screen.getByTestId('form-skeleton')).toBeVisible();
+
+    rerender(
+      <FormModal
+        processDisplayName="Process 0"
+        schema={mockFormSchema.basicInputForm}
+        fetchStatus="idle"
+        status="success"
+        isOpen
+        onClose={() => Promise.resolve()}
+        onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
+        isMultiTenancyEnabled={false}
+      />,
+    );
+
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
+  });
+
   it('should submit a form', async () => {
     vi.useFakeTimers({
       shouldAdvanceTime: true,
     });
-    nodeMockServer.use(
-      http.get('/v1/forms/:formId', () => {
-        return HttpResponse.json(formMocks.form);
-      }),
-    );
 
     const mockOnSubmit = vi.fn();
 
     const {user} = render(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={mockFormSchema.basicInputForm}
+        fetchStatus="idle"
+        status="success"
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
         onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
-      {
-        wrapper: getWrapper(),
-      },
     );
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('form-skeleton'),
-    );
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable/i}),
+      await screen.findByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     await user.type(
@@ -100,31 +122,23 @@ describe('<FormModal />', () => {
   });
 
   it('should handle closing', async () => {
-    nodeMockServer.use(
-      http.get('/v1/forms/:formId', () => {
-        return HttpResponse.json(formMocks.form);
-      }),
-    );
-
     const mockOnClose = vi.fn();
 
     render(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={mockFormSchema.basicInputForm}
+        fetchStatus="idle"
+        status="success"
         isOpen
         onClose={mockOnClose}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
-      {
-        wrapper: getWrapper(),
-      },
     );
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('form-skeleton'),
-    );
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole('button', {
@@ -144,29 +158,21 @@ describe('<FormModal />', () => {
   });
 
   it('should handle invalid forms', async () => {
-    nodeMockServer.use(
-      http.get('/v1/forms/:formId', () => {
-        return HttpResponse.json(formMocks.invalidForm);
-      }),
-    );
-
     render(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={mockFormSchema.invalidForm}
+        fetchStatus="idle"
+        status="success"
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
-      {
-        wrapper: getWrapper(),
-      },
     );
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('form-skeleton'),
-    );
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
     expect(
       await within(await screen.findByRole('alert')).findByText(
@@ -181,29 +187,21 @@ describe('<FormModal />', () => {
   });
 
   it('should handle form fetching failure', async () => {
-    nodeMockServer.use(
-      http.get('/v1/forms/:formId', () => {
-        return new HttpResponse(null, {status: 500});
-      }),
-    );
-
     render(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={null}
+        fetchStatus="idle"
+        status="error"
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
-      {
-        wrapper: getWrapper(),
-      },
     );
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('form-skeleton'),
-    );
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
     expect(
       within(screen.getByRole('alert')).getByText('Something went wrong'),
@@ -219,11 +217,6 @@ describe('<FormModal />', () => {
     vi.useFakeTimers({
       shouldAdvanceTime: true,
     });
-    nodeMockServer.use(
-      http.get('/v1/forms/:formId', () => {
-        return HttpResponse.json(formMocks.form);
-      }),
-    );
 
     const mockOnSubmit = vi.fn(() => {
       throw new Error('Mock error');
@@ -231,24 +224,22 @@ describe('<FormModal />', () => {
 
     const {user} = render(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={mockFormSchema.basicInputForm}
+        fetchStatus="idle"
+        status="success"
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
         onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
-      {
-        wrapper: getWrapper(),
-      },
     );
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('form-skeleton'),
-    );
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable/i}),
+      await screen.findByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     vi.runOnlyPendingTimers();
@@ -280,11 +271,6 @@ describe('<FormModal />', () => {
     vi.useFakeTimers({
       shouldAdvanceTime: true,
     });
-    nodeMockServer.use(
-      http.get('/v1/forms/:formId', () => {
-        return HttpResponse.json(formMocks.form);
-      }),
-    );
 
     const mockFailOnSubmit = vi.fn(() => {
       throw new Error('Mock error');
@@ -293,7 +279,10 @@ describe('<FormModal />', () => {
 
     const {user, rerender} = render(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={mockFormSchema.basicInputForm}
+        fetchStatus="idle"
+        status="success"
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockFailOnSubmit}
@@ -301,17 +290,12 @@ describe('<FormModal />', () => {
         isMultiTenancyEnabled
         tenantId={undefined}
       />,
-      {
-        wrapper: getWrapper(),
-      },
     );
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('form-skeleton'),
-    );
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable/i}),
+      await screen.findByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     vi.runOnlyPendingTimers();
@@ -339,7 +323,10 @@ describe('<FormModal />', () => {
 
     rerender(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={mockFormSchema.basicInputForm}
+        fetchStatus="idle"
+        status="success"
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockSuccessOnSubmit}
@@ -350,7 +337,7 @@ describe('<FormModal />', () => {
     );
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable/i}),
+      await screen.findByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     vi.runOnlyPendingTimers();
@@ -385,11 +372,6 @@ describe('<FormModal />', () => {
     vi.useFakeTimers({
       shouldAdvanceTime: true,
     });
-    nodeMockServer.use(
-      http.get('/v1/forms/:formId', () => {
-        return HttpResponse.json(formMocks.form);
-      }),
-    );
 
     const mockOnSubmit = vi.fn(() => {
       throw new Error('Mock error');
@@ -397,24 +379,22 @@ describe('<FormModal />', () => {
 
     const {rerender, user} = render(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={mockFormSchema.basicInputForm}
+        fetchStatus="idle"
+        status="success"
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
         onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
-      {
-        wrapper: getWrapper(),
-      },
     );
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('form-skeleton'),
-    );
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
     await user.type(
-      screen.getByRole('textbox', {name: /my variable/i}),
+      await screen.findByRole('textbox', {name: /my variable/i}),
       'var1',
     );
     vi.runOnlyPendingTimers();
@@ -446,7 +426,10 @@ describe('<FormModal />', () => {
 
     rerender(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={null}
+        fetchStatus="idle"
+        status="pending"
         isOpen={false}
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
@@ -460,7 +443,10 @@ describe('<FormModal />', () => {
 
     rerender(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={mockFormSchema.basicInputForm}
+        fetchStatus="idle"
+        status="success"
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
@@ -469,38 +455,28 @@ describe('<FormModal />', () => {
       />,
     );
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('form-skeleton'),
-    );
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
     vi.useRealTimers();
   });
 
   it('should copy the form link when clicking on share', async () => {
-    nodeMockServer.use(
-      http.get('/v1/forms/:formId', () => {
-        return HttpResponse.json(formMocks.form);
-      }),
-    );
-
     const {user} = render(
       <FormModal
-        process={createMockProcess('process-0')}
+        processDisplayName="Process 0"
+        schema={mockFormSchema.basicInputForm}
+        fetchStatus="idle"
+        status="success"
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
-      {
-        wrapper: getWrapper(),
-      },
     );
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('form-skeleton'),
-    );
+    expect(screen.queryByTestId('form-skeleton')).not.toBeInTheDocument();
 
     await user.click(
       screen.getByRole('button', {

@@ -7,9 +7,6 @@
  */
 
 import {FormManager} from 'common/form-js/formManager';
-import {useForm} from 'v1/api/useForm.query';
-import type {Process} from 'v1/api/types';
-import {getProcessDisplayName} from 'v1/utils/getProcessDisplayName';
 import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
@@ -25,45 +22,38 @@ import {match} from 'ts-pattern';
 import {FormJSRenderer} from 'common/form-js/FormJSRenderer';
 import {createPortal} from 'react-dom';
 import styles from './styles.module.scss';
+import type {FetchStatus, QueryStatus} from '@tanstack/react-query';
 
 type Props = {
-  process: Process;
+  processDisplayName: string;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: React.ComponentProps<typeof FormJSRenderer>['handleSubmit'];
   onFileUpload: React.ComponentProps<typeof FormJSRenderer>['handleFileUpload'];
   isMultiTenancyEnabled: boolean;
   tenantId?: string;
+  schema: string | null;
+  fetchStatus: FetchStatus;
+  status: QueryStatus;
 };
 
 const FormModal: React.FC<Props> = ({
   isOpen,
   onClose,
-  process,
+  processDisplayName,
   onSubmit,
   onFileUpload,
   isMultiTenancyEnabled,
   tenantId,
+  schema,
+  fetchStatus,
+  status,
 }) => {
   const formManagerRef = useRef<FormManager | null>(null);
-  const processDisplayName = getProcessDisplayName(process);
-  const {data, fetchStatus, status} = useForm(
-    {
-      id: process.startEventFormId!,
-      processDefinitionKey: process.id,
-      version: 'latest',
-    },
-    {
-      enabled: isOpen && process.startEventFormId !== null,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-    },
-  );
   const {t} = useTranslation();
   const [isFormSchemaValid, setIsFormSchemaValid] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmissionFailed, setHasSubmissionFailed] = useState(false);
-  const {schema} = data ?? {};
   const prioritizeTenantValidation =
     isMultiTenancyEnabled && tenantId === undefined;
 
@@ -126,7 +116,7 @@ const FormModal: React.FC<Props> = ({
             fetchStatus,
             isFormSchemaValid,
           })
-            .with({fetchStatus: 'fetching'}, () => (
+            .with({fetchStatus: 'fetching'}, {status: 'pending'}, () => (
               <div
                 className={styles.formSkeletonContainer}
                 data-testid="form-skeleton"
