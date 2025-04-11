@@ -38,6 +38,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
@@ -145,7 +146,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -601,6 +601,7 @@ public class RequestMapper {
     final Map<String, Object> claims = new HashMap<>();
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authenticatedTenantIds = new ArrayList<>();
+    final List<String> authenticatedMappingIds = new ArrayList<>();
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
     if (requestAuthentication != null) {
@@ -616,12 +617,15 @@ public class RequestMapper {
 
         authenticatedUsername = authenticationContext.username();
         claims.put(Authorization.AUTHORIZED_USERNAME, authenticationContext.username());
-      }
 
-      if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
-        jwtAuthenticationToken
-            .getTokenAttributes()
-            .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
+        if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
+          authenticatedMappingIds.addAll(principal.getOAuthContext().mappingIds());
+          authenticatedMappingIds.addAll(
+              principal.getOAuthContext().mappingKeys().stream().map(Object::toString).toList());
+          principal
+              .getClaims()
+              .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
+        }
       }
     }
 
@@ -630,6 +634,7 @@ public class RequestMapper {
         .user(authenticatedUsername)
         .roleKeys(authenticatedRoleKeys)
         .tenants(authenticatedTenantIds)
+        .mapping(authenticatedMappingIds)
         .build();
   }
 
