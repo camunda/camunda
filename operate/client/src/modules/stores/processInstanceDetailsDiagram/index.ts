@@ -23,7 +23,7 @@ import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {isFlowNode} from 'modules/utils/flowNodes';
 import {modificationsStore} from '../modifications';
 import {processInstanceDetailsStatisticsStore} from '../processInstanceDetailsStatistics';
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
@@ -80,7 +80,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     );
   }
 
-  get businessObjects(): {[flowNodeId: string]: BusinessObject} {
+  get businessObjects(): BusinessObjects {
     if (this.state.diagramModel === null) {
       return {};
     }

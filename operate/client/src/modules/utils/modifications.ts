@@ -6,14 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {tracking} from 'modules/tracking';
 
 const finishMovingToken = (
   affectedTokenCount: number,
   visibleAffectedTokenCount: number,
+  businessObjects: BusinessObjects,
   targetFlowNodeId?: string,
 ) => {
   tracking.track({
@@ -32,13 +33,8 @@ const finishMovingToken = (
     sourceFlowNodeIdForMoveOperation !== null
   ) {
     if (sourceFlowNodeInstanceKeyForMoveOperation === null) {
-      // TODO: [OPERATE-V2-MIGRATION] After migrating processInstanceDetailsDiagramStore to a query,
-      // consider passing the resolved sourceFlowNode as a parameter to finishMovingToken
-      // instead of accessing it directly from processInstanceDetailsDiagramStore.businessObjects.
       newScopeCount = isMultiInstance(
-        processInstanceDetailsDiagramStore.businessObjects[
-          sourceFlowNodeIdForMoveOperation
-        ],
+        businessObjects[sourceFlowNodeIdForMoveOperation],
       )
         ? 1
         : affectedTokenCount;

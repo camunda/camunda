@@ -9,21 +9,23 @@
 import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
 import {getStatisticsByFlowNode} from 'modules/utils/statistics/flownodeInstances';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
 const totalRunningInstancesForFlowNodeParser =
-  (flowNodeId?: string) =>
+  (businessObjects?: BusinessObjects, flowNodeId?: string) =>
   (response: GetProcessInstanceStatisticsResponseBody) => {
     if (!flowNodeId) return 0;
-    return (
-      (getStatisticsByFlowNode(response.items)[flowNodeId]?.active ?? 0) +
-      (getStatisticsByFlowNode(response.items)[flowNodeId]?.incidents ?? 0)
-    );
+    const statistics = getStatisticsByFlowNode(response.items, businessObjects)[
+      flowNodeId
+    ];
+    return (statistics?.active ?? 0) + (statistics?.incidents ?? 0);
   };
 
 const totalRunningInstancesForFlowNodesParser =
-  (flowNodeIds: string[]) =>
+  (flowNodeIds: string[], businessObjects?: BusinessObjects) =>
   (response: GetProcessInstanceStatisticsResponseBody) => {
-    const statistics = getStatisticsByFlowNode(response.items);
+    const statistics = getStatisticsByFlowNode(response.items, businessObjects);
 
     return flowNodeIds.reduce<Record<string, number>>((acc, flowNodeId) => {
       const active = statistics[flowNodeId]?.active ?? 0;
@@ -33,37 +35,38 @@ const totalRunningInstancesForFlowNodesParser =
     }, {});
   };
 
-const totalRunningInstancesByFlowNodeParser = (
-  response: GetProcessInstanceStatisticsResponseBody,
-): Record<string, number> => {
-  const statistics = getStatisticsByFlowNode(response.items);
+const totalRunningInstancesByFlowNodeParser =
+  (businessObjects?: BusinessObjects) =>
+  (
+    response: GetProcessInstanceStatisticsResponseBody,
+  ): Record<string, number> => {
+    const statistics = getStatisticsByFlowNode(response.items, businessObjects);
 
-  return Object.keys(statistics).reduce<Record<string, number>>(
-    (acc, flowNodeId) => {
-      const active = statistics[flowNodeId]?.active ?? 0;
-      const incidents = statistics[flowNodeId]?.incidents ?? 0;
-      acc[flowNodeId] = active + incidents;
-      return acc;
-    },
-    {},
-  );
-};
-
-const totalRunningInstancesVisibleForFlowNodeParser =
-  (flowNodeId?: string) =>
-  (response: GetProcessInstanceStatisticsResponseBody) => {
-    if (!flowNodeId) return 0;
-    return (
-      (getStatisticsByFlowNode(response.items)[flowNodeId]?.filteredActive ??
-        0) +
-      (getStatisticsByFlowNode(response.items)[flowNodeId]?.incidents ?? 0)
+    return Object.keys(statistics).reduce<Record<string, number>>(
+      (acc, flowNodeId) => {
+        const active = statistics[flowNodeId]?.active ?? 0;
+        const incidents = statistics[flowNodeId]?.incidents ?? 0;
+        acc[flowNodeId] = active + incidents;
+        return acc;
+      },
+      {},
     );
   };
 
-const totalRunningInstancesVisibleForFlowNodesParser =
-  (flowNodeIds: string[]) =>
+const totalRunningInstancesVisibleForFlowNodeParser =
+  (businessObjects?: BusinessObjects, flowNodeId?: string) =>
   (response: GetProcessInstanceStatisticsResponseBody) => {
-    const statistics = getStatisticsByFlowNode(response.items);
+    if (!flowNodeId) return 0;
+    const statistics = getStatisticsByFlowNode(response.items, businessObjects)[
+      flowNodeId
+    ];
+    return (statistics?.filteredActive ?? 0) + (statistics?.incidents ?? 0);
+  };
+
+const totalRunningInstancesVisibleForFlowNodesParser =
+  (flowNodeIds: string[], businessObjects?: BusinessObjects) =>
+  (response: GetProcessInstanceStatisticsResponseBody) => {
+    const statistics = getStatisticsByFlowNode(response.items, businessObjects);
 
     return flowNodeIds.reduce<Record<string, number>>((acc, flowNodeId) => {
       const active = statistics[flowNodeId]?.filteredActive ?? 0;
@@ -74,30 +77,45 @@ const totalRunningInstancesVisibleForFlowNodesParser =
   };
 
 const useTotalRunningInstancesForFlowNode = (flowNodeId?: string) => {
+  const {data: businessObjects} = useBusinessObjects();
+
   return useFlownodeInstancesStatistics(
-    totalRunningInstancesForFlowNodeParser(flowNodeId),
+    totalRunningInstancesForFlowNodeParser(businessObjects, flowNodeId),
   );
 };
 
 const useTotalRunningInstancesForFlowNodes = (flowNodeIds: string[]) => {
+  const {data: businessObjects} = useBusinessObjects();
+
   return useFlownodeInstancesStatistics(
-    totalRunningInstancesForFlowNodesParser(flowNodeIds),
+    totalRunningInstancesForFlowNodesParser(flowNodeIds, businessObjects),
   );
 };
 
 const useTotalRunningInstancesByFlowNode = () => {
-  return useFlownodeInstancesStatistics(totalRunningInstancesByFlowNodeParser);
+  const {data: businessObjects} = useBusinessObjects();
+
+  return useFlownodeInstancesStatistics(
+    totalRunningInstancesByFlowNodeParser(businessObjects),
+  );
 };
 
 const useTotalRunningInstancesVisibleForFlowNode = (flowNodeId?: string) => {
+  const {data: businessObjects} = useBusinessObjects();
+
   return useFlownodeInstancesStatistics(
-    totalRunningInstancesVisibleForFlowNodeParser(flowNodeId),
+    totalRunningInstancesVisibleForFlowNodeParser(businessObjects, flowNodeId),
   );
 };
 
 const useTotalRunningInstancesVisibleForFlowNodes = (flowNodeIds: string[]) => {
+  const {data: businessObjects} = useBusinessObjects();
+
   return useFlownodeInstancesStatistics(
-    totalRunningInstancesVisibleForFlowNodesParser(flowNodeIds),
+    totalRunningInstancesVisibleForFlowNodesParser(
+      flowNodeIds,
+      businessObjects,
+    ),
   );
 };
 

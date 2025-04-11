@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {TOKEN_OPERATIONS} from 'modules/constants';
@@ -15,7 +14,7 @@ import {
   useTotalRunningInstancesForFlowNodes,
   useTotalRunningInstancesVisibleForFlowNodes,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
-import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
   EMPTY_MODIFICATION,
   modificationsStore,
@@ -49,11 +48,7 @@ const useModificationsByFlowNode = () => {
   const flowNodeIds = modificationsStore.flowNodeModifications.map(
     (modification) => modification.flowNode.id,
   );
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-  const businessObjects =
-    useProcessInstanceXml({
-      processDefinitionKey: processDefinitionKey,
-    }).data?.businessObjects ?? {};
+  const {data: businessObjects} = useBusinessObjects();
 
   const {data: flowNodeDataArray} =
     useTotalRunningInstancesForFlowNodes(flowNodeIds);
@@ -68,7 +63,7 @@ const useModificationsByFlowNode = () => {
   }, [flowNodeIds, flowNodeDataArray]);
 
   const elementIds = flowNodeIds.flatMap((flowNodeId) =>
-    getFlowElementIds(businessObjects[flowNodeId]),
+    getFlowElementIds(businessObjects?.[flowNodeId]),
   );
 
   const {data: elementCancelledTokens} =
@@ -138,7 +133,9 @@ const useModificationsByFlowNode = () => {
         ...EMPTY_MODIFICATION,
       };
 
-      targetFlowNode.newTokens += isMultiInstance(businessObjects[flowNode.id])
+      targetFlowNode.newTokens += isMultiInstance(
+        businessObjects?.[flowNode.id],
+      )
         ? 1
         : affectedTokenCount;
 

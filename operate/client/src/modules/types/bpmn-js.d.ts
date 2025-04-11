@@ -92,6 +92,8 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     targetRef?: BusinessObject;
   };
 
+  export type BusinessObjects = {[flowNodeId: string]: BusinessObject};
+
   export type BpmnElement = {
     id: string;
     type: ElementType;

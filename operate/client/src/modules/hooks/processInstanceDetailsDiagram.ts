@@ -6,12 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useTotalRunningInstancesByFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
-import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {modificationsStore} from 'modules/stores/modifications';
 import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
@@ -19,13 +18,9 @@ const useFlowNodes = () => {
   const {data: statistics} = useFlownodeInstancesStatistics();
   const {data: totalRunningInstancesByFlowNode} =
     useTotalRunningInstancesByFlowNode();
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-  const businessObjects =
-    useProcessInstanceXml({
-      processDefinitionKey: processDefinitionKey,
-    }).data?.businessObjects ?? {};
+  const {data: businessObjects} = useBusinessObjects();
 
-  return Object.values(businessObjects).map((flowNode) => {
+  return Object.values(businessObjects ?? {}).map((flowNode) => {
     const flowNodeState = statistics?.items.find(
       ({flowNodeId}) => flowNodeId === flowNode.id,
     );

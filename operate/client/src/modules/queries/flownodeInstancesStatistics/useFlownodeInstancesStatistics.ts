@@ -12,8 +12,7 @@ import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-s
 import {fetchFlownodeInstancesStatistics} from 'modules/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {isEmpty} from 'lodash';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {useProcessInstanceXml} from '../processDefinitions/useProcessInstanceXml';
+import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
 function getQueryKey(processInstanceKey?: string) {
   return ['flownodeInstancesStatistics', processInstanceKey];
@@ -26,11 +25,7 @@ const useFlownodeInstancesStatistics = <
   enabled: boolean = true,
 ): UseQueryResult<T, RequestError> => {
   const {processInstanceId} = useProcessInstancePageParams();
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-  const businessObjects =
-    useProcessInstanceXml({
-      processDefinitionKey: processDefinitionKey,
-    }).data?.businessObjects ?? {};
+  const {data: businessObjects} = useBusinessObjects();
 
   return useQuery({
     queryKey: getQueryKey(processInstanceId),
