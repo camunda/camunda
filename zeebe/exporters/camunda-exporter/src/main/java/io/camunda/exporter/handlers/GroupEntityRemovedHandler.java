@@ -44,10 +44,7 @@ public class GroupEntityRemovedHandler implements ExportHandler<GroupEntity, Gro
   @Override
   public List<String> generateIds(final Record<GroupRecordValue> record) {
     final var groupRecord = record.getValue();
-    // TODO: revisit with https://github.com/camunda/camunda/issues/29903
-    return List.of(
-        GroupEntity.getChildKey(
-            groupRecord.getGroupKey(), Long.parseLong(groupRecord.getEntityId())));
+    return List.of(GroupEntity.getChildKey(groupRecord.getGroupId(), groupRecord.getEntityId()));
   }
 
   @Override
@@ -58,9 +55,8 @@ public class GroupEntityRemovedHandler implements ExportHandler<GroupEntity, Gro
   @Override
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
-    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(value.getGroupKey());
-    // TODO: revisit with https://github.com/camunda/camunda/issues/29903
-    entity.setMemberKey(Long.parseLong(value.getEntityId())).setJoin(joinRelation);
+    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(value.getGroupId());
+    entity.setMemberId(value.getEntityId()).setJoin(joinRelation);
   }
 
   @Override
