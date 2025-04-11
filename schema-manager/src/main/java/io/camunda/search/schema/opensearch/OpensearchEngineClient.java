@@ -98,7 +98,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
         // as this means the index was created by another exporter on a different partition
         final var warnMsg =
             String.format(
-                "Expected to create index [%s], but already exist. Will continue, likely was created by different partition (exporter).",
+                "Expected to create index [%s], but already exist. Will continue, likely was created by a different instance.",
                 indexDescriptor.getFullQualifiedName());
         LOG.debug(warnMsg, ose);
         return;
