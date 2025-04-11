@@ -8,8 +8,7 @@
 
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
-const getParentElement = (businessObject?: BusinessObject) => {
-  return businessObject?.$parent;
-};
+const getParentElement = (businessObject?: BusinessObject) =>
+  businessObject?.$parent;
 
 export {getParentElement};
