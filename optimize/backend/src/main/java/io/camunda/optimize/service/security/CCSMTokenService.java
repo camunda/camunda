@@ -89,19 +89,17 @@ public class CCSMTokenService {
 
   public List<NewCookie> createOptimizeAuthNewCookies(
       final Tokens tokens, final AccessToken accessToken, final String scheme) {
-    final NewCookie optimizeAuthCookie =
-        authCookieService.createCookie(
-            AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
-            accessToken.getToken().getToken(),
-            accessToken.getToken().getExpiresAt(),
-            scheme);
-    final NewCookie optimizeRefreshCookie =
+    final List<NewCookie> cookies =
+        new ArrayList<>(
+            authCookieService.createOptimizeAuthNewCookies(
+                accessToken.getToken().getToken(), accessToken.getToken().getExpiresAt(), scheme));
+    cookies.add(
         authCookieService.createCookie(
             OPTIMIZE_REFRESH_TOKEN,
             tokens.getRefreshToken(),
             getRefreshTokenExpirationDate(tokens.getRefreshToken()),
-            scheme);
-    return List.of(optimizeAuthCookie, optimizeRefreshCookie);
+            scheme));
+    return cookies;
   }
 
   public List<Cookie> createOptimizeDeleteAuthCookies() {

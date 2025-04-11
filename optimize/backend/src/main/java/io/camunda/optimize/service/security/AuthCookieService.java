@@ -80,6 +80,23 @@ public class AuthCookieService {
     return cookies;
   }
 
+  public List<NewCookie> createOptimizeAuthNewCookies(
+      final String cookieValue, final Date expiresAt, final String requestScheme) {
+    final int maxCookieLength =
+        configurationService.getAuthConfiguration().getCookieConfiguration().getMaxSize();
+    final int numberOfCookies = (int) Math.ceil((double) cookieValue.length() / maxCookieLength);
+    final List<NewCookie> cookies = new ArrayList<>();
+    for (int i = 0; i < numberOfCookies; i++) {
+      cookies.add(
+          createCookie(
+              getAuthorizationCookieNameWithSuffix(i),
+              extractTokenisedCookieValue(i, numberOfCookies, maxCookieLength, cookieValue),
+              expiresAt,
+              requestScheme));
+    }
+    return cookies;
+  }
+
   public jakarta.servlet.http.Cookie createDeleteOptimizeRefreshCookie() {
     log.trace("Deleting Optimize refresh cookie.");
     return createDeleteCookie(OPTIMIZE_REFRESH_TOKEN, "", "https");
