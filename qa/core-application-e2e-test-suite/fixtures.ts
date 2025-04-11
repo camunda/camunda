@@ -15,6 +15,7 @@ import {TaskListLoginPage} from '@pages/TaskListLoginPage';
 import {OperateProcessesPage} from '@pages/OperateProcessesPage';
 import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
+import {TasklistHeader} from '@pages/TasklistHeader';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
@@ -25,6 +26,7 @@ type PlaywrightFixtures = {
   operateProcessesPage: OperateProcessesPage;
   operateProcessInstancePage: OperateProcessInstancePage;
   taskDetailsPage: TaskDetailsPage;
+  tasklistHeader: TasklistHeader;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -60,6 +62,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
+  },
+  tasklistHeader: async ({page}, use) => {
+    await use(new TasklistHeader(page));
   },
 });
 

@@ -13,12 +13,14 @@ class TaskListLoginPage {
   readonly usernameInput: Locator;
   readonly passwordInput: Locator;
   readonly loginButton: Locator;
+  readonly errorMessage: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.usernameInput = page.getByLabel('Username');
     this.passwordInput = page.getByRole('textbox', {name: 'password'});
     this.loginButton = page.getByRole('button', {name: 'Login'});
+    this.errorMessage = page.getByRole('alert').first();
   }
 
   async fillUsername(username: string): Promise<void> {
