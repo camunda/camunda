@@ -7,11 +7,15 @@
  */
 package io.camunda.exporter.tasks;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.exporter.tasks.archiver.ArchiverJob;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -22,39 +26,39 @@ final class ReschedulingTaskTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(ReschedulingTaskTest.class);
 
   @AutoClose
-  private final ScheduledThreadPoolExecutor executor =
+  private static final ScheduledThreadPoolExecutor EXECUTOR =
       Mockito.spy(new ScheduledThreadPoolExecutor(1));
 
   @Test
   void shouldRescheduleTaskOnError() {
     // given
-    final var task = new ReschedulingTask(new FailingJob(), 1, 10, 1000, executor, LOGGER);
+    final var task = new ReschedulingTask(new FailingJob(), 1, 10, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
 
     // then
-    final var inOrder = Mockito.inOrder(executor);
+    final var inOrder = Mockito.inOrder(EXECUTOR);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 10L, TimeUnit.MILLISECONDS);
   }
 
   @Test
   void shouldRescheduleTaskOnErrorWithDelay() {
     // given
-    final var task = new ReschedulingTask(new FailingJob(), 1, 10, 1000, executor, LOGGER);
+    final var task = new ReschedulingTask(new FailingJob(), 1, 10, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
 
     // then
-    final var inOrder = Mockito.inOrder(executor);
+    final var inOrder = Mockito.inOrder(EXECUTOR);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 10L, TimeUnit.MILLISECONDS);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 12L, TimeUnit.MILLISECONDS);
   }
 
@@ -79,22 +83,22 @@ final class ReschedulingTaskTest {
             return CompletableFuture.completedFuture(1);
           }
         };
-    final var task = new ReschedulingTask(job, 1, 10L, 1000, executor, LOGGER);
+    final var task = new ReschedulingTask(job, 1, 10L, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
 
     // then - scheduled after the minimum delay on the first error, again on success, and then
     // since we reset the error delay, again on the second error
-    final var inOrder = Mockito.inOrder(executor);
+    final var inOrder = Mockito.inOrder(EXECUTOR);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 10L, TimeUnit.MILLISECONDS);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 10L, TimeUnit.MILLISECONDS);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 10L, TimeUnit.MILLISECONDS);
   }
 
@@ -108,15 +112,15 @@ final class ReschedulingTaskTest {
             return null;
           }
         };
-    final var task = new ReschedulingTask(job, 1, 10L, 1000, executor, LOGGER);
+    final var task = new ReschedulingTask(job, 1, 10L, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
 
     // then
-    final var inOrder = Mockito.inOrder(executor);
+    final var inOrder = Mockito.inOrder(EXECUTOR);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 10L, TimeUnit.MILLISECONDS);
   }
 
@@ -130,7 +134,7 @@ final class ReschedulingTaskTest {
             return CompletableFuture.completedFuture(1);
           }
         };
-    final var task = new ReschedulingTask(job, 2, 10L, 1000, executor, LOGGER);
+    final var task = new ReschedulingTask(job, 2, 10L, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
@@ -138,15 +142,15 @@ final class ReschedulingTaskTest {
     // then
     // FYI - the back off is exponential, but at low values it looks like it's always adding the
     // same value
-    final var inOrder = Mockito.inOrder(executor);
+    final var inOrder = Mockito.inOrder(EXECUTOR);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 10L, TimeUnit.MILLISECONDS);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 12L, TimeUnit.MILLISECONDS);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 14L, TimeUnit.MILLISECONDS);
   }
 
@@ -160,7 +164,7 @@ final class ReschedulingTaskTest {
             return CompletableFuture.completedFuture(1);
           }
         };
-    final var task = new ReschedulingTask(job, 2, 10L, 12L, executor, LOGGER);
+    final var task = new ReschedulingTask(job, 2, 10L, 12L, EXECUTOR, LOGGER);
 
     // when
     task.run();
@@ -168,16 +172,33 @@ final class ReschedulingTaskTest {
     // then
     // FYI - the back off is exponential, but at low values it looks like it's always adding the
     // same value
-    final var inOrder = Mockito.inOrder(executor);
+    final var inOrder = Mockito.inOrder(EXECUTOR);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 10L, TimeUnit.MILLISECONDS);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 12L, TimeUnit.MILLISECONDS);
     inOrder
-        .verify(executor, Mockito.timeout(5_000).times(1))
+        .verify(EXECUTOR, Mockito.timeout(5_000).times(1))
         .schedule(task, 12L, TimeUnit.MILLISECONDS);
+  }
+
+  @Test
+  void shouldNotRescheduleIfClosed() {
+    final var runningCounter = new AtomicInteger();
+    final var job =
+        new ArchiverJob() {
+          @Override
+          public CompletionStage<Integer> archiveNextBatch() {
+            return CompletableFuture.completedFuture(runningCounter.incrementAndGet());
+          }
+        };
+    final var task = new ReschedulingTask(job, 1, 100, 100, EXECUTOR, LOGGER);
+    task.run();
+    task.close();
+    Awaitility.await("Until it's been rescheduled").until(() -> task.executionCount() == 1);
+    assertThat(runningCounter.get()).isEqualTo(1);
   }
 
   private static final class FailingJob implements ArchiverJob {

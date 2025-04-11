@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,25 +44,30 @@ import org.slf4j.LoggerFactory;
 
 final class IncidentUpdateTaskTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateTaskTest.class);
+  private static final Duration TIMEOUT = Duration.ofSeconds(5);
+
+  @AutoClose
+  private static final ScheduledThreadPoolExecutor EXECUTOR = new ScheduledThreadPoolExecutor(1);
+
   private final ExporterMetadata metadata = new ExporterMetadata(TestObjectMapper.objectMapper());
   private final TestRepository repository = Mockito.spy(new TestRepository());
 
   @Test
   void shouldReturnNothingDoneOnEmptyPendingBatch() {
     // given
-    final var task = new IncidentUpdateTask(metadata, repository, false, 10, LOGGER);
+    final var task = new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
 
     // when
     final var result = task.execute();
 
     // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
+    assertThat(result).succeedsWithin(TIMEOUT).isEqualTo(0);
   }
 
   @Test
   void shouldUseMetadataPositionToFetchPendingBatch() {
     // given
-    final var task = new IncidentUpdateTask(metadata, repository, false, 10, LOGGER);
+    final var task = new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
     metadata.setLastIncidentUpdatePosition(5);
 
     // when
@@ -73,7 +80,7 @@ final class IncidentUpdateTaskTest {
   @Test
   void shouldUseBatchSizeToFetchPendingBatch() {
     // given
-    final var task = new IncidentUpdateTask(metadata, repository, false, 10, LOGGER);
+    final var task = new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
 
     // when
     task.execute().toCompletableFuture().join();
@@ -232,7 +239,7 @@ final class IncidentUpdateTaskTest {
     @Test
     void shouldUpdateMetadataOnSuccess() {
       // given
-      final var task = new IncidentUpdateTask(metadata, repository, false, 10, LOGGER);
+      final var task = new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
 
       // when
       task.execute().toCompletableFuture().join();
@@ -244,14 +251,14 @@ final class IncidentUpdateTaskTest {
     @Test
     void shouldReturnNumberOfDocumentsUpdated() {
       // given
-      final var task = new IncidentUpdateTask(metadata, repository, false, 10, LOGGER);
+      final var task = new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER);
 
       // when
       final var result = task.execute();
 
       // then
       assertThat(result)
-          .succeedsWithin(Duration.ZERO)
+          .succeedsWithin(TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.INTEGER)
           .isEqualTo(7);
     }
@@ -260,7 +267,7 @@ final class IncidentUpdateTaskTest {
     void shouldFailOnMissingIncident() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.incidents = CompletableFuture.completedFuture(Map.of());
 
       // when
@@ -268,7 +275,7 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result)
-          .failsWithin(Duration.ZERO)
+          .failsWithin(TIMEOUT)
           .withThrowableThat()
           .withRootCauseExactlyInstanceOf(ExporterException.class)
           .withMessageContaining("Failed to fetch incidents");
@@ -278,7 +285,7 @@ final class IncidentUpdateTaskTest {
     void shouldFailOnMissingProcessInstance() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.processInstances = CompletableFuture.completedFuture(List.of());
 
       // when
@@ -286,7 +293,7 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result)
-          .failsWithin(Duration.ZERO)
+          .failsWithin(TIMEOUT)
           .withThrowableThat()
           .withRootCauseExactlyInstanceOf(ExporterException.class)
           .withMessageContaining("Process instance 3 is not yet imported for incident 5");
@@ -296,7 +303,7 @@ final class IncidentUpdateTaskTest {
     void shouldFailOnMissingFlowNodeInstance() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.flowNodesInListView = CompletableFuture.completedFuture(List.of());
 
       // when
@@ -304,7 +311,7 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result)
-          .failsWithin(Duration.ZERO)
+          .failsWithin(TIMEOUT)
           .withThrowableThat()
           .withRootCauseExactlyInstanceOf(ExporterException.class)
           .withMessageContaining("Flow node instance 2 affected by incident 5");
@@ -314,7 +321,7 @@ final class IncidentUpdateTaskTest {
     void shouldFailOnMissingFlowNode() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.flowNodeInstances = CompletableFuture.completedFuture(List.of());
 
       // when
@@ -322,7 +329,7 @@ final class IncidentUpdateTaskTest {
 
       // then
       assertThat(result)
-          .failsWithin(Duration.ZERO)
+          .failsWithin(TIMEOUT)
           .withThrowableThat()
           .withRootCauseExactlyInstanceOf(ExporterException.class)
           .withMessageContaining("Flow node instance 2 affected by incident 5");
@@ -332,13 +339,13 @@ final class IncidentUpdateTaskTest {
     void shouldUpdateIncidents() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
 
       // when
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ZERO);
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.incidentRequests())
           .hasSize(1)
           .containsEntry(
@@ -358,13 +365,13 @@ final class IncidentUpdateTaskTest {
     void shouldUpdateListView() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
 
       // when
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ZERO);
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.listViewRequests())
           .hasSize(4)
           .containsEntry(
@@ -385,13 +392,13 @@ final class IncidentUpdateTaskTest {
     void shouldUpdateFlowNode() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
 
       // when
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ZERO);
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.flowNodeInstanceRequests())
           .hasSize(2)
           .containsEntry(
@@ -408,7 +415,7 @@ final class IncidentUpdateTaskTest {
     void shouldResolveIncident() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       incidentEntity.setState(IncidentState.ACTIVE);
       repository.activeIncidentsByTreePaths =
           CompletableFuture.completedFuture(
@@ -422,7 +429,7 @@ final class IncidentUpdateTaskTest {
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ZERO);
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.incidentRequests())
           .hasSize(1)
           .containsEntry(
@@ -460,7 +467,7 @@ final class IncidentUpdateTaskTest {
       // given - we have another active incident with an overlapping tree path, but only covering
       // process instance
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       incidentEntity.setState(IncidentState.ACTIVE);
       repository.activeIncidentsByTreePaths =
           CompletableFuture.completedFuture(
@@ -477,7 +484,7 @@ final class IncidentUpdateTaskTest {
 
       // then - we should mark the child process instance, the call activity, and the task as
       // incident free, but NOT the parent process instance as it still has an active incident
-      assertThat(result).succeedsWithin(Duration.ZERO);
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.incidentRequests())
           .hasSize(1)
           .containsEntry(
@@ -511,7 +518,7 @@ final class IncidentUpdateTaskTest {
     void shouldIgnoreDeletedProcessInstance() {
       // given
       final var task =
-          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+          new IncidentUpdateTask(metadata, repository, false, 10, EXECUTOR, LOGGER, Duration.ZERO);
       repository.processInstances =
           CompletableFuture.completedFuture(List.of(parentProcessInstance));
       repository.wasProcessInstanceDeleted = CompletableFuture.completedFuture(true);
@@ -520,7 +527,7 @@ final class IncidentUpdateTaskTest {
       final var result = task.execute();
 
       // then
-      assertThat(result).succeedsWithin(Duration.ZERO);
+      assertThat(result).succeedsWithin(TIMEOUT);
       assertThat(repository.updated.listViewRequests()).isEmpty();
       assertThat(repository.updated.incidentRequests()).isEmpty();
       assertThat(repository.updated.flowNodeInstanceRequests()).isEmpty();
