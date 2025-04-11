@@ -5806,6 +5806,7 @@ components:
           type: string
           enum:
             - mappingKey
+            - mappingId
             - claimName
             - claimValue
             - name
