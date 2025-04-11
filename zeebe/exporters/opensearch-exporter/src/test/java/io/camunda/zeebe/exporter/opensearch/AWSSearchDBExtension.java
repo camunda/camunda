@@ -12,6 +12,19 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.UUID;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+/**
+ * {@code AWSSearchDBExtension} is an extension that manages an AWS-based OpenSearch instance,
+ * creates and configures respective client, and provides a client for interaction for usage in
+ * tests.
+ *
+ * <p>To use this extension, preconditions from {@link SearchDBExtension} must be met.
+ *
+ * <p>This extension fetches the AWS URL from the {@link
+ * SearchDBExtension#TEST_INTEGRATION_OPENSEARCH_AWS_URL} argument.
+ *
+ * <p>This extension uses the {@link
+ * software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider} for implicit authentication.
+ */
 public class AWSSearchDBExtension extends SearchDBExtension {
 
   private static final String PREFIX_AWS_OS_TESTS = "exportertests";
@@ -64,41 +77,49 @@ public class AWSSearchDBExtension extends SearchDBExtension {
     // No-Op
   }
 
+  /** {@inheritDoc} */
   @Override
   public OpensearchExporterConfiguration config() {
     return config;
   }
 
+  /** {@inheritDoc} */
   @Override
   public ProtocolFactory recordFactory() {
     return recordFactory;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TemplateReader templateReader() {
     return templateReader;
   }
 
+  /** {@inheritDoc} */
   @Override
   public RecordIndexRouter indexRouter() {
     return indexRouter;
   }
 
+  /** {@inheritDoc} */
   @Override
   public BulkIndexRequest bulkRequest() {
     return bulkRequest;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TestClient testClient() {
     return testClient;
   }
 
+  /** {@inheritDoc} */
   @Override
   public OpensearchClient client() {
     return client;
   }
 
+  /** {@inheritDoc} */
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {}
 }

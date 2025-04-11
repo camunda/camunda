@@ -14,6 +14,11 @@ import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
 
+/**
+ * {@code ContainerizedSearchDBExtension} is an extension that creates and manages a containerized
+ * test containers based OpenSearch instance, creates and configures respective client, and provides
+ * a client for interaction for usage in tests.
+ */
 public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
   private static OpensearchContainer opensearchContainer;
@@ -32,16 +37,19 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
     asyncOsClient = connector.createAsyncClient();
   }
 
+  /** {@inheritDoc} */
   @Override
   public OpenSearchClient osClient() {
     return osClient;
   }
 
+  /** {@inheritDoc} */
   @Override
   public OpenSearchAsyncClient asyncOsClient() {
     return asyncOsClient;
   }
 
+  /** {@inheritDoc} */
   @Override
   public String osUrl() {
     return opensearchContainer.getHttpHostAddress();
