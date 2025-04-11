@@ -1,5 +1,8 @@
 name: Optimize Zeebe Compatibility
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: "0 23 * * 1-5" # runs every day at 23:00 between Mon - Fri
   workflow_dispatch:
