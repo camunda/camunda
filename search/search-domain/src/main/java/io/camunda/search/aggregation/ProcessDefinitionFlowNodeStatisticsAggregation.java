@@ -7,7 +7,10 @@
  */
 package io.camunda.search.aggregation;
 
-public record ProcessDefinitionFlowNodeStatisticsAggregation() implements AggregationBase {
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+
+public record ProcessDefinitionFlowNodeStatisticsAggregation(
+    ProcessDefinitionStatisticsFilter filter) implements AggregationBase {
 
   public static final int AGGREGATION_TERMS_SIZE = 10000;
   public static final String AGGREGATION_TO_CHILDREN_FN = "to-flow-nodes";

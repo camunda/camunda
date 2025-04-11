@@ -15,10 +15,12 @@
  */
 package io.camunda.client.api.statistics.filter;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.statistics.request.StatisticsRequest.StatisticsRequestFilter;
@@ -80,4 +82,39 @@ public interface ProcessDefinitionStatisticsFilter extends StatisticsRequestFilt
 
   /** Filter by variables map */
   ProcessDefinitionStatisticsFilter variables(final Map<String, Object> variableValueFilters);
+
+  /** Filter by batchOperationId */
+  ProcessDefinitionStatisticsFilter batchOperationId(final String batchOperationId);
+
+  /** Filter by batchOperationId using {@link StringProperty} */
+  ProcessDefinitionStatisticsFilter batchOperationId(final Consumer<StringProperty> fn);
+
+  /** Filter by error message */
+  ProcessDefinitionStatisticsFilter errorMessage(final String errorMessage);
+
+  /** Filter by error message using {@link StringProperty} consumer */
+  ProcessDefinitionStatisticsFilter errorMessage(final Consumer<StringProperty> fn);
+
+  /** Filter by hasRetriesLeft */
+  ProcessDefinitionStatisticsFilter hasRetriesLeft(final Boolean hasRetriesLeft);
+
+  /** Filter by flowNodeId */
+  ProcessDefinitionStatisticsFilter flowNodeId(final String flowNodeId);
+
+  /** Filter by flowNodeId using {@link StringProperty} */
+  ProcessDefinitionStatisticsFilter flowNodeId(final Consumer<StringProperty> fn);
+
+  /** Filter by flowNodeInstanceState */
+  ProcessDefinitionStatisticsFilter flowNodeInstanceState(final FlowNodeInstanceState state);
+
+  /** Filter by flowNodeInstanceState using {@link FlowNodeInstanceStateProperty} */
+  ProcessDefinitionStatisticsFilter flowNodeInstanceState(
+      final Consumer<FlowNodeInstanceStateProperty> fn);
+
+  /** Filter by hasFlowNodeInstanceIncident */
+  ProcessDefinitionStatisticsFilter hasFlowNodeInstanceIncident(
+      final Boolean hasFlowNodeInstanceIncident);
+
+  /** Filter by incidentErrorHashCode */
+  ProcessDefinitionStatisticsFilter incidentErrorHashCode(final Integer incidentErrorHashCode);
 }
