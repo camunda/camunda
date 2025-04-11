@@ -92,9 +92,9 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected static boolean isZeebeVersion87_OrLater() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.([7-9]|\\d{2,})");
     return zeebeVersionPattern
-        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
-        .matches();
-    // || isZeebeVersionSnapshot();
+            .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
+            .matches()
+        || isZeebeVersionSnapshot();
   }
 
   protected static boolean isZeebeVersionSnapshot() {
