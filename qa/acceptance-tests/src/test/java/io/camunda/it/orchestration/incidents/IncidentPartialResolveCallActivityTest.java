@@ -18,10 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests that when one of several incidents is resolved all involved flow node instances and process
+ * Tests that when one of several incidents is resolved all involved element instances and process
  * instances in the call stack stay in incident state.
  */
 @MultiDbTest
@@ -152,12 +152,12 @@ public class IncidentPartialResolveCallActivityTest {
   }
 
   @Test
-  public void testParentFlowNodeInstanceInIncidentState() {
+  public void testParentElementInstanceInIncidentState() {
     // when
-    final FlowNodeInstance flowNodeInstance =
+    final ElementInstance elementInstance =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId(CALL_ACTIVITY_ID))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(CALL_ACTIVITY_ID))
             .page(p -> p.limit(100))
             .send()
             .join()
@@ -165,9 +165,9 @@ public class IncidentPartialResolveCallActivityTest {
             .getFirst();
 
     // then
-    assertThat(flowNodeInstance).isNotNull();
-    assertThat(flowNodeInstance.getState()).isEqualTo(FlowNodeInstanceState.ACTIVE);
-    assertThat(flowNodeInstance.getIncident()).isEqualTo(true);
+    assertThat(elementInstance).isNotNull();
+    assertThat(elementInstance.getState()).isEqualTo(ElementInstanceState.ACTIVE);
+    assertThat(elementInstance.getIncident()).isEqualTo(true);
   }
 
   @Test
@@ -189,12 +189,12 @@ public class IncidentPartialResolveCallActivityTest {
   }
 
   @Test
-  public void testChildFlowNodeInstanceInIncidentState() {
+  public void testChildElementInstanceInIncidentState() {
     // when
-    final FlowNodeInstance flowNodeInstance =
+    final ElementInstance elementInstance =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId(SERVICE_TASK_1_ID))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(SERVICE_TASK_1_ID))
             .page(p -> p.limit(100))
             .send()
             .join()
@@ -202,9 +202,9 @@ public class IncidentPartialResolveCallActivityTest {
             .getFirst();
 
     // then
-    assertThat(flowNodeInstance).isNotNull();
-    assertThat(flowNodeInstance.getState()).isEqualTo(FlowNodeInstanceState.ACTIVE);
-    assertThat(flowNodeInstance.getIncident()).isEqualTo(true);
+    assertThat(elementInstance).isNotNull();
+    assertThat(elementInstance.getState()).isEqualTo(ElementInstanceState.ACTIVE);
+    assertThat(elementInstance.getIncident()).isEqualTo(true);
   }
 
   @Test

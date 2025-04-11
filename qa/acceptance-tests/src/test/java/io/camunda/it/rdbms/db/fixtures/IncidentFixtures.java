@@ -29,7 +29,7 @@ public final class IncidentFixtures extends CommonFixtures {
             .flowNodeInstanceKey(nextKey())
             .processInstanceKey(nextKey())
             .jobKey(nextKey())
-            .flowNodeId("flowNode-" + nextKey())
+            .flowNodeId("element-" + nextKey())
             .state(randomEnum(IncidentState.class))
             .errorType(randomEnum(ErrorType.class))
             .errorMessage("error-" + generateRandomString(20))

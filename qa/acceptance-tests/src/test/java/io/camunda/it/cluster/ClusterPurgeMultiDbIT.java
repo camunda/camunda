@@ -206,7 +206,7 @@ public class ClusterPurgeMultiDbIT {
 
     // Query API so cache is filled - we don't care about the result
     client
-        .newFlownodeInstanceSearchRequest()
+        .newElementInstanceSearchRequest()
         .filter((f) -> f.processInstanceKey(processInstanceKey1))
         .sort(sort -> sort.startDate().asc())
         .send()
@@ -239,29 +239,29 @@ public class ClusterPurgeMultiDbIT {
      *
      * Scenario:
      * - A new cluster is started and a Process model is deployed.
-     * - We execute a flow node instance query which also populates the ProcessCache.
+     * - We execute a element instance query which also populates the ProcessCache.
      * - We purge the cluster, but don't delete the ProcessCache.
      * - We deploy a new Process model, but this will have the same key as the old one.
-     * - We execute a flow node instance query which finds outdated data in the ProcessCache.
+     * - We execute a element instance query which finds outdated data in the ProcessCache.
      * - The outdated data is returned instead of the correct information.
-     * - Therefore, without purging the ProcessCache, the query will not return a FlowNode of name
+     * - Therefore, without purging the ProcessCache, the query will not return a Element of name
      *   "test-task-2"
      */
-    Awaitility.await("until flownode instance query returns non-empty list with two elements")
+    Awaitility.await("until element instance query returns non-empty list with two elements")
         .atMost(Duration.ofSeconds(2 * TIMEOUT))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var items2 =
                   client
-                      .newFlownodeInstanceSearchRequest()
+                      .newElementInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(processInstanceKey1))
                       .sort(sort -> sort.startDate().asc())
                       .send()
                       .join()
                       .items();
 
-              assertThat((items2.get(1)).getFlowNodeName()).isEqualTo("test-task-2");
+              assertThat((items2.get(1)).getElementName()).isEqualTo("test-task-2");
             });
   }
 

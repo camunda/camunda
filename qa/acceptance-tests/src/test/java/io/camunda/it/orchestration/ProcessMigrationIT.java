@@ -14,13 +14,13 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.search.enums.IncidentState;
-import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -79,7 +79,7 @@ public class ProcessMigrationIT {
           assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-process_v2");
           assertThat(userTask.getProcessDefinitionVersion()).isEqualTo(1);
         });
-    processInstanceHasFlowNodes(
+    processInstanceHasElements(
         client,
         processInstanceKey,
         Map.of(
@@ -117,12 +117,12 @@ public class ProcessMigrationIT {
             .build());
 
     // then
-    flowNodeHasIncident(client, processInstanceKey, "taskB2");
+    elementHasIncident(client, processInstanceKey, "taskB2");
     processInstanceHasIncident(
         client,
         processInstanceKey,
         i -> {
-          assertThat(i.getFlowNodeId()).isEqualTo("taskB2");
+          assertThat(i.getElementId()).isEqualTo("taskB2");
           assertThat(i.getProcessDefinitionId()).isEqualTo("migration-process_v2");
           assertThat(i.getState()).isEqualTo(IncidentState.ACTIVE);
         });
@@ -155,7 +155,7 @@ public class ProcessMigrationIT {
         client,
         processInstanceKey,
         i -> {
-          assertThat(i.getFlowNodeId()).isEqualTo("taskB");
+          assertThat(i.getElementId()).isEqualTo("taskB");
           assertThat(i.getProcessDefinitionId()).isEqualTo("migration-process_v1");
           assertThat(i.getState()).isEqualTo(IncidentState.RESOLVED);
         });
@@ -246,11 +246,11 @@ public class ProcessMigrationIT {
             });
   }
 
-  public void flowNodeHasIncident(
-      final CamundaClient client, final Long processInstanceKey, final String flowNodeId) {
-    flowNodeInstanceExistAndMatches(
+  public void elementHasIncident(
+      final CamundaClient client, final Long processInstanceKey, final String elementId) {
+    elementInstanceExistAndMatches(
         client,
-        f -> f.processInstanceKey(processInstanceKey).flowNodeId(flowNodeId),
+        f -> f.processInstanceKey(processInstanceKey).elementId(elementId),
         f -> {
           assertThat(f).hasSize(1);
           assertThat(f.getFirst().getIncident()).isTrue();
@@ -283,17 +283,17 @@ public class ProcessMigrationIT {
         });
   }
 
-  public void processInstanceHasFlowNodes(
+  public void processInstanceHasElements(
       final CamundaClient client,
       final Long processInstanceKey,
-      final Map<String, Predicate<FlowNodeInstance>> flowNodeAssertions) {
-    flowNodeInstanceExistAndMatches(
+      final Map<String, Predicate<ElementInstance>> elementAssertions) {
+    elementInstanceExistAndMatches(
         client,
         f -> f.processInstanceKey(processInstanceKey),
         f -> {
-          assertThat(f).hasSize(flowNodeAssertions.size());
+          assertThat(f).hasSize(elementAssertions.size());
           f.forEach(
-              fni -> assertThat(flowNodeAssertions.get(fni.getFlowNodeId()).test(fni)).isTrue());
+              fni -> assertThat(elementAssertions.get(fni.getElementId()).test(fni)).isTrue());
         });
   }
 
@@ -310,16 +310,16 @@ public class ProcessMigrationIT {
         });
   }
 
-  public void flowNodeInstanceExistAndMatches(
+  public void elementInstanceExistAndMatches(
       final CamundaClient client,
-      final Consumer<FlownodeInstanceFilter> filter,
-      final Consumer<List<FlowNodeInstance>> asserter) {
+      final Consumer<ElementInstanceFilter> filter,
+      final Consumer<List<ElementInstance>> asserter) {
     await()
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var result =
-                  client.newFlownodeInstanceSearchRequest().filter(filter).send().join().items();
+                  client.newElementInstanceSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }

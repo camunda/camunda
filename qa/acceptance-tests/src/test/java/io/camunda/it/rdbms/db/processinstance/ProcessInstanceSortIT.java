@@ -114,7 +114,7 @@ public class ProcessInstanceSortIT {
   }
 
   @TestTemplate
-  public void shouldSortByParentFlowNodeInstanceKeyAsc(
+  public void shouldSortByParentElementInstanceKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),

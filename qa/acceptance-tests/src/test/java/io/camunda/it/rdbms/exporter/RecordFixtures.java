@@ -174,14 +174,14 @@ public class RecordFixtures {
         .build();
   }
 
-  protected static ImmutableRecord<RecordValue> getFlowNodeActivatingRecord(final Long position) {
+  protected static ImmutableRecord<RecordValue> getElementActivatingRecord(final Long position) {
     final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
 
-    return getFlowNodeActivatingRecord(position, FACTORY.generateObject(Long.class));
+    return getElementActivatingRecord(position, FACTORY.generateObject(Long.class));
   }
 
-  protected static ImmutableRecord<RecordValue> getFlowNodeActivatingRecord(
+  protected static ImmutableRecord<RecordValue> getElementActivatingRecord(
       final Long position, final long processInstanceKey) {
     final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
@@ -203,7 +203,7 @@ public class RecordFixtures {
         .build();
   }
 
-  protected static ImmutableRecord<RecordValue> getFlowNodeCompletedRecord(
+  protected static ImmutableRecord<RecordValue> getElementCompletedRecord(
       final Long position, final long elementKey) {
     final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
@@ -362,7 +362,7 @@ public class RecordFixtures {
       final IncidentIntent intent,
       final long incidentKey,
       final long processInstanceKey,
-      final long flowNodeInstanceKey) {
+      final long elementInstanceKey) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.INCIDENT);
     return ImmutableRecord.builder()
         .from(recordValueRecord)
@@ -373,9 +373,9 @@ public class RecordFixtures {
         .withValue(
             ImmutableIncidentRecordValue.builder()
                 .from((IncidentRecordValue) recordValueRecord.getValue())
-                .withElementInstanceKey(flowNodeInstanceKey)
+                .withElementInstanceKey(elementInstanceKey)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementInstancePath(List.of(List.of(processInstanceKey, flowNodeInstanceKey)))
+                .withElementInstancePath(List.of(List.of(processInstanceKey, elementInstanceKey)))
                 .build())
         .build();
   }

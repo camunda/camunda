@@ -28,7 +28,7 @@ public final class UserTaskFixtures extends CommonFixtures {
     final var builder =
         new Builder()
             .userTaskKey(nextKey())
-            .elementId(generateRandomString("flowNodeBpmnId"))
+            .elementId(generateRandomString("elementBpmnId"))
             .processDefinitionId(generateRandomString("processDefinitionId"))
             .processInstanceKey(nextKey())
             .creationDate(NOW)

@@ -52,7 +52,7 @@ public class IncidentSortIT {
   }
 
   @TestTemplate
-  public void shouldSortByFlowNodeIdAsc(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSortByElementIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.flowNodeId().asc(),

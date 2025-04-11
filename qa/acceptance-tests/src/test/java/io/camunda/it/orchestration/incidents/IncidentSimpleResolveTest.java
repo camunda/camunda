@@ -11,7 +11,7 @@ import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
-import static io.camunda.it.util.TestHelper.waitUntilIncidentIsResolvedOnFlowNodeInstance;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentIsResolvedOnElementInstance;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentIsResolvedOnProcessInstance;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests that when incident is resolved all involved flow node instances and process instance are in
+ * Tests that when incident is resolved all involved element instances and process instance are in
  * ACTIVE state.
  */
 @MultiDbTest
@@ -75,7 +75,7 @@ public class IncidentSimpleResolveTest {
     camundaClient.newResolveIncidentCommand(incident.getIncidentKey()).send().join();
 
     waitUntilIncidentIsResolvedOnProcessInstance(camundaClient, 1);
-    waitUntilIncidentIsResolvedOnFlowNodeInstance(camundaClient, 2);
+    waitUntilIncidentIsResolvedOnElementInstance(camundaClient, 2);
     waitUntilIncidentsAreResolved(camundaClient, 1);
   }
 
@@ -85,23 +85,23 @@ public class IncidentSimpleResolveTest {
   }
 
   @Test
-  public void testFlowNodeInstanceWithoutIncident() {
+  public void testElementInstanceWithoutIncident() {
     // when
-    final FlowNodeInstance flowNodeInstance =
+    final ElementInstance elementInstance =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId(SERVICE_TASK_ID))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(SERVICE_TASK_ID))
             .page(p -> p.limit(100))
-            .sort(s -> s.flowNodeId().asc())
+            .sort(s -> s.elementId().asc())
             .send()
             .join()
             .items()
             .getFirst();
 
     // then
-    assertThat(flowNodeInstance).isNotNull();
-    assertThat(flowNodeInstance.getState()).isEqualTo(FlowNodeInstanceState.ACTIVE);
-    assertThat(flowNodeInstance.getIncident()).isEqualTo(false);
+    assertThat(elementInstance).isNotNull();
+    assertThat(elementInstance.getState()).isEqualTo(ElementInstanceState.ACTIVE);
+    assertThat(elementInstance.getIncident()).isEqualTo(false);
   }
 
   @Test

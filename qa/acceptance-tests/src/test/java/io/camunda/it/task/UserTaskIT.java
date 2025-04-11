@@ -365,13 +365,13 @@ public class UserTaskIT {
   public static String createAndDeployUserTaskProcess(
       final CamundaClient camundaClient,
       final String processId,
-      final String flowNodeBpmnId,
+      final String elementBpmnId,
       final Consumer<UserTaskBuilder>... taskModifiers) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .userTask(
-                flowNodeBpmnId,
+                elementBpmnId,
                 task -> Arrays.stream(taskModifiers).forEach(modifier -> modifier.accept(task)))
             .endEvent()
             .done();

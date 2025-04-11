@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db.flownodeinstance;
+package io.camunda.it.rdbms.db.elementinstance;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
-import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances;
+import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveRandomElementInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -31,13 +31,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
-public class FlowNodeInstanceSortIT {
+public class ElementInstanceSortIT {
 
   public static final Long PARTITION_ID = 0L;
 
   @TestTemplate
-  public void shouldSortByFlowNodeInstanceKeyAsc(
-      final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSortByElementInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.flowNodeInstanceKey().asc(),
@@ -45,7 +44,7 @@ public class FlowNodeInstanceSortIT {
   }
 
   @TestTemplate
-  public void shouldSortByFlowNodeInstanceKeyDesc(
+  public void shouldSortByElementInstanceKeyDesc(
       final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
@@ -54,7 +53,7 @@ public class FlowNodeInstanceSortIT {
   }
 
   @TestTemplate
-  public void shouldSortByFlowNodeIdAsc(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSortByElementIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.flowNodeId().asc(),
@@ -62,7 +61,7 @@ public class FlowNodeInstanceSortIT {
   }
 
   @TestTemplate
-  public void shouldSortByFlowNodeIdDesc(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSortByElementIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.flowNodeId().desc(),
@@ -164,7 +163,7 @@ public class FlowNodeInstanceSortIT {
     final FlowNodeInstanceReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinitionKey = nextKey();
-    createAndSaveRandomFlowNodeInstances(
+    createAndSaveRandomElementInstances(
         rdbmsWriter, b -> b.processDefinitionKey(processDefinitionKey));
 
     final var searchResult =
