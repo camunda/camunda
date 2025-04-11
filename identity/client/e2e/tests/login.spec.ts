@@ -52,7 +52,7 @@ test.describe("login page", () => {
     await expect(page).toHaveURL(relativizePath(Paths.users()));
     await commonPage.logout();
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login())}?next=/identity${Paths.users()}`,
+      `${relativizePath(Paths.login())}?next=/identity/`,
     );
   });
 
