@@ -13,10 +13,10 @@ import static io.camunda.client.api.search.enums.ProcessInstanceState.TERMINATED
 import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForFlowNodeInstances;
+import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
-import static io.camunda.it.util.TestHelper.waitUntilFlowNodeInstanceHasIncidents;
+import static io.camunda.it.util.TestHelper.waitUntilElementInstanceHasIncidents;
 import static io.camunda.it.util.TestHelper.waitUntilJobWorkerHasFailedJob;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,12 +27,12 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
-import io.camunda.client.api.search.enums.FlowNodeInstanceType;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.StringFilterProperty;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -46,7 +46,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class ProcessInstanceAndFlowNodeInstanceSearchTest {
+public class ProcessInstanceAndElementInstanceSearchTest {
 
   public static final String INCIDENT_ERROR_MESSAGE_V1 =
       "Expected result of the expression 'retriesA' to be 'NUMBER', but was 'STRING'.";
@@ -54,9 +54,9 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
   private static long processInstanceWithIncidentKey;
-  private static FlowNodeInstance flowNodeInstance;
-  private static FlowNodeInstance flowNodeInstanceWithIncident;
-  private static List<FlowNodeInstance> allFlowNodeInstances;
+  private static ElementInstance elementInstance;
+  private static ElementInstance elementInstanceWithIncident;
+  private static List<ElementInstance> allElementInstances;
   private static CamundaClient camundaClient;
 
   @BeforeAll
@@ -95,21 +95,21 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
 
     waitForProcessInstancesToStart(camundaClient, 8);
-    waitForFlowNodeInstances(camundaClient, 24);
-    waitUntilFlowNodeInstanceHasIncidents(camundaClient, 2);
+    waitForElementInstances(camundaClient, 24);
+    waitUntilElementInstanceHasIncidents(camundaClient, 2);
     waitUntilProcessInstanceHasIncidents(camundaClient, 2);
-    // store flow node instances for querying
-    allFlowNodeInstances =
+    // store element instances for querying
+    allElementInstances =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .page(p -> p.limit(100))
-            .sort(s -> s.flowNodeId().asc())
+            .sort(s -> s.elementId().asc())
             .send()
             .join()
             .items();
-    flowNodeInstance = allFlowNodeInstances.getFirst();
-    flowNodeInstanceWithIncident =
-        allFlowNodeInstances.stream()
+    elementInstance = allElementInstances.getFirst();
+    elementInstanceWithIncident =
+        allElementInstances.stream()
             .filter(f -> f.getIncidentKey() != null)
             .findFirst()
             .orElseThrow();
@@ -973,7 +973,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var resultDesc =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .sort(s -> s.parentFlowNodeInstanceKey().desc())
+            .sort(s -> s.parentElementInstanceKey().desc())
             .send()
             .join();
 
@@ -1038,76 +1038,76 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  public void shouldValidateFlowNodeInstancePagination() {
+  public void shouldValidateElementInstancePagination() {
     final var result =
-        camundaClient.newFlownodeInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+        camundaClient.newElementInstanceSearchRequest().page(p -> p.limit(2)).send().join();
     assertThat(result.items().size()).isEqualTo(2);
-    final var key = result.items().getFirst().getFlowNodeInstanceKey();
+    final var key = result.items().getFirst().getElementInstanceKey();
     // apply searchAfter
     final var resultAfter =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .page(p -> p.searchAfter(Collections.singletonList(key)))
             .send()
             .join();
 
     assertThat(resultAfter.items().size()).isEqualTo(23);
-    final var keyAfter = resultAfter.items().getFirst().getFlowNodeInstanceKey();
+    final var keyAfter = resultAfter.items().getFirst().getElementInstanceKey();
     // apply searchBefore
     final var resultBefore =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
-    assertThat(resultBefore.items().getFirst().getFlowNodeInstanceKey()).isEqualTo(key);
+    assertThat(resultBefore.items().getFirst().getElementInstanceKey()).isEqualTo(key);
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceByFlowNodeInstanceKey() {
+  void shouldQueryElementInstanceByElementInstanceKey() {
     // given
-    final var key = flowNodeInstance.getFlowNodeInstanceKey();
+    final var key = elementInstance.getElementInstanceKey();
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeInstanceKey(key))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementInstanceKey(key))
             .send()
             .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst()).isEqualTo(flowNodeInstance);
+    assertThat(result.items().getFirst()).isEqualTo(elementInstance);
   }
 
   @Test
-  void shouldSortFlowNodeInstanceByFlowNodeInstanceKey() {
+  void shouldSortElementInstanceByElementInstanceKey() {
     // when
     final var resultAsc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .sort(s -> s.flowNodeInstanceKey().asc())
+            .newElementInstanceSearchRequest()
+            .sort(s -> s.elementInstanceKey().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .sort(s -> s.flowNodeInstanceKey().desc())
+            .newElementInstanceSearchRequest()
+            .sort(s -> s.elementInstanceKey().desc())
             .send()
             .join();
 
-    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getFlowNodeInstanceKey);
+    assertSorted(resultAsc, resultDesc, ElementInstance::getElementInstanceKey);
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceQueryByProcessInstanceKey() {
+  void shouldQueryElementInstanceQueryByProcessInstanceKey() {
     // given
-    final var processInstanceKey = flowNodeInstance.getProcessInstanceKey();
+    final var processInstanceKey = elementInstance.getProcessInstanceKey();
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
             .send()
             .join();
@@ -1119,112 +1119,111 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldSortFlowNodeInstanceByProcessInstanceKey() {
+  void shouldSortElementInstanceByProcessInstanceKey() {
     // when
     final var resultAsc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .sort(s -> s.processInstanceKey().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .sort(s -> s.processInstanceKey().desc())
             .send()
             .join();
 
-    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getProcessInstanceKey);
+    assertSorted(resultAsc, resultDesc, ElementInstance::getProcessInstanceKey);
   }
 
   @Test
-  void shouldGetFlowNodeInstanceByKey() {
+  void shouldGetElementInstanceByKey() {
     // given
-    final var flowNodeInstanceKey = flowNodeInstance.getFlowNodeInstanceKey();
+    final var elementInstanceKey = elementInstance.getElementInstanceKey();
 
     // when
-    final var result =
-        camundaClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
+    final var result = camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result).isEqualTo(flowNodeInstance);
+    assertThat(result).isEqualTo(elementInstance);
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceByFlowNodeId() {
+  void shouldQueryElementInstanceByElementId() {
     // given
-    final var flowNodeId = flowNodeInstance.getFlowNodeId();
+    final var elementId = elementInstance.getElementId();
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId(flowNodeId))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(elementId))
             .send()
             .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(result.items().getFirst().getElementId()).isEqualTo(elementId);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isNotNull();
     assertThat(result.items().getFirst().getProcessDefinitionId())
-        .isEqualTo(flowNodeInstance.getProcessDefinitionId());
+        .isEqualTo(elementInstance.getProcessDefinitionId());
   }
 
   @Test
-  void shouldSortFlowNodeInstanceByFlowNodeId() {
+  void shouldSortElementInstanceByElementId() {
     // when
     final var resultAsc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .sort(s -> s.flowNodeId().asc())
+            .newElementInstanceSearchRequest()
+            .sort(s -> s.elementId().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .sort(s -> s.flowNodeId().desc())
+            .newElementInstanceSearchRequest()
+            .sort(s -> s.elementId().desc())
             .send()
             .join();
-    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getFlowNodeId);
+    assertSorted(resultAsc, resultDesc, ElementInstance::getElementId);
   }
 
   @Test
-  void shouldHaveCorrectFlowNodeInstanceFlowNodeName() {
+  void shouldHaveCorrectElementInstanceElementName() {
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId("noOpTask"))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId("noOpTask"))
             .send()
             .join();
     // then
     assertThat(result.items()).hasSize(1);
-    assertThat(result.items().getFirst().getFlowNodeName()).isEqualTo("No Op");
+    assertThat(result.items().getFirst().getElementName()).isEqualTo("No Op");
   }
 
   @Test
-  void shouldUseFlowNodeInstanceFlowNodeIdIfNameNotSet() {
+  void shouldUseElementInstanceElementIdIfNameNotSet() {
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId("Event_1p0nsc7"))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId("Event_1p0nsc7"))
             .send()
             .join();
     // then
     assertThat(result.items()).hasSize(1);
-    assertThat(result.items().getFirst().getFlowNodeName()).isEqualTo("Event_1p0nsc7");
+    assertThat(result.items().getFirst().getElementName()).isEqualTo("Event_1p0nsc7");
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceByProcessDefinitionKey() {
+  void shouldQueryElementInstanceByProcessDefinitionKey() {
     // given
-    final var processDefinitionKey = flowNodeInstance.getProcessDefinitionKey();
+    final var processDefinitionKey = elementInstance.getProcessDefinitionKey();
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .filter(f -> f.processDefinitionKey(processDefinitionKey))
             .send()
             .join();
@@ -1235,31 +1234,31 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldSortFlowNodeInstanceByProcessDefinitionKey() {
+  void shouldSortElementInstanceByProcessDefinitionKey() {
     // when
     final var resultAsc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .sort(s -> s.processDefinitionKey().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
             .send()
             .join();
-    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getProcessDefinitionKey);
+    assertSorted(resultAsc, resultDesc, ElementInstance::getProcessDefinitionKey);
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceByIncidentKey() {
+  void shouldQueryElementInstanceByIncidentKey() {
     // given
-    final var incidentKey = flowNodeInstanceWithIncident.getIncidentKey();
+    final var incidentKey = elementInstanceWithIncident.getIncidentKey();
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .filter(f -> f.incidentKey(incidentKey))
             .send()
             .join();
@@ -1267,38 +1266,38 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getIncidentKey()).isEqualTo(incidentKey);
-    assertThat(result.items().getFirst().getState()).isEqualTo(FlowNodeInstanceState.ACTIVE);
+    assertThat(result.items().getFirst().getState()).isEqualTo(ElementInstanceState.ACTIVE);
     assertThat(result.items().getFirst().getIncident()).isEqualTo(true);
   }
 
   @Test
-  void shouldSortFlowNodeInstanceByIncidentKey() {
+  void shouldSortElementInstanceByIncidentKey() {
     // when
     final var resultAsc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .sort(s -> s.incidentKey().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .sort(s -> s.incidentKey().desc())
             .send()
             .join();
 
-    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getIncidentKey);
+    assertSorted(resultAsc, resultDesc, ElementInstance::getIncidentKey);
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceByState() {
+  void shouldQueryElementInstanceByState() {
     // given
-    final var state = flowNodeInstance.getState();
+    final var state = elementInstance.getState();
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.state(FlowNodeInstanceState.valueOf(state.name())))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.state(ElementInstanceState.valueOf(state.name())))
             .send()
             .join();
 
@@ -1308,24 +1307,24 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldSortFlowNodeInstanceByState() {
+  void shouldSortElementInstanceByState() {
     // when
     final var resultAsc =
-        camundaClient.newFlownodeInstanceSearchRequest().sort(s -> s.state().asc()).send().join();
+        camundaClient.newElementInstanceSearchRequest().sort(s -> s.state().asc()).send().join();
     final var resultDesc =
-        camundaClient.newFlownodeInstanceSearchRequest().sort(s -> s.state().desc()).send().join();
+        camundaClient.newElementInstanceSearchRequest().sort(s -> s.state().desc()).send().join();
 
-    assertSorted(resultAsc, resultDesc, flowNodeInstance -> flowNodeInstance.getState().name());
+    assertSorted(resultAsc, resultDesc, elementInstance -> elementInstance.getState().name());
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceByIncident() {
+  void shouldQueryElementInstanceByIncident() {
     // given
-    final var hasIncident = flowNodeInstanceWithIncident.getIncident();
+    final var hasIncident = elementInstanceWithIncident.getIncident();
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .filter(f -> f.hasIncident(hasIncident))
             .send()
             .join();
@@ -1336,14 +1335,14 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceByType() {
+  void shouldQueryElementInstanceByType() {
     // given
-    final var type = flowNodeInstance.getType();
+    final var type = elementInstance.getType();
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.type(FlowNodeInstanceType.valueOf(type.name())))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.type(ElementInstanceType.valueOf(type.name())))
             .send()
             .join();
 
@@ -1355,34 +1354,34 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldSortFlowNodeInstanceByType() {
+  void shouldSortElementInstanceByType() {
     // when
     final var resultAsc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .page(p -> p.limit(100))
             .sort(s -> s.type().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .page(p -> p.limit(100))
             .sort(s -> s.type().desc())
             .send()
             .join();
 
-    assertSorted(resultAsc, resultDesc, flowNodeInstance -> flowNodeInstance.getType().name());
+    assertSorted(resultAsc, resultDesc, elementInstance -> elementInstance.getType().name());
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceByTenantId() {
+  void shouldQueryElementInstanceByTenantId() {
     // given
-    final var tenantId = flowNodeInstance.getTenantId();
+    final var tenantId = elementInstance.getTenantId();
     // when
     final var result =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .filter(f -> f.tenantId(tenantId))
             .send()
             .join();
@@ -1393,48 +1392,44 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  public void shouldQueryFlowNodeInstanceValidatePagination() {
+  public void shouldQueryElementInstanceValidatePagination() {
     final var result =
-        camundaClient.newFlownodeInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+        camundaClient.newElementInstanceSearchRequest().page(p -> p.limit(2)).send().join();
     assertThat(result.items().size()).isEqualTo(2);
-    final var key = result.items().getFirst().getFlowNodeInstanceKey();
+    final var key = result.items().getFirst().getElementInstanceKey();
     // apply searchAfter
     final var resultAfter =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .page(p -> p.searchAfter(Collections.singletonList(key)))
             .send()
             .join();
 
     assertThat(resultAfter.items().size()).isEqualTo(23);
-    final var keyAfter = resultAfter.items().getFirst().getFlowNodeInstanceKey();
+    final var keyAfter = resultAfter.items().getFirst().getElementInstanceKey();
     // apply searchBefore
     final var resultBefore =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
+            .newElementInstanceSearchRequest()
             .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
-    assertThat(resultBefore.items().getFirst().getFlowNodeInstanceKey()).isEqualTo(key);
+    assertThat(resultBefore.items().getFirst().getElementInstanceKey()).isEqualTo(key);
   }
 
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newFlownodeInstanceSearchRequest().send().join();
-    final var thirdKey = resultAll.items().get(2).getFlowNodeInstanceKey();
+    final var resultAll = camundaClient.newElementInstanceSearchRequest().send().join();
+    final var thirdKey = resultAll.items().get(2).getElementInstanceKey();
 
     final var resultSearchFrom =
-        camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .page(p -> p.limit(2).from(2))
-            .send()
-            .join();
+        camundaClient.newElementInstanceSearchRequest().page(p -> p.limit(2).from(2)).send().join();
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
-    assertThat(resultSearchFrom.items().stream().findFirst().get().getFlowNodeInstanceKey())
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getElementInstanceKey())
         .isEqualTo(thirdKey);
   }
 
@@ -1594,11 +1589,10 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldQueryProcessInstancesByFlowNodeIdFilter() {
+  void shouldQueryProcessInstancesByElementIdFilter() {
     // given
     final var random = RandomGenerator.getDefault();
-    final var flowNodeInstance =
-        allFlowNodeInstances.get(random.nextInt(allFlowNodeInstances.size()));
+    final var elementInstance = allElementInstances.get(random.nextInt(allElementInstances.size()));
 
     // when
     final var result =
@@ -1606,24 +1600,24 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .newProcessInstanceSearchRequest()
             .filter(
                 f ->
-                    f.processInstanceKey(flowNodeInstance.getProcessInstanceKey())
-                        .flowNodeId(flowNodeInstance.getFlowNodeId()))
+                    f.processInstanceKey(elementInstance.getProcessInstanceKey())
+                        .elementId(elementInstance.getElementId()))
             .send()
             .join();
 
     assertThat(result.items())
         .extracting("processInstanceKey")
-        .containsExactly(flowNodeInstance.getProcessInstanceKey());
+        .containsExactly(elementInstance.getProcessInstanceKey());
   }
 
   @Test
-  void shouldQueryProcessInstancesByFlowNodeIdAndFlowNodeInstanceStateFilter() {
+  void shouldQueryProcessInstancesByElementIdAndElementInstanceStateFilter() {
 
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.flowNodeId("taskA").flowNodeInstanceState(FlowNodeInstanceState.ACTIVE))
+            .filter(f -> f.elementId("taskA").elementInstanceState(ElementInstanceState.ACTIVE))
             .send()
             .join();
 
@@ -1634,15 +1628,15 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
-  void shouldQueryProcessInstancesByFlowNodeIdAndFlowNodeInstanceIncidentFilter() {
+  void shouldQueryProcessInstancesByElementIdAndElementInstanceIncidentFilter() {
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(
                 f ->
-                    f.flowNodeId(flowNodeInstanceWithIncident.getFlowNodeId())
-                        .hasFlowNodeInstanceIncident(true))
+                    f.elementId(elementInstanceWithIncident.getElementId())
+                        .hasElementInstanceIncident(true))
             .send()
             .join();
 

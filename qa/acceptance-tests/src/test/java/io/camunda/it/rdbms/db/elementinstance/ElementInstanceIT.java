@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db.flownodeinstance;
+package io.camunda.it.rdbms.db.elementinstance;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
-import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveFlowNodeInstance;
-import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances;
+import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveElementInstance;
+import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveRandomElementInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -33,36 +33,35 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
-public class FlowNodeInstanceIT {
+public class ElementInstanceIT {
 
   public static final int PARTITION_ID = 0;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
-  public void shouldSaveAndFindFlowNodeInstanceByKey(
+  public void shouldSaveAndFindElementInstanceByKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final FlowNodeInstanceReader reader = rdbmsService.getFlowNodeInstanceReader();
 
-    final var flowNodeInstance = createAndSaveFlowNodeInstance(rdbmsWriter);
+    final var elementInstance = createAndSaveElementInstance(rdbmsWriter);
 
-    final var actual = reader.findOne(flowNodeInstance.flowNodeInstanceKey()).orElseThrow();
-    compareFlowNodeInstance(actual, flowNodeInstance);
+    final var actual = reader.findOne(elementInstance.flowNodeInstanceKey()).orElseThrow();
+    compareElementInstance(actual, elementInstance);
   }
 
   @TestTemplate
   public void shouldSaveLogAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceReader flowNodeInstanceReader = rdbmsService.getFlowNodeInstanceReader();
+    final FlowNodeInstanceReader elementInstanceReader = rdbmsService.getFlowNodeInstanceReader();
 
-    final FlowNodeInstanceDbModel original = createAndSaveFlowNodeInstance(rdbmsWriter, b -> b);
+    final FlowNodeInstanceDbModel original = createAndSaveElementInstance(rdbmsWriter, b -> b);
     rdbmsWriter.getFlowNodeInstanceWriter().createIncident(original.flowNodeInstanceKey(), 42L);
     rdbmsWriter.flush();
 
-    final var instance =
-        flowNodeInstanceReader.findOne(original.flowNodeInstanceKey()).orElse(null);
+    final var instance = elementInstanceReader.findOne(original.flowNodeInstanceKey()).orElse(null);
 
     assertThat(instance).isNotNull();
     assertThat(instance.hasIncident()).isTrue();
@@ -72,7 +71,7 @@ public class FlowNodeInstanceIT {
     rdbmsWriter.flush();
 
     final var resolvedInstance =
-        flowNodeInstanceReader.findOne(original.flowNodeInstanceKey()).orElse(null);
+        elementInstanceReader.findOne(original.flowNodeInstanceKey()).orElse(null);
 
     assertThat(resolvedInstance).isNotNull();
     assertThat(resolvedInstance.hasIncident()).isFalse();
@@ -80,19 +79,19 @@ public class FlowNodeInstanceIT {
   }
 
   @TestTemplate
-  public void shouldFindFlowNodeInstanceByProcessDefinitionId(
+  public void shouldFindElementInstanceByProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final FlowNodeInstanceReader reader = rdbmsService.getFlowNodeInstanceReader();
 
-    final var flowNodeInstance = createAndSaveFlowNodeInstance(rdbmsWriter);
+    final var elementInstance = createAndSaveElementInstance(rdbmsWriter);
 
     final var searchResult =
         reader.search(
             new FlowNodeInstanceQuery(
                 new FlowNodeInstanceFilter.Builder()
-                    .processDefinitionIds(flowNodeInstance.processDefinitionId())
+                    .processDefinitionIds(elementInstance.processDefinitionId())
                     .build(),
                 FlowNodeInstanceSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -101,18 +100,17 @@ public class FlowNodeInstanceIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
 
-    compareFlowNodeInstance(searchResult.items().getFirst(), flowNodeInstance);
+    compareElementInstance(searchResult.items().getFirst(), elementInstance);
   }
 
   @TestTemplate
-  public void shouldFindAllFlowNodeInstancePaged(
-      final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindAllElementInstancePaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final FlowNodeInstanceReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinitionId = nextStringId();
-    createAndSaveRandomFlowNodeInstances(
+    createAndSaveRandomElementInstances(
         rdbmsWriter, b -> b.processDefinitionId(processDefinitionId));
     final var searchResult =
         reader.search(
@@ -129,14 +127,14 @@ public class FlowNodeInstanceIT {
   }
 
   @TestTemplate
-  public void shouldFindAllFlowNodeInstancePageValuesAreNull(
+  public void shouldFindAllElementInstancePageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final FlowNodeInstanceReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinitionId = nextStringId();
-    createAndSaveRandomFlowNodeInstances(
+    createAndSaveRandomElementInstances(
         rdbmsWriter, b -> b.processDefinitionId(processDefinitionId));
 
     final var searchResult =
@@ -154,14 +152,14 @@ public class FlowNodeInstanceIT {
   }
 
   @TestTemplate
-  public void shouldFindFlowNodeInstanceWithFullFilter(
+  public void shouldFindElementInstanceWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final FlowNodeInstanceReader reader = rdbmsService.getFlowNodeInstanceReader();
 
-    createAndSaveRandomFlowNodeInstances(rdbmsWriter);
-    final var instance = createAndSaveFlowNodeInstance(rdbmsWriter);
+    createAndSaveRandomElementInstances(rdbmsWriter);
+    final var instance = createAndSaveElementInstance(rdbmsWriter);
 
     final var searchResult =
         reader.search(
@@ -187,7 +185,7 @@ public class FlowNodeInstanceIT {
         .isEqualTo(instance.flowNodeInstanceKey());
   }
 
-  private static void compareFlowNodeInstance(
+  private static void compareElementInstance(
       final FlowNodeInstanceEntity actual, final FlowNodeInstanceDbModel expected) {
     assertThat(actual)
         .usingRecursiveComparison()
@@ -212,15 +210,15 @@ public class FlowNodeInstanceIT {
   }
 
   @TestTemplate
-  public void shouldFindFlowNodeInstanceWithSearchAfter(
+  public void shouldFindElementInstanceWithSearchAfter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceReader flowNodeInstanceReader = rdbmsService.getFlowNodeInstanceReader();
+    final FlowNodeInstanceReader elementInstanceReader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
-    createAndSaveRandomFlowNodeInstances(
+    createAndSaveRandomElementInstances(
         rdbmsWriter,
         b ->
             b.processDefinitionKey(processDefinition.processDefinitionKey())
@@ -228,7 +226,7 @@ public class FlowNodeInstanceIT {
     final var sort =
         FlowNodeInstanceSort.of(s -> s.type().asc().tenantId().asc().startDate().desc());
     final var searchResult =
-        flowNodeInstanceReader.search(
+        elementInstanceReader.search(
             FlowNodeInstanceQuery.of(
                 b ->
                     b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
@@ -237,7 +235,7 @@ public class FlowNodeInstanceIT {
 
     final var instanceAfter = searchResult.items().get(9);
     final var nextPage =
-        flowNodeInstanceReader.search(
+        elementInstanceReader.search(
             FlowNodeInstanceQuery.of(
                 b ->
                     b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
@@ -269,13 +267,13 @@ public class FlowNodeInstanceIT {
     final var definition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
     final var item1 =
-        createAndSaveFlowNodeInstance(
+        createAndSaveElementInstance(
             rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
     final var item2 =
-        createAndSaveFlowNodeInstance(
+        createAndSaveElementInstance(
             rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
     final var item3 =
-        createAndSaveFlowNodeInstance(
+        createAndSaveElementInstance(
             rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
 
     // set cleanup dates

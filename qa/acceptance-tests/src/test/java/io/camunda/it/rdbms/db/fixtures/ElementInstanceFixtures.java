@@ -16,9 +16,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.function.Function;
 
-public final class FlowNodeInstanceFixtures extends CommonFixtures {
+public final class ElementInstanceFixtures extends CommonFixtures {
 
-  private FlowNodeInstanceFixtures() {}
+  private ElementInstanceFixtures() {}
 
   public static FlowNodeInstanceDbModel createRandomized(
       final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
@@ -29,7 +29,7 @@ public final class FlowNodeInstanceFixtures extends CommonFixtures {
             .processInstanceKey(nextKey())
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-" + generateRandomString(20))
-            .flowNodeId("flowNode-" + generateRandomString(20))
+            .flowNodeId("element-" + generateRandomString(20))
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .treePath(nextStringId())
@@ -41,45 +41,44 @@ public final class FlowNodeInstanceFixtures extends CommonFixtures {
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomFlowNodeInstances(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomFlowNodeInstances(rdbmsWriter, b -> b);
+  public static void createAndSaveRandomElementInstances(final RdbmsWriter rdbmsWriter) {
+    createAndSaveRandomElementInstances(rdbmsWriter, b -> b);
   }
 
-  public static void createAndSaveRandomFlowNodeInstances(
+  public static void createAndSaveRandomElementInstances(
       final RdbmsWriter rdbmsWriter,
       final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
       rdbmsWriter
           .getFlowNodeInstanceWriter()
-          .create(FlowNodeInstanceFixtures.createRandomized(builderFunction));
+          .create(ElementInstanceFixtures.createRandomized(builderFunction));
     }
 
     rdbmsWriter.flush();
   }
 
-  public static FlowNodeInstanceDbModel createAndSaveFlowNodeInstance(
-      final RdbmsWriter rdbmsWriter) {
-    final var instance = FlowNodeInstanceFixtures.createRandomized(b -> b);
-    createAndSaveFlowNodeInstances(rdbmsWriter, List.of(instance));
+  public static FlowNodeInstanceDbModel createAndSaveElementInstance(final RdbmsWriter rdbmsWriter) {
+    final var instance = ElementInstanceFixtures.createRandomized(b -> b);
+    createAndSaveElementInstances(rdbmsWriter, List.of(instance));
     return instance;
   }
 
-  public static FlowNodeInstanceDbModel createAndSaveFlowNodeInstance(
+  public static FlowNodeInstanceDbModel createAndSaveElementInstance(
       final RdbmsWriter rdbmsWriter,
       final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
           builderFunction) {
-    final var instance = FlowNodeInstanceFixtures.createRandomized(builderFunction);
-    createAndSaveFlowNodeInstances(rdbmsWriter, List.of(instance));
+    final var instance = ElementInstanceFixtures.createRandomized(builderFunction);
+    createAndSaveElementInstances(rdbmsWriter, List.of(instance));
     return instance;
   }
 
-  public static void createAndSaveFlowNodeInstance(
+  public static void createAndSaveElementInstance(
       final RdbmsWriter rdbmsWriter, final FlowNodeInstanceDbModel processInstance) {
-    createAndSaveFlowNodeInstances(rdbmsWriter, List.of(processInstance));
+    createAndSaveElementInstances(rdbmsWriter, List.of(processInstance));
   }
 
-  public static void createAndSaveFlowNodeInstances(
+  public static void createAndSaveElementInstances(
       final RdbmsWriter rdbmsWriter, final List<FlowNodeInstanceDbModel> processInstanceList) {
     for (final FlowNodeInstanceDbModel processInstance : processInstanceList) {
       rdbmsWriter.getFlowNodeInstanceWriter().create(processInstance);

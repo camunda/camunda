@@ -58,7 +58,7 @@ public class ProcessDefinitionStatisticsIT {
 
     // when
     final var actual =
-        getProcessDefinitionFlowNodeStatisticsEntities(
+        getProcessDefinitionElementStatisticsEntities(
             processDefinitionReader, pd1.processDefinitionKey(), f -> {});
 
     // then
@@ -81,7 +81,7 @@ public class ProcessDefinitionStatisticsIT {
 
     // when
     final var actual =
-        getProcessDefinitionFlowNodeStatisticsEntities(
+        getProcessDefinitionElementStatisticsEntities(
             processDefinitionReader,
             pd1.processDefinitionKey(),
             f -> f.processInstanceKeys(node1Active, node2Incident));
@@ -109,7 +109,7 @@ public class ProcessDefinitionStatisticsIT {
 
     // when
     final var actual =
-        getProcessDefinitionFlowNodeStatisticsEntities(
+        getProcessDefinitionElementStatisticsEntities(
             processDefinitionReader, pd1.processDefinitionKey(), b -> {});
 
     // then
@@ -131,7 +131,7 @@ public class ProcessDefinitionStatisticsIT {
 
     // when
     final var actual =
-        getProcessDefinitionFlowNodeStatisticsEntities(
+        getProcessDefinitionElementStatisticsEntities(
             processDefinitionReader, pd1.processDefinitionKey(), b -> {});
 
     // then
@@ -156,7 +156,7 @@ public class ProcessDefinitionStatisticsIT {
 
     // when
     final var actual =
-        getProcessDefinitionFlowNodeStatisticsEntities(
+        getProcessDefinitionElementStatisticsEntities(
             processDefinitionReader, pd1.processDefinitionKey(), b -> {});
 
     // then
@@ -184,7 +184,7 @@ public class ProcessDefinitionStatisticsIT {
 
     // when
     final var actual =
-        getProcessDefinitionFlowNodeStatisticsEntities(
+        getProcessDefinitionElementStatisticsEntities(
             processDefinitionReader, pd1.processDefinitionKey(), b -> {});
 
     // then
@@ -194,7 +194,7 @@ public class ProcessDefinitionStatisticsIT {
   }
 
   private static List<ProcessFlowNodeStatisticsEntity>
-      getProcessDefinitionFlowNodeStatisticsEntities(
+      getProcessDefinitionElementStatisticsEntities(
           final ProcessDefinitionReader processDefinitionReader,
           final Long processDefinitionKey,
           final Consumer<ProcessDefinitionStatisticsFilter.Builder> fn) {
@@ -204,35 +204,35 @@ public class ProcessDefinitionStatisticsIT {
   }
 
   private Long createActive(
-      final RdbmsWriter rdbmsWriter, final Long processDefinitionKey, final String flowNodeId) {
+      final RdbmsWriter rdbmsWriter, final Long processDefinitionKey, final String elementId) {
     return createPIAndFNI(
         rdbmsWriter,
         processDefinitionKey,
-        b -> b.flowNodeId(flowNodeId).state(FlowNodeState.ACTIVE));
+        b -> b.flowNodeId(elementId).state(FlowNodeState.ACTIVE));
   }
 
   private void createCompleted(
-      final RdbmsWriter rdbmsWriter, final Long processDefinitionKey, final String flowNodeId) {
+      final RdbmsWriter rdbmsWriter, final Long processDefinitionKey, final String elementId) {
     createPIAndFNI(
         rdbmsWriter,
         processDefinitionKey,
-        b -> b.flowNodeId(flowNodeId).state(FlowNodeState.COMPLETED).type(FlowNodeType.END_EVENT));
+        b -> b.flowNodeId(elementId).state(FlowNodeState.COMPLETED).type(FlowNodeType.END_EVENT));
   }
 
   private void createCanceled(
-      final RdbmsWriter rdbmsWriter, final Long processDefinitionKey, final String flowNodeId) {
+      final RdbmsWriter rdbmsWriter, final Long processDefinitionKey, final String elementId) {
     createPIAndFNI(
         rdbmsWriter,
         processDefinitionKey,
-        b -> b.flowNodeId(flowNodeId).state(FlowNodeState.TERMINATED));
+        b -> b.flowNodeId(elementId).state(FlowNodeState.TERMINATED));
   }
 
   private Long createIncident(
-      final RdbmsWriter rdbmsWriter, final Long processDefinitionKey, final String flowNodeId) {
+      final RdbmsWriter rdbmsWriter, final Long processDefinitionKey, final String elementId) {
     return createPIAndFNI(
         rdbmsWriter,
         processDefinitionKey,
-        b -> b.flowNodeId(flowNodeId).state(FlowNodeState.ACTIVE).incidentKey(123L));
+        b -> b.flowNodeId(elementId).state(FlowNodeState.ACTIVE).incidentKey(123L));
   }
 
   private Long createPIAndFNI(
@@ -264,16 +264,13 @@ public class ProcessDefinitionStatisticsIT {
 
   private void assertStatisticsResult(
       final List<ProcessFlowNodeStatisticsEntity> statistics,
-      final String flowNodeId,
+      final String elementId,
       final long active,
       final long canceled,
       final long completed,
       final long incidents) {
     final var node =
-        statistics.stream()
-            .filter(s -> s.flowNodeId().equals(flowNodeId))
-            .findFirst()
-            .orElseThrow();
+        statistics.stream().filter(s -> s.flowNodeId().equals(elementId)).findFirst().orElseThrow();
     assertThat(node.active()).isEqualTo(active);
     assertThat(node.canceled()).isEqualTo(canceled);
     assertThat(node.completed()).isEqualTo(completed);

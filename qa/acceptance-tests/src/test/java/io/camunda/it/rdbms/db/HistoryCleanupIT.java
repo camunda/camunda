@@ -15,7 +15,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
-import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
+import io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
@@ -104,7 +104,7 @@ public class HistoryCleanupIT {
                 rdbmsService.createWriter(0), b -> b)
             .processInstanceKey();
 
-    FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances(
+    ElementInstanceFixtures.createAndSaveRandomElementInstances(
         rdbmsWriter, b -> b.processInstanceKey(processInstanceKey));
 
     UserTaskFixtures.createAndSaveRandomUserTasks(

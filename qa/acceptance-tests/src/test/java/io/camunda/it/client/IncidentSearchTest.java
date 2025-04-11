@@ -174,21 +174,21 @@ class IncidentSearchTest {
   }
 
   @Test
-  void shouldFilterByFlowNodeInstanceKey() {
+  void shouldFilterByElementInstanceKey() {
     // given
-    final var flowNodeInstanceKey = incident.getFlowNodeInstanceKey();
+    final var elementInstanceKey = incident.getElementInstanceKey();
 
     // when
     final var result =
         camundaClient
             .newIncidentSearchRequest()
-            .filter(f -> f.flowNodeInstanceKey(flowNodeInstanceKey))
+            .filter(f -> f.elementInstanceKey(elementInstanceKey))
             .send()
             .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getFlowNodeInstanceKey()).isEqualTo(flowNodeInstanceKey);
+    assertThat(result.items().getFirst().getElementInstanceKey()).isEqualTo(elementInstanceKey);
   }
 
   @Test
@@ -267,21 +267,17 @@ class IncidentSearchTest {
   }
 
   @Test
-  void shouldFilterByFlowNodeId() {
+  void shouldFilterByElementId() {
     // given
-    final var flowNodeId = incident.getFlowNodeId();
+    final var elementId = incident.getElementId();
 
     // when
     final var result =
-        camundaClient
-            .newIncidentSearchRequest()
-            .filter(f -> f.flowNodeId(flowNodeId))
-            .send()
-            .join();
+        camundaClient.newIncidentSearchRequest().filter(f -> f.elementId(elementId)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(result.items().getFirst().getElementId()).isEqualTo(elementId);
   }
 
   @Test
@@ -423,44 +419,44 @@ class IncidentSearchTest {
   }
 
   @Test
-  void shouldSortByFlowNodeInstanceId() {
+  void shouldSortByElementInstanceId() {
     final var resultAsc =
         camundaClient
             .newIncidentSearchRequest()
-            .sort(s -> s.flowNodeInstanceKey().asc())
+            .sort(s -> s.elementInstanceKey().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newIncidentSearchRequest()
-            .sort(s -> s.flowNodeInstanceKey().desc())
+            .sort(s -> s.elementInstanceKey().desc())
             .send()
             .join();
 
-    final var all = resultAsc.items().stream().map(Incident::getFlowNodeInstanceKey).toList();
+    final var all = resultAsc.items().stream().map(Incident::getElementInstanceKey).toList();
     final var sortedAsc = all.stream().sorted().toList();
     final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
 
-    assertThat(resultAsc.items().stream().map(Incident::getFlowNodeInstanceKey).toList())
+    assertThat(resultAsc.items().stream().map(Incident::getElementInstanceKey).toList())
         .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(Incident::getFlowNodeInstanceKey).toList())
+    assertThat(resultDesc.items().stream().map(Incident::getElementInstanceKey).toList())
         .containsExactlyElementsOf(sortedDesc);
   }
 
   @Test
-  void shouldSortByFlowNodeId() {
+  void shouldSortByElementId() {
     final var resultAsc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.flowNodeId().asc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.elementId().asc()).send().join();
     final var resultDesc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.flowNodeId().desc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.elementId().desc()).send().join();
 
-    final var all = resultAsc.items().stream().map(Incident::getFlowNodeId).toList();
+    final var all = resultAsc.items().stream().map(Incident::getElementId).toList();
     final var sortedAsc = all.stream().sorted().toList();
     final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
 
-    assertThat(resultAsc.items().stream().map(Incident::getFlowNodeId).toList())
+    assertThat(resultAsc.items().stream().map(Incident::getElementId).toList())
         .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(Incident::getFlowNodeId).toList())
+    assertThat(resultDesc.items().stream().map(Incident::getElementId).toList())
         .containsExactlyElementsOf(sortedDesc);
   }
 

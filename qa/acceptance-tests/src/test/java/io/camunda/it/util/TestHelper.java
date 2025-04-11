@@ -125,15 +125,15 @@ public final class TestHelper {
             });
   }
 
-  public static void waitForFlowNodeInstances(
-      final CamundaClient camundaClient, final int expectedFlowNodeInstances) {
-    Awaitility.await("should wait until flow node instances are available")
+  public static void waitForElementInstances(
+      final CamundaClient camundaClient, final int expectedElementInstances) {
+    Awaitility.await("should wait until element instances are available")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newFlownodeInstanceSearchRequest().send().join();
-              assertThat(result.page().totalItems()).isEqualTo(expectedFlowNodeInstances);
+              final var result = camundaClient.newElementInstanceSearchRequest().send().join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
             });
   }
 
@@ -183,8 +183,8 @@ public final class TestHelper {
             });
   }
 
-  public static void waitUntilIncidentIsResolvedOnFlowNodeInstance(
-      final CamundaClient camundaClient, final int expectedFlowNodeInstances) {
+  public static void waitUntilIncidentIsResolvedOnElementInstance(
+      final CamundaClient camundaClient, final int expectedElementInstances) {
     Awaitility.await("should wait until incidents are resolved")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -192,11 +192,11 @@ public final class TestHelper {
             () -> {
               final var result =
                   camundaClient
-                      .newFlownodeInstanceSearchRequest()
+                      .newElementInstanceSearchRequest()
                       .filter(f -> f.hasIncident(false))
                       .send()
                       .join();
-              assertThat(result.page().totalItems()).isEqualTo(expectedFlowNodeInstances);
+              assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
             });
   }
 
@@ -251,16 +251,16 @@ public final class TestHelper {
             });
   }
 
-  public static void waitUntilFlowNodeInstanceHasIncidents(
+  public static void waitUntilElementInstanceHasIncidents(
       final CamundaClient camundaClient, final int expectedIncidents) {
-    Awaitility.await("should wait until flow node instance has incidents")
+    Awaitility.await("should wait until element instance has incidents")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result =
                   camundaClient
-                      .newFlownodeInstanceSearchRequest()
+                      .newElementInstanceSearchRequest()
                       .filter(f -> f.hasIncident(true))
                       .send()
                       .join();

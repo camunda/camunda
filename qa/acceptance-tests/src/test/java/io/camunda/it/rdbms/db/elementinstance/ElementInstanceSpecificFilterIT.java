@@ -5,17 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db.flownodeinstance;
+package io.camunda.it.rdbms.db.elementinstance;
 
-import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveFlowNodeInstance;
-import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances;
+import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveElementInstance;
+import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndSaveRandomElementInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
+import io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -40,13 +40,13 @@ import org.springframework.test.context.TestPropertySource;
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
 @TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
-public class FlowNodeInstanceSpecificFilterIT {
+public class ElementInstanceSpecificFilterIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
+  @Autowired private FlowNodeInstanceReader elementInstanceReader;
 
   private RdbmsWriter rdbmsWriter;
 
@@ -56,17 +56,17 @@ public class FlowNodeInstanceSpecificFilterIT {
   }
 
   @ParameterizedTest
-  @MethodSource("shouldFindFlowNodeInstanceWithSpecificFilterParameters")
-  public void shouldFindFlowNodeInstanceWithSpecificFilter(final FlowNodeInstanceFilter filter) {
-    createAndSaveRandomFlowNodeInstances(
+  @MethodSource("shouldFindElementInstanceWithSpecificFilterParameters")
+  public void shouldFindElementInstanceWithSpecificFilter(final FlowNodeInstanceFilter filter) {
+    createAndSaveRandomElementInstances(
         rdbmsWriter,
         b -> b.state(FlowNodeState.COMPLETED).type(FlowNodeType.BOUNDARY_EVENT).incidentKey(null));
-    createAndSaveFlowNodeInstance(
+    createAndSaveElementInstance(
         rdbmsWriter,
-        FlowNodeInstanceFixtures.createRandomized(
+        ElementInstanceFixtures.createRandomized(
             b ->
                 b.flowNodeInstanceKey(42L)
-                    .flowNodeId("unique-flowNode-42")
+                    .flowNodeId("unique-element-42")
                     .processInstanceKey(123L)
                     .processDefinitionId("unique-process-124")
                     .processDefinitionKey(124L)
@@ -77,7 +77,7 @@ public class FlowNodeInstanceSpecificFilterIT {
                     .treePath("unique-tree-path-42")));
 
     final var searchResult =
-        flowNodeInstanceReader.search(
+        elementInstanceReader.search(
             new FlowNodeInstanceQuery(
                 filter,
                 FlowNodeInstanceSort.of(b -> b),
@@ -88,10 +88,10 @@ public class FlowNodeInstanceSpecificFilterIT {
     assertThat(searchResult.items().getFirst().flowNodeInstanceKey()).isEqualTo(42L);
   }
 
-  static List<FlowNodeInstanceFilter> shouldFindFlowNodeInstanceWithSpecificFilterParameters() {
+  static List<FlowNodeInstanceFilter> shouldFindElementInstanceWithSpecificFilterParameters() {
     return List.of(
         FlowNodeInstanceFilter.of(b -> b.flowNodeInstanceKeys(42L)),
-        FlowNodeInstanceFilter.of(b -> b.flowNodeIds("unique-flowNode-42")),
+        FlowNodeInstanceFilter.of(b -> b.flowNodeIds("unique-element-42")),
         FlowNodeInstanceFilter.of(b -> b.processInstanceKeys(123L)),
         FlowNodeInstanceFilter.of(b -> b.processDefinitionKeys(124L)),
         FlowNodeInstanceFilter.of(b -> b.processDefinitionIds("unique-process-124")),
