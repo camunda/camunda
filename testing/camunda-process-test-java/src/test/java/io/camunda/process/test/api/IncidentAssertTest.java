@@ -86,7 +86,7 @@ public class IncidentAssertTest {
       final IncidentErrorType type,
       final IncidentState state,
       final String error) {
-    return IncidentBuilder.newActiveIncident(type, error).setFlowNodeId(id).setState(state).build();
+    return IncidentBuilder.newActiveIncident(type, error).setElementId(id).setState(state).build();
   }
 
   static class ActiveIncidentsProvider implements ArgumentsProvider {

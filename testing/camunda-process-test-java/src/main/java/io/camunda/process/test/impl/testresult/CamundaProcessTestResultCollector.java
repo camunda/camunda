@@ -15,9 +15,9 @@
  */
 package io.camunda.process.test.impl.testresult;
 
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -55,7 +55,7 @@ public class CamundaProcessTestResultCollector {
     result.setProcessInstance(processInstance);
     result.setVariables(collectVariables(processInstanceKey));
     result.setOpenIncidents(collectOpenIncidents(processInstanceKey));
-    result.setActiveFlowNodeInstances(collectActiveFlowNodeInstances(processInstanceKey));
+    result.setActiveElementInstances(collectActiveElementInstances(processInstanceKey));
 
     return result;
   }
@@ -74,9 +74,9 @@ public class CamundaProcessTestResultCollector {
         filter -> filter.processInstanceKey(processInstanceKey).state(IncidentState.ACTIVE));
   }
 
-  private List<FlowNodeInstance> collectActiveFlowNodeInstances(final long processInstanceKey) {
-    return dataSource.findFlowNodeInstances(
+  private List<ElementInstance> collectActiveElementInstances(final long processInstanceKey) {
+    return dataSource.findElementInstances(
         filter ->
-            filter.processInstanceKey(processInstanceKey).state(FlowNodeInstanceState.ACTIVE));
+            filter.processInstanceKey(processInstanceKey).state(ElementInstanceState.ACTIVE));
   }
 }

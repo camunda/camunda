@@ -31,7 +31,7 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   private String processDefinitionVersionTag;
   private Long processDefinitionKey;
   private Long parentProcessInstanceKey;
-  private Long parentFlowNodeInstanceKey;
+  private Long parentElementInstanceKey;
   private String startDate;
   private String endDate;
   private ProcessInstanceState state;
@@ -74,8 +74,8 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   }
 
   @Override
-  public Long getParentFlowNodeInstanceKey() {
-    return parentFlowNodeInstanceKey;
+  public Long getParentElementInstanceKey() {
+    return parentElementInstanceKey;
   }
 
   @Override
@@ -128,8 +128,8 @@ public class ProcessInstanceBuilder implements ProcessInstance {
     return this;
   }
 
-  public ProcessInstanceBuilder setParentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey) {
-    this.parentFlowNodeInstanceKey = parentFlowNodeInstanceKey;
+  public ProcessInstanceBuilder setParentElementInstanceKey(final Long parentElementInstanceKey) {
+    this.parentElementInstanceKey = parentElementInstanceKey;
     return this;
   }
 

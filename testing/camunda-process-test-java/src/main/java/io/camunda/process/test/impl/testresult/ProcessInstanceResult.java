@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.testresult;
 
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ public class ProcessInstanceResult {
 
   private List<Incident> openIncidents = new ArrayList<>();
 
-  private List<FlowNodeInstance> activeFlowNodeInstances = new ArrayList<>();
+  private List<ElementInstance> activeElementInstances = new ArrayList<>();
 
   public ProcessInstance getProcessInstance() {
     return processInstance;
@@ -57,11 +57,11 @@ public class ProcessInstanceResult {
     this.openIncidents = openIncidents;
   }
 
-  public List<FlowNodeInstance> getActiveFlowNodeInstances() {
-    return activeFlowNodeInstances;
+  public List<ElementInstance> getActiveElementInstances() {
+    return activeElementInstances;
   }
 
-  public void setActiveFlowNodeInstances(final List<FlowNodeInstance> activeFlowNodeInstances) {
-    this.activeFlowNodeInstances = activeFlowNodeInstances;
+  public void setActiveElementInstances(final List<ElementInstance> activeElementInstances) {
+    this.activeElementInstances = activeElementInstances;
   }
 }
