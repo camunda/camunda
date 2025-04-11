@@ -84,7 +84,7 @@ public class CamundaOAuthPrincipalServiceTest {
 
     final var roleR1 = new RoleEntity(8L, "Role R1");
     when(roleServices.getRolesByMemberKeys(Set.of(5L, 7L))).thenReturn(List.of(roleR1));
-    when(authorizationServices.getAuthorizedApplications(Set.of("5", "7", "8")))
+    when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "8")))
         .thenReturn(List.of("*"));
 
     // when
