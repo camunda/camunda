@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.security.tenant;
+package io.camunda.tasklist.webapp.tenant;
 
 import java.util.Comparator;
 import java.util.List;

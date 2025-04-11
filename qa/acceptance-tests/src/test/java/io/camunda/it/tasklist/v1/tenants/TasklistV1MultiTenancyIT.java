@@ -119,13 +119,7 @@ public class TasklistV1MultiTenancyIT {
     waitForProcessesToBeDeployed(adminClient, 2);
   }
 
-  // This test is disable for now because of the class TasklistSecurityStubsConfiguration
-  //  Tasklist security package is excluded from the configuration of C8 single application to avoid
-  // the conflicts with the existing Operate WebSecurity configuration. This will be solved after
-  // the
-  // creation of a common Security layer.
   @Test
-  @Disabled
   public void shouldGetProcessByKeyOnlyForProcessesInAuthenticatedTenants() {
     try (final var tasklistClient1 =
             CAMUNDA_APPLICATION.newTasklistClient().withAuthentication(USERNAME_1, PASSWORD);

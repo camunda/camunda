@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.security.tenant;
+package io.camunda.tasklist.webapp.tenant;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -19,7 +19,7 @@ public final class TasklistTenant implements Serializable {
   private final String id;
   private final String name;
 
-  public TasklistTenant(String id, String name) {
+  public TasklistTenant(final String id, final String name) {
     this.id = id;
     this.name = name;
   }
@@ -33,7 +33,12 @@ public final class TasklistTenant implements Serializable {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(id, name);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -42,11 +47,6 @@ public final class TasklistTenant implements Serializable {
     }
     final TasklistTenant that = (TasklistTenant) o;
     return Objects.equals(id, that.id) && Objects.equals(name, that.name);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, name);
   }
 
   @Override

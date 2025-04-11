@@ -13,7 +13,7 @@ import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantCheckApplier;
 import io.camunda.tasklist.util.OpenSearchUtil;
-import io.camunda.tasklist.webapp.security.tenant.TenantService;
+import io.camunda.tasklist.webapp.tenant.TenantService;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Set;
@@ -42,7 +42,7 @@ public class OpenSearchTenantCheckApplier implements TenantCheckApplier<SearchRe
   }
 
   @Override
-  public void apply(SearchRequest.Builder searchRequest, Collection<String> tenantIds) {
+  public void apply(final SearchRequest.Builder searchRequest, final Collection<String> tenantIds) {
     final var tenants = tenantService.getAuthenticatedTenants();
     final var tenantCheckQueryType = tenants.getTenantAccessType();
     final var authorizedTenantIds = Set.copyOf(tenants.getTenantIds());
@@ -53,9 +53,9 @@ public class OpenSearchTenantCheckApplier implements TenantCheckApplier<SearchRe
   }
 
   private void applyTenantCheckOnQuery(
-      SearchRequest.Builder searchRequest,
-      TenantService.TenantAccessType tenantCheckQueryType,
-      Collection<String> searchByTenantIds) {
+      final SearchRequest.Builder searchRequest,
+      final TenantService.TenantAccessType tenantCheckQueryType,
+      final Collection<String> searchByTenantIds) {
     final var actualQuery = getQueryFromSearchRequestBuilder(searchRequest);
 
     switch (tenantCheckQueryType) {
@@ -100,7 +100,7 @@ public class OpenSearchTenantCheckApplier implements TenantCheckApplier<SearchRe
 
       // Store the value of private field in variable
       return (Query) privateField.get(searchRequest);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
+    } catch (final NoSuchFieldException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
   }

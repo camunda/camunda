@@ -29,7 +29,7 @@ import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
-import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
+import io.camunda.tasklist.webapp.tenant.TasklistTenant;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

@@ -13,8 +13,6 @@ import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.TenantServices.TenantDTO;
-import io.camunda.tasklist.webapp.security.tenant.TenantService;
-import io.camunda.tasklist.webapp.security.tenant.TenantServiceImpl;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
