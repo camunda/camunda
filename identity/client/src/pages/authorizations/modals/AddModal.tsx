@@ -6,12 +6,7 @@
  * You may not use this file except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
-import {
-  Dropdown,
-  CheckboxGroup,
-  Checkbox,
-  InlineNotification,
-} from "@carbon/react";
+import { Dropdown, CheckboxGroup, Checkbox } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
@@ -120,6 +115,7 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
       open={open}
       onClose={onClose}
       loading={loading}
+      error={error}
       submitDisabled={loading}
       confirmLabel={t("createAuthorization")}
       onSubmit={handleSubmit}
@@ -198,15 +194,6 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           />
         ))}
       </CheckboxGroup>
-      {error && (
-        <InlineNotification
-          kind="error"
-          role="alert"
-          lowContrast
-          title={error.title}
-          subtitle={error.detail}
-        />
-      )}
     </FormModal>
   );
 };

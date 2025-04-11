@@ -7,7 +7,6 @@
  */
 
 import { FC, useState } from "react";
-import { InlineNotification } from "@carbon/react";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api/hooks";
@@ -61,6 +60,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
       onSubmit={handleSubmit}
       onClose={onClose}
       loading={loading}
+      error={error}
       loadingDescription={t("updatingGroup")}
       confirmLabel={t("editGroup")}
       submitDisabled={!groupName || !groupId || !isGroupIdValid}
@@ -91,15 +91,6 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
         cols={2}
         enableCounter
       />
-      {error && (
-        <InlineNotification
-          kind="error"
-          role="alert"
-          lowContrast
-          title={error.title}
-          subtitle={error.detail}
-        />
-      )}
     </FormModal>
   );
 };
