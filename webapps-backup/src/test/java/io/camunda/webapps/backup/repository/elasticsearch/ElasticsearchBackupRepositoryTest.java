@@ -114,11 +114,11 @@ public class ElasticsearchBackupRepositoryTest {
   @Test
   public void testWaitingForSnapshotTillCompleted() throws IOException {
     final int timeout = 0;
-
+    final int snapshotCount = 6;
     final var snapshotInfos = new ArrayList<SnapshotInfo>();
     final var metadatas = new ArrayList<Metadata>();
-    for (int i = 0; i < 6; i++) {
-      final var metadata = new Metadata(backupId, "8.3.0", 1, 1);
+    for (int i = 0; i < snapshotCount; i++) {
+      final var metadata = new Metadata(backupId, "8.3.0", i + 1, snapshotCount);
       metadatas.add(metadata);
       final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
       when(snapshotInfo.state())
@@ -138,16 +138,19 @@ public class ElasticsearchBackupRepositoryTest {
     when(esClient.snapshot().create(any(CreateSnapshotRequest.class)))
         .thenThrow(new SocketTimeoutException());
 
-    backupRepository.executeSnapshotting(
-        new SnapshotRequest(
-            repositoryName,
-            snapshotName,
-            new SnapshotIndexCollection(List.of("index-example"), List.of()),
-            metadatas.getFirst()),
-        () -> {},
-        () -> {});
+    for (int i = 0; i < snapshotCount; i++) {
+      final var metadata = metadatas.get(i);
+      backupRepository.executeSnapshotting(
+          new SnapshotRequest(
+              repositoryName,
+              snapshotNameProvider.getSnapshotName(metadata),
+              new SnapshotIndexCollection(List.of("index-example"), List.of()),
+              metadata),
+          () -> {},
+          () -> {});
+    }
 
-    verify(backupRepository, times(3)).findSnapshots(repositoryName, backupId);
+    verify(backupRepository, times(3 * snapshotCount)).findSnapshots(repositoryName, backupId);
 
     Awaitility.await("backup is completed")
         .untilAsserted(
