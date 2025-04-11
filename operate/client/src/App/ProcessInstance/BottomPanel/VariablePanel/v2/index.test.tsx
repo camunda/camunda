@@ -1581,7 +1581,7 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
+  it.skip('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {

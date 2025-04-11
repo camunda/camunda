@@ -20,7 +20,6 @@ import {
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getProcessName} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
 import {StateProps} from 'modules/components/ModalStateManager';
@@ -31,6 +30,10 @@ import {JSONEditor} from 'modules/components/JSONEditor';
 import {DiffEditor} from 'modules/components/DiffEditor';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {notificationsStore} from 'modules/stores/notifications';
+import {
+  useModificationsByFlowNode,
+  useWillAllFlowNodesBeCanceled,
+} from 'modules/hooks/modifications';
 
 const OPERATION_DISPLAY_NAME = {
   ADD_TOKEN: 'Add',
@@ -42,9 +45,10 @@ const OPERATION_DISPLAY_NAME = {
 
 const ModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
+    const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
+    const modificationsByFlowNode = useModificationsByFlowNode();
     const flowNodeModificationsTableRef = useRef<HTMLDivElement>(null);
     const variableModificationsTableRef = useRef<HTMLDivElement>(null);
-
     const {processInstance} = processInstanceDetailsStore.state;
 
     useLayoutEffect(() => {
@@ -82,8 +86,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
     const hasParentProcess = processInstance.parentInstanceId !== null;
 
     const areModificationsInvalid =
-      processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled &&
-      hasParentProcess;
+      willAllFlowNodesBeCanceled && hasParentProcess;
 
     return (
       <Modal
@@ -116,8 +119,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
             editVariable: modificationsStore.variableModifications.filter(
               ({operation}) => operation === 'EDIT_VARIABLE',
             ).length,
-            isProcessCanceled:
-              processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled,
+            isProcessCanceled: willAllFlowNodesBeCanceled,
           });
 
           modificationsStore.applyModifications({
@@ -154,8 +156,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
           )} - ${processInstanceId}". Click "Apply" to proceed.`}
         </p>
 
-        {processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled &&
-          !hasParentProcess && <Warning />}
+        {willAllFlowNodesBeCanceled && !hasParentProcess && <Warning />}
         {areModificationsInvalid && <Error />}
 
         <Title>Flow Node Modifications</Title>
@@ -238,9 +239,8 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                     <span data-testid="affected-token-count">
                       {modification.operation === 'CANCEL_TOKEN'
                         ? modification.visibleAffectedTokenCount +
-                          (modificationsStore.modificationsByFlowNode[
-                            flowNodeId
-                          ]?.cancelledChildTokens ?? 0)
+                          (modificationsByFlowNode[flowNodeId]
+                            ?.cancelledChildTokens ?? 0)
                         : modification.affectedTokenCount}
                     </span>
                   ),
