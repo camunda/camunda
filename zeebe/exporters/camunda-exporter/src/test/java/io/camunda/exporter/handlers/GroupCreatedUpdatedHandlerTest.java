@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -69,7 +70,7 @@ public class GroupCreatedUpdatedHandlerTest {
     final var idList = underTest.generateIds(groupRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(groupRecord.getKey()));
+    assertThat(idList).containsExactly(String.valueOf(groupRecord.getValue().getGroupId()));
   }
 
   @Test
@@ -85,12 +86,15 @@ public class GroupCreatedUpdatedHandlerTest {
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
-    final long recordKey = 123L;
+    final var recordKey = 123L;
+    final var groupId = Strings.newRandomValidIdentityId();
 
     final GroupRecordValue groupRecordValue =
         ImmutableGroupRecordValue.builder()
             .from(factory.generateObject(GroupRecordValue.class))
             .withName("updated-foo")
+            .withDescription("updated-bar")
+            .withGroupId(groupId)
             .withGroupKey(recordKey)
             .build();
 
@@ -100,11 +104,12 @@ public class GroupCreatedUpdatedHandlerTest {
             r -> r.withIntent(GroupIntent.CREATED).withValue(groupRecordValue).withKey(recordKey));
 
     // when
-    final GroupEntity groupEntity = new GroupEntity().setName("foo");
+    final GroupEntity groupEntity = new GroupEntity().setName("foo").setGroupId(groupId).setDescription("bar");
     underTest.updateEntity(groupRecord, groupEntity);
 
     // then
     assertThat(groupEntity.getName()).isEqualTo("updated-foo");
+    assertThat(groupEntity.getDescription()).isEqualTo("updated-bar");
   }
 
   @Test
