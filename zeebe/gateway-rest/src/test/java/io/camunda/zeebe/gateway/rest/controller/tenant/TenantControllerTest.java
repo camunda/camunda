@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.MappingServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
@@ -47,6 +48,8 @@ public class TenantControllerTest extends RestControllerTest {
   @MockBean private TenantServices tenantServices;
 
   @MockBean private UserServices userServices;
+
+  @MockBean private MappingServices mappingServices;
 
   @BeforeEach
   void setup() {

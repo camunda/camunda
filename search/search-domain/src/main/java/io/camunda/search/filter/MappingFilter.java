@@ -9,8 +9,10 @@ package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
 
+import io.camunda.search.filter.UserFilter.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
+import java.util.Set;
 
 public record MappingFilter(
     String mappingId,
@@ -19,16 +21,34 @@ public record MappingFilter(
     List<String> claimNames,
     String claimValue,
     String name,
-    List<Claim> claims)
+    List<Claim> claims,
+    String tenantId,
+    Set<String> mappingIds)
     implements FilterBase {
+
+  public MappingFilter.Builder toBuilder() {
+    return new Builder()
+        .mappingId(mappingId)
+        .mappingKey(mappingKey)
+        .claimName(claimName)
+        .claimNames(claimNames)
+        .claimValue(claimValue)
+        .name(name)
+        .claims(claims)
+        .tenantId(tenantId)
+        .mappingIds(mappingIds);
+  }
+
   public static final class Builder implements ObjectBuilder<MappingFilter> {
     private String mappingId;
+    private Set<String> mappingIds;
     private Long mappingKey;
     private String claimName;
     private List<String> claimNames;
     private String claimValue;
     private String name;
     private List<Claim> claims;
+    private String tenantId;
 
     public Builder mappingId(final String value) {
       mappingId = value;
@@ -65,10 +85,28 @@ public record MappingFilter(
       return this;
     }
 
+    public Builder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    public Builder mappingIds(final Set<String> mappingIds) {
+      this.mappingIds = mappingIds;
+      return this;
+    }
+
     @Override
     public MappingFilter build() {
       return new MappingFilter(
-          mappingId, mappingKey, claimName, claimNames, claimValue, name, claims);
+          mappingId,
+          mappingKey,
+          claimName,
+          claimNames,
+          claimValue,
+          name,
+          claims,
+          tenantId,
+          mappingIds);
     }
   }
 

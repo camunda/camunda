@@ -975,6 +975,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case MAPPING_KEY -> builder.mappingKey();
+        case MAPPING_ID -> builder.mappingId();
         case CLAIM_NAME -> builder.claimName();
         case CLAIM_VALUE -> builder.claimValue();
         case NAME -> builder.name();
