@@ -17,6 +17,7 @@ import {
   mockNewDeleteOperation,
   mockProcessInstances,
   mockFinishedOrderProcessInstances,
+  mockStatisticsV2,
 } from '../mocks/processes.mocks';
 import {
   mockResponses as mockProcessDetailResponses,
@@ -44,6 +45,7 @@ test.describe('delete finished instances', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockFinishedOrderProcessInstances,
         statistics: mockStatistics,
+        statisticsV2: mockStatisticsV2,
         processXml: open('orderProcess.bpmn'),
       }),
     );
@@ -106,6 +108,7 @@ test.describe('delete finished instances', () => {
         batchOperations: [mockNewDeleteOperation, ...mockBatchOperations],
         processInstances: processInstancesMock,
         statistics: mockStatistics,
+        statisticsV2: mockStatisticsV2,
         processXml: open('orderProcess.bpmn'),
       }),
     );
@@ -164,6 +167,7 @@ test.describe('delete finished instances', () => {
         processInstanceDetail: completedOrderProcessInstance.detail,
         flowNodeInstances: completedOrderProcessInstance.flowNodeInstances,
         statistics: completedOrderProcessInstance.statistics,
+        statisticsV2: completedOrderProcessInstance.statisticsV2,
         sequenceFlows: completedOrderProcessInstance.sequenceFlows,
         variables: completedOrderProcessInstance.variables,
         xml: completedOrderProcessInstance.xml,
