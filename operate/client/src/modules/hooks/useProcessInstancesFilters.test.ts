@@ -27,7 +27,7 @@ describe('useProcessInstanceFilters', () => {
     };
   });
 
-  it('should map filters to request correctly', () => {
+  it('should map filters to request correctly with both state and incidents', () => {
     const mockFilters: ProcessInstanceFilters = {
       startDateAfter: '2023-01-01',
       startDateBefore: '2023-01-31',
@@ -42,10 +42,6 @@ describe('useProcessInstanceFilters', () => {
       canceled: true,
       parentInstanceId: 'parent1',
       tenant: 'tenant1',
-      retriesLeft: true,
-      operationId: 'operation1',
-      flowNodeId: 'flowNode1',
-      errorMessage: 'some error message',
     };
 
     (useFilters as jest.Mock).mockReturnValue({
@@ -65,6 +61,44 @@ describe('useProcessInstanceFilters', () => {
         processInstanceKey: {
           $in: ['id1', 'id2'],
         },
+        $or: [
+          {
+            state: {
+              $in: [
+                ProcessInstanceState.ACTIVE,
+                ProcessInstanceState.COMPLETED,
+                ProcessInstanceState.TERMINATED,
+              ],
+            },
+          },
+          {hasIncident: true},
+        ],
+        parentProcessInstanceKey: {
+          $eq: 'parent1',
+        },
+        tenantId: {
+          $eq: 'tenant1',
+        },
+      },
+    };
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual(expectedRequest);
+  });
+
+  it('should map filters to request correctly with only state', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      active: true,
+      completed: true,
+      canceled: true,
+    };
+
+    (useFilters as jest.Mock).mockReturnValue({
+      getFilters: () => mockFilters,
+    });
+
+    const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
+      filter: {
         state: {
           $in: [
             ProcessInstanceState.ACTIVE,
@@ -72,13 +106,25 @@ describe('useProcessInstanceFilters', () => {
             ProcessInstanceState.TERMINATED,
           ],
         },
+      },
+    };
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual(expectedRequest);
+  });
+
+  it('should map filters to request correctly with only incidents', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      incidents: true,
+    };
+
+    (useFilters as jest.Mock).mockReturnValue({
+      getFilters: () => mockFilters,
+    });
+
+    const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
+      filter: {
         hasIncident: true,
-        parentProcessInstanceKey: {
-          $eq: 'parent1',
-        },
-        tenantId: {
-          $eq: 'tenant1',
-        },
       },
     };
 
