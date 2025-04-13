@@ -265,8 +265,8 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
   private boolean composePlaintext() {
     final String protocol = getGrpcAddress().getScheme();
     return switch (protocol) {
-      case "http" -> true;
-      case "https" -> false;
+      case "http", "grpc" -> true;
+      case "https", "grpcs" -> false;
       default ->
           throw new IllegalStateException(
               String.format("Unrecognized zeebe protocol '%s'", protocol));
