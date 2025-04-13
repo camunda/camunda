@@ -159,6 +159,20 @@
       <artifactId>spring-boot-test</artifactId>
       <scope>test</scope>
     </dependency>
+<<<<<<< HEAD:spring-boot-starter-camunda-sdk/pom.xml
+=======
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+>>>>>>> 9655b644 (fix: grpcs is allowed protocol):clients/spring-boot-starter-camunda-sdk/pom.xml
   </dependencies>
 
   <build>
