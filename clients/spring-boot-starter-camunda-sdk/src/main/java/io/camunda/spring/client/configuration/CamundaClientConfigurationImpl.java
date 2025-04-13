@@ -45,6 +45,8 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
   private final List<AsyncExecChainHandler> chainHandlers;
   private final CamundaClientExecutorService zeebeClientExecutorService;
   private final CredentialsProvider credentialsProvider;
+  private final String gatewayAddress;
+  private final boolean plaintext;
 
   public CamundaClientConfigurationImpl(
       final CamundaClientProperties camundaClientProperties,
@@ -59,6 +61,8 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
     this.chainHandlers = chainHandlers;
     this.zeebeClientExecutorService = zeebeClientExecutorService;
     this.credentialsProvider = credentialsProvider;
+    gatewayAddress = composeGatewayAddress();
+    plaintext = composePlaintext();
   }
 
   private static <T> T propertyOrDefault(final T property, final T defaultValue) {
@@ -70,7 +74,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public String getGatewayAddress() {
-    return propertyOrDefault(composeGatewayAddress(), DEFAULT.getGatewayAddress());
+    return propertyOrDefault(gatewayAddress, DEFAULT.getGatewayAddress());
   }
 
   @Override
@@ -143,7 +147,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public boolean isPlaintextConnectionEnabled() {
-    return propertyOrDefault(composePlaintext(), DEFAULT.isPlaintextConnectionEnabled());
+    return propertyOrDefault(plaintext, DEFAULT.isPlaintextConnectionEnabled());
   }
 
   @Override
