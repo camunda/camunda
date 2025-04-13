@@ -47,6 +47,8 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   private final List<AsyncExecChainHandler> chainHandlers;
   private final ZeebeClientExecutorService zeebeClientExecutorService;
   private final CredentialsProvider credentialsProvider;
+  private final String gatewayAddress;
+  private final boolean plaintext;
 
   @Autowired
   public ZeebeClientConfigurationImpl(
@@ -62,11 +64,13 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
     this.chainHandlers = chainHandlers;
     this.zeebeClientExecutorService = zeebeClientExecutorService;
     this.credentialsProvider = credentialsProvider;
+    gatewayAddress = composeGatewayAddress();
+    plaintext = composePlaintext();
   }
 
   @Override
   public String getGatewayAddress() {
-    return ofNullable(composeGatewayAddress()).orElse(DEFAULT.getGatewayAddress());
+    return ofNullable(gatewayAddress).orElse(DEFAULT.getGatewayAddress());
   }
 
   @Override
@@ -136,7 +140,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public boolean isPlaintextConnectionEnabled() {
-    return composePlaintext();
+    return plaintext;
   }
 
   @Override
@@ -258,8 +262,8 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   private boolean composePlaintext() {
     final String protocol = getGrpcAddress().getScheme();
     return switch (protocol) {
-      case "http" -> true;
-      case "https" -> false;
+      case "http", "grpc" -> true;
+      case "https", "grpcs" -> false;
       default ->
           throw new IllegalStateException(
               String.format("Unrecognized zeebe protocol '%s'", protocol));
