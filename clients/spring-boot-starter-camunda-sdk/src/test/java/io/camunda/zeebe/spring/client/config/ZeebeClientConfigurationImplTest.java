@@ -25,10 +25,16 @@ import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
 import java.util.List;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/zeebe/spring/client/config/ZeebeClientConfigurationImplTest.java
 import org.springframework.mock.env.MockEnvironment;
+=======
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+>>>>>>> 8ef8bc63 (fix: grpcs was not configurable on sdk):clients/spring-boot-starter-camunda-sdk/src/test/java/io/camunda/spring/client/config/CamundaClientConfigurationImplTest.java
 
 public class ZeebeClientConfigurationImplTest {
   private static ZeebeClientConfigurationImpl configuration(
@@ -71,5 +77,22 @@ public class ZeebeClientConfigurationImplTest {
     final CredentialsProvider credentialsProvider1 = configuration.getCredentialsProvider();
     final CredentialsProvider credentialsProvider2 = configuration.getCredentialsProvider();
     assertThat(credentialsProvider1).isSameAs(credentialsProvider2);
+  }
+
+  @ParameterizedTest
+  @CsvSource(value = {"http, true", "https, false", "grpc, true", "grpcs, false"})
+  void shouldConfigurePlaintextAndGatewayAddress(final String protocol, final boolean plaintext) {
+    final CamundaClientProperties properties = properties();
+    properties.setGrpcAddress(URI.create(String.format("%s://some-host:21500", protocol)));
+    final CamundaClientConfigurationImpl configuration =
+        configuration(
+            properties,
+            jsonMapper(),
+            List.of(),
+            List.of(),
+            executorService(),
+            credentialsProvider());
+    assertThat(configuration.isPlaintextConnectionEnabled()).isEqualTo(plaintext);
+    assertThat(configuration.getGatewayAddress()).isEqualTo("some-host:21500");
   }
 }
