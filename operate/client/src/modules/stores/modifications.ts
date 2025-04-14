@@ -253,9 +253,11 @@ class Modifications {
           scopeId: generateUniqueID(),
           flowNode: {
             id: this.state.sourceFlowNodeIdForAddOperation,
-            name: processInstanceDetailsDiagramStore.getFlowNodeName(
-              this.state.sourceFlowNodeIdForAddOperation,
-            ),
+            name:
+              getFlowNodeName({
+                businessObjects,
+                flowNodeId: this.state.sourceFlowNodeIdForAddOperation,
+              }) ?? '',
           },
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
@@ -812,16 +814,16 @@ class Modifications {
         operation: 'MOVE_TOKEN',
         flowNode: {
           id: sourceFlowNodeId,
-          name: processInstanceDetailsDiagramStore.getFlowNodeName(
-            sourceFlowNodeId,
-          ),
+          name:
+            getFlowNodeName({businessObjects, flowNodeId: sourceFlowNodeId}) ??
+            '',
         },
         flowNodeInstanceKey: sourceFlowNodeInstanceKey,
         targetFlowNode: {
           id: targetFlowNodeId,
-          name: processInstanceDetailsDiagramStore.getFlowNodeName(
-            targetFlowNodeId,
-          ),
+          name:
+            getFlowNodeName({businessObjects, flowNodeId: targetFlowNodeId}) ??
+            '',
         },
         affectedTokenCount,
         visibleAffectedTokenCount,

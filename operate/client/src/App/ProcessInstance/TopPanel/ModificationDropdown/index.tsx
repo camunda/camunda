@@ -127,8 +127,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                                   id: flowNodeId,
                                   name:
                                     getFlowNodeName({
-                                      diagramModel:
-                                        processDefinitionData?.diagramModel,
+                                      businessObjects:
+                                        processDefinitionData?.businessObjects,
                                       flowNodeId,
                                     }) ?? '',
                                 },
