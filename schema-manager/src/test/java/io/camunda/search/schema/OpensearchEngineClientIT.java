@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
+import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;

@@ -9,6 +9,7 @@ package io.camunda.search.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
