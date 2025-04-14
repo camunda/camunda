@@ -5,18 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared;
+package io.camunda.application.commons.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.netty4.NettyAllocatorMetrics;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import jdk.jfr.consumer.RecordingStream;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public final class MetricRegistration implements MeterBinder {
-
   @SuppressWarnings("NullableProblems")
   @Override
   public void bindTo(final MeterRegistry registry) {
