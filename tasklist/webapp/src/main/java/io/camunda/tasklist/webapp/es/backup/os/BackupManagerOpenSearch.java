@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.es.backup.os;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -15,8 +16,10 @@ import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistElasticsearchConnectionException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.ThreadUtil;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.es.backup.Metadata;
+import io.camunda.tasklist.webapp.es.backup.os.response.SnapshotState;
 import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDetailDto;
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
@@ -26,6 +29,7 @@ import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -36,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -357,51 +362,94 @@ public class BackupManagerOpenSearch extends BackupManager {
     }
   }
 
-  private void executeSnapshotting(final CreateSnapshotRequest snapshotRequest) {
+  protected void executeSnapshotting(final CreateSnapshotRequest snapshotRequest) {
     try {
       openSearchAsyncClient
           .snapshot()
           .create(snapshotRequest)
           .whenComplete(
               (response, ex) -> {
-                if (ex != null) {
-                  LOGGER.error("Snapshot taking failed", ex);
-                  // no need to continue
-                  requestsQueue.clear();
-                } else {
-                  switch (Objects.requireNonNullElse(response.snapshot().state(), "null")) {
-                    case "SUCCESS" -> {
-                      LOGGER.info("Snapshot done: " + getSnapshotId(response.snapshot()));
-                      scheduleNextSnapshot();
-                    }
-                    case "FAILED" -> {
-                      LOGGER.error(
-                          "Snapshot taking failed for {}, reason {}",
-                          getSnapshotId(response.snapshot()),
-                          response.snapshot().reason());
-                      // no need to continue
-                      requestsQueue.clear();
-                    }
-                    default -> {
-                      LOGGER.warn(
-                          "Snapshot status {} for the {}",
-                          response.snapshot().state(),
-                          getSnapshotId(response.snapshot()));
-                      scheduleNextSnapshot();
-                    }
+                handleSnapshotResponse(response.snapshot());
+              })
+          .exceptionally(
+              e -> {
+                final Long backupId =
+                    Metadata.extractBackupIdFromSnapshotName(snapshotRequest.snapshot());
+                if (e.getCause() instanceof SocketTimeoutException) {
+                  // This is thrown even if the backup is still running
+                  LOGGER.warn(
+                      format(
+                          "Timeout while creating snapshot [%s] for backup id [%d]. Need to keep waiting with polling...",
+                          snapshotRequest.snapshot(),
+                          Metadata.extractBackupIdFromSnapshotName(snapshotRequest.snapshot())));
+                  // Keep waiting
+                  final List<SnapshotInfo> snapshotInfos = findSnapshots(backupId);
+                  final Optional<SnapshotInfo> maybeCurrentSnapshot =
+                      snapshotInfos.stream()
+                          .filter(x -> Objects.equals(x.snapshot(), snapshotRequest.snapshot()))
+                          .findFirst();
+
+                  if (maybeCurrentSnapshot.isEmpty()) {
+                    LOGGER.error(
+                        format(
+                            "Expected (but not found) snapshot [%s] for backupId [%d].",
+                            snapshotRequest.snapshot(), backupId));
+                    // No need to continue
+                    requestsQueue.clear();
+                  } else if (isSnapshotFinishedWithinTimeout(
+                      maybeCurrentSnapshot.get().snapshot())) {
+                    scheduleNextSnapshot();
+                  } else {
+                    requestsQueue.clear();
                   }
+                } else {
+                  LOGGER.error(
+                      format(
+                          "Exception while creating snapshot [%s] for backup id [%d].",
+                          snapshotRequest.snapshot(), backupId),
+                      e);
+                  // No need to continue
+                  requestsQueue.clear();
                 }
+                return null;
               });
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
+  private void handleSnapshotResponse(final SnapshotInfo snapshotInfo) {
+    switch (Objects.requireNonNullElse(snapshotInfo.snapshot(), "null")) {
+      case "SUCCESS" -> {
+        LOGGER.info("Snapshot done: " + getSnapshotId(snapshotInfo));
+        scheduleNextSnapshot();
+      }
+      case "FAILED" -> {
+        LOGGER.error(
+            "Snapshot taking failed for {}, reason {}",
+            getSnapshotId(snapshotInfo),
+            snapshotInfo.reason());
+        // no need to continue
+        requestsQueue.clear();
+      }
+      default -> {
+        LOGGER.error(
+            "Snapshot status {} for the {}", snapshotInfo.state(), getSnapshotId(snapshotInfo));
+        requestsQueue.clear();
+      }
+    }
+  }
+
+  private boolean isSnapshotFinished(final SnapshotInfo snapshotInfo) {
+    return (Objects.requireNonNullElse(snapshotInfo.snapshot(), "null"))
+        .equals(SnapshotState.SUCCESS.name());
+  }
+
   private String getSnapshotId(final SnapshotInfo snapshotInfo) {
     return String.format("%s/%s", snapshotInfo.snapshot(), snapshotInfo.uuid());
   }
 
-  private List<SnapshotInfo> findSnapshots(final Long backupId) {
+  List<SnapshotInfo> findSnapshots(final Long backupId) {
     final GetSnapshotRequest snapshotStatusRequest =
         GetSnapshotRequest.of(
             gsr ->
@@ -537,5 +585,52 @@ public class BackupManagerOpenSearch extends BackupManager {
     executor.setQueueCapacity(6);
     executor.initialize();
     return executor;
+  }
+
+  protected boolean isSnapshotFinishedWithinTimeout(final String snapshotName) {
+    int count = 0;
+    final long startTime = System.currentTimeMillis();
+    final int snapshotTimeout = tasklistProperties.getBackup().getSnapshotTimeout();
+    final long backupId = Metadata.extractBackupIdFromSnapshotName(snapshotName);
+    while (snapshotTimeout == 0
+        || System.currentTimeMillis() - startTime <= snapshotTimeout * 1000) {
+      final List<SnapshotInfo> snapshotInfos = findSnapshots(backupId);
+      final SnapshotInfo currentSnapshot =
+          snapshotInfos.stream()
+              .filter(x -> Objects.equals(x.snapshot(), snapshotName))
+              .findFirst()
+              .orElse(null);
+      if (currentSnapshot == null) {
+        LOGGER.error(
+            String.format(
+                "Expected (but not found) snapshot [%s] for backupId [%d].",
+                snapshotName, backupId));
+        // No need to continue
+        return false;
+      }
+      if (currentSnapshot.state().equals(SnapshotState.STARTED.name())) {
+        ThreadUtil.sleepFor(100);
+        count++;
+        if (count % 600 == 0) { // approx. 1 minute, depending on how long findSnapshots takes
+          LOGGER.info(String.format("Waiting for snapshot [%s] to finish.", snapshotName));
+        }
+      } else {
+        return isSnapshotFinished(currentSnapshot);
+      }
+    }
+    LOGGER.error(
+        String.format(
+            "Snapshot [%s] did not finish after configured timeout. Snapshot process won't continue.",
+            snapshotName));
+    return false;
+  }
+
+  public long sleepFor(final long milliseconds) {
+    try {
+      Thread.sleep(milliseconds);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    return milliseconds;
   }
 }
