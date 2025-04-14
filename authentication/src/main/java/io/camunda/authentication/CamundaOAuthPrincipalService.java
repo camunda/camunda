@@ -85,7 +85,7 @@ public class CamundaOAuthPrincipalService {
             tenantServices.getTenantsByMemberIds(mappingIds).stream()
                 .map(TenantDTO::fromEntity)
                 .toList(),
-            groupServices.getGroupsByMemberKeys(mappingKeys).stream()
+            groupServices.getGroupsByMemberKeys(mappingIds).stream()
                 .map(GroupEntity::name)
                 .toList()));
   }
