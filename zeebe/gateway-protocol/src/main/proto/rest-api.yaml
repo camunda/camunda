@@ -5118,7 +5118,7 @@ components:
           items:
             $ref: "#/components/schemas/ProcessElementStatisticsResult"
     ProcessInstanceElementStatisticsQueryResult:
-      description: Process definition element statistics query response.
+      description: Process instance element statistics query response.
       type: object
       properties:
         items:

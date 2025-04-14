@@ -17,25 +17,25 @@ package io.camunda.client.impl.statistics.request;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.statistics.request.ProcessInstanceFlowNodeStatisticsRequest;
-import io.camunda.client.api.statistics.response.ProcessFlowNodeStatistics;
+import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
+import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.statistics.response.StatisticsResponseMapper;
-import io.camunda.client.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ProcessInstanceFlowNodeStatisticsRequestImpl
-    implements ProcessInstanceFlowNodeStatisticsRequest {
+public class ProcessInstanceElementStatisticsRequestImpl
+    implements ProcessInstanceElementStatisticsRequest {
 
   private final long processInstanceKey;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public ProcessInstanceFlowNodeStatisticsRequestImpl(
+  public ProcessInstanceElementStatisticsRequestImpl(
       final HttpClient httpClient, final long processInstanceKey) {
     this.httpClient = httpClient;
     this.processInstanceKey = processInstanceKey;
@@ -43,19 +43,19 @@ public class ProcessInstanceFlowNodeStatisticsRequestImpl
   }
 
   @Override
-  public FinalCommandStep<List<ProcessFlowNodeStatistics>> requestTimeout(
+  public FinalCommandStep<List<ProcessElementStatistics>> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<List<ProcessFlowNodeStatistics>> send() {
-    final HttpCamundaFuture<List<ProcessFlowNodeStatistics>> result = new HttpCamundaFuture<>();
+  public CamundaFuture<List<ProcessElementStatistics>> send() {
+    final HttpCamundaFuture<List<ProcessElementStatistics>> result = new HttpCamundaFuture<>();
     httpClient.get(
-        "/process-instances/" + processInstanceKey + "/statistics/flownode-instances",
+        "/process-instances/" + processInstanceKey + "/statistics/element-instances",
         httpRequestConfig.build(),
-        ProcessDefinitionFlowNodeStatisticsQueryResult.class,
+        ProcessDefinitionElementStatisticsQueryResult.class,
         StatisticsResponseMapper::toProcessDefinitionStatisticsResponse,
         result);
     return result;

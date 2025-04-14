@@ -144,7 +144,8 @@ public class ProcessDefinitionController {
           processDefinitionServices
               .withAuthentication(RequestMapper.getAuthentication())
               .elementStatistics(filter);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toProcessElementStatisticsQueryResult(result));
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toProcessDefinitionElementStatisticsResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

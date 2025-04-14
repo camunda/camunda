@@ -27,7 +27,8 @@ import io.camunda.client.impl.util.ParseUtil;
 import java.util.function.Consumer;
 
 public class ElementInstanceFilterImpl
-    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.ElementInstanceFilter>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.ElementInstanceFilter>
     implements ElementInstanceFilter {
 
   private final io.camunda.client.protocol.rest.ElementInstanceFilter filter;

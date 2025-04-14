@@ -19,7 +19,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
-import io.camunda.client.api.statistics.request.ProcessElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -63,8 +63,7 @@ public class ProcessDefinitionElementStatisticsRequestImpl
 
   @Override
   public CamundaFuture<List<ProcessElementStatistics>> send() {
-    final HttpCamundaFuture<List<ProcessElementStatistics>> result =
-        new HttpCamundaFuture<>();
+    final HttpCamundaFuture<List<ProcessElementStatistics>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-definitions/" + processDefinitionKey + "/statistics/element-instances",
         jsonMapper.toJson(request),

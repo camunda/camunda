@@ -82,7 +82,7 @@ public final class ProcessInstanceServices
     return search(processInstanceSearchQuery(fn));
   }
 
-  public List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(final long processInstanceKey) {
+  public List<ProcessFlowNodeStatisticsEntity> elementStatistics(final long processInstanceKey) {
     return processInstanceSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(

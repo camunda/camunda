@@ -35,13 +35,13 @@ public class ProcessElementStatisticsImpl implements ProcessElementStatistics {
     completed = statistics.getCompleted();
   }
 
-  public ProcessFlowNodeStatisticsImpl(
-      final String flowNodeId,
+  public ProcessElementStatisticsImpl(
+      final String elementId,
       final Long active,
       final Long canceled,
       final Long incidents,
       final Long completed) {
-    this.flowNodeId = flowNodeId;
+    this.elementId = elementId;
     this.active = active;
     this.canceled = canceled;
     this.incidents = incidents;

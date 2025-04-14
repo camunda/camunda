@@ -160,8 +160,7 @@ class ProcessElementProviderTest {
     verify(mockConsumer)
         .accept(PROC_DEF_KEY, new ProcessElement("StartEvent_1", "Start process A"));
     verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessElement("Activity_0whadek", "Do task A"));
-    verify(mockConsumer)
-        .accept(PROC_DEF_KEY, new ProcessElement("Event_0ovp9k6", "End process B"));
+    verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessElement("Event_0ovp9k6", "End process B"));
     verifyNoMoreInteractions(mockConsumer);
   }
 
@@ -176,8 +175,7 @@ class ProcessElementProviderTest {
     verify(mockConsumer)
         .accept(PROC_DEF_KEY, new ProcessElement("Event_00cm7tu", "Start process B"));
     verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessElement("Activity_0w5vpxz", "Do task B"));
-    verify(mockConsumer)
-        .accept(PROC_DEF_KEY, new ProcessElement("Event_083hekc", "End process B"));
+    verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessElement("Event_083hekc", "End process B"));
     verifyNoMoreInteractions(mockConsumer);
   }
 

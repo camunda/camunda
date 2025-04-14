@@ -9,11 +9,11 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForFlowNodeInstances;
+import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
-import static io.camunda.it.util.TestHelper.waitUntilFlowNodeInstanceHasIncidents;
+import static io.camunda.it.util.TestHelper.waitUntilElementInstanceHasIncidents;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -76,8 +76,8 @@ public class BatchCancelProcessInstanceTest {
     ACTIVE_PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "incident_process_v1"));
 
     waitForProcessInstancesToStart(camundaClient, 6);
-    waitForFlowNodeInstances(camundaClient, 20);
-    waitUntilFlowNodeInstanceHasIncidents(camundaClient, 1);
+    waitForElementInstances(camundaClient, 20);
+    waitUntilElementInstanceHasIncidents(camundaClient, 1);
     waitUntilProcessInstanceHasIncidents(camundaClient, 1);
   }
 

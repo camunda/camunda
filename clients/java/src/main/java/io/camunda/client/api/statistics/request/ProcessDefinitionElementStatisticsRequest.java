@@ -20,7 +20,7 @@ import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import java.util.List;
 
-public interface ProcessElementStatisticsRequest
+public interface ProcessDefinitionElementStatisticsRequest
     extends StatisticsRequest<
-            ProcessDefinitionStatisticsFilter, ProcessElementStatisticsRequest>,
+            ProcessDefinitionStatisticsFilter, ProcessDefinitionElementStatisticsRequest>,
         FinalCommandStep<List<ProcessElementStatistics>> {}

@@ -73,6 +73,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatistics
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
@@ -121,9 +122,19 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static ProcessDefinitionElementStatisticsQueryResult toProcessElementStatisticsResult(
-      final List<ProcessFlowNodeStatisticsEntity> result) {
+  public static ProcessDefinitionElementStatisticsQueryResult
+      toProcessDefinitionElementStatisticsResult(
+          final List<ProcessFlowNodeStatisticsEntity> result) {
     return new ProcessDefinitionElementStatisticsQueryResult()
+        .items(
+            result.stream()
+                .map(SearchQueryResponseMapper::toProcessElementStatisticsResult)
+                .toList());
+  }
+
+  public static ProcessInstanceElementStatisticsQueryResult
+      toProcessInstanceElementStatisticsResult(final List<ProcessFlowNodeStatisticsEntity> result) {
+    return new ProcessInstanceElementStatisticsQueryResult()
         .items(
             result.stream()
                 .map(SearchQueryResponseMapper::toProcessElementStatisticsResult)

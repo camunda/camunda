@@ -58,7 +58,8 @@ public final class ElementInstanceFixtures extends CommonFixtures {
     rdbmsWriter.flush();
   }
 
-  public static FlowNodeInstanceDbModel createAndSaveElementInstance(final RdbmsWriter rdbmsWriter) {
+  public static FlowNodeInstanceDbModel createAndSaveElementInstance(
+      final RdbmsWriter rdbmsWriter) {
     final var instance = ElementInstanceFixtures.createRandomized(b -> b);
     createAndSaveElementInstances(rdbmsWriter, List.of(instance));
     return instance;

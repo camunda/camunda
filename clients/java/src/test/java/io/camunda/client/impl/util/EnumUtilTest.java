@@ -193,8 +193,7 @@ public class EnumUtilTest {
 
     for (final io.camunda.client.protocol.rest.ElementInstanceResult.TypeEnum protocolValue :
         io.camunda.client.protocol.rest.ElementInstanceResult.TypeEnum.values()) {
-      final ElementInstanceType value =
-          EnumUtil.convert(protocolValue, ElementInstanceType.class);
+      final ElementInstanceType value = EnumUtil.convert(protocolValue, ElementInstanceType.class);
       assertThat(value).isNotNull();
       if (protocolValue
           == io.camunda.client.protocol.rest.ElementInstanceResult.TypeEnum
@@ -226,8 +225,7 @@ public class EnumUtilTest {
 
     for (final io.camunda.client.protocol.rest.ElementInstanceFilter.TypeEnum protocolValue :
         io.camunda.client.protocol.rest.ElementInstanceFilter.TypeEnum.values()) {
-      final ElementInstanceType value =
-          EnumUtil.convert(protocolValue, ElementInstanceType.class);
+      final ElementInstanceType value = EnumUtil.convert(protocolValue, ElementInstanceType.class);
       assertThat(value).isNotNull();
       if (protocolValue
           == io.camunda.client.protocol.rest.ElementInstanceFilter.TypeEnum

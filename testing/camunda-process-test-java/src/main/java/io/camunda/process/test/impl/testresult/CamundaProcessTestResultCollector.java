@@ -76,7 +76,6 @@ public class CamundaProcessTestResultCollector {
 
   private List<ElementInstance> collectActiveElementInstances(final long processInstanceKey) {
     return dataSource.findElementInstances(
-        filter ->
-            filter.processInstanceKey(processInstanceKey).state(ElementInstanceState.ACTIVE));
+        filter -> filter.processInstanceKey(processInstanceKey).state(ElementInstanceState.ACTIVE));
   }
 }

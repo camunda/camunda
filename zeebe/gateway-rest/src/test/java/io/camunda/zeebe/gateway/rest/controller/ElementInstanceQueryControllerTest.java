@@ -288,6 +288,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
             new FlowNodeInstanceQuery.Builder()
                 .sort(
                     new FlowNodeInstanceSort.Builder()
+                        .flowNodeInstanceKey()
                         .asc()
                         .processInstanceKey()
                         .asc()

@@ -207,9 +207,7 @@ public class CamundaProcessResultPrinterTest {
     processInstance2.setActiveElementInstances(
         Arrays.asList(
             ElementInstanceBuilder.newActiveElementInstance("C", 2L).build(),
-            ElementInstanceBuilder.newActiveElementInstance("D", 2L)
-                .setElementName(null)
-                .build()));
+            ElementInstanceBuilder.newActiveElementInstance("D", 2L).setElementName(null).build()));
 
     processTestResult.setProcessInstanceTestResults(
         Arrays.asList(processInstance1, processInstance2));
