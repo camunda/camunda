@@ -595,7 +595,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           }
         }""";
 
-    final var orOperations =
+    final var orFilters =
         List.of(
             new ProcessInstanceFilter.Builder().processDefinitionIds("process_v1").build(),
             new ProcessInstanceFilter.Builder()
@@ -607,7 +607,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         new ProcessInstanceFilter.Builder()
             .stateOperations(Operation.eq("ACTIVE"))
             .tenantIdOperations(Operation.eq("tenant"));
-    orOperations.forEach(expectedFilter::addOrOperation);
+    orFilters.forEach(expectedFilter::addOrOperation);
 
     when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
 
