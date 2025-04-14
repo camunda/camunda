@@ -26,8 +26,6 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -144,15 +142,6 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @MockBean private TenantServices tenantServices;
   @MockBean private UserServices userServices;
   @MockBean private MappingServices mappingServices;
-
-  private static String formatSet(final Set<Long> set, final boolean asString) {
-    return set.isEmpty()
-        ? "[]"
-        : set.stream()
-            .map(v -> asString ? "\"%s\"".formatted(v) : v)
-            .collect(Collectors.toSet())
-            .toString();
-  }
 
   @BeforeEach
   void setup() {
@@ -319,6 +308,38 @@ public class TenantQueryControllerTest extends RestControllerTest {
             """
             {
               "sort": [{"field": "mappingId", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_MAPPING_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchTenantMappingsWithEmptyQuery() {
+    // given
+    when(mappingServices.search(any(MappingQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingEntity>()
+                .total(MAPPING_ENTITIES.size())
+                .items(MAPPING_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/mappings/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
             }
             """)
         .exchange()
