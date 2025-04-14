@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {DiagramModel} from 'bpmn-moddle';
 
 export function isFlowNode(businessObject: BusinessObject) {
@@ -14,23 +14,23 @@ export function isFlowNode(businessObject: BusinessObject) {
 }
 
 export function getFlowNode({
-  diagramModel,
+  businessObjects,
   flowNodeId,
 }: {
-  diagramModel?: DiagramModel;
+  businessObjects?: BusinessObjects;
   flowNodeId?: string;
 }) {
-  return flowNodeId ? diagramModel?.elementsById[flowNodeId] : undefined;
+  return flowNodeId ? businessObjects?.[flowNodeId] : undefined;
 }
 
 export function getFlowNodeName({
-  diagramModel,
+  businessObjects,
   flowNodeId,
 }: {
-  diagramModel?: DiagramModel;
+  businessObjects?: BusinessObjects;
   flowNodeId?: string;
 }) {
-  return getFlowNode({diagramModel, flowNodeId})?.name ?? flowNodeId;
+  return getFlowNode({businessObjects, flowNodeId})?.name ?? flowNodeId;
 }
 
 export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {

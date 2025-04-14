@@ -35,12 +35,12 @@ const BatchModificationNotification: React.FC<Props> = observer(
     );
 
     const sourceFlowNodeName = getFlowNodeName({
-      diagramModel: processDefinitionData?.diagramModel,
+      businessObjects: processDefinitionData?.diagramModel.elementsById,
       flowNodeId: sourceFlowNodeId,
     });
 
     const targetFlowNodeName = getFlowNodeName({
-      diagramModel: processDefinitionData?.diagramModel,
+      businessObjects: processDefinitionData?.diagramModel.elementsById,
       flowNodeId: targetFlowNodeId,
     });
 

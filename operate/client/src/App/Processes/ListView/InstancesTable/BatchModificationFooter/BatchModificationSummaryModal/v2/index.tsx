@@ -41,11 +41,11 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       processDefinitionKey,
     });
     const sourceFlowNodeName = getFlowNodeName({
-      diagramModel: processDefinitionData?.diagramModel,
+      businessObjects: processDefinitionData?.diagramModel.elementsById,
       flowNodeId: sourceFlowNodeId,
     });
     const targetFlowNodeName = getFlowNodeName({
-      diagramModel: processDefinitionData?.diagramModel,
+      businessObjects: processDefinitionData?.diagramModel.elementsById,
       flowNodeId: targetFlowNodeId ?? undefined,
     });
 
