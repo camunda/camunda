@@ -1481,7 +1481,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /process-instances/{processInstanceKey}/statistics/element-instances:
-    post:
+    get:
       tags:
         - Process instance
       operationId: getProcessInstanceStatistics
