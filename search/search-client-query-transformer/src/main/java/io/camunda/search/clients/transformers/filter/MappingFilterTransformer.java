@@ -47,6 +47,6 @@ public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilt
             ? null
             : filter.mappingIds().isEmpty()
                 ? matchNone()
-                : stringTerms(MAPPING_ID, filter.mappingIds()));
+                : stringTerms(MAPPING_ID, filter.mappingIds().stream().sorted().toList()));
   }
 }

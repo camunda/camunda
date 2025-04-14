@@ -53,13 +53,17 @@ public class MappingQueryTransformerTest extends AbstractTransformerTest {
             (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.claimValue("foobar"),
             SearchQuery.of(q -> q.term(t -> t.field("claimValue").value("foobar")))),
         Arguments.of(
+            (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.name("foobar"),
+            SearchQuery.of(q -> q.term(t -> t.field("name").value("foobar")))),
+        Arguments.of(
             (Function<Builder, ObjectBuilder<MappingFilter>>)
                 f -> f.mappingIds(Set.of("id1", "id2")),
             SearchQuery.of(
-                q -> q.terms(t -> t.field("mappingId").stringTerms(List.of("id1", "id2"))))),
-        Arguments.of(
-            (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.name("foobar"),
-            SearchQuery.of(q -> q.term(t -> t.field("name").value("foobar")))),
+                q ->
+                    q.terms(
+                        t ->
+                            t.field("mappingId")
+                                .stringTerms(Set.of("id1", "id2").stream().sorted().toList())))),
         Arguments.of(
             (Function<Builder, ObjectBuilder<MappingFilter>>)
                 f -> f.claims(List.of(new Claim("c1", "v1"), new Claim("c2", "v2"))),
