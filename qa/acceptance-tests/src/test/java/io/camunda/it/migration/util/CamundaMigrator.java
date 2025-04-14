@@ -222,7 +222,8 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_CLASSNAME",
             ElasticsearchExporter.class.getName());
         put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_URL", internalUrl);
-        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_BULKSIZE", "1");
+        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_BULK_SIZE", "1");
+        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_BULK_DELAY", "1");
         put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_INDEX_PREFIX", indexPrefix);
         put("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITYMODE", "true");
         put("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", internalUrl);
@@ -247,10 +248,13 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
       {
         put("SPRING_PROFILES_ACTIVE", "tasklist,broker,auth,operate");
         put("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "1");
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME", OpensearchExporter.class.getName());
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", internalUrl);
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULKSIZE", "1");
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX", indexPrefix);
+        put(
+            "ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_CLASSNAME",
+            OpensearchExporter.class.getName());
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_URL", internalUrl);
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_BULK_SIZE", "1");
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_BULK_DELAY", "1");
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_INDEX_PREFIX", indexPrefix);
         put("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITYMODE", "true");
         put("CAMUNDA_TASKLIST_DATABASE", "opensearch");
         put("CAMUNDA_TASKLIST_OPENSEARCH_URL", internalUrl);
