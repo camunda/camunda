@@ -30,8 +30,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
@@ -39,8 +37,6 @@ import org.slf4j.LoggerFactory;
 public class ProcessDefinitionFormDataMigrationIT {
 
   private static final Map<String, Long> PROCESS_DEFINITION_KEYS = new HashMap<>();
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(ProcessDefinitionFormDataMigrationIT.class);
 
   @RegisterExtension
   private static final MigrationITExtension PROVIDER =
@@ -93,7 +89,6 @@ public class ProcessDefinitionFormDataMigrationIT {
             () -> {
               final var proc = findProcess(migrator, processDefinitionKey);
               assertThat(proc).isPresent();
-              LOGGER.info("Process definition found: {}", proc.get());
               assertThat(proc.get().getFormId()).isEqualTo("test");
               assertThat(proc.get().getIsPublic()).isFalse();
               assertThat(proc.get().getFormKey()).isNull();
@@ -113,7 +108,6 @@ public class ProcessDefinitionFormDataMigrationIT {
             () -> {
               final var proc = findProcess(migrator, processDefinitionKey);
               assertThat(proc).isPresent();
-              LOGGER.info("Process definition found: {}", proc.get());
               assertThat(proc.get().getFormId()).isNull();
               assertThat(proc.get().getFormKey()).isEqualTo("camunda-forms:bpmn:testForm");
               assertThat(proc.get().getIsPublic()).isTrue();
