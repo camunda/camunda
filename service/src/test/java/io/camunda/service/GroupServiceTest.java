@@ -134,7 +134,7 @@ public class GroupServiceTest {
     when(client.searchGroups(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getGroupsByUserKey(1L);
+    final var searchQueryResult = services.getGroupsByUserKey("username");
 
     // then
     assertThat(searchQueryResult).contains(group1, group2);
