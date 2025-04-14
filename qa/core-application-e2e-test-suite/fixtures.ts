@@ -30,7 +30,7 @@ type PlaywrightFixtures = {
   operateProcessInstancePage: OperateProcessInstancePage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
-  tasklistprocessesPage: TasklistProcessesPage;
+  tasklistProcessesPage: TasklistProcessesPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -70,7 +70,7 @@ const test = base.extend<PlaywrightFixtures>({
   tasklistHeader: async ({page}, use) => {
     await use(new TasklistHeader(page));
   },
-  tasklistprocessesPage: async ({page}, use) => {
+  tasklistProcessesPage: async ({page}, use) => {
     await use(new TasklistProcessesPage(page));
   },
   resetData: async ({baseURL}, use) => {

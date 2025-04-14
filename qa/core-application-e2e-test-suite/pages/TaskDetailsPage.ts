@@ -251,7 +251,11 @@ class TaskDetailsPage {
     fn: (value: Locator, index: number, array: Locator[]) => Promise<void>,
   ) {
     const elements = await locator.all();
-
+    if (elements.length === 0) {
+      throw new Error(
+        'No elements found for provided locator in the dynamic list',
+      );
+    }
     for (const element of elements) {
       await fn(element, elements.indexOf(element), elements);
     }

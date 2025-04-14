@@ -12,7 +12,6 @@ class TasklistProcessesPage {
   private page: Page;
   readonly continueButton: Locator;
   readonly cancelButton: Locator;
-  readonly modaLStartProcessButton: Locator;
   readonly startProcessButton: Locator;
   readonly docsLink: Locator;
   readonly searchProcessesInput: Locator;
@@ -24,9 +23,6 @@ class TasklistProcessesPage {
     this.continueButton = page.getByRole('button', {name: 'Continue'});
     this.cancelButton = page.getByRole('button', {name: 'Cancel'});
     this.startProcessButton = page.getByRole('button', {name: 'Start process'});
-    this.modaLStartProcessButton = this.page
-      .getByLabel('Start process processWithStartNodeFormDeployed')
-      .getByRole('button', {name: 'Start process'});
     this.docsLink = page.getByRole('link', {name: 'here'});
     this.searchProcessesInput = page.getByPlaceholder('Search processes');
     this.processTile = page.getByTestId('process-tile');
@@ -44,5 +40,16 @@ class TasklistProcessesPage {
     await this.searchProcessesInput.fill(process);
     await this.searchProcessesInput.press('Enter');
   }
+
+  async getModalStartProcessButton(processName: string): Promise<Locator> {
+    return this.page
+      .getByLabel(`Start process ${processName}`)
+      .getByRole('button', {name: 'Start process'});
+  }
+
+  async clickStartProcessButton(processName: string): Promise<void> {
+    await (await this.getModalStartProcessButton(processName)).click();
+  }
 }
+
 export {TasklistProcessesPage};

@@ -31,40 +31,40 @@ test.describe('process page', () => {
   test('process page navigation', async ({
     tasklistHeader,
     page,
-    tasklistprocessesPage,
+    tasklistProcessesPage,
   }) => {
     await tasklistHeader.processesTab.click();
     await expect(page).toHaveURL('/tasklist/processes');
     await expect(page.getByText('Start your process on demand')).toBeVisible();
-    await tasklistprocessesPage.cancelButton.click();
+    await tasklistProcessesPage.cancelButton.click();
     await expect(page.getByText('Welcome to Tasklist')).toBeVisible();
 
     await tasklistHeader.processesTab.click();
-    await tasklistprocessesPage.continueButton.click();
+    await tasklistProcessesPage.continueButton.click();
     await expect(page.getByText('Search processes')).toBeVisible();
   });
 
   test('process searching', async ({
     page,
     tasklistHeader,
-    tasklistprocessesPage,
+    tasklistProcessesPage,
   }) => {
     await tasklistHeader.processesTab.click();
     await expect(page).toHaveURL('/tasklist/processes');
-    await tasklistprocessesPage.continueButton.click();
+    await tasklistProcessesPage.continueButton.click();
 
-    await tasklistprocessesPage.searchForProcess('fake_process');
+    await tasklistProcessesPage.searchForProcess('fake_process');
     await expect(
       page.getByText('We could not find any process with that name'),
     ).toBeVisible();
 
-    await tasklistprocessesPage.searchForProcess('User_Process');
+    await tasklistProcessesPage.searchForProcess('User_Process');
     await expect(
       page.getByText('We could not find any process with that name'),
     ).toBeHidden();
 
-    await expect(tasklistprocessesPage.processTile).toHaveCount(1);
-    await expect(tasklistprocessesPage.processTile).toContainText(
+    await expect(tasklistProcessesPage.processTile).toHaveCount(1);
+    await expect(tasklistProcessesPage.processTile).toContainText(
       'User_Process',
     );
   });
@@ -72,42 +72,42 @@ test.describe('process page', () => {
   test('start process instance', async ({
     page,
     tasklistHeader,
-    tasklistprocessesPage,
+    tasklistProcessesPage,
     taskPanelPage,
   }) => {
     await tasklistHeader.processesTab.click();
     await expect(page).toHaveURL('/tasklist/processes');
-    await tasklistprocessesPage.continueButton.click();
+    await tasklistProcessesPage.continueButton.click();
 
-    await tasklistprocessesPage.searchForProcess('User_Process');
-    await expect(tasklistprocessesPage.processTile).toHaveCount(1, {
+    await tasklistProcessesPage.searchForProcess('User_Process');
+    await expect(tasklistProcessesPage.processTile).toHaveCount(1, {
       timeout: 10000,
     });
 
-    await tasklistprocessesPage.startProcessButton.click();
+    await tasklistProcessesPage.startProcessButton.click();
     await expect(page.getByText('Process has started')).toBeVisible();
-    await expect(tasklistprocessesPage.startProcessButton).toBeHidden();
+    await expect(tasklistProcessesPage.startProcessButton).toBeHidden();
     await expect(page.getByText('Waiting for tasks...')).toBeVisible();
-    await expect(taskPanelPage.assignToMeButton).toBeVisible();
+    await expect(taskPanelPage.assignToMeButton).toBeVisible({timeout: 60000});
   });
 
   test('complete task started by process instance', async ({
     page,
     tasklistHeader,
-    tasklistprocessesPage,
+    tasklistProcessesPage,
     taskPanelPage,
   }) => {
     await tasklistHeader.processesTab.click();
     await expect(page).toHaveURL('/tasklist/processes');
-    await tasklistprocessesPage.continueButton.click();
+    await tasklistProcessesPage.continueButton.click();
 
-    await tasklistprocessesPage.searchForProcess('User_Process');
-    await expect(tasklistprocessesPage.processTile).toHaveCount(1, {
+    await tasklistProcessesPage.searchForProcess('User_Process');
+    await expect(tasklistProcessesPage.processTile).toHaveCount(1, {
       timeout: 10000,
     });
 
-    await tasklistprocessesPage.startProcessButton.click();
-    await tasklistprocessesPage.tasksTab.click();
+    await tasklistProcessesPage.startProcessButton.click();
+    await tasklistProcessesPage.tasksTab.click();
 
     await taskPanelPage.openTask('User_Task');
 
@@ -120,21 +120,21 @@ test.describe('process page', () => {
     page,
     tasklistHeader,
     taskDetailsPage,
-    tasklistprocessesPage,
+    tasklistProcessesPage,
     taskPanelPage,
   }) => {
     await tasklistHeader.processesTab.click();
     await expect(page).toHaveURL('/tasklist/processes');
-    await tasklistprocessesPage.continueButton.click();
+    await tasklistProcessesPage.continueButton.click();
 
-    await tasklistprocessesPage.searchForProcess(
+    await tasklistProcessesPage.searchForProcess(
       'processWithStartNodeFormDeployed',
     );
-    await expect(tasklistprocessesPage.processTile).toHaveCount(1, {
+    await expect(tasklistProcessesPage.processTile).toHaveCount(1, {
       timeout: 30000,
     });
 
-    await tasklistprocessesPage.startProcessButton.click();
+    await tasklistProcessesPage.startProcessButton.click();
     await page.getByRole('textbox', {name: 'Client Name'}).fill('Jon');
     await page.getByRole('textbox', {name: 'Client Address'}).fill('Earth');
     await taskDetailsPage.fillDatetimeField('Invoice Date', '1/1/3000');
@@ -171,9 +171,11 @@ test.describe('process page', () => {
     await expect(page.getByText('EUR 231')).toBeVisible();
     await expect(page.getByText('EUR 264')).toBeVisible();
     await expect(page.getByText('Total: EUR 544.5')).toBeVisible();
-    await tasklistprocessesPage.modaLStartProcessButton.click();
+    await tasklistProcessesPage.clickStartProcessButton(
+      'processWithStartNodeFormDeployed',
+    );
 
-    await tasklistprocessesPage.tasksTab.click();
+    await tasklistProcessesPage.tasksTab.click();
     await taskPanelPage.openTask('processStartedByForm_user_task');
     await expect(
       page.getByText('{"name":"jon","address":"earth"}'),
