@@ -21,6 +21,7 @@ import io.camunda.exporter.rdbms.handlers.FlowNodeExportHandler;
 import io.camunda.exporter.rdbms.handlers.FlowNodeInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.FormExportHandler;
 import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
+import io.camunda.exporter.rdbms.handlers.IncidentBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingExportHandler;
@@ -223,5 +224,8 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceBatchOperationExportHandler(rdbmsWriter.getBatchOperationWriter()));
+    builder.withHandler(
+        ValueType.INCIDENT,
+        new IncidentBatchOperationExportHandler(rdbmsWriter.getBatchOperationWriter()));
   }
 }
