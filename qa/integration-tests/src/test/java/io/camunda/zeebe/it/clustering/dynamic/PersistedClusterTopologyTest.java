@@ -11,11 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -67,6 +69,13 @@ public class PersistedClusterTopologyTest {
     //                                        |                            |
     //                                        |----------------------------|
     //
+    final var correlationkey = "foobar";
+
+    // the partition for the correlation key should not equal 1, which is the only partition
+    // available after the restart
+    assertThat(
+            SubscriptionUtil.getSubscriptionPartitionId(BufferUtil.wrapString(correlationkey), 3))
+        .isNotEqualTo(1);
 
     final var processDefinition =
         Bpmn.createExecutableProcess("catch_event")
@@ -77,7 +86,9 @@ public class PersistedClusterTopologyTest {
                 "boundary_catch",
                 bi ->
                     bi.message(
-                        bm -> bm.name("catch_event_message").zeebeCorrelationKey("=\"foo\"")))
+                        bm ->
+                            bm.name("catch_event_message")
+                                .zeebeCorrelationKey("=\"" + correlationkey + "\"")))
             .endEvent()
             .done();
 
@@ -105,7 +116,7 @@ public class PersistedClusterTopologyTest {
     client
         .newPublishMessageCommand()
         .messageName("catch_event_message")
-        .correlationKey("foo")
+        .correlationKey(correlationkey)
         .send()
         .join();
 
