@@ -39,12 +39,9 @@ import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchClientException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OpensearchAdapter implements Adapter {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchAdapter.class);
   private final ProcessMigrationProperties properties;
   private final OpenSearchClient client;
   private final MigrationRepositoryIndex migrationRepositoryIndex;
@@ -87,7 +84,6 @@ public class OpensearchAdapter implements Adapter {
                   res == null
                       || res.items().isEmpty()
                       || res.items().stream().allMatch(i -> i.error() != null));
-      LOGGER.info("Migrated {} entities res {}", idList, response);
     } catch (final Exception e) {
       throw new MigrationException("Failed to migrate entities %s".formatted(idList), e);
     }
