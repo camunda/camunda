@@ -85,7 +85,7 @@ public class Metadata {
         .replace("{count}", partCount + "");
   }
 
-  public boolean isInitialized() {
+  public boolean checkIsInitialized() {
     return partCount != null && partNo != null && version != null;
   }
 
@@ -149,7 +149,7 @@ public class Metadata {
 
   public static Metadata extractFromMetadataOrName(
       final Metadata fromMetadata, final String snapshotName) {
-    if (fromMetadata != null && fromMetadata.isInitialized()) {
+    if (fromMetadata != null && fromMetadata.checkIsInitialized()) {
       return fromMetadata;
     } else {
       return Metadata.extractMetadataFromSnapshotName(snapshotName);
