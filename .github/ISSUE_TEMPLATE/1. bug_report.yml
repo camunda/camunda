@@ -25,7 +25,7 @@ body:
     attributes:
       label: <!-- Affected version -->
       multiple: true
-      description: Which version is affected?
+      description: Which version is affected? (You can select more than one)
       options:
         - <!-- -8.3 -->
         - <!-- -8.4 -->
