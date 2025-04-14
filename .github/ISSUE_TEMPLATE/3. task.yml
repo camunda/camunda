@@ -1,6 +1,7 @@
 name: Task
 description: Describe a generic activity we should carry out.
 labels: ["kind/task"]
+type: task
 body:
   - type: dropdown
     id: Component
@@ -16,7 +17,7 @@ body:
         - <!-- Zeebe- -->
         - <!-- C8Run- -->
         - <!-- Feel- -->
-      default: 0
+      default: null
     validations:
       required: true
   - type: textarea

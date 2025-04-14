@@ -1,6 +1,7 @@
 name: Bug Report
 description: Report a problem and help us fix it.
 labels: ["kind/bug"]
+type: bug
 body:
   - type: dropdown
     id: Component
@@ -16,7 +17,23 @@ body:
         - <!-- Zeebe- -->
         - <!-- C8Run- -->
         - <!-- Feel- -->
-      default: 0
+      default: null
+    validations:
+      required: true
+  - type: dropdown
+    id: affected-version
+    attributes:
+      label: <!-- Affected version -->
+      multiple: true
+      description: Which version is affected? (You can select more than one)
+      options:
+        - <!-- -8.3 -->
+        - <!-- -8.4 -->
+        - <!-- -8.5 -->
+        - <!-- -8.6 -->
+        - <!-- -8.7 -->
+        - <!-- -8.8 -->
+      default: null
     validations:
       required: true
   - type: dropdown
@@ -29,7 +46,7 @@ body:
         - <!-- Medium- -->
         - <!-- High- -->
         - <!-- Critical- -->
-      default: 0
+      default: null
     validations:
       required: true
   - type: dropdown
@@ -42,7 +59,7 @@ body:
         - <!-- Low_ -->
         - <!-- Medium_ -->
         - <!-- High_ -->
-      default: 0
+      default: null
     validations:
       required: true
   - type: textarea

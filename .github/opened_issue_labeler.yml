@@ -32,3 +32,15 @@ likelihood/low:
   '(Low_)'
 likelihood/unknown:
   '(Unknown_)'
+affects/8.3:
+  - '(-8.3)'
+affects/8.4:
+  - '(-8.4)'
+affects/8.5:
+  - '(-8.5)'
+affects/8.6:
+  - '(-8.6)'
+affects/8.7:
+  - '(-8.7)'
+affects/8.8:
+  - '(-8.8)'
