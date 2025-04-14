@@ -63,6 +63,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Map;
@@ -419,69 +420,95 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportUpdateAndDeleteGroup() {
     // given
-    final var groupRecord = getGroupRecord(42L, GroupIntent.CREATED);
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupRecord = getGroupRecord(groupId, GroupIntent.CREATED);
     final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
 
     // when
     exporter.export(groupRecord);
 
     // then
-    final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    final var group =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(group).isNotEmpty();
     assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupId()).isEqualTo(groupRecordValue.getGroupId());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
+    assertThat(group.get().description()).isEqualTo(groupRecordValue.getDescription());
 
     // given
-    final var updateGroupRecord = getGroupRecord(42L, GroupIntent.UPDATED);
+    final var updateGroupRecord = getGroupRecord(groupId, GroupIntent.UPDATED);
     final var updateGroupRecordValue = ((GroupRecordValue) updateGroupRecord.getValue());
 
     // when
     exporter.export(updateGroupRecord);
 
     // then
-    final var updatedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    final var updatedGroup =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(updatedGroup).isNotEmpty();
     assertThat(updatedGroup.get().groupKey()).isEqualTo(updateGroupRecordValue.getGroupKey());
+    assertThat(updatedGroup.get().groupId()).isEqualTo(updateGroupRecordValue.getGroupId());
     assertThat(updatedGroup.get().name()).isEqualTo(updateGroupRecordValue.getName());
+    assertThat(updatedGroup.get().description()).isEqualTo(updateGroupRecordValue.getDescription());
 
     // when
-    exporter.export(getGroupRecord(42L, GroupIntent.DELETED));
+    exporter.export(getGroupRecord(groupId, GroupIntent.DELETED));
 
     // then
-    final var deletedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    final var deletedGroup =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(deletedGroup).isEmpty();
   }
 
   @Test
   public void shouldExportGroupAndAddAndDeleteMember() {
     // given
-    final var groupRecord = getGroupRecord(43L, GroupIntent.CREATED);
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupRecord = getGroupRecord(groupId, GroupIntent.CREATED);
     final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
 
     // when
     exporter.export(groupRecord);
 
     // then
-    final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    final var group =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(group).isNotEmpty();
     assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupId()).isEqualTo(groupRecordValue.getGroupId());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
+    assertThat(group.get().description()).isEqualTo(groupRecordValue.getDescription());
 
     // when
-    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_ADDED, 1337L));
+    exporter.export(getGroupRecord(groupId, GroupIntent.ENTITY_ADDED, "entityId"));
 
     // then
     final var updatedGroup =
-        rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
-    assertThat(updatedGroup.assignedMemberKeys()).containsExactly(1337L);
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId())
+            .orElseThrow();
+    assertThat(updatedGroup.assignedMemberIds()).containsExactly("entityId");
 
     // when
-    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_REMOVED, 1337L));
+    exporter.export(getGroupRecord(groupId, GroupIntent.ENTITY_REMOVED, "entityId"));
 
     // then
     final var deletedGroup =
-        rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
-    assertThat(deletedGroup.assignedMemberKeys()).isEmpty();
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId())
+            .orElseThrow();
+    assertThat(deletedGroup.assignedMemberIds()).isEmpty();
   }
 
   @Test
