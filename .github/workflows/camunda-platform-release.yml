@@ -46,7 +46,7 @@ jobs:
 #          fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
       - name: Install Zeebe changelog tool
         run: |
-          gh release download 0.9.0 --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
+          gh release download 0.9.0-debug --repo camunda/zeebe-changelog --pattern '*_Linux_i386.tar.gz'
           tar -xzvf zeebe-changelog_*
           chmod +x zcl
       - name: Generate Changelog for patch release
