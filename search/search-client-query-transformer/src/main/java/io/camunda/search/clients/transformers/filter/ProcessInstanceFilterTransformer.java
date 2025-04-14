@@ -122,9 +122,9 @@ public final class ProcessInstanceFilterTransformer
     ofNullable(getIsProcessInstanceQuery()).ifPresent(queries::add);
     queries.addAll(toSearchQueryFields(filter));
 
-    if (filter.orOperations() != null && !filter.orOperations().isEmpty()) {
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
       final var orQueries = new ArrayList<SearchQuery>();
-      filter.orOperations().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
+      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
       queries.add(or(orQueries));
     }
 

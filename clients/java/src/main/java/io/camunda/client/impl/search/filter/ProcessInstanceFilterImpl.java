@@ -18,6 +18,7 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
@@ -323,8 +324,8 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter orFilters(final List<Consumer<ProcessInstanceFilter>> fns) {
-    for (final Consumer<ProcessInstanceFilter> fn : fns) {
+  public ProcessInstanceFilter orFilters(final List<Consumer<ProcessInstanceFilterBase>> fns) {
+    for (final Consumer<ProcessInstanceFilterBase> fn : fns) {
       final ProcessInstanceFilterImpl orFilter = new ProcessInstanceFilterImpl();
       fn.accept(orFilter);
       final io.camunda.client.protocol.rest.ProcessInstanceFilter protocolFilter =
