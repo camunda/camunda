@@ -74,7 +74,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public String getGatewayAddress() {
-    return propertyOrDefault(gatewayAddress, DEFAULT.getGatewayAddress());
+    return gatewayAddress;
   }
 
   @Override
@@ -147,7 +147,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public boolean isPlaintextConnectionEnabled() {
-    return propertyOrDefault(plaintext, DEFAULT.isPlaintextConnectionEnabled());
+    return plaintext;
   }
 
   @Override
