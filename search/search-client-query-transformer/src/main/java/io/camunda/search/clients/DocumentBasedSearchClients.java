@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
@@ -117,9 +118,12 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
+  public SearchQueryResult<MappingEntity> searchMappings(MappingQuery query) {
+    if (query.filter().tenantId() != null) {
+      query = expandTenantFilter(query);
+    }
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
+        .search(query, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
   }
 
   @Override
@@ -361,6 +365,23 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                 securityContext)
             .findAll(filter, io.camunda.webapps.schema.entities.UsageMetricsEntity.class);
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
+  }
+
+  private MappingQuery expandTenantFilter(final MappingQuery mappingQuery) {
+    final List<TenantMemberEntity> tenantMembers =
+        getSearchExecutor()
+            .findAll(
+                new TenantQuery.Builder()
+                    .filter(
+                        f -> f.joinParentId(mappingQuery.filter().tenantId()).memberType(MAPPING))
+                    .build(),
+                io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
+    final var mappingIds =
+        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+
+    return mappingQuery.toBuilder()
+        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .build();
   }
 
   private UserQuery expandTenantFilter(final UserQuery userQuery) {

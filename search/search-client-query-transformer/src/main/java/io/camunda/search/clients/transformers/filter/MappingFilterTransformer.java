@@ -8,11 +8,13 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_NAME;
 import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_VALUE;
+import static io.camunda.webapps.schema.descriptors.index.MappingIndex.MAPPING_ID;
 import static io.camunda.webapps.schema.descriptors.index.MappingIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -32,6 +34,7 @@ public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilt
         filter.claimName() == null ? null : term(CLAIM_NAME, filter.claimName()),
         filter.claimValue() == null ? null : term(CLAIM_VALUE, filter.claimValue()),
         filter.name() == null ? null : term(NAME, filter.name()),
+        filter.mappingId() == null ? null : term(MAPPING_ID, filter.mappingId()),
         filter.claims() == null
             ? null
             : or(
@@ -39,6 +42,11 @@ public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilt
                     .map(
                         claim ->
                             and(term(CLAIM_NAME, claim.name()), term(CLAIM_VALUE, claim.value())))
-                    .toList()));
+                    .toList()),
+        filter.mappingIds() == null
+            ? null
+            : filter.mappingIds().isEmpty()
+                ? matchNone()
+                : stringTerms(MAPPING_ID, filter.mappingIds().stream().sorted().toList()));
   }
 }

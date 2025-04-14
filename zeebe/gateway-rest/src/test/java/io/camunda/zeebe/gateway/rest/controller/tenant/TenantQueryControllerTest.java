@@ -13,18 +13,19 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.MappingServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,11 @@ public class TenantQueryControllerTest extends RestControllerTest {
           new TenantEntity(100L, "tenant-id-1", "Tenant 1", "Description 1"),
           new TenantEntity(200L, "tenant-id-2", "Tenant 2", "Description 2"),
           new TenantEntity(300L, "tenant-id-3", "Tenant 12", "Description 3"));
+
+  private static final List<MappingEntity> MAPPING_ENTITIES =
+      List.of(
+          new MappingEntity("mapping-id-1", 100L, "claim1", "value1", "cv1"),
+          new MappingEntity("mapping-id-2", 200L, "claim2", "value2", "cv2"));
 
   private static final String RESPONSE =
       """
@@ -92,22 +98,56 @@ public class TenantQueryControllerTest extends RestControllerTest {
           TENANT_ENTITIES.get(2).tenantId(),
           TENANT_ENTITIES.size());
 
+  private static final String MAPPING_RESPONSE =
+      """
+      {
+         "items": [
+           {
+             "name": "%s",
+             "claimName": "%s",
+             "claimValue": "%s",
+             "mappingKey": %s,
+             "mappingId": %s
+           },
+           {
+             "name": "%s",
+             "claimName": "%s",
+             "claimValue": "%s",
+             "mappingKey": %s,
+             "mappingId": "%s"
+           }
+         ],
+         "page": {
+           "totalItems": %s,
+           "firstSortValues": ["f"],
+           "lastSortValues": ["v"]
+         }
+       }
+      """;
+
+  private static final String EXPECTED_MAPPING_RESPONSE =
+      MAPPING_RESPONSE.formatted(
+          MAPPING_ENTITIES.get(0).name(),
+          MAPPING_ENTITIES.get(0).claimName(),
+          MAPPING_ENTITIES.get(0).claimValue(),
+          "\"%s\"".formatted(MAPPING_ENTITIES.get(0).mappingKey()),
+          MAPPING_ENTITIES.get(0).mappingId(),
+          MAPPING_ENTITIES.get(1).name(),
+          MAPPING_ENTITIES.get(1).claimName(),
+          MAPPING_ENTITIES.get(1).claimValue(),
+          "\"%s\"".formatted(MAPPING_ENTITIES.get(1).mappingKey()),
+          MAPPING_ENTITIES.get(1).mappingId(),
+          MAPPING_ENTITIES.size());
+
   @MockBean private TenantServices tenantServices;
   @MockBean private UserServices userServices;
-
-  private static String formatSet(final Set<Long> set, final boolean asString) {
-    return set.isEmpty()
-        ? "[]"
-        : set.stream()
-            .map(v -> asString ? "\"%s\"".formatted(v) : v)
-            .collect(Collectors.toSet())
-            .toString();
-  }
+  @MockBean private MappingServices mappingServices;
 
   @BeforeEach
   void setup() {
     when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
   }
 
   @Test
@@ -244,6 +284,71 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new TenantQuery.Builder()
                 .sort(TenantSort.of(builder -> builder.tenantId().asc()))
                 .build());
+  }
+
+  @Test
+  void shouldSearchTenantMappingsWithSorting() {
+    // given
+    when(mappingServices.search(any(MappingQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingEntity>()
+                .total(MAPPING_ENTITIES.size())
+                .items(MAPPING_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/mappings/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "mappingId", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_MAPPING_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchTenantMappingsWithEmptyQuery() {
+    // given
+    when(mappingServices.search(any(MappingQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingEntity>()
+                .total(MAPPING_ENTITIES.size())
+                .items(MAPPING_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/mappings/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_MAPPING_RESPONSE);
   }
 
   @ParameterizedTest

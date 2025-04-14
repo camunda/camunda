@@ -635,6 +635,33 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /tenants/{tenantId}/mappings/search:
+    post:
+      tags:
+        - Tenant
+      operationId: searchMappingsForTenant
+      summary: Search mappings for tenant
+      description: Retrieves a filtered and sorted list of mappings for a specified tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingSearchQueryRequest"
+      responses:
+        "200":
+          description: The search result of mappings for the tenant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingSearchQueryResult"
 
   /tenants/{tenantId}/groups/{groupKey}:
     put:
@@ -5893,6 +5920,7 @@ components:
           type: string
           enum:
             - mappingKey
+            - mappingId
             - claimName
             - claimValue
             - name
