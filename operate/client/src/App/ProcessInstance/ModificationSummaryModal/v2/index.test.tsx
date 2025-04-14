@@ -224,7 +224,7 @@ describe('Modification Summary Modal', () => {
 
     act(() => {
       modificationsStore.removeLastModification();
-      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1');
+      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1', {});
     });
 
     expect(
@@ -247,6 +247,7 @@ describe('Modification Summary Modal', () => {
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         newScopeCount: 1,
+        businessObjects: {},
       });
     });
 
@@ -307,8 +308,8 @@ describe('Modification Summary Modal', () => {
     );
 
     act(() => {
-      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1');
-      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-2');
+      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1', {});
+      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-2', {});
     });
 
     await waitFor(() =>
@@ -342,6 +343,7 @@ describe('Modification Summary Modal', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
 
     modificationsStore.addMoveModification({
@@ -351,6 +353,7 @@ describe('Modification Summary Modal', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
 
     const {user} = render(
@@ -510,6 +513,7 @@ describe('Modification Summary Modal', () => {
         flowNodeId: 'multi-instance-subprocess',
         affectedTokenCount: 7,
         visibleAffectedTokenCount: 7,
+        businessObjects: {},
       });
     });
 
@@ -682,6 +686,7 @@ describe('Modification Summary Modal', () => {
         flowNodeId: 'service-task-2',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
+        businessObjects: {},
       });
     });
 
@@ -696,6 +701,7 @@ describe('Modification Summary Modal', () => {
         flowNodeId: 'service-task-3',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
+        businessObjects: {},
       });
     });
 
@@ -783,7 +789,7 @@ describe('Modification Summary Modal', () => {
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
 
     act(() => {
-      modificationsStore.cancelAllTokens('taskA');
+      modificationsStore.cancelAllTokens('taskA', {});
     });
 
     expect(

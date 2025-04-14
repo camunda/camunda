@@ -106,10 +106,10 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
 
     act(() => {
       modificationsStore.startAddingToken('user_task');
-      modificationsStore.finishAddingToken('inner_sub_process', '2_2');
+      modificationsStore.finishAddingToken({}, 'inner_sub_process', '2_2');
 
       modificationsStore.startAddingToken('user_task');
-      modificationsStore.finishAddingToken('inner_sub_process', '2_2');
+      modificationsStore.finishAddingToken({}, 'inner_sub_process', '2_2');
     });
 
     mockFetchFlowNodeInstances().withSuccess(
@@ -200,10 +200,10 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
 
     act(() => {
       modificationsStore.startAddingToken('user_task');
-      modificationsStore.finishAddingToken('parent_sub_process', '2');
+      modificationsStore.finishAddingToken({}, 'parent_sub_process', '2');
 
       modificationsStore.startAddingToken('user_task');
-      modificationsStore.finishAddingToken('parent_sub_process', '2');
+      modificationsStore.finishAddingToken({}, 'parent_sub_process', '2');
     });
 
     mockFetchFlowNodeInstances().withSuccess(
@@ -367,12 +367,14 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     act(() => {
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
+        {},
         'nested_sub_process',
         processInstanceId,
       );
 
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
+        {},
         'nested_sub_process',
         processInstanceId,
       );
@@ -548,6 +550,7 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     act(() => {
       modificationsStore.startAddingToken('user_task');
       modificationsStore.finishAddingToken(
+        {},
         'nested_sub_process',
         processInstanceId,
       );

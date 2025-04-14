@@ -1084,7 +1084,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     act(() => {
-      cancelAllTokens('Activity_0qtp1k6', 1, 1);
+      cancelAllTokens('Activity_0qtp1k6', 1, 1, {});
     });
 
     expect(
@@ -1401,7 +1401,7 @@ describe('VariablePanel', () => {
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     act(() => {
-      cancelAllTokens('Activity_0qtp1k6', 1, 1);
+      cancelAllTokens('Activity_0qtp1k6', 1, 1, {});
     });
 
     await waitFor(() =>
@@ -1465,7 +1465,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     act(() => {
-      cancelAllTokens('Activity_0qtp1k6', 0, 0);
+      cancelAllTokens('Activity_0qtp1k6', 0, 0, {});
     });
 
     expect(
@@ -1646,7 +1646,7 @@ describe('VariablePanel', () => {
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     act(() => {
-      cancelAllTokens('Activity_0qtp1k6', 0, 0);
+      cancelAllTokens('Activity_0qtp1k6', 0, 0, {});
     });
 
     await waitFor(() => {
