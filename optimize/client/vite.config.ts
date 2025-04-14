@@ -94,7 +94,7 @@ export default defineConfig(({mode}) => ({
           }
 
           if (
-            req.headers.cookie?.includes('X-Optimize-Authorization') ||
+            req.headers.cookie?.includes('X-Optimize-Authorization_0') ||
             req.headers.cookie?.includes('X-Optimize-Refresh-Token')
           ) {
             return path;
