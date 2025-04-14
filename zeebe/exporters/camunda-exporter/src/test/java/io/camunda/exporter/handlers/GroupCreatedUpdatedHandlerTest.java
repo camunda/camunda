@@ -104,7 +104,8 @@ public class GroupCreatedUpdatedHandlerTest {
             r -> r.withIntent(GroupIntent.CREATED).withValue(groupRecordValue).withKey(recordKey));
 
     // when
-    final GroupEntity groupEntity = new GroupEntity().setName("foo").setGroupId(groupId).setDescription("bar");
+    final GroupEntity groupEntity =
+        new GroupEntity().setName("foo").setGroupId(groupId).setDescription("bar");
     underTest.updateEntity(groupRecord, groupEntity);
 
     // then
