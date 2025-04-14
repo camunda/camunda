@@ -17,6 +17,7 @@ import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
 import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
+import {PublicFormsPage} from '@pages/PublicFormsPage';
 import {sleep} from 'utils/sleep';
 
 type PlaywrightFixtures = {
@@ -31,6 +32,7 @@ type PlaywrightFixtures = {
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
+  publicFormsPage: PublicFormsPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -81,6 +83,9 @@ const test = base.extend<PlaywrightFixtures>({
 
       await sleep(1000);
     });
+  },
+  publicFormsPage: async ({page}, use) => {
+    await use(new PublicFormsPage(page));
   },
 });
 
