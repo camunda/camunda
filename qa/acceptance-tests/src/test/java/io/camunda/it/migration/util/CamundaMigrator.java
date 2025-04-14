@@ -125,6 +125,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     try {
       Thread.sleep(3000);
     } catch (final InterruptedException ignored) {
+      // ignore
     }
     /* Retake snapshot to increase chance of capturing the ExporterMetadata */
     PartitionsActuator.of(camundaContainer).takeSnapshot();
