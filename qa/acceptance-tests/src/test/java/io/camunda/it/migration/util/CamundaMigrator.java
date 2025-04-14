@@ -122,6 +122,12 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   public CamundaMigrator update(final Map<String, String> envOverrides) {
     /* Trigger snapshot of Zeebe's data to force flush ExporterMetadata */
     PartitionsActuator.of(camundaContainer).takeSnapshot();
+    try {
+      Thread.sleep(3000);
+    } catch (final InterruptedException ignored) {
+    }
+    /* Retake snapshot to increase chance of capturing the ExporterMetadata */
+    PartitionsActuator.of(camundaContainer).takeSnapshot();
 
     camundaContainer.close();
     extractVolume();
