@@ -10,6 +10,7 @@ package io.camunda.document.store.gcp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -55,6 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class GcpDocumentStoreTest {
 
+  private static final int EXPECTED_BUFFER_SIZE = 256 * 1024;
   private static final String BUCKET_NAME = "camunda-saas-dev-test-document-storage";
   @Mock private Storage storage;
   private final ObjectMapper mapper = new ObjectMapper();
@@ -115,7 +117,7 @@ public class GcpDocumentStoreTest {
                 Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
-    when(storage.createFrom(BlobInfo.newBuilder(BUCKET_NAME, "documentId").build(), inputStream))
+    when(storage.createFrom(any(), (InputStream) any(), eq(EXPECTED_BUFFER_SIZE)))
         .thenThrow(new RuntimeException("Failed to create document"));
 
     // when
@@ -127,12 +129,14 @@ public class GcpDocumentStoreTest {
     assertThat(documentReferenceResponse).isInstanceOf(Left.class);
     assertThat(((Left<DocumentError, DocumentReference>) documentReferenceResponse).value())
         .isInstanceOf(UnknownDocumentError.class);
+    verify(storage).get(BUCKET_NAME, "documentId");
+    verify(storage).createFrom(any(), (InputStream) any(), eq(EXPECTED_BUFFER_SIZE));
   }
 
   @Test
-  void createDocumentShouldSucceed() {
+  void createDocumentShouldSucceed() throws IOException {
     // given
-    final var inputStream = new ByteArrayInputStream("content".getBytes());
+    final var inputStream = new ByteArrayInputStream("Some custom content".getBytes());
     final var documentCreationRequest =
         new DocumentCreationRequest(
             "documentId",
@@ -149,16 +153,49 @@ public class GcpDocumentStoreTest {
     final Blob mockBlob = mock(Blob.class);
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null).thenReturn(mockBlob);
+    when(storage.createFrom(any(), (InputStream) any(), eq(EXPECTED_BUFFER_SIZE)))
+        .then(
+            invocation -> {
+              try (final var stream = invocation.getArgument(1, InputStream.class)) {
+                stream.transferTo(OutputStream.nullOutputStream());
+              }
+              return null;
+            });
 
     // when
     final var documentReferenceResponse =
         gcpDocumentStore.createDocument(documentCreationRequest).join();
 
     // then
+    final var creationBlobCaptor = ArgumentCaptor.forClass(BlobInfo.class);
+    final var updateBlobCaptor = ArgumentCaptor.forClass(BlobInfo.class);
+
     assertThat(documentReferenceResponse).isNotNull();
     assertThat(documentReferenceResponse).isInstanceOf(Right.class);
     assertThat(((Right<DocumentError, DocumentReference>) documentReferenceResponse).value())
         .isNotNull();
+    verify(storage).get(BUCKET_NAME, "documentId");
+    verify(storage)
+        .createFrom(
+            creationBlobCaptor.capture(), (DigestInputStream) any(), eq(EXPECTED_BUFFER_SIZE));
+    verify(storage).update(updateBlobCaptor.capture());
+    verifyNoMoreInteractions(storage);
+
+    final var creationBlobMetadata = creationBlobCaptor.getValue().getMetadata();
+    assertThat(creationBlobMetadata).hasSize(2);
+    assertThat(creationBlobMetadata)
+        .containsAllEntriesOf(
+            Map.of(
+                "key", "\"value\"",
+                "contentHash", ""));
+
+    final var updateBlobMetadata = updateBlobCaptor.getValue().getMetadata();
+    assertThat(updateBlobMetadata).hasSize(2);
+    assertThat(updateBlobMetadata)
+        .containsAllEntriesOf(
+            Map.of(
+                "key", "\"value\"",
+                "contentHash", "dbd17af5357df5e6c4cad5e382c9b1b7a1f9da31ceef9747995147ef1f12e852"));
   }
 
   @Test
@@ -512,7 +549,7 @@ public class GcpDocumentStoreTest {
                     "Map",
                     Map.of("key1", "val1", "key2", "val2"))));
     when(storage.get(BUCKET_NAME, documentId)).thenReturn(null);
-    when(storage.createFrom(any(), (InputStream) any()))
+    when(storage.createFrom(any(), (InputStream) any(), eq(EXPECTED_BUFFER_SIZE)))
         .then(
             invocation -> {
               try (final var stream = invocation.getArgument(1, InputStream.class)) {
@@ -539,7 +576,9 @@ public class GcpDocumentStoreTest {
                 .metadata()
                 .processInstanceKey())
         .isEqualTo(123L);
-    verify(storage).createFrom(creationBlobCaptor.capture(), (DigestInputStream) any());
+    verify(storage)
+        .createFrom(
+            creationBlobCaptor.capture(), (DigestInputStream) any(), eq(EXPECTED_BUFFER_SIZE));
     verify(storage).update(updateBlobCaptor.capture());
     verifyNoMoreInteractions(storage);
 
