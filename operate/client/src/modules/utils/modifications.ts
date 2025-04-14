@@ -18,11 +18,13 @@ const cancelAllTokens = (
   flowNodeId: string,
   totalRunningInstancesForFlowNode: number,
   totalRunningInstancesVisibleForFlowNode: number,
+  businessObjects: BusinessObjects,
 ) => {
   modificationsStore.addCancelModification({
     flowNodeId,
     affectedTokenCount: totalRunningInstancesForFlowNode,
     visibleAffectedTokenCount: totalRunningInstancesVisibleForFlowNode,
+    businessObjects,
   });
 };
 
@@ -63,6 +65,7 @@ const finishMovingToken = (
       affectedTokenCount,
       visibleAffectedTokenCount,
       newScopeCount,
+      businessObjects,
     });
   }
 

@@ -107,7 +107,7 @@ describe('<ModificationIcons />', () => {
       screen.queryByTitle('This flow node instance is planned to be canceled'),
     ).not.toBeInTheDocument();
 
-    act(() => modificationsStore.cancelAllTokens('user_task'));
+    act(() => modificationsStore.cancelAllTokens('user_task', {}));
 
     expect(
       screen.getByTitle('This flow node instance is planned to be canceled'),
@@ -134,7 +134,9 @@ describe('<ModificationIcons />', () => {
       },
     );
 
-    act(() => modificationsStore.cancelToken('user_task', 'some-flow-node-id'));
+    act(() =>
+      modificationsStore.cancelToken('user_task', 'some-flow-node-id', {}),
+    );
 
     expect(
       screen.getByTitle('This flow node instance is planned to be canceled'),
@@ -162,7 +164,11 @@ describe('<ModificationIcons />', () => {
     );
 
     act(() =>
-      modificationsStore.cancelToken('user_task', 'some-other-flow-node-id'),
+      modificationsStore.cancelToken(
+        'user_task',
+        'some-other-flow-node-id',
+        {},
+      ),
     );
 
     expect(
@@ -191,7 +197,11 @@ describe('<ModificationIcons />', () => {
     );
 
     act(() =>
-      modificationsStore.cancelToken('user_task', 'some-parent-flow-node-id'),
+      modificationsStore.cancelToken(
+        'user_task',
+        'some-parent-flow-node-id',
+        {},
+      ),
     );
 
     expect(
@@ -223,6 +233,7 @@ describe('<ModificationIcons />', () => {
       modificationsStore.cancelToken(
         'user_task',
         'some-second-parent-flow-node-id',
+        {},
       ),
     );
 

@@ -1312,7 +1312,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6', {});
     });
 
     expect(
@@ -1548,7 +1548,7 @@ describe('VariablePanel', () => {
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6', {});
     });
 
     await waitFor(() => {
@@ -1586,10 +1586,14 @@ describe('VariablePanel', () => {
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6', {});
     });
 
-    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
+    await waitFor(
+      () =>
+        expect(screen.queryByTestId('edit-variable-value')).not
+          .toBeInTheDocument,
+    );
   });
 
   it('should display readonly state for existing node if cancel modification is applied on the flow node and one new token is added', async () => {
@@ -1646,7 +1650,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6', {});
     });
 
     await waitFor(() =>

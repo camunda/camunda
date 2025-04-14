@@ -48,12 +48,14 @@ describe('cancelAllTokens', () => {
       flowNodeId,
       totalRunningInstancesForFlowNode,
       totalRunningInstancesVisibleForFlowNode,
+      {},
     );
 
     expect(modificationsStore.addCancelModification).toHaveBeenCalledWith({
       flowNodeId,
       affectedTokenCount: totalRunningInstancesForFlowNode,
       visibleAffectedTokenCount: totalRunningInstancesVisibleForFlowNode,
+      businessObjects: {},
     });
   });
 });
@@ -108,6 +110,7 @@ describe('finishMovingToken', () => {
       affectedTokenCount: 5,
       visibleAffectedTokenCount: 3,
       newScopeCount: 5,
+      businessObjects,
     });
   });
 

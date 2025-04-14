@@ -145,7 +145,7 @@ describe('stores/modificationRules', () => {
     ]);
 
     // cancel all instances
-    modificationsStore.cancelAllTokens('service-task-2');
+    modificationsStore.cancelAllTokens('service-task-2', {});
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(false);
     expect(modificationRulesStore.availableModifications).toEqual(['add']);
@@ -172,7 +172,7 @@ describe('stores/modificationRules', () => {
     });
 
     // cancel one of the instances
-    modificationsStore.cancelToken('service-task-2', 'some-instance-key-1');
+    modificationsStore.cancelToken('service-task-2', 'some-instance-key-1', {});
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(true);
     expect(modificationRulesStore.availableModifications).toEqual([
@@ -203,7 +203,7 @@ describe('stores/modificationRules', () => {
     ]);
 
     // cancel the other instance
-    modificationsStore.cancelToken('service-task-2', 'some-instance-key-2');
+    modificationsStore.cancelToken('service-task-2', 'some-instance-key-2', {});
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(false);
     expect(modificationRulesStore.availableModifications).toEqual([]);

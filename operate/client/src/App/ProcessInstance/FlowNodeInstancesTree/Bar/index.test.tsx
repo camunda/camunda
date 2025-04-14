@@ -12,11 +12,20 @@ import {mockStartNode, mockStartEventBusinessObject} from './index.setup';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {useEffect} from 'react';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => flowNodeTimeStampStore.reset, []);
 
-  return <>{children}</>;
+  return (
+    <ProcessDefinitionKeyContext.Provider value={'123'}>
+      <QueryClientProvider client={getMockQueryClient()}>
+        {children}
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
+  );
 };
 
 describe('<Bar />', () => {

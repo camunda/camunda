@@ -1323,7 +1323,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6', {});
     });
 
     expect(
@@ -1560,7 +1560,7 @@ describe('VariablePanel', () => {
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6', {});
     });
 
     await waitFor(() => {
@@ -1623,7 +1623,7 @@ describe('VariablePanel', () => {
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6', {});
     });
 
     await waitFor(() =>
@@ -1687,7 +1687,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      modificationsStore.cancelAllTokens('Activity_0qtp1k6', {});
     });
 
     await waitFor(() =>
