@@ -160,15 +160,9 @@ class TaskDetailsPage {
     await this.decrementButton.click();
   }
 
-  async fillDate(date: string): Promise<void> {
-    await this.dateInput.click();
-    await this.dateInput.fill(date);
-    await this.dateInput.press('Enter');
-  }
-
-  async enterTime(time: string): Promise<void> {
-    await this.timeInput.click();
-    await this.page.getByText(time).click();
+  async fillDatetimeField(name: string, value: string) {
+    await this.page.getByRole('textbox', {name}).fill(value);
+    await this.page.getByRole('textbox', {name}).press('Enter');
   }
 
   async checkCheckbox(): Promise<void> {
@@ -177,6 +171,11 @@ class TaskDetailsPage {
 
   async selectDropdownValue(value: string): Promise<void> {
     await this.selectDropdown.click();
+    await this.page.getByText(value).click();
+  }
+
+  async selectDropdownOption(label: string, value: string) {
+    await this.page.getByText(label).click();
     await this.page.getByText(value).click();
   }
 
@@ -246,6 +245,20 @@ class TaskDetailsPage {
     await expect(this.page.getByTitle(variableName + ' Value')).toHaveValue(
       variableValue,
     );
+  }
+  async forEachDynamicListItem(
+    locator: Locator,
+    fn: (value: Locator, index: number, array: Locator[]) => Promise<void>,
+  ) {
+    const elements = await locator.all();
+    if (elements.length === 0) {
+      throw new Error(
+        'No elements found for provided locator in the dynamic list',
+      );
+    }
+    for (const element of elements) {
+      await fn(element, elements.indexOf(element), elements);
+    }
   }
 }
 export {TaskDetailsPage};
