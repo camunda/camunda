@@ -428,19 +428,21 @@
 
   <changeSet id="create_group_table" author="cthiel">
     <createTable tableName="${prefix}GROUPS">
-      <column name="GROUP_KEY" type="BIGINT" >
+      <column name="GROUP_ID" type="VARCHAR(255)" >
         <constraints primaryKey="true"/>
       </column>
+      <column name="GROUP_KEY" type="BIGINT" />
       <column name="NAME" type="VARCHAR(255)" />
+      <column name="DESCRIPTION" type="VARCHAR(255)" />
     </createTable>
   </changeSet>
 
   <changeSet id="group_members_table" author="cthiel">
     <createTable tableName="${prefix}GROUP_MEMBER">
-      <column name="GROUP_KEY" type="BIGINT" >
+      <column name="GROUP_ID" type="VARCHAR(255)" >
         <constraints primaryKey="true"/>
       </column>
-      <column name="ENTITY_KEY" type="BIGINT" >
+      <column name="ENTITY_ID" type="VARCHAR(255)" >
         <constraints primaryKey="true"/>
       </column>
       <column name="ENTITY_TYPE" type="VARCHAR(255)" />
