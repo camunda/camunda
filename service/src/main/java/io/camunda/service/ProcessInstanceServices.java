@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceW
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -182,6 +183,21 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<BatchOperationCreationRecord> migrateProcessInstancesBatchOperation(
+      final ProcessInstanceMigrationBatchOperationRequest request) {
+    final var migrationPlan = new BatchOperationProcessInstanceMigrationPlan();
+    migrationPlan.setTargetProcessDefinitionKey(request.targetProcessDefinitionKey);
+    request.mappingInstructions.forEach(migrationPlan::addMappingInstruction);
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(request.filter)
+            .setMigrationPlan(migrationPlan)
+            .setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public CompletableFuture<ProcessInstanceMigrationRecord> migrateProcessInstance(
       final ProcessInstanceMigrateRequest request) {
     final var brokerRequest =
@@ -235,4 +251,9 @@ public final class ProcessInstanceServices
       List<ProcessInstanceModificationActivateInstruction> activateInstructions,
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
       Long operationReference) {}
+
+  public record ProcessInstanceMigrationBatchOperationRequest(
+      ProcessInstanceFilter filter,
+      Long targetProcessDefinitionKey,
+      List<ProcessInstanceMigrationMappingInstruction> mappingInstructions) {}
 }

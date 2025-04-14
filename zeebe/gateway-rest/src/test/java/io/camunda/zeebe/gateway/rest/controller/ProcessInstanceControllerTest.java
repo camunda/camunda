@@ -20,6 +20,7 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -1422,5 +1423,56 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class));
+  }
+
+  @Test
+  void shouldMigrateProcessInstancesBatchOperation() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrationBatchOperationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+           {
+            "filter": {
+              "processDefinitionId": "test-process-definition-id"
+            },
+            "migrationPlan": {
+                "targetProcessDefinitionKey": "123",
+                "mappingInstructions": [
+                  {
+                    "sourceElementId": "a",
+                    "targetElementId": "b"
+                  }
+                ]
+              }
+           }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/batch-operations/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"MIGRATE_PROCESS_INSTANCE"}
+        """);
+
+    verify(processInstanceServices)
+        .migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrationBatchOperationRequest.class));
   }
 }

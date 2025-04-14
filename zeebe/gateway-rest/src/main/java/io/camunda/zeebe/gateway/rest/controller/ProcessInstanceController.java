@@ -15,10 +15,12 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
@@ -144,6 +146,13 @@ public class ProcessInstanceController {
             this::batchOperationResolveIncidents);
   }
 
+  @CamundaPostMapping(path = "/batch-operations/migration")
+  public CompletableFuture<ResponseEntity<Object>> migrateProcessInstancesBatchOperation(
+      @RequestBody final ProcessInstanceMigrationBatchOperationInstruction request) {
+    return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(request)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationMigrate);
+  }
+
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
       final ProcessInstanceQuery query) {
     try {
@@ -175,6 +184,16 @@ public class ProcessInstanceController {
             processInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .resolveIncidentsBatchOperationWithResult(filter),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> batchOperationMigrate(
+      final ProcessInstanceMigrationBatchOperationRequest request) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            processInstanceServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .migrateProcessInstancesBatchOperation(request),
         ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
 

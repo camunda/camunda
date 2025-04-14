@@ -51,9 +51,6 @@ public final class BatchOperationProcessInstanceMigrationPlan extends ObjectValu
    */
   @Override
   public List<ProcessInstanceMigrationMappingInstructionValue> getMappingInstructions() {
-    // we need to make a copy of each element in the ArrayProperty while iterating it because the
-    // inner values are updated during the iteration
-    // TODO: Is it for the batch operation case also needed to copy everything?
     return mappingInstructionsProperty.stream()
         .map(
             element -> {
