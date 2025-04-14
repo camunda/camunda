@@ -11,8 +11,8 @@ import static io.camunda.qa.util.multidb.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.exporter.CamundaExporter;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
