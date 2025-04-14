@@ -8,6 +8,5 @@ camunda:
     auth:
       token-url: https://login.cloud.camunda.io/oauth/token
       audience: zeebe.camunda.io
-    enabled: true
     grpc-address: https://${camunda.client.cloud.cluster-id}.${camunda.client.cloud.region}.${camunda.client.cloud.base-url}:${camunda.client.cloud.port}
     rest-address: https://${camunda.client.cloud.region}.${camunda.client.cloud.base-url}:${camunda.client.cloud.port}/${camunda.client.cloud.cluster-id}
