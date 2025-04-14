@@ -7,6 +7,7 @@
  */
 
 import {Page, expect} from '@playwright/test';
+import type {Role} from 'utils/types';
 
 export async function navigateToApp(
   page: Page,
@@ -32,4 +33,12 @@ export async function navigateToApp(
 export async function validateURL(page: Page, URL: RegExp): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-floating-promises, playwright/missing-playwright-await
   expect(page).toHaveURL(URL);
+}
+
+export async function assertElementVisibilityByName(
+  page: Page,
+  role: Role,
+  nameText: string,
+) {
+  await expect(page.getByRole(role, {name: nameText})).toBeVisible();
 }
