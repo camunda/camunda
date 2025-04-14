@@ -70,11 +70,6 @@ on:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitrary helm arguments, like --set starter.rate=100'
         type: string
         required: false
-      measure:
-        description: 'Measure impact of network latency'
-        type: boolean
-        required: false
-        default: true
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
         default: ""
@@ -82,6 +77,16 @@ on:
         required: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
+        type: boolean
+        required: false
+        default: false
+      operate-tag:
+        description: 'Specifies the tag of operate, when Operate should be included in the Benchmark'
+        type: string
+        default: ""
+        required: false
+      realistic:
+        description: 'Should run a realistic benchmark, with real-world process and load'
         type: boolean
         required: false
         default: false
