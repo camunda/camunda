@@ -64,7 +64,13 @@ jobs:
           # Default changelog value
           changelog="Release ${{ inputs.releaseVersion }}"
 
-          changelog=$(./zcl generate --label version:${{ inputs.releaseVersion }} --token=${{ secrets.GITHUB_TOKEN }})
+          ./zcl generate --label version:${{ inputs.releaseVersion }} --token=${{ secrets.GITHUB_TOKEN }} >> changelog.txt
+
+          echo "ls"
+          ls
+          echo "cat changelog.txt"
+          cat changelog.txt
+          changelog=$(< changelog.txt)
 
           echo changelog:
           echo $changelog
