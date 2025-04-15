@@ -8,7 +8,10 @@
 package io.camunda.operate.webapp.zeebe.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
@@ -24,9 +27,14 @@ import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.grpc.Status;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
@@ -92,6 +100,29 @@ public class UpdateVariableHandlerTest {
             OperationType.UPDATE_VARIABLE.name());
   }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = Code.class,
+      names = {"UNAVAILABLE", "RESOURCE_EXHAUSTED", "DEADLINE_EXCEEDED"})
+  void shouldRetryOnRetriableGrpcStatus(final Code retriableStatusCode) throws Exception {
+    // given
+    final var operation = createLockedOperation();
+
+    final var statusException =
+        new StatusRuntimeException(
+            Status.fromCode(retriableStatusCode).withDescription("Will be retried"));
+    mockSetVariablesCommand(failedFuture(statusException));
+
+    // when
+    handler.handle(operation);
+
+    // then: should NOT mark operation as failed, allowing retry later
+    verify(batchOperationWriter, never()).updateOperation(any());
+    assertThat(operation.getState()).isEqualTo(OperationState.LOCKED);
+    // no metrics updates for retried operation
+    verifyNoInteractions(metrics);
+  }
+
   /**
    * Creates a locked UPDATE_VARIABLE operation, simulating an operation that was picked up by the
    * executor for processing.
@@ -121,5 +152,11 @@ public class UpdateVariableHandlerTest {
     when(setVariablesCommandStep2.operationReference(Long.parseLong(operationId)))
         .thenReturn(setVariablesCommandStep2);
     when(setVariablesCommandStep2.send()).thenReturn(expectedSetVariablesFuture);
+  }
+
+  private <T, Z> CamundaClientFutureImpl<T, Z> failedFuture(Throwable throwable) {
+    final var future = new CamundaClientFutureImpl<T, Z>();
+    future.completeExceptionally(throwable);
+    return future;
   }
 }
