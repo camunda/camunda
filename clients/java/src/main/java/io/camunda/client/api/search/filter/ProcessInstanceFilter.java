@@ -23,126 +23,166 @@ import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public interface ProcessInstanceFilter extends SearchRequestFilter {
+public interface ProcessInstanceFilter extends ProcessInstanceFilterBase {
 
   /** Filter by processInstanceKey */
+  @Override
   ProcessInstanceFilter processInstanceKey(final Long processInstanceKey);
 
   /** Filter by processInstanceKey using {@link BasicLongProperty} consumer */
+  @Override
   ProcessInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by processDefinitionId */
+  @Override
   ProcessInstanceFilter processDefinitionId(final String processDefinitionId);
 
   /** Filter by processDefinitionId using {@link StringProperty} */
+  @Override
   ProcessInstanceFilter processDefinitionId(final Consumer<StringProperty> fn);
 
   /** Filter by processDefinitionName */
+  @Override
   ProcessInstanceFilter processDefinitionName(final String processDefinitionName);
 
   /** Filter by processDefinitionName using {@link StringProperty} consumer */
+  @Override
   ProcessInstanceFilter processDefinitionName(final Consumer<StringProperty> fn);
 
   /** Filter by processDefinitionVersion */
+  @Override
   ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion);
 
   /** Filter by processDefinitionVersion using {@link IntegerProperty} consumer */
+  @Override
   ProcessInstanceFilter processDefinitionVersion(final Consumer<IntegerProperty> fn);
 
   /** Filter by processDefinitionVersionTag */
+  @Override
   ProcessInstanceFilter processDefinitionVersionTag(final String processDefinitionVersionTag);
 
   /** Filter by processDefinitionVersionTag using {@link StringProperty} consumer */
+  @Override
   ProcessInstanceFilter processDefinitionVersionTag(final Consumer<StringProperty> fn);
 
   /** Filter by processDefinitionKey */
+  @Override
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
 
   /** Filter by processDefinitionKey using {@link BasicLongProperty} consumer */
+  @Override
   ProcessInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by parentProcessInstanceKey */
+  @Override
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
 
   /** Filter by parentProcessInstanceKey using {@link BasicLongProperty} consumer */
+  @Override
   ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by parentFlowNodeInstanceKey */
+  @Override
   ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
 
   /** Filter by parentFlowNodeInstanceKey using {@link BasicLongProperty} consumer */
+  @Override
   ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by startDate */
+  @Override
   ProcessInstanceFilter startDate(final OffsetDateTime startDate);
 
   /** Filter by startDate using {@link DateTimeProperty} consumer */
+  @Override
   ProcessInstanceFilter startDate(final Consumer<DateTimeProperty> fn);
 
   /** Filter by endDate */
+  @Override
   ProcessInstanceFilter endDate(final OffsetDateTime endDate);
 
   /** Filter by endDate using {@link DateTimeProperty} consumer */
+  @Override
   ProcessInstanceFilter endDate(final Consumer<DateTimeProperty> fn);
 
   /** Filter by state */
+  @Override
   ProcessInstanceFilter state(final ProcessInstanceState state);
 
   /** Filter by state using {@link ProcessInstanceStateProperty} consumer */
+  @Override
   ProcessInstanceFilter state(final Consumer<ProcessInstanceStateProperty> fn);
 
   /** Filter by hasIncident */
+  @Override
   ProcessInstanceFilter hasIncident(final Boolean hasIncident);
 
   /** Filter by tenantId */
+  @Override
   ProcessInstanceFilter tenantId(final String tenantId);
 
   /** Filter by tenantId using {@link StringProperty} consumer */
+  @Override
   ProcessInstanceFilter tenantId(final Consumer<StringProperty> fn);
 
   /** Filter by variables */
+  @Override
   ProcessInstanceFilter variables(
       final List<ProcessInstanceVariableFilterRequest> variableValueFilters);
 
   /** Filter by variables map */
+  @Override
   ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters);
 
   /** Filter by batchOperationId */
+  @Override
   ProcessInstanceFilter batchOperationId(final String batchOperationId);
 
   /** Filter by batchOperationId using {@link StringProperty} */
+  @Override
   ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn);
 
   /** Filter by error message */
+  @Override
   ProcessInstanceFilter errorMessage(final String errorMessage);
 
   /** Filter by error message using {@link StringProperty} consumer */
+  @Override
   ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn);
 
   /** Filter by hasRetriesLeft */
+  @Override
   ProcessInstanceFilter hasRetriesLeft(final Boolean hasRetriesLeft);
 
   /** Filter by flowNodeId */
+  @Override
   ProcessInstanceFilter flowNodeId(final String flowNodeId);
 
   /** Filter by flowNodeId using {@link StringProperty} */
+  @Override
   ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn);
 
   /** Filter by state */
+  @Override
   ProcessInstanceFilter flowNodeInstanceState(final FlowNodeInstanceState state);
 
   /** Filter by flowNodeInstanceState using {@link FlowNodeInstanceStateProperty} */
+  @Override
   ProcessInstanceFilter flowNodeInstanceState(final Consumer<FlowNodeInstanceStateProperty> fn);
 
   /** Filter by hasFlowNodeInstanceIncident */
+  @Override
   ProcessInstanceFilter hasFlowNodeInstanceIncident(final Boolean hasFlowNodeInstanceIncident);
 
   /** Filter by incidentErrorHashCode */
+  @Override
   ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode);
+
+  /** Filter by or conjunction using {@link ProcessInstanceFilterBase} consumer */
+  ProcessInstanceFilterBase orFilters(List<Consumer<ProcessInstanceFilterBase>> filters);
 }

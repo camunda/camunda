@@ -18,6 +18,7 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
@@ -33,6 +34,8 @@ import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.ProcessInstanceFilterMapper;
+import io.camunda.client.protocol.rest.ProcessInstanceFilterFields;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -317,6 +320,20 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode) {
     filter.setIncidentErrorHashCode(incidentErrorHashCode);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilterBase orFilters(final List<Consumer<ProcessInstanceFilterBase>> fns) {
+    for (final Consumer<ProcessInstanceFilterBase> fn : fns) {
+      final ProcessInstanceFilterImpl orFilter = new ProcessInstanceFilterImpl();
+      fn.accept(orFilter);
+      final io.camunda.client.protocol.rest.ProcessInstanceFilter protocolFilter =
+          orFilter.getSearchRequestProperty();
+      final ProcessInstanceFilterFields protocolFilterFields =
+          ProcessInstanceFilterMapper.from(protocolFilter);
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 

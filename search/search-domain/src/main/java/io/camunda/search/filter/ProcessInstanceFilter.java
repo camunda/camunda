@@ -40,7 +40,8 @@ public record ProcessInstanceFilter(
     Boolean hasFlowNodeInstanceIncident,
     List<Operation<String>> flowNodeInstanceStateOperations,
     List<Integer> incidentErrorHashCodes,
-    Integer partitionId)
+    Integer partitionId,
+    List<ProcessInstanceFilter> orFilters)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -87,6 +88,7 @@ public record ProcessInstanceFilter(
     private List<Operation<String>> flowNodeInstanceStateOperations;
     private List<Integer> incidentErrorHashCodes;
     private Integer partitionId;
+    private List<ProcessInstanceFilter> orFilters;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -366,6 +368,14 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder addOrOperation(final ProcessInstanceFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -391,7 +401,8 @@ public record ProcessInstanceFilter(
           hasFlowNodeInstanceIncident,
           Objects.requireNonNullElse(flowNodeInstanceStateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(incidentErrorHashCodes, Collections.emptyList()),
-          partitionId);
+          partitionId,
+          orFilters);
     }
   }
 }

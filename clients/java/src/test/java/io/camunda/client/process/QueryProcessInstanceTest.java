@@ -21,13 +21,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.lang.reflect.Modifier;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 public class QueryProcessInstanceTest extends ClientRestTest {
@@ -308,9 +311,65 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList("a"));
   }
 
+  @Test
+  void shouldSearchProcessInstanceWithOrOperatorFilters() {
+    // when
+    final OffsetDateTime now = OffsetDateTime.now();
+
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(
+            f ->
+                f.tenantId("tenant-1")
+                    .orFilters(Arrays.asList(f1 -> f1.state(ACTIVE), f3 -> f3.hasIncident(true))))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant-1");
+    assertThat(filter.get$Or()).isNotNull();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getState().get$Eq())
+        .isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(filter.get$Or().get(1).getHasIncident()).isTrue();
+  }
+
   private void assertSort(
       final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
+  }
+
+  @Test
+  void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
+    final Set<String> baseMethods = publicMethodSignatures(ProcessInstanceFilterBase.class);
+    final Set<String> fullMethods =
+        publicMethodSignatures(io.camunda.client.api.search.filter.ProcessInstanceFilter.class);
+
+    // Full interface must contain all base interface methods
+    assertThat(fullMethods)
+        .withFailMessage("Full interface is missing methods from base interface")
+        .containsAll(baseMethods);
+
+    // Full interface may only include orFilters in addition to base methods
+    final Set<String> expectedExtras = new HashSet<>();
+    expectedExtras.add("orFilters[interface java.util.List]");
+    final Set<String> actualExtras = new HashSet<>(fullMethods);
+    actualExtras.removeAll(baseMethods);
+
+    assertThat(actualExtras)
+        .withFailMessage("Unexpected methods in full interface: %s", actualExtras)
+        .isEqualTo(expectedExtras);
+  }
+
+  private static Set<String> publicMethodSignatures(final Class<?> clazz) {
+    return Arrays.stream(clazz.getMethods())
+        .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
+        .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
+        .collect(Collectors.toSet());
   }
 }
