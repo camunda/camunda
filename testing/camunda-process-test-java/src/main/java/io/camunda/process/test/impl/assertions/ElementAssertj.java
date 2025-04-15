@@ -251,8 +251,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
               IntStream.rangeClosed(0, relevantElementInstances.size() - elementSelectors.size())
                   .mapToObj(
                       index ->
-                          relevantElementInstances.subList(
-                              index, relevantElementInstances.size()))
+                          relevantElementInstances.subList(index, relevantElementInstances.size()))
                   .anyMatch(sublist -> containsSequence(sublist, elementSelectors));
 
           if (!sequenceFound) {
@@ -268,8 +267,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
   }
 
   private static boolean containsSequence(
-      final List<ElementInstance> elementInstances,
-      final List<ElementSelector> elementSelectors) {
+      final List<ElementInstance> elementInstances, final List<ElementSelector> elementSelectors) {
     for (int i = 0; i < elementSelectors.size(); i++) {
       if (!elementSelectors.get(i).test(elementInstances.get(i))) {
         return false;
