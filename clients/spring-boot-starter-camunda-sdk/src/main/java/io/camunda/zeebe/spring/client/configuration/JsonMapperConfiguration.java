@@ -39,8 +39,7 @@ public class JsonMapperConfiguration {
     if (objectMapper == null) {
       return new ZeebeObjectMapper();
     }
-<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/configuration/JsonMapperConfiguration.java
-    return new ZeebeObjectMapper(objectMapper);
+    return new ZeebeObjectMapper(objectMapper.copy());
   }
 
   @Bean(name = "commonJsonMapper")
@@ -49,9 +48,6 @@ public class JsonMapperConfiguration {
     if (objectMapper == null) {
       return new SdkObjectMapper();
     }
-    return new SdkObjectMapper(objectMapper);
-=======
-    return new CamundaObjectMapper(objectMapper.copy());
->>>>>>> 26a62bbe (fix: use copy of objectMapper):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/configuration/JsonMapperConfiguration.java
+    return new SdkObjectMapper(objectMapper.copy());
   }
 }
