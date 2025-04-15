@@ -27,7 +27,7 @@ import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
-import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -346,31 +346,30 @@ public class QueryProcessInstanceTest extends ClientRestTest {
 
   @Test
   void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
-    final Set<String> baseMethods =
-        Arrays.stream(ProcessInstanceFilterBase.class.getDeclaredMethods())
-            .map(this::methodSignature)
-            .collect(Collectors.toSet());
-
+    final Set<String> baseMethods = publicMethodSignatures(ProcessInstanceFilterBase.class);
     final Set<String> fullMethods =
-        Arrays.stream(
-                io.camunda.client.api.search.filter.ProcessInstanceFilter.class
-                    .getDeclaredMethods())
-            .map(this::methodSignature)
-            .collect(Collectors.toSet());
+        publicMethodSignatures(io.camunda.client.api.search.filter.ProcessInstanceFilter.class);
 
-    // Ensure that all base methods are present in the full interface
-    assertThat(fullMethods).containsAll(baseMethods);
+    // Full interface must contain all base interface methods
+    assertThat(fullMethods)
+        .withFailMessage("Full interface is missing methods from base interface")
+        .containsAll(baseMethods);
 
+    // Full interface may only include orFilters in addition to base methods
     final Set<String> expectedExtras = new HashSet<>();
     expectedExtras.add("orFilters[interface java.util.List]");
-    final Set<String> extras = new HashSet<>(fullMethods);
-    extras.removeAll(baseMethods);
+    final Set<String> actualExtras = new HashSet<>(fullMethods);
+    actualExtras.removeAll(baseMethods);
 
-    // Ensure that orFilters method is the only extra method in full interface
-    assertThat(extras).isEqualTo(expectedExtras);
+    assertThat(actualExtras)
+        .withFailMessage("Unexpected methods in full interface: %s", actualExtras)
+        .isEqualTo(expectedExtras);
   }
 
-  private String methodSignature(final Method m) {
-    return m.getName() + Arrays.toString(m.getParameterTypes());
+  private static Set<String> publicMethodSignatures(final Class<?> clazz) {
+    return Arrays.stream(clazz.getMethods())
+        .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
+        .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
+        .collect(Collectors.toSet());
   }
 }
