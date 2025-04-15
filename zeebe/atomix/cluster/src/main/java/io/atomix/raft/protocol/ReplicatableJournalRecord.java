@@ -63,8 +63,13 @@ public record ReplicatableJournalRecord(
         + index
         + ", checksum="
         + checksum
-        + ", serializedJournalRecord="
-        + Arrays.toString(serializedJournalRecord)
+        + ", serializedJournalRecord={rawToString="
+        + serializedJournalRecord
+        + ", length="
+        + serializedJournalRecord.length
+        + ", hashCode="
+        + Arrays.hashCode(serializedJournalRecord)
+        + "}"
         + '}';
   }
 
