@@ -15,8 +15,11 @@
  */
 package io.camunda.process.test.impl.extension;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -28,7 +31,12 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import org.awaitility.Awaitility;
 
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
@@ -116,8 +124,54 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public JobWorkerMock mockJobWorker(final String jobId) {
+  public JobWorkerMock mockJobWorker(final String jobType) {
     final CamundaClient client = createClient();
-    return new JobWorkerMockImpl(jobId, client);
+    return new JobWorkerMockImpl(jobType, client);
+  }
+
+  @Override
+  public void completeJob(final String jobType) {
+    completeJob(jobType, new HashMap<>());
+  }
+
+  @Override
+  public void completeJob(final String jobType, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final ActivatedJob job = getActivatedJob(jobType);
+    client.newCompleteCommand(job).variables(variables).send().join();
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(final String jobType, final String errorCode) {
+    throwBpmnErrorFromJob(jobType, errorCode, new HashMap<>());
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(
+      final String jobType, final String errorCode, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final ActivatedJob job = getActivatedJob(jobType);
+    client.newThrowErrorCommand(job).errorCode(errorCode).variables(variables).send().join();
+  }
+
+  private ActivatedJob getActivatedJob(final String jobType) {
+    final CamundaClient client = createClient();
+    final AtomicReference<ActivatedJob> activatedJob = new AtomicReference<>();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              final List<ActivatedJob> jobs =
+                  client
+                      .newActivateJobsCommand()
+                      .jobType(jobType)
+                      .maxJobsToActivate(1)
+                      .send()
+                      .join()
+                      .getJobs();
+              assertThat(jobs).isNotEmpty();
+              activatedJob.set(jobs.get(0));
+            });
+    return activatedJob.get();
   }
 }
