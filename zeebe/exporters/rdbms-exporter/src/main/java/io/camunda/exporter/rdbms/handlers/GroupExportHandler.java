@@ -49,21 +49,19 @@ public class GroupExportHandler implements RdbmsExportHandler<GroupRecordValue> 
     switch (record.getIntent()) {
       case GroupIntent.CREATED -> groupWriter.create(map(value));
       case GroupIntent.UPDATED -> groupWriter.update(map(value));
-      case GroupIntent.DELETED -> groupWriter.delete(value.getGroupKey());
+      case GroupIntent.DELETED -> groupWriter.delete(value.getGroupId());
       case GroupIntent.ENTITY_ADDED ->
           groupWriter.addMember(
               new GroupMemberDbModel.Builder()
-                  .groupKey(value.getGroupKey())
-                  // TODO: revisit with https://github.com/camunda/camunda/pull/30697
-                  .entityKey(Long.parseLong(value.getEntityId()))
+                  .groupId(value.getGroupId())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       case GroupIntent.ENTITY_REMOVED ->
           groupWriter.removeMember(
               new GroupMemberDbModel.Builder()
-                  .groupKey(value.getGroupKey())
-                  // TODO: revisit https://github.com/camunda/camunda/pull/30697
-                  .entityKey(Long.parseLong(value.getEntityId()))
+                  .groupId(value.getGroupId())
+                  .entityId((value.getEntityId()))
                   .entityType(value.getEntityType().name())
                   .build());
       default -> LOG.warn("Unexpected intent {} for group record", record.getIntent());
@@ -72,8 +70,10 @@ public class GroupExportHandler implements RdbmsExportHandler<GroupRecordValue> 
 
   private GroupDbModel map(final GroupRecordValue decision) {
     return new GroupDbModel.Builder()
+        .groupId(decision.getGroupId())
         .groupKey(decision.getGroupKey())
         .name(decision.getName())
+        .description(decision.getDescription())
         .build();
   }
 }

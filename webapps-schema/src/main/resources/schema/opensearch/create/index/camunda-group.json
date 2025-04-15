@@ -5,10 +5,16 @@
       "id": {
         "type": "keyword"
       },
+      "groupId": {
+        "type": "keyword"
+      },
       "key": {
         "type": "long"
       },
       "name": {
+        "type": "keyword"
+      },
+      "description": {
         "type": "keyword"
       },
       "memberKey": {

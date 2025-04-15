@@ -9,22 +9,22 @@ package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
 
-public record GroupMemberDbModel(Long groupKey, Long entityKey, String entityType) {
+public record GroupMemberDbModel(String groupId, String entityId, String entityType) {
 
   // create builder implementing ObjectBuilder
   public static class Builder implements ObjectBuilder<GroupMemberDbModel> {
 
-    private Long groupKey;
-    private Long entityKey;
+    private String groupId;
+    private String entityId;
     private String entityType;
 
-    public Builder groupKey(final Long groupKey) {
-      this.groupKey = groupKey;
+    public Builder groupId(final String groupId) {
+      this.groupId = groupId;
       return this;
     }
 
-    public Builder entityKey(final Long entityKey) {
-      this.entityKey = entityKey;
+    public Builder entityId(final String entityId) {
+      this.entityId = entityId;
       return this;
     }
 
@@ -35,7 +35,7 @@ public record GroupMemberDbModel(Long groupKey, Long entityKey, String entityTyp
 
     @Override
     public GroupMemberDbModel build() {
-      return new GroupMemberDbModel(groupKey, entityKey, entityType);
+      return new GroupMemberDbModel(groupId, entityId, entityType);
     }
   }
 }

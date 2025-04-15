@@ -336,13 +336,14 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getGroupRecord(
-      final Long groupKey, final GroupIntent intent) {
-    return getGroupRecord(groupKey, intent, null);
+      final String groupId, final GroupIntent intent) {
+    return getGroupRecord(groupId, intent, null);
   }
 
   protected static ImmutableRecord<RecordValue> getGroupRecord(
-      final Long groupKey, final GroupIntent intent, final Long entityKey) {
+      final String groupId, final GroupIntent intent, final String entityId) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.GROUP);
+    final long groupKey = 1L;
     return ImmutableRecord.builder()
         .from(recordValueRecord)
         .withIntent(intent)
@@ -353,9 +354,9 @@ public class RecordFixtures {
             ImmutableGroupRecordValue.builder()
                 .from((GroupRecordValue) recordValueRecord.getValue())
                 .withGroupKey(groupKey)
-                // TODO: revisit with https://github.com/camunda/camunda/issues/29903
-                .withEntityId(entityKey != null ? String.valueOf(entityKey) : "0")
-                .withEntityType(entityKey != null ? EntityType.USER : null)
+                .withGroupId(groupId)
+                .withEntityId(entityId != null ? entityId : "0")
+                .withEntityType(entityId != null ? EntityType.USER : null)
                 .build())
         .build();
   }

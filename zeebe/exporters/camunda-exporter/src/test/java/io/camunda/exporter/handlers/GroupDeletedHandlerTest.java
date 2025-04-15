@@ -58,7 +58,7 @@ public class GroupDeletedHandlerTest {
     final var idList = underTest.generateIds(groupRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(groupRecord.getKey()));
+    assertThat(idList).containsExactly(String.valueOf(groupRecord.getValue().getGroupId()));
   }
 
   @Test

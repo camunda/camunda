@@ -21,10 +21,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import org.junit.jupiter.api.Disabled;
+import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.Test;
 
-@Disabled("https://github.com/camunda/camunda/issues/29903")
 public class GroupEntityRemovedHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -62,10 +61,8 @@ public class GroupEntityRemovedHandlerTest {
 
     // then
     final var value = groupRecord.getValue();
-    // TODO: revisit with https://github.com/camunda/camunda/pull/30697
     assertThat(idList)
-        .containsExactly(
-            GroupEntity.getChildKey(value.getGroupKey(), Long.parseLong(value.getEntityId())));
+        .containsExactly(GroupEntity.getChildKey(value.getGroupId(), value.getEntityId()));
   }
 
   @Test
@@ -81,9 +78,15 @@ public class GroupEntityRemovedHandlerTest {
   @Test
   void shouldUpdateGroupEntityOnFlush() throws PersistenceException {
     // given
-    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(111L);
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var memberId = Strings.newRandomValidIdentityId();
+    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(groupId);
     final GroupEntity inputEntity =
-        new GroupEntity().setId("111").setMemberKey(222L).setJoin(joinRelation);
+        new GroupEntity()
+            .setId("111")
+            .setGroupId(groupId)
+            .setMemberId(memberId)
+            .setJoin(joinRelation);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

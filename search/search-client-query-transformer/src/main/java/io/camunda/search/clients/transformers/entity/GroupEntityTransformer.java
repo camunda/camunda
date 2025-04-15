@@ -18,8 +18,9 @@ public class GroupEntityTransformer
   @Override
   public GroupEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.GroupEntity value) {
-    final Set<Long> memberSet =
-        value.getMemberKey() == null ? Set.of() : Set.of(value.getMemberKey());
-    return new GroupEntity(value.getKey(), value.getName(), memberSet);
+    final Set<String> memberSet =
+        value.getMemberId() == null ? Set.of() : Set.of(value.getMemberId());
+    return new GroupEntity(
+        value.getKey(), value.getGroupId(), value.getName(), value.getDescription(), memberSet);
   }
 }

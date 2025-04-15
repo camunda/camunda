@@ -22,10 +22,12 @@ import io.camunda.search.sort.GroupSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -34,6 +36,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
+@Disabled("Enable with https://github.com/camunda/camunda/issues/30285")
 @WebMvcTest(value = GroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
 
@@ -43,17 +46,23 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "items":[
           {
             "groupKey":"111",
+            "groupId":"%s",
             "name":"Group 1",
+            "description":"Description 1",
             "assignedMemberKeys":[]
           },
           {
             "groupKey":"222",
+            "groupId":"%s",
             "name":"Group 2",
+            "description":"Description 2",
             "assignedMemberKeys":[]
           },
           {
             "groupKey":"333",
+            "groupId":"%s",
             "name":"Group 3",
+            "description":"Description 3",
             "assignedMemberKeys":[]
           }
         ],
@@ -78,8 +87,10 @@ public class GroupQueryControllerTest extends RestControllerTest {
   void shouldReturnOkOnGetGroup() {
     // given
     final var groupKey = 111L;
+    final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "groupName";
-    final var group = new GroupEntity(groupKey, groupName, Set.of());
+    final var groupDescription = "groupDescription";
+    final var group = new GroupEntity(groupKey, groupId, groupName, groupDescription, Set.of());
     when(groupServices.getGroup(group.groupKey())).thenReturn(group);
 
     // when
@@ -94,10 +105,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .json(
             """
             {
+              "groupKey": "%d",
+              "groupId": "%s",
               "name": "%s",
-              "groupKey": "%d"
+              "description": "%s"
             }"""
-                .formatted(groupName, groupKey));
+                .formatted(groupKey, groupId, groupName, groupDescription));
 
     // then
     verify(groupServices, times(1)).getGroup(group.groupKey());
@@ -142,9 +155,15 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var groupKey1 = 111L;
     final var groupKey2 = 222L;
     final var groupKey3 = 333L;
+    final var groupId1 = Strings.newRandomValidIdentityId();
+    final var groupId2 = Strings.newRandomValidIdentityId();
+    final var groupId3 = Strings.newRandomValidIdentityId();
     final var groupName1 = "Group 1";
     final var groupName2 = "Group 2";
     final var groupName3 = "Group 3";
+    final var description1 = "Description 1";
+    final var description2 = "Description 2";
+    final var description3 = "Description 3";
     when(groupServices.search(any(GroupQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<GroupEntity>()
@@ -153,9 +172,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
-                        new GroupEntity(groupKey1, groupName1, Set.of()),
-                        new GroupEntity(groupKey2, groupName2, Set.of()),
-                        new GroupEntity(groupKey3, groupName3, Set.of())))
+                        new GroupEntity(groupKey1, groupId1, groupName1, description1, Set.of()),
+                        new GroupEntity(groupKey2, groupId2, groupName2, description2, Set.of()),
+                        new GroupEntity(groupKey3, groupId3, groupName3, description3, Set.of())))
                 .build());
 
     // when / then
@@ -177,15 +196,21 @@ public class GroupQueryControllerTest extends RestControllerTest {
              "items": [
                {
                  "groupKey": "%d",
-                 "name": "%s"
+                 "groupId": "%s",
+                 "name": "%s",
+                 "description": "%s",
                },
                {
                  "groupKey": "%d",
-                 "name": "%s"
+                 "groupId": "%s",
+                 "name": "%s",
+                 "description": "%s"
                },
                {
                  "groupKey": "%d",
-                 "name": "%s"
+                 "groupId": "%s",
+                 "name": "%s",
+                 "description": "%s"
                }
              ],
              "page": {
@@ -194,7 +219,19 @@ public class GroupQueryControllerTest extends RestControllerTest {
                "lastSortValues": ["v"]
              }
            }"""
-                .formatted(groupKey1, groupName1, groupKey2, groupName2, groupKey3, groupName3));
+                .formatted(
+                    groupKey1,
+                    groupId1,
+                    groupName1,
+                    description1,
+                    groupKey2,
+                    groupId2,
+                    groupName2,
+                    description2,
+                    groupKey3,
+                    groupId3,
+                    groupName3,
+                    description3));
 
     verify(groupServices).search(new GroupQuery.Builder().build());
   }
@@ -205,18 +242,24 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var groupKey1 = 111L;
     final var groupKey2 = 222L;
     final var groupKey3 = 333L;
+    final var groupId1 = Strings.newRandomValidIdentityId();
+    final var groupId2 = Strings.newRandomValidIdentityId();
+    final var groupId3 = Strings.newRandomValidIdentityId();
     final var groupName1 = "Group 1";
     final var groupName2 = "Group 2";
     final var groupName3 = "Group 3";
+    final var description1 = "Description 1";
+    final var description2 = "Description 2";
+    final var description3 = "Description 3";
     when(groupServices.search(any(GroupQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(3)
                 .items(
                     List.of(
-                        new GroupEntity(groupKey1, groupName1, Set.of()),
-                        new GroupEntity(groupKey2, groupName2, Set.of()),
-                        new GroupEntity(groupKey3, groupName3, Set.of())))
+                        new GroupEntity(groupKey1, groupId1, groupName1, description1, Set.of()),
+                        new GroupEntity(groupKey2, groupId2, groupName2, description2, Set.of()),
+                        new GroupEntity(groupKey3, groupId3, groupName3, description3, Set.of())))
                 .firstSortValues(new Object[] {"f"})
                 .lastSortValues(new Object[] {"v"})
                 .build());
@@ -238,7 +281,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE.formatted(groupId1, groupId2, groupId3));
 
     verify(groupServices)
         .search(

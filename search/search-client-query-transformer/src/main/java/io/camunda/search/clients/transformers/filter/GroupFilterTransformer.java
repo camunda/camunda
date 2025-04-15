@@ -9,11 +9,11 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.index.GroupIndex.MEMBER_KEY;
+import static io.camunda.webapps.schema.descriptors.index.GroupIndex.MEMBER_ID;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -33,13 +33,15 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
     return and(
         term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()),
         filter.groupKey() == null ? null : term(KEY, filter.groupKey()),
+        filter.groupId() == null ? null : term(GroupIndex.GROUP_ID, filter.groupId()),
         filter.name() == null ? null : term(NAME, filter.name()),
-        filter.memberKeys() == null
+        filter.description() == null ? null : term(GroupIndex.DESCRIPTION, filter.description()),
+        filter.memberIds() == null
             ? null
-            : filter.memberKeys().isEmpty()
+            : filter.memberIds().isEmpty()
                 ? matchNone()
                 : hasChildQuery(
                     IdentityJoinRelationshipType.MEMBER.getType(),
-                    longTerms(MEMBER_KEY, filter.memberKeys())));
+                    stringTerms(MEMBER_ID, filter.memberIds())));
   }
 }

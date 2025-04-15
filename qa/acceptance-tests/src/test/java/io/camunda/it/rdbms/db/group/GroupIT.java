@@ -44,7 +44,7 @@ public class GroupIT {
     final var group = GroupFixtures.createRandomized(b -> b);
     createAndSaveGroup(rdbmsWriter, group);
 
-    final var instance = groupReader.findOne(group.groupKey()).orElse(null);
+    final var instance = groupReader.findOne(group.groupId()).orElse(null);
 
     compareGroups(instance, group);
   }
@@ -58,11 +58,12 @@ public class GroupIT {
     final var group = GroupFixtures.createRandomized(b -> b);
     createAndSaveGroup(rdbmsWriter, group);
 
-    final var groupUpdate = GroupFixtures.createRandomized(b -> b.groupKey(group.groupKey()));
+    final var groupUpdate =
+        GroupFixtures.createRandomized(b -> b.groupId(group.groupId()).groupKey(group.groupKey()));
     rdbmsWriter.getGroupWriter().update(groupUpdate);
     rdbmsWriter.flush();
 
-    final var instance = groupReader.findOne(group.groupKey()).orElse(null);
+    final var instance = groupReader.findOne(group.groupId()).orElse(null);
 
     compareGroups(instance, groupUpdate);
   }
@@ -75,13 +76,13 @@ public class GroupIT {
 
     final var group = GroupFixtures.createRandomized(b -> b);
     createAndSaveGroup(rdbmsWriter, group);
-    final var instance = groupReader.findOne(group.groupKey()).orElse(null);
+    final var instance = groupReader.findOne(group.groupId()).orElse(null);
     compareGroups(instance, group);
 
-    rdbmsWriter.getGroupWriter().delete(group.groupKey());
+    rdbmsWriter.getGroupWriter().delete(group.groupId());
     rdbmsWriter.flush();
 
-    final var deletedInstance = groupReader.findOne(group.groupKey()).orElse(null);
+    final var deletedInstance = groupReader.findOne(group.groupId()).orElse(null);
     assertThat(deletedInstance).isNull();
   }
 
@@ -161,7 +162,7 @@ public class GroupIT {
     final GroupReader groupReader = rdbmsService.getGroupReader();
 
     createAndSaveRandomGroups(rdbmsWriter, b -> b.name("Alice Doe"));
-    final var sort = GroupSort.of(s -> s.name().asc());
+    final var sort = GroupSort.of(s -> s.name().asc().groupId().asc());
     final var searchResult =
         groupReader.search(
             GroupQuery.of(
@@ -179,7 +180,9 @@ public class GroupIT {
                                 p.size(5)
                                     .searchAfter(
                                         new Object[] {
-                                          instanceAfter.name(), instanceAfter.groupKey()
+                                          instanceAfter.name(),
+                                          instanceAfter.groupId(),
+                                          instanceAfter.groupKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
@@ -190,6 +193,8 @@ public class GroupIT {
   private static void compareGroups(final GroupEntity instance, final GroupDbModel group) {
     assertThat(instance).isNotNull();
     assertThat(instance.groupKey()).isEqualTo(group.groupKey());
+    assertThat(instance.groupId()).isEqualTo(group.groupId());
     assertThat(instance.name()).isEqualTo(group.name());
+    assertThat(instance.description()).isEqualTo(group.description());
   }
 }
