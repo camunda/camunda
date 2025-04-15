@@ -88,41 +88,35 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           "Deployments are already stored and don't need to be reconstructed");
       return;
     }
-    var progressState = ProgressState.fromDeploymentRecord(record.getValue());
+    final var progressState = ProgressState.fromDeploymentRecord(record.getValue());
 
-    try {
-      final var key = keyGenerator.nextKey();
+    final var key = keyGenerator.nextKey();
 
-      final var resource = findNextResource(progressState);
-      if (resource == null) {
-        stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED_ALL, record.getValue());
-        return;
-      }
-
-      final DeploymentRecord deploymentRecord;
-      if (resource.deploymentKey() != NO_DEPLOYMENT_KEY) {
-        final var allResourcesOfDeployment =
-            findResourcesWithDeploymentKey(resource.tenantId(), resource.deploymentKey());
-        deploymentRecord =
-            recreateDeploymentForResources(
-                resource.deploymentKey(), resource.tenantId(), allResourcesOfDeployment);
-      } else {
-        deploymentRecord = createNewDeploymentForResource(resource);
-      }
-      stateWriter.appendFollowUpEvent(
-          deploymentRecord.getDeploymentKey(), DeploymentIntent.RECONSTRUCTED, deploymentRecord);
-      // trigger reconstruction of another deployment reconstruction
-      cachedDeploymentRecordCommand.reset();
-      cachedDeploymentRecordCommand
-          .setTenantId(deploymentRecord.getTenantId())
-          .setReconstructionKey(deploymentRecord.getDeploymentKey())
-          .setReconstructionProgress(progressState.progress());
-      commandWriter.appendNewCommand(DeploymentIntent.RECONSTRUCT, cachedDeploymentRecordCommand);
-
-    } finally {
-      // progressState contains a reference to a resource, so no need to keep it
-      progressState = null;
+    final var resource = findNextResource(progressState);
+    if (resource == null) {
+      stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED_ALL, record.getValue());
+      return;
     }
+
+    final DeploymentRecord deploymentRecord;
+    if (resource.deploymentKey() != NO_DEPLOYMENT_KEY) {
+      final var allResourcesOfDeployment =
+          findResourcesWithDeploymentKey(resource.tenantId(), resource.deploymentKey());
+      deploymentRecord =
+          recreateDeploymentForResources(
+              resource.deploymentKey(), resource.tenantId(), allResourcesOfDeployment);
+    } else {
+      deploymentRecord = createNewDeploymentForResource(resource);
+    }
+    stateWriter.appendFollowUpEvent(
+        deploymentRecord.getDeploymentKey(), DeploymentIntent.RECONSTRUCTED, deploymentRecord);
+    // trigger reconstruction of another deployment reconstruction
+    cachedDeploymentRecordCommand.reset();
+    cachedDeploymentRecordCommand
+        .setTenantId(deploymentRecord.getTenantId())
+        .setReconstructionKey(deploymentRecord.getDeploymentKey())
+        .setReconstructionProgress(progressState.progress());
+    commandWriter.appendNewCommand(DeploymentIntent.RECONSTRUCT, cachedDeploymentRecordCommand);
   }
 
   private Resource findNextResource(ProgressState progressState) {
