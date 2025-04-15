@@ -1405,8 +1405,21 @@ paths:
 
         The caller must provide a file name for each document, which will be used in case of a multi-status response
         to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
-        of the file part or in the `fileName` field of the metadata part. If both are provided, the `fileName` field
-        takes precedence.
+        of the file part or in the `fileName` field of the metadata, which can be configured with
+        the `X-Document-Metadata` header for each file part. If both are provided, the `fileName` metadata field
+        takes precedence. For example, given the following headers for a file:
+        ```
+        Content-Disposition: form-data; name="files"; filename="bill.pdf"
+        X-Document-Metadata: {"fileName": "invoice.pdf", "size": 1234567}
+        ```
+
+        The filename will be `invoice.pdf`, but in the following example:
+        ```
+        Content-Disposition: form-data; name="files"; filename="bill.pdf"
+        X-Document-Metadata: {"size": 1234567}
+        ```
+
+        it would be `bill.pdf`.
 
         In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
         each of which contains the file name of the document that failed to upload and the reason for the failure.
