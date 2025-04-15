@@ -56,7 +56,7 @@ public class ZeebeClientEnabledTest {
 
   @Nested
   @SpringBootTest(classes = ZeebeClientProdAutoConfiguration.class)
-  class NegativeTest {
+  class DefaultTest {
     @Autowired(required = false)
     ZeebeClient camundaClient;
 
