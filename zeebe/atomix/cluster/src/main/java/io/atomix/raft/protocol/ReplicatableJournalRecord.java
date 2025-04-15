@@ -56,6 +56,16 @@ public record ReplicatableJournalRecord(
 
   @Override
   public String toString() {
+    final var recordToString =
+        serializedJournalRecord != null
+            ? "{rawToString="
+                + serializedJournalRecord
+                + ", length="
+                + serializedJournalRecord.length
+                + ", hashCode="
+                + Arrays.hashCode(serializedJournalRecord)
+                + "}"
+            : "null";
     return "ReplicatableJournalRecord{"
         + "term="
         + term
@@ -64,7 +74,7 @@ public record ReplicatableJournalRecord(
         + ", checksum="
         + checksum
         + ", serializedJournalRecord="
-        + Arrays.toString(serializedJournalRecord)
+        + recordToString
         + '}';
   }
 
