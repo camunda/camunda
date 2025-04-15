@@ -266,9 +266,7 @@ public class AuthCookieService {
             .filter(name -> name.getName().startsWith(OPTIMIZE_AUTHORIZATION_PREFIX))
             .sorted(
                 Comparator.comparingInt(
-                    s ->
-                        Integer.parseInt(
-                            s.getValue().substring(s.getValue().lastIndexOf('_') + 1))))
+                    s -> Integer.parseInt(s.getName().substring(s.getName().lastIndexOf('_') + 1))))
             .map(Cookie::getValue)
             .collect(Collectors.joining());
     if (!authCookieValues.isEmpty()) {
