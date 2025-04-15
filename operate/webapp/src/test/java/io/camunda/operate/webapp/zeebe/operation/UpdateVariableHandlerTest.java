@@ -26,7 +26,6 @@ import io.camunda.operate.webapp.elasticsearch.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
@@ -75,8 +74,7 @@ public class UpdateVariableHandlerTest {
     // given
     final var operation = createLockedOperation();
 
-    final var setVariablesRespFuture =
-        new CamundaClientFutureImpl<SetVariablesResponse, GatewayOuterClass.SetVariablesResponse>();
+    final var setVariablesRespFuture = new CamundaClientFutureImpl<SetVariablesResponse, Void>();
     setVariablesRespFuture.complete(() -> variableDocumentKey);
     when(setVariablesCommandStep2.send()).thenReturn(setVariablesRespFuture);
     mockSetVariablesCommand(setVariablesRespFuture);
@@ -174,8 +172,7 @@ public class UpdateVariableHandlerTest {
    * {@code .send()} invocation, returning the specified future (success or failure).
    */
   private void mockSetVariablesCommand(
-      final CamundaClientFutureImpl<SetVariablesResponse, GatewayOuterClass.SetVariablesResponse>
-          expectedSetVariablesFuture) {
+      final CamundaClientFutureImpl<SetVariablesResponse, Void> expectedSetVariablesFuture) {
     when(camundaClient.newSetVariablesCommand(scopeKey)).thenReturn(setVariablesCommandStep1);
     when(setVariablesCommandStep1.variables(variablesDocumentJson))
         .thenReturn(setVariablesCommandStep2);
