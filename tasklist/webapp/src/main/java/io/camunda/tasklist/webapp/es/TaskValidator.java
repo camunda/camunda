@@ -13,6 +13,7 @@ import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED;
 import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED_TO_CURRENT_USER;
 import static io.camunda.tasklist.util.ErrorHandlingUtils.createErrorMessage;
 
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
 public class TaskValidator {
 
   @Autowired private UserReader userReader;
+  @Autowired private TasklistProperties tasklistProperties;
 
   public void validateCanPersistDraftTaskVariables(final TaskEntity task) {
     validateTaskStateAndAssignment(task);
@@ -75,7 +77,9 @@ public class TaskValidator {
       final TaskEntity taskBefore, final boolean allowOverrideAssignment) {
     validateTaskIsActive(taskBefore);
 
-    if (TasklistAuthenticationUtil.isApiUser() && allowOverrideAssignment) {
+    if ((TasklistAuthenticationUtil.isApiUser()
+            || tasklistProperties.getFeatureFlag().getAllowNonSelfAssignment())
+        && allowOverrideAssignment) {
       // JWT Token/API users can reassign task
       return;
     }

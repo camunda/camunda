@@ -13,6 +13,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.tasklist.property.FeatureFlagProperties;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
@@ -36,6 +38,7 @@ public class TaskValidatorTest {
   public static final String TEST_USER = "TestUser";
 
   @Mock private UserReader userReader;
+  @Mock private TasklistProperties tasklistProperties;
 
   @InjectMocks private TaskValidator instance;
 
@@ -288,6 +291,7 @@ public class TaskValidatorTest {
   @Test
   public void nonApiUserShouldNotBeAbleToReassignToAnotherUser() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
@@ -307,6 +311,7 @@ public class TaskValidatorTest {
   @Test
   public void nonApiUserShouldNotBeAbleToReassignToAnotherUserWhenOverrideAllowed() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);

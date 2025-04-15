@@ -304,11 +304,12 @@ class TaskServiceTest {
     final var userA = "userA";
     final var userB = "userB";
     return Stream.of(
-        Arguments.of(null, true, userA, new UserDTO().setUserId(userA), false, userA, false),
-        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), true, userA, false),
-        Arguments.of(true, true, null, new UserDTO().setUserId(userB), false, userB, false),
-        Arguments.of(true, true, "", new UserDTO().setUserId(userB), false, userB, false),
-        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), false, userA, true));
+        Arguments.of(null, true, userA, new UserDTO().setUserId(userA), false, userA, false, null),
+        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), true, userA, false, null),
+        Arguments.of(true, true, null, new UserDTO().setUserId(userB), false, userB, false, null),
+        Arguments.of(true, true, "", new UserDTO().setUserId(userB), false, userB, false, null),
+        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), false, userA, true, null),
+        Arguments.of(true, true, userA, new UserDTO().setUserId(userB), false, userA, true, userB));
   }
 
   @ParameterizedTest
@@ -320,7 +321,8 @@ class TaskServiceTest {
       final UserDTO user,
       final boolean isApiUser,
       final String expectedAssignee,
-      final boolean allowNonSelfAssignment) {
+      final boolean allowNonSelfAssignment,
+      final String currentAssignee) {
 
     // Given
     when(tasklistProperties.getFeatureFlag())
@@ -328,6 +330,7 @@ class TaskServiceTest {
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
+    when(taskBefore.getAssignee()).thenReturn(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
@@ -560,14 +563,15 @@ class TaskServiceTest {
       final UserDTO user,
       final boolean isApiUser,
       final String expectedAssignee,
-      final boolean allowNonSelfAssignment) {
+      final boolean allowNonSelfAssignment,
+      final String currentAssignee) {
     // Given
     when(tasklistProperties.getFeatureFlag())
         .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(allowNonSelfAssignment));
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
-
+    when(taskBefore.getAssignee()).thenReturn(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
