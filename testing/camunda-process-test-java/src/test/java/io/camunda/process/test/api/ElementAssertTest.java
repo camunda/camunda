@@ -1379,6 +1379,145 @@ public class ElementAssertTest {
   }
 
   @Nested
+  class HasCompletedElementsInOrder {
+
+    @Test
+    void shouldPassIfElementsAreCompletedInOrder() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(
+                  newCompletedFlowNodeInstance("A"),
+                  newCompletedFlowNodeInstance("B"),
+                  newCompletedFlowNodeInstance("C")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "B", "C");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "C");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("B", "C");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("B");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("C");
+    }
+
+    @Test
+    void shouldPassIfElementsAreCompletedInOrderForTheSameInstance() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(
+                  newCompletedFlowNodeInstance("A"),
+                  newCompletedFlowNodeInstance("A"),
+                  newCompletedFlowNodeInstance("A")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "A", "A");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "A");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A");
+    }
+
+    @Test
+    void shouldPassIfElementsAreCompletedInOrderMultipleTimes() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(
+                  newCompletedFlowNodeInstance("A"),
+                  newCompletedFlowNodeInstance("A"),
+                  newCompletedFlowNodeInstance("B"),
+                  newCompletedFlowNodeInstance("A")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "B", "A");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("B", "A");
+    }
+
+    @Test
+    void shouldFailIfOneElementIsNotCompleted() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(
+                  newCompletedFlowNodeInstance("A"),
+                  newCompletedFlowNodeInstance("B"),
+                  newActiveFlowNodeInstance("A")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasCompletedElementsInOrder("A", "B", "A"))
+          .hasMessage(
+              "Process instance [key: %d] should have completed elements ['A', 'B', 'A'] in order, but only the following elements were completed:\n"
+                  + "\t- 'A': completed\n"
+                  + "\t- 'B': completed",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfElementsAreCompletedInADifferentOrder() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(
+                  newCompletedFlowNodeInstance("A"),
+                  newCompletedFlowNodeInstance("B"),
+                  newCompletedFlowNodeInstance("A")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasCompletedElementsInOrder("B", "A", "A"))
+          .hasMessage(
+              "Process instance [key: %d] should have completed elements ['B', 'A', 'A'] in order, but only the following elements were completed:\n"
+                  + "\t- 'A': completed\n"
+                  + "\t- 'B': completed\n"
+                  + "\t- 'A': completed",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldWaitUntilAllElementsAreCompletedInOrder() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(
+                  newCompletedFlowNodeInstance("A"),
+                  newCompletedFlowNodeInstance("B"),
+                  newActiveFlowNodeInstance("A")))
+          .thenReturn(
+              Arrays.asList(
+                  newCompletedFlowNodeInstance("A"),
+                  newCompletedFlowNodeInstance("B"),
+                  newCompletedFlowNodeInstance("A")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "B", "A");
+      verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
+    }
+  }
+
+  @Nested
   class HasActiveElementsExactly {
 
     @Test
