@@ -24,7 +24,6 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.sort.GroupSort;
 import java.time.OffsetDateTime;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -156,7 +155,6 @@ public class GroupIT {
     assertThat(searchResult.items().getFirst().groupKey()).isEqualTo(group.groupKey());
   }
 
-  @Disabled("I think this test is not valid anymore as now the key of the table is a String")
   @TestTemplate
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -164,7 +162,7 @@ public class GroupIT {
     final GroupReader groupReader = rdbmsService.getGroupReader();
 
     createAndSaveRandomGroups(rdbmsWriter, b -> b.name("Alice Doe"));
-    final var sort = GroupSort.of(s -> s.name().asc());
+    final var sort = GroupSort.of(s -> s.name().asc().groupId().asc());
     final var searchResult =
         groupReader.search(
             GroupQuery.of(
@@ -182,7 +180,9 @@ public class GroupIT {
                                 p.size(5)
                                     .searchAfter(
                                         new Object[] {
-                                          instanceAfter.name(), instanceAfter.groupKey()
+                                          instanceAfter.name(),
+                                          instanceAfter.groupId(),
+                                          instanceAfter.groupKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
