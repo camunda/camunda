@@ -44,6 +44,7 @@ import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -89,6 +90,8 @@ public class LeaderRoleTest {
     when(context.getLog()).thenReturn(log);
 
     final ReceivableSnapshotStore persistedSnapshotStore = mock(ReceivableSnapshotStore.class);
+    when(persistedSnapshotStore.purgePendingSnapshots())
+        .thenReturn(CompletableActorFuture.completed(null));
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
     when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.ok());
     when(context.getStorage()).thenReturn(RaftStorage.builder().withMaxSegmentSize(1024).build());
@@ -269,6 +272,31 @@ public class LeaderRoleTest {
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
 
+    assertThat(caughtError.get()).isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
+  public void shouldCallOnCommitErrorWhenSteppingDown() throws InterruptedException {
+    // given
+    final AtomicReference<Throwable> caughtError = new AtomicReference<>();
+    final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AppendListener listener =
+        new AppendListener() {
+          @Override
+          public void onCommitError(final long index, final Throwable error) {
+
+            caughtError.set(error);
+            latch.countDown();
+          }
+        };
+    leaderRole.appendEntry(2, 3, data, listener);
+
+    // when
+    leaderRole.stop().join();
+
+    // then
+    assertThat(latch.await(100, TimeUnit.SECONDS)).isTrue();
     assertThat(caughtError.get()).isInstanceOf(RuntimeException.class);
   }
 
