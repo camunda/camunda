@@ -408,7 +408,7 @@ public class AuthCookieService {
       // In the header we have a series of values of the type a=b;c=d;d=e
       final String[] cookiePairs = headerString.split(";");
       for (final String cookiePair : cookiePairs) {
-        // We are looking for "foo" in something like X-Optimize-Authorization=foo
+        // We are looking for "foo" in something like X-Optimize-Authorization_bar=foo
         final Pattern pattern = Pattern.compile(OPTIMIZE_AUTHORIZATION_PREFIX + "\\d+=([^;]+)");
         final Matcher matcher = pattern.matcher(cookiePair);
         if (matcher.find()) {
