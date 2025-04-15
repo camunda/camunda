@@ -1382,12 +1382,12 @@ public class ElementAssertTest {
     @Test
     void shouldPassIfElementsAreCompletedInOrder() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
+      when(camundaDataSource.findElementInstances(any()))
           .thenReturn(
               Arrays.asList(
-                  newCompletedFlowNodeInstance("A"),
-                  newCompletedFlowNodeInstance("B"),
-                  newCompletedFlowNodeInstance("C")));
+                  newCompletedElementInstance("A"),
+                  newCompletedElementInstance("B"),
+                  newCompletedElementInstance("C")));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -1405,12 +1405,12 @@ public class ElementAssertTest {
     @Test
     void shouldPassIfElementsAreCompletedInOrderForTheSameInstance() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
+      when(camundaDataSource.findElementInstances(any()))
           .thenReturn(
               Arrays.asList(
-                  newCompletedFlowNodeInstance("A"),
-                  newCompletedFlowNodeInstance("A"),
-                  newCompletedFlowNodeInstance("A")));
+                  newCompletedElementInstance("A"),
+                  newCompletedElementInstance("A"),
+                  newCompletedElementInstance("A")));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -1424,13 +1424,13 @@ public class ElementAssertTest {
     @Test
     void shouldPassIfElementsAreCompletedInOrderMultipleTimes() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
+      when(camundaDataSource.findElementInstances(any()))
           .thenReturn(
               Arrays.asList(
-                  newCompletedFlowNodeInstance("A"),
-                  newCompletedFlowNodeInstance("A"),
-                  newCompletedFlowNodeInstance("B"),
-                  newCompletedFlowNodeInstance("A")));
+                  newCompletedElementInstance("A"),
+                  newCompletedElementInstance("A"),
+                  newCompletedElementInstance("B"),
+                  newCompletedElementInstance("A")));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -1443,12 +1443,12 @@ public class ElementAssertTest {
     @Test
     void shouldFailIfOneElementIsNotCompleted() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
+      when(camundaDataSource.findElementInstances(any()))
           .thenReturn(
               Arrays.asList(
-                  newCompletedFlowNodeInstance("A"),
-                  newCompletedFlowNodeInstance("B"),
-                  newActiveFlowNodeInstance("A")));
+                  newCompletedElementInstance("A"),
+                  newCompletedElementInstance("B"),
+                  newActiveElementInstance("A")));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -1468,12 +1468,12 @@ public class ElementAssertTest {
     @Test
     void shouldFailIfElementsAreCompletedInADifferentOrder() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
+      when(camundaDataSource.findElementInstances(any()))
           .thenReturn(
               Arrays.asList(
-                  newCompletedFlowNodeInstance("A"),
-                  newCompletedFlowNodeInstance("B"),
-                  newCompletedFlowNodeInstance("A")));
+                  newCompletedElementInstance("A"),
+                  newCompletedElementInstance("B"),
+                  newCompletedElementInstance("A")));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -1494,24 +1494,24 @@ public class ElementAssertTest {
     @Test
     void shouldWaitUntilAllElementsAreCompletedInOrder() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
+      when(camundaDataSource.findElementInstances(any()))
           .thenReturn(
               Arrays.asList(
-                  newCompletedFlowNodeInstance("A"),
-                  newCompletedFlowNodeInstance("B"),
-                  newActiveFlowNodeInstance("A")))
+                  newCompletedElementInstance("A"),
+                  newCompletedElementInstance("B"),
+                  newActiveElementInstance("A")))
           .thenReturn(
               Arrays.asList(
-                  newCompletedFlowNodeInstance("A"),
-                  newCompletedFlowNodeInstance("B"),
-                  newCompletedFlowNodeInstance("A")));
+                  newCompletedElementInstance("A"),
+                  newCompletedElementInstance("B"),
+                  newCompletedElementInstance("A")));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasCompletedElementsInOrder("A", "B", "A");
-      verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
+      verify(camundaDataSource, times(2)).findElementInstances(any());
     }
   }
 

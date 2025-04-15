@@ -27,7 +27,7 @@ public final class ProcessInstanceFilterMapper {
     // Prevent instantiation
   }
 
-  public static ProcessInstanceFilterFields from(ProcessInstanceFilter filter) {
+  public static ProcessInstanceFilterFields from(final ProcessInstanceFilter filter) {
     if (filter == null) {
       return null;
     }
@@ -49,7 +49,7 @@ public final class ProcessInstanceFilterMapper {
     target.setVariables(filter.getVariables());
     target.setProcessInstanceKey(filter.getProcessInstanceKey());
     target.setParentProcessInstanceKey(filter.getParentProcessInstanceKey());
-    target.setParentFlowNodeInstanceKey(filter.getParentFlowNodeInstanceKey());
+    target.setParentElementInstanceKey(filter.getParentElementInstanceKey());
 
     return target;
   }
