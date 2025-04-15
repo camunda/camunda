@@ -285,7 +285,7 @@ jobs:
           # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
           #
           echo 'CHANGELOG<<EOF' >> $GITHUB_OUTPUT
-          echo $changelog >> $GITHUB_OUTPUT
+          echo "$changelog" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
           # To show the changelog also as step summary
