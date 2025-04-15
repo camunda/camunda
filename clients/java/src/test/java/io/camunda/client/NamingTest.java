@@ -26,7 +26,7 @@ import com.tngtech.archunit.lang.ArchRule;
 @AnalyzeClasses(
     packages = "io.camunda.client",
     importOptions = ImportOption.DoNotIncludeTests.class)
-public class SearchNamingTest {
+public class NamingTest {
 
   @ArchTest
   public static final ArchRule RULE_CLIENT_API_METHODS_SHOULD_NOT_CONTAIN_QUERY =
@@ -45,4 +45,34 @@ public class SearchNamingTest {
           .should()
           .haveSimpleNameContaining("Query")
           .because("Client classes should use \"SearchRequest\" instead.");
+
+  @ArchTest
+  public static final ArchRule RULE_CLIENT_API_METHODS_SHOULD_NOT_CONTAIN_FLOW_NODE =
+      noMethods()
+          .that()
+          .areDeclaredIn(CamundaClient.class)
+          .should()
+          .haveNameContaining("flowNode")
+          .orShould()
+          .haveNameContaining("FlowNode")
+          .orShould()
+          .haveNameContaining("Flownode")
+          .orShould()
+          .haveNameContaining("flownode")
+          .because("Client API methods should use \"Element\" instead.");
+
+  @ArchTest
+  public static final ArchRule RULE_CLIENT_API_CLASSES_SHOULD_NOT_CONTAIN_FLOW_NODE =
+      noClasses()
+          .that()
+          .resideOutsideOfPackage("io.camunda.client.protocol.rest..")
+          .should()
+          .haveSimpleNameContaining("flowNode")
+          .orShould()
+          .haveSimpleNameContaining("FlowNode")
+          .orShould()
+          .haveSimpleNameContaining("Flownode")
+          .orShould()
+          .haveSimpleNameContaining("flownode")
+          .because("Client classes should use \"Element\" instead.");
 }
