@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+
 public interface BatchOperationExecutor {
 
-  void handle(long entityKey, long batchOperationKey);
+  void execute(long itemKey, PersistedBatchOperation batchOperation);
 }

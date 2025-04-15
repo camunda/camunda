@@ -89,7 +89,7 @@ public final class BatchOperationExecuteProcessor
     appendBatchOperationExecutionExecutingEvent(command.getValue(), Set.copyOf(entityKeys));
 
     final var handler = handlers.get(batchOperation.getBatchOperationType());
-    entityKeys.forEach(entityKey -> handler.handle(entityKey, batchKey));
+    entityKeys.forEach(entityKey -> handler.execute(entityKey, batchOperation));
 
     appendBatchOperationExecutionExecutedEvent(command.getValue(), Set.copyOf(entityKeys));
 

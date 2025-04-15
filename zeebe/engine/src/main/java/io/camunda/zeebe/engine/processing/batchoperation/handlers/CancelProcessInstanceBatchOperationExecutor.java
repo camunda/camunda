@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.slf4j.Logger;
@@ -24,12 +25,12 @@ public class CancelProcessInstanceBatchOperationExecutor implements BatchOperati
   }
 
   @Override
-  public void handle(final long processInstanceKey, final long batchOperationKey) {
-    LOGGER.info("Cancelling process instance with key '{}'", processInstanceKey);
+  public void execute(final long itemKey, final PersistedBatchOperation batchOperation) {
+    LOGGER.info("Cancelling process instance with key '{}'", itemKey);
 
     final var command = new ProcessInstanceRecord();
-    command.setProcessInstanceKey(processInstanceKey);
+    command.setProcessInstanceKey(itemKey);
     commandWriter.appendFollowUpCommand(
-        processInstanceKey, ProcessInstanceIntent.CANCEL, command, batchOperationKey);
+        itemKey, ProcessInstanceIntent.CANCEL, command, batchOperation.getKey());
   }
 }
