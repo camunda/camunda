@@ -88,7 +88,11 @@ public interface ZeebeProcessInstanceScriptFactory {
                 existingFlowNode.assigneeOperations = new ArrayList();
               }
               if (newFlowNode.assigneeOperations != null && !newFlowNode.assigneeOperations.isEmpty()) {
-                existingFlowNode.assigneeOperations.addAll(newFlowNode.assigneeOperations);
+                def newAssigneeOperations = newFlowNode.assigneeOperations.stream()
+                  .filter(Objects::nonNull)
+                  .filter(newOperation -> !existingFlowNode.assigneeOperations.contains(newOperation))
+                  .collect(Collectors.toList());
+                existingFlowNode.assigneeOperations.addAll(newAssigneeOperations);
               }
               if (isUserTaskImport) {
                 existingFlowNode.assignee = newFlowNode.assignee;
