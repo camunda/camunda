@@ -39,7 +39,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.HashSet;
@@ -65,7 +64,6 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   private final TypedRejectionWriter rejectionWriter;
   private final TypedCommandWriter commandWriter;
   private final DeploymentRecord cachedDeploymentRecordCommand = new DeploymentRecord();
-  private ProgressState progressState;
 
   public DeploymentReconstructProcessor(
       final KeyGenerator keyGenerator,
@@ -90,12 +88,12 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           "Deployments are already stored and don't need to be reconstructed");
       return;
     }
-    progressState = ProgressState.fromDeploymentRecord(record.getValue());
+    var progressState = ProgressState.fromDeploymentRecord(record.getValue());
 
     try {
       final var key = keyGenerator.nextKey();
 
-      final var resource = findNextResource();
+      final var resource = findNextResource(progressState);
       if (resource == null) {
         stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED_ALL, record.getValue());
         return;
@@ -127,12 +125,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     }
   }
 
-  @VisibleForTesting
-  ProgressState getProgressState() {
-    return progressState;
-  }
-
-  private Resource findNextResource() {
+  private Resource findNextResource(ProgressState progressState) {
     while (!(progressState instanceof Done)) {
       progressState =
           switch (progressState) {
