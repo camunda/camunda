@@ -1,10 +1,12 @@
 -------------------------------------------
 Access each component at the following urls:
 
-Operate:                     http://localhost:{{.ServerPort}}/operate
-Tasklist:                    http://localhost:{{.ServerPort}}/tasklist
-Zeebe Cluster Endpoint:      http://localhost:26500
-Inbound Connectors Endpoint: http://localhost:8085
+Camunda 8 API:      http://localhost:8080/v2/
+Inbound Connectors: http://localhost:8085/
+Operate API:        http://localhost:8081/
+Optimize API:       http://localhost:8083/
+Tasklist API:       http://localhost:8082/
+Zeebe API (gRPC):   http://localhost:26500/
 
 Camunda metrics endpoint:    http://localhost:9600/actuator/prometheus
 
