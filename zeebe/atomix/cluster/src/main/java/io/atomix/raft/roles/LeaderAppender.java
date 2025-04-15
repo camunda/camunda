@@ -19,6 +19,7 @@ package io.atomix.raft.roles;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.RaftException;
+import io.atomix.raft.RaftException.AppendFailureException;
 import io.atomix.raft.RaftException.CommitFailedException;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
@@ -1050,20 +1051,6 @@ final class LeaderAppender {
 
   void observeNonCommittedEntries(final long commitIndex) {
     metrics.observeNonCommittedEntries(raft.getLog().getLastIndex() - commitIndex);
-  }
-
-  static class AppendFailureException extends Throwable {
-
-    private final long index;
-
-    public AppendFailureException(final long index, final String message) {
-      super(message);
-      this.index = index;
-    }
-
-    public long getIndex() {
-      return index;
-    }
   }
 
   /** Timestamped completable future. */

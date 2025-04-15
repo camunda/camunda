@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.raft.RaftException.AppendFailureException;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.LogCompactor;
@@ -301,8 +302,8 @@ public class LeaderRoleTest {
     leaderRole.stop().join();
 
     // then
-    assertThat(latch.await(100, TimeUnit.SECONDS)).isTrue();
-    assertThat(caughtError.get()).isInstanceOf(RuntimeException.class);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    assertThat(caughtError.get()).isInstanceOf(AppendFailureException.class);
   }
 
   @Test

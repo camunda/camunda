@@ -21,6 +21,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
+import io.atomix.raft.RaftException.AppendFailureException;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
@@ -767,8 +768,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             }
           } else {
             long index = -1L;
-            if (commitError
-                instanceof final LeaderAppender.AppendFailureException appendFailureException) {
+            if (commitError instanceof final AppendFailureException appendFailureException) {
               index = appendFailureException.getIndex();
             }
             appendListener.onCommitError(index, commitError);
