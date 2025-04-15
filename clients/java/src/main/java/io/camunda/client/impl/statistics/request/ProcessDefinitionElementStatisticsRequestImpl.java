@@ -26,7 +26,6 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
 import io.camunda.client.impl.statistics.response.StatisticsResponseMapper;
-import io.camunda.client.protocol.rest.BaseProcessInstanceFilter;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import java.time.Duration;
@@ -77,7 +76,8 @@ public class ProcessDefinitionElementStatisticsRequestImpl
   @Override
   public ProcessDefinitionElementStatisticsRequest filter(
       final ProcessDefinitionStatisticsFilter value) {
-    final BaseProcessInstanceFilter filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -87,7 +87,8 @@ public class ProcessDefinitionElementStatisticsRequestImpl
       final Consumer<ProcessDefinitionStatisticsFilter> fn) {
     final ProcessDefinitionStatisticsFilter value = new ProcessDefinitionStatisticsFilterImpl();
     fn.accept(value);
-    final BaseProcessInstanceFilter filter = provideSearchRequestProperty(value);
+    final io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
