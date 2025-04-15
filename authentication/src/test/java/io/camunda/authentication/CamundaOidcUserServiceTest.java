@@ -14,6 +14,7 @@ import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.service.TenantServices.TenantDTO;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -66,7 +67,11 @@ public class CamundaOidcUserServiceTest {
                 Set.of(5L, 7L),
                 Set.of("test-id", "test-id-2"),
                 new AuthenticationContext(
-                    null, List.of(roleR1), List.of("*"), new ArrayList<>(), new ArrayList<>())));
+                    null,
+                    List.of(roleR1),
+                    List.of("*"),
+                    List.of(new TenantDTO(1L, "tenant-1", "Tenant One", "desc")),
+                    new ArrayList<>())));
 
     // when
     final OidcUser oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
@@ -81,7 +86,9 @@ public class CamundaOidcUserServiceTest {
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
     assertThat(authenticationContext.groups()).isEmpty();
-    assertThat(authenticationContext.tenants()).isEmpty();
+    assertThat(authenticationContext.tenants()).hasSize(1);
+    assertThat(authenticationContext.tenants().get(0).tenantId()).isEqualTo("tenant-1");
+
     assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
   }
 

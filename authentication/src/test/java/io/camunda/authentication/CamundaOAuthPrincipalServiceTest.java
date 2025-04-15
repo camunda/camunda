@@ -14,6 +14,7 @@ import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -99,5 +100,47 @@ public class CamundaOAuthPrincipalServiceTest {
     assertThat(authenticationContext.groups()).isEmpty();
     assertThat(authenticationContext.tenants()).isEmpty();
     assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
+  }
+
+  @Test
+  public void shouldLoadTenantsFromMappings() {
+    // given
+    final Map<String, Object> claims = Map.of("sub", "user@example.com");
+
+    final var mapping1 = new MappingEntity("map-1", 1L, "role", "R1", "role-r1");
+    final var mapping2 = new MappingEntity("map-2", 2L, "group", "G1", "group-g1");
+
+    when(mappingServices.getMatchingMappings(claims)).thenReturn(List.of(mapping1, mapping2));
+
+    final var tenantEntity1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
+    final var tenantEntity2 = new TenantEntity(200L, "t2", "Tenant Two", "Second Tenant");
+
+    when(tenantServices.getTenantsByMemberIds(Set.of("map-1", "map-2")))
+        .thenReturn(List.of(tenantEntity1, tenantEntity2));
+
+    final var roleR1 = new RoleEntity(10L, "Role R1");
+    when(roleServices.getRolesByMemberKeys(Set.of(1L, 2L))).thenReturn(List.of(roleR1));
+
+    when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "10")))
+        .thenReturn(List.of("app-1", "app-2"));
+
+    // when
+    final OAuthContext oAuthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
+
+    // then
+    assertThat(oAuthContext).isNotNull();
+    assertThat(oAuthContext.mappingKeys()).isEqualTo(Set.of(1L, 2L));
+    assertThat(oAuthContext.mappingIds()).isEqualTo(Set.of("map-1", "map-2"));
+
+    final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
+    assertThat(authenticationContext.username()).isEqualTo("user@example.com");
+    assertThat(authenticationContext.roles()).containsExactly(roleR1);
+    assertThat(authenticationContext.groups()).isEmpty();
+    assertThat(authenticationContext.tenants())
+        .containsExactlyInAnyOrder(
+            TenantServices.TenantDTO.fromEntity(tenantEntity1),
+            TenantServices.TenantDTO.fromEntity(tenantEntity2));
+    assertThat(authenticationContext.authorizedApplications())
+        .containsExactlyInAnyOrder("app-1", "app-2");
   }
 }

@@ -19,6 +19,7 @@ import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.entity.OAuthContext;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.auth.Authorization;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -99,6 +100,42 @@ class RequestMapperTest {
     assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "sub")).isEqualTo(sub1);
     assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "aud")).isEqualTo(aud1);
     assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "groups")).isEqualTo(List.of("g1", "g2"));
+  }
+
+  @Test
+  void tokenContainsTenantIdsInAuthenticationContext() {
+    // given
+    final var username = "test-user";
+    final var tenants =
+        List.of(
+            new TenantDTO(1L, "tenant-1", "Tenant One", "First"),
+            new TenantDTO(2L, "tenant-2", "Tenant Two", "Second"));
+    final var authenticationContext =
+        new AuthenticationContext(username, List.of(), List.of(), tenants, List.of());
+
+    final var principal =
+        new CamundaOidcUser(
+            new DefaultOidcUser(
+                Collections.emptyList(),
+                new OidcIdToken(
+                    "tokenValue",
+                    Instant.now(),
+                    Instant.now().plusSeconds(3600),
+                    Map.of("sub", username))),
+            Collections.emptySet(),
+            Collections.emptySet(),
+            authenticationContext);
+
+    final var auth = new OAuth2AuthenticationToken(principal, List.of(), "oidc");
+    SecurityContextHolder.getContext().setAuthentication(auth);
+
+    // when
+    final var authContext = RequestMapper.getAuthentication();
+
+    // then
+    assertThat(authContext.authenticatedTenantIds())
+        .containsExactlyInAnyOrder("tenant-1", "tenant-2");
+    assertThat(authContext.authenticatedUsername()).isEqualTo(username);
   }
 
   private void setJwtAuthenticationInContext(final String sub, final String aud) {
