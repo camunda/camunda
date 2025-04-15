@@ -75,7 +75,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "processDefinitionVersionTag": "v5",
             "processDefinitionKey": "789",
             "parentProcessInstanceKey": "333",
-            "parentFlowNodeInstanceKey": "777",
+            "parentElementInstanceKey": "777",
             "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
@@ -95,7 +95,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionVersionTag": "v5",
                   "processDefinitionKey": "789",
                   "parentProcessInstanceKey": "333",
-                  "parentFlowNodeInstanceKey": "777",
+                  "parentElementInstanceKey": "777",
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,
@@ -283,7 +283,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentFlowNodeInstanceKey, startDate, endDate, state, hasIncident, tenantId]",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentElementInstanceKey, startDate, endDate, state, hasIncident, tenantId]",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -457,7 +457,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         ops -> new ProcessInstanceFilter.Builder().parentProcessInstanceKeyOperations(ops).build());
     keyOperationTestCases(
         streamBuilder,
-        "parentFlowNodeInstanceKey",
+        "parentElementInstanceKey",
         ops ->
             new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeyOperations(ops).build());
     integerOperationTestCases(

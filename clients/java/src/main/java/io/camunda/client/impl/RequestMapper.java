@@ -23,7 +23,7 @@ import io.camunda.client.api.search.filter.AdHocSubprocessActivityRequestFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum;
+import io.camunda.client.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import java.util.ArrayList;
 import java.util.List;
@@ -282,15 +282,15 @@ public class RequestMapper {
         .collect(Collectors.toList());
   }
 
-  public static io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty
-      toProtocolObject(final FlowNodeInstanceStateFilterProperty object) {
+  public static io.camunda.client.protocol.rest.ElementInstanceStateFilterProperty toProtocolObject(
+      final ElementInstanceStateFilterProperty object) {
     if (object == null) {
       return null;
     }
 
-    final io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty protocolObject =
-        new io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty();
-    protocolObject.set$Eq(EnumUtil.convert(object.getEq(), FlowNodeInstanceStateEnum.class));
+    final io.camunda.client.protocol.rest.ElementInstanceStateFilterProperty protocolObject =
+        new io.camunda.client.protocol.rest.ElementInstanceStateFilterProperty();
+    protocolObject.set$Eq(EnumUtil.convert(object.getEq(), ElementInstanceStateEnum.class));
     protocolObject.set$Exists(object.getExists());
     if (object.getIn() == null) {
       protocolObject.set$In(null);
@@ -301,10 +301,10 @@ public class RequestMapper {
           .forEach(
               item ->
                   protocolObject.add$InItem(
-                      EnumUtil.convert(item, FlowNodeInstanceStateEnum.class)));
+                      EnumUtil.convert(item, ElementInstanceStateEnum.class)));
     }
     protocolObject.set$Like(object.getLike());
-    protocolObject.set$Neq(EnumUtil.convert(object.getNeq(), FlowNodeInstanceStateEnum.class));
+    protocolObject.set$Neq(EnumUtil.convert(object.getNeq(), ElementInstanceStateEnum.class));
 
     return protocolObject;
   }

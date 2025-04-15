@@ -28,15 +28,15 @@ public class ProcessInstanceStatisticsTest extends ClientRestTest {
   public static final long PROCESS_INSTANCE_KEY = 123L;
 
   @Test
-  void shouldGetProcessInstanceFlowNodeStatistics() {
+  void shouldGetProcessInstanceElementStatistics() {
     // when
-    client.newProcessInstanceFlowNodeStatisticsRequest(PROCESS_INSTANCE_KEY).send().join();
+    client.newProcessInstanceElementStatisticsRequest(PROCESS_INSTANCE_KEY).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getUrl())
         .isEqualTo(
-            "/v2/process-instances/" + PROCESS_INSTANCE_KEY + "/statistics/flownode-instances");
+            "/v2/process-instances/" + PROCESS_INSTANCE_KEY + "/statistics/element-instances");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
     assertThat(request.getBodyAsString()).isEmpty();
   }

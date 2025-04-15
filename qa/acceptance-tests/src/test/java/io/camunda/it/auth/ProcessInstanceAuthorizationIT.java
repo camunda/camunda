@@ -83,7 +83,7 @@ class ProcessInstanceAuthorizationIT {
     startProcessInstance(adminClient, PROCESS_ID_1);
     startProcessInstance(adminClient, PROCESS_ID_2);
 
-    waitForFlowNodeInstancesBeingExported(adminClient, 4);
+    waitForElementInstancesBeingExported(adminClient, 4);
   }
 
   @Test
@@ -127,13 +127,13 @@ class ProcessInstanceAuthorizationIT {
   }
 
   @Test
-  public void searchShouldReturnAuthorizedFlowNodeInstances(
+  public void searchShouldReturnAuthorizedElementInstances(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
     final long processDefinitionKey = getProcessDefinitionKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newFlownodeInstanceSearchRequest().send().join();
+    final var result = camundaClient.newElementInstanceSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().getFirst().getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
@@ -141,14 +141,13 @@ class ProcessInstanceAuthorizationIT {
   }
 
   @Test
-  void getByKeyShouldReturnAuthorizedFlowNodeInstance(
+  void getByKeyShouldReturnAuthorizedElementInstance(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
-    final var flowNodeInstanceKey = getAnyFlowNodeInstanceKey(adminClient, PROCESS_ID_1);
+    final var elementInstanceKey = getAnyElementInstanceKey(adminClient, PROCESS_ID_1);
     // when
-    final var result =
-        camundaClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
+    final var result = camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessDefinitionKey())
@@ -156,14 +155,14 @@ class ProcessInstanceAuthorizationIT {
   }
 
   @Test
-  void getByKeyShouldReturnForbiddenForUnauthorizedFlowNodeInstance(
+  void getByKeyShouldReturnForbiddenForUnauthorizedElementInstance(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
-    final var flowNodeInstanceKey = getAnyFlowNodeInstanceKey(adminClient, PROCESS_ID_2);
+    final var elementInstanceKey = getAnyElementInstanceKey(adminClient, PROCESS_ID_2);
     // when
     final Executable executeGet =
-        () -> camundaClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
+        () -> camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeGet);
     assertThat(problemException.code()).isEqualTo(403);
@@ -269,16 +268,15 @@ class ProcessInstanceAuthorizationIT {
         .getProcessInstanceKey();
   }
 
-  private long getAnyFlowNodeInstanceKey(
-      final CamundaClient camundaClient, final String processId) {
+  private long getAnyElementInstanceKey(final CamundaClient camundaClient, final String processId) {
     return camundaClient
-        .newFlownodeInstanceSearchRequest()
+        .newElementInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
         .send()
         .join()
         .items()
         .getFirst()
-        .getFlowNodeInstanceKey();
+        .getElementInstanceKey();
   }
 
   private long getAnyIncidentKey(final CamundaClient camundaClient, final String processId) {
@@ -323,14 +321,14 @@ class ProcessInstanceAuthorizationIT {
     camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
 
-  private static void waitForFlowNodeInstancesBeingExported(
+  private static void waitForElementInstancesBeingExported(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newFlownodeInstanceSearchRequest().send().join().items())
+                assertThat(camundaClient.newElementInstanceSearchRequest().send().join().items())
                     .hasSize(expectedCount));
   }
 }

@@ -15,7 +15,7 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider;
+import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
@@ -43,14 +43,14 @@ public class ProcessCache {
   public static final String NAMESPACE = "camunda.gateway.rest.cache";
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
   private final LoadingCache<Long, ProcessCacheItem> cache;
-  private final ProcessFlowNodeProvider processFlowNodeProvider;
+  private final ProcessElementProvider processElementProvider;
 
   public ProcessCache(
       final GatewayRestConfiguration configuration,
-      final ProcessFlowNodeProvider processFlowNodeProvider,
+      final ProcessElementProvider processElementProvider,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry) {
-    this.processFlowNodeProvider = processFlowNodeProvider;
+    this.processElementProvider = processElementProvider;
     final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry);
     final var cacheBuilder =
         Caffeine.newBuilder()
@@ -79,18 +79,18 @@ public class ProcessCache {
   }
 
   public String getUserTaskName(final UserTaskEntity userTask) {
-    return getCacheItem(userTask.processDefinitionKey()).getFlowNodeName(userTask.elementId());
+    return getCacheItem(userTask.processDefinitionKey()).getElementName(userTask.elementId());
   }
 
-  public Map<Long, ProcessCacheItem> getFlowNodeNames(final List<FlowNodeInstanceEntity> items) {
+  public Map<Long, ProcessCacheItem> getElementNames(final List<FlowNodeInstanceEntity> items) {
     return getCacheItems(
         items.stream()
             .map(FlowNodeInstanceEntity::processDefinitionKey)
             .collect(Collectors.toSet()));
   }
 
-  public String getFlowNodeName(final FlowNodeInstanceEntity flowNode) {
-    return getCacheItem(flowNode.processDefinitionKey()).getFlowNodeName(flowNode.flowNodeId());
+  public String getElementName(final FlowNodeInstanceEntity element) {
+    return getCacheItem(element.processDefinitionKey()).getElementName(element.flowNodeId());
   }
 
   public void invalidate() {
@@ -102,20 +102,20 @@ public class ProcessCache {
 
     @Override
     public ProcessCacheItem load(final Long processDefinitionKey) {
-      final var flowNodes = new HashMap<String, String>();
-      processFlowNodeProvider.extractFlowNodeNames(
-          processDefinitionKey, (pdKey, node) -> flowNodes.put(node.id(), node.name()));
-      return new ProcessCacheItem(Collections.unmodifiableMap(flowNodes));
+      final var elements = new HashMap<String, String>();
+      processElementProvider.extractElementNames(
+          processDefinitionKey, (pdKey, node) -> elements.put(node.id(), node.name()));
+      return new ProcessCacheItem(Collections.unmodifiableMap(elements));
     }
 
     @Override
     public Map<Long, ProcessCacheItem> loadAll(final Set<? extends Long> processDefinitionKeys) {
       final var processMap = new HashMap<Long, Map<String, String>>();
-      processFlowNodeProvider.extractFlowNodeNames(
+      processElementProvider.extractElementNames(
           (Set<Long>) processDefinitionKeys,
-          (pdKey, flowNode) -> {
-            final var flowNodeMap = processMap.computeIfAbsent(pdKey, key -> new HashMap<>());
-            flowNodeMap.put(flowNode.id(), flowNode.name());
+          (pdKey, element) -> {
+            final var elementMap = processMap.computeIfAbsent(pdKey, key -> new HashMap<>());
+            elementMap.put(element.id(), element.name());
           });
       return processMap.entrySet().stream()
           .collect(

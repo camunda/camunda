@@ -15,8 +15,8 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -129,22 +129,23 @@ public class ProcessDefinitionController {
     }
   }
 
-  @CamundaPostMapping(path = "/{processDefinitionKey}/statistics/flownode-instances")
-  public ResponseEntity<ProcessDefinitionFlowNodeStatisticsQueryResult> flowNodeStatistics(
+  @CamundaPostMapping(path = "/{processDefinitionKey}/statistics/element-instances")
+  public ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
       @PathVariable("processDefinitionKey") final long processDefinitionKey,
-      @RequestBody(required = false) final ProcessDefinitionFlowNodeStatisticsQuery query) {
+      @RequestBody(required = false) final ProcessDefinitionElementStatisticsQuery query) {
     return SearchQueryRequestMapper.toProcessDefinitionStatisticsQuery(processDefinitionKey, query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::flowNodeStatistics);
+        .fold(RestErrorMapper::mapProblemToResponse, this::elementStatistics);
   }
 
-  private ResponseEntity<ProcessDefinitionFlowNodeStatisticsQueryResult> flowNodeStatistics(
+  private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     try {
       final var result =
           processDefinitionServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .flowNodeStatistics(filter);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toProcessFlowNodeStatisticsResult(result));
+              .elementStatistics(filter);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toProcessDefinitionElementStatisticsResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

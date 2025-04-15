@@ -16,7 +16,7 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
-import io.camunda.client.impl.statistics.response.ProcessFlowNodeStatisticsImpl;
+import io.camunda.client.impl.statistics.response.ProcessElementStatisticsImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -72,15 +72,15 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceFlowNodeStatisticsRequest(processInstanceKey).send().join();
+        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
 
     // then
     assertThat(actual).hasSize(2);
 
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -93,14 +93,14 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceFlowNodeStatisticsRequest(processInstanceKey).send().join();
+        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
 
     // then
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("UserTask", 1L, 0L, 0L, 0L),
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("UserTask", 1L, 0L, 0L, 0L),
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -125,14 +125,14 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceFlowNodeStatisticsRequest(processInstanceKey).send().join();
+        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
 
     // then
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("ScriptTask", 0L, 0L, 1L, 0L),
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 1L, 0L),
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -157,14 +157,14 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceFlowNodeStatisticsRequest(processInstanceKey).send().join();
+        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
 
     // then
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("UserTask", 0L, 1L, 0L, 0L),
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("UserTask", 0L, 1L, 0L, 0L),
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -194,14 +194,14 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceFlowNodeStatisticsRequest(processInstanceKey).send().join();
+        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
 
     // then
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("UserTaskMultiInstance", 3L, 0L, 0L, 0L),
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("UserTaskMultiInstance", 3L, 0L, 0L, 0L),
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
   }
 
   private static DeploymentEvent deployResource(

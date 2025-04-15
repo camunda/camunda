@@ -15,21 +15,21 @@
  */
 package io.camunda.client.impl.search.filter;
 
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
-import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
+import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
-import io.camunda.client.impl.search.filter.builder.FlowNodeInstanceStatePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.ElementInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
@@ -152,16 +152,16 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey) {
-    parentFlowNodeInstanceKey(b -> b.eq(parentFlowNodeInstanceKey));
+  public ProcessInstanceFilter parentElementInstanceKey(final Long parentElementInstanceKey) {
+    parentElementInstanceKey(b -> b.eq(parentElementInstanceKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn) {
+  public ProcessInstanceFilter parentElementInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setParentFlowNodeInstanceKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setParentElementInstanceKey(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -281,39 +281,39 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter flowNodeId(final String flowNodeId) {
-    flowNodeId(b -> b.eq(flowNodeId));
+  public ProcessInstanceFilter elementId(final String elementId) {
+    elementId(b -> b.eq(elementId));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn) {
+  public ProcessInstanceFilter elementId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setFlowNodeId(RequestMapper.toProtocolObject(property.build()));
+    filter.setElementId(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter flowNodeInstanceState(
-      final FlowNodeInstanceState flowNodeInstanceState) {
-    flowNodeInstanceState(b -> b.eq(flowNodeInstanceState));
+  public ProcessInstanceFilter elementInstanceState(
+      final ElementInstanceState elementInstanceState) {
+    elementInstanceState(b -> b.eq(elementInstanceState));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter flowNodeInstanceState(
-      final Consumer<FlowNodeInstanceStateProperty> fn) {
-    final FlowNodeInstanceStateProperty property = new FlowNodeInstanceStatePropertyImpl();
+  public ProcessInstanceFilter elementInstanceState(
+      final Consumer<ElementInstanceStateProperty> fn) {
+    final ElementInstanceStateProperty property = new ElementInstanceStatePropertyImpl();
     fn.accept(property);
-    filter.setFlowNodeInstanceState(RequestMapper.toProtocolObject(property.build()));
+    filter.setElementInstanceState(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter hasFlowNodeInstanceIncident(
-      final Boolean hasFlowNodeInstanceIncident) {
-    filter.hasFlowNodeInstanceIncident(hasFlowNodeInstanceIncident);
+  public ProcessInstanceFilter hasElementInstanceIncident(
+      final Boolean hasElementInstanceIncident) {
+    filter.hasElementInstanceIncident(hasElementInstanceIncident);
     return this;
   }
 

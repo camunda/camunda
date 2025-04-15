@@ -19,7 +19,7 @@ import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
-import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
@@ -29,7 +29,7 @@ import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
-import io.camunda.client.api.search.sort.FlownodeInstanceSort;
+import io.camunda.client.api.search.sort.ElementInstanceSort;
 import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
@@ -39,7 +39,7 @@ import io.camunda.client.impl.search.filter.AdHocSubprocessActivityFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
-import io.camunda.client.impl.search.filter.FlownodeInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.ElementInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
@@ -50,7 +50,7 @@ import io.camunda.client.impl.search.request.SearchRequestPageImpl;
 import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
-import io.camunda.client.impl.search.sort.FlownodeInstanceSortImpl;
+import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
 import io.camunda.client.impl.search.sort.IncidentSortImpl;
 import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
@@ -236,23 +236,23 @@ public final class SearchRequestBuilders {
     return new DecisionInstanceSortImpl();
   }
 
-  public static FlownodeInstanceFilter flowNodeInstanceFilter() {
-    return new FlownodeInstanceFilterImpl();
+  public static ElementInstanceFilter elementInstanceFilter() {
+    return new ElementInstanceFilterImpl();
   }
 
-  public static FlownodeInstanceFilter flowNodeInstanceFilter(
-      final Consumer<FlownodeInstanceFilter> fn) {
-    final FlownodeInstanceFilter filter = flowNodeInstanceFilter();
+  public static ElementInstanceFilter elementInstanceFilter(
+      final Consumer<ElementInstanceFilter> fn) {
+    final ElementInstanceFilter filter = elementInstanceFilter();
     fn.accept(filter);
     return filter;
   }
 
-  public static FlownodeInstanceSort flowNodeInstanceSort() {
-    return new FlownodeInstanceSortImpl();
+  public static ElementInstanceSort elementInstanceSort() {
+    return new ElementInstanceSortImpl();
   }
 
-  public static FlownodeInstanceSort flowNodeInstanceSort(final Consumer<FlownodeInstanceSort> fn) {
-    final FlownodeInstanceSort sort = flowNodeInstanceSort();
+  public static ElementInstanceSort elementInstanceSort(final Consumer<ElementInstanceSort> fn) {
+    final ElementInstanceSort sort = elementInstanceSort();
     fn.accept(sort);
     return sort;
   }

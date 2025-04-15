@@ -11,8 +11,8 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeActivatingRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeCompletedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementActivatingRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getIncidentRecord;
@@ -201,30 +201,30 @@ class RdbmsExporterIT {
   }
 
   @Test
-  public void shouldExportFlowNode() {
+  public void shouldExportElement() {
     // given
-    final var flowNodeRecord = getFlowNodeActivatingRecord(1L);
+    final var elementRecord = getElementActivatingRecord(1L);
 
     // when
-    exporter.export(flowNodeRecord);
+    exporter.export(elementRecord);
 
     // then
-    final var key = flowNodeRecord.getKey();
-    final var flowNode = rdbmsService.getFlowNodeInstanceReader().findOne(key);
-    assertThat(flowNode).isNotEmpty();
+    final var key = elementRecord.getKey();
+    final var element = rdbmsService.getFlowNodeInstanceReader().findOne(key);
+    assertThat(element).isNotEmpty();
 
     // given
-    final var flowNodeCompleteRecord = getFlowNodeCompletedRecord(1L, key);
+    final var elementCompleteRecord = getElementCompletedRecord(1L, key);
 
     // when
-    exporter.export(flowNodeCompleteRecord);
+    exporter.export(elementCompleteRecord);
 
     // then
-    final var completedFlowNode = rdbmsService.getFlowNodeInstanceReader().findOne(key);
-    assertThat(completedFlowNode).isNotEmpty();
-    assertThat(completedFlowNode.get().state()).isEqualTo(FlowNodeState.COMPLETED);
+    final var completedElement = rdbmsService.getFlowNodeInstanceReader().findOne(key);
+    assertThat(completedElement).isNotEmpty();
+    assertThat(completedElement.get().state()).isEqualTo(FlowNodeState.COMPLETED);
     // Default tree path
-    assertThat(completedFlowNode.get().treePath()).isEqualTo("1/2");
+    assertThat(completedElement.get().treePath()).isEqualTo("1/2");
   }
 
   @Test
@@ -518,22 +518,22 @@ class RdbmsExporterIT {
     final var processInstanceKey =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     exporter.export(processInstanceRecord);
-    final var flowNodeRecord = getFlowNodeActivatingRecord(1L, processInstanceKey);
-    final var flowNodeInstanceKey = flowNodeRecord.getKey();
-    exporter.export(flowNodeRecord);
+    final var elementRecord = getElementActivatingRecord(1L, processInstanceKey);
+    final var elementInstanceKey = elementRecord.getKey();
+    exporter.export(elementRecord);
 
     // when
     final var incidentKey = 42L;
     final var incidentRecord =
         getIncidentRecord(
-            IncidentIntent.CREATED, incidentKey, processInstanceKey, flowNodeInstanceKey);
+            IncidentIntent.CREATED, incidentKey, processInstanceKey, elementInstanceKey);
     exporter.export(incidentRecord);
 
     // then
-    final var flowNode = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
-    assertThat(flowNode).isNotEmpty();
-    assertThat(flowNode.get().incidentKey()).isEqualTo(incidentKey);
-    assertThat(flowNode.get().hasIncident()).isTrue();
+    final var element = rdbmsService.getFlowNodeInstanceReader().findOne(elementInstanceKey);
+    assertThat(element).isNotEmpty();
+    assertThat(element.get().incidentKey()).isEqualTo(incidentKey);
+    assertThat(element.get().hasIncident()).isTrue();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
     assertThat(processInstance).isNotEmpty();
     assertThat(processInstance.get().hasIncident()).isTrue();
@@ -545,16 +545,16 @@ class RdbmsExporterIT {
     // given
     final var incidentResolvedRecord =
         getIncidentRecord(
-            IncidentIntent.RESOLVED, incidentKey, processInstanceKey, flowNodeInstanceKey);
+            IncidentIntent.RESOLVED, incidentKey, processInstanceKey, elementInstanceKey);
 
     // when
     exporter.export(incidentResolvedRecord);
 
     // then
-    final var flowNode2 = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
-    assertThat(flowNode2).isNotEmpty();
-    assertThat(flowNode2.get().incidentKey()).isNull();
-    assertThat(flowNode2.get().hasIncident()).isFalse();
+    final var element2 = rdbmsService.getFlowNodeInstanceReader().findOne(elementInstanceKey);
+    assertThat(element2).isNotEmpty();
+    assertThat(element2.get().incidentKey()).isNull();
+    assertThat(element2.get().hasIncident()).isFalse();
     final var processInstance2 =
         rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
     assertThat(processInstance2).isNotEmpty();

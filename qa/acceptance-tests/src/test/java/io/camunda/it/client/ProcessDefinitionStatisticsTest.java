@@ -18,7 +18,7 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.api.statistics.response.ProcessFlowNodeStatistics;
+import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -69,8 +69,7 @@ public class ProcessDefinitionStatisticsTest {
   @Test
   void shouldGetEmptyStatisticsWithoutMatch() {
     // when
-    final var actual =
-        camundaClient.newProcessDefinitionFlowNodeStatisticsRequest(1L).send().join();
+    final var actual = camundaClient.newProcessDefinitionElementStatisticsRequest(1L).send().join();
 
     // then
     assertThat(actual).hasSize(0);
@@ -88,7 +87,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.processInstanceKey(pi1.getProcessInstanceKey()))
             .send()
             .join();
@@ -111,7 +110,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(
                 f ->
                     f.processInstanceKey(
@@ -136,7 +135,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.tenantId(b -> b.like("*def*")))
             .send()
             .join();
@@ -160,7 +159,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(
                 f ->
                     f.startDate(
@@ -189,7 +188,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.startDate(b -> b.gte(startDate).lte(startDate)))
             .send()
             .join();
@@ -218,7 +217,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.endDate(b -> b.exists(true)))
             .send()
             .join();
@@ -247,7 +246,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.endDate(b -> b.exists(false)))
             .send()
             .join();
@@ -277,7 +276,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.state(ACTIVE))
             .send()
             .join();
@@ -315,7 +314,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.state(ACTIVE))
             .send()
             .join();
@@ -344,7 +343,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.state(b -> b.neq(ACTIVE)))
             .send()
             .join();
@@ -367,7 +366,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .send()
             .join();
 
@@ -387,7 +386,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .send()
             .join();
 
@@ -421,7 +420,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.hasIncident(true))
             .send()
             .join();
@@ -452,7 +451,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .send()
             .join();
 
@@ -462,13 +461,13 @@ public class ProcessDefinitionStatisticsTest {
   }
 
   private static void assertStatistics(
-      final ProcessFlowNodeStatistics statistics,
-      final String flowNodeId,
+      final ProcessElementStatistics statistics,
+      final String elementId,
       final long active,
       final long canceled,
       final long completed,
       final long incidents) {
-    assertThat(statistics.getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(statistics.getElementId()).isEqualTo(elementId);
     assertThat(statistics.getActive()).isEqualTo(active);
     assertThat(statistics.getCanceled()).isEqualTo(canceled);
     assertThat(statistics.getCompleted()).isEqualTo(completed);

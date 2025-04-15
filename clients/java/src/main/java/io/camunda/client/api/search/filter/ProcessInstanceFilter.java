@@ -15,11 +15,11 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
-import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
+import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
@@ -86,13 +86,13 @@ public interface ProcessInstanceFilter extends ProcessInstanceFilterBase {
   @Override
   ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn);
 
-  /** Filter by parentFlowNodeInstanceKey */
+  /** Filter by parentElementInstanceKey */
   @Override
-  ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
+  ProcessInstanceFilter parentElementInstanceKey(final Long parentElementInstanceKey);
 
-  /** Filter by parentFlowNodeInstanceKey using {@link BasicLongProperty} consumer */
+  /** Filter by parentElementInstanceKey using {@link BasicLongProperty} consumer */
   @Override
-  ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn);
+  ProcessInstanceFilter parentElementInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by startDate */
   @Override
@@ -159,25 +159,25 @@ public interface ProcessInstanceFilter extends ProcessInstanceFilterBase {
   @Override
   ProcessInstanceFilter hasRetriesLeft(final Boolean hasRetriesLeft);
 
-  /** Filter by flowNodeId */
+  /** Filter by elementId */
   @Override
-  ProcessInstanceFilter flowNodeId(final String flowNodeId);
+  ProcessInstanceFilter elementId(final String elementId);
 
-  /** Filter by flowNodeId using {@link StringProperty} */
+  /** Filter by elementId using {@link StringProperty} */
   @Override
-  ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn);
+  ProcessInstanceFilter elementId(final Consumer<StringProperty> fn);
 
   /** Filter by state */
   @Override
-  ProcessInstanceFilter flowNodeInstanceState(final FlowNodeInstanceState state);
+  ProcessInstanceFilter elementInstanceState(final ElementInstanceState state);
 
-  /** Filter by flowNodeInstanceState using {@link FlowNodeInstanceStateProperty} */
+  /** Filter by elementInstanceState using {@link ElementInstanceStateProperty} */
   @Override
-  ProcessInstanceFilter flowNodeInstanceState(final Consumer<FlowNodeInstanceStateProperty> fn);
+  ProcessInstanceFilter elementInstanceState(final Consumer<ElementInstanceStateProperty> fn);
 
-  /** Filter by hasFlowNodeInstanceIncident */
+  /** Filter by hasElementInstanceIncident */
   @Override
-  ProcessInstanceFilter hasFlowNodeInstanceIncident(final Boolean hasFlowNodeInstanceIncident);
+  ProcessInstanceFilter hasElementInstanceIncident(final Boolean hasElementInstanceIncident);
 
   /** Filter by incidentErrorHashCode */
   @Override

@@ -137,6 +137,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
                 "processDefinitionKey": "123"
             }""";
+    final var expectedResponse =
+        """
+            {
+              "processDefinitionKey":"123",
+              "processDefinitionId":"bpmnProcessId",
+              "processDefinitionVersion":-1,
+              "processInstanceKey":"123",
+              "tenantId":"<default>"
+            }""";
 
     // when / then
     webClient
@@ -151,15 +160,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(
-            """
-{
-   "processDefinitionKey":"123",
-   "processDefinitionId":"bpmnProcessId",
-   "processDefinitionVersion":-1,
-   "processInstanceKey":"123",
-   "tenantId":"<default>"
-}""");
+        .json(expectedResponse);
 
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -1342,11 +1343,11 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  public void shouldGetFlowNodeStatistics() {
+  public void shouldGetElementStatistics() {
     // given
     final long processInstanceKey = 1L;
     final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
-    when(processInstanceServices.flowNodeStatistics(processInstanceKey)).thenReturn(stats);
+    when(processInstanceServices.elementStatistics(processInstanceKey)).thenReturn(stats);
     final var request =
         """
             {
@@ -1358,7 +1359,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {"items":[
               {
-                "flowNodeId": "node1",
+                "elementId": "node1",
                 "active": 1,
                 "canceled": 1,
                 "incidents": 1,
@@ -1370,7 +1371,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     webClient
         .get()
         .uri(
-            "%s/%d/statistics/flownode-instances"
+            "%s/%d/statistics/element-instances"
                 .formatted(PROCESS_INSTANCES_START_URL, processInstanceKey))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
@@ -1381,7 +1382,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(response);
 
-    verify(processInstanceServices).flowNodeStatistics(processInstanceKey);
+    verify(processInstanceServices).elementStatistics(processInstanceKey);
   }
 
   @Test

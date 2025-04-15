@@ -32,9 +32,9 @@ public interface Incident {
 
   String getErrorMessage();
 
-  String getFlowNodeId();
+  String getElementId();
 
-  Long getFlowNodeInstanceKey();
+  Long getElementInstanceKey();
 
   String getCreationTime();
 

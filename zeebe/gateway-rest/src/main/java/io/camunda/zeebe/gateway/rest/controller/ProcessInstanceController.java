@@ -105,16 +105,16 @@ public class ProcessInstanceController {
     }
   }
 
-  @CamundaGetMapping(path = "/{processInstanceKey}/statistics/flownode-instances")
-  public ResponseEntity<Object> flowNodeStatistics(
+  @CamundaGetMapping(path = "/{processInstanceKey}/statistics/element-instances")
+  public ResponseEntity<Object> elementStatistics(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
     try {
       return ResponseEntity.ok()
           .body(
-              SearchQueryResponseMapper.toProcessFlowNodeStatisticsResult(
+              SearchQueryResponseMapper.toProcessInstanceElementStatisticsResult(
                   processInstanceServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .flowNodeStatistics(processInstanceKey)));
+                      .elementStatistics(processInstanceKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

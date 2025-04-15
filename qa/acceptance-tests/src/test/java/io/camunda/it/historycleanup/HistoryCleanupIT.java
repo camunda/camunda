@@ -9,7 +9,7 @@ package io.camunda.it.historycleanup;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForFlowNodeInstances;
+import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceIsEnded;
@@ -44,7 +44,7 @@ public class HistoryCleanupIT {
         camundaClient, "PROCESS_WITH_USER_TASK_PRE_ASSIGNED", "{\"variable\":\"bud2\"}");
     // await them
     waitForProcessInstancesToStart(camundaClient, 2);
-    waitForFlowNodeInstances(camundaClient, 4);
+    waitForElementInstances(camundaClient, 4);
 
     // when we complete the user task of one instance
     final UserTask userTask =

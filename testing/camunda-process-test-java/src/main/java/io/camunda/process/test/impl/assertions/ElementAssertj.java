@@ -19,9 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
-import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,32 +46,32 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
   public void hasActiveElements(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
-    hasElementsInState(processInstanceKey, elementSelectors, FlowNodeInstanceState.ACTIVE);
+    hasElementsInState(processInstanceKey, elementSelectors, ElementInstanceState.ACTIVE);
   }
 
   public void hasCompletedElements(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
-    hasElementsInState(processInstanceKey, elementSelectors, FlowNodeInstanceState.COMPLETED);
+    hasElementsInState(processInstanceKey, elementSelectors, ElementInstanceState.COMPLETED);
   }
 
   public void hasTerminatedElements(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
-    hasElementsInState(processInstanceKey, elementSelectors, FlowNodeInstanceState.TERMINATED);
+    hasElementsInState(processInstanceKey, elementSelectors, ElementInstanceState.TERMINATED);
   }
 
   private void hasElementsInState(
       final long processInstanceKey,
       final List<ElementSelector> elementSelectors,
-      final FlowNodeInstanceState expectedState) {
+      final ElementInstanceState expectedState) {
 
-    awaitFlowNodeInstanceAssertion(
-        flowNodeInstanceFilter(processInstanceKey, elementSelectors),
-        flowNodeInstances -> {
-          final List<FlowNodeInstance> flowNodeInstancesInState =
-              getInstancesInState(flowNodeInstances, expectedState);
+    awaitElementInstanceAssertion(
+        elementInstanceFilter(processInstanceKey, elementSelectors),
+        elementInstances -> {
+          final List<ElementInstance> elementInstancesInState =
+              getInstancesInState(elementInstances, expectedState);
 
           final List<ElementSelector> selectorsNotMatched =
-              getSelectorsWithoutInstances(elementSelectors, flowNodeInstancesInState);
+              getSelectorsWithoutInstances(elementSelectors, elementInstancesInState);
 
           assertThat(selectorsNotMatched)
               .withFailMessage(
@@ -80,7 +80,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
                   formatState(expectedState),
                   formatElementSelectors(elementSelectors),
                   formatState(expectedState),
-                  formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances))
+                  formatElementInstanceStates(selectorsNotMatched, elementInstances))
               .isEmpty();
         });
   }
@@ -90,7 +90,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
       final ElementSelector elementSelector,
       final int expectedTimes) {
     hasElementInState(
-        processInstanceKey, elementSelector, FlowNodeInstanceState.ACTIVE, expectedTimes);
+        processInstanceKey, elementSelector, ElementInstanceState.ACTIVE, expectedTimes);
   }
 
   public void hasCompletedElement(
@@ -98,7 +98,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
       final ElementSelector elementSelector,
       final int expectedTimes) {
     hasElementInState(
-        processInstanceKey, elementSelector, FlowNodeInstanceState.COMPLETED, expectedTimes);
+        processInstanceKey, elementSelector, ElementInstanceState.COMPLETED, expectedTimes);
   }
 
   public void hasTerminatedElement(
@@ -106,24 +106,26 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
       final ElementSelector elementSelector,
       final int expectedTimes) {
     hasElementInState(
-        processInstanceKey, elementSelector, FlowNodeInstanceState.TERMINATED, expectedTimes);
+        processInstanceKey, elementSelector, ElementInstanceState.TERMINATED, expectedTimes);
   }
 
   private void hasElementInState(
       final long processInstanceKey,
       final ElementSelector elementSelector,
-      final FlowNodeInstanceState expectedState,
+      final ElementInstanceState expectedState,
       final int expectedTimes) {
 
     if (expectedTimes < 0) {
       throw new IllegalArgumentException("The amount must be greater than or equal to zero.");
     }
 
-    awaitFlowNodeInstanceAssertion(
-        flowNodeInstanceFilter(processInstanceKey, Collections.singletonList(elementSelector)),
-        flowNodeInstances -> {
-          final List<FlowNodeInstance> elementInstances =
-              flowNodeInstances.stream().filter(elementSelector::test).collect(Collectors.toList());
+    awaitElementInstanceAssertion(
+        elementInstanceFilter(processInstanceKey, Collections.singletonList(elementSelector)),
+        elementInstancesUnfiltered -> {
+          final List<ElementInstance> elementInstances =
+              elementInstancesUnfiltered.stream()
+                  .filter(elementSelector::test)
+                  .collect(Collectors.toList());
 
           final long actualTimes = getInstancesInState(elementInstances, expectedState).size();
 
@@ -137,7 +139,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
                   actualTimes,
                   elementInstances.isEmpty()
                       ? "<None>"
-                      : formatFlowNodeInstanceStates(
+                      : formatElementInstanceStates(
                           elementInstances, elementInstance -> elementSelector.describe()))
               .isEqualTo(expectedTimes);
         });
@@ -146,41 +148,41 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
   public void hasNotActivatedElements(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
 
-    final List<FlowNodeInstance> flowNodeInstances =
-        dataSource.findFlowNodeInstances(
-            flowNodeInstanceFilter(processInstanceKey, elementSelectors));
+    final List<ElementInstance> elementInstances =
+        dataSource.findElementInstances(
+            elementInstanceFilter(processInstanceKey, elementSelectors));
 
     final List<ElementSelector> activatedElements =
-        getSelectorsWithInstances(elementSelectors, flowNodeInstances);
+        getSelectorsWithInstances(elementSelectors, elementInstances);
 
     assertThat(activatedElements)
         .withFailMessage(
             "%s should have not activated elements %s but the following elements were activated:\n%s",
             actual,
             formatElementSelectors(elementSelectors),
-            formatFlowNodeInstanceStates(activatedElements, flowNodeInstances))
+            formatElementInstanceStates(activatedElements, elementInstances))
         .isEmpty();
   }
 
   public void hasNoActiveElements(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
 
-    final Consumer<FlownodeInstanceFilter> flowNodeInstanceFilter =
-        flowNodeInstanceFilter(processInstanceKey, elementSelectors)
-            .andThen(filter -> filter.state(FlowNodeInstanceState.ACTIVE));
+    final Consumer<ElementInstanceFilter> elementInstanceFilter =
+        elementInstanceFilter(processInstanceKey, elementSelectors)
+            .andThen(filter -> filter.state(ElementInstanceState.ACTIVE));
 
-    awaitFlowNodeInstanceAssertion(
-        flowNodeInstanceFilter,
-        flowNodeInstances -> {
+    awaitElementInstanceAssertion(
+        elementInstanceFilter,
+        elementInstances -> {
           final List<ElementSelector> selectorsWithActiveElements =
-              getSelectorsWithInstances(elementSelectors, flowNodeInstances);
+              getSelectorsWithInstances(elementSelectors, elementInstances);
 
           assertThat(selectorsWithActiveElements)
               .withFailMessage(
                   "%s should have no active elements %s but the following elements were active:\n%s",
                   actual,
                   formatElementSelectors(elementSelectors),
-                  formatFlowNodeInstanceStates(selectorsWithActiveElements, flowNodeInstances))
+                  formatElementInstanceStates(selectorsWithActiveElements, elementInstances))
               .isEmpty();
         });
   }
@@ -188,21 +190,21 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
   public void hasActiveElementsExactly(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
 
-    awaitFlowNodeInstanceAssertion(
+    awaitElementInstanceAssertion(
         processInstanceFilter(processInstanceKey),
-        flowNodeInstances -> {
-          final List<FlowNodeInstance> activeFlowNodeInstances =
-              getInstancesInState(flowNodeInstances, FlowNodeInstanceState.ACTIVE);
+        elementInstances -> {
+          final List<ElementInstance> activeElementInstances =
+              getInstancesInState(elementInstances, ElementInstanceState.ACTIVE);
 
           final List<ElementSelector> selectorsNotMatched =
-              getSelectorsWithoutInstances(elementSelectors, activeFlowNodeInstances);
+              getSelectorsWithoutInstances(elementSelectors, activeElementInstances);
 
-          final List<FlowNodeInstance> otherActiveElements =
-              activeFlowNodeInstances.stream()
+          final List<ElementInstance> otherActiveElements =
+              activeElementInstances.stream()
                   .filter(
-                      flowNodeInstance ->
+                      elementInstance ->
                           elementSelectors.stream()
-                              .noneMatch(selector -> selector.test(flowNodeInstance)))
+                              .noneMatch(selector -> selector.test(elementInstance)))
                   .collect(Collectors.toList());
 
           final List<String> failureMessages = new ArrayList<>();
@@ -212,7 +214,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
                     "%s should have active elements %s but the following elements were not active:\n%s",
                     actual,
                     formatElementSelectors(elementSelectors),
-                    formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances)));
+                    formatElementInstanceStates(selectorsNotMatched, elementInstances)));
           }
           if (!otherActiveElements.isEmpty()) {
             failureMessages.add(
@@ -220,8 +222,8 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
                     "%s should have no active elements except %s but the following elements were active:\n%s",
                     actual,
                     formatElementSelectors(elementSelectors),
-                    formatFlowNodeInstanceStates(
-                        otherActiveElements, FlowNodeInstance::getFlowNodeId)));
+                    formatElementInstanceStates(
+                        otherActiveElements, ElementInstance::getElementId)));
           }
           final String combinedFailureMessage = String.join("\n\n", failureMessages);
 
@@ -233,24 +235,23 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
   public void hasCompletedElementsInOrder(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
 
-    awaitFlowNodeInstanceAssertion(
+    awaitElementInstanceAssertion(
         processInstanceFilter(processInstanceKey),
-        flowNodeInstances -> {
-          final List<FlowNodeInstance> relevantFlowNodeInstances =
-              getInstancesInState(flowNodeInstances, FlowNodeInstanceState.COMPLETED).stream()
+        elementInstances -> {
+          final List<ElementInstance> relevantElementInstances =
+              getInstancesInState(elementInstances, ElementInstanceState.COMPLETED).stream()
                   .filter(i -> elementSelectors.stream().anyMatch(e -> e.test(i)))
                   .collect(Collectors.toList());
 
-          // Loop over flowNodeInstances and check if the order is correct. With each iteration,
-          // remove the first element of the flow node instance list and call isSequenceFound() to
+          // Loop over elementInstances and check if the order is correct. With each iteration,
+          // remove the first element of the element instance list and call isSequenceFound() to
           // with the remaining list.
           // This ensures we pass with instances 'A, B, A' for selectors 'B, A'.
           final boolean sequenceFound =
-              IntStream.rangeClosed(0, relevantFlowNodeInstances.size() - elementSelectors.size())
+              IntStream.rangeClosed(0, relevantElementInstances.size() - elementSelectors.size())
                   .mapToObj(
                       index ->
-                          relevantFlowNodeInstances.subList(
-                              index, relevantFlowNodeInstances.size()))
+                          relevantElementInstances.subList(index, relevantElementInstances.size()))
                   .anyMatch(sublist -> containsSequence(sublist, elementSelectors));
 
           if (!sequenceFound) {
@@ -259,26 +260,25 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
                     "%s should have completed elements %s in order, but only the following elements were completed:\n%s",
                     actual,
                     formatElementSelectors(elementSelectors),
-                    formatFlowNodeInstanceStates(
-                        relevantFlowNodeInstances, FlowNodeInstance::getFlowNodeId)));
+                    formatElementInstanceStates(
+                        relevantElementInstances, ElementInstance::getElementId)));
           }
         });
   }
 
   private static boolean containsSequence(
-      final List<FlowNodeInstance> flowNodeInstances,
-      final List<ElementSelector> elementSelectors) {
+      final List<ElementInstance> elementInstances, final List<ElementSelector> elementSelectors) {
     for (int i = 0; i < elementSelectors.size(); i++) {
-      if (!elementSelectors.get(i).test(flowNodeInstances.get(i))) {
+      if (!elementSelectors.get(i).test(elementInstances.get(i))) {
         return false;
       }
     }
     return true;
   }
 
-  private void awaitFlowNodeInstanceAssertion(
-      final Consumer<FlownodeInstanceFilter> filter,
-      final Consumer<List<FlowNodeInstance>> assertion) {
+  private void awaitElementInstanceAssertion(
+      final Consumer<ElementInstanceFilter> filter,
+      final Consumer<List<ElementInstance>> assertion) {
     // If await() times out, the exception doesn't contain the assertion error. Use a reference to
     // store the error's failure message.
     final AtomicReference<String> failureMessage = new AtomicReference<>("?");
@@ -286,10 +286,10 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
       Awaitility.await()
           .ignoreException(ClientException.class)
           .untilAsserted(
-              () -> dataSource.findFlowNodeInstances(filter),
-              flowNodeInstances -> {
+              () -> dataSource.findElementInstances(filter),
+              elementInstances -> {
                 try {
-                  assertion.accept(flowNodeInstances);
+                  assertion.accept(elementInstances);
                 } catch (final AssertionError e) {
                   failureMessage.set(e.getMessage());
                   throw e;
@@ -301,71 +301,68 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
     }
   }
 
-  private static List<FlowNodeInstance> getInstancesInState(
-      final List<FlowNodeInstance> flowNodeInstances, final FlowNodeInstanceState state) {
-    return flowNodeInstances.stream()
-        .filter(flowNodeInstance -> flowNodeInstance.getState().equals(state))
+  private static List<ElementInstance> getInstancesInState(
+      final List<ElementInstance> elementInstances, final ElementInstanceState state) {
+    return elementInstances.stream()
+        .filter(elementInstance -> elementInstance.getState().equals(state))
         .collect(Collectors.toList());
   }
 
   private static List<ElementSelector> getSelectorsWithoutInstances(
-      final List<ElementSelector> elementSelectors,
-      final List<FlowNodeInstance> flowNodeInstances) {
+      final List<ElementSelector> elementSelectors, final List<ElementInstance> elementInstances) {
     return elementSelectors.stream()
-        .filter(elementSelector -> flowNodeInstances.stream().noneMatch(elementSelector::test))
+        .filter(elementSelector -> elementInstances.stream().noneMatch(elementSelector::test))
         .collect(Collectors.toList());
   }
 
   private static List<ElementSelector> getSelectorsWithInstances(
-      final List<ElementSelector> elementSelectors,
-      final List<FlowNodeInstance> flowNodeInstances) {
+      final List<ElementSelector> elementSelectors, final List<ElementInstance> elementInstances) {
     return elementSelectors.stream()
-        .filter(elementSelector -> flowNodeInstances.stream().anyMatch(elementSelector::test))
+        .filter(elementSelector -> elementInstances.stream().anyMatch(elementSelector::test))
         .collect(Collectors.toList());
   }
 
-  private static String formatFlowNodeInstanceStates(
-      final List<ElementSelector> elementSelectors,
-      final List<FlowNodeInstance> flowNodeInstances) {
+  private static String formatElementInstanceStates(
+      final List<ElementSelector> elementSelectors, final List<ElementInstance> elementInstances) {
 
     return elementSelectors.stream()
         .map(
             elementSelector -> {
-              final FlowNodeInstanceState flowNodeInstanceState =
-                  getFlowNodeInstanceStateForSelector(flowNodeInstances, elementSelector);
+              final ElementInstanceState elementInstanceState =
+                  getElementInstanceStateForSelector(elementInstances, elementSelector);
 
               return String.format(
-                  "\t- '%s': %s", elementSelector.describe(), formatState(flowNodeInstanceState));
+                  "\t- '%s': %s", elementSelector.describe(), formatState(elementInstanceState));
             })
         .collect(Collectors.joining("\n"));
   }
 
-  private static FlowNodeInstanceState getFlowNodeInstanceStateForSelector(
-      final List<FlowNodeInstance> flowNodeInstances, final ElementSelector elementSelector) {
+  private static ElementInstanceState getElementInstanceStateForSelector(
+      final List<ElementInstance> elementInstances, final ElementSelector elementSelector) {
 
-    return flowNodeInstances.stream()
+    return elementInstances.stream()
         .filter(elementSelector::test)
         .findFirst()
-        .map(FlowNodeInstance::getState)
-        .orElse(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
+        .map(ElementInstance::getState)
+        .orElse(ElementInstanceState.UNKNOWN_ENUM_VALUE);
   }
 
-  private static String formatFlowNodeInstanceStates(
-      final List<FlowNodeInstance> flowNodeInstances,
-      final Function<FlowNodeInstance, String> flowNodeDescriptor) {
+  private static String formatElementInstanceStates(
+      final List<ElementInstance> elementInstances,
+      final Function<ElementInstance, String> elementDescriptor) {
 
-    return flowNodeInstances.stream()
+    return elementInstances.stream()
         .map(
-            flowNodeInstance ->
+            elementInstance ->
                 String.format(
                     "\t- '%s': %s",
-                    flowNodeDescriptor.apply(flowNodeInstance),
-                    formatState(flowNodeInstance.getState())))
+                    elementDescriptor.apply(elementInstance),
+                    formatState(elementInstance.getState())))
         .collect(Collectors.joining("\n"));
   }
 
-  private static String formatState(final FlowNodeInstanceState state) {
-    if (state == null || state == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
+  private static String formatState(final ElementInstanceState state) {
+    if (state == null || state == ElementInstanceState.UNKNOWN_ENUM_VALUE) {
       return "not activated";
     } else {
       return state.name().toLowerCase();
@@ -378,12 +375,12 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
     return AssertFormatUtil.formatNames(selectorList);
   }
 
-  private static Consumer<FlownodeInstanceFilter> processInstanceFilter(
+  private static Consumer<ElementInstanceFilter> processInstanceFilter(
       final long processInstanceKey) {
     return filter -> filter.processInstanceKey(processInstanceKey);
   }
 
-  private static Consumer<FlownodeInstanceFilter> flowNodeInstanceFilter(
+  private static Consumer<ElementInstanceFilter> elementInstanceFilter(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
     return elementSelectors.size() == 1
         ? processInstanceFilter(processInstanceKey).andThen(elementSelectors.get(0)::applyFilter)

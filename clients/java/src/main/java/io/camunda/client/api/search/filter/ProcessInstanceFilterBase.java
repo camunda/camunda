@@ -15,11 +15,11 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
-import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
+import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
@@ -73,11 +73,11 @@ public interface ProcessInstanceFilterBase extends SearchRequestFilter {
   /** Filter by parentProcessInstanceKey using {@link BasicLongProperty} consumer */
   ProcessInstanceFilterBase parentProcessInstanceKey(final Consumer<BasicLongProperty> fn);
 
-  /** Filter by parentFlowNodeInstanceKey */
-  ProcessInstanceFilterBase parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
+  /** Filter by parentElementInstanceKey */
+  ProcessInstanceFilterBase parentElementInstanceKey(final Long parentElementInstanceKey);
 
-  /** Filter by parentFlowNodeInstanceKey using {@link BasicLongProperty} consumer */
-  ProcessInstanceFilterBase parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn);
+  /** Filter by parentElementInstanceKey using {@link BasicLongProperty} consumer */
+  ProcessInstanceFilterBase parentElementInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by startDate */
   ProcessInstanceFilterBase startDate(final OffsetDateTime startDate);
@@ -128,20 +128,20 @@ public interface ProcessInstanceFilterBase extends SearchRequestFilter {
   /** Filter by hasRetriesLeft */
   ProcessInstanceFilterBase hasRetriesLeft(final Boolean hasRetriesLeft);
 
-  /** Filter by flowNodeId */
-  ProcessInstanceFilterBase flowNodeId(final String flowNodeId);
+  /** Filter by elementId */
+  ProcessInstanceFilterBase elementId(final String elementId);
 
-  /** Filter by flowNodeId using {@link StringProperty} */
-  ProcessInstanceFilterBase flowNodeId(final Consumer<StringProperty> fn);
+  /** Filter by elementId using {@link StringProperty} */
+  ProcessInstanceFilterBase elementId(final Consumer<StringProperty> fn);
 
   /** Filter by state */
-  ProcessInstanceFilterBase flowNodeInstanceState(final FlowNodeInstanceState state);
+  ProcessInstanceFilterBase elementInstanceState(final ElementInstanceState state);
 
-  /** Filter by flowNodeInstanceState using {@link FlowNodeInstanceStateProperty} */
-  ProcessInstanceFilterBase flowNodeInstanceState(final Consumer<FlowNodeInstanceStateProperty> fn);
+  /** Filter by elementInstanceState using {@link ElementInstanceStateProperty} */
+  ProcessInstanceFilterBase elementInstanceState(final Consumer<ElementInstanceStateProperty> fn);
 
-  /** Filter by hasFlowNodeInstanceIncident */
-  ProcessInstanceFilterBase hasFlowNodeInstanceIncident(final Boolean hasFlowNodeInstanceIncident);
+  /** Filter by hasElementInstanceIncident */
+  ProcessInstanceFilterBase hasElementInstanceIncident(final Boolean hasElementInstanceIncident);
 
   /** Filter by incidentErrorHashCode */
   ProcessInstanceFilterBase incidentErrorHashCode(final Integer incidentErrorHashCode);

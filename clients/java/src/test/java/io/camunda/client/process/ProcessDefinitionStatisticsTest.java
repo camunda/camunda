@@ -23,7 +23,7 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.protocol.rest.BaseProcessInstanceFilter;
 import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import io.camunda.client.protocol.rest.DateTimeFilterProperty;
-import io.camunda.client.protocol.rest.ProcessDefinitionFlowNodeStatisticsQuery;
+import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.protocol.rest.StringFilterProperty;
@@ -40,21 +40,21 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
   public static final long PROCESS_DEFINITION_KEY = 123L;
 
   @Test
-  void shouldGetProcessDefinitionFlowNodeStatistics() {
+  void shouldGetProcessDefinitionElementStatistics() {
     // when
-    client.newProcessDefinitionFlowNodeStatisticsRequest(PROCESS_DEFINITION_KEY).send().join();
+    client.newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl())
         .isEqualTo(
-            "/v2/process-definitions/" + PROCESS_DEFINITION_KEY + "/statistics/flownode-instances");
+            "/v2/process-definitions/" + PROCESS_DEFINITION_KEY + "/statistics/element-instances");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
     assertThat(request.getBodyAsString()).isEqualTo("{}");
   }
 
   @Test
-  void shouldGetProcessDefinitionFlowNodeStatisticsWithFullFilters() {
+  void shouldGetProcessDefinitionElementStatisticsWithFullFilters() {
     // when
     final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
     final OffsetDateTime endDate = OffsetDateTime.now();
@@ -70,12 +70,12 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
                 .name("n2")
                 .value(new StringFilterProperty().$eq("v2")));
     client
-        .newProcessDefinitionFlowNodeStatisticsRequest(PROCESS_DEFINITION_KEY)
+        .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(
             f ->
                 f.processInstanceKey(PROCESS_DEFINITION_KEY)
                     .parentProcessInstanceKey(25L)
-                    .parentFlowNodeInstanceKey(30L)
+                    .parentElementInstanceKey(30L)
                     .startDate(startDate)
                     .endDate(endDate)
                     .state(ProcessInstanceState.ACTIVE)
@@ -86,14 +86,14 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery query =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery query =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = query.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getProcessInstanceKey().get$Eq())
         .isEqualTo(String.valueOf(PROCESS_DEFINITION_KEY));
     assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo("25");
-    assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo("30");
+    assertThat(filter.getParentElementInstanceKey().get$Eq()).isEqualTo("30");
     assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
     assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
     assertThat(filter.getState().get$Eq()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
@@ -103,17 +103,17 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
   }
 
   @Test
-  void shouldGetProcessDefinitionFlowNodeStatisticsByProcessInstanceKeyLongFilter() {
+  void shouldGetProcessDefinitionElementStatisticsByProcessInstanceKeyLongFilter() {
     // when
     client
-        .newProcessDefinitionFlowNodeStatisticsRequest(PROCESS_DEFINITION_KEY)
+        .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
         .send()
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
@@ -122,17 +122,17 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
   }
 
   @Test
-  void shouldGetProcessDefinitionFlowNodeStatisticsByTenantIdStringFilter() {
+  void shouldGetProcessDefinitionElementStatisticsByTenantIdStringFilter() {
     // when
     client
-        .newProcessDefinitionFlowNodeStatisticsRequest(PROCESS_DEFINITION_KEY)
+        .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(f -> f.tenantId(b -> b.like("string")))
         .send()
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final StringFilterProperty tenantId = filter.getTenantId();
@@ -141,18 +141,18 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
   }
 
   @Test
-  void shouldGetProcessDefinitionFlowNodeStatisticsByStartDateDateTimeFilter() {
+  void shouldGetProcessDefinitionElementStatisticsByStartDateDateTimeFilter() {
     // when
     final OffsetDateTime now = OffsetDateTime.now();
     client
-        .newProcessDefinitionFlowNodeStatisticsRequest(PROCESS_DEFINITION_KEY)
+        .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(f -> f.startDate(b -> b.gt(now)))
         .send()
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final DateTimeFilterProperty startDate = filter.getStartDate();
@@ -177,14 +177,14 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
 
     // when
     client
-        .newProcessDefinitionFlowNodeStatisticsRequest(PROCESS_DEFINITION_KEY)
+        .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(f -> f.variables(variablesMap))
         .send()
         .join();
 
     // then
-    final ProcessDefinitionFlowNodeStatisticsQuery request =
-        gatewayService.getLastRequest(ProcessDefinitionFlowNodeStatisticsQuery.class);
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final BaseProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getVariables()).isEqualTo(variables);

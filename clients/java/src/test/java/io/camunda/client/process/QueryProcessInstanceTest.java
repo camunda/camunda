@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
@@ -85,7 +85,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .processDefinitionVersionTag("v7")
                     .processDefinitionKey(15L)
                     .parentProcessInstanceKey(25L)
-                    .parentFlowNodeInstanceKey(30L)
+                    .parentElementInstanceKey(30L)
                     .startDate(startDate)
                     .endDate(endDate)
                     .state(ACTIVE)
@@ -94,9 +94,9 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .variables(variablesMap)
                     .errorMessage("Error message")
                     .hasRetriesLeft(true)
-                    .flowNodeId("flowNodeId")
-                    .flowNodeInstanceState(FlowNodeInstanceState.ACTIVE)
-                    .hasFlowNodeInstanceIncident(true)
+                    .elementId("elementId")
+                    .elementInstanceState(ElementInstanceState.ACTIVE)
+                    .hasElementInstanceIncident(true)
                     .incidentErrorHashCode(123456789))
         .send()
         .join();
@@ -112,7 +112,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionVersionTag().get$Eq()).isEqualTo("v7");
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("15");
     assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo("25");
-    assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo("30");
+    assertThat(filter.getParentElementInstanceKey().get$Eq()).isEqualTo("30");
     assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
     assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
     assertThat(filter.getState().get$Eq())
@@ -122,10 +122,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getVariables()).isEqualTo(variables);
     assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
     assertThat(filter.getHasRetriesLeft()).isEqualTo(true);
-    assertThat(filter.getFlowNodeId().get$Eq()).isEqualTo("flowNodeId");
-    assertThat(filter.getFlowNodeInstanceState().get$Eq())
-        .isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
-    assertThat(filter.getHasFlowNodeInstanceIncident()).isEqualTo(true);
+    assertThat(filter.getElementId().get$Eq()).isEqualTo("elementId");
+    assertThat(filter.getElementInstanceState().get$Eq())
+        .isEqualTo(ElementInstanceStateEnum.ACTIVE);
+    assertThat(filter.getHasElementInstanceIncident()).isEqualTo(true);
     assertThat(filter.getIncidentErrorHashCode()).isEqualTo(123456789);
   }
 
@@ -249,7 +249,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .desc()
                     .parentProcessInstanceKey()
                     .asc()
-                    .parentFlowNodeInstanceKey()
+                    .parentElementInstanceKey()
                     .asc()
                     .startDate()
                     .asc()
@@ -278,7 +278,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertSort(sorts.get(4), "processDefinitionVersionTag", SortOrderEnum.DESC);
     assertSort(sorts.get(5), "processDefinitionKey", SortOrderEnum.DESC);
     assertSort(sorts.get(6), "parentProcessInstanceKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(7), "parentFlowNodeInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(7), "parentElementInstanceKey", SortOrderEnum.ASC);
     assertSort(sorts.get(8), "startDate", SortOrderEnum.ASC);
     assertSort(sorts.get(9), "endDate", SortOrderEnum.ASC);
     assertSort(sorts.get(10), "state", SortOrderEnum.ASC);

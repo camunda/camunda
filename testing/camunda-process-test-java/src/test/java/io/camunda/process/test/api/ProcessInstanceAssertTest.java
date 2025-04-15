@@ -25,11 +25,11 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.utils.FlowNodeInstanceBuilder;
+import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.VariableBuilder;
 import java.time.Duration;
@@ -569,8 +569,8 @@ public class ProcessInstanceAssertTest {
   @Nested
   class FluentAssertions {
 
-    private final FlowNodeInstance activeFlowNodeInstance =
-        FlowNodeInstanceBuilder.newActiveFlowNodeInstance("A", PROCESS_INSTANCE_KEY);
+    private final ElementInstance activeElementInstance =
+        ElementInstanceBuilder.newActiveElementInstance("A", PROCESS_INSTANCE_KEY);
 
     private final Variable variable = VariableBuilder.newVariable("x", "1").build();
 
@@ -585,8 +585,8 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertStateAndElements() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
-          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(activeElementInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -611,8 +611,8 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertElementsAndState() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
-          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(activeElementInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -637,8 +637,8 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertElementsAndVariables() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
-          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(activeElementInstance));
 
       when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variable));
@@ -653,8 +653,8 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertVariablesAndElements() {
       // given
-      when(camundaDataSource.findFlowNodeInstances(any()))
-          .thenReturn(Collections.singletonList(activeFlowNodeInstance));
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(activeElementInstance));
 
       when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variable));
