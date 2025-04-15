@@ -38,6 +38,6 @@ public class JsonMapperConfiguration {
     if (objectMapper == null) {
       return new CamundaObjectMapper();
     }
-    return new CamundaObjectMapper(objectMapper);
+    return new CamundaObjectMapper(objectMapper.copy());
   }
 }
