@@ -766,7 +766,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               appendListener.onCommit(commitIndex, committedPosition);
             }
           } else {
-            final var index = (commitIndex != null) ? commitIndex : committedPosition;
+            long index = -1L;
+            if (commitError
+                instanceof final LeaderAppender.AppendFailureException appendFailureException) {
+              index = appendFailureException.getIndex();
+            }
             appendListener.onCommitError(index, commitError);
             // replicating the entry will be retried on the next append request
             log.error("Failed to replicate entry: {}", commitIndex, commitError);

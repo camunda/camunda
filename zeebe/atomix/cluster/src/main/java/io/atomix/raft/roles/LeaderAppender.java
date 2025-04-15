@@ -858,10 +858,10 @@ final class LeaderAppender {
     open = false;
     metrics.close();
     completeCommits(raft.getCommitIndex());
-    appendFutures
-        .values()
-        .forEach(
-            future -> future.completeExceptionally(new IllegalStateException("Inactive state")));
+    appendFutures.forEach(
+        (index, future) ->
+            future.completeExceptionally(
+                new AppendFailureException(index, "Leader stepping down")));
     heartbeatFutures.forEach(
         future ->
             future.completeExceptionally(
@@ -1050,6 +1050,20 @@ final class LeaderAppender {
 
   void observeNonCommittedEntries(final long commitIndex) {
     metrics.observeNonCommittedEntries(raft.getLog().getLastIndex() - commitIndex);
+  }
+
+  static class AppendFailureException extends Throwable {
+
+    private final long index;
+
+    public AppendFailureException(final long index, final String message) {
+      super(message);
+      this.index = index;
+    }
+
+    public long getIndex() {
+      return index;
+    }
   }
 
   /** Timestamped completable future. */
