@@ -549,4 +549,26 @@ public class DeploymentRejectionTest {
         .hasValueType(ValueType.DEPLOYMENT)
         .hasIntent(DeploymentIntent.CREATED);
   }
+
+  @Test
+  public void shouldRejectDeploymentOnDuplicatedExtensions() {
+    // given
+    final String resource = "/processes/invalid_user_task_extensions.bpmn";
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlClasspathResource(resource).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Element: Activity_1cq8igv")
+        .contains(
+            "ERROR: Must have exactly one 'zeebe:userTask' extension element when exists. "
+                + "Please check process definition XML and retain only one extension element.");
+  }
 }
