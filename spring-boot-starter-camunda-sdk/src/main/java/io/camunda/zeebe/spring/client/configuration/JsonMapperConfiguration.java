@@ -39,7 +39,7 @@ public class JsonMapperConfiguration {
     if (objectMapper == null) {
       return new ZeebeObjectMapper();
     }
-    return new ZeebeObjectMapper(objectMapper);
+    return new ZeebeObjectMapper(objectMapper.copy());
   }
 
   @Bean(name = "commonJsonMapper")
@@ -48,6 +48,6 @@ public class JsonMapperConfiguration {
     if (objectMapper == null) {
       return new SdkObjectMapper();
     }
-    return new SdkObjectMapper(objectMapper);
+    return new SdkObjectMapper(objectMapper.copy());
   }
 }
