@@ -944,6 +944,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case GROUP_KEY -> builder.groupKey();
+        case GROUP_ID -> builder.groupId();
         case NAME -> builder.name();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
