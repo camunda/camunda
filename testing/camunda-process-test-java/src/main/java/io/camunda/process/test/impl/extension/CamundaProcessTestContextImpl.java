@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.extension;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
@@ -111,5 +112,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public void increaseTime(final Duration timeToAdd) {
     camundaManagementClient.increaseTime(timeToAdd);
+  }
+
+  @Override
+  public JobWorkerMock mockJobWorker(final String jobId) {
+    final CamundaClient client = createClient();
+    return new JobWorkerMock(jobId, client);
   }
 }
