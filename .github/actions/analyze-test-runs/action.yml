@@ -57,8 +57,7 @@ runs:
         # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
         {
           echo 'FLAKY_TESTS<<EOF'
-            # echo ${flakyTests[*]}
-            echo $flakyTests
+          echo "$flakyTests"
           echo EOF
         } >> $GITHUB_OUTPUT
 
