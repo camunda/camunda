@@ -32,117 +32,117 @@ import java.util.function.Consumer;
 public interface ProcessInstanceFilterBase extends SearchRequestFilter {
 
   /** Filter by processInstanceKey */
-  ProcessInstanceFilter processInstanceKey(final Long processInstanceKey);
+  ProcessInstanceFilterBase processInstanceKey(final Long processInstanceKey);
 
   /** Filter by processInstanceKey using {@link BasicLongProperty} consumer */
-  ProcessInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
+  ProcessInstanceFilterBase processInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by processDefinitionId */
-  ProcessInstanceFilter processDefinitionId(final String processDefinitionId);
+  ProcessInstanceFilterBase processDefinitionId(final String processDefinitionId);
 
   /** Filter by processDefinitionId using {@link StringProperty} */
-  ProcessInstanceFilter processDefinitionId(final Consumer<StringProperty> fn);
+  ProcessInstanceFilterBase processDefinitionId(final Consumer<StringProperty> fn);
 
   /** Filter by processDefinitionName */
-  ProcessInstanceFilter processDefinitionName(final String processDefinitionName);
+  ProcessInstanceFilterBase processDefinitionName(final String processDefinitionName);
 
   /** Filter by processDefinitionName using {@link StringProperty} consumer */
-  ProcessInstanceFilter processDefinitionName(final Consumer<StringProperty> fn);
+  ProcessInstanceFilterBase processDefinitionName(final Consumer<StringProperty> fn);
 
   /** Filter by processDefinitionVersion */
-  ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion);
+  ProcessInstanceFilterBase processDefinitionVersion(final Integer processDefinitionVersion);
 
   /** Filter by processDefinitionVersion using {@link IntegerProperty} consumer */
-  ProcessInstanceFilter processDefinitionVersion(final Consumer<IntegerProperty> fn);
+  ProcessInstanceFilterBase processDefinitionVersion(final Consumer<IntegerProperty> fn);
 
   /** Filter by processDefinitionVersionTag */
-  ProcessInstanceFilter processDefinitionVersionTag(final String processDefinitionVersionTag);
+  ProcessInstanceFilterBase processDefinitionVersionTag(final String processDefinitionVersionTag);
 
   /** Filter by processDefinitionVersionTag using {@link StringProperty} consumer */
-  ProcessInstanceFilter processDefinitionVersionTag(final Consumer<StringProperty> fn);
+  ProcessInstanceFilterBase processDefinitionVersionTag(final Consumer<StringProperty> fn);
 
   /** Filter by processDefinitionKey */
-  ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
+  ProcessInstanceFilterBase processDefinitionKey(final Long processDefinitionKey);
 
   /** Filter by processDefinitionKey using {@link BasicLongProperty} consumer */
-  ProcessInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn);
+  ProcessInstanceFilterBase processDefinitionKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by parentProcessInstanceKey */
-  ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
+  ProcessInstanceFilterBase parentProcessInstanceKey(final Long parentProcessInstanceKey);
 
   /** Filter by parentProcessInstanceKey using {@link BasicLongProperty} consumer */
-  ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn);
+  ProcessInstanceFilterBase parentProcessInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by parentFlowNodeInstanceKey */
-  ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
+  ProcessInstanceFilterBase parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
 
   /** Filter by parentFlowNodeInstanceKey using {@link BasicLongProperty} consumer */
-  ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn);
+  ProcessInstanceFilterBase parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by startDate */
-  ProcessInstanceFilter startDate(final OffsetDateTime startDate);
+  ProcessInstanceFilterBase startDate(final OffsetDateTime startDate);
 
   /** Filter by startDate using {@link DateTimeProperty} consumer */
-  ProcessInstanceFilter startDate(final Consumer<DateTimeProperty> fn);
+  ProcessInstanceFilterBase startDate(final Consumer<DateTimeProperty> fn);
 
   /** Filter by endDate */
-  ProcessInstanceFilter endDate(final OffsetDateTime endDate);
+  ProcessInstanceFilterBase endDate(final OffsetDateTime endDate);
 
   /** Filter by endDate using {@link DateTimeProperty} consumer */
-  ProcessInstanceFilter endDate(final Consumer<DateTimeProperty> fn);
+  ProcessInstanceFilterBase endDate(final Consumer<DateTimeProperty> fn);
 
   /** Filter by state */
-  ProcessInstanceFilter state(final ProcessInstanceState state);
+  ProcessInstanceFilterBase state(final ProcessInstanceState state);
 
   /** Filter by state using {@link ProcessInstanceStateProperty} consumer */
-  ProcessInstanceFilter state(final Consumer<ProcessInstanceStateProperty> fn);
+  ProcessInstanceFilterBase state(final Consumer<ProcessInstanceStateProperty> fn);
 
   /** Filter by hasIncident */
-  ProcessInstanceFilter hasIncident(final Boolean hasIncident);
+  ProcessInstanceFilterBase hasIncident(final Boolean hasIncident);
 
   /** Filter by tenantId */
-  ProcessInstanceFilter tenantId(final String tenantId);
+  ProcessInstanceFilterBase tenantId(final String tenantId);
 
   /** Filter by tenantId using {@link StringProperty} consumer */
-  ProcessInstanceFilter tenantId(final Consumer<StringProperty> fn);
+  ProcessInstanceFilterBase tenantId(final Consumer<StringProperty> fn);
 
   /** Filter by variables */
-  ProcessInstanceFilter variables(
+  ProcessInstanceFilterBase variables(
       final List<ProcessInstanceVariableFilterRequest> variableValueFilters);
 
   /** Filter by variables map */
-  ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters);
+  ProcessInstanceFilterBase variables(final Map<String, Object> variableValueFilters);
 
   /** Filter by batchOperationId */
-  ProcessInstanceFilter batchOperationId(final String batchOperationId);
+  ProcessInstanceFilterBase batchOperationId(final String batchOperationId);
 
   /** Filter by batchOperationId using {@link StringProperty} */
-  ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn);
+  ProcessInstanceFilterBase batchOperationId(final Consumer<StringProperty> fn);
 
   /** Filter by error message */
-  ProcessInstanceFilter errorMessage(final String errorMessage);
+  ProcessInstanceFilterBase errorMessage(final String errorMessage);
 
   /** Filter by error message using {@link StringProperty} consumer */
-  ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn);
+  ProcessInstanceFilterBase errorMessage(final Consumer<StringProperty> fn);
 
   /** Filter by hasRetriesLeft */
-  ProcessInstanceFilter hasRetriesLeft(final Boolean hasRetriesLeft);
+  ProcessInstanceFilterBase hasRetriesLeft(final Boolean hasRetriesLeft);
 
   /** Filter by flowNodeId */
-  ProcessInstanceFilter flowNodeId(final String flowNodeId);
+  ProcessInstanceFilterBase flowNodeId(final String flowNodeId);
 
   /** Filter by flowNodeId using {@link StringProperty} */
-  ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn);
+  ProcessInstanceFilterBase flowNodeId(final Consumer<StringProperty> fn);
 
   /** Filter by state */
-  ProcessInstanceFilter flowNodeInstanceState(final FlowNodeInstanceState state);
+  ProcessInstanceFilterBase flowNodeInstanceState(final FlowNodeInstanceState state);
 
   /** Filter by flowNodeInstanceState using {@link FlowNodeInstanceStateProperty} */
-  ProcessInstanceFilter flowNodeInstanceState(final Consumer<FlowNodeInstanceStateProperty> fn);
+  ProcessInstanceFilterBase flowNodeInstanceState(final Consumer<FlowNodeInstanceStateProperty> fn);
 
   /** Filter by hasFlowNodeInstanceIncident */
-  ProcessInstanceFilter hasFlowNodeInstanceIncident(final Boolean hasFlowNodeInstanceIncident);
+  ProcessInstanceFilterBase hasFlowNodeInstanceIncident(final Boolean hasFlowNodeInstanceIncident);
 
   /** Filter by incidentErrorHashCode */
-  ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode);
+  ProcessInstanceFilterBase incidentErrorHashCode(final Integer incidentErrorHashCode);
 }

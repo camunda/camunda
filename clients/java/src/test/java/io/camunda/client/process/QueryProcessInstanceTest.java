@@ -21,13 +21,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 public class QueryProcessInstanceTest extends ClientRestTest {
@@ -339,5 +342,35 @@ public class QueryProcessInstanceTest extends ClientRestTest {
       final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
+  }
+
+  @Test
+  void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
+    final Set<String> baseMethods =
+        Arrays.stream(ProcessInstanceFilterBase.class.getDeclaredMethods())
+            .map(this::methodSignature)
+            .collect(Collectors.toSet());
+
+    final Set<String> fullMethods =
+        Arrays.stream(
+                io.camunda.client.api.search.filter.ProcessInstanceFilter.class
+                    .getDeclaredMethods())
+            .map(this::methodSignature)
+            .collect(Collectors.toSet());
+
+    // Ensure that all base methods are present in the full interface
+    assertThat(fullMethods).containsAll(baseMethods);
+
+    final Set<String> expectedExtras = new HashSet<>();
+    expectedExtras.add("orFilters[interface java.util.List]");
+    final Set<String> extras = new HashSet<>(fullMethods);
+    extras.removeAll(baseMethods);
+
+    // Ensure that orFilters method is the only extra method in full interface
+    assertThat(extras).isEqualTo(expectedExtras);
+  }
+
+  private String methodSignature(final Method m) {
+    return m.getName() + Arrays.toString(m.getParameterTypes());
   }
 }

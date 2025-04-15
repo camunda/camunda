@@ -324,7 +324,7 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter orFilters(final List<Consumer<ProcessInstanceFilterBase>> fns) {
+  public ProcessInstanceFilterBase orFilters(final List<Consumer<ProcessInstanceFilterBase>> fns) {
     for (final Consumer<ProcessInstanceFilterBase> fn : fns) {
       final ProcessInstanceFilterImpl orFilter = new ProcessInstanceFilterImpl();
       fn.accept(orFilter);
