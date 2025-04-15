@@ -91,8 +91,6 @@ public class RaftCorruptedDataTest {
     Awaitility.await("commitIndex is > 0 on all nodes")
         .until(() -> Arrays.stream(servers).allMatch(s -> s.getContext().getCommitIndex() >= 100));
 
-    final var commitIndex = servers[2].getContext().getCommitIndex();
-
     for (final RaftServer server : servers) {
       raftRule.shutdownServer(server);
     }
@@ -116,7 +114,12 @@ public class RaftCorruptedDataTest {
     // wait for the two corrupted nodes to form quorum
     Awaitility.await("corrupted nodes form a quorum")
         .until(() -> server0.isLeader() || server1.isLeader());
-    raftRule.appendEntries(1000);
+    for (int i = 0; i < 1000; i++) {
+      //      raftRule.appendEntry();
+      Awaitility.await("entry is committed")
+          .untilAsserted(() -> assertThatNoException().isThrownBy(() -> raftRule.appendEntry()));
+    }
+
     raftRule.restartLeader();
 
     Awaitility.await("until the term is > 1")

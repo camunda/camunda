@@ -757,17 +757,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     appendEntriesFuture.whenCompleteAsync(
         (commitIndex, commitError) -> {
-          if (!isRunning()) {
-            return;
-          }
 
           // have the state machine apply the index which should do nothing but ensures it keeps
           // up to date with the latest entries, so it can handle configuration and initial
           // entries properly on fail over
           if (commitError == null) {
-            appendListener.onCommit(commitIndex, committedPosition);
+            if (isRunning()) {
+              appendListener.onCommit(commitIndex, committedPosition);
+            }
           } else {
-            appendListener.onCommitError(commitIndex, commitError);
+            final var index = (commitIndex != null) ? commitIndex : committedPosition;
+            appendListener.onCommitError(index, commitError);
             // replicating the entry will be retried on the next append request
             log.error("Failed to replicate entry: {}", commitIndex, commitError);
           }
