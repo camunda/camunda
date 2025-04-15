@@ -1,19 +1,5 @@
 name: Optimize Zeebe Compatibility
 on:
-  # adding for testing purposes. make sure to remove this in the final pr!!
-  pull_request:
-    paths:
-      - ".github/actions/**"
-      - ".github/workflows/optimize-*"
-      - "bom/*"
-      - "parent/*"
-      - "pom.xml"
-      - "optimize/**"
-      - "optimize.Dockerfile"
-  push:
-    branches:
-      - main
-  ## end of temp settings
   schedule:
     - cron: "0 23 * * 1-5" # runs every day at 23:00 between Mon - Fri
   workflow_dispatch:
