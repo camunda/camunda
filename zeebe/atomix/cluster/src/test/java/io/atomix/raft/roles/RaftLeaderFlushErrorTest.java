@@ -15,6 +15,7 @@ import io.atomix.raft.RaftException.AppendFailureException;
 import io.atomix.raft.RaftRule;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -88,14 +89,16 @@ public class RaftLeaderFlushErrorTest {
 
     // then
     assertThatThrownBy(() -> commitListener.awaitCommit(Duration.ofSeconds(2)))
-        .isExactlyInstanceOf(AppendFailureException.class);
+        .isInstanceOf(ExecutionException.class)
+        .hasCauseInstanceOf(AppendFailureException.class);
 
     // when
     isFaulty.set(false);
     LOG.info("Leader flusher is not faulty anymore");
 
     assertThatThrownBy(() -> commitListener.awaitCommit(Duration.ofSeconds(2)))
-        .isExactlyInstanceOf(AppendFailureException.class);
+        .isInstanceOf(ExecutionException.class)
+        .hasCauseInstanceOf(AppendFailureException.class);
 
     // then
     // await new leader
