@@ -33,6 +33,8 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
+import {generateParentScopeIds} from 'modules/utils/modifications';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
@@ -83,8 +85,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           flowNode: {id: 'peterJoin', name: 'Peter Join'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
-          parentScopeIds:
-            modificationsStore.generateParentScopeIds('peterJoin'),
+          parentScopeIds: generateParentScopeIds({}, 'peterJoin'),
         },
       });
       modificationsStore.addModification({
@@ -95,8 +96,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           flowNode: {id: 'peterJoin', name: 'Peter Join'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
-          parentScopeIds:
-            modificationsStore.generateParentScopeIds('peterJoin'),
+          parentScopeIds: generateParentScopeIds({}, 'peterJoin'),
         },
       });
     });
@@ -193,7 +193,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
   });
 
-  it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
+  it('should create new parent scopes for a new placeholder if there are no running scopes', async () => {
     mockFetchProcessInstance().withSuccess({
       ...multiInstanceProcessInstance,
       bpmnProcessId: 'nested_sub_process',
@@ -275,8 +275,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           flowNode: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
-          parentScopeIds:
-            modificationsStore.generateParentScopeIds('user_task'),
+          parentScopeIds: generateParentScopeIds(
+            mockNestedSubProcessBusinessObjects,
+            'user_task',
+          ),
         },
       });
       modificationsStore.addModification({
@@ -287,8 +289,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           flowNode: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
-          parentScopeIds:
-            modificationsStore.generateParentScopeIds('user_task'),
+          parentScopeIds: generateParentScopeIds(
+            mockNestedSubProcessBusinessObjects,
+            'user_task',
+          ),
         },
       });
     });
@@ -479,8 +483,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           flowNode: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
-          parentScopeIds:
-            modificationsStore.generateParentScopeIds('user_task'),
+          parentScopeIds: generateParentScopeIds({}, 'user_task'),
         },
       });
       modificationsStore.addModification({
@@ -491,8 +494,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           flowNode: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
-          parentScopeIds:
-            modificationsStore.generateParentScopeIds('user_task'),
+          parentScopeIds: generateParentScopeIds({}, 'user_task'),
         },
       });
     });

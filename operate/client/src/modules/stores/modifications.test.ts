@@ -20,6 +20,8 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {createInstance} from 'modules/testUtils';
+import {generateParentScopeIds} from 'modules/utils/modifications';
+import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
 
 type AddModificationPayload = Extract<
   FlowNodeModification['payload'],
@@ -821,32 +823,6 @@ describe('stores/modifications', () => {
     ]);
   });
 
-  it('should generate parent scope ids', async () => {
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({bpmnProcessId: 'nested_sub_process'}),
-    );
-    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
-    expect(modificationsStore.generateParentScopeIds('user_task')).toEqual({
-      inner_sub_process: expect.any(String),
-      parent_sub_process: expect.any(String),
-    });
-
-    expect(
-      modificationsStore.generateParentScopeIds('inner_sub_process'),
-    ).toEqual({
-      parent_sub_process: expect.any(String),
-    });
-
-    expect(
-      modificationsStore.generateParentScopeIds('parent_sub_process'),
-    ).toEqual({});
-  });
-
   it('should not generate parent scope id twice', async () => {
     processInstanceDetailsStore.setProcessInstance(
       createInstance({bpmnProcessId: 'nested_sub_process'}),
@@ -865,7 +841,10 @@ describe('stores/modifications', () => {
         scopeId: 'random-scope-id-0',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
+        parentScopeIds: generateParentScopeIds(
+          mockNestedSubProcessBusinessObjects,
+          'user_task',
+        ),
       },
     });
     modificationsStore.addModification({
@@ -876,7 +855,10 @@ describe('stores/modifications', () => {
         scopeId: 'random-scope-id-1',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
+        parentScopeIds: generateParentScopeIds(
+          mockNestedSubProcessBusinessObjects,
+          'user_task',
+        ),
       },
     });
 
