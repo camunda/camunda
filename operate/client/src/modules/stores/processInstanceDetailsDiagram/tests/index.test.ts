@@ -11,7 +11,6 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {createInstance, mockProcessXML} from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {open} from 'modules/mocks/diagrams';
@@ -305,110 +304,6 @@ describe('stores/processInstanceDiagram', () => {
       'eventAttachedToEventbasedGateway1',
       'eventAttachedToEventbasedGateway2',
     ]);
-  });
-
-  it('should get flow node parents', async () => {
-    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: '123',
-        state: 'ACTIVE',
-        processId: '10',
-        bpmnProcessId: 'nested_sub_process',
-      }),
-    );
-
-    processInstanceDetailsDiagramStore.init();
-
-    await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toEqual(
-        'fetched',
-      ),
-    );
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents('user_task'),
-    ).toEqual(['inner_sub_process', 'parent_sub_process']);
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents(
-        'inner_sub_process',
-      ),
-    ).toEqual(['parent_sub_process']);
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents(
-        'parent_sub_process',
-      ),
-    ).toEqual([]);
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents('non_existing'),
-    ).toEqual([]);
-  });
-
-  it('should get flow nodes in between two flow nodes', async () => {
-    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: '123',
-        state: 'ACTIVE',
-        processId: '10',
-        bpmnProcessId: 'nested_sub_process',
-      }),
-    );
-
-    processInstanceDetailsDiagramStore.init();
-
-    await waitFor(() =>
-      expect(processInstanceDetailsDiagramStore.state.status).toEqual(
-        'fetched',
-      ),
-    );
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
-        'user_task',
-        'nested_sub_process',
-      ),
-    ).toEqual(['inner_sub_process', 'parent_sub_process']);
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
-        'inner_sub_process',
-        'nested_sub_process',
-      ),
-    ).toEqual(['parent_sub_process']);
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
-        'parent_sub_process',
-        'nested_sub_process',
-      ),
-    ).toEqual([]);
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
-        'user_task',
-        'parent_sub_process',
-      ),
-    ).toEqual(['inner_sub_process']);
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
-        'inner_sub_process',
-        'parent_sub_process',
-      ),
-    ).toEqual([]);
-
-    expect(
-      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
-        'user_task',
-        'inner_sub_process',
-      ),
-    ).toEqual([]);
   });
 
   it('should get has multiple scopes', async () => {

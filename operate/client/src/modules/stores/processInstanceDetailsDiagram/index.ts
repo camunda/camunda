@@ -127,37 +127,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return this.businessObjects[flowNodeId]?.name || flowNodeId;
   };
 
-  getFlowNodeParents = (flowNodeId: string): string[] => {
-    const bpmnProcessId =
-      processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
-
-    if (bpmnProcessId === undefined) {
-      return [];
-    }
-
-    return this.getFlowNodesInBetween(flowNodeId, bpmnProcessId);
-  };
-
-  getFlowNodesInBetween = (
-    fromFlowNodeId: string,
-    toFlowNodeId: string,
-  ): string[] => {
-    const fromFlowNode =
-      processInstanceDetailsDiagramStore.businessObjects[fromFlowNodeId];
-
-    if (
-      fromFlowNode?.$parent === undefined ||
-      fromFlowNode.$parent.id === toFlowNodeId
-    ) {
-      return [];
-    }
-
-    return [
-      fromFlowNode.$parent.id,
-      ...this.getFlowNodesInBetween(fromFlowNode.$parent.id, toFlowNodeId),
-    ];
-  };
-
   hasMultipleScopes = (parentFlowNode?: BusinessObject): boolean => {
     if (parentFlowNode === undefined) {
       return false;
