@@ -31,6 +31,7 @@ runs:
         echo "::error::Build output file does not exist or is empty!"
         exit 1
       fi
+<<<<<<< HEAD
       if grep -E -q "^\[(INFO|WARNING|ERROR)\] Tests run: [1-9]" "$BUILD_OUTPUT_FILE_PATH"; then
         outputFile=$(mktemp)
         tmpFile=$(mktemp)
@@ -48,6 +49,32 @@ runs:
         fi
         echo "::error::Could not find any tests, duplicate detection is broken."
         exit 1
+=======
+
+      # Extracting flaky tests
+      # Based on old Jenkins script
+      # https://github.com/camunda/camunda/blob/stable/8.1/.ci/scripts/lib/flaky-tests.sh
+      if grep -q "\[WARNING\] Flakes:" "$BUILD_OUTPUT_FILE_PATH"; then
+        irOutputFile=$(mktemp)
+
+        # Extracting the essential lines
+        awk '/^\[WARNING\] Flakes:.*$/{flag=1}/^\[ERROR\] Tests run:.*Flakes: [0-9]*$/{print;flag=0}flag' "$BUILD_OUTPUT_FILE_PATH" > ${irOutputFile}
+
+        # To cover cases where we use parameterized tests like
+        # [WARNING]  io.camunda.zeebe.engine.state.BanInstanceTest.shouldBanInstance[PROCESS_MESSAGE_SUBSCRIPTION DELETE should ban instance true]
+        # We grep the WARNING line and set the first argument to an empty string
+        flakyTests=$(grep -E "\[WARNING\] [a-z]+\." ${irOutputFile} | awk '{$1=""; print $0}')
+
+        # To support multi-line string in output we have to work with EOF delimiter
+        # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
+        {
+          echo 'FLAKY_TESTS<<EOF'
+          echo "$flakyTests"
+          echo EOF
+        } >> $GITHUB_OUTPUT
+
+        echo "::warning::Found flaky tests!\n ${flakyTests}"
+>>>>>>> 7bf4f2ff (ci: Fix globbing issue in analyze-test-runs)
       fi
       echo "No test execution found in build output, thus nothing to check."
       exit 0
