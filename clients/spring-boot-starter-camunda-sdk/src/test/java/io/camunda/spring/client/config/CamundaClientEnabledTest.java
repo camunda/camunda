@@ -70,7 +70,7 @@ public class CamundaClientEnabledTest {
 
   @Nested
   @SpringBootTest(classes = CamundaClientProdAutoConfiguration.class)
-  class NegativeTest {
+  class DefaultTest {
     @Autowired(required = false)
     CamundaClient camundaClient;
 
