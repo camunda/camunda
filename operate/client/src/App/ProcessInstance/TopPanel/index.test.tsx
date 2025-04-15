@@ -150,6 +150,7 @@ describe('TopPanel', () => {
 
   it('should show an error when a server error occurs', async () => {
     mockFetchProcessXML().withServerError();
+    mockFetchProcessDefinitionXml().withServerError();
 
     render(<TopPanel />, {
       wrapper: Wrapper,
@@ -168,6 +169,7 @@ describe('TopPanel', () => {
       .mockImplementation();
 
     mockFetchProcessXML().withNetworkError();
+    mockFetchProcessDefinitionXml().withNetworkError();
 
     render(<TopPanel />, {
       wrapper: Wrapper,

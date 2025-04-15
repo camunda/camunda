@@ -95,6 +95,9 @@ describe('TopPanel', () => {
       open('diagramForModifications.bpmn'),
     );
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
+    );
 
     mockFetchProcessInstance().withSuccess(
       createInstance({id: 'instance_id', state: 'INCIDENT'}),
@@ -153,6 +156,7 @@ describe('TopPanel', () => {
 
   it('should show an error when a server error occurs', async () => {
     mockFetchProcessXML().withServerError();
+    mockFetchProcessDefinitionXml().withServerError();
 
     render(<TopPanel />, {
       wrapper: Wrapper,
@@ -171,12 +175,11 @@ describe('TopPanel', () => {
       .mockImplementation();
 
     mockFetchProcessXML().withNetworkError();
+    mockFetchProcessDefinitionXml().withNetworkError();
 
     render(<TopPanel />, {
       wrapper: Wrapper,
     });
-
-    processInstanceDetailsStore.init({id: 'instance_with_incident'});
 
     expect(
       await screen.findByText('Data could not be fetched'),
@@ -376,6 +379,7 @@ describe('TopPanel', () => {
     'should display parent selection banner when trying to add a token on a flow node that has multiple scopes',
     async () => {
       mockFetchProcessXML().withSuccess(mockNestedSubprocess);
+      mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
 
       processInstanceDetailsStore.init({id: 'active_instance'});
       processInstanceDetailsDiagramStore.init();
