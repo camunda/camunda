@@ -17,8 +17,8 @@ package io.camunda.client.api.statistics.filter;
 
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
+import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;

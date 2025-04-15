@@ -15,30 +15,23 @@
  */
 package io.camunda.client.impl.util;
 
-import io.camunda.client.protocol.rest.ProcessInstanceFilter;
-import io.camunda.client.protocol.rest.ProcessInstanceFilterFields;
+import io.camunda.client.protocol.rest.BaseProcessInstanceFilterFields;
+import io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter;
 
-/**
- * Utility class for mapping {@link ProcessInstanceFilter} to {@link ProcessInstanceFilterFields}.
- */
-public final class ProcessInstanceFilterMapper {
+public final class ProcessDefinitionStatisticsFilterMapper {
 
-  private ProcessInstanceFilterMapper() {
+  private ProcessDefinitionStatisticsFilterMapper() {
     // Prevent instantiation
   }
 
-  public static ProcessInstanceFilterFields from(final ProcessInstanceFilter filter) {
+  public static BaseProcessInstanceFilterFields from(
+      final ProcessDefinitionStatisticsFilter filter) {
     if (filter == null) {
       return null;
     }
 
-    final ProcessInstanceFilterFields target = new ProcessInstanceFilterFields();
+    final BaseProcessInstanceFilterFields target = new BaseProcessInstanceFilterFields();
 
-    target.setProcessDefinitionId(filter.getProcessDefinitionId());
-    target.setProcessDefinitionName(filter.getProcessDefinitionName());
-    target.setProcessDefinitionVersion(filter.getProcessDefinitionVersion());
-    target.setProcessDefinitionVersionTag(filter.getProcessDefinitionVersionTag());
-    target.setProcessDefinitionKey(filter.getProcessDefinitionKey());
     target.setStartDate(filter.getStartDate());
     target.setEndDate(filter.getEndDate());
     target.setState(filter.getState());
