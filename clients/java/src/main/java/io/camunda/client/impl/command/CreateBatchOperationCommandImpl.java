@@ -102,6 +102,8 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     switch (type) {
       case PROCESS_CANCELLATION:
         return "/process-instances/batch-operations/cancellation";
+      case RESOLVE_INCIDENT:
+        return "/process-instances/batch-operations/incident-resolution";
       default:
         throw new IllegalArgumentException("Unsupported batch operation type: " + type);
     }

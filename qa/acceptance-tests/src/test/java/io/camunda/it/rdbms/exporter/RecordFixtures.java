@@ -561,4 +561,33 @@ public class RecordFixtures {
                 .build())
         .build();
   }
+
+  protected static ImmutableRecord<RecordValue> getBatchOperationResolveIncidentRecord(
+      final Long incidentKey, final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.INCIDENT);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(IncidentIntent.RESOLVED)
+        .withKey(incidentKey)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withOperationReference(batchOperationKey)
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getFailedBatchOperationResolveIncidentRecord(
+      final Long incidentKey, final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.INCIDENT);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(IncidentIntent.RESOLVE)
+        .withRejectionType(RejectionType.INVALID_STATE)
+        .withKey(incidentKey)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withOperationReference(batchOperationKey)
+        .build();
+  }
 }
