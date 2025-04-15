@@ -123,6 +123,37 @@ public class UpdateVariableHandlerTest {
     verifyNoInteractions(metrics);
   }
 
+  @Test
+  void shouldFailOperationWhenDeniedByTaskListener() throws Exception {
+    // given
+    final var operation = createLockedOperation();
+
+    final var statusException =
+        new StatusRuntimeException(
+            Status.fromCode(Code.FAILED_PRECONDITION).withDescription("Update was denied"));
+    mockSetVariablesCommand(failedFuture(statusException));
+
+    // when
+    handler.handle(operation);
+
+    // then: assert that the operation was marked as `FAILED` and error message captured
+    verify(batchOperationWriter).updateOperation(operation);
+    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(operation.getErrorMessage())
+        .startsWith("Unable to process operation")
+        .endsWith("Update was denied");
+
+    // assert that failure metric was recorded
+    verify(metrics)
+        .recordCounts(
+            Metrics.COUNTER_NAME_COMMANDS,
+            1,
+            Metrics.TAG_KEY_STATUS,
+            OperationState.FAILED.name(),
+            Metrics.TAG_KEY_TYPE,
+            OperationType.UPDATE_VARIABLE.name());
+  }
+
   /**
    * Creates a locked UPDATE_VARIABLE operation, simulating an operation that was picked up by the
    * executor for processing.
