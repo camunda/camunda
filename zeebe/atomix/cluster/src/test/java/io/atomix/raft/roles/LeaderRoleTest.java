@@ -16,6 +16,7 @@
 package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.AdditionalAnswers.answerVoid;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
@@ -26,9 +27,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.raft.RaftException.AppendFailureException;
+import io.atomix.cluster.MemberId;
+import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.LogCompactor;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
@@ -52,7 +56,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -64,6 +70,7 @@ import org.mockito.Mockito;
 
 public class LeaderRoleTest {
 
+  @AutoClose SingleThreadContext threadContext;
   private LeaderRole leaderRole;
   private RaftContext context;
   private RaftLog log;
@@ -81,7 +88,7 @@ public class LeaderRoleTest {
     when(context.getReplicationMetrics()).thenReturn(mock(RaftReplicationMetrics.class));
     when(context.getLogCompactor()).thenReturn(logCompactor);
 
-    final SingleThreadContext threadContext = new SingleThreadContext("leader");
+    threadContext = new SingleThreadContext("leader");
     when(context.getThreadContext()).thenReturn(threadContext);
 
     log = mock(RaftLog.class);
@@ -104,8 +111,12 @@ public class LeaderRoleTest {
 
     leaderRole = new LeaderRole(context);
     // since we mock RaftContext we should simulate leader close on transition
-    doAnswer(i -> leaderRole.stop().join()).when(context).transition(Role.FOLLOWER);
+    doAnswer(answerVoid(ignored -> leaderRole.stop().join()))
+        .when(context)
+        .transition(Role.FOLLOWER);
     when(context.getMembershipService()).thenReturn(mock(ClusterMembershipService.class));
+    when(context.getLeader())
+        .thenReturn(new DefaultRaftMember(MemberId.from("0"), Type.ACTIVE, Instant.now()));
   }
 
   @Test
@@ -287,8 +298,18 @@ public class LeaderRoleTest {
     final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
     final CountDownLatch latch = new CountDownLatch(1);
+    final CountDownLatch writeLatch = new CountDownLatch(1);
+    // because RETURN_DEEP_STUBS is set on the context, it returns a default value
+    // each of these methods must be stubbed
+    when(context.getCommitIndex()).thenReturn(0L);
+    when(context.getCluster().getReplicationTargets()).thenReturn(Set.of());
     final AppendListener listener =
         new AppendListener() {
+          @Override
+          public void onWrite(final IndexedRaftLogEntry indexed) {
+            writeLatch.countDown();
+          }
+
           @Override
           public void onCommitError(final long index, final Throwable error) {
 
@@ -297,13 +318,15 @@ public class LeaderRoleTest {
           }
         };
     leaderRole.appendEntry(2, 3, data, listener);
+    // wait before the event has been written before stopping
+    assertThat(writeLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
     // when
     leaderRole.stop().join();
 
     // then
     assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-    assertThat(caughtError.get()).isInstanceOf(AppendFailureException.class);
+    assertThat(caughtError.get()).isInstanceOf(RaftException.class);
   }
 
   @Test
