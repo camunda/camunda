@@ -70,16 +70,15 @@ public class BatchOperationArchiverJob implements ArchiverJob {
     return CompletableFuture.completedFuture(0);
   }
 
-  private CompletableFuture<Integer> moveBatch(
-      final String finishDate, final List<String> processInstanceKeys) {
+  private CompletableFuture<Integer> moveBatch(final String finishDate, final List<String> ids) {
     return repository
         .moveDocuments(
             batchOperationTemplate.getFullQualifiedName(),
             batchOperationTemplate.getFullQualifiedName() + finishDate,
-            finishDate,
-            processInstanceKeys,
+            BatchOperationTemplate.ID,
+            ids,
             executor)
-        .thenApplyAsync(ok -> processInstanceKeys.size(), executor);
+        .thenApplyAsync(ok -> ids.size(), executor);
   }
 
   @Override
