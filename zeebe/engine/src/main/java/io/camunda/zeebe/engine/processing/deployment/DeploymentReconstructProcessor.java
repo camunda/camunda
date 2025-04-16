@@ -122,27 +122,32 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   // If all the resources have been searched then it returns null.
   private Resource findNextResource(
       final ResourceIdentifier identifier, final ReconstructionProgress reconstructionProgress) {
-    if (identifier == null & reconstructionProgress == ReconstructionProgress.DONE) {
+    if (reconstructionProgress == ReconstructionProgress.DONE) {
       return null;
     }
-    final var resource =
-        switch (identifier) {
-          case null ->
-              switch (reconstructionProgress) {
-                case PROCESS -> findProcessResource(null);
-                case FORM -> findFormResource(null);
-                case DECISION_REQUIREMENTS -> findDecisionRequirementsResource(null);
-                case DONE -> null;
-              };
-          case final ProcessIdentifier processIdentifier -> findProcessResource(processIdentifier);
-          case final FormIdentifier form -> findFormResource(form);
-          case final DecisionRequirementsIdentifier decisionRequirementsIdentifier ->
-              findDecisionRequirementsResource(decisionRequirementsIdentifier);
-        };
+    final var resource = findResource(identifier, reconstructionProgress);
     if (resource != null) {
       return resource;
+    } else {
+      return findNextResource(null, nextProgress(reconstructionProgress));
     }
-    return findNextResource(null, nextProgress(reconstructionProgress));
+  }
+
+  private Resource findResource(
+      final ResourceIdentifier identifier, final ReconstructionProgress reconstructionProgress) {
+    return switch (identifier) {
+      case null ->
+          switch (reconstructionProgress) {
+            case PROCESS -> findProcessResource(null);
+            case FORM -> findFormResource(null);
+            case DECISION_REQUIREMENTS -> findDecisionRequirementsResource(null);
+            case DONE -> null;
+          };
+      case final ProcessIdentifier processIdentifier -> findProcessResource(processIdentifier);
+      case final FormIdentifier form -> findFormResource(form);
+      case final DecisionRequirementsIdentifier decisionRequirementsIdentifier ->
+          findDecisionRequirementsResource(decisionRequirementsIdentifier);
+    };
   }
 
   private ProcessResource findProcessResource(final ProcessIdentifier identifier) {
@@ -392,11 +397,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
       @Override
       public ResourceIdentifier identifier() {
-        return process != null ? processIdentifier() : null;
-      }
-
-      public ProcessIdentifier processIdentifier() {
-        return new ProcessIdentifier(tenantId(), key());
+        return process != null ? new ProcessIdentifier(tenantId(), key()) : null;
       }
     }
 
@@ -419,11 +420,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
       @Override
       public ResourceIdentifier identifier() {
-        return form != null ? formIdentifier() : null;
-      }
-
-      public FormIdentifier formIdentifier() {
-        return new FormIdentifier(tenantId(), form.getFormKey());
+        return form != null ? new FormIdentifier(tenantId(), form.getFormKey()) : null;
       }
     }
 
@@ -449,11 +446,9 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
       @Override
       public ResourceIdentifier identifier() {
-        return decisionRequirements != null ? decisionRequirementsIdentifier() : null;
-      }
-
-      DecisionRequirementsIdentifier decisionRequirementsIdentifier() {
-        return new DecisionRequirementsIdentifier(tenantId(), key());
+        return decisionRequirements != null
+            ? new DecisionRequirementsIdentifier(tenantId(), key())
+            : null;
       }
     }
   }
