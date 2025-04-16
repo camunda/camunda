@@ -15,14 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.worker.JobWorker;
-import io.camunda.client.impl.statistics.response.ProcessFlowNodeStatisticsImpl;
+import io.camunda.client.impl.statistics.response.ProcessElementStatisticsImpl;
 import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -102,8 +101,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -131,8 +130,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 2L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 2L));
   }
 
   @Test
@@ -148,7 +147,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(
                 f ->
                     f.processInstanceKey(
@@ -160,8 +159,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -185,8 +184,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 2L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 2L));
   }
 
   @Test
@@ -217,8 +216,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -244,8 +243,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -276,9 +275,9 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(3);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("UserTask", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("UserTask", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -309,8 +308,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("UserTask", 1L, 0L, 0L, 0L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("UserTask", 1L, 0L, 0L, 0L));
   }
 
   @Test
@@ -342,8 +341,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessFlowNodeStatisticsImpl("UserTask", 2L, 0L, 0L, 0L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("UserTask", 2L, 0L, 0L, 0L));
   }
 
   @Test
@@ -383,8 +382,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessFlowNodeStatisticsImpl("UserTaskMultiInstance", 2L, 0L, 0L, 0L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("UserTaskMultiInstance", 2L, 0L, 0L, 0L));
   }
 
   @Test
@@ -415,9 +414,9 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(3);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("UserTask", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("UserTask", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
@@ -441,8 +440,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 3L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 3L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 3L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 3L));
   }
 
   @Test
@@ -464,8 +463,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessFlowNodeStatisticsImpl("UserTask", 2L, 0L, 0L, 0L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("UserTask", 2L, 0L, 0L, 0L));
   }
 
   @Test
@@ -489,8 +488,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 3L),
-            new ProcessFlowNodeStatisticsImpl("ScriptTask", 0L, 0L, 3L, 0L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 3L),
+            new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 3L, 0L));
   }
 
   @Test
@@ -523,8 +522,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessFlowNodeStatisticsImpl("UserTask", 1L, 1L, 0L, 0L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("UserTask", 1L, 1L, 0L, 0L));
   }
 
   @Test
@@ -549,7 +548,7 @@ public class ProcessDefinitionStatisticsTest {
       // when
       final var actual =
           camundaClient
-              .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+              .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
               .filter(f -> f.hasRetriesLeft(true))
               .send()
               .join();
@@ -558,13 +557,13 @@ public class ProcessDefinitionStatisticsTest {
       assertThat(actual).hasSize(2);
       assertThat(actual)
           .containsExactlyInAnyOrder(
-              new ProcessFlowNodeStatisticsImpl("start", 0L, 0L, 0L, 1L),
-              new ProcessFlowNodeStatisticsImpl("taskA", 1L, 0L, 0L, 0L));
+              new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 1L),
+              new ProcessElementStatisticsImpl("taskA", 1L, 0L, 0L, 0L));
     }
   }
 
   @Test
-  void shouldReturnStatisticsAndFilterByFlowNodeId() {
+  void shouldReturnStatisticsAndFilterByElementId() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
     createInstance(processDefinitionKey);
@@ -582,19 +581,19 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
-            .filter(f -> f.flowNodeId("UserTask"))
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(f -> f.elementId("UserTask"))
             .send()
             .join();
 
     // then
     assertThat(actual).hasSize(1);
     assertThat(actual)
-        .containsExactlyInAnyOrder(new ProcessFlowNodeStatisticsImpl("UserTask", 1L, 0L, 0L, 1L));
+        .containsExactlyInAnyOrder(new ProcessElementStatisticsImpl("UserTask", 1L, 0L, 0L, 1L));
   }
 
   @Test
-  void shouldReturnStatisticsAndFilterByFlowNodeInstanceState() {
+  void shouldReturnStatisticsAndFilterByElementInstanceState() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
     createInstance(processDefinitionKey);
@@ -612,8 +611,8 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
-            .filter(f -> f.flowNodeInstanceState(FlowNodeInstanceState.COMPLETED))
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(f -> f.elementInstanceState(ElementInstanceState.COMPLETED))
             .send()
             .join();
 
@@ -621,13 +620,13 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(3);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
-            new ProcessFlowNodeStatisticsImpl("UserTask", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("UserTask", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L));
   }
 
   @Test
-  void shouldReturnStatisticsAndFilterByFlowNodeInstanceIncident() {
+  void shouldReturnStatisticsAndFilterByElementInstanceIncident() {
     // given
     final var processDefinitionKey = deployIncidentBPMN();
     createInstance(processDefinitionKey);
@@ -636,15 +635,15 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
-            .filter(f -> f.hasFlowNodeInstanceIncident(true))
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(f -> f.hasElementInstanceIncident(true))
             .send()
             .join();
 
     // then
     assertThat(actual).hasSize(1);
     assertThat(actual)
-        .containsExactly(new ProcessFlowNodeStatisticsImpl("ScriptTask", 0L, 0L, 1L, 0L));
+        .containsExactly(new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 1L, 0L));
   }
 
   @Test
@@ -661,7 +660,7 @@ public class ProcessDefinitionStatisticsTest {
     // when
     final var actual =
         camundaClient
-            .newProcessDefinitionFlowNodeStatisticsRequest(processDefinitionKey)
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))
             .send()
             .join();
@@ -670,8 +669,8 @@ public class ProcessDefinitionStatisticsTest {
     assertThat(actual).hasSize(2);
     assertThat(actual)
         .containsExactlyInAnyOrder(
-            new ProcessFlowNodeStatisticsImpl("start", 0L, 0L, 0L, 1L),
-            new ProcessFlowNodeStatisticsImpl("taskAIncident", 0L, 0L, 1L, 0L));
+            new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 1L, 0L));
   }
 
   private static DeploymentEvent deployResource(
