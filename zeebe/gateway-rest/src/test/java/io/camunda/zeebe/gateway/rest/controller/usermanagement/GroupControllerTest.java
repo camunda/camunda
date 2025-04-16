@@ -525,10 +525,7 @@ public class GroupControllerTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
                     new BrokerRejection(
-                        RoleIntent.ENTITY_ADDED,
-                        1L,
-                        RejectionType.NOT_FOUND,
-                        "Mapping not found"))));
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
     // when
     webClient
@@ -544,7 +541,7 @@ public class GroupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToMapping() {
+  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToRole() {
     // given
     final String groupId = Strings.newRandomValidIdentityId();
     final String mappingId = "mappingId!";
