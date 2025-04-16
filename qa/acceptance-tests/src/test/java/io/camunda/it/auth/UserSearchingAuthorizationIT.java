@@ -7,14 +7,13 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.AUTHORIZATION;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
@@ -63,10 +62,10 @@ class UserSearchingAuthorizationIT {
           ADMIN,
           DEFAULT_PASSWORD,
           List.of(
-              new Permissions(USER, PermissionTypeEnum.CREATE, List.of("*")),
-              new Permissions(USER, PermissionTypeEnum.UPDATE, List.of("*")),
-              new Permissions(USER, PermissionTypeEnum.READ, List.of("*")),
-              new Permissions(AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*"))));
+              new Permissions(ResourceType.USER, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.USER, PermissionType.UPDATE, List.of("*")),
+              new Permissions(ResourceType.USER, PermissionType.READ, List.of("*")),
+              new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
   private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
@@ -76,7 +75,7 @@ class UserSearchingAuthorizationIT {
       new User(
           RESTRICTED_WITH_READ,
           DEFAULT_PASSWORD,
-          List.of(new Permissions(USER, PermissionTypeEnum.READ, List.of("*"))));
+          List.of(new Permissions(ResourceType.USER, PermissionType.READ, List.of("*"))));
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 

@@ -7,13 +7,13 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.AUTHORIZATION;
+import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
@@ -52,9 +52,7 @@ class AuthorizationSearchIT {
   @UserDefinition
   private static final User ADMIN_USER =
       new User(
-          ADMIN,
-          DEFAULT_PASSWORD,
-          List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
+          ADMIN, DEFAULT_PASSWORD, List.of(new Permissions(AUTHORIZATION, READ, List.of("*"))));
 
   @UserDefinition
   private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
