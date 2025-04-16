@@ -377,14 +377,13 @@ public class TaskListenerBlockedTransitionTest {
         listenerType + "_3");
 
     final Predicate<Record<?>> isUserTaskOrVariableDocumentWithElementInstanceKey =
-        r -> {
-          if (r.getValue() instanceof final UserTaskRecord utr) {
-            return utr.getElementInstanceKey() == userTaskElementInstanceKey;
-          } else if (r.getValue() instanceof final VariableDocumentRecord vdr) {
-            return vdr.getScopeKey() == userTaskElementInstanceKey;
-          }
-          return false;
-        };
+        r ->
+            switch (r.getValue()) {
+              case final UserTaskRecord u ->
+                  u.getElementInstanceKey() == userTaskElementInstanceKey;
+              case final VariableDocumentRecord v -> v.getScopeKey() == userTaskElementInstanceKey;
+              default -> false;
+            };
 
     assertThat(
             RecordingExporter.records()
@@ -563,14 +562,13 @@ public class TaskListenerBlockedTransitionTest {
         userTask -> assertThat(userTask.getAction()).isEmpty());
 
     final Predicate<Record<?>> isUserTaskOrProcessInstanceRecordWithUserTaskInstanceKey =
-        r -> {
-          if (r.getValue() instanceof UserTaskRecord utr) {
-            return utr.getElementInstanceKey() == userTaskElementInstanceKey;
-          } else if (r.getValue() instanceof ProcessInstanceRecord) {
-            return r.getKey() == userTaskElementInstanceKey;
-          }
-          return false;
-        };
+        r ->
+            switch (r.getValue()) {
+              case final UserTaskRecord u ->
+                  u.getElementInstanceKey() == userTaskElementInstanceKey;
+              case final ProcessInstanceRecord ignored -> r.getKey() == userTaskElementInstanceKey;
+              default -> false;
+            };
 
     assertThat(
             RecordingExporter.records()
