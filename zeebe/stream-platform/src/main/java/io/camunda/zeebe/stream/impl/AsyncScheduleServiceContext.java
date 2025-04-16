@@ -12,18 +12,14 @@ import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.EnumMap;
 
 class AsyncScheduleServiceContext implements AsyncClosable {
   private final ActorSchedulingService actorSchedulingService;
   private final ProcessingScheduleServiceFactory actorServiceFactory;
   private final int partitionId;
 
-  private final Map<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> asyncActors;
+  private final EnumMap<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> asyncActors;
 
   public AsyncScheduleServiceContext(
       final ActorSchedulingService actorSchedulingService,
@@ -35,7 +31,7 @@ class AsyncScheduleServiceContext implements AsyncClosable {
     this.partitionId = partitionId;
 
     // create the async actors for all defined task groups
-    asyncActors = Collections.unmodifiableMap(createAsyncActors());
+    asyncActors = createAsyncActors();
   }
 
   public AsyncProcessingScheduleServiceActor geAsyncActor(final AsyncTaskGroup taskGroup) {
@@ -62,13 +58,15 @@ class AsyncScheduleServiceContext implements AsyncClosable {
     return actorSchedulingService.submitActor(actor, taskGroup.getSchedulingHints());
   }
 
-  private Map<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> createAsyncActors() {
-    return Arrays.stream(AsyncTaskGroup.values())
-        .collect(
-            Collectors.toMap(
-                Function.identity(),
-                taskGroup ->
-                    new AsyncProcessingScheduleServiceActor(
-                        taskGroup.getName(), actorServiceFactory, partitionId)));
+  private EnumMap<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> createAsyncActors() {
+    final var groups =
+        new EnumMap<AsyncTaskGroup, AsyncProcessingScheduleServiceActor>(AsyncTaskGroup.class);
+    for (final var group : AsyncTaskGroup.values()) {
+      groups.put(
+          group,
+          new AsyncProcessingScheduleServiceActor(
+              group.getName(), actorServiceFactory, partitionId));
+    }
+    return groups;
   }
 }
