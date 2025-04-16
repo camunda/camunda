@@ -188,7 +188,8 @@ public class GroupController {
                 .assignMember(request.groupId(), request.entityId(), request.entityType()));
   }
 
-  public CompletableFuture<ResponseEntity<Object>> unassignMapping(final GroupMemberRequest request) {
+  public CompletableFuture<ResponseEntity<Object>> unassignMapping(
+      final GroupMemberRequest request) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             groupServices
