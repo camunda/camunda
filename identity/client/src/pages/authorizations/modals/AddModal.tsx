@@ -10,6 +10,7 @@ import { FC, useState } from "react";
 import { Dropdown, CheckboxGroup, Checkbox } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
+import { isOIDC } from "src/configuration";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
   Authorization,
@@ -23,6 +24,7 @@ import TextField from "src/components/form/TextField";
 import Divider from "src/components/form/Divider";
 import { DocumentationLink } from "src/components/documentation";
 import { Row, TextFieldContainer, PermissionsSectionLabel } from "./components";
+import OwnerSelection from "./OwnerSelection";
 
 type ResourcePermissionsType = {
   [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
@@ -69,7 +71,9 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   const [apiCall, { loading, error }] = useApiCall(createAuthorization, {
     suppressErrorNotification: true,
   });
-  const [ownerType, setOwnerType] = useState<OwnerType>(OwnerType.USER);
+  const [ownerType, setOwnerType] = useState<OwnerType>(
+    isOIDC ? OwnerType.MAPPING : OwnerType.USER,
+  );
   const [ownerId, setOwnerId] = useState("");
   const [resourceId, setResourceId] = useState("");
   const [resourceType, setResourceType] =
@@ -126,23 +130,21 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           id="owner-type-dropdown"
           label={t("selectOwnerType")}
           titleText={t("ownerType")}
-          items={ownerTypeItems}
-          onChange={(item: { selectedItem: OwnerType }) =>
-            setOwnerType(item.selectedItem)
-          }
+          items={ownerTypeItems.filter((ownerType) => {
+            const excludedType = isOIDC ? OwnerType.USER : OwnerType.MAPPING;
+            return ownerType !== excludedType;
+          })}
+          onChange={(item: { selectedItem: OwnerType }) => {
+            setOwnerId("");
+            setOwnerType(item.selectedItem);
+          }}
           itemToString={(item: Authorization["ownerType"]) =>
             item ? t(OwnerType[item]) : ""
           }
           selectedItem={ownerType}
         />
         <TextFieldContainer>
-          <TextField
-            label={t("ownerId")}
-            placeholder={t("enterId")}
-            onChange={setOwnerId}
-            value={ownerId}
-            autoFocus
-          />
+          <OwnerSelection type={ownerType} onChange={setOwnerId} />
         </TextFieldContainer>
       </Row>
       <Divider />
