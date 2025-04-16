@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.CancelProcessInstanceBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -42,7 +43,10 @@ public final class BatchOperationSetupProcessors {
             new CancelProcessInstanceBatchOperationExecutor(writers.command()),
             BatchOperationType.RESOLVE_INCIDENT,
             new ResolveIncidentBatchOperationExecutor(
-                writers.command(), processingState.getIncidentState()));
+                writers.command(), processingState.getIncidentState()),
+            BatchOperationType.MIGRATE_PROCESS_INSTANCE,
+            new MigrateProcessInstanceBatchOperationExecutor(
+                writers.command(), processingState.getBatchOperationState()));
 
     typedRecordProcessors
         .onCommand(
