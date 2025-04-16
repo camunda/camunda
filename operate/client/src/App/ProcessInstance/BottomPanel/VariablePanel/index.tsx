@@ -16,8 +16,10 @@ import {processInstanceListenersStore} from 'modules/stores/processInstanceListe
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
+import {VariablesContent as VariablesContentV2} from './v2/VariablesContent';
 import {Listeners} from './Listeners';
 import {WarningFilled} from './styled';
+import {IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 const VariablePanel = observer(function VariablePanel() {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -84,7 +86,11 @@ const VariablePanel = observer(function VariablePanel() {
         {
           id: 'variables',
           label: 'Variables',
-          content: <VariablesContent />,
+          content: IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED ? (
+            <VariablesContentV2 />
+          ) : (
+            <VariablesContent />
+          ),
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(false);

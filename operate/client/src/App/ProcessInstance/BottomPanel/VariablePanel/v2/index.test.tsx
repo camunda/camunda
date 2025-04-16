@@ -55,11 +55,6 @@ jest.mock('modules/stores/notifications', () => ({
   },
 }));
 
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
-}));
-
 const getWrapper = (
   initialEntries: React.ComponentProps<
     typeof MemoryRouter
