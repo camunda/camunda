@@ -40,7 +40,7 @@ public class UserTaskCancelProcessor implements UserTaskCommandProcessor {
     final var userTaskElementInstanceKey = userTaskRecord.getElementInstanceKey();
     final var userTaskElementInstance =
         elementInstanceState.getInstance(userTaskElementInstanceKey);
-    if (userTaskElementInstance != null) {
+    if (userTaskElementInstance != null && userTaskElementInstance.isTerminating()) {
       commandWriter.appendFollowUpCommand(
           userTaskElementInstanceKey,
           ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT,
