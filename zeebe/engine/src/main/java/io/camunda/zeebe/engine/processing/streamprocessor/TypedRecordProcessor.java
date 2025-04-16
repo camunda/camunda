@@ -12,7 +12,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
 
-  default void processRecord(final TypedRecord<T> record) {}
+  void processRecord(final TypedRecord<T> record);
 
   /**
    * Try to handle an error that occurred during processing.
