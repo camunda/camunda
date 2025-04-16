@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package io.camunda.spring.client.config;
+package io.camunda.zeebe.spring.client.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.api.JsonMapper;
-import io.camunda.spring.client.config.JsonMapperConfigurationTest.JacksonConfiguration;
-import io.camunda.spring.client.configuration.JsonMapperConfiguration;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+import io.camunda.zeebe.spring.client.config.JsonMapperConfigurationTest.JacksonConfiguration;
+import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
+import io.camunda.zeebe.spring.common.json.SdkObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,8 @@ import org.springframework.context.annotation.Configuration;
 @SpringBootTest(classes = {JacksonConfiguration.class, JsonMapperConfiguration.class})
 public class JsonMapperConfigurationTest {
   @Autowired private ObjectMapper defaultObjectMapper;
-  @Autowired private JsonMapper camundaJsonMapper;
+  @Autowired private SdkObjectMapper commonJsonMapper;
+  @Autowired private ZeebeObjectMapper zeebeJsonMapper;
 
   @Test
   public void shouldSerializeNullValuesInJson() throws Exception {
@@ -43,14 +45,17 @@ public class JsonMapperConfigurationTest {
     final Map<String, Object> map = new HashMap<>();
     map.put("key", null);
     map.put("key2", "value2");
-    // when
 
-    final String json = camundaJsonMapper.toJson(map);
-    final JsonNode zeebeJsonNode = new ObjectMapper().readTree(json);
+    // when
+    final JsonNode zeebeJsonNode = new ObjectMapper().readTree(zeebeJsonMapper.toJson(map));
+    final JsonNode commonJsonNode = new ObjectMapper().readTree(commonJsonMapper.toJson(map));
 
     // then
-    assertThat(zeebeJsonNode.get("key").isNull()).isTrue();
+    assertThat(zeebeJsonNode.get("key")).isNotNull();
+    assertThat(commonJsonNode.get("key")).isNull();
+
     assertThat(zeebeJsonNode.get("key2").asText()).isEqualTo("value2");
+    assertThat(commonJsonNode.get("key2").asText()).isEqualTo("value2");
   }
 
   @Test
