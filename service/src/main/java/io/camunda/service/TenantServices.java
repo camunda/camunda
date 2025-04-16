@@ -94,19 +94,6 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setEntity(entityType, entityId));
   }
 
-  /**
-   * TODO: This is a temporary method which can be removed once groups and mappings are refactored
-   * to work with ids instead of keys.
-   */
-  public CompletableFuture<TenantRecord> removeMember(
-      final String tenantId, final EntityType entityType, final long entityKey) {
-    final var entityId = String.valueOf(entityKey);
-    return sendBrokerRequest(
-        BrokerTenantEntityRequest.createRemoveRequest()
-            .setTenantId(tenantId)
-            .setEntity(entityType, entityId));
-  }
-
   public CompletableFuture<TenantRecord> removeMember(
       final String tenantId, final EntityType entityType, final String entityId) {
     return sendBrokerRequest(
