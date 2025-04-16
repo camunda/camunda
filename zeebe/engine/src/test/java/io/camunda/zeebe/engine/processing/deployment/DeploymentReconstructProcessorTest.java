@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord.ReconstructionProgress;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -620,5 +622,19 @@ final class DeploymentReconstructProcessorTest {
     when(command.getIntent()).thenReturn(record.getIntent());
     when(command.getRecordType()).thenReturn(record.getRecordType());
     return command;
+  }
+
+  @Nested
+  class ReconstructionProgressTest {
+    @Test
+    void shouldHaveDoneAsTerminalState() {
+      var progress = ReconstructionProgress.PROCESS;
+      for (int i = 0; i < 3; i++) {
+        progress = DeploymentReconstructProcessor.nextProgress(progress);
+      }
+      assertThat(progress).isEqualTo(ReconstructionProgress.DONE);
+      assertThat(DeploymentReconstructProcessor.nextProgress(progress))
+          .isEqualTo(ReconstructionProgress.DONE);
+    }
   }
 }

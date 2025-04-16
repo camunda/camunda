@@ -142,7 +142,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     if (resource != null) {
       return resource;
     }
-    return findNextResource(null, reconstructionProgress.next());
+    return findNextResource(null, nextProgress(reconstructionProgress));
   }
 
   private ProcessResource findProcessResource(final ProcessIdentifier identifier) {
@@ -334,6 +334,14 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
             });
       }
     }
+  }
+
+  public static ReconstructionProgress nextProgress(final ReconstructionProgress progress) {
+    return switch (progress) {
+      case PROCESS -> ReconstructionProgress.FORM;
+      case FORM -> ReconstructionProgress.DECISION_REQUIREMENTS;
+      case DECISION_REQUIREMENTS, DONE -> ReconstructionProgress.DONE;
+    };
   }
 
   static ResourceIdentifier fromDeploymentRecord(final DeploymentRecord record) {
