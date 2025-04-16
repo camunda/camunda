@@ -44,7 +44,7 @@ function getClientConfig() {
   if (success) {
     return {
       ...data,
-      clientMode: IS_V2_ENABLED ? 'v2' : data.clientMode,
+      clientMode: IS_V2_ENABLED ? 'v1' : data.clientMode,
     };
   }
 
