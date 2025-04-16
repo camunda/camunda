@@ -39,6 +39,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
@@ -89,12 +90,13 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
     final var key = keyGenerator.nextKey();
 
-    final var resource =
+    final var resourceOpt =
         findNextResource(identifier, record.getValue().getReconstructionProgress());
-    if (resource == null) {
+    if (resourceOpt.isEmpty()) {
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED_ALL, record.getValue());
       return;
     }
+    final var resource = resourceOpt.get();
 
     final DeploymentRecord deploymentRecord;
     if (resource.deploymentKey() != NO_DEPLOYMENT_KEY) {
@@ -120,20 +122,16 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   // Recursive function to find the next resource.
   // if the resource for the current type is not found, the next resource is tried.
   // If all the resources have been searched then it returns null.
-  private Resource findNextResource(
+  private Optional<Resource> findNextResource(
       final ResourceIdentifier identifier, final ReconstructionProgress reconstructionProgress) {
     if (reconstructionProgress == ReconstructionProgress.DONE) {
-      return null;
+      return Optional.empty();
     }
     final var resource = findResource(identifier, reconstructionProgress);
-    if (resource != null) {
-      return resource;
-    } else {
-      return findNextResource(null, nextProgress(reconstructionProgress));
-    }
+    return resource.or(() -> findNextResource(null, nextProgress(reconstructionProgress)));
   }
 
-  private Resource findResource(
+  private Optional<Resource> findResource(
       final ResourceIdentifier identifier, final ReconstructionProgress reconstructionProgress) {
     return switch (identifier) {
       case null ->
@@ -141,7 +139,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
             case PROCESS -> findProcessResource(null);
             case FORM -> findFormResource(null);
             case DECISION_REQUIREMENTS -> findDecisionRequirementsResource(null);
-            case DONE -> null;
+            case DONE -> Optional.empty();
           };
       case final ProcessIdentifier processIdentifier -> findProcessResource(processIdentifier);
       case final FormIdentifier form -> findFormResource(form);
@@ -150,7 +148,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     };
   }
 
-  private ProcessResource findProcessResource(final ProcessIdentifier identifier) {
+  private Optional<Resource> findProcessResource(final ProcessIdentifier identifier) {
     final var foundProcess = new MutableReference<PersistedProcess>();
 
     processState.forEachProcess(
@@ -167,10 +165,10 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           return false;
         });
 
-    return foundProcess.get() != null ? new ProcessResource(foundProcess.get()) : null;
+    return Optional.ofNullable(foundProcess.get()).map(ProcessResource::new);
   }
 
-  private FormResource findFormResource(final FormIdentifier identifier) {
+  private Optional<Resource> findFormResource(final FormIdentifier identifier) {
     final var foundForm = new MutableReference<PersistedForm>();
 
     formState.forEachForm(
@@ -187,10 +185,10 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           return false;
         });
 
-    return foundForm.get() != null ? new FormResource(foundForm.get()) : null;
+    return Optional.ofNullable(foundForm.get()).map(FormResource::new);
   }
 
-  private DecisionRequirementsResource findDecisionRequirementsResource(
+  private Optional<Resource> findDecisionRequirementsResource(
       final DecisionRequirementsIdentifier identifier) {
     final var foundDecisionRequirements = new MutableReference<PersistedDecisionRequirements>();
     final var foundDecisions = new MutableReference<Collection<PersistedDecision>>();
@@ -226,13 +224,11 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           return false;
         });
 
-    final var decisionRequirements = foundDecisionRequirements.get();
-    if (decisionRequirements != null) {
-      return new DecisionRequirementsResource(
-          foundDecisionDeploymentKey.get(), decisionRequirements, foundDecisions.get());
-    } else {
-      return null;
-    }
+    return Optional.ofNullable(foundDecisionRequirements.get())
+        .map(
+            decisionRequirements ->
+                new DecisionRequirementsResource(
+                    foundDecisionDeploymentKey.get(), decisionRequirements, foundDecisions.get()));
   }
 
   private Set<Resource> findResourcesWithDeploymentKey(
@@ -397,7 +393,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
       @Override
       public ResourceIdentifier identifier() {
-        return process != null ? new ProcessIdentifier(tenantId(), key()) : null;
+        return new ProcessIdentifier(tenantId(), key());
       }
     }
 
@@ -420,7 +416,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
       @Override
       public ResourceIdentifier identifier() {
-        return form != null ? new FormIdentifier(tenantId(), form.getFormKey()) : null;
+        return new FormIdentifier(tenantId(), form.getFormKey());
       }
     }
 
@@ -429,10 +425,6 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
         PersistedDecisionRequirements decisionRequirements,
         Collection<PersistedDecision> decisions)
         implements Resource {
-
-      static DecisionRequirementsResource empty() {
-        return new DecisionRequirementsResource(-1L, null, null);
-      }
 
       @Override
       public long key() {
@@ -446,9 +438,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
       @Override
       public ResourceIdentifier identifier() {
-        return decisionRequirements != null
-            ? new DecisionRequirementsIdentifier(tenantId(), key())
-            : null;
+        return new DecisionRequirementsIdentifier(tenantId(), key());
       }
     }
   }
