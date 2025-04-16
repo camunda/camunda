@@ -19,6 +19,7 @@ package io.atomix.raft.roles;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.RaftException;
+import io.atomix.raft.RaftException.AppendFailureException;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.cluster.RaftMember;
@@ -857,10 +858,10 @@ final class LeaderAppender {
     open = false;
     metrics.close();
     completeCommits(raft.getCommitIndex());
-    appendFutures
-        .values()
-        .forEach(
-            future -> future.completeExceptionally(new IllegalStateException("Inactive state")));
+    appendFutures.forEach(
+        (index, future) ->
+            future.completeExceptionally(
+                new AppendFailureException(index, "Leader stepping down")));
     heartbeatFutures.forEach(
         future ->
             future.completeExceptionally(
