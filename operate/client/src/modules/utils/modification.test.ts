@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {finishMovingToken} from './modifications';
+import {cancelAllTokens, finishMovingToken} from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
@@ -19,6 +19,7 @@ jest.mock('modules/stores/modifications', () => ({
       sourceFlowNodeInstanceKeyForMoveOperation: null,
       status: 'disabled',
     },
+    addCancelModification: jest.fn(),
     addMoveModification: jest.fn(),
   },
 }));
@@ -32,6 +33,30 @@ jest.mock('modules/tracking', () => ({
     track: jest.fn(),
   },
 }));
+
+describe('cancelAllTokens', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should add a cancel modification with the correct parameters', () => {
+    const flowNodeId = 'node1';
+    const totalRunningInstancesForFlowNode = 10;
+    const totalRunningInstancesVisibleForFlowNode = 5;
+
+    cancelAllTokens(
+      flowNodeId,
+      totalRunningInstancesForFlowNode,
+      totalRunningInstancesVisibleForFlowNode,
+    );
+
+    expect(modificationsStore.addCancelModification).toHaveBeenCalledWith({
+      flowNodeId,
+      affectedTokenCount: totalRunningInstancesForFlowNode,
+      visibleAffectedTokenCount: totalRunningInstancesVisibleForFlowNode,
+    });
+  });
+});
 
 describe('finishMovingToken', () => {
   const businessObjects: BusinessObjects = {
