@@ -50,6 +50,20 @@ public class GroupIT {
   }
 
   @TestTemplate
+  public void shouldSaveAndFindById(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final GroupReader groupReader = rdbmsService.getGroupReader();
+
+    final var group = GroupFixtures.createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriter, group);
+
+    final var instance = groupReader.findOne(group.groupId()).orElse(null);
+
+    compareGroups(instance, group);
+  }
+
+  @TestTemplate
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);

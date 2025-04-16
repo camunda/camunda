@@ -6317,6 +6317,7 @@ components:
           enum:
             - groupKey
             - name
+            - groupId
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:

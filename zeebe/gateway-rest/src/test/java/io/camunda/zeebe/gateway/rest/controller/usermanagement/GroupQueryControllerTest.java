@@ -36,7 +36,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@Disabled("Enable with https://github.com/camunda/camunda/issues/30285")
+@Disabled(
+    "Enable after https://github.com/camunda/camunda/issues/30010 and https://github.com/camunda/camunda/issues/30012")
 @WebMvcTest(value = GroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
 
