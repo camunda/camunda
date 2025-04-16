@@ -108,7 +108,7 @@ public class GroupServiceTest {
     when(client.searchGroups(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findGroup(1L);
+    final var searchQueryResult = services.findGroup("groupId");
 
     // then
     assertThat(searchQueryResult).contains(entity);
@@ -117,11 +117,11 @@ public class GroupServiceTest {
   @Test
   public void shouldThrowExceptionIfGroupNotFoundByKey() {
     // given
-    final var key = 100L;
+    final var id = "groupId";
     when(client.searchGroups(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
 
     // when / then
-    assertThat(services.findGroup(key)).isEmpty();
+    assertThat(services.findGroup(id)).isEmpty();
   }
 
   @Test

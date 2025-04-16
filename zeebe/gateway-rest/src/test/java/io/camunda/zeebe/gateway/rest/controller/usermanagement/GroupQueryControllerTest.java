@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -36,8 +35,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@Disabled(
-    "Enable after https://github.com/camunda/camunda/issues/30010 and https://github.com/camunda/camunda/issues/30012")
 @WebMvcTest(value = GroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
 
@@ -50,21 +47,21 @@ public class GroupQueryControllerTest extends RestControllerTest {
             "groupId":"%s",
             "name":"Group 1",
             "description":"Description 1",
-            "assignedMemberKeys":[]
+            "assignedMemberIds":[]
           },
           {
             "groupKey":"222",
             "groupId":"%s",
             "name":"Group 2",
             "description":"Description 2",
-            "assignedMemberKeys":[]
+            "assignedMemberIds":[]
           },
           {
             "groupKey":"333",
             "groupId":"%s",
             "name":"Group 3",
             "description":"Description 3",
-            "assignedMemberKeys":[]
+            "assignedMemberIds":[]
           }
         ],
         "page":{
@@ -92,12 +89,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var groupName = "groupName";
     final var groupDescription = "groupDescription";
     final var group = new GroupEntity(groupKey, groupId, groupName, groupDescription, Set.of());
-    when(groupServices.getGroup(group.groupKey())).thenReturn(group);
+    when(groupServices.getGroup(group.groupId())).thenReturn(group);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(GROUP_BASE_URL, group.groupKey()))
+        .uri("%s/%s".formatted(GROUP_BASE_URL, group.groupId()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -109,20 +106,21 @@ public class GroupQueryControllerTest extends RestControllerTest {
               "groupKey": "%d",
               "groupId": "%s",
               "name": "%s",
-              "description": "%s"
+              "description": "%s",
+              "assignedMemberIds": []
             }"""
                 .formatted(groupKey, groupId, groupName, groupDescription));
 
     // then
-    verify(groupServices, times(1)).getGroup(group.groupKey());
+    verify(groupServices, times(1)).getGroup(group.groupId());
   }
 
   @Test
   void shouldReturnNotFoundOnGetNonExistingGroup() {
     // given
-    final var groupKey = 100L;
-    final var path = "%s/%s".formatted(GROUP_BASE_URL, groupKey);
-    when(groupServices.getGroup(groupKey))
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s".formatted(GROUP_BASE_URL, groupId);
+    when(groupServices.getGroup(groupId))
         .thenThrow(
             new CamundaSearchException("group not found", CamundaSearchException.Reason.NOT_FOUND));
 
@@ -147,7 +145,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .formatted(path));
 
     // then
-    verify(groupServices, times(1)).getGroup(groupKey);
+    verify(groupServices, times(1)).getGroup(groupId);
   }
 
   @Test
@@ -200,18 +198,21 @@ public class GroupQueryControllerTest extends RestControllerTest {
                  "groupId": "%s",
                  "name": "%s",
                  "description": "%s",
+                 "assignedMemberIds": []
                },
                {
                  "groupKey": "%d",
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s"
+                 "description": "%s",
+                 "assignedMemberIds": []
                },
                {
                  "groupKey": "%d",
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s"
+                 "description": "%s",
+                 "assignedMemberIds": []
                }
              ],
              "page": {
@@ -358,7 +359,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [groupKey, name]",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [groupKey, name, groupId]",
                       "instance": "%s"
                     }""",
                 endpoint)),
