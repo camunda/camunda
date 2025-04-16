@@ -36,6 +36,13 @@ public interface CreateBatchOperationCommandStep1 {
    */
   CreateBatchOperationCommandStep2<ProcessInstanceFilter> resolveIncident();
 
+  /**
+   * Defines the type of the batch operation to modify process instance.
+   *
+   * @return the builder for this command
+   */
+  ProcessInstanceModificationStep<ProcessInstanceFilter> processInstanceModify();
+
   interface CreateBatchOperationCommandStep2<E extends SearchRequestFilter> {
 
     /**
@@ -53,6 +60,13 @@ public interface CreateBatchOperationCommandStep1 {
      * @return the builder for fluent use
      */
     CreateBatchOperationCommandStep3<E> filter(Consumer<E> filter);
+  }
+
+  interface ProcessInstanceModificationStep<E extends SearchRequestFilter>
+      extends CreateBatchOperationCommandStep2<E> {
+
+    ProcessInstanceModificationStep<E> moveInstruction(
+        String sourceElementId, String targetElementId);
   }
 
   interface CreateBatchOperationCommandStep3<E extends SearchRequestFilter>
