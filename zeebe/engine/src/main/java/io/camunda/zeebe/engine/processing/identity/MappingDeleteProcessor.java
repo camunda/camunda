@@ -14,10 +14,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -45,6 +47,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   private final MappingState mappingState;
   private final TenantState tenantState;
   private final AuthorizationState authorizationState;
+  private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -61,6 +64,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     mappingState = processingState.getMappingState();
     tenantState = processingState.getTenantState();
     authorizationState = processingState.getAuthorizationState();
+    membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -123,7 +127,9 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   private void deleteMapping(final PersistedMapping mapping) {
     final var mappingKey = mapping.getMappingKey();
     deleteAuthorizations(mappingKey);
-    for (final var tenantId : mapping.getTenantIdsList()) {
+    for (final var tenantId :
+        membershipState.getMemberships(
+            EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT)) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           tenant.getTenantKey(),

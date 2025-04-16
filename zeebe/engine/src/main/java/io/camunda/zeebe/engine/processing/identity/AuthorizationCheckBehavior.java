@@ -220,14 +220,11 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationRequest request, final List<PersistedMapping> persistedMappings) {
     final var tenantId = request.tenantId;
 
-    final var mappingAssignedToTenant =
-        persistedMappings.stream()
-            .flatMap(persistedMapping -> persistedMapping.getTenantIdsList().stream())
-            .collect(Collectors.toSet())
-            .contains(tenantId);
-
-    if (mappingAssignedToTenant) {
-      return true;
+    for (final var mapping : persistedMappings) {
+      if (membershipState.hasRelation(
+          EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT, tenantId)) {
+        return true;
+      }
     }
 
     final var groupIds =
@@ -464,13 +461,16 @@ public final class AuthorizationCheckBehavior {
         getPersistedMappings(command).stream()
             .flatMap(
                 mapping -> {
-                  final var tenantIdsList = mapping.getTenantIdsList();
+                  final var tenantIds =
+                      new ArrayList<>(
+                          membershipState.getMemberships(
+                              EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT));
                   final var groupIds =
                       mapping.getGroupKeysList().stream()
                           .map(key -> Long.toString(key))
                           .collect(Collectors.toSet());
-                  tenantIdsList.addAll(getTenantIdsForGroups(groupIds));
-                  return tenantIdsList.stream();
+                  tenantIds.addAll(getTenantIdsForGroups(groupIds));
+                  return tenantIds.stream();
                 })
             .toList();
     return tenantsOfMapping.isEmpty()

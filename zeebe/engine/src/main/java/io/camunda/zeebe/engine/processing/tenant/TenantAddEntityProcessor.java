@@ -158,7 +158,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       createEntityNotExistRejectCommand(command, mappingId, EntityType.MAPPING, tenantId);
       return false;
     }
-    if (mapping.get().getTenantIdsList().contains(tenantId)) {
+    if (membershipState.hasRelation(EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId)) {
       createAlreadyAssignedRejectCommand(command, mappingId, EntityType.MAPPING, tenantId);
       return false;
     }

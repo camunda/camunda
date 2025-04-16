@@ -31,16 +31,16 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
   @Override
   public void applyState(final long tenantKey, final TenantRecord tenant) {
     switch (tenant.getEntityType()) {
-      case USER, GROUP ->
+      case USER, GROUP, MAPPING ->
           membershipState.insertRelation(
               tenant.getEntityType(),
               tenant.getEntityId(),
               RelationType.TENANT,
               tenant.getTenantId());
-      case MAPPING -> {
-        tenantState.addEntity(tenant);
-        mappingState.addTenant(tenant.getEntityId(), tenant.getTenantId());
-      }
+      //      case MAPPING -> {
+      //        tenantState.addEntity(tenant);
+      //        mappingState.addTenant(tenant.getEntityId(), tenant.getTenantId());
+      //      }
       default ->
           throw new IllegalStateException(
               String.format(
