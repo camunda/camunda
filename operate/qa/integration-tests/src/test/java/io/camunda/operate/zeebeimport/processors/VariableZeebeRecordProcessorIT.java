@@ -33,14 +33,14 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 public class VariableZeebeRecordProcessorIT extends OperateSearchAbstractIT {
 
   @Autowired private VariableTemplate variableTemplate;
   @Autowired private VariableZeebeRecordProcessor variableZeebeRecordProcessor;
   @Autowired private BeanFactory beanFactory;
-  @MockBean private PartitionHolder partitionHolder;
+  @MockitoBean private PartitionHolder partitionHolder;
   @Autowired private ImportPositionHolder importPositionHolder;
   private final String newVarValue = "newVarValue";
 
