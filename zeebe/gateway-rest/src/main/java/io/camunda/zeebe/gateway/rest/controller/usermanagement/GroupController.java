@@ -107,15 +107,15 @@ public class GroupController {
     }
   }
 
-  @CamundaGetMapping(path = "/{groupKey}")
-  public ResponseEntity<Object> getGroup(@PathVariable final long groupKey) {
+  @CamundaGetMapping(path = "/{groupId}")
+  public ResponseEntity<Object> getGroup(@PathVariable final String groupId) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toGroup(
                   groupServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .getGroup(groupKey)));
+                      .getGroup(groupId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }

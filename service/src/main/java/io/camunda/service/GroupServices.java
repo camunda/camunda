@@ -74,12 +74,12 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             .setDescription(createGroupRequest.description));
   }
 
-  public GroupEntity getGroup(final Long groupKey) {
-    return findGroup(groupKey)
+  public GroupEntity getGroup(final String groupId) {
+    return findGroup(groupId)
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_KEY.formatted(groupKey),
+                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_ID.formatted(groupId),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
@@ -111,8 +111,8 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberIds(memberKeys)).build());
   }
 
-  public Optional<GroupEntity> findGroup(final Long groupKey) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupKey(groupKey)).build())
+  public Optional<GroupEntity> findGroup(final String groupId) {
+    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupId(groupId)).build())
         .items()
         .stream()
         .findFirst();
