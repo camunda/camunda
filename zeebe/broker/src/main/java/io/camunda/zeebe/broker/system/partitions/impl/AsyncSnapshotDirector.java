@@ -31,8 +31,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
@@ -264,39 +262,11 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private ActorFuture<PersistedSnapshot> snapshot(final InProgressSnapshot inProgressSnapshot) {
-    final ActorFuture<Void> takeTransientSnapshotFuture = actor.createFuture();
-    final ActorFuture<Void> getLastWrittenPositionFuture = actor.createFuture();
-    final ActorFuture<Void> lastWrittenPositionCommittedFuture = actor.createFuture();
-    final ActorFuture<Void> journalFlushFuture = actor.createFuture();
-    final ActorFuture<PersistedSnapshot> snapshotPersistedFuture = actor.createFuture();
-
-    takeTransientSnapshot(inProgressSnapshot).onComplete(takeTransientSnapshotFuture);
-
-    takeTransientSnapshotFuture.onComplete(
-        proceed(
-            getLastWrittenPositionFuture::completeExceptionally,
-            () ->
-                getLastWrittenPosition(inProgressSnapshot)
-                    .onComplete(getLastWrittenPositionFuture)));
-
-    getLastWrittenPositionFuture.onComplete(
-        proceed(
-            lastWrittenPositionCommittedFuture::completeExceptionally,
-            () ->
-                waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot)
-                    .onComplete(lastWrittenPositionCommittedFuture)));
-
-    lastWrittenPositionCommittedFuture.onComplete(
-        proceed(
-            journalFlushFuture::completeExceptionally,
-            () -> flushJournal().onComplete(journalFlushFuture)));
-
-    journalFlushFuture.onComplete(
-        proceed(
-            snapshotPersistedFuture::completeExceptionally,
-            () -> persistSnapshot(inProgressSnapshot).onComplete(snapshotPersistedFuture)));
-
-    return snapshotPersistedFuture;
+    return takeTransientSnapshot(inProgressSnapshot)
+        .andThen(() -> getLastWrittenPosition(inProgressSnapshot), actor)
+        .andThen(() -> waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot), actor)
+        .andThen(this::flushJournal, actor)
+        .andThen(() -> persistSnapshot(inProgressSnapshot), actor);
   }
 
   private ActorFuture<Void> flushJournal() {
@@ -433,17 +403,6 @@ public final class AsyncSnapshotDirector extends Actor
     }
 
     ongoingSnapshotFuture = null;
-  }
-
-  private BiConsumer<Void, Throwable> proceed(
-      final Consumer<Throwable> onError, final Runnable nextStep) {
-    return (ignore, error) -> {
-      if (error != null) {
-        onError.accept(error);
-      } else {
-        nextStep.run();
-      }
-    };
   }
 
   private static final class InProgressSnapshot {
