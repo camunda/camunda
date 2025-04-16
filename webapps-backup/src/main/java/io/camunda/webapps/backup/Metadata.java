@@ -8,25 +8,13 @@
 package io.camunda.webapps.backup;
 
 public record Metadata(Long backupId, String version, Integer partNo, Integer partCount) {
-  // FIXME
-  //  public static Metadata extractFromMetadataOrName(
-  //      final ObjectMapper objectMapper,
-  //      final Map<String, Object> metadata,
-  //      final String snapshotName) {
-  //    final Metadata fromMetadata = objectMapper.convertValue(metadata, Metadata.class);
-  //    if (fromMetadata != null && fromMetadata.isInitialized()) {
-  //      return fromMetadata;
-  //    } else {
-  //      return Metadata.extractMetadataFromSnapshotName(snapshotName);
-  //    }
-  //  }
 
   public boolean isInitialized() {
     return partNo != null
         && partCount != null
         && partCount > 0
         && version != null
-        && version.length() > 0;
+        && !version.isEmpty();
   }
 
   public Metadata withPart(final int part) {
