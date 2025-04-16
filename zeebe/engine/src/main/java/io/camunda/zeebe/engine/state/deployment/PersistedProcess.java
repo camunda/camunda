@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.immutable.DeployableResource;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
@@ -20,7 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 
-public final class PersistedProcess extends UnpackedObject implements DbValue {
+public final class PersistedProcess extends UnpackedObject implements DbValue, DeployableResource {
   private static final long NO_DEPLOYMENT_KEY = -1L;
   private final IntegerProperty versionProp = new IntegerProperty("version", -1);
   private final LongProperty keyProp = new LongProperty("key", -1L);
@@ -76,12 +77,14 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
     return bpmnProcessIdProp.getValue();
   }
 
-  public DirectBuffer getResourceName() {
-    return resourceNameProp.getValue();
-  }
-
+  @Override
   public DirectBuffer getResource() {
     return resourceProp.getValue();
+  }
+
+  @Override
+  public DirectBuffer getResourceName() {
+    return resourceNameProp.getValue();
   }
 
   public PersistedProcessState getState() {

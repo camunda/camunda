@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.immutable.DeployableResource;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -21,7 +22,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class PersistedForm extends UnpackedObject implements DbValue {
+public final class PersistedForm extends UnpackedObject implements DbValue, DeployableResource {
   private static final long NO_DEPLOYMENT_KEY = -1L;
 
   private final StringProperty formIdProp = new StringProperty("formId");
@@ -79,12 +80,14 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     return formKeyProp.getValue();
   }
 
-  public DirectBuffer getResourceName() {
-    return resourceNameProp.getValue();
-  }
-
+  @Override
   public DirectBuffer getResource() {
     return resourceProp.getValue();
+  }
+
+  @Override
+  public DirectBuffer getResourceName() {
+    return resourceNameProp.getValue();
   }
 
   public DirectBuffer getChecksum() {

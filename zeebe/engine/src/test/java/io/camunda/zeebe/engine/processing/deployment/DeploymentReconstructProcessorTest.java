@@ -30,11 +30,15 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -180,26 +184,20 @@ final class DeploymentReconstructProcessorTest {
     final var command = mockedCommand();
 
     final var deploymentKey = Protocol.encodePartitionId(1, 1);
-    final var processKey1 = Protocol.encodePartitionId(1, 2);
-    final var processKey2 = Protocol.encodePartitionId(1, 3);
-    state
-        .getProcessState()
-        .putProcess(
-            processKey1,
-            new ProcessRecord()
-                .setDeploymentKey(deploymentKey)
-                .setBpmnProcessId("process1")
-                .setResourceName("process1.bpmn")
-                .setVersion(1));
-    state
-        .getProcessState()
-        .putProcess(
-            processKey2,
-            new ProcessRecord()
-                .setDeploymentKey(deploymentKey)
-                .setBpmnProcessId("process2")
-                .setResourceName("process2.bpmn")
-                .setVersion(1));
+    final var processKeys =
+        Stream.of(2, 3).mapToLong(idx -> Protocol.encodePartitionId(1, idx)).toArray();
+    for (int i = 0; i < 2; i++) {
+      state
+          .getProcessState()
+          .putProcess(
+              processKeys[i],
+              new ProcessRecord()
+                  .setDeploymentKey(deploymentKey)
+                  .setBpmnProcessId(String.format("process%d", i + 1))
+                  .setResourceName(String.format("process%d.bpmn", i + 1))
+                  .setResource(BufferUtil.wrapString(String.format("process resource #%d", i + 1)))
+                  .setVersion(1));
+    }
 
     // when
     processor.processRecord(command);
@@ -215,6 +213,19 @@ final class DeploymentReconstructProcessorTest {
                   deploymentRecord -> {
                     assertThat(deploymentRecord.getProcessesMetadata()).hasSize(2);
                     assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+
+                    assertThat(deploymentRecord.getResources()).hasSize(2);
+                    assertThat(
+                            deploymentRecord.getResources().stream()
+                                .sorted(Comparator.comparing(DeploymentResource::getResourceName)))
+                        .zipSatisfy(
+                            List.of(1, 2),
+                            (resource, index) -> {
+                              assertThat(resource.getResourceName())
+                                  .isEqualTo(String.format("process%d.bpmn", index));
+                              assertThat(new String(resource.getResource()))
+                                  .isEqualTo(String.format("process resource #%d", index));
+                            });
                   });
         });
   }
@@ -308,6 +319,7 @@ final class DeploymentReconstructProcessorTest {
                 .setFormKey(formKey1)
                 .setFormId("form1")
                 .setResourceName("form1.form")
+                .setResource(BufferUtil.wrapString("form resource #1"))
                 .setVersion(1));
     state
         .getFormState()
@@ -317,6 +329,7 @@ final class DeploymentReconstructProcessorTest {
                 .setFormKey(formKey2)
                 .setFormId("form2")
                 .setResourceName("form2.form")
+                .setResource(BufferUtil.wrapString("form resource #2"))
                 .setVersion(1));
 
     // when
@@ -333,6 +346,16 @@ final class DeploymentReconstructProcessorTest {
                   deploymentRecord -> {
                     assertThat(deploymentRecord.getFormMetadata()).hasSize(2);
                     assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                    assertThat(deploymentRecord.getResources()).hasSize(2);
+                    assertThat(deploymentRecord.getResources())
+                        .zipSatisfy(
+                            List.of(1, 2),
+                            (resource, index) -> {
+                              assertThat(resource.getResourceName())
+                                  .isEqualTo(String.format("form%d.form", index));
+                              assertThat(new String(resource.getResource()))
+                                  .isEqualTo(String.format("form resource #%d", index));
+                            });
                   });
         });
   }
@@ -430,7 +453,10 @@ final class DeploymentReconstructProcessorTest {
     state
         .getDecisionState()
         .storeDecisionRequirements(
-            new DecisionRequirementsRecord().setDecisionRequirementsKey(decisionRequirementsKey));
+            new DecisionRequirementsRecord()
+                .setDecisionRequirementsKey(decisionRequirementsKey)
+                .setResourceName("decision-resource.decision")
+                .setResource(BufferUtil.wrapString("decision requirements binary")));
     state
         .getDecisionState()
         .storeDecisionRecord(
@@ -466,6 +492,15 @@ final class DeploymentReconstructProcessorTest {
                   deploymentRecord -> {
                     assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(2);
                     assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                    assertThat(deploymentRecord.getResources())
+                        .singleElement()
+                        .satisfies(
+                            resource -> {
+                              assertThat(new String(resource.getResource()))
+                                  .isEqualTo("decision requirements binary");
+                              assertThat(resource.getResourceName())
+                                  .isEqualTo("decision-resource.decision");
+                            });
                   });
         });
   }
@@ -513,6 +548,7 @@ final class DeploymentReconstructProcessorTest {
             new ProcessRecord()
                 .setBpmnProcessId("process")
                 .setResourceName("process.bpmn")
+                .setResource(BufferUtil.wrapString("process binary resource"))
                 .setTenantId("tenant-id")
                 .setVersion(1));
 
@@ -523,6 +559,7 @@ final class DeploymentReconstructProcessorTest {
             new ProcessRecord()
                 .setBpmnProcessId("process2")
                 .setResourceName("process2.bpmn")
+                .setResource(BufferUtil.wrapString("process binary resource #2"))
                 .setTenantId("tenant-id")
                 .setVersion(2));
     state
@@ -534,12 +571,15 @@ final class DeploymentReconstructProcessorTest {
                 .setFormId("form")
                 .setTenantId("form-tenant")
                 .setResourceName("form.form")
+                .setResource(BufferUtil.wrapString("form binary resource"))
                 .setVersion(1));
     state
         .getDecisionState()
         .storeDecisionRequirements(
             new DecisionRequirementsRecord()
                 .setTenantId("decision-tenant")
+                .setResourceName("decision-resource.decision")
+                .setResource(BufferUtil.wrapString("decision requirement binary resource"))
                 .setDecisionRequirementsKey(decisionRequirementsKey));
     state
         .getDecisionState()
@@ -564,6 +604,14 @@ final class DeploymentReconstructProcessorTest {
                   .satisfies(el -> assertThat(el.getBpmnProcessId()).isEqualTo("process"));
               assertThat(record.decisionsMetadata()).isEmpty();
               assertThat(record.formMetadata()).isEmpty();
+              assertThat(record.getResources())
+                  .singleElement()
+                  .satisfies(
+                      resource -> {
+                        assertThat(resource.getResourceName()).isEqualTo("process.bpmn");
+                        assertThat(new String(resource.getResource()))
+                            .isEqualTo("process binary resource");
+                      });
             });
 
     // when
@@ -578,6 +626,14 @@ final class DeploymentReconstructProcessorTest {
                   .satisfies(el -> assertThat(el.getBpmnProcessId()).isEqualTo("process2"));
               assertThat(record.decisionsMetadata()).isEmpty();
               assertThat(record.formMetadata()).isEmpty();
+              assertThat(record.getResources())
+                  .singleElement()
+                  .satisfies(
+                      resource -> {
+                        assertThat(resource.getResourceName()).isEqualTo("process2.bpmn");
+                        assertThat(new String(resource.getResource()))
+                            .isEqualTo("process binary resource #2");
+                      });
             });
 
     // when
@@ -591,7 +647,18 @@ final class DeploymentReconstructProcessorTest {
               assertThat(record.decisionsMetadata()).isEmpty();
               assertThat(record.formMetadata())
                   .singleElement()
-                  .satisfies(el -> assertThat(el.getFormKey()).isEqualTo(formKey));
+                  .satisfies(
+                      el -> {
+                        assertThat(el.getFormKey()).isEqualTo(formKey);
+                        assertThat(record.getResources())
+                            .singleElement()
+                            .satisfies(
+                                resource -> {
+                                  assertThat(resource.getResourceName()).isEqualTo("form.form");
+                                  assertThat(new String(resource.getResource()))
+                                      .isEqualTo("form binary resource");
+                                });
+                      });
             });
 
     // when
@@ -605,7 +672,15 @@ final class DeploymentReconstructProcessorTest {
               assertThat(record.formMetadata()).isEmpty();
               assertThat(record.decisionsMetadata())
                   .singleElement()
-                  .satisfies(el -> assertThat(el.getDecisionKey()).isEqualTo(decisionKey));
+                  .satisfies(
+                      el -> {
+                        assertThat(el.getDecisionKey()).isEqualTo(decisionKey);
+                        final var resource = record.getResources().getFirst();
+                        assertThat(resource.getResourceName())
+                            .isEqualTo("decision-resource.decision");
+                        assertThat(new String(resource.getResource()))
+                            .isEqualTo("decision requirement binary resource");
+                      });
             });
 
     // when
