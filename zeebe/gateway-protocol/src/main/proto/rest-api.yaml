@@ -6303,9 +6303,15 @@ components:
         groupKey:
           type: string
           description: The group key.
-        assignedMemberKeys:
+        groupId:
+          type: string
+          description: The group ID.
+        description:
+          type: string
+          description: The group description.
+        assignedMemberIds:
           type: array
-          description: The set of keys of members assigned to the group.
+          description: The IDs of members assigned to the group.
           items:
             type: string
     GroupSearchQuerySortRequest:
