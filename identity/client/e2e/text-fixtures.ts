@@ -9,22 +9,17 @@
 import { test as base } from "@playwright/test";
 import { Header } from "./pages/Header";
 import { LoginPage } from "./pages/LoginPage";
-import { Users } from "./pages/Users";
+import { UsersPage } from "./pages/UsersPage";
+import { createFixture } from "./utils/createFixture";
 
-type PlaywrightFixtures = {
+type Fixtures = {
   header: Header;
   loginPage: LoginPage;
-  usersPage: Users;
+  usersPage: UsersPage;
 };
 
-export const test = base.extend<PlaywrightFixtures>({
-  header: async ({ page }, use) => {
-    await use(new Header(page));
-  },
-  loginPage: async ({ page }, use) => {
-    await use(new LoginPage(page));
-  },
-  usersPage: async ({ page }, use) => {
-    await use(new Users(page));
-  },
+export const test = base.extend<Fixtures>({
+  header: createFixture(Header),
+  loginPage: createFixture(LoginPage),
+  usersPage: createFixture(UsersPage),
 });
