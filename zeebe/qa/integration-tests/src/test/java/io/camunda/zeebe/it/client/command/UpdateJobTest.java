@@ -13,11 +13,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.client.api.command.JobChangeset;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.impl.ResponseMapper;
-import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -147,15 +146,11 @@ public class UpdateJobTest {
     final long jobKey = job.getKey();
     final int retries = 10;
     final long timeout = Duration.ofMinutes(15).toMillis();
-    final var changeset = new JobChangeset().retries(retries).timeout(timeout);
+    final var jobChangeset = new JobChangeset().setRetries(retries).setTimeout(timeout);
     final var initialDeadline = job.getDeadline();
 
     // when
-    client
-        .newUpdateJobCommand(jobKey)
-        .update(ResponseMapper.fromProtocolObject(changeset))
-        .send()
-        .join();
+    client.newUpdateJobCommand(jobKey).update(jobChangeset).send().join();
 
     // then
     assertTimeoutIncreased(initialDeadline, jobKey, true);
@@ -170,15 +165,11 @@ public class UpdateJobTest {
     final var job = activateJob(client, true, jobType);
     final long jobKey = job.getKey();
     final int retries = 10;
-    final var changeset = new JobChangeset().retries(retries);
+    final var jobChangeset = new JobChangeset().setRetries(retries);
     final var initialDeadline = job.getDeadline();
 
     // when
-    client
-        .newUpdateJobCommand(jobKey)
-        .update(ResponseMapper.fromProtocolObject(changeset))
-        .send()
-        .join();
+    client.newUpdateJobCommand(jobKey).update(jobChangeset).send().join();
 
     // then
     assertRetriesUpdated(jobKey, true, retries);
@@ -194,16 +185,12 @@ public class UpdateJobTest {
     final var job = activateJob(client, true, jobType);
     final long jobKey = job.getKey();
     final long timeout = Duration.ofMinutes(15).toMillis();
-    final var changeset = new JobChangeset().timeout(timeout);
+    final var jobChangeset = new JobChangeset().setTimeout(timeout);
     final var initialDeadline = job.getDeadline();
     final var initialRetries = job.getRetries();
 
     // when
-    client
-        .newUpdateJobCommand(jobKey)
-        .update(ResponseMapper.fromProtocolObject(changeset))
-        .send()
-        .join();
+    client.newUpdateJobCommand(jobKey).update(jobChangeset).send().join();
 
     // then
     assertTimeoutIncreased(initialDeadline, jobKey, true);

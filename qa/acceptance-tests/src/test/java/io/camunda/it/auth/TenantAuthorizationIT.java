@@ -7,9 +7,9 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.TENANT;
+import static io.camunda.client.api.search.enums.PermissionType.CREATE;
+import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.ResourceType.TENANT;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;

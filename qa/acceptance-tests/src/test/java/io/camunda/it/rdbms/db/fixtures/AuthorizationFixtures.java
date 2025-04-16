@@ -7,8 +7,8 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel.Builder;
@@ -35,8 +35,8 @@ public final class AuthorizationFixtures extends CommonFixtures {
         new Builder()
             .authorizationKey(nextKey())
             .ownerId(ownerId)
-            .ownerType(randomEnum(OwnerTypeEnum.class).name())
-            .resourceType(randomEnum(ResourceTypeEnum.class).name())
+            .ownerType(randomEnum(OwnerType.class).name())
+            .resourceType(randomEnum(ResourceType.class).name())
             .resourceId(nextStringId())
             .permissionTypes(Set.of(randomPermissionType1, randomPermissionType2));
 

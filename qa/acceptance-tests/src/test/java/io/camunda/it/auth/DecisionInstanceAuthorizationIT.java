@@ -7,11 +7,9 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE_DECISION_INSTANCE;
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_DECISION_INSTANCE;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.DECISION_DEFINITION;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
+import static io.camunda.client.api.search.enums.PermissionType.*;
+import static io.camunda.client.api.search.enums.ResourceType.DECISION_DEFINITION;
+import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

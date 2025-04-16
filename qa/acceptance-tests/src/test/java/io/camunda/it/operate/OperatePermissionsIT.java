@@ -7,9 +7,9 @@
  */
 package io.camunda.it.operate;
 
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_DEFINITION;
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
