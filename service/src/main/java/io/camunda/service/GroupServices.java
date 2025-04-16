@@ -133,10 +133,10 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public CompletableFuture<GroupRecord> assignMember(
-      final String groupId, final String username, final EntityType memberType) {
+      final String groupId, final String entityId, final EntityType memberType) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createAddRequest(groupId)
-            .setMemberId(username)
+            .setMemberId(entityId)
             .setMemberType(memberType));
   }
 
@@ -149,4 +149,6 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public record CreateGroupRequest(String groupId, String name, String description) {}
+
+  public record GroupMemberRequest(String groupId, String entityId, EntityType entityType) {}
 }
