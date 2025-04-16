@@ -1,7 +1,7 @@
 -------------------------------------------
 Access each component at the following urls:
 
-Camunda 8 API:      http://localhost:8080/v2/
+Camunda 8 API:      http://localhost:{{.ServerPort}}/v2/
 Inbound Connectors: http://localhost:8085/
 Operate API:        http://localhost:8081/
 Optimize API:       http://localhost:8083/
