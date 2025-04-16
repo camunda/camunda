@@ -31,6 +31,11 @@ import java.util.Optional;
  */
 public final class ProcessInstanceStateTransitionGuard {
 
+  private static final String UNSUPPORTED_INTENT_MESSAGE =
+      "Expected the check of the preconditions of a command with intent "
+          + "[ACTIVATE_ELEMENT,COMPLETE_ELEMENT,TERMINATE_ELEMENT,"
+          + "CONTINUE_TERMINATING_ELEMENT,COMPLETE_EXECUTION_LISTENER] but the intent was '%s'";
+
   private final BpmnStateBehavior stateBehavior;
   private final BpmnInclusiveGatewayBehavior inclusiveGatewayBehavior;
 
@@ -78,12 +83,7 @@ public final class ProcessInstanceStateTransitionGuard {
               context,
               ProcessInstanceIntent.ELEMENT_ACTIVATING,
               ProcessInstanceIntent.ELEMENT_COMPLETING);
-      default ->
-          Either.left(
-              String.format(
-                  "Expected the check of the preconditions of a command with intent "
-                      + "[activate,complete,terminate,continue_terminating,complete_el] but the intent was '%s'",
-                  context.getIntent()));
+      default -> Either.left(UNSUPPORTED_INTENT_MESSAGE.formatted(context.getIntent()));
     };
   }
 
