@@ -69,7 +69,17 @@ public class CommonFixtures {
   }
 
   public static <T extends Enum<?>> T randomEnum(final Class<T> clazz) {
-    final int x = RANDOM.nextInt(clazz.getEnumConstants().length);
-    return clazz.getEnumConstants()[x];
+    T value = null;
+    int retries = 0;
+    while (value == null || value.name().equals("UNKNOWN_ENUM_VALUE")) {
+      final int x = RANDOM.nextInt(clazz.getEnumConstants().length);
+      value = clazz.getEnumConstants()[x];
+      retries++;
+      if (retries >= 100) {
+        throw new RuntimeException(
+            String.format("Could not generate valid random enum of type %s", clazz.getName()));
+      }
+    }
+    return value;
   }
 }
