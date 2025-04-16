@@ -2828,6 +2828,44 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Group
+      operationId: unassignMappingFromGroup
+      summary: Unassign a mapping rule from a group (Work-in-Progress)
+      description: |
+        Unassigns a mapping rule from a group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            type: string
+        - name: mappingId
+          in: path
+          required: true
+          description: The mapping rule ID.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The mapping rule was unassigned successfully from the group.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group or mapping rule with the given ID was not found, or the mapping rule is not assigned to this group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /groups/search:
     post:
       tags:
