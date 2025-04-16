@@ -71,11 +71,6 @@ public class DbMigratorImpl implements DbMigrator {
   private int skippedMigrations = 0;
 
   public DbMigratorImpl(
-      final ClusterContext clusterContext, final MutableProcessingState processingState) {
-    this(true, new MigrationTaskContextImpl(clusterContext, processingState), MIGRATION_TASKS);
-  }
-
-  public DbMigratorImpl(
       final boolean versionCheckRestrictionEnabled,
       final ClusterContext clusterContext,
       final MutableProcessingState processingState) {
