@@ -662,7 +662,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MappingSearchQueryResult"
 
-  /tenants/{tenantId}/groups/{groupKey}:
+  /tenants/{tenantId}/groups/{groupId}:
     put:
       tags:
         - Tenant
@@ -676,7 +676,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
           description: The unique identifier of the group.
@@ -711,7 +711,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
           description: The unique identifier of the group.
