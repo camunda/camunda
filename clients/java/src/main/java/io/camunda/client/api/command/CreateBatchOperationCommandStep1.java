@@ -43,6 +43,13 @@ public interface CreateBatchOperationCommandStep1 {
    */
   ProcessInstanceMigrationStep<ProcessInstanceFilter> migrateProcessInstance();
 
+  /**
+   * Defines the type of the batch operation to modify process instance.
+   *
+   * @return the builder for this command
+   */
+  ProcessInstanceModificationStep<ProcessInstanceFilter> modifyProcessInstance();
+
   interface CreateBatchOperationCommandStep2<E extends SearchRequestFilter> {
 
     /**
@@ -71,6 +78,46 @@ public interface CreateBatchOperationCommandStep1 {
         String sourceElementId, String targetElementId);
 
     ProcessInstanceMigrationStep<E> targetProcessDefinitionKey(long targetProcessDefinitionKey);
+  }
+
+  interface ProcessInstanceModificationStep<E extends SearchRequestFilter>
+      extends CreateBatchOperationCommandStep2<E> {
+
+    /**
+     * Adds a move instruction to the command. These instructions will be applied to all matching
+     * sourceElementIds and create matching new targetElementId's tokens on all processInstances
+     * matching the filter.
+     *
+     * <p><b>Example: </b><br>
+     * Given a process instance with the following structure:
+     *
+     * <pre>
+     *   (start) -----> [ taskA ] -----> [ taskB ] ----> (end)
+     * </pre>
+     *
+     * A running processInstance has an active element <code>taskA</code>.<br>
+     * <br>
+     * When the following move instructions are applied:
+     *
+     * <ul>
+     *   <li>sourceElementId: <code>taskA</code>, targetElementId: <code>taskB</code>
+     * </ul>
+     *
+     * Then <code>taskA</code> will be terminated and <code>taskB</code> will be activated.
+     *
+     * <ul>
+     *   <li>move instructions, matching no active source element will have no effect on the
+     *       processInstance
+     *   <li>elements not matching any move instruction, will stay untouched
+     *   <li>when the processInstance has more than one active instance of a sourceElement, all
+     *       sourceElements will be terminated and for each terminated element a new targetElement
+     *       will be activated
+     * </ul>
+     *
+     * @return Returns a list of move instructions
+     */
+    ProcessInstanceModificationStep<E> addMoveInstruction(
+        String sourceElementId, String targetElementId);
   }
 
   interface CreateBatchOperationCommandStep3<E extends SearchRequestFilter>

@@ -23,6 +23,7 @@ import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.CreateBatchOperationCommandStep2;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.CreateBatchOperationCommandStep3;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.ProcessInstanceMigrationStep;
+import io.camunda.client.api.command.CreateBatchOperationCommandStep1.ProcessInstanceModificationStep;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
@@ -37,7 +38,11 @@ import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -47,6 +52,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     implements ProcessInstanceMigrationStep<E>,
         CreateBatchOperationCommandStep2<E>,
+        ProcessInstanceModificationStep<E>,
         CreateBatchOperationCommandStep3<E> {
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -57,6 +63,8 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   private E filter;
   private final ProcessInstanceMigrationInstruction migrationPlan =
       new ProcessInstanceMigrationInstruction();
+  private final List<ProcessInstanceModificationMoveBatchOperationInstruction> moveInstructions =
+      new ArrayList<>();
 
   public CreateBatchOperationCommandImpl(
       final HttpClient httpClient,
@@ -81,6 +89,18 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   public CreateBatchOperationCommandStep3<E> filter(final Consumer<E> fn) {
     Objects.requireNonNull(fn, "must specify a filter consumer");
     filter = filterFactory.apply(fn);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceModificationStep<E> addMoveInstruction(
+      final String sourceElementId, final String targetElementId) {
+    Objects.requireNonNull(sourceElementId, "must specify a source element id");
+    Objects.requireNonNull(targetElementId, "must specify a target element id");
+    moveInstructions.add(
+        new ProcessInstanceModificationMoveBatchOperationInstruction()
+            .sourceElementId(sourceElementId)
+            .targetElementId(targetElementId));
     return this;
   }
 
@@ -114,6 +134,8 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
         return "/process-instances/batch-operations/incident-resolution";
       case MIGRATE_PROCESS_INSTANCE:
         return "/process-instances/batch-operations/migration";
+      case MODIFY_PROCESS_INSTANCE:
+        return "/process-instances/batch-operations/modification";
       default:
         throw new IllegalArgumentException("Unsupported batch operation type: " + type);
     }
@@ -124,6 +146,10 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
       return new ProcessInstanceMigrationBatchOperationInstruction()
           .filter(provideSearchRequestProperty(filter))
           .migrationPlan(migrationPlan);
+    } else if (type == BatchOperationTypeEnum.MODIFY_PROCESS_INSTANCE) {
+      return new ProcessInstanceModificationBatchOperationInstruction()
+          .filter(provideSearchRequestProperty(filter))
+          .moveInstructions(moveInstructions);
     } else {
       return provideSearchRequestProperty(filter);
     }
@@ -196,6 +222,15 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
           httpClient,
           jsonMapper,
           BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE,
+          SearchRequestBuilders::processInstanceFilter);
+    }
+
+    @Override
+    public ProcessInstanceModificationStep<ProcessInstanceFilter> modifyProcessInstance() {
+      return new CreateBatchOperationCommandImpl<>(
+          httpClient,
+          jsonMapper,
+          BatchOperationTypeEnum.MODIFY_PROCESS_INSTANCE,
           SearchRequestBuilders::processInstanceFilter);
     }
   }
