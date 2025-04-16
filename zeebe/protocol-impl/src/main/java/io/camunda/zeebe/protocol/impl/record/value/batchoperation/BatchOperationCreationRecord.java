@@ -25,6 +25,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public static final String PROP_BATCH_OPERATION_TYPE = "batchOperationType";
   public static final String PROP_ENTITY_FILTER = "entityFilter";
   public static final String PROP_MIGRATION_PLAN = "migrationPlan";
+  public static final String PROP_MODIFICATION_PLAN = "modificationPlan";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
@@ -33,13 +34,17 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
       new BinaryProperty(PROP_ENTITY_FILTER, new UnsafeBuffer());
   private final ObjectProperty<BatchOperationProcessInstanceMigrationPlan> migrationPlanProp =
       new ObjectProperty<>(PROP_MIGRATION_PLAN, new BatchOperationProcessInstanceMigrationPlan());
+  private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
+      new ObjectProperty<>(
+          PROP_MODIFICATION_PLAN, new BatchOperationProcessInstanceModificationPlan());
 
   public BatchOperationCreationRecord() {
-    super(4);
+    super(5);
     declareProperty(batchOperationKeyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(entityFilterProp)
-        .declareProperty(migrationPlanProp);
+        .declareProperty(migrationPlanProp)
+        .declareProperty(modificationPlanProp);
   }
 
   @Override
@@ -87,6 +92,17 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public BatchOperationProcessInstanceModificationPlanValue getModificationPlan() {
+    return modificationPlanProp.getValue();
+  }
+
+  public BatchOperationCreationRecord setModificationPlan(
+      final BatchOperationProcessInstanceModificationPlanValue migrationPlan) {
+    modificationPlanProp.getValue().wrap(migrationPlan);
+    return this;
+  }
+
   public DirectBuffer getEntityFilterBuffer() {
     return entityFilterProp.getValue();
   }
@@ -96,6 +112,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     batchOperationTypeProp.setValue(record.getBatchOperationType());
     entityFilterProp.setValue(record.getEntityFilterBuffer());
     migrationPlanProp.getValue().wrap(record.getMigrationPlan());
+    modificationPlanProp.getValue().wrap(record.getModificationPlan());
     return this;
   }
 }
