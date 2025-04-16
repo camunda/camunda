@@ -22,6 +22,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerTenantEntityRequest;
@@ -230,5 +231,19 @@ public class TenantServiceTest {
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
     assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
+  }
+
+  @Test
+  public void shouldThrowForbiddenIfNotAuthorized() {
+    final Authentication auth = Authentication.of(builder -> builder.user("unauthorizedUser"));
+    final var contextProvider = mock(SecurityContextProvider.class);
+    when(contextProvider.isAuthorized(any(), any(), any())).thenReturn(false);
+
+    final var service = new TenantServices(stubbedBrokerClient, contextProvider, client, auth);
+    when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.searchTenants(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(tenantEntity), null, null));
+
+    assertThatCode(() -> service.getById("tenant-id")).isInstanceOf(ForbiddenException.class);
   }
 }
