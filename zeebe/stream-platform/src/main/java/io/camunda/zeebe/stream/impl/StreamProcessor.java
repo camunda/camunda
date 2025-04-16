@@ -23,7 +23,6 @@ import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
-import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
 import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
@@ -254,7 +253,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public ActorFuture<Void> closeAsync() {
     if (isOpened.getAndSet(false)) {
-      actor.run(() -> asyncScheduleServiceContext.closeAsync().onComplete((v, t) -> actor.close()));
+      actor.run(() -> asyncScheduleServiceContext.closeActors(actor).andThen(actor::close, actor));
     }
 
     return closeFuture;
@@ -372,30 +371,35 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
     metrics.setStreamProcessorProcessing();
 
-    AsyncUtil.chainSteps(
-        0,
-        new Step[] {
-          () -> processorActorService.open(actor), () -> asyncScheduleServiceContext.submitActors()
-        },
-        () -> startProcessing(lastProcessingPositions),
-        this::onFailure);
+    processorActorService
+        .open(actor)
+        .andThen(() -> asyncScheduleServiceContext.submitActors(actor), actor)
+        .onComplete(
+            (ignored, error) -> {
+              if (error != null) {
+                onFailure(error);
+              }
+              startProcessing(lastProcessingPositions);
+            },
+            actor);
   }
 
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
 
-    final var asyncActorCloseFuture = asyncScheduleServiceContext.closeAsync();
-    asyncActorCloseFuture.onComplete(
-        (v, t) -> {
-          actor.fail(throwable);
-          if (!openFuture.isDone()) {
-            openFuture.completeExceptionally(throwable);
-          }
+    asyncScheduleServiceContext
+        .closeActors(actor)
+        .onComplete(
+            (v, t) -> {
+              actor.fail(throwable);
+              if (!openFuture.isDone()) {
+                openFuture.completeExceptionally(throwable);
+              }
 
-          final var report =
-              HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
-          failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
-        });
+              final var report =
+                  HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
+              failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
+            });
   }
 
   public boolean isOpened() {

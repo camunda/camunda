@@ -8,13 +8,13 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.AsyncClosable;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
-import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
 import java.util.EnumMap;
 
-class AsyncScheduleServiceContext implements AsyncClosable {
+class AsyncScheduleServiceContext {
   private final ActorSchedulingService actorSchedulingService;
   private final ProcessingScheduleServiceFactory actorServiceFactory;
   private final int partitionId;
@@ -38,24 +38,21 @@ class AsyncScheduleServiceContext implements AsyncClosable {
     return asyncActors.get(taskGroup);
   }
 
-  public ActorFuture<Void> submitActors() {
-    final Step[] submitActorSteps =
-        asyncActors.entrySet().stream()
-            .map((e) -> (Step) () -> submitActor(e.getKey(), e.getValue()))
-            .toArray(Step[]::new);
-    return AsyncUtil.chainSteps(0, submitActorSteps);
+  public ActorFuture<Void> submitActors(final ConcurrencyControl concurrencyControl) {
+    return asyncActors.entrySet().stream()
+        .map(
+            entry ->
+                actorSchedulingService.submitActor(
+                    entry.getValue(), entry.getKey().getSchedulingHints()))
+        .collect(new ActorFutureCollector<>(concurrencyControl))
+        .thenApply(results -> null, concurrencyControl);
   }
 
-  @Override
-  public ActorFuture<Void> closeAsync() {
-    final Step[] array =
-        asyncActors.values().stream().map(a -> (Step) a::closeAsync).toArray(Step[]::new);
-    return AsyncUtil.chainSteps(0, array);
-  }
-
-  private ActorFuture<Void> submitActor(
-      final AsyncTaskGroup taskGroup, final AsyncProcessingScheduleServiceActor actor) {
-    return actorSchedulingService.submitActor(actor, taskGroup.getSchedulingHints());
+  public ActorFuture<Void> closeActors(final ConcurrencyControl concurrencyControl) {
+    return asyncActors.values().stream()
+        .map(AsyncProcessingScheduleServiceActor::closeAsync)
+        .collect(new ActorFutureCollector<>(concurrencyControl))
+        .thenApply(results -> null, concurrencyControl);
   }
 
   private EnumMap<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> createAsyncActors() {
