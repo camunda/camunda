@@ -101,6 +101,15 @@ public class GroupController {
                 .removeMember(groupId, username, EntityType.USER));
   }
 
+  @CamundaDeleteMapping(
+      path = "/{groupId}/mapping-rules/{mappingId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> unassignMappingToGroup(
+      @PathVariable final String groupId, @PathVariable final String mappingId) {
+    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMapping);
+  }
+
   @CamundaGetMapping(path = "/{groupKey}/users")
   public ResponseEntity<UserSearchResult> usersByGroup(
       @PathVariable("groupKey") final long groupKey) {
@@ -177,5 +186,13 @@ public class GroupController {
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .assignMember(request.groupId(), request.entityId(), request.entityType()));
+  }
+
+  public CompletableFuture<ResponseEntity<Object>> unassignMapping(final GroupMemberRequest request) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+        () ->
+            groupServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(request.groupId(), request.entityId(), request.entityType()));
   }
 }

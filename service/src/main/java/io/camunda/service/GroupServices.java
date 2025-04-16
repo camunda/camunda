@@ -141,10 +141,10 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public CompletableFuture<GroupRecord> removeMember(
-      final String groupId, final String username, final EntityType memberType) {
+      final String groupId, final String entityId, final EntityType memberType) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createRemoveRequest(groupId)
-            .setMemberId(username)
+            .setMemberId(entityId)
             .setMemberType(memberType));
   }
 
