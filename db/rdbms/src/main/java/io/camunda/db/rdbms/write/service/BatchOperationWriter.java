@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStatusUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateCountsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateTotalCountDto;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
@@ -88,7 +89,7 @@ public class BatchOperationWriter {
               WriteStatementType.UPDATE,
               batchOperationKey,
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementFailedOperationsCount",
-              batchOperationKey));
+              new BatchOperationUpdateCountsDto(batchOperationKey, itemKey)));
     } else if (state == BatchOperationItemState.COMPLETED) {
       executionQueue.executeInQueue(
           new QueueItem(
@@ -96,7 +97,7 @@ public class BatchOperationWriter {
               WriteStatementType.UPDATE,
               batchOperationKey,
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementCompletedOperationsCount",
-              batchOperationKey));
+              new BatchOperationUpdateCountsDto(batchOperationKey, itemKey)));
     }
   }
 

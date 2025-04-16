@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -60,6 +61,6 @@ public class ProcessInstanceBatchOperationExportHandler
 
   private boolean isFailed(final Record<ProcessInstanceRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceIntent.CANCEL)
-        && record.getRejectionType() != null;
+        && record.getRejectionType() != RejectionType.NULL_VAL;
   }
 }

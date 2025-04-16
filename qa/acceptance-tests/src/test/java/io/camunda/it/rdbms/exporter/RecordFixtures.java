@@ -536,6 +536,7 @@ public class RecordFixtures {
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ImmutableProcessInstanceRecordValue) recordValueRecord.getValue())
                 .withBpmnElementType(BpmnElementType.PROCESS)
+                .withProcessInstanceKey(processInstanceKey)
                 .withParentProcessInstanceKey(-1)
                 .build())
         .build();
@@ -558,6 +559,7 @@ public class RecordFixtures {
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ImmutableProcessInstanceRecordValue) recordValueRecord.getValue())
                 .withBpmnElementType(BpmnElementType.PROCESS)
+                .withProcessInstanceKey(processInstanceKey)
                 .withParentProcessInstanceKey(-1)
                 .build())
         .build();

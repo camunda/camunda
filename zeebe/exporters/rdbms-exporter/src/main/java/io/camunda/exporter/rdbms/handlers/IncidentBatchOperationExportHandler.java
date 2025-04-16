@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
@@ -48,6 +49,7 @@ public class IncidentBatchOperationExportHandler
   }
 
   private boolean isFailed(final Record<IncidentRecordValue> record) {
-    return record.getIntent().equals(IncidentIntent.RESOLVE) && record.getRejectionType() != null;
+    return record.getIntent().equals(IncidentIntent.RESOLVE)
+        && record.getRejectionType() != RejectionType.NULL_VAL;
   }
 }
