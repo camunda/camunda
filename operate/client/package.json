@@ -91,7 +91,7 @@
     "eslint-plugin-prettier": "5.2.1",
     "event-source-polyfill": "1.0.31",
     "glob": "11.0.0",
-    "http-proxy-middleware": "3.0.3",
+    "http-proxy-middleware": "3.0.4",
     "husky": "9.1.6",
     "jest-styled-components": "7.2.0",
     "lint-staged": "15.4.3",
