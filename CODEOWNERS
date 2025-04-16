@@ -1,2 +1,25 @@
 # C8 REST OpenAPI changes are owned by the API reviewers team
 /zeebe/gateway-protocol/src/main/proto/rest-api.yaml @camunda/docs-api-reviewers
+
+# C8Run by Distro team
+.github/workflows/c8run* @camunda/distribution
+
+# General Automation, Unified CI and release helpers by Monorepo DevOps team
+/.github/workflows/add-to-projects.yml                   @camunda/monorepo-devops-team
+/.github/workflows/backport.yml                          @camunda/monorepo-devops-team
+/.github/workflows/camunda-helm-integration.yml          @camunda/monorepo-devops-team
+/.github/workflows/camunda-platform-release*             @camunda/monorepo-devops-team
+/.github/workflows/chatops*                              @camunda/monorepo-devops-team
+/.github/workflows/check-licenses.yml                    @camunda/monorepo-devops-team
+/.github/workflows/check-pr-conflicts.yml                @camunda/monorepo-devops-team
+/.github/workflows/ci*                                   @camunda/monorepo-devops-team
+/.github/workflows/commitlint.yml                        @camunda/monorepo-devops-team
+/.github/workflows/dispatch-release*                     @camunda/monorepo-devops-team
+/.github/workflows/issue-add-support-label.yml           @camunda/monorepo-devops-team
+/.github/workflows/labeler.yml                           @camunda/monorepo-devops-team
+/.github/workflows/preview-env*                          @camunda/monorepo-devops-team
+/.github/workflows/reject-updates-using-merge-commit.yml @camunda/monorepo-devops-team
+/.github/workflows/renovatelint.yml                      @camunda/monorepo-devops-team
+/.github/workflows/retry-workflow.yml                    @camunda/monorepo-devops-team
+/.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
+/.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team

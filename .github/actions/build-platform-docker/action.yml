@@ -3,6 +3,9 @@
 
 ---
 name: Build Docker Image
+
+# owner: @camunda/monorepo-devops-team
+
 description: Builds the Docker image
 
 inputs:

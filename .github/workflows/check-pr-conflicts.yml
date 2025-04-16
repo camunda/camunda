@@ -1,6 +1,8 @@
 ---
 name: Check for PR conflicts
 
+# owner: @camunda/monorepo-devops-team
+
 on:
   schedule:
   - cron: 23 1 * * 1-5

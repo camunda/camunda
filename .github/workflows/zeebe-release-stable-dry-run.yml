@@ -1,4 +1,7 @@
 name: Zeebe Release Dry Run from stable branches
+
+# owner: @camunda/monorepo-devops-team
+
 on:
   workflow_dispatch: { }
   schedule:
