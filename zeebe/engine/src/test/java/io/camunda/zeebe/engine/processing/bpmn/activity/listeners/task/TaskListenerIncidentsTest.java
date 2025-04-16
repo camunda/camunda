@@ -128,6 +128,15 @@ public class TaskListenerIncidentsTest {
         UserTaskIntent.COMPLETED);
   }
 
+  @Test
+  public void shouldCreateJobNoRetriesIncidentForCancelingListenerAndContinueAfterResolution() {
+    verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
+        ZeebeTaskListenerEventType.canceling,
+        UnaryOperator.identity(),
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
+        UserTaskIntent.CANCELED);
+  }
+
   private long verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
