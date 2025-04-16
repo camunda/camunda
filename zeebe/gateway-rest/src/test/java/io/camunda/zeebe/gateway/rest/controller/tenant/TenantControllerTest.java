@@ -471,8 +471,7 @@ public class TenantControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideAddMemberByIdTestCases() {
     return Stream.of(
         Arguments.of(EntityType.USER, "users"),
-        Arguments.of(EntityType.MAPPING, "mappings"),
-        Arguments.of(EntityType.GROUP, "groups"));
+        Arguments.of(EntityType.MAPPING, "mappings"), Arguments.of(EntityType.GROUP, "groups"));
   }
 
   private static Stream<Arguments> provideRemoveMemberByKeyTestCases() {
