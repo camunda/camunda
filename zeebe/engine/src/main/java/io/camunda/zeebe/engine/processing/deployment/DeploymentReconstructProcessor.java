@@ -8,10 +8,6 @@
 package io.camunda.zeebe.engine.processing.deployment;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.ProgressState.DecisionRequirements;
-import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.ProgressState.Done;
-import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.ProgressState.Form;
-import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.ProgressState.Process;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.DecisionRequirementsResource;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.FormResource;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.ProcessResource;
@@ -33,6 +29,7 @@ import io.camunda.zeebe.engine.state.immutable.FormState.FormIdentifier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ResourceIdentifier;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord.ReconstructionProgress;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -88,11 +85,12 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           "Deployments are already stored and don't need to be reconstructed");
       return;
     }
-    final var progressState = ProgressState.fromDeploymentRecord(record.getValue());
+    final var identifier = fromDeploymentRecord(record.getValue());
 
     final var key = keyGenerator.nextKey();
 
-    final var resource = findNextResource(progressState);
+    final var resource =
+        findNextResource(identifier, record.getValue().getReconstructionProgress());
     if (resource == null) {
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED_ALL, record.getValue());
       return;
@@ -115,26 +113,36 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     cachedDeploymentRecordCommand
         .setTenantId(deploymentRecord.getTenantId())
         .setReconstructionKey(deploymentRecord.getDeploymentKey())
-        .setReconstructionProgress(progressState.progress());
+        .setReconstructionProgress(Resource.progress(resource));
     commandWriter.appendNewCommand(DeploymentIntent.RECONSTRUCT, cachedDeploymentRecordCommand);
   }
 
-  private Resource findNextResource(ProgressState progressState) {
-    while (!(progressState instanceof Done)) {
-      progressState =
-          switch (progressState) {
-            case final Process process -> process.next(findProcessResource(process.identifier()));
-            case final Form form -> form.next(findFormResource(form.identifier()));
-            case final DecisionRequirements decisionRequirements ->
-                decisionRequirements.next(
-                    findDecisionRequirementsResource(decisionRequirements.identifier()));
-            case final Done done -> done; // unreachable
-          };
-      if (progressState.resource() != null) {
-        return progressState.resource();
-      }
+  // Recursive function to find the next resource.
+  // if the resource for the current type is not found, the next resource is tried.
+  // If all the resources have been searched then it returns null.
+  private Resource findNextResource(
+      final ResourceIdentifier identifier, final ReconstructionProgress reconstructionProgress) {
+    if (identifier == null & reconstructionProgress == ReconstructionProgress.DONE) {
+      return null;
     }
-    return null;
+    final var resource =
+        switch (identifier) {
+          case null ->
+              switch (reconstructionProgress) {
+                case PROCESS -> findProcessResource(null);
+                case FORM -> findFormResource(null);
+                case DECISION_REQUIREMENTS -> findDecisionRequirementsResource(null);
+                case DONE -> null;
+              };
+          case final ProcessIdentifier processIdentifier -> findProcessResource(processIdentifier);
+          case final FormIdentifier form -> findFormResource(form);
+          case final DecisionRequirementsIdentifier decisionRequirementsIdentifier ->
+              findDecisionRequirementsResource(decisionRequirementsIdentifier);
+        };
+    if (resource != null) {
+      return resource;
+    }
+    return findNextResource(null, reconstructionProgress.next());
   }
 
   private ProcessResource findProcessResource(final ProcessIdentifier identifier) {
@@ -328,12 +336,34 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     }
   }
 
+  static ResourceIdentifier fromDeploymentRecord(final DeploymentRecord record) {
+    return switch (record.getReconstructionProgress()) {
+      case PROCESS -> new ProcessIdentifier(record.getTenantId(), record.getReconstructionKey());
+      case FORM -> new FormIdentifier(record.getTenantId(), record.getReconstructionKey());
+      case DECISION_REQUIREMENTS ->
+          new DecisionRequirementsIdentifier(record.getTenantId(), record.getReconstructionKey());
+      case DONE -> null;
+    };
+  }
+
   sealed interface Resource {
     long key();
 
     long deploymentKey();
 
     String tenantId();
+
+    ResourceIdentifier identifier();
+
+    static ReconstructionProgress progress(final Resource resource) {
+      return switch (resource) {
+        case null -> ReconstructionProgress.DONE;
+        case final DecisionRequirementsResource ignored ->
+            ReconstructionProgress.DECISION_REQUIREMENTS;
+        case final FormResource ignored -> ReconstructionProgress.FORM;
+        case final ProcessResource ignored -> ReconstructionProgress.PROCESS;
+      };
+    }
 
     record ProcessResource(PersistedProcess process) implements Resource {
 
@@ -350,6 +380,11 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       @Override
       public String tenantId() {
         return process.getTenantId();
+      }
+
+      @Override
+      public ResourceIdentifier identifier() {
+        return process != null ? processIdentifier() : null;
       }
 
       public ProcessIdentifier processIdentifier() {
@@ -374,6 +409,11 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
         return form.getTenantId();
       }
 
+      @Override
+      public ResourceIdentifier identifier() {
+        return form != null ? formIdentifier() : null;
+      }
+
       public FormIdentifier formIdentifier() {
         return new FormIdentifier(tenantId(), form.getFormKey());
       }
@@ -385,6 +425,10 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
         Collection<PersistedDecision> decisions)
         implements Resource {
 
+      static DecisionRequirementsResource empty() {
+        return new DecisionRequirementsResource(-1L, null, null);
+      }
+
       @Override
       public long key() {
         return decisionRequirements.getDecisionRequirementsKey();
@@ -395,104 +439,13 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
         return decisionRequirements.getTenantId();
       }
 
+      @Override
+      public ResourceIdentifier identifier() {
+        return decisionRequirements != null ? decisionRequirementsIdentifier() : null;
+      }
+
       DecisionRequirementsIdentifier decisionRequirementsIdentifier() {
         return new DecisionRequirementsIdentifier(tenantId(), key());
-      }
-    }
-  }
-
-  /**
-   * Represent the progress when querying the resources. Will search for resources in the following
-   * order by repeatedly calling the method {@link Process#next(ProcessResource)}, {@link
-   * Form#next(FormResource)}, {@link DecisionRequirements#next(DecisionRequirementsResource)}:
-   *
-   * <ul>
-   *   <li>{@link Process}
-   *   <li>{@link Form}
-   *   <li>{@link DecisionRequirements}
-   * </ul>
-   *
-   * then terminates when reaches the state {@link Done}
-   */
-  sealed interface ProgressState {
-    Resource resource();
-
-    default ReconstructionProgress progress() {
-      return switch (this) {
-        case final DecisionRequirements ignored -> ReconstructionProgress.DECISION_REQUIREMENTS;
-        case final Done ignored -> ReconstructionProgress.DONE;
-        case final Form ignored -> ReconstructionProgress.FORM;
-        case final Process ignored -> ReconstructionProgress.PROCESS;
-      };
-    }
-
-    static ProgressState initial() {
-      return new Process(null, null);
-    }
-
-    static ProgressState fromDeploymentRecord(final DeploymentRecord record) {
-      return switch (record.getReconstructionProgress()) {
-        case PROCESS ->
-            new Process(
-                new ProcessIdentifier(record.getTenantId(), record.getReconstructionKey()), null);
-        case FORM ->
-            new Form(new FormIdentifier(record.getTenantId(), record.getReconstructionKey()), null);
-        case DECISION_REQUIREMENTS ->
-            new DecisionRequirements(
-                new DecisionRequirementsIdentifier(
-                    record.getTenantId(), record.getReconstructionKey()),
-                null);
-        case DONE -> Done.done();
-      };
-    }
-
-    record Process(ProcessIdentifier identifier, Resource resource) implements ProgressState {
-
-      ProgressState next(final ProcessResource resource) {
-        if (resource != null) {
-          return new Process(resource.processIdentifier(), resource);
-        } else {
-          return new Form(null, null);
-        }
-      }
-    }
-
-    record Form(FormIdentifier identifier, Resource resource) implements ProgressState {
-
-      ProgressState next(final FormResource resource) {
-        if (resource != null) {
-          return new Form(resource.formIdentifier(), resource);
-        } else {
-          return new DecisionRequirements(null, null);
-        }
-      }
-    }
-
-    record DecisionRequirements(DecisionRequirementsIdentifier identifier, Resource resource)
-        implements ProgressState {
-
-      ProgressState next(final DecisionRequirementsResource resource) {
-        if (resource != null) {
-          return new DecisionRequirements(resource.decisionRequirementsIdentifier(), resource);
-        } else {
-          return new Done();
-        }
-      }
-    }
-
-    final class Done implements ProgressState {
-
-      private static final Done DONE = new Done();
-
-      private Done() {}
-
-      @Override
-      public Resource resource() {
-        return null;
-      }
-
-      static ProgressState done() {
-        return DONE;
       }
     }
   }

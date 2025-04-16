@@ -278,5 +278,13 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     FORM,
     DECISION_REQUIREMENTS,
     DONE;
+
+    public ReconstructionProgress next() {
+      return switch (this) {
+        case PROCESS -> FORM;
+        case FORM -> DECISION_REQUIREMENTS;
+        case DECISION_REQUIREMENTS, DONE -> DONE;
+      };
+    }
   }
 }
