@@ -68,7 +68,7 @@ final class BatchOperationArchiverJobTest {
             new DocumentMove(
                 batchOperationTemplate.getFullQualifiedName(),
                 batchOperationTemplate.getFullQualifiedName() + "2024-01-01",
-                repository.batch.finishDate(),
+                BatchOperationTemplate.ID,
                 List.of("1", "2", "3"),
                 executor));
   }
