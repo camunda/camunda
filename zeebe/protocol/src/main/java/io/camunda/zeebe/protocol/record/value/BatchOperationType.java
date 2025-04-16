@@ -17,5 +17,6 @@ package io.camunda.zeebe.protocol.record.value;
 
 public enum BatchOperationType {
   PROCESS_CANCELLATION,
-  RESOLVE_INCIDENT
+  RESOLVE_INCIDENT,
+  MODIFY_PROCESS_INSTANCE
 }
