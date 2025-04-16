@@ -113,7 +113,7 @@ public class MappingCreatedUpdatedHandlerTest {
     assertThat(mappingEntity.getClaimName()).isEqualTo("updated-claim");
     assertThat(mappingEntity.getClaimValue()).isEqualTo("updated-value");
     assertThat(mappingEntity.getName()).isEqualTo("updated-name");
-    assertThat(mappingEntity.getId()).isEqualTo("updated-id");
+    assertThat(mappingEntity.getMappingId()).isEqualTo("updated-id");
   }
 
   @Test

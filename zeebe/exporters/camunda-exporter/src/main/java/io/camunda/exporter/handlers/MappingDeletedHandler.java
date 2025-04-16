@@ -54,7 +54,7 @@ public class MappingDeletedHandler implements ExportHandler<MappingEntity, Mappi
     final MappingRecordValue value = record.getValue();
     entity
         .setKey(value.getMappingKey())
-        .setId(value.getMappingId())
+        .setMappingId(value.getMappingId())
         .setClaimName(value.getClaimName())
         .setClaimValue(value.getClaimValue());
   }
