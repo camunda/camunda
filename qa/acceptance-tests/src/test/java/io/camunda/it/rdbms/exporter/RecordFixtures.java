@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationExecutionRe
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
@@ -591,6 +593,47 @@ public class RecordFixtures {
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
         .withOperationReference(batchOperationKey)
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getBatchOperationProcessMigratedRecord(
+      final Long processInstanceKey, final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.PROCESS_INSTANCE_MIGRATION);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceMigrationIntent.MIGRATED)
+        .withKey(processInstanceKey)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withOperationReference(batchOperationKey)
+        .withValue(
+            ImmutableProcessInstanceMigrationRecordValue.builder()
+                .from((ImmutableProcessInstanceMigrationRecordValue) recordValueRecord.getValue())
+                .withProcessInstanceKey(processInstanceKey)
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getFailedBatchOperationProcessMigratedRecord(
+      final Long processInstanceKey, final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.PROCESS_INSTANCE_MIGRATION);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .withRejectionType(RejectionType.INVALID_STATE)
+        .withKey(processInstanceKey)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withOperationReference(batchOperationKey)
+        .withValue(
+            ImmutableProcessInstanceMigrationRecordValue.builder()
+                .from((ImmutableProcessInstanceMigrationRecordValue) recordValueRecord.getValue())
+                .withProcessInstanceKey(processInstanceKey)
+                .build())
         .build();
   }
 }
