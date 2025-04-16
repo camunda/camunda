@@ -57,7 +57,7 @@ import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
     },
     properties = {
       "camunda.client.mode=self-managed",
-      "camunda.client.auth.client-id=my-client-id",
+      "camunda.client.auth.client-id=CredentialsProviderSelfManagedTest-my-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
 @EnableConfigurationProperties({CamundaClientProperties.class})
@@ -93,6 +93,7 @@ public class CredentialsProviderSelfManagedTest {
 
   @Test
   void shouldHaveZeebeAuth() throws IOException {
+    // given
     final CredentialsProvider credentialsProvider = configuration.getCredentialsProvider();
     final Map<String, String> headers = new HashMap<>();
 
@@ -108,7 +109,10 @@ public class CredentialsProviderSelfManagedTest {
                             .put("token_type", "bearer")
                             .put("expires_in", 300))));
 
+    // when
     credentialsProvider.applyCredentials(headers::put);
+
+    // then
     assertThat(headers).isEqualTo(Map.of("Authorization", "Bearer " + accessToken));
     wm.verify(
         postRequestedFor(urlEqualTo("/auth-server"))
