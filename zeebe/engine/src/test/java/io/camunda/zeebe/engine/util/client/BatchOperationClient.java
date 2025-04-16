@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceMigrationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -90,6 +91,12 @@ public final class BatchOperationClient {
 
     public BatchOperationCreationClient withFilter(final DirectBuffer filter) {
       batchOperationCreationRecord.setEntityFilter(filter);
+      return this;
+    }
+
+    public BatchOperationCreationClient withMigrationPlan(
+        final BatchOperationProcessInstanceMigrationPlanValue migrationPlan) {
+      batchOperationCreationRecord.setMigrationPlan(migrationPlan);
       return this;
     }
 
