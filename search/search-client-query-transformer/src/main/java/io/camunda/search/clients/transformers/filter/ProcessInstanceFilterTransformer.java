@@ -101,11 +101,10 @@ public final class ProcessInstanceFilterTransformer
     ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
         .ifPresent(queries::addAll);
 
-    ofNullable(geHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
+    ofNullable(getHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
 
     if (filter.flowNodeIdOperations() != null && !filter.flowNodeIdOperations().isEmpty()) {
-      final var flowNodeInstanceQuery = getFlowNodeInstanceQuery(filter, queries);
-      queries.add(flowNodeInstanceQuery);
+      queries.add(getFlowNodeInstanceQuery(filter));
     }
 
     if (filter.partitionId() != null) {
@@ -131,8 +130,7 @@ public final class ProcessInstanceFilterTransformer
     return and(queries);
   }
 
-  private static SearchQuery getFlowNodeInstanceQuery(
-      final ProcessInstanceFilter filter, final ArrayList<SearchQuery> queries) {
+  private static SearchQuery getFlowNodeInstanceQuery(final ProcessInstanceFilter filter) {
     final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
 
     ofNullable(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
@@ -145,7 +143,7 @@ public final class ProcessInstanceFilterTransformer
     return hasChildQuery(ACTIVITIES_JOIN_RELATION, and(flowNodeInstanceQueries));
   }
 
-  private SearchQuery geHasRetriesLeftQuery(final Boolean hasRetriesLeft) {
+  private SearchQuery getHasRetriesLeftQuery(final Boolean hasRetriesLeft) {
     if (hasRetriesLeft != null) {
       return hasChildQuery(
           ACTIVITIES_JOIN_RELATION, term(JOB_FAILED_WITH_RETRIES_LEFT, hasRetriesLeft));

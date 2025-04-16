@@ -1481,7 +1481,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /process-instances/{processInstanceKey}/statistics/element-instances:
-    post:
+    get:
       tags:
         - Process instance
       operationId: getProcessInstanceStatistics
@@ -4938,32 +4938,6 @@ components:
           description: The parent element instance key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-    ProcessInstanceFilterFields:
-      description: Process instance search filter.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/BaseProcessInstanceFilter"
-      properties:
-        processDefinitionId:
-          description: The process definition ID.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionName:
-          description: The process definition name.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionVersion:
-          description: The process definition version.
-          allOf:
-            - $ref: "#/components/schemas/IntegerFilterProperty"
-        processDefinitionVersionTag:
-          description: The process definition version tag.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionKey:
-          description: The process definition key.
-          allOf:
-            - $ref: "#/components/schemas/BasicStringFilterProperty"
         batchOperationId:
           description: The batch operation ID.
           allOf:
@@ -4990,6 +4964,32 @@ components:
           description: The incident error hash code, associated with this process.
           type: integer
           format: int32
+    ProcessInstanceFilterFields:
+      description: Process instance search filter.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+      properties:
+        processDefinitionId:
+          description: The process definition ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionName:
+          description: The process definition name.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionVersion:
+          description: The process definition version.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
+        processDefinitionVersionTag:
+          description: The process definition version tag.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
     ProcessInstanceFilter:
       description: Process instance search filter.
       allOf:

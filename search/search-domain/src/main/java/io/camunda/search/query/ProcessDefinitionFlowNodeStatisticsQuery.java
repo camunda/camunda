@@ -16,6 +16,6 @@ public record ProcessDefinitionFlowNodeStatisticsQuery(ProcessDefinitionStatisti
 
   @Override
   public ProcessDefinitionFlowNodeStatisticsAggregation aggregation() {
-    return new ProcessDefinitionFlowNodeStatisticsAggregation();
+    return new ProcessDefinitionFlowNodeStatisticsAggregation(filter);
   }
 }

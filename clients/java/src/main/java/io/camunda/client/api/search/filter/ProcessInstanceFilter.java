@@ -167,7 +167,7 @@ public interface ProcessInstanceFilter extends ProcessInstanceFilterBase {
   @Override
   ProcessInstanceFilter elementId(final Consumer<StringProperty> fn);
 
-  /** Filter by state */
+  /** Filter by elementInstanceState */
   @Override
   ProcessInstanceFilter elementInstanceState(final ElementInstanceState state);
 
