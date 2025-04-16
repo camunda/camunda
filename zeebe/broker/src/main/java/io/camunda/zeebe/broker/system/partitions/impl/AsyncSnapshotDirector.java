@@ -131,7 +131,6 @@ public final class AsyncSnapshotDirector extends Actor
    * Create an AsyncSnapshotDirector that can take snapshot when the StreamProcessor is in
    * continuous replay mode.
    *
-   * @param nodeId id of this broker
    * @param partitionId partition id
    * @param streamProcessor stream processor for the partition
    * @param stateController state controller that manages state
@@ -139,7 +138,6 @@ public final class AsyncSnapshotDirector extends Actor
    * @return snapshot director
    */
   public static AsyncSnapshotDirector ofReplayMode(
-      final int nodeId,
       final int partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
@@ -158,7 +156,6 @@ public final class AsyncSnapshotDirector extends Actor
    * Create an AsyncSnapshotDirector that can take snapshot when the StreamProcessor is in
    * processing mode
    *
-   * @param nodeId id of this broker
    * @param partitionId partition id
    * @param streamProcessor stream processor for the partition
    * @param stateController state controller that manages state
@@ -166,7 +163,6 @@ public final class AsyncSnapshotDirector extends Actor
    * @return snapshot director
    */
   public static AsyncSnapshotDirector ofProcessingMode(
-      final int nodeId,
       final int partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
