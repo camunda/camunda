@@ -28,6 +28,7 @@ import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.vali
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
@@ -64,6 +65,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
@@ -99,6 +101,7 @@ import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
@@ -117,6 +120,7 @@ import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -835,6 +839,23 @@ public class RequestMapper {
                 request.getOperationReference()));
   }
 
+  public static Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest>
+      toProcessInstanceModifyBatchOperationRequest(
+          final ProcessInstanceModificationBatchOperationInstruction request) {
+    // First validate filter and return early
+    final var filter = SearchQueryRequestMapper.toProcessInstanceFilter(request.getFilter());
+    if (filter.isLeft()) {
+      return Either.left(createProblemDetail(filter.getLeft()).get());
+    }
+
+    return getResult(
+        validateModifyProcessInstanceBatchRequest(request),
+        () ->
+            new ProcessInstanceModifyBatchOperationRequest(
+                filter.get(),
+                mapProcessInstanceModificationMoveInstruction(request.getMoveInstructions())));
+  }
+
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
       final DecisionEvaluationInstruction request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
@@ -939,6 +960,25 @@ public class RequestMapper {
                                   new UnsafeBuffer(
                                       MsgPackConverter.convertToMsgPack(variable.getVariables()))))
                   .forEach(mappedInstruction::addVariableInstruction);
+              return mappedInstruction;
+            })
+        .toList();
+  }
+
+  private static List<BatchOperationProcessInstanceModificationMoveInstruction>
+      mapProcessInstanceModificationMoveInstruction(
+          final List<
+                  io.camunda.zeebe.gateway.protocol.rest
+                      .ProcessInstanceModificationMoveBatchOperationInstruction>
+              instructions) {
+    return instructions.stream()
+        .map(
+            instruction -> {
+              final var mappedInstruction =
+                  new BatchOperationProcessInstanceModificationMoveInstruction();
+              mappedInstruction
+                  .setSourceElementId(instruction.getSourceElementId())
+                  .setTargetElementId(instruction.getTargetElementId());
               return mappedInstruction;
             })
         .toList();
