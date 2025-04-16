@@ -93,4 +93,18 @@ public abstract class RaftException extends RuntimeException {
       super(Type.COMMAND_FAILURE, message, args);
     }
   }
+
+  public static class AppendFailureException extends RaftException {
+
+    private final long index;
+
+    public AppendFailureException(final long index, final String message) {
+      super(Type.COMMAND_FAILURE, message);
+      this.index = index;
+    }
+
+    public long getIndex() {
+      return index;
+    }
+  }
 }

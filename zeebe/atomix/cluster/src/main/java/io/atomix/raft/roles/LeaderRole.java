@@ -21,6 +21,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
+import io.atomix.raft.RaftException.AppendFailureException;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
@@ -757,17 +758,20 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     appendEntriesFuture.whenCompleteAsync(
         (commitIndex, commitError) -> {
-          if (!isRunning()) {
-            return;
-          }
 
           // have the state machine apply the index which should do nothing but ensures it keeps
           // up to date with the latest entries, so it can handle configuration and initial
           // entries properly on fail over
           if (commitError == null) {
-            appendListener.onCommit(commitIndex, committedPosition);
+            if (isRunning()) {
+              appendListener.onCommit(commitIndex, committedPosition);
+            }
           } else {
-            appendListener.onCommitError(commitIndex, commitError);
+            long index = -1L;
+            if (commitError instanceof final AppendFailureException appendFailureException) {
+              index = appendFailureException.getIndex();
+            }
+            appendListener.onCommitError(index, commitError);
             // replicating the entry will be retried on the next append request
             log.error("Failed to replicate entry: {}", commitIndex, commitError);
           }
