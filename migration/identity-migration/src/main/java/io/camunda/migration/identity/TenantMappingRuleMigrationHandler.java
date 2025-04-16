@@ -59,14 +59,14 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
               tenantMappingRule.getClaimValue(),
               tenantMappingRule.getName(),
               tenantMappingRule.getName());
-      final var mappingKey =
+      final var mappingId =
           mappingServices
               .findMapping(request)
-              .map(MappingEntity::mappingKey)
-              .orElseGet(() -> mappingServices.createMapping(request).join().getMappingKey());
+              .map(MappingEntity::mappingId)
+              .orElseGet(() -> mappingServices.createMapping(request).join().getMappingId());
       for (final Tenant mappingTenant : tenantMappingRule.getAppliedTenants()) {
         final var tenant = tenantServices.getById(mappingTenant.tenantId());
-        assignMappingToTenant(tenant.tenantId(), mappingKey);
+        assignMappingToTenant(tenant.tenantId(), mappingId);
       }
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, null);
     } catch (final Exception e) {
@@ -75,9 +75,9 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
     }
   }
 
-  private void assignMappingToTenant(final String tenantId, final long mappingKey) {
+  private void assignMappingToTenant(final String tenantId, final String mappingId) {
     try {
-      tenantServices.addMember(tenantId, EntityType.MAPPING, mappingKey).join();
+      tenantServices.addMember(tenantId, EntityType.MAPPING, mappingId).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         throw e;
