@@ -30,6 +30,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceW
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -210,6 +212,25 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<BatchOperationCreationRecord> modifyProcessInstancesBatchOperation(
+      final ProcessInstanceModifyBatchOperationRequest request) {
+    final var rootInstanceFilter =
+        request.filter.toBuilder()
+            // It is only possible to modify active processes in zeebe
+            .states(ProcessInstanceState.ACTIVE.name())
+            .build();
+    final var modificationPlan = new BatchOperationProcessInstanceModificationPlan();
+    request.moveInstructions().forEach(modificationPlan::addMoveInstruction);
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setModificationPlan(modificationPlan)
+            .setFilter(rootInstanceFilter)
+            .setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public record ProcessInstanceCreateRequest(
       Long processDefinitionKey,
       String bpmnProcessId,
@@ -235,4 +256,8 @@ public final class ProcessInstanceServices
       List<ProcessInstanceModificationActivateInstruction> activateInstructions,
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
       Long operationReference) {}
+
+  public record ProcessInstanceModifyBatchOperationRequest(
+      ProcessInstanceFilter filter,
+      List<BatchOperationProcessInstanceModificationMoveInstruction> moveInstructions) {}
 }
