@@ -74,7 +74,8 @@ public interface ProcessState {
    */
   void forEachProcess(ProcessIdentifier previousProcess, PersistedProcessVisitor visitor);
 
-  record ProcessIdentifier(String tenantId, long processDefinitionKey) {}
+  record ProcessIdentifier(String tenantId, long processDefinitionKey)
+      implements ResourceIdentifier {}
 
   interface PersistedProcessVisitor {
     boolean visit(PersistedProcess process);

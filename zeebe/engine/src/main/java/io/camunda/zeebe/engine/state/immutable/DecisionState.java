@@ -107,7 +107,8 @@ public interface DecisionState {
   /** Completely clears all caches. */
   void clearCache();
 
-  record DecisionRequirementsIdentifier(String tenantId, long decisionRequirementsKey) {}
+  record DecisionRequirementsIdentifier(String tenantId, long decisionRequirementsKey)
+      implements ResourceIdentifier {}
 
   interface PersistedDecisionRequirementsVisitor {
     boolean visit(PersistedDecisionRequirements decisionRequirements);
