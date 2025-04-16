@@ -90,15 +90,27 @@
   </update>
 
   <update id="incrementFailedOperationsCount" parameterType="java.lang.Long">
-    UPDATE ${prefix}BATCH_OPERATION
+    UPDATE ${prefix}BATCH_OPERATION t
     SET OPERATIONS_FAILED_COUNT = OPERATIONS_FAILED_COUNT + 1
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+    AND EXISTS(
+      SELECT 1
+      FROM ${prefix}BATCH_OPERATION_ITEM i
+      WHERE i.BATCH_OPERATION_KEY = t.BATCH_OPERATION_KEY
+      AND i.ITEM_KEY = #{itemKey}
+    )
   </update>
 
   <update id="incrementCompletedOperationsCount" parameterType="java.lang.Long">
-    UPDATE ${prefix}BATCH_OPERATION
+    UPDATE ${prefix}BATCH_OPERATION t
     SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + 1
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND EXISTS(
+      SELECT 1
+      FROM ${prefix}BATCH_OPERATION_ITEM i
+      WHERE i.BATCH_OPERATION_KEY = t.BATCH_OPERATION_KEY
+        AND i.ITEM_KEY = #{itemKey}
+    )
   </update>
 
   <select id="getItems"

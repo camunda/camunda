@@ -37,15 +37,13 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "es")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "os")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class BatchResolveIncidentTest {
+public class BatchOperationResolveIncidentTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<Long> ACTIVE_INCIDENTS = new ArrayList<>();
   private static final int AMOUNT_OF_INCIDENTS = 3;
 
   private static CamundaClient camundaClient;
-
-  private static Incident incident;
 
   @BeforeAll
   public static void beforeAll() {
@@ -117,6 +115,14 @@ public class BatchResolveIncidentTest {
             });
 
     waitUntilIncidentsAreResolved(camundaClient, ACTIVE_INCIDENTS.size());
+
+    final var batch =
+        camundaClient.newBatchOperationGetRequest(result.getBatchOperationKey()).send().join();
+    assertThat(batch).isNotNull();
+    assertThat(batch.getEndDate()).isNotNull();
+    assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+    assertThat(batch.getOperationsCompletedCount()).isEqualTo(3);
+    assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
 
     // and
     final var itemsObj =
