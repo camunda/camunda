@@ -674,7 +674,7 @@
     <repository>
       <id>camunda-nexus</id>
       <name>Camunda Nexus</name>
-      <url>https://artifacts.camunda.com/artifactory/internal/</url>
+      <url>https://artifacts.camunda.com/artifactory/public/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
