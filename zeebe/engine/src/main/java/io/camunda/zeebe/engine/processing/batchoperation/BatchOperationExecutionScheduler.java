@@ -165,7 +165,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         () -> !batchOperationState.exists(batchOperation.getKey());
 
     return switch (batchOperation.getBatchOperationType()) {
-      case PROCESS_CANCELLATION ->
+      case PROCESS_CANCELLATION, MIGRATE_PROCESS_INSTANCE ->
           entityKeyProvider.fetchProcessInstanceKeys(
               batchOperation.getEntityFilter(ProcessInstanceFilter.class), abortCondition);
       case RESOLVE_INCIDENT ->
