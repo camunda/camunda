@@ -22,7 +22,9 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.CreateBatchOperationCommandStep2;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.CreateBatchOperationCommandStep3;
+import io.camunda.client.api.command.CreateBatchOperationCommandStep1.ProcessInstanceMigrationStep;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.SearchRequestBuilders;
@@ -32,6 +34,9 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateBatchOperationResponseImpl;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
+import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceMigrationInstruction;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +45,9 @@ import java.util.function.Supplier;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
-    implements CreateBatchOperationCommandStep2<E>, CreateBatchOperationCommandStep3<E> {
+    implements ProcessInstanceMigrationStep<E>,
+        CreateBatchOperationCommandStep2<E>,
+        CreateBatchOperationCommandStep3<E> {
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
@@ -48,6 +55,8 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   private final BatchOperationTypeEnum type;
   private final Supplier<E> filterFactory;
   private E filter;
+  private final ProcessInstanceMigrationInstruction migrationPlan =
+      new ProcessInstanceMigrationInstruction();
 
   public CreateBatchOperationCommandImpl(
       final HttpClient httpClient,
@@ -90,7 +99,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     final CreateBatchOperationResponseImpl response = new CreateBatchOperationResponseImpl();
     httpClient.post(
         getUrl(),
-        jsonMapper.toJson(provideSearchRequestProperty(filter)),
+        jsonMapper.toJson(getBody()),
         httpRequestConfig.build(),
         BatchOperationCreatedResult.class,
         response::setResponse,
@@ -104,9 +113,52 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
         return "/process-instances/batch-operations/cancellation";
       case RESOLVE_INCIDENT:
         return "/process-instances/batch-operations/incident-resolution";
+      case MIGRATE_PROCESS_INSTANCE:
+        return "/process-instances/batch-operations/migration";
       default:
         throw new IllegalArgumentException("Unsupported batch operation type: " + type);
     }
+  }
+
+  private Object getBody() {
+    if (type == BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE) {
+      return new ProcessInstanceMigrationBatchOperationInstruction()
+          .filter(provideSearchRequestProperty(filter))
+          .migrationPlan(migrationPlan);
+    } else {
+      return provideSearchRequestProperty(filter);
+    }
+  }
+
+  @Override
+  public ProcessInstanceMigrationStep<E> migrationPlan(final MigrationPlan migrationPlan) {
+    targetProcessDefinitionKey(migrationPlan.getTargetProcessDefinitionKey());
+    migrationPlan
+        .getMappingInstructions()
+        .forEach(
+            instruction ->
+                addMappingInstruction(
+                    instruction.getSourceElementId(), instruction.getTargetElementId()));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceMigrationStep<E> addMappingInstruction(
+      final String sourceElementId, final String targetElementId) {
+    Objects.requireNonNull(sourceElementId, "must specify a source element id");
+    Objects.requireNonNull(targetElementId, "must specify a target element id");
+    migrationPlan.addMappingInstructionsItem(
+        new MigrateProcessInstanceMappingInstruction()
+            .sourceElementId(sourceElementId)
+            .targetElementId(targetElementId));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceMigrationStep<E> targetProcessDefinitionKey(
+      final long targetProcessDefinitionKey) {
+    migrationPlan.targetProcessDefinitionKey(String.valueOf(targetProcessDefinitionKey));
+    return this;
   }
 
   public static class CreateBatchOperationCommandStep1Impl
@@ -136,6 +188,15 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
           httpClient,
           jsonMapper,
           BatchOperationTypeEnum.RESOLVE_INCIDENT,
+          SearchRequestBuilders::processInstanceFilter);
+    }
+
+    @Override
+    public ProcessInstanceMigrationStep<ProcessInstanceFilter> migrateProcessInstance() {
+      return new CreateBatchOperationCommandImpl<>(
+          httpClient,
+          jsonMapper,
+          BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE,
           SearchRequestBuilders::processInstanceFilter);
     }
   }
