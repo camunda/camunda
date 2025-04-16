@@ -73,7 +73,7 @@ public interface FormState {
 
   void clearCache();
 
-  record FormIdentifier(String tenantId, long key) {}
+  record FormIdentifier(String tenantId, long key) implements ResourceIdentifier {}
 
   interface PersistedFormVisitor {
     boolean visit(final PersistedForm form);
