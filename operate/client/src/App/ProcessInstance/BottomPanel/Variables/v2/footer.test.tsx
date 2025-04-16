@@ -14,18 +14,21 @@ import {
 } from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from '../index';
-import {Wrapper, mockVariables} from './mocks';
+import Variables from './index';
+import {getWrapper, mockVariables} from './mocks';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {createInstance} from 'modules/testUtils';
+import {
+  createInstance,
+  mockProcessWithInputOutputMappingsXML,
+} from 'modules/testUtils';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {act} from 'react';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -41,7 +44,7 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
@@ -62,7 +65,7 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() =>
@@ -83,7 +86,7 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: Wrapper});
+    const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -106,23 +109,27 @@ describe('Footer', () => {
   });
 
   it('should disable add variable button when selected flow node is not running', async () => {
-    processInstanceDetailsStatisticsStore.init(instanceMock.id);
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'start',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'neverFails',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-    ]);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          flowNodeId: 'start',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          flowNodeId: 'neverFails',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+      ],
+    });
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
     mockFetchVariables().withSuccess([]);
 
     flowNodeMetaDataStore.init();
@@ -133,7 +140,7 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: Wrapper});
+    render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
