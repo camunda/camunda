@@ -98,8 +98,7 @@ public class CredentialsProviderSelfManagedTest {
 
     // then
     assertThat(credentialsProvider).isExactlyInstanceOf(OAuthCredentialsProvider.class);
-    final var authorizationValue = headers.get("Authorization");
-    assertThat(authorizationValue).isEqualTo("Bearer " + accessToken);
+    assertThat(headers).containsEntry("Authorization", "Bearer " + accessToken);
     assertThat(headers).hasSize(1);
   }
 }
