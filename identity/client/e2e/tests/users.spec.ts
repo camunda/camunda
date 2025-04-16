@@ -11,6 +11,7 @@ import { test } from "../text-fixtures";
 import { Paths } from "../utils/paths";
 import { relativizePath } from "../utils/relativizePaths";
 import { LOGIN_CREDENTIALS } from "../utils/constants";
+import { waitForItemInList } from "../utils/waitForItemInList";
 
 const NEW_USER = {
   username: "testuser",
@@ -32,7 +33,7 @@ test.beforeEach(async ({ page, loginPage }) => {
 });
 
 test.describe.serial("users CRUD", () => {
-  test("creates an user", async ({ page, usersPage }) => {
+  test("creates a user", async ({ page, usersPage }) => {
     await expect(
       usersPage.usersList.getByRole("cell", { name: "demo@demo.com" }),
     ).toBeVisible();
@@ -50,24 +51,14 @@ test.describe.serial("users CRUD", () => {
     await usersPage.createUserModalCreateButton.click();
     await expect(usersPage.createUserModal).not.toBeVisible();
 
-    await expect
-      .poll(
-        async () => {
-          await page.reload();
-          await page.waitForTimeout(1000); // this timeout is needed to give time for the table to load when the page loads, regular assertions do not have the same effect
-          const isVisible = await usersPage.usersList
-            .getByRole("cell", { name: NEW_USER.email })
-            .isVisible();
-          return isVisible;
-        },
-        {
-          timeout: 10000,
-        },
-      )
-      .toBeTruthy();
+    const item = usersPage.usersList.getByRole("cell", {
+      name: NEW_USER.email,
+    });
+
+    await waitForItemInList(page, item);
   });
 
-  test("edits an user", async ({ page, usersPage }) => {
+  test("edits a user", async ({ page, usersPage }) => {
     await expect(
       usersPage.usersList.getByRole("cell", { name: NEW_USER.email }),
     ).toBeVisible();
@@ -79,24 +70,14 @@ test.describe.serial("users CRUD", () => {
     await usersPage.editUserModalUpdateButton.click();
     await expect(usersPage.editUserModal).not.toBeVisible();
 
-    await expect
-      .poll(
-        async () => {
-          await page.reload();
-          await page.waitForTimeout(1000); // this timeout is needed to give time for the table to load when the page loads, regular assertions do not have the same effect
-          const isVisible = await usersPage.usersList
-            .getByRole("cell", { name: EDITED_USER.email })
-            .isVisible();
-          return isVisible;
-        },
-        {
-          timeout: 10000,
-        },
-      )
-      .toBeTruthy();
+    const item = usersPage.usersList.getByRole("cell", {
+      name: EDITED_USER.email,
+    });
+
+    await waitForItemInList(page, item);
   });
 
-  test("deletes an user", async ({ page, usersPage }) => {
+  test("deletes a user", async ({ page, usersPage }) => {
     await expect(
       usersPage.usersList.getByRole("cell", { name: EDITED_USER.email }),
     ).toBeVisible();
@@ -121,5 +102,11 @@ test.describe.serial("users CRUD", () => {
         },
       )
       .toBeFalsy();
+
+    const item = usersPage.usersList.getByRole("cell", {
+      name: EDITED_USER.email,
+    });
+
+    await waitForItemInList(page, item, false);
   });
 });
