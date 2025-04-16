@@ -15,8 +15,9 @@ import {
   Layer,
   Dropdown,
   SkeletonPlaceholder,
+  type InlineLoadingProps,
 } from '@carbon/react';
-import {ProcessTile} from './ProcessTile';
+import {ProcessTile} from 'common/processes/ProcessTile';
 import debounce from 'lodash/debounce';
 import {
   useLocation,
@@ -44,6 +45,16 @@ import {MultitenancyDropdown} from 'common/multitenancy/MultitenancyDropdown';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {getClientConfig} from 'common/config/getClientConfig';
+import {FormModal} from 'common/processes/FormModal';
+import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
+import {useForm} from 'v1/api/useForm.query';
+import {getProcessDisplayName} from 'v1/utils/getProcessDisplayName';
+import {useStartProcess} from 'v1/api/useStartProcess.mutation';
+import type {Process} from 'v1/api/types';
+
+type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
+
+type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
 type UseProcessesFilterParams = Omit<
   Parameters<typeof useProcesses>[0],
@@ -112,6 +123,8 @@ const FilterDropdown: React.FC<{
 };
 
 const Processes: React.FC = observer(() => {
+  const [startProcessStatus, setStartProcessStatus] =
+    useState<LoadingStatus>('inactive');
   const {t} = useTranslation();
   const {instance} = newProcessInstance;
   const {data: currentUser} = useCurrentUser();
@@ -168,6 +181,52 @@ const Processes: React.FC = observer(() => {
   const isFiltered = data?.query !== undefined && data.query !== '';
   const processes = data?.processes ?? [];
   const match = useMatch(pages.internalStartProcessFromForm());
+  const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
+  const {mutateAsync: uploadDocuments} = useUploadDocuments();
+  const formQueryResult = useForm(
+    {
+      id: selectedProcess?.startEventFormId ?? '',
+      processDefinitionKey: selectedProcess?.id ?? '',
+      version: 'latest',
+    },
+    {
+      enabled: match !== null && selectedProcess !== null,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    },
+  );
+  const {mutateAsync: startProcess} = useStartProcess({
+    onSuccess(data) {
+      tracking.track({
+        eventName: 'process-started',
+      });
+      setStartProcessStatus('active-tasks');
+
+      newProcessInstance.setInstance({
+        ...data,
+        removeCallback: () => {
+          setStartProcessStatus('finished');
+        },
+      });
+      notificationsStore.displayNotification({
+        isDismissable: true,
+        kind: 'success',
+        title: t('processesStartProcessNotificationSuccess'),
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (match !== null) {
+      setSelectedProcess((currentProcess) => {
+        return (
+          data?.processes.find(
+            (process) => process.bpmnProcessId === match.params.bpmnProcessId,
+          ) ?? currentProcess
+        );
+      });
+    }
+  }, [match, data]);
 
   useEffect(() => {
     if (error !== null) {
@@ -401,6 +460,7 @@ const Processes: React.FC = observer(() => {
                         >
                           <ProcessTile
                             process={process}
+                            displayName={getProcessDisplayName(process)}
                             isFirst={idx === 0}
                             isStartButtonDisabled={
                               instance !== null &&
@@ -408,6 +468,72 @@ const Processes: React.FC = observer(() => {
                             }
                             data-testid="process-tile"
                             tenantId={selectedTenantId}
+                            onStartProcess={async () => {
+                              setSelectedProcess(process);
+                              const {bpmnProcessId} = process;
+                              if (process.startEventFormId === null) {
+                                setStartProcessStatus('active');
+                                tracking.track({
+                                  eventName: 'process-start-clicked',
+                                });
+                                try {
+                                  await startProcess({
+                                    bpmnProcessId,
+                                    tenantId: selectedTenantId,
+                                  });
+                                } catch (error) {
+                                  logger.error(error);
+                                  setStartProcessStatus('error');
+                                }
+                              } else {
+                                navigate({
+                                  ...location,
+                                  pathname:
+                                    pages.internalStartProcessFromForm(
+                                      bpmnProcessId,
+                                    ),
+                                });
+                              }
+                            }}
+                            onStartProcessError={() => {
+                              setSelectedProcess(null);
+                              const displayName =
+                                getProcessDisplayName(process);
+                              tracking.track({
+                                eventName: 'process-start-failed',
+                              });
+                              setStartProcessStatus('inactive');
+                              if (
+                                getClientConfig().isMultiTenancyEnabled &&
+                                selectedTenantId === undefined
+                              ) {
+                                notificationsStore.displayNotification({
+                                  isDismissable: false,
+                                  kind: 'error',
+                                  title: t(
+                                    'processesStartProcessFailedMissingTenant',
+                                  ),
+                                  subtitle: displayName,
+                                });
+                              } else {
+                                notificationsStore.displayNotification({
+                                  isDismissable: false,
+                                  kind: 'error',
+                                  title: t('processesStartProcessFailed'),
+                                  subtitle: displayName,
+                                });
+                              }
+                            }}
+                            onStartProcessSuccess={() => {
+                              setSelectedProcess(null);
+                              setStartProcessStatus('inactive');
+                            }}
+                            status={
+                              selectedProcess?.bpmnProcessId ===
+                              process.bpmnProcessId
+                                ? startProcessStatus
+                                : 'inactive'
+                            }
                           />
                         </Column>
                       ))}
@@ -417,6 +543,50 @@ const Processes: React.FC = observer(() => {
           </div>
         </Stack>
       </div>
+
+      <FormModal
+        processDisplayName={
+          selectedProcess === null ? '' : getProcessDisplayName(selectedProcess)
+        }
+        schema={formQueryResult.data?.schema ?? null}
+        fetchStatus={formQueryResult.fetchStatus}
+        status={formQueryResult.status}
+        isOpen={match !== null}
+        onClose={() => {
+          navigate({
+            ...location,
+            pathname: '/processes',
+          });
+        }}
+        onSubmit={async (variables) => {
+          if (selectedProcess === null) {
+            return;
+          }
+
+          const {bpmnProcessId} = selectedProcess;
+
+          await startProcess({
+            bpmnProcessId,
+            variables,
+            tenantId: selectedTenantId,
+          });
+          navigate({
+            ...location,
+            pathname: '/processes',
+          });
+        }}
+        onFileUpload={async (files: Map<string, File[]>) => {
+          if (files.size === 0) {
+            return new Map();
+          }
+
+          return uploadDocuments({
+            files,
+          });
+        }}
+        isMultiTenancyEnabled={getClientConfig().isMultiTenancyEnabled}
+        tenantId={selectedTenantId}
+      />
 
       <FirstTimeModal />
     </main>
