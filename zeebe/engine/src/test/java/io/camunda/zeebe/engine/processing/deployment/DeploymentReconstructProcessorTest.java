@@ -611,6 +611,8 @@ final class DeploymentReconstructProcessorTest {
     // when
     // let's run again the processor to make it reach progressState = Done
     processor.processRecord(getCommandAt(eventIndex++));
+    final var typedRecord = resultBuilder.getFollowupRecords().get(eventIndex++);
+    assertThat(typedRecord.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED_ALL);
   }
 
   private TypedRecord<DeploymentRecord> getCommandAt(final int index) {

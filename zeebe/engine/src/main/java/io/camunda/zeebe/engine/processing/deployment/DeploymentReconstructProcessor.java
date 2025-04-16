@@ -208,7 +208,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           // decisions are associated with a deployment key instead.
           final long deploymentKey =
               decisions.stream()
-                  .map(PersistedDecision::getDeploymentKey)
+                  .mapToLong(PersistedDecision::getDeploymentKey)
                   .filter(key -> key != NO_DEPLOYMENT_KEY)
                   .findAny()
                   .orElse(NO_DEPLOYMENT_KEY);
