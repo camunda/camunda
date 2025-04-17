@@ -9,11 +9,9 @@
 import {createAddVariableModification} from 'modules/mocks/modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {createBatchOperation, createInstance} from 'modules/testUtils';
 import {ModificationSummaryModal} from './index';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {open} from 'modules/mocks/diagrams';
 import {useEffect, act} from 'react';
@@ -23,6 +21,8 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -40,18 +40,19 @@ const getWrapper = (
       return () => {
         modificationsStore.reset();
         processInstanceDetailsStore.reset();
-        processInstanceDetailsDiagramStore.reset();
       };
     }, []);
 
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={initialEntries}>
-          <Routes>
-            <Route path={Paths.processInstance()} element={children} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={initialEntries}>
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
   return Wrapper;
@@ -60,7 +61,6 @@ const getWrapper = (
 describe('Modification Summary Modal', () => {
   beforeEach(() => {
     processInstanceDetailsStore.setProcessInstance(createInstance({id: '1'}));
-    processInstanceDetailsDiagramStore.init();
   });
 
   it('should render information message', async () => {
@@ -486,10 +486,8 @@ describe('Modification Summary Modal', () => {
       ],
     });
 
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
     );
 
     act(() => {
@@ -646,7 +644,7 @@ describe('Modification Summary Modal', () => {
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
   });
 
-  it.skip('should display/hide warning message if all modifications are about to be canceled', async () => {
+  it('should display/hide warning message if all modifications are about to be canceled', async () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -665,7 +663,9 @@ describe('Modification Summary Modal', () => {
         },
       ],
     });
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
+    );
 
     render(<ModificationSummaryModal open setOpen={jest.fn()} />, {
       wrapper: getWrapper(),
@@ -726,7 +726,7 @@ describe('Modification Summary Modal', () => {
     ).not.toBeInTheDocument();
   });
 
-  it.skip('should display error message and diable apply button if all modifications are about to be canceled and process has a parent', async () => {
+  it('should display error message and diable apply button if all modifications are about to be canceled and process has a parent', async () => {
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: '1',
@@ -749,7 +749,9 @@ describe('Modification Summary Modal', () => {
         },
       ],
     });
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
+    );
 
     render(<ModificationSummaryModal open setOpen={jest.fn()} />, {
       wrapper: getWrapper(),

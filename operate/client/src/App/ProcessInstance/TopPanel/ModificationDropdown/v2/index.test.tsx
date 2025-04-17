@@ -97,7 +97,7 @@ describe('Modification Dropdown', () => {
     modificationsStore.enableModificationMode();
   });
 
-  it.skip('should not render dropdown when no flow node is selected', async () => {
+  it('should not render dropdown when no flow node is selected', async () => {
     renderPopover();
 
     await waitFor(() =>
@@ -355,7 +355,7 @@ describe('Modification Dropdown', () => {
     expect(screen.getByText(/Move/)).toBeInTheDocument();
   });
 
-  it.skip('should not support move operation for sub processes', async () => {
+  it('should not support move operation for sub processes', async () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
@@ -389,7 +389,7 @@ describe('Modification Dropdown', () => {
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
   });
 
-  it.skip('should display spinner when loading meta data', async () => {
+  it('should display spinner when loading meta data', async () => {
     init(statisticsData);
 
     renderPopover();

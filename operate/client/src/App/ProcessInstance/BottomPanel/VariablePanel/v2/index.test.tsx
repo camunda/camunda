@@ -27,8 +27,6 @@ import {
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
@@ -46,8 +44,15 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {init} from 'modules/utils/flowNodeMetadata';
+import {cancelAllTokens} from 'modules/utils/modifications';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
+
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
+}));
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -67,7 +72,6 @@ const getWrapper = (
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
-        processInstanceDetailsStatisticsStore.reset();
       };
     }, []);
 
@@ -88,29 +92,35 @@ const getWrapper = (
 
 describe('VariablePanel', () => {
   beforeEach(() => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
+    const statistics = [
       {
-        activityId: 'TEST_FLOW_NODE',
+        flowNodeId: 'TEST_FLOW_NODE',
         active: 0,
         canceled: 0,
         incidents: 0,
         completed: 1,
       },
       {
-        activityId: 'Activity_0qtp1k6',
+        flowNodeId: 'Activity_0qtp1k6',
         active: 0,
         canceled: 0,
         incidents: 1,
         completed: 0,
       },
-    ]);
+    ];
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statistics,
+    });
 
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    flowNodeMetaDataStore.init();
+    init(statistics);
     flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -118,10 +128,10 @@ describe('VariablePanel', () => {
         state: 'ACTIVE',
       }),
     );
+  });
 
-    processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      'instance_id',
-    );
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it.each([true, false])(
@@ -235,6 +245,33 @@ describe('VariablePanel', () => {
       consoleErrorMock.mockRestore();
     },
   );
+
+  it('should display spinner for variables tab when switching between tabs', async () => {
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
+
+    act(() => {
+      flowNodeSelectionStore.setSelection({
+        flowNodeInstanceId: 'another_flow_node',
+        flowNodeId: 'TEST_FLOW_NODE',
+      });
+    });
+
+    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+    expect(screen.getByText('test2')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
+
+    mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
+
+    await user.click(screen.getByRole('tab', {name: 'Variables'}));
+    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+  });
 
   it('should render variables', async () => {
     render(<VariablePanel />, {wrapper: getWrapper()});
@@ -903,9 +940,9 @@ describe('VariablePanel', () => {
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     act(() => {
       flowNodeSelectionStore.setSelection({
@@ -970,33 +1007,6 @@ describe('VariablePanel', () => {
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
   });
 
-  it('should display spinner for variables tab when switching between tabs', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
-
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeInstanceId: 'another_flow_node',
-        flowNodeId: 'TEST_FLOW_NODE',
-      });
-    });
-
-    expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
-    expect(screen.getByText('test2')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
-
-    mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
-
-    await user.click(screen.getByRole('tab', {name: 'Variables'}));
-    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
-  });
-
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
     modificationsStore.enableModificationMode();
 
@@ -1020,6 +1030,189 @@ describe('VariablePanel', () => {
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
     expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
+  });
+
+  it('should display correct state for a flow node that has only one running token on it', async () => {
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '2251799813695856',
+      instanceCount: 1,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+      },
+    });
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
+    modificationsStore.enableModificationMode();
+
+    render(<VariablePanel />, {wrapper: getWrapper()});
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+
+    mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+      });
+    });
+
+    await waitFor(() =>
+      expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        ...singleInstanceMetadata,
+        flowNodeInstanceId: '2251799813695856',
+        instanceCount: 1,
+        instanceMetadata: {
+          ...singleInstanceMetadata.instanceMetadata!,
+          endDate: null,
+        },
+      }),
+    );
+
+    // initial state
+    expect(
+      await screen.findByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /add variable/i}),
+    ).toBeInTheDocument();
+
+    act(() => {
+      cancelAllTokens('Activity_0qtp1k6', 1, 1);
+    });
+
+    expect(
+      screen.getByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
+
+    // add a new token
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {
+            id: 'Activity_0qtp1k6',
+            name: 'Flow Node with running tokens',
+          },
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'some-new-scope-id',
+          parentScopeIds: {},
+        },
+      });
+    });
+
+    expect(
+      await screen.findByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('button', {name: /add variable/i}),
+    ).not.toBeInTheDocument();
+
+    // remove cancel modification
+    act(() => {
+      modificationsStore.removeFlowNodeModification({
+        operation: 'CANCEL_TOKEN',
+        flowNode: {
+          id: 'Activity_0qtp1k6',
+          name: 'Flow Node with running tokens',
+        },
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+      });
+    });
+
+    expect(
+      screen.getByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('button', {name: /add variable/i}),
+    ).not.toBeInTheDocument();
+
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '2251799813695856',
+      instanceCount: 1,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+        startDate: '2022-09-30T15:00:31.772+0000',
+      },
+    });
+
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
+    // select existing scope
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+        flowNodeInstanceId: '2251799813695856',
+      });
+    });
+
+    await waitFor(() =>
+      expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        ...singleInstanceMetadata,
+        flowNodeInstanceId: '2251799813695856',
+        instanceCount: 1,
+        instanceMetadata: {
+          ...singleInstanceMetadata.instanceMetadata!,
+          endDate: null,
+        },
+      }),
+    );
+
+    expect(
+      screen.queryByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i}),
+    ).toBeInTheDocument();
+
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
+    // select new scope
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+        flowNodeInstanceId: 'some-new-scope-id',
+        isPlaceholder: true,
+      });
+    });
+
+    expect(
+      screen.queryByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i}),
+    ).toBeInTheDocument();
   });
 
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
@@ -1161,422 +1354,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('should display correct state for a flow node that has only one finished token on it', async () => {
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: null,
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: '2022-09-08T12:44:45.406+0000',
-      },
-    });
-
-    modificationsStore.enableModificationMode();
-
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-
-    mockFetchVariables().withSuccess([]);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'TEST_FLOW_NODE',
-      });
-    });
-
-    await waitFor(() =>
-      expect(flowNodeMetaDataStore.state.metaData).toEqual({
-        ...singleInstanceMetadata,
-        flowNodeInstanceId: null,
-        instanceMetadata: {
-          ...singleInstanceMetadata.instanceMetadata!,
-          endDate: '2018-12-12 00:00:00',
-        },
-      }),
-    );
-
-    // initial state
-    expect(
-      await screen.findByText('The Flow Node has no Variables'),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
-
-    // one 'add token' modification is created
-    act(() => {
-      modificationsStore.addModification({
-        type: 'token',
-        payload: {
-          operation: 'ADD_TOKEN',
-          flowNode: {
-            id: 'TEST_FLOW_NODE',
-            name: 'Flow Node with finished tokens',
-          },
-          affectedTokenCount: 1,
-          visibleAffectedTokenCount: 1,
-          scopeId: 'some-new-scope-id',
-          parentScopeIds: {},
-        },
-      });
-    });
-
-    expect(
-      await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
-
-    // go to input mappings and back, see the correct state
-
-    await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
-    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {name: 'Variables'}));
-    expect(
-      await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
-
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    // select only one of the scopes
-    act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'TEST_FLOW_NODE',
-        flowNodeInstanceId: 'some-new-scope-id',
-        isPlaceholder: true,
-      });
-    });
-
-    expect(
-      await screen.findByText('The Flow Node has no Variables'),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-  });
-
-  it('should display correct state for a flow node that has only one running token on it', async () => {
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: '2251799813695856',
-      instanceCount: 1,
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: null,
-      },
-    });
-
-    mockFetchProcessDefinitionXml().withSuccess('');
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    modificationsStore.enableModificationMode();
-
-    render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-
-    mockFetchVariables().withSuccess([]);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-      });
-    });
-
-    await waitFor(() =>
-      expect(flowNodeMetaDataStore.state.metaData).toEqual({
-        ...singleInstanceMetadata,
-        flowNodeInstanceId: '2251799813695856',
-        instanceCount: 1,
-        instanceMetadata: {
-          ...singleInstanceMetadata.instanceMetadata!,
-          endDate: null,
-        },
-      }),
-    );
-
-    // initial state
-    expect(
-      await screen.findByText('The Flow Node has no Variables'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-
-    act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
-    });
-
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText('The Flow Node has no Variables'),
-    ).toBeInTheDocument();
-
-    // add a new token
-    act(() => {
-      modificationsStore.addModification({
-        type: 'token',
-        payload: {
-          operation: 'ADD_TOKEN',
-          flowNode: {
-            id: 'Activity_0qtp1k6',
-            name: 'Flow Node with running tokens',
-          },
-          affectedTokenCount: 1,
-          visibleAffectedTokenCount: 1,
-          scopeId: 'some-new-scope-id',
-          parentScopeIds: {},
-        },
-      });
-    });
-
-    expect(
-      await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
-      ),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
-
-    // remove cancel modification
-    act(() => {
-      modificationsStore.removeFlowNodeModification({
-        operation: 'CANCEL_TOKEN',
-        flowNode: {
-          id: 'Activity_0qtp1k6',
-          name: 'Flow Node with running tokens',
-        },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      });
-    });
-
-    expect(
-      screen.getByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
-      ),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
-
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: '2251799813695856',
-      instanceCount: 1,
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: null,
-        startDate: '2022-09-30T15:00:31.772+0000',
-      },
-    });
-
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    // select existing scope
-    act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-        flowNodeInstanceId: '2251799813695856',
-      });
-    });
-
-    await waitFor(() =>
-      expect(flowNodeMetaDataStore.state.metaData).toEqual({
-        ...singleInstanceMetadata,
-        flowNodeInstanceId: '2251799813695856',
-        instanceCount: 1,
-        instanceMetadata: {
-          ...singleInstanceMetadata.instanceMetadata!,
-          endDate: null,
-        },
-      }),
-    );
-
-    expect(
-      screen.queryByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
-      ),
-    ).not.toBeInTheDocument();
-
-    expect(
-      screen.getByText('The Flow Node has no Variables'),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    // select new scope
-    act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-        flowNodeInstanceId: 'some-new-scope-id',
-        isPlaceholder: true,
-      });
-    });
-
-    expect(
-      screen.queryByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
-      ),
-    ).not.toBeInTheDocument();
-
-    expect(
-      screen.getByText('The Flow Node has no Variables'),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-  });
-
-  it('should be readonly if flow node has variables but no running instances', async () => {
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: null,
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: '2022-09-08T12:44:45.406+0000',
-      },
-    });
-
-    modificationsStore.enableModificationMode();
-
-    render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
-
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchVariables().withSuccess([
-      createVariable({name: 'some-other-variable'}),
-    ]);
-
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: '9007199254742797',
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: '2022-09-15T12:44:45.406+0000',
-      },
-    });
-
-    act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'TEST_FLOW_NODE',
-      });
-    });
-
-    expect(await screen.findByText('some-other-variable')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: /edit variable/i}),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should be readonly if flow node has variables and running instances', async () => {
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: null,
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: null,
-      },
-    });
-
-    act(() => {
-      modificationsStore.enableModificationMode();
-    });
-
-    render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
-
-    mockFetchVariables().withSuccess([
-      createVariable({name: 'some-other-variable'}),
-    ]);
-
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: '9007199254742797',
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: null,
-      },
-    });
-
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-      });
-    });
-
-    // initial state
-    expect(await screen.findByText('some-other-variable')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
-
-    act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
-    });
-
-    await waitFor(() => {
-      expect(
-        screen.queryByRole('button', {name: /add variable/i}),
-      ).not.toBeInTheDocument();
-    });
-    expect(screen.getByText('some-other-variable')).toBeInTheDocument();
-
-    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: /edit variable/i}),
-    ).not.toBeInTheDocument();
-  });
-
-  it.skip('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
+  it('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
@@ -1623,7 +1401,7 @@ describe('VariablePanel', () => {
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      cancelAllTokens('Activity_0qtp1k6', 1, 1);
     });
 
     await waitFor(() =>
@@ -1687,7 +1465,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('Activity_0qtp1k6');
+      cancelAllTokens('Activity_0qtp1k6', 0, 0);
     });
 
     await waitFor(() =>
@@ -1718,9 +1496,6 @@ describe('VariablePanel', () => {
       });
     });
 
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
     expect(
       screen.getByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
@@ -1797,10 +1572,260 @@ describe('VariablePanel', () => {
     });
 
     expect(
+      screen.getByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
+  });
+
+  it('should be readonly if flow node has variables and running instances', async () => {
+    const mockData: GetProcessInstanceStatisticsResponseBody = {
+      items: [
+        {
+          flowNodeId: 'TEST_FLOW_NODE',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+          active: 2,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
+        },
+      ],
+    };
+    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: null,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+      },
+    });
+
+    act(() => {
+      modificationsStore.enableModificationMode();
+    });
+
+    render(<VariablePanel />, {wrapper: getWrapper()});
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    mockFetchVariables().withSuccess([
+      createVariable({name: 'some-other-variable'}),
+    ]);
+
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '9007199254742797',
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+      },
+    });
+
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+      });
+    });
+
+    // initial state
+    expect(await screen.findByText('some-other-variable')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /add variable/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    act(() => {
+      cancelAllTokens('Activity_0qtp1k6', 0, 0);
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('button', {name: /add variable/i}),
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('some-other-variable')).toBeInTheDocument();
+
+    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /edit variable/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should be readonly if flow node has variables but no running instances', async () => {
+    modificationsStore.enableModificationMode();
+
+    render(<VariablePanel />, {wrapper: getWrapper()});
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchVariables().withSuccess([
+      createVariable({name: 'some-other-variable'}),
+    ]);
+
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '9007199254742797',
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: '2022-09-15T12:44:45.406+0000',
+      },
+    });
+
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+      });
+    });
+
+    expect(await screen.findByText('some-other-variable')).toBeInTheDocument();
+    expect(
       screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
     expect(
-      screen.getByText('The Flow Node has no Variables'),
+      screen.queryByRole('button', {name: /edit variable/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should display correct state for a flow node that has only one finished token on it', async () => {
+    const statistics = [
+      {
+        flowNodeId: 'StartEvent_1',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+      {
+        flowNodeId: 'Activity_0qtp1k6',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+    ];
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statistics,
+    });
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: null,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: '2022-09-08T12:44:45.406+0000',
+      },
+    });
+
+    modificationsStore.enableModificationMode();
+
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+
+    mockFetchVariables().withSuccess([]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+      });
+    });
+
+    await waitFor(() =>
+      expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        ...singleInstanceMetadata,
+        flowNodeInstanceId: null,
+        instanceMetadata: {
+          ...singleInstanceMetadata.instanceMetadata!,
+          endDate: '2018-12-12 00:00:00',
+        },
+      }),
+    );
+
+    // initial state
+    expect(
+      await screen.findByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /add variable/i}),
+    ).not.toBeInTheDocument();
+
+    // one 'add token' modification is created
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          flowNode: {
+            id: 'Activity_0qtp1k6',
+            name: 'Flow Node with finished tokens',
+          },
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          scopeId: 'some-new-scope-id',
+          parentScopeIds: {},
+        },
+      });
+    });
+
+    expect(
+      await screen.findByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /add variable/i}),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', {name: 'Variables'}));
+    expect(
+      await screen.findByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
+
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
+    // select only one of the scopes
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'Activity_0qtp1k6',
+        flowNodeInstanceId: 'some-new-scope-id',
+        isPlaceholder: true,
+      });
+    });
+
+    expect(
+      await screen.findByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
   });
 });
