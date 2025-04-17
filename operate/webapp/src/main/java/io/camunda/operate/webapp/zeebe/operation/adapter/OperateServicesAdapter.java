@@ -7,4 +7,7 @@
  */
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
-public interface OperateServicesAdapter {}
+public interface OperateServicesAdapter {
+
+  void cancelProcessInstance(long processInstanceKey, String operationId) throws Exception;
+}
