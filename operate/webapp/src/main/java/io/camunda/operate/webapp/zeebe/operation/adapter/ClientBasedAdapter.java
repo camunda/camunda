@@ -51,6 +51,15 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
     cancelInstanceCommand.send().join();
   }
 
+  @Override
+  public void updateJobRetries(final long jobKey, final int retries, final String operationId)
+      throws Exception {
+    final var updateRetriesJobCommand =
+        withOperationReference(
+            camundaClient.newUpdateRetriesCommand(jobKey).retries(retries), operationId);
+    updateRetriesJobCommand.send().join();
+  }
+
   protected static <T extends CommandWithOperationReferenceStep<T>> T withOperationReference(
       final T command, final String id) {
     try {
