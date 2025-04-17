@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -90,6 +91,12 @@ public final class BatchOperationClient {
 
     public BatchOperationCreationClient withFilter(final DirectBuffer filter) {
       batchOperationCreationRecord.setEntityFilter(filter);
+      return this;
+    }
+
+    public BatchOperationCreationClient withModificationPlanFilter(
+        final BatchOperationProcessInstanceModificationPlan modificationPlan) {
+      batchOperationCreationRecord.setModificationPlan(modificationPlan);
       return this;
     }
 

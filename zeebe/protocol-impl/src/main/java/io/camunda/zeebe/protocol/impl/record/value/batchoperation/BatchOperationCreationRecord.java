@@ -91,4 +91,12 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public DirectBuffer getEntityFilterBuffer() {
     return entityFilterProp.getValue();
   }
+
+  public BatchOperationCreationRecord wrap(final BatchOperationCreationRecord record) {
+    batchOperationKeyProp.setValue(record.getBatchOperationKey());
+    batchOperationTypeProp.setValue(record.getBatchOperationType());
+    entityFilterProp.setValue(record.getEntityFilterBuffer());
+    modificationPlanProp.getValue().wrap(record.getModificationPlan());
+    return this;
+  }
 }

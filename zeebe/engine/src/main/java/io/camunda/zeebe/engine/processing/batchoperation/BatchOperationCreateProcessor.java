@@ -60,10 +60,8 @@ public final class BatchOperationCreateProcessor
     final var recordValue = command.getValue();
     LOGGER.debug("Processing new command with key '{}': {}", key, recordValue);
 
-    final var recordWithKey = new BatchOperationCreationRecord();
-    recordWithKey.setBatchOperationKey(key);
-    recordWithKey.setBatchOperationType(recordValue.getBatchOperationType());
-    recordWithKey.setEntityFilter(command.getValue().getEntityFilterBuffer());
+    final var recordWithKey = new BatchOperationCreationRecord().wrap(recordValue);
+    recordWithKey.setBatchOperationKey(key); // manually override key
 
     stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED, recordWithKey);
     responseWriter.writeEventOnCommand(key, BatchOperationIntent.CREATED, recordWithKey, command);
