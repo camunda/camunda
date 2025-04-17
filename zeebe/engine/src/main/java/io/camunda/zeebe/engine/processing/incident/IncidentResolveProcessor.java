@@ -201,7 +201,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
             intent -> {
               final var userTaskRecord = new UserTaskRecord();
               userTaskRecord.wrap(intermediateState.getRecord());
-              return new IncidentRecordWrapper<UserTaskRecord>(userTaskKey, intent, userTaskRecord);
+              return new IncidentRecordWrapper<>(userTaskKey, intent, userTaskRecord);
             });
   }
 
@@ -213,8 +213,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
             intent -> {
               final var record = new ProcessInstanceRecord();
               record.wrap(elementInstance.getValue());
-              return new IncidentRecordWrapper<ProcessInstanceRecord>(
-                  elementInstance.getKey(), intent, record);
+              return new IncidentRecordWrapper<>(elementInstance.getKey(), intent, record);
             });
   }
 
