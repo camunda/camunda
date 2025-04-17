@@ -115,18 +115,6 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void addRole(final long mappingKey, final long roleKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
-    if (fkClaim != null) {
-      final var claim = fkClaim.inner();
-      final var persistedMapping = mappingColumnFamily.get(claim);
-      persistedMapping.addRoleKey(roleKey);
-      mappingColumnFamily.update(claim, persistedMapping);
-    }
-  }
-
-  @Override
   public void addGroup(final String mappingId, final long groupKey) {
     this.mappingId.wrapString(mappingId);
     final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
@@ -134,20 +122,6 @@ public class DbMappingState implements MutableMappingState {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
       persistedMapping.addGroupKey(groupKey);
-      mappingColumnFamily.update(claim, persistedMapping);
-    }
-  }
-
-  @Override
-  public void removeRole(final long mappingKey, final long roleKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
-    if (fkClaim != null) {
-      final var claim = fkClaim.inner();
-      final var persistedMapping = mappingColumnFamily.get(claim);
-      final List<Long> roleKeys = persistedMapping.getRoleKeysList();
-      roleKeys.remove(roleKey);
-      persistedMapping.setRoleKeysList(roleKeys);
       mappingColumnFamily.update(claim, persistedMapping);
     }
   }

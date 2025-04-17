@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -84,30 +83,6 @@ public class RoleAppliersTest {
   }
 
   @Test
-  void shouldAddEntityToRoleWithTypeMapping() {
-    // given
-    final long entityKey = 1L;
-    mappingState.create(
-        new MappingRecord()
-            .setMappingKey(entityKey)
-            .setClaimName("claimName")
-            .setClaimValue("claimValue"));
-    final long roleKey = 11L;
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
-    roleState.create(roleRecord);
-    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
-
-    // when
-    roleEntityAddedApplier.applyState(roleKey, roleRecord);
-
-    // then
-    assertThat(roleState.getEntitiesByType(roleKey).get(EntityType.MAPPING))
-        .containsExactly(entityKey);
-    final var persistedMapping = mappingState.get(entityKey).get();
-    assertThat(persistedMapping.getRoleKeysList()).containsExactly(roleKey);
-  }
-
-  @Test
   void shouldDeleteRole() {
     // given
     final long roleKey = 11L;
@@ -168,30 +143,5 @@ public class RoleAppliersTest {
             membershipState.getMemberships(
                 EntityType.USER, Long.toString(userKey), RelationType.ROLE))
         .isEmpty();
-  }
-
-  @Test
-  void shouldRemoveEntityFromRoleWithTypeMapping() {
-    // given
-    final long entityKey = 1L;
-    mappingState.create(
-        new MappingRecord()
-            .setMappingKey(entityKey)
-            .setClaimName("claimName")
-            .setClaimValue("claimValue"));
-    final long roleKey = 11L;
-    mappingState.addRole(entityKey, 11L);
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
-    roleState.create(roleRecord);
-    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
-    roleState.addEntity(roleRecord);
-
-    // when
-    roleEntityRemovedApplier.applyState(roleKey, roleRecord);
-
-    // then
-    assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    final var persistedMapping = mappingState.get(entityKey).get();
-    assertThat(persistedMapping.getRoleKeysList()).isEmpty();
   }
 }

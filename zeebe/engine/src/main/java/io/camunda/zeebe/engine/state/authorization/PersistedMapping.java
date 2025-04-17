@@ -25,18 +25,15 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty mappingIdProp = new StringProperty("mappingId", "");
-  private final ArrayProperty<LongValue> roleKeysProp =
-      new ArrayProperty<>("roleKeys", LongValue::new);
   private final ArrayProperty<LongValue> groupKeysProp =
       new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedMapping() {
-    super(7);
+    super(6);
     declareProperty(mappingKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
-        .declareProperty(roleKeysProp)
         .declareProperty(groupKeysProp)
         .declareProperty(mappingIdProp);
   }
@@ -89,23 +86,6 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
 
   public PersistedMapping setMappingId(final String mappingId) {
     mappingIdProp.setValue(mappingId);
-    return this;
-  }
-
-  public List<Long> getRoleKeysList() {
-    return StreamSupport.stream(roleKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
-        .collect(Collectors.toList());
-  }
-
-  public PersistedMapping setRoleKeysList(final List<Long> roleKeys) {
-    roleKeysProp.reset();
-    roleKeys.forEach(roleKey -> roleKeysProp.add().setValue(roleKey));
-    return this;
-  }
-
-  public PersistedMapping addRoleKey(final long roleKey) {
-    roleKeysProp.add().setValue(roleKey);
     return this;
   }
 
