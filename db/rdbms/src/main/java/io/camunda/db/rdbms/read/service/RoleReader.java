@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.read.domain.RoleDbQuery;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.columns.RoleSearchColumn;
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
+import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -51,9 +52,6 @@ public class RoleReader extends AbstractEntityReader<RoleEntity> {
     return new RoleEntity(
         model.roleKey(),
         model.name(),
-        model.members().stream()
-            // todo, remove long parse in https://github.com/camunda/camunda/issues/30111
-            .map(dbModel -> Long.parseLong(dbModel.entityId()))
-            .collect(Collectors.toSet()));
+        model.members().stream().map(RoleMemberDbModel::entityId).collect(Collectors.toSet()));
   }
 }

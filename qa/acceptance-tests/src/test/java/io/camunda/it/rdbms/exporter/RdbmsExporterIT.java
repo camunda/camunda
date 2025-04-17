@@ -407,14 +407,14 @@ class RdbmsExporterIT {
 
     // then
     final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
-    assertThat(updatedRole.assignedMemberKeys()).containsExactly(1337L);
+    assertThat(updatedRole.assignedMemberIds()).containsExactly("1337");
 
     // when
     exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_REMOVED, 1337L));
 
     // then
     final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
-    assertThat(deletedRole.assignedMemberKeys()).isEmpty();
+    assertThat(deletedRole.assignedMemberIds()).isEmpty();
   }
 
   @Test
