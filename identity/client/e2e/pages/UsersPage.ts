@@ -7,8 +7,11 @@
  */
 
 import { Page, Locator } from "@playwright/test";
+import { Paths } from "../utils/paths";
+import { relativizePath } from "../utils/relativizePaths";
 
 export class UsersPage {
+  private page: Page;
   readonly usersList: Locator;
   readonly createUserButton: Locator;
   readonly editUserButton: (rowName?: string) => Locator;
@@ -36,6 +39,7 @@ export class UsersPage {
   readonly deleteUserModalDeleteButton: Locator;
 
   constructor(page: Page) {
+    this.page = page;
     // List page
     this.usersList = page.getByRole("table");
     this.createUserButton = page.getByRole("button", {
@@ -130,5 +134,9 @@ export class UsersPage {
         name: /delete user/i,
       },
     );
+  }
+
+  async navigateToUsers() {
+    await this.page.goto(relativizePath(Paths.users()));
   }
 }
