@@ -17,7 +17,9 @@ package io.camunda.process.test.impl.extension;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
@@ -26,6 +28,8 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
@@ -111,5 +115,52 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public void increaseTime(final Duration timeToAdd) {
     camundaManagementClient.increaseTime(timeToAdd);
+  }
+
+  @Override
+  public JobWorkerMock mockJobWorker(final String jobId) {
+    final CamundaClient client = createClient();
+    return new JobWorkerMock(jobId, client);
+  }
+
+  @Override
+  public void completeJob(final String jobId) {
+    completeJob(jobId, new HashMap<>());
+  }
+
+  @Override
+  public void completeJob(final String jobId, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final ActivatedJob activeJob =
+        client
+            .newActivateJobsCommand()
+            .jobType("test")
+            .maxJobsToActivate(1)
+            .send()
+            .join()
+            .getJobs()
+            .get(0);
+    client.newCompleteCommand(activeJob).variables(variables).send().join();
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(final String jobId, final String errorCode) {
+    throwBpmnErrorFromJob(jobId, errorCode, new HashMap<>());
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(
+      final String jobId, final String errorCode, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final ActivatedJob activeJob =
+        client
+            .newActivateJobsCommand()
+            .jobType("test")
+            .maxJobsToActivate(1)
+            .send()
+            .join()
+            .getJobs()
+            .get(0);
+    client.newThrowErrorCommand(activeJob).errorCode(errorCode).variables(variables).send().join();
   }
 }
