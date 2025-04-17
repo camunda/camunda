@@ -42,6 +42,11 @@ describe('useProcessInstanceFilters', () => {
       canceled: true,
       parentInstanceId: 'parent1',
       tenant: 'tenant1',
+      retriesLeft: true,
+      operationId: 'operation1',
+      flowNodeId: 'flowNode1',
+      errorMessage: 'some error message',
+      incidentErrorHashCode: 321456,
     };
 
     (useFilters as jest.Mock).mockReturnValue({
@@ -79,6 +84,17 @@ describe('useProcessInstanceFilters', () => {
         tenantId: {
           $eq: 'tenant1',
         },
+        batchOperationId: {
+          $eq: 'operation1',
+        },
+        elementId: {
+          $eq: 'flowNode1',
+        },
+        errorMessage: {
+          $in: ['some error message'],
+        },
+        incidentErrorHashCode: 321456,
+        hasRetriesLeft: true,
       },
     };
 
