@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.zeebe.operation.adapter;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CommandWithOperationReferenceStep;
+import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
@@ -36,15 +37,26 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
-  public void deleteResource(final long resourceKey, final String operationId) throws Exception {
+  public void deleteResource(final long resourceKey, final String operationId) {
     final var deleteResourceCommand =
         withOperationReference(camundaClient.newDeleteResourceCommand(resourceKey), operationId);
     deleteResourceCommand.send().join();
   }
 
   @Override
-  public void cancelProcessInstance(final long processInstanceKey, final String operationId)
-      throws Exception {
+  public void migrateProcessInstance(
+      final long processInstanceKey, final MigrationPlan migrationPlan, final String operationId) {
+    final var migrateProcessInstanceCommand =
+        withOperationReference(
+            camundaClient
+                .newMigrateProcessInstanceCommand(processInstanceKey)
+                .migrationPlan(migrationPlan),
+            operationId);
+    migrateProcessInstanceCommand.send().join();
+  }
+
+  @Override
+  public void cancelProcessInstance(final long processInstanceKey, final String operationId) {
     final var cancelInstanceCommand =
         withOperationReference(
             camundaClient.newCancelInstanceCommand(processInstanceKey), operationId);
@@ -52,8 +64,7 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
-  public void updateJobRetries(final long jobKey, final int retries, final String operationId)
-      throws Exception {
+  public void updateJobRetries(final long jobKey, final int retries, final String operationId) {
     final var updateRetriesJobCommand =
         withOperationReference(
             camundaClient.newUpdateRetriesCommand(jobKey).retries(retries), operationId);
@@ -61,7 +72,7 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
-  public void resolveIncident(final long incidentKey, final String operationId) throws Exception {
+  public void resolveIncident(final long incidentKey, final String operationId) {
     final var resolveIncidentCommand =
         withOperationReference(camundaClient.newResolveIncidentCommand(incidentKey), operationId);
     resolveIncidentCommand.send().join();

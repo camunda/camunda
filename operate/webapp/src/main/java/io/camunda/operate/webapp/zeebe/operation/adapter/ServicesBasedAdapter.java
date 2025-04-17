@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
+import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
@@ -15,9 +16,11 @@ import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.VariableServices;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +58,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
-  public void deleteResource(final long resourceKey, final String operationId) throws Exception {
+  public void deleteResource(final long resourceKey, final String operationId) {
     withOperationReference(
         operationReference ->
             resourceServices.deleteResource(
@@ -64,8 +67,27 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
-  public void cancelProcessInstance(final long processInstanceKey, final String operationId)
-      throws Exception {
+  public void migrateProcessInstance(
+      final long processInstanceKey, final MigrationPlan migrationPlan, final String operationId) {
+    withOperationReference(
+        operationReference ->
+            processInstanceServices.migrateProcessInstance(
+                new ProcessInstanceMigrateRequest(
+                    processInstanceKey,
+                    migrationPlan.getTargetProcessDefinitionKey(),
+                    migrationPlan.getMappingInstructions().stream()
+                        .map(
+                            instruction ->
+                                new ProcessInstanceMigrationMappingInstruction()
+                                    .setSourceElementId(instruction.getSourceElementId())
+                                    .setTargetElementId(instruction.getTargetElementId()))
+                        .toList(),
+                    operationReference)),
+        operationId);
+  }
+
+  @Override
+  public void cancelProcessInstance(final long processInstanceKey, final String operationId) {
     withOperationReference(
         operationReference ->
             processInstanceServices.cancelProcessInstance(
@@ -74,14 +96,13 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
-  public void updateJobRetries(final long jobKey, final int retries, final String operationId)
-      throws Exception {
+  public void updateJobRetries(final long jobKey, final int retries, final String operationId) {
     // operationId is not used in the updateJob service method
     jobServices.updateJob(jobKey, new UpdateJobChangeset(retries, null));
   }
 
   @Override
-  public void resolveIncident(final long incidentKey, final String operationId) throws Exception {
+  public void resolveIncident(final long incidentKey, final String operationId) {
     incidentServices.resolveIncident(incidentKey);
   }
 
