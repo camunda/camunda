@@ -79,6 +79,16 @@ describe('useProcessInstanceFilters', () => {
         tenantId: {
           $eq: 'tenant1',
         },
+        batchOperationId: {
+          $eq: 'operation1',
+        },
+        elementId: {
+          $eq: 'flowNode1',
+        },
+        errorMessage: {
+          $in: ['some error message'],
+        },
+        hasRetriesLeft: true,
       },
     };
 
