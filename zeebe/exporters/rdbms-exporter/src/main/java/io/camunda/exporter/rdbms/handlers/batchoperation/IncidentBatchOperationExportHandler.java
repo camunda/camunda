@@ -7,11 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
-
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
-import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -19,36 +15,24 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
 /** This aggregates the batch operation status of incident management tasks */
 public class IncidentBatchOperationExportHandler
-    implements RdbmsExportHandler<IncidentRecordValue> {
-
-  private final BatchOperationWriter batchOperationWriter;
+    extends RdbmsBatchOperationStatusExportHandler<IncidentRecordValue> {
 
   public IncidentBatchOperationExportHandler(final BatchOperationWriter batchOperationWriter) {
-    this.batchOperationWriter = batchOperationWriter;
+    super(batchOperationWriter);
   }
 
   @Override
-  public boolean canExport(final Record<IncidentRecordValue> record) {
-    return record.getOperationReference() != operationReferenceNullValue()
-        && (isIncidentResolved(record) || isFailed(record));
+  long getItemKey(final Record<IncidentRecordValue> record) {
+    return record.getKey();
   }
 
   @Override
-  public void export(final Record<IncidentRecordValue> record) {
-    if (isIncidentResolved(record)) {
-      batchOperationWriter.updateItem(
-          record.getOperationReference(), record.getKey(), BatchOperationItemState.COMPLETED);
-    } else if (isFailed(record)) {
-      batchOperationWriter.updateItem(
-          record.getOperationReference(), record.getKey(), BatchOperationItemState.FAILED);
-    }
-  }
-
-  private boolean isIncidentResolved(final Record<IncidentRecordValue> record) {
+  boolean isCompleted(final Record<IncidentRecordValue> record) {
     return record.getIntent().equals(IncidentIntent.RESOLVED);
   }
 
-  private boolean isFailed(final Record<IncidentRecordValue> record) {
+  @Override
+  boolean isFailed(final Record<IncidentRecordValue> record) {
     return record.getIntent().equals(IncidentIntent.RESOLVE)
         && record.getRejectionType() != RejectionType.NULL_VAL;
   }
