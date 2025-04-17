@@ -25,7 +25,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.exporter.notifier.HttpClientWrapper;
 import io.camunda.it.util.HttpRequestBodyTestUtility;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import java.io.IOException;
@@ -45,8 +45,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class IncidentNotifierIT {
 
   @MultiDbTestApplication(managedLifecycle = false)
-  private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
-      new TestSimpleCamundaApplication().withUnauthenticatedAccess();
+  private static final TestCamundaApplication STANDALONE_CAMUNDA =
+      new TestCamundaApplication().withUnauthenticatedAccess();
 
   private static final String JWT_TOKEN = JWT.create().sign(Algorithm.HMAC256("secretkey"));
   private static final String WEBHOOK_PATH = "/webhook";
