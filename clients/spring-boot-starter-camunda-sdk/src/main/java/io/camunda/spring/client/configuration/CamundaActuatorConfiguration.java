@@ -20,10 +20,6 @@ import io.camunda.spring.client.actuator.CamundaClientHealthIndicator;
 import io.camunda.spring.client.actuator.MicrometerMetricsRecorder;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -41,21 +37,8 @@ import org.springframework.context.annotation.Lazy;
 public class CamundaActuatorConfiguration {
   @Bean
   @ConditionalOnMissingBean
-  public MetricsRecorder micrometerMetricsRecorder(
-      final @Autowired @Lazy MeterRegistry meterRegistry) {
+  public MetricsRecorder micrometerMetricsRecorder(@Lazy final MeterRegistry meterRegistry) {
     return new MicrometerMetricsRecorder(meterRegistry);
-  }
-
-  @Bean
-  InitializingBean forceMeterRegistryPostProcessor(
-      final @Autowired(required = false) @Qualifier("meterRegistryPostProcessor") BeanPostProcessor
-              meterRegistryPostProcessor,
-      final @Autowired(required = false) MeterRegistry registry) {
-    if (registry == null || meterRegistryPostProcessor == null) {
-      return () -> {};
-    } else {
-      return () -> meterRegistryPostProcessor.postProcessAfterInitialization(registry, "");
-    }
   }
 
   @Bean
