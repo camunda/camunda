@@ -13,6 +13,7 @@ import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -76,6 +77,21 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
     final var resolveIncidentCommand =
         withOperationReference(camundaClient.newResolveIncidentCommand(incidentKey), operationId);
     resolveIncidentCommand.send().join();
+  }
+
+  @Override
+  public long setVariables(
+      final long scopeKey,
+      final Map<String, Object> variables,
+      final boolean local,
+      final String operationId) {
+    final var setVariablesCommand =
+        withOperationReference(
+            camundaClient.newSetVariablesCommand(scopeKey).variables(variables).local(true),
+            operationId);
+
+    final var response = setVariablesCommand.send().join();
+    return response.getKey();
   }
 
   protected static <T extends CommandWithOperationReferenceStep<T>> T withOperationReference(
