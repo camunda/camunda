@@ -11,16 +11,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.Metadata;
+import io.camunda.tasklist.webapp.es.backup.os.GetCustomSnapshotResponse.Builder;
+import io.camunda.tasklist.webapp.es.backup.os.response.SnapshotState;
 import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,21 +39,31 @@ import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mock.Strictness;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
+import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class BackupManagerOpenSearchTest {
 
   @Mock OpenSearchTransport openSearchTransport;
+  private final long backupId = 2L;
+  final Metadata metadata =
+      new Metadata().setBackupId(backupId).setPartCount(3).setPartNo(1).setVersion("8.6.1");
+  private final String repositoryName = "test-repo";
 
-  @Mock(strictness = Strictness.LENIENT)
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private OpenSearchAsyncClient openSearchAsyncClient;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -55,11 +72,11 @@ class BackupManagerOpenSearchTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private TasklistProperties tasklistProperties;
 
-  @InjectMocks private BackupManagerOpenSearch backupManagerOpenSearch;
+  @InjectMocks @Spy private BackupManagerOpenSearch backupManagerOpenSearch;
 
   @BeforeEach
   public void setUp() {
-    when(tasklistProperties.getBackup().getRepositoryName()).thenReturn("test-repo");
+    when(tasklistProperties.getBackup().getRepositoryName()).thenReturn(repositoryName);
     when(openSearchClient._transport()).thenReturn(openSearchTransport);
     when(openSearchAsyncClient._transport()).thenReturn(openSearchTransport);
   }
@@ -81,6 +98,7 @@ class BackupManagerOpenSearchTest {
   @ValueSource(strings = {"SUCCESS", "IN_PROGRESS", "PARTIAL", "FAILED"})
   void shouldReturnPartialDataWhenVerboseIsFalse(final String state) throws IOException {
     // given
+
     final var metadata =
         new Metadata().setBackupId(2L).setPartCount(3).setPartNo(1).setVersion("8.6.1");
     final var snapshots = new ArrayList<SnapshotInfo>(metadata.getPartCount());
@@ -99,6 +117,7 @@ class BackupManagerOpenSearchTest {
 
     final var snapshotResponse = GetCustomSnapshotResponse.of(b -> b.snapshots(snapshots));
     when(openSearchTransport.performRequest(any(), any(), any())).thenReturn(snapshotResponse);
+    when(tasklistProperties.getBackup().getRepositoryName()).thenReturn(repositoryName);
 
     // when
     final var backupResponse = backupManagerOpenSearch.getBackups(false, null);
@@ -144,5 +163,83 @@ class BackupManagerOpenSearchTest {
             argThat((GetSnapshotRequest r) -> r.snapshot().contains("camunda_tasklist_2025*")),
             any(),
             any());
+  }
+
+  @Test
+  public void shouldWaitForSnapshotWithTimeout() {
+    final int timeout = 1;
+    final SnapshotState snapshotState = SnapshotState.STARTED;
+
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+    when(snapshotInfo.state()).thenReturn(snapshotState.name());
+    when(snapshotInfo.snapshot()).thenReturn(metadata.buildSnapshotName());
+    when(tasklistProperties.getBackup().getSnapshotTimeout()).thenReturn(timeout);
+    doReturn(List.of(snapshotInfo)).when(backupManagerOpenSearch).findSnapshots(backupId);
+
+    final boolean finished =
+        backupManagerOpenSearch.isSnapshotFinishedWithinTimeout(snapshotInfo.snapshot());
+
+    assertFalse(finished);
+    verify(backupManagerOpenSearch, atLeast(5)).findSnapshots(backupId);
+  }
+
+  @Test
+  public void shouldWaitForSnapshotTillCompleted() throws IOException {
+    final int timeout = 0;
+    when(tasklistProperties.getBackup().getSnapshotTimeout()).thenReturn(timeout);
+    final int numberOfSnapshots = 6;
+    final var snapshotInfos = new ArrayList<SnapshotInfo>();
+
+    final List<Metadata> metadata = new ArrayList<>();
+    for (int i = 0; i < numberOfSnapshots; i++) {
+      metadata.add(
+          new Metadata()
+              .setBackupId(backupId)
+              .setPartCount(numberOfSnapshots)
+              .setPartNo(i)
+              .setVersion("8.3.0"));
+    }
+
+    for (int i = 0; i < numberOfSnapshots; i++) {
+      final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+      when(snapshotInfo.state())
+          .thenReturn(SnapshotState.STARTED.name())
+          .thenReturn(SnapshotState.STARTED.name())
+          .thenReturn(SnapshotState.SUCCESS.name());
+      when(snapshotInfo.snapshot()).thenReturn(metadata.get(i).buildSnapshotName());
+      snapshotInfos.add(snapshotInfo);
+    }
+
+    final CompletableFuture<CreateSnapshotResponse> failedResponse =
+        CompletableFuture.failedFuture(new SocketTimeoutException("Request timed out."));
+    when(openSearchAsyncClient.snapshot().create(any(CreateSnapshotRequest.class)))
+        .thenReturn(failedResponse);
+    when(openSearchClient._transport().performRequest(any(), any(), any()))
+        .thenReturn(new Builder().snapshots(snapshotInfos).build());
+
+    for (int i = 0; i < numberOfSnapshots; i++) {
+      final Metadata snapshotMetadata = metadata.get(i);
+      final String snapshotName = snapshotMetadata.buildSnapshotName();
+      backupManagerOpenSearch.executeSnapshotting(
+          CreateSnapshotRequest.of(
+              csr ->
+                  csr.repository(repositoryName)
+                      .snapshot(snapshotName)
+                      .indices(List.of("index-1", "index-2"))
+                      .ignoreUnavailable(false)
+                      .includeGlobalState(true)
+                      .metadata(
+                          Map.of(
+                              "backupId", JsonData.of(snapshotMetadata.getBackupId()),
+                              "version", JsonData.of(snapshotMetadata.getVersion()),
+                              "partNo", JsonData.of(snapshotMetadata.getPartNo()),
+                              "partCount", JsonData.of(snapshotMetadata.getPartCount())))
+                      .featureStates("none")
+                      .waitForCompletion(true)));
+    }
+
+    verify(backupManagerOpenSearch, atLeast(12)).findSnapshots(backupId);
+    final var response = backupManagerOpenSearch.getBackupState(backupId);
+    assertThat(response.getState()).isEqualTo(BackupStateDto.COMPLETED);
   }
 }
