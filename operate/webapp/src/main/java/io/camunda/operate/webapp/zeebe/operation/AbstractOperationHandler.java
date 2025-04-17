@@ -14,6 +14,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.grpc.Status;
@@ -35,6 +36,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
           Status.DEADLINE_EXCEEDED.getCode());
 
   @Autowired protected CamundaClient camundaClient;
+  @Autowired protected OperateServicesAdapter operationServicesAdapter;
   @Autowired protected BatchOperationWriter batchOperationWriter;
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected Metrics metrics;
