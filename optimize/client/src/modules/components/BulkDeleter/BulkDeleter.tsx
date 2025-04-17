@@ -6,14 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useState} from 'react';
+import {ComponentProps, useState} from 'react';
 import {TableBatchAction} from '@carbon/react';
 import {TrashCan} from '@carbon/icons-react';
 
 import {Deleter} from 'components';
 import {t} from 'translation';
 import {useErrorHandling} from 'hooks';
+import {EntityListEntity} from 'types';
 import {showError} from 'notifications';
+
+interface BulkDeleterProps extends Omit<ComponentProps<typeof TableBatchAction>, 'type'> {
+  deleteEntities: (entries: EntityListEntity[]) => Promise<void>;
+  checkConflicts?: (entity: EntityListEntity[]) => Promise<{conflictedItems: []}>;
+  conflictMessage?: string;
+  onDelete?: () => void;
+  selectedEntries: EntityListEntity[];
+  type?: 'delete' | 'remove';
+}
 
 export default function BulkDeleter({
   deleteEntities,
@@ -23,7 +33,7 @@ export default function BulkDeleter({
   selectedEntries,
   type = 'delete',
   ...rest
-}) {
+}: BulkDeleterProps) {
   const [deleting, setDeleting] = useState(false);
   const [conflict, setConflict] = useState(false);
   const {mightFail} = useErrorHandling();
@@ -40,7 +50,7 @@ export default function BulkDeleter({
       </TableBatchAction>
       <Deleter
         type="items"
-        entity={deleting && selectedEntries}
+        entity={deleting ? selectedEntries : null}
         deleteEntity={() =>
           mightFail(
             deleteEntities(selectedEntries),
@@ -54,8 +64,8 @@ export default function BulkDeleter({
         onClose={reset}
         deleteText={t('common.' + (type === 'remove' ? 'removeEntity' : 'deleteEntity'), {
           entity: 'items',
-        })}
-        deleteButtonText={t('common.' + type)}
+        }).toString()}
+        deleteButtonText={t('common.' + type).toString()}
         descriptionText={
           <>
             {conflict && (
