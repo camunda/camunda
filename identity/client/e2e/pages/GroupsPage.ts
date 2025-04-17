@@ -7,8 +7,11 @@
  */
 
 import { Page, Locator } from "@playwright/test";
+import { Paths } from "../utils/paths";
+import { relativizePath } from "../utils/relativizePaths";
 
 export class GroupsPage {
+  private page: Page;
   readonly groupsList: Locator;
   readonly createGroupButton: Locator;
   readonly editGroupButton: (rowName?: string) => Locator;
@@ -32,6 +35,7 @@ export class GroupsPage {
   readonly deleteGroupModalDeleteButton: Locator;
 
   constructor(page: Page) {
+    this.page = page;
     // List page
     this.groupsList = page.getByRole("table");
     this.createGroupButton = page.getByRole("button", {
@@ -109,5 +113,9 @@ export class GroupsPage {
         name: /delete group/i,
       },
     );
+  }
+
+  async navigateToGroups() {
+    await this.page.goto(relativizePath(Paths.groups()));
   }
 }

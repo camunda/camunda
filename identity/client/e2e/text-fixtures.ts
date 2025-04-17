@@ -24,5 +24,5 @@ export const test = base.extend<Fixtures>({
   header: createFixture(Header),
   loginPage: createFixture(LoginPage),
   usersPage: createFixture(UsersPage),
-  groupsPage: createFixture(UsersPage),
+  groupsPage: createFixture(GroupsPage),
 });
