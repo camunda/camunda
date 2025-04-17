@@ -13,8 +13,10 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationExecu
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleCanceledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecyclePausedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleResumeRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationModifyProcessInstanceRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationProcessCancelledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationResolveIncidentRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationModifyProcessInstanceRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationProcessCancelledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationResolveIncidentRecord;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -263,6 +265,57 @@ class RdbmsExporterBatchOperationsIT {
     exporter.export(batchOperationCreatedRecord);
     exporter.export(batchOperationChunkRecord);
     exporter.export(resolveIncidentFailedRecord);
+
+    // then
+    final var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(batchOperationKey).get();
+    assertThat(batchOperation).isNotNull();
+    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
+    assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
+    assertThat(batchOperation.operationsFailedCount()).isEqualTo(1);
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+  }
+
+  @Test
+  public void shouldMonitorModifyProcessInstanceBatchOperation() {
+    // given
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var processInstanceKey = 1L;
+    final var processInstanceModifiedRecord =
+        getBatchOperationModifyProcessInstanceRecord(processInstanceKey, batchOperationKey, 3L);
+
+    // when
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+    exporter.export(processInstanceModifiedRecord);
+
+    // then
+    final var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(batchOperationKey).get();
+    assertThat(batchOperation).isNotNull();
+    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
+    assertThat(batchOperation.operationsCompletedCount()).isEqualTo(1);
+    assertThat(batchOperation.operationsFailedCount()).isEqualTo(0);
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+  }
+
+  @Test
+  public void shouldMonitorFailedProcessInstanceBatchOperation() {
+    // given
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var processInstanceKey = 1L;
+    final var modifyProcessIncidentFailedRecord =
+        getFailedBatchOperationModifyProcessInstanceRecord(
+            processInstanceKey, batchOperationKey, 3L);
+
+    // when
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+    exporter.export(modifyProcessIncidentFailedRecord);
 
     // then
     final var batchOperation =
