@@ -191,7 +191,7 @@ public class RoleIT {
     assertThat(instance).isNotNull();
     assertThat(instance)
         .usingRecursiveComparison()
-        .ignoringFields("assignedMemberKeys")
+        .ignoringFields("assignedMemberIds")
         .isEqualTo(role);
   }
 }
