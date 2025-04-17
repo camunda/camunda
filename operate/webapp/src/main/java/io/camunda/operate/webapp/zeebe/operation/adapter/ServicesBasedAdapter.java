@@ -11,6 +11,8 @@ import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.service.IncidentServices;
+import io.camunda.service.JobServices;
+import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ResourceServices;
@@ -30,6 +32,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   private final ProcessInstanceServices processInstanceServices;
   private final ResourceServices resourceServices;
   private final VariableServices variableServices;
+  private final JobServices<?> jobServices;
   private final IncidentServices incidentServices;
   private final PermissionsService permissionsService;
   private final TenantService tenantService;
@@ -38,12 +41,14 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       final ProcessInstanceServices processInstanceServices,
       final ResourceServices resourceServices,
       final VariableServices variableServices,
+      final JobServices<?> jobServices,
       final IncidentServices incidentServices,
       final PermissionsService permissionsService,
       final TenantService tenantService) {
     this.processInstanceServices = processInstanceServices;
     this.resourceServices = resourceServices;
     this.variableServices = variableServices;
+    this.jobServices = jobServices;
     this.incidentServices = incidentServices;
     this.permissionsService = permissionsService;
     this.tenantService = tenantService;
@@ -66,6 +71,13 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
             processInstanceServices.cancelProcessInstance(
                 new ProcessInstanceCancelRequest(processInstanceKey, operationReference)),
         operationId);
+  }
+
+  @Override
+  public void updateJobRetries(final long jobKey, final int retries, final String operationId)
+      throws Exception {
+    // operationId is not used in the updateJob service method
+    jobServices.updateJob(jobKey, new UpdateJobChangeset(retries, null));
   }
 
   protected static void withOperationReference(final Consumer<Long> command, final String id) {
