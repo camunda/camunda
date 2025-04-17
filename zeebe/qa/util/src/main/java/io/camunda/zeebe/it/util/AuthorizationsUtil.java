@@ -12,18 +12,15 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.search.clients.DocumentBasedSearchClients;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
@@ -89,13 +86,10 @@ public class AuthorizationsUtil implements CloseableSilently {
         client
             .newCreateAuthorizationCommand()
             .ownerId(username)
-            .ownerType(EnumUtil.convert(OwnerTypeEnum.USER, OwnerType.class))
+            .ownerType(OwnerType.USER)
             .resourceId(resourceId)
             .resourceType(EnumUtil.convert(permission.resourceType(), ResourceType.class))
-            .permissionTypes(
-                EnumUtil.convert(
-                    permission.permissionType(),
-                    io.camunda.client.api.search.enums.PermissionType.class))
+            .permissionTypes(permission.permissionType())
             .send()
             .join();
       }
@@ -168,8 +162,8 @@ public class AuthorizationsUtil implements CloseableSilently {
 
   private void awaitPermissionExistsInElasticsearch(
       final String username, final Permissions permissions) {
-    final var resourceType = permissions.resourceType().getValue();
-    final var permissionType = PermissionType.valueOf(permissions.permissionType().getValue());
+    final var resourceType = permissions.resourceType();
+    final var permissionType = permissions.permissionType();
     final var resourceIds = permissions.resourceIds();
     // since the resourceIds filter uses an OR condition, we need to wait for the exported
     // authorization to contain all resourceIds
@@ -180,8 +174,10 @@ public class AuthorizationsUtil implements CloseableSilently {
                   b.filter(
                       f ->
                           f.ownerIds(username)
-                              .resourceType(resourceType)
-                              .permissionTypes(permissionType)
+                              .resourceType(resourceType.name())
+                              .permissionTypes(
+                                  io.camunda.zeebe.protocol.record.value.PermissionType.valueOf(
+                                      permissionType.name()))
                               .resourceIds(resourceId)));
 
       awaitEntityExistsInElasticsearch(
@@ -208,5 +204,5 @@ public class AuthorizationsUtil implements CloseableSilently {
   }
 
   public record Permissions(
-      ResourceTypeEnum resourceType, PermissionTypeEnum permissionType, List<String> resourceIds) {}
+      ResourceType resourceType, PermissionType permissionType, List<String> resourceIds) {}
 }

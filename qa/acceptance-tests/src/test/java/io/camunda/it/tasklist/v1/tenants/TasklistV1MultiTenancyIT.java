@@ -13,8 +13,8 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
@@ -51,28 +51,24 @@ public class TasklistV1MultiTenancyIT {
           ADMIN_USER_NAME,
           ADMIN_USER_PASSWORD,
           List.of(
-              new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(ResourceType.RESOURCE, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.AUTHORIZATION, PermissionType.CREATE, List.of("*")),
               new Permissions(
-                  ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
-              new Permissions(
-                  ResourceTypeEnum.PROCESS_DEFINITION,
-                  PermissionTypeEnum.READ_PROCESS_DEFINITION,
+                  ResourceType.PROCESS_DEFINITION,
+                  PermissionType.READ_PROCESS_DEFINITION,
                   List.of("*")),
               new Permissions(
-                  ResourceTypeEnum.PROCESS_DEFINITION,
-                  PermissionTypeEnum.READ_USER_TASK,
+                  ResourceType.PROCESS_DEFINITION, PermissionType.READ_USER_TASK, List.of("*")),
+              new Permissions(
+                  ResourceType.PROCESS_DEFINITION,
+                  PermissionType.READ_PROCESS_INSTANCE,
                   List.of("*")),
               new Permissions(
-                  ResourceTypeEnum.PROCESS_DEFINITION,
-                  PermissionTypeEnum.READ_PROCESS_INSTANCE,
+                  ResourceType.PROCESS_DEFINITION,
+                  PermissionType.CREATE_PROCESS_INSTANCE,
                   List.of("*")),
-              new Permissions(
-                  ResourceTypeEnum.PROCESS_DEFINITION,
-                  PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
-                  List.of("*")),
-              new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")),
-              new Permissions(
-                  ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*"))));
+              new Permissions(ResourceType.USER, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition private static final User USER1 = new User(USERNAME_1, PASSWORD, List.of());
 

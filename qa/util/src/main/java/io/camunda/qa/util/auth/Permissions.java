@@ -7,9 +7,9 @@
  */
 package io.camunda.qa.util.auth;
 
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import java.util.List;
 
 public record Permissions(
-    ResourceTypeEnum resourceType, PermissionTypeEnum permissionType, List<String> resourceIds) {}
+    ResourceType resourceType, PermissionType permissionType, List<String> resourceIds) {}
