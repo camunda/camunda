@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CommandWithOperationReferenceStep;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
@@ -32,5 +33,27 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
     this.camundaClient = camundaClient;
     this.permissionsService = permissionsService;
     this.tenantService = tenantService;
+  }
+
+  @Override
+  public void cancelProcessInstance(final long processInstanceKey, final String operationId)
+      throws Exception {
+    final var cancelInstanceCommand =
+        withOperationReference(
+            camundaClient.newCancelInstanceCommand(processInstanceKey), operationId);
+    cancelInstanceCommand.send().join();
+  }
+
+  protected static <T extends CommandWithOperationReferenceStep<T>> T withOperationReference(
+      final T command, final String id) {
+    try {
+      final long operationReference = Long.parseLong(id);
+      command.operationReference(operationReference);
+    } catch (final NumberFormatException e) {
+      LOGGER.debug(
+          "The operation reference provided is not a number: {}. Ignoring propagating it to zeebe commands.",
+          id);
+    }
+    return command;
   }
 }
