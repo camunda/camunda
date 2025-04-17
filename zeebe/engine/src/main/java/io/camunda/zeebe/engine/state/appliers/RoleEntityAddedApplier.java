@@ -42,7 +42,8 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
               Long.toString(value.getRoleKey()));
       case MAPPING -> {
         roleState.addEntity(value);
-        mappingState.addRole(value.getEntityKey(), value.getRoleKey());
+        // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
+        mappingState.addRole(String.valueOf(value.getEntityKey()), value.getRoleKey());
       }
       default ->
           throw new IllegalStateException(

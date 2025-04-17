@@ -133,7 +133,7 @@ public class MappingAppliersTest {
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;
-    mappingState.addRole(mappingKey, roleKey);
+    mappingState.addRole(mappingId, roleKey);
     final var role =
         new RoleRecord()
             .setRoleKey(roleKey)
