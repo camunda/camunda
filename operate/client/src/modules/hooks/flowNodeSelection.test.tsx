@@ -50,14 +50,14 @@ describe('useWillAllFlowNodesBeCanceled', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 0,
           completed: 0,
           canceled: 1,
           incidents: 0,
         },
         {
-          flowNodeId: 'node2',
+          elementId: 'node2',
           active: 0,
           completed: 0,
           canceled: 1,
@@ -102,14 +102,14 @@ describe('useWillAllFlowNodesBeCanceled', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 1,
           completed: 0,
           canceled: 0,
           incidents: 0,
         },
         {
-          flowNodeId: 'node2',
+          elementId: 'node2',
           active: 0,
           completed: 0,
           canceled: 1,
@@ -131,14 +131,14 @@ describe('useWillAllFlowNodesBeCanceled', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 0,
           completed: 0,
           canceled: 0,
           incidents: 1,
         },
         {
-          flowNodeId: 'node2',
+          elementId: 'node2',
           active: 0,
           completed: 0,
           canceled: 1,

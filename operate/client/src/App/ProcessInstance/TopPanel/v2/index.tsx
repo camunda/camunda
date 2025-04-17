@@ -147,8 +147,8 @@ const TopPanel: React.FC = observer(() => {
     .filter(isCompensationAssociation)
     .filter(({targetRef}) => {
       // check if the target element for the association was executed
-      return executedFlowNodes?.find(({flowNodeId, completed}) => {
-        return targetRef?.id === flowNodeId && completed > 0;
+      return executedFlowNodes?.find(({elementId, completed}) => {
+        return targetRef?.id === elementId && completed > 0;
       });
     })
     .map(({id}) => id);
@@ -321,7 +321,7 @@ const TopPanel: React.FC = observer(() => {
                 ...compensationAssociationIds,
               ]}
               highlightedFlowNodeIds={executedFlowNodes?.map(
-                ({flowNodeId}) => flowNodeId,
+                ({elementId}) => elementId,
               )}
             >
               {stateOverlays.map((overlay) => {

@@ -47,14 +47,14 @@ describe('useFlownodeInstancesStatistics', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 5,
           completed: 10,
           canceled: 0,
           incidents: 0,
         },
         {
-          flowNodeId: 'node2',
+          elementId: 'node2',
           active: 3,
           completed: 7,
           canceled: 0,
@@ -78,14 +78,14 @@ describe('useFlownodeInstancesStatistics', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 5,
           completed: 10,
           canceled: 0,
           incidents: 0,
         },
         {
-          flowNodeId: 'node2',
+          elementId: 'node2',
           active: 3,
           completed: 7,
           canceled: 0,

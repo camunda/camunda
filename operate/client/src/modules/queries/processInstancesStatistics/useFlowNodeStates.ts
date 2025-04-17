@@ -45,7 +45,7 @@ const flowNodeStatesParser = (
         return [
           ...states,
           {
-            flowNodeId: statistics.flowNodeId,
+            flowNodeId: statistics.elementId,
             count,
             flowNodeState:
               flowNodeState === 'completed'

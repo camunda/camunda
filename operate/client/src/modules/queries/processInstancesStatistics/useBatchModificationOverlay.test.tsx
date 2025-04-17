@@ -36,7 +36,7 @@ describe('useBatchModificationOverlayData', () => {
     const mockData = {
       items: [
         {
-          flowNodeId: 'messageCatchEvent',
+          elementId: 'messageCatchEvent',
           active: 2,
           canceled: 1,
           incidents: 3,

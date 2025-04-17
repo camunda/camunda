@@ -66,14 +66,14 @@ describe('modifications hooks', () => {
       const mockData: GetProcessInstanceStatisticsResponseBody = {
         items: [
           {
-            flowNodeId: 'node1',
+            elementId: 'node1',
             active: 0,
             completed: 0,
             canceled: 1,
             incidents: 0,
           },
           {
-            flowNodeId: 'node2',
+            elementId: 'node2',
             active: 0,
             completed: 0,
             canceled: 1,
@@ -120,14 +120,14 @@ describe('modifications hooks', () => {
       const mockData: GetProcessInstanceStatisticsResponseBody = {
         items: [
           {
-            flowNodeId: 'node1',
+            elementId: 'node1',
             active: 1,
             completed: 0,
             canceled: 0,
             incidents: 0,
           },
           {
-            flowNodeId: 'node2',
+            elementId: 'node2',
             active: 0,
             completed: 0,
             canceled: 1,
@@ -149,14 +149,14 @@ describe('modifications hooks', () => {
       const mockData: GetProcessInstanceStatisticsResponseBody = {
         items: [
           {
-            flowNodeId: 'node1',
+            elementId: 'node1',
             active: 0,
             completed: 0,
             canceled: 0,
             incidents: 1,
           },
           {
-            flowNodeId: 'node2',
+            elementId: 'node2',
             active: 0,
             completed: 0,
             canceled: 1,
@@ -285,7 +285,7 @@ describe('modifications hooks', () => {
   });
 
   describe('useNewScopeIdForFlowNode', () => {
-    it('should return null if flowNodeId is undefined', () => {
+    it('should return null if elementId is undefined', () => {
       const {result} = renderHook(() => useNewScopeIdForFlowNode(), {
         wrapper: getWrapper(),
       });

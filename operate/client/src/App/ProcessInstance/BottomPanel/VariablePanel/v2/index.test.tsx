@@ -1580,14 +1580,14 @@ describe('VariablePanel', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'TEST_FLOW_NODE',
+          elementId: 'TEST_FLOW_NODE',
           active: 0,
           canceled: 0,
           incidents: 0,
           completed: 1,
         },
         {
-          flowNodeId: 'Activity_0qtp1k6',
+          elementId: 'Activity_0qtp1k6',
           active: 0,
           canceled: 0,
           incidents: 1,

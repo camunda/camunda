@@ -21,8 +21,8 @@ const getStatisticsByFlowNode = (
   businessObjects?: BusinessObjects,
 ) => {
   return data.reduce<{
-    [key: string]: Omit<Statistic, 'flowNodeId'>;
-  }>((statistics, {flowNodeId: id, active, incidents, completed, canceled}) => {
+    [key: string]: Omit<Statistic, 'elementId'>;
+  }>((statistics, {elementId: id, active, incidents, completed, canceled}) => {
     const businessObject = businessObjects?.[id];
 
     if (businessObject === undefined) {

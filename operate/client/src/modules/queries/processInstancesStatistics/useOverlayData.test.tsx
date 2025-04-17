@@ -43,7 +43,7 @@ describe('useProcessInstancesOverlayStatistics', () => {
   it('should fetch process instances overlay statistics successfully', async () => {
     const mockData = [
       {
-        flowNodeId: 'messageCatchEvent',
+        elementId: 'messageCatchEvent',
         active: 2,
         canceled: 1,
         incidents: 3,

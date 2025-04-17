@@ -11,10 +11,10 @@ import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas/operate
 
 function getInstancesCount(
   data: ProcessDefinitionStatistic[],
-  flowNodeId?: string,
+  elementId?: string,
 ) {
   const flowNodeStatistics = data.find(
-    (statistics) => statistics.flowNodeId === flowNodeId,
+    (statistics) => statistics.elementId === elementId,
   );
 
   if (flowNodeStatistics === undefined) {

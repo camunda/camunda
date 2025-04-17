@@ -51,7 +51,7 @@ const useHasRunningOrFinishedTokens = () => {
   return (
     currentFlowNodeSelection?.flowNodeId !== undefined &&
     statistics?.items.some(
-      ({flowNodeId}) => flowNodeId === currentFlowNodeSelection.flowNodeId,
+      ({elementId}) => elementId === currentFlowNodeSelection.flowNodeId,
     )
   );
 };
@@ -60,17 +60,17 @@ const useNewTokenCountForSelectedNode = () => {
   const modificationsByFlowNode = useModificationsByFlowNode();
   const currentFlowNodeSelection = flowNodeSelectionStore.state.selection;
 
-  const flowNodeId = currentFlowNodeSelection?.flowNodeId;
-  if (flowNodeId === undefined) {
+  const elementId = currentFlowNodeSelection?.flowNodeId;
+  if (elementId === undefined) {
     return 0;
   }
 
   return (
-    (modificationsByFlowNode[flowNodeId]?.newTokens ?? 0) +
+    (modificationsByFlowNode[elementId]?.newTokens ?? 0) +
     modificationsStore.flowNodeModifications.filter(
       (modification) =>
         modification.operation !== TOKEN_OPERATIONS.CANCEL_TOKEN &&
-        Object.keys(modification.parentScopeIds).includes(flowNodeId),
+        Object.keys(modification.parentScopeIds).includes(elementId),
     ).length
   );
 };

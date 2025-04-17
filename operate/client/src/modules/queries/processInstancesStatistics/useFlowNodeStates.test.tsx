@@ -35,14 +35,14 @@ describe('useProcessInstancesFlowNodeStates', () => {
     const mockData = {
       items: [
         {
-          flowNodeId: 'task1',
+          elementId: 'task1',
           active: 5,
           canceled: 2,
           incidents: 1,
           completed: 3,
         },
         {
-          flowNodeId: 'task2',
+          elementId: 'task2',
           active: 0,
           canceled: 0,
           incidents: 0,

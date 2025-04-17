@@ -52,7 +52,7 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'StartEvent_1',
+          elementId: 'StartEvent_1',
           active: 5,
           incidents: 2,
           completed: 0,
@@ -81,14 +81,14 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'StartEvent_1',
+          elementId: 'StartEvent_1',
           active: 5,
           incidents: 2,
           completed: 0,
           canceled: 0,
         },
         {
-          flowNodeId: 'Activity_0qtp1k6',
+          elementId: 'Activity_0qtp1k6',
           active: 3,
           incidents: 1,
           completed: 0,
@@ -120,7 +120,7 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'StartEvent_1',
+          elementId: 'StartEvent_1',
           active: 5,
           incidents: 2,
           completed: 0,
@@ -145,14 +145,14 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'StartEvent_1',
+          elementId: 'StartEvent_1',
           active: 5,
           incidents: 2,
           completed: 0,
           canceled: 0,
         },
         {
-          flowNodeId: 'Activity_0qtp1k6',
+          elementId: 'Activity_0qtp1k6',
           active: 3,
           incidents: 1,
           completed: 0,

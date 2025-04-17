@@ -72,7 +72,7 @@ describe('BatchModificationNotification', () => {
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'userTask',
+          elementId: 'userTask',
           active: 4,
           canceled: 0,
           incidents: 0,
@@ -101,7 +101,7 @@ describe('BatchModificationNotification', () => {
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'userTask',
+          elementId: 'userTask',
           active: 4,
           canceled: 0,
           incidents: 0,
@@ -135,7 +135,7 @@ describe('BatchModificationNotification', () => {
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'userTask',
+          elementId: 'userTask',
           active: 4,
           canceled: 0,
           incidents: 0,

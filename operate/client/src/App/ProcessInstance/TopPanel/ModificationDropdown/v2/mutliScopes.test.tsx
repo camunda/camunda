@@ -31,21 +31,21 @@ describe('Modification Dropdown - Multi Scopes', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'OuterSubProcess',
+          elementId: 'OuterSubProcess',
           active: 1,
           incidents: 0,
           completed: 0,
           canceled: 0,
         },
         {
-          flowNodeId: 'InnerSubProcess',
+          elementId: 'InnerSubProcess',
           active: 1,
           incidents: 0,
           completed: 0,
           canceled: 0,
         },
         {
-          flowNodeId: 'TaskB',
+          elementId: 'TaskB',
           active: 10,
           incidents: 0,
           completed: 0,
@@ -82,21 +82,21 @@ describe('Modification Dropdown - Multi Scopes', () => {
       mockFetchFlownodeInstancesStatistics().withSuccess({
         items: [
           {
-            flowNodeId: 'OuterSubProcess',
+            elementId: 'OuterSubProcess',
             active: 1,
             incidents: 0,
             completed: 0,
             canceled: 0,
           },
           {
-            flowNodeId: 'InnerSubProcess',
+            elementId: 'InnerSubProcess',
             active: 10,
             incidents: 0,
             completed: 0,
             canceled: 0,
           },
           {
-            flowNodeId: 'TaskB',
+            elementId: 'TaskB',
             active: 1,
             incidents: 0,
             completed: 0,
@@ -134,21 +134,21 @@ describe('Modification Dropdown - Multi Scopes', () => {
       mockFetchFlownodeInstancesStatistics().withSuccess({
         items: [
           {
-            flowNodeId: 'OuterSubProcess',
+            elementId: 'OuterSubProcess',
             active: 10,
             incidents: 0,
             completed: 0,
             canceled: 0,
           },
           {
-            flowNodeId: 'InnerSubProcess',
+            elementId: 'InnerSubProcess',
             active: 1,
             incidents: 0,
             completed: 0,
             canceled: 0,
           },
           {
-            flowNodeId: 'TaskB',
+            elementId: 'TaskB',
             active: 1,
             incidents: 0,
             completed: 0,
@@ -186,21 +186,21 @@ describe('Modification Dropdown - Multi Scopes', () => {
       mockFetchFlownodeInstancesStatistics().withSuccess({
         items: [
           {
-            flowNodeId: 'OuterSubProcess',
+            elementId: 'OuterSubProcess',
             active: 1,
             incidents: 0,
             completed: 0,
             canceled: 0,
           },
           {
-            flowNodeId: 'InnerSubProcess',
+            elementId: 'InnerSubProcess',
             active: 10,
             incidents: 0,
             completed: 0,
             canceled: 0,
           },
           {
-            flowNodeId: 'TaskB',
+            elementId: 'TaskB',
             active: 1,
             incidents: 0,
             completed: 0,
@@ -243,21 +243,21 @@ describe('Modification Dropdown - Multi Scopes', () => {
       mockFetchFlownodeInstancesStatistics().withSuccess({
         items: [
           {
-            flowNodeId: 'OuterSubProcess',
+            elementId: 'OuterSubProcess',
             active: 1,
             incidents: 0,
             completed: 0,
             canceled: 0,
           },
           {
-            flowNodeId: 'InnerSubProcess',
+            elementId: 'InnerSubProcess',
             active: 10,
             incidents: 0,
             completed: 0,
             canceled: 0,
           },
           {
-            flowNodeId: 'TaskB',
+            elementId: 'TaskB',
             active: 1,
             incidents: 0,
             completed: 0,

@@ -112,14 +112,14 @@ describe('Footer', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'start',
+          elementId: 'start',
           active: 0,
           canceled: 0,
           incidents: 0,
           completed: 1,
         },
         {
-          flowNodeId: 'neverFails',
+          elementId: 'neverFails',
           active: 0,
           canceled: 0,
           incidents: 0,
