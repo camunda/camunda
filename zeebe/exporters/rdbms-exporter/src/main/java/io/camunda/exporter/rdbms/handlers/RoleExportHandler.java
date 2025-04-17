@@ -54,16 +54,14 @@ public class RoleExportHandler implements RdbmsExportHandler<RoleRecordValue> {
           roleWriter.addMember(
               new RoleMemberDbModel.Builder()
                   .roleKey(value.getRoleKey())
-                  // todo,remove parse in https://github.com/camunda/camunda/issues/30111
-                  .entityId(String.valueOf(value.getEntityKey()))
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       case RoleIntent.ENTITY_REMOVED ->
           roleWriter.removeMember(
               new RoleMemberDbModel.Builder()
                   .roleKey(value.getRoleKey())
-                  // todo,remove parse in https://github.com/camunda/camunda/issues/30111
-                  .entityId(String.valueOf(value.getEntityKey()))
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       default -> LOG.warn("Unexpected intent {} for role record", record.getIntent());

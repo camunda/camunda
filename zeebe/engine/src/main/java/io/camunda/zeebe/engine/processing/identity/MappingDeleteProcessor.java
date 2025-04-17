@@ -140,7 +140,8 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
               .setRoleKey(roleKey)
-              .setEntityKey(mappingKey)
+              // todo use mappingId : https://github.com/camunda/camunda/pull/30809
+              .setEntityId(String.valueOf(mappingKey))
               .setEntityType(EntityType.MAPPING));
     }
     for (final var groupKey : mapping.getGroupKeysList()) {

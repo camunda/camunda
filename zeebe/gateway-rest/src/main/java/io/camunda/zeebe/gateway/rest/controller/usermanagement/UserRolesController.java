@@ -34,19 +34,19 @@ public class UserRolesController {
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<RoleSearchQueryResult> searchRoles(
-      @PathVariable("userKey") final long userKey,
+      @PathVariable("userKey") final String username,
       @RequestBody(required = false) final RoleSearchQueryRequest queryRequest) {
     return SearchQueryRequestMapper.toRoleQuery(queryRequest)
-        .fold(RestErrorMapper::mapProblemToResponse, query -> searchRoles(userKey, query));
+        .fold(RestErrorMapper::mapProblemToResponse, query -> searchRoles(username, query));
   }
 
   private ResponseEntity<RoleSearchQueryResult> searchRoles(
-      final long userKey, final RoleQuery query) {
+      final String username, final RoleQuery query) {
     try {
       final var result =
           roleServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .getMemberRoles(userKey, query);
+              .getMemberRoles(username, query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);

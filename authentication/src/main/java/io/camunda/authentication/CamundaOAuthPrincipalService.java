@@ -69,7 +69,7 @@ public class CamundaOAuthPrincipalService {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
-    final var assignedRoles = roleServices.getRolesByMemberKeys(mappingKeys);
+    final var assignedRoles = roleServices.getRolesByMemberIds(mappingIds);
 
     return new OAuthContext(
         mappingKeys,
