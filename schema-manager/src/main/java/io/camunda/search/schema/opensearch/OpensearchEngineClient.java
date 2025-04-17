@@ -37,6 +37,7 @@ import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
@@ -63,6 +64,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchEngineClient.class);
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
       "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
+  private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
   private final ObjectReader objectReader;
   private final ObjectWriter objectWriter;
   private final OpenSearchClient client;
@@ -296,8 +298,14 @@ public class OpensearchEngineClient implements SearchEngineClient {
   @Override
   public void truncateIndex(final String indexName) {
     final DeleteByQueryRequest request =
-        new DeleteByQueryRequest.Builder().index(indexName).query(q -> q.matchAll(m -> m)).build();
-
+        new DeleteByQueryRequest.Builder()
+            .waitForCompletion(true)
+            .slices(AUTO_SLICES)
+            .conflicts(Conflicts.Proceed)
+            .index(indexName)
+            .query(q -> q.matchAll(m -> m))
+            .refresh(true)
+            .build();
     try {
       final DeleteByQueryResponse response = client.deleteByQuery(request);
       LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);

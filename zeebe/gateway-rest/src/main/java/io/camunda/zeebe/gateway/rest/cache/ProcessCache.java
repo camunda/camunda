@@ -95,7 +95,6 @@ public class ProcessCache {
 
   public void invalidate() {
     cache.invalidateAll();
-    LOGGER.debug("Cache invalidated");
   }
 
   private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {
@@ -135,6 +134,7 @@ public class ProcessCache {
     @Override
     public void completedClusterChange() {
       cache.invalidate();
+      LOGGER.debug("Process cache invalidated");
     }
   }
 }
