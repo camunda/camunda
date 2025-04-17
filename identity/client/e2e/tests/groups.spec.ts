@@ -13,6 +13,8 @@ import { relativizePath } from "../utils/relativizePaths";
 import { LOGIN_CREDENTIALS } from "../utils/constants";
 import { waitForItemInList } from "../utils/waitForItemInList";
 
+import { IS_GROUPS_ID_SUPPORTED } from "../../src/feature-flags";
+
 const NEW_GROUP = {
   groupId: "testgroupid",
   name: "Test Group",
@@ -32,8 +34,8 @@ test.beforeEach(async ({ page, loginPage, groupsPage }) => {
   await expect(page).toHaveURL(relativizePath(Paths.groups()));
 });
 
-test.describe.serial("groups CRUD", () => {
-  test.only("creates a group", async ({ page, groupsPage }) => {
+test.describe[IS_GROUPS_ID_SUPPORTED ? "serial" : "skip"]("groups CRUD", () => {
+  test("creates a group", async ({ page, groupsPage }) => {
     await expect(
       groupsPage.groupsList.getByRole("cell", { name: NEW_GROUP.name }),
     ).not.toBeVisible();
