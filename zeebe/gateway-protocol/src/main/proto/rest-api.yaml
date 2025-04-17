@@ -1647,6 +1647,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /process-instances/batch-operations/migration:
+    post:
+      tags:
+        - Process instance
+      operationId: migrateProcessInstancesBatchOperation
+      summary: Create a batch operation to migrate process instances
+      description: |
+        Migrate multiple instances of process instances.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceMigrationBatchOperationInstruction"
+      responses:
+        "202":
+          description: The batch operation request was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationCreatedResult"
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/migration:
     post:
       tags:
@@ -7834,8 +7870,20 @@ components:
             The unique identifier of the created process instance; to be used wherever a request
             needs a process instance key (e.g. CancelProcessInstanceRequest).
           type: string
+    ProcessInstanceMigrationBatchOperationInstruction:
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/ProcessInstanceFilter"
+        migrationPlan:
+          $ref: "#/components/schemas/ProcessInstanceMigrationInstruction"
+      required:
+        - filter
+        - migrationPlan
     ProcessInstanceMigrationInstruction:
       type: object
+      description: |
+        The migration instructions describe how to migrate a process instance from one process definition to another.
       properties:
         mappingInstructions:
           description: Element mappings from the source process instance to the target process instance.
@@ -8056,6 +8104,7 @@ components:
       enum:
       - PROCESS_CANCELLATION
       - RESOLVE_INCIDENT
+      - MIGRATE_PROCESS_INSTANCE
     BatchOperationCreatedResult:
       type: object
       properties:
