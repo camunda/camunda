@@ -29,7 +29,6 @@ import Mappings from "src/pages/tenants/detail/mappings";
 import {
   IS_TENANT_GROUPS_SUPPORTED,
   IS_TENANT_ROLES_SUPPORTED,
-  IS_TENANT_MAPPINGS_SUPPORTED,
 } from "src/feature-flags";
 import { isOIDC } from "src/configuration";
 
@@ -111,7 +110,7 @@ const Details: FC = () => {
                       },
                     ]
                   : []),
-                ...(IS_TENANT_MAPPINGS_SUPPORTED && isOIDC
+                ...(isOIDC
                   ? [
                       {
                         key: "mappings",
