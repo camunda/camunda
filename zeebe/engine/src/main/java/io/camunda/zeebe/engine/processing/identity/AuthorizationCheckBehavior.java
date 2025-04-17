@@ -220,14 +220,11 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationRequest request, final List<PersistedMapping> persistedMappings) {
     final var tenantId = request.tenantId;
 
-    final var mappingAssignedToTenant =
-        persistedMappings.stream()
-            .flatMap(persistedMapping -> persistedMapping.getTenantIdsList().stream())
-            .collect(Collectors.toSet())
-            .contains(tenantId);
-
-    if (mappingAssignedToTenant) {
-      return true;
+    for (final var mapping : persistedMappings) {
+      if (membershipState.hasRelation(
+          EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT, tenantId)) {
+        return true;
+      }
     }
 
     final var groupIds =
@@ -463,15 +460,20 @@ public final class AuthorizationCheckBehavior {
     final var tenantsOfMapping =
         getPersistedMappings(command).stream()
             .flatMap(
-                mapping -> {
-                  final var tenantIdsList = mapping.getTenantIdsList();
-                  final var groupIds =
-                      mapping.getGroupKeysList().stream()
-                          .map(key -> Long.toString(key))
-                          .collect(Collectors.toSet());
-                  tenantIdsList.addAll(getTenantIdsForGroups(groupIds));
-                  return tenantIdsList.stream();
-                })
+                mapping ->
+                    Stream.concat(
+                        membershipState
+                            .getMemberships(
+                                EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT)
+                            .stream(),
+                        mapping.getGroupKeysList().stream()
+                            .map(key -> Long.toString(key))
+                            .flatMap(
+                                groupId ->
+                                    membershipState
+                                        .getMemberships(
+                                            EntityType.GROUP, groupId, RelationType.TENANT)
+                                        .stream())))
             .toList();
     return tenantsOfMapping.isEmpty()
         ? AuthorizedTenants.DEFAULT_TENANTS

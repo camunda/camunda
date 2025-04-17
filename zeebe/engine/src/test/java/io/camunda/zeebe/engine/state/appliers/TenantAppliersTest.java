@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -99,9 +98,10 @@ public class TenantAppliersTest {
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntityType(tenantId, mappingId).get()).isEqualTo(EntityType.MAPPING);
-    final var persistedMapping = mappingState.get(mappingId).get();
-    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(
+            membershipState.hasRelation(
+                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+        .isTrue();
   }
 
   @Test
@@ -182,8 +182,6 @@ public class TenantAppliersTest {
   }
 
   @Test
-  @Disabled(
-      "Disabled while mappings are not supported: https://github.com/camunda/camunda/issues/26981")
   void shouldRemoveEntityFromTenantWithTypeMapping() {
     // given
     final var mappingId = "mappingId";
@@ -200,17 +198,19 @@ public class TenantAppliersTest {
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // Ensure the mapping is associated with the tenant before removal
-    assertThat(tenantState.getEntityType(tenantId, mappingId).get()).isEqualTo(EntityType.MAPPING);
-    final var persistedMapping = mappingState.get(mappingId).get();
-    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(
+            membershipState.hasRelation(
+                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+        .isTrue();
 
     // when
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntityType(tenantId, mappingId)).isEmpty();
-    final var updatedMapping = mappingState.get(mappingId).get();
-    assertThat(updatedMapping.getTenantIdsList()).isEmpty();
+    assertThat(
+            membershipState.hasRelation(
+                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+        .isFalse();
   }
 
   @Test

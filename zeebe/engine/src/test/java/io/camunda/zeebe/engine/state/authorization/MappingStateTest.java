@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -167,55 +166,6 @@ public class MappingStateTest {
     // then
     final var persistedMapping = mappingState.get(key).get();
     assertThat(persistedMapping.getRoleKeysList()).isEmpty();
-  }
-
-  @Test
-  void shouldAddTenant() {
-    // given
-    final long key = 1L;
-    final String claimName = "foo";
-    final String claimValue = "bar";
-    final String mappingId = Strings.newRandomValidIdentityId();
-    final var mapping =
-        new MappingRecord()
-            .setMappingId(mappingId)
-            .setMappingKey(key)
-            .setClaimName(claimName)
-            .setClaimValue(claimValue);
-    mappingState.create(mapping);
-    final var tenantId = "tenant";
-
-    // when
-    mappingState.addTenant(mappingId, tenantId);
-
-    // then
-    final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
-  }
-
-  @Test
-  void shouldRemoveTenant() {
-    // given
-    final long key = 1L;
-    final String claimName = "foo";
-    final String claimValue = "bar";
-    final String mappingId = Strings.newRandomValidIdentityId();
-    final var mapping =
-        new MappingRecord()
-            .setMappingId(mappingId)
-            .setMappingKey(key)
-            .setClaimName(claimName)
-            .setClaimValue(claimValue);
-    mappingState.create(mapping);
-    final var tenantId = "tenant";
-    mappingState.addTenant(mappingId, tenantId);
-
-    // when
-    mappingState.removeTenant(key, tenantId);
-
-    // then
-    final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getTenantIdsList()).isEmpty();
   }
 
   @Test

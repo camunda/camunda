@@ -26,20 +26,6 @@ public interface MutableTenantState extends TenantState {
   void updateTenant(final TenantRecord updatedTenantRecord);
 
   /**
-   * Adds an entity to the specified tenant.
-   *
-   * @param tenantRecord the tenant record containing the tenant key and the entity to add
-   */
-  void addEntity(final TenantRecord tenantRecord);
-
-  /**
-   * Removes a specific entity from the given tenant.
-   *
-   * @param tenantRecord the tenant record containing the tenant id and the entity to add
-   */
-  void removeEntity(final TenantRecord tenantRecord);
-
-  /**
    * Deletes a tenant and all associated data from the state.
    *
    * @param tenantRecord the tenant record representing the tenant to delete

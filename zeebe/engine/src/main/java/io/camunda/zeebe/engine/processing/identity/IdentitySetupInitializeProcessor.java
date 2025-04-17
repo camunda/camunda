@@ -42,7 +42,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Collections;
 import org.agrona.collections.MutableBoolean;
 
 @ExcludeAuthorizationCheck
@@ -293,14 +292,10 @@ public final class IdentitySetupInitializeProcessor
       final TenantRecord tenant, final String entityId, final EntityType entityType) {
     final var isAlreadyAssigned =
         switch (entityType) {
-          case USER ->
+          case USER, MAPPING ->
               membershipState.hasRelation(
-                  EntityType.USER, entityId, RelationType.TENANT, tenant.getTenantId());
-          default ->
-              tenantState
-                  .getEntitiesByType(tenant.getTenantId())
-                  .getOrDefault(entityType, Collections.emptyList())
-                  .contains(entityId);
+                  entityType, entityId, RelationType.TENANT, tenant.getTenantId());
+          default -> throw new IllegalArgumentException("Unsupported entity type: " + entityType);
         };
     if (isAlreadyAssigned) {
       return false;

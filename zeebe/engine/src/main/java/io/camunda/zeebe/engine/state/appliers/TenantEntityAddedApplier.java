@@ -9,38 +9,28 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 
 public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent, TenantRecord> {
 
-  private final MutableTenantState tenantState;
-  private final MutableMappingState mappingState;
   private final MutableMembershipState membershipState;
 
   public TenantEntityAddedApplier(final MutableProcessingState state) {
-    tenantState = state.getTenantState();
-    mappingState = state.getMappingState();
     membershipState = state.getMembershipState();
   }
 
   @Override
   public void applyState(final long tenantKey, final TenantRecord tenant) {
     switch (tenant.getEntityType()) {
-      case USER, GROUP ->
+      case USER, GROUP, MAPPING ->
           membershipState.insertRelation(
               tenant.getEntityType(),
               tenant.getEntityId(),
               RelationType.TENANT,
               tenant.getTenantId());
-      case MAPPING -> {
-        tenantState.addEntity(tenant);
-        mappingState.addTenant(tenant.getEntityId(), tenant.getTenantId());
-      }
       default ->
           throw new IllegalStateException(
               String.format(

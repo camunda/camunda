@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.state.appliers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
@@ -42,6 +44,7 @@ public class MappingAppliersTest {
   private MutableTenantState tenantState;
   private MutableGroupState groupState;
   private MutableAuthorizationState authorizationState;
+  private MutableMembershipState membershipState;
   private MappingDeletedApplier mappingDeletedApplier;
   private MappingUpdatedApplier mappingUpdatedApplier;
 
@@ -52,6 +55,7 @@ public class MappingAppliersTest {
     tenantState = processingState.getTenantState();
     authorizationState = processingState.getAuthorizationState();
     groupState = processingState.getGroupState();
+    membershipState = processingState.getMembershipState();
     mappingDeletedApplier = new MappingDeletedApplier(processingState.getMappingState());
     mappingUpdatedApplier = new MappingUpdatedApplier(processingState.getMappingState());
   }
@@ -144,7 +148,7 @@ public class MappingAppliersTest {
     // create tenant
     final long tenantKey = 3L;
     final var tenantId = "tenant";
-    mappingState.addTenant(mappingId, tenantId);
+    membershipState.insertRelation(EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId);
     final var tenant =
         new TenantRecord()
             .setTenantId(tenantId)
@@ -152,7 +156,6 @@ public class MappingAppliersTest {
             .setEntityId(mappingId)
             .setEntityType(EntityType.MAPPING);
     tenantState.createTenant(tenant);
-    tenantState.addEntity(tenant);
     // create group
     final var groupId = "1";
     final var groupKey = Long.parseLong(groupId);
