@@ -33,7 +33,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
-public class CamundaProcessTestContextTest {
+public class CamundaProcessTestContextIT {
   private static final int TIMEOUT = 40;
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
