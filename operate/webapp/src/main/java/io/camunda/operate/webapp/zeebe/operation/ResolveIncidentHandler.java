@@ -43,11 +43,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
 
     final ErrorType errorType = incident.getErrorType();
     if (errorType != null && errorType.isResolvedViaRetries()) {
-      final var updateRetriesJobCommand =
-          withOperationReference(
-              camundaClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1),
-              operation.getId());
-      updateRetriesJobCommand.send().join();
+      operationServicesAdapter.updateJobRetries(incident.getJobKey(), 1, operation.getId());
     }
     final var resolveIncidentCommand =
         withOperationReference(
