@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
 import io.camunda.client.api.command.MigrationPlan;
+import java.util.Map;
 
 public interface OperateServicesAdapter {
 
@@ -21,4 +22,10 @@ public interface OperateServicesAdapter {
   void updateJobRetries(final long jobKey, final int retries, final String operationId);
 
   void resolveIncident(final long incidentKey, final String operationId);
+
+  long setVariables(
+      final long scopeKey,
+      final Map<String, Object> variables,
+      final boolean local,
+      final String operationId);
 }
