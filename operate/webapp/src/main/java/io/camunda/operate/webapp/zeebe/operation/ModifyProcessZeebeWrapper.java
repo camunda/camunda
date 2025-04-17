@@ -12,6 +12,7 @@ import static io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
+import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
@@ -23,9 +24,12 @@ import org.springframework.stereotype.Component;
 public class ModifyProcessZeebeWrapper {
 
   private CamundaClient camundaClient;
+  private final OperateServicesAdapter operateServicesAdapter;
 
-  public ModifyProcessZeebeWrapper(final CamundaClient camundaClient) {
+  public ModifyProcessZeebeWrapper(
+      final CamundaClient camundaClient, final OperateServicesAdapter operateServicesAdapter) {
     this.camundaClient = camundaClient;
+    this.operateServicesAdapter = operateServicesAdapter;
   }
 
   public CamundaClient getCamundaClient() {
@@ -43,12 +47,7 @@ public class ModifyProcessZeebeWrapper {
 
   public void setVariablesInZeebe(
       final Long scopeKey, final Map<String, Object> variables, final String operationId) {
-    final var setVariablesCommand =
-        withOperationReference(
-            camundaClient.newSetVariablesCommand(scopeKey).variables(variables).local(true),
-            operationId);
-
-    setVariablesCommand.send().join();
+    operateServicesAdapter.setVariables(scopeKey, variables, true, operationId);
   }
 
   public void sendModificationsToZeebe(
