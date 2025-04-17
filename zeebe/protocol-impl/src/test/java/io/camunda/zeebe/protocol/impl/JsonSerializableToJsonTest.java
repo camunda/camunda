@@ -2836,7 +2836,6 @@ final class JsonSerializableToJsonTest {
                     .setRoleId("id")
                     .setName("role")
                     .setDescription("description")
-                    .setEntityKey(2L)
                     .setEntityId("entityId")
                     .setEntityType(EntityType.USER),
         """
@@ -2845,7 +2844,6 @@ final class JsonSerializableToJsonTest {
           "roleId": "id",
           "name": "role",
           "description": "description",
-          "entityKey": 2,
           "entityId": "entityId",
           "entityType": "USER"
         }
@@ -2863,7 +2861,6 @@ final class JsonSerializableToJsonTest {
           "roleId": "",
           "name": "",
           "description": "",
-          "entityKey": -1,
           "entityId": "",
           "entityType": "UNSPECIFIED"
         }
@@ -3061,7 +3058,6 @@ final class JsonSerializableToJsonTest {
                             .setRoleId("id")
                             .setName("roleName")
                             .setDescription("description")
-                            .setEntityKey(2)
                             .setEntityId("entityId")
                             .setEntityType(EntityType.USER))
                     .addUser(
@@ -3101,7 +3097,6 @@ final class JsonSerializableToJsonTest {
           "roleId": "id",
           "name": "roleName",
           "description": "description",
-          "entityKey": 2,
           "entityId": "entityId",
           "entityType": "USER"
         },
@@ -3161,7 +3156,6 @@ final class JsonSerializableToJsonTest {
               "roleId": "",
               "name": "",
               "description": "",
-              "entityKey": -1,
               "entityId": "",
               "entityType": "UNSPECIFIED"
           },

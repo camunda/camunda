@@ -79,10 +79,10 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
     return this;
   }
 
-  @Override
-  public long getEntityKey() {
-    return entityKeyProp.getValue();
-  }
+  //  @Override
+  //  public long getEntityKey() {
+  //    return entityKeyProp.getValue();
+  //  }
 
   @Override
   public String getEntityId() {
@@ -104,8 +104,8 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
     return this;
   }
 
-  public RoleRecord setEntityKey(final long entityKey) {
-    entityKeyProp.setValue(entityKey);
-    return this;
-  }
+  //  public RoleRecord setEntityKey(final long entityKey) {
+  //    entityKeyProp.setValue(entityKey);
+  //    return this;
+  //  }
 }
