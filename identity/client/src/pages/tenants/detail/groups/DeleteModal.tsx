@@ -40,7 +40,7 @@ const DeleteModal: FC<RemoveTenantGroupModalProps> = ({
     if (tenant && group) {
       const { success } = await callUnassignGroup({
         tenantId: tenant,
-        groupKey: group.groupKey,
+        groupId: group.groupId,
       });
 
       if (success) {
@@ -66,9 +66,9 @@ const DeleteModal: FC<RemoveTenantGroupModalProps> = ({
       <p>
         <Translate
           i18nKey="removeGroupFromTenant"
-          values={{ groupKey: group.groupKey }}
+          values={{ groupId: group.groupId }}
         >
-          Are you sure you want to remove <strong>{group.groupKey}</strong> from
+          Are you sure you want to remove <strong>{group.groupId}</strong> from
           this tenant?
         </Translate>
       </p>

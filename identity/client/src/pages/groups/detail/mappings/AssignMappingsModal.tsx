@@ -24,7 +24,7 @@ const SelectedMappings = styled.div`
 
 const AssignMappingsModal: FC<
   UseEntityModalCustomProps<
-    { id: Group["groupKey"] },
+    { id: Group["groupId"] },
     { assignedMappings: Mapping[] }
   >
 > = ({ entity: group, assignedMappings, onSuccess, open, onClose }) => {
