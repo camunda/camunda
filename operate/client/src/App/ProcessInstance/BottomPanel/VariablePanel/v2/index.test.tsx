@@ -94,14 +94,14 @@ describe('VariablePanel', () => {
   beforeEach(() => {
     const statistics = [
       {
-        flowNodeId: 'TEST_FLOW_NODE',
+        elementId: 'TEST_FLOW_NODE',
         active: 0,
         canceled: 0,
         incidents: 0,
         completed: 1,
       },
       {
-        flowNodeId: 'Activity_0qtp1k6',
+        elementId: 'Activity_0qtp1k6',
         active: 0,
         canceled: 0,
         incidents: 1,
@@ -1468,11 +1468,9 @@ describe('VariablePanel', () => {
       cancelAllTokens('Activity_0qtp1k6', 0, 0);
     });
 
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('button', {name: /add variable/i}),
-      ).not.toBeInTheDocument(),
-    );
+    expect(
+      screen.queryByRole('button', {name: /add variable/i}),
+    ).not.toBeInTheDocument();
 
     expect(
       screen.getByText('The Flow Node has no Variables'),
@@ -1580,14 +1578,14 @@ describe('VariablePanel', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'TEST_FLOW_NODE',
+          elementId: 'TEST_FLOW_NODE',
           active: 0,
           canceled: 0,
           incidents: 0,
           completed: 1,
         },
         {
-          flowNodeId: 'Activity_0qtp1k6',
+          elementId: 'Activity_0qtp1k6',
           active: 2,
           canceled: 0,
           incidents: 0,
@@ -1709,14 +1707,14 @@ describe('VariablePanel', () => {
   it('should display correct state for a flow node that has only one finished token on it', async () => {
     const statistics = [
       {
-        flowNodeId: 'StartEvent_1',
+        elementId: 'StartEvent_1',
         active: 1,
         canceled: 0,
         incidents: 0,
         completed: 0,
       },
       {
-        flowNodeId: 'Activity_0qtp1k6',
+        elementId: 'Activity_0qtp1k6',
         active: 0,
         canceled: 0,
         incidents: 0,
