@@ -137,14 +137,15 @@ public class MappingAppliersTest {
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;
-    mappingState.addRole(mappingKey, roleKey);
     final var role =
         new RoleRecord()
             .setRoleKey(roleKey)
             .setEntityKey(mappingKey)
             .setEntityType(EntityType.MAPPING);
     roleState.create(role);
-    roleState.addEntity(role);
+    // TODO: Use role id instead of key
+    membershipState.insertRelation(
+        EntityType.MAPPING, mappingId, RelationType.ROLE, String.valueOf(roleKey));
     // create tenant
     final long tenantKey = 3L;
     final var tenantId = "tenant";

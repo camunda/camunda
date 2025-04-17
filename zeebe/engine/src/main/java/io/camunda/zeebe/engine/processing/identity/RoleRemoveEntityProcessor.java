@@ -113,9 +113,9 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     final var record = command.getValue();
     final var isAssigned =
         switch (record.getEntityType()) {
-          case USER ->
+          case USER, MAPPING ->
               membershipState.hasRelation(
-                  EntityType.USER,
+                  record.getEntityType(),
                   // TODO: Use entity id instead of key
                   Long.toString(record.getEntityKey()),
                   RelationType.ROLE,

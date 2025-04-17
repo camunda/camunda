@@ -352,9 +352,14 @@ public final class AuthorizationCheckBehavior {
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
-              getAuthorizedResourceIdentifiersForOwnerKeys(
+              getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.ROLE,
-                      mapping.getRoleKeysList(),
+                      membershipState.getMemberships(
+                          EntityType.MAPPING,
+                          // TODO: Use mappingId instead of mappingKey when roles and mappings are
+                          //   id-based
+                          String.valueOf(mapping.getMappingKey()),
+                          RelationType.ROLE),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
