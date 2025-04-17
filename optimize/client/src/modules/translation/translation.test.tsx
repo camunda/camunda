@@ -31,7 +31,8 @@ beforeEach(async () => {
       entity: {
         create: 'Create a new {label}',
       },
-      htmlString: 'This is an html <b>string</b> linking to <a href="testUrl" >{linkText}</a><br/>',
+      htmlString:
+        'This is an html <b class="bold">string</b> linking to <a href="testUrl" >{linkText}</a><br/>',
     })
   );
 
@@ -66,6 +67,7 @@ it('should convert html string to JSX', async () => {
   const node = shallow(<div>{translationJSX}</div>);
 
   expect(node.find('b').text()).toBe('string');
+  expect(node.find('b').props().className).toBe('bold');
   expect(node.find('a').text()).toBe('foo');
   expect(node.find('a').prop('href')).toBe('testUrl');
   expect(node.find('br')).toExist();

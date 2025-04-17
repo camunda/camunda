@@ -14,7 +14,7 @@ exports[`should create two Charts 1`] = `
     </b>
      that passed the gateway 
     <i
-      class="gatewayName"
+      className="gatewayName"
       key="3"
     />
   </p>
@@ -31,7 +31,7 @@ exports[`should create two Charts 1`] = `
       </b>
        (33%) took the 
       <i
-        class="branchName"
+        className="branchName"
         key="2"
       />
        branch, 
@@ -42,7 +42,7 @@ exports[`should create two Charts 1`] = `
       </b>
        (300%) of those then continued to reach the end event 
       <i
-        class="endEventName"
+        className="endEventName"
         key="6"
       />
     </li>
@@ -56,7 +56,7 @@ exports[`should create two Charts 1`] = `
       </b>
        (67%) took the 
       <i
-        class="branchName"
+        className="branchName"
         key="2"
       />
        branch, 
@@ -67,7 +67,7 @@ exports[`should create two Charts 1`] = `
       </b>
        (100%) of those then continued to reach the end event 
       <i
-        class="endEventName"
+        className="endEventName"
         key="6"
       />
     </li>
@@ -75,7 +75,7 @@ exports[`should create two Charts 1`] = `
   <p>
     Distribution of instances at the gateway 
     <i
-      class="gatewayName"
+      className="gatewayName"
       key="1"
     />
     :
@@ -88,7 +88,7 @@ exports[`should create two Charts 1`] = `
   <p>
     Probability to reach the end event 
     <i
-      class="endEventName"
+      className="endEventName"
       key="1"
     />
      after taking a branch:
@@ -147,7 +147,7 @@ exports[`should show a summary after loading is complete 1`] = `
     </b>
      that passed the gateway 
     <i
-      class="gatewayName"
+      className="gatewayName"
       key="3"
     />
   </p>
@@ -164,7 +164,7 @@ exports[`should show a summary after loading is complete 1`] = `
       </b>
        (33%) took the 
       <i
-        class="branchName"
+        className="branchName"
         key="2"
       />
        branch, 
@@ -175,7 +175,7 @@ exports[`should show a summary after loading is complete 1`] = `
       </b>
        (300%) of those then continued to reach the end event 
       <i
-        class="endEventName"
+        className="endEventName"
         key="6"
       />
     </li>
@@ -189,7 +189,7 @@ exports[`should show a summary after loading is complete 1`] = `
       </b>
        (67%) took the 
       <i
-        class="branchName"
+        className="branchName"
         key="2"
       />
        branch, 
@@ -200,7 +200,7 @@ exports[`should show a summary after loading is complete 1`] = `
       </b>
        (100%) of those then continued to reach the end event 
       <i
-        class="endEventName"
+        className="endEventName"
         key="6"
       />
     </li>
@@ -208,7 +208,7 @@ exports[`should show a summary after loading is complete 1`] = `
   <p>
     Distribution of instances at the gateway 
     <i
-      class="gatewayName"
+      className="gatewayName"
       key="1"
     />
     :
@@ -221,7 +221,7 @@ exports[`should show a summary after loading is complete 1`] = `
   <p>
     Probability to reach the end event 
     <i
-      class="endEventName"
+      className="endEventName"
       key="1"
     />
      after taking a branch:
