@@ -270,12 +270,9 @@ public final class IdentitySetupInitializeProcessor
 
     final var isAlreadyAssigned =
         switch (entityType) {
-          case USER ->
+          case USER, MAPPING ->
               membershipState.hasRelation(
-                  EntityType.USER,
-                  Long.toString(entityKey),
-                  RelationType.ROLE,
-                  Long.toString(roleKey));
+                  entityType, Long.toString(entityKey), RelationType.ROLE, Long.toString(roleKey));
           default -> roleState.getEntityType(roleKey, entityKey).isPresent();
         };
     if (isAlreadyAssigned) {
