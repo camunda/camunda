@@ -46,7 +46,7 @@ export default function BulkDeleter({
             deleteEntities(selectedEntries),
             () => {
               reset();
-              onDelete();
+              onDelete?.();
             },
             showError
           )

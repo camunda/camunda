@@ -29,7 +29,7 @@ interface DeleterProps {
   checkConflicts?: (entity: EntityListEntity) => Promise<{conflictedItems: []}>;
   onConflict?: () => void;
   onClose: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
   deleteEntity?: ({entityType, id}: {entityType: string; id: string}) => Promise<Response>;
   getName?: (entity: EntityListEntity) => string;
 }
@@ -106,7 +106,7 @@ export default function Deleter({
     mightFail(
       deleteEntity(entity),
       () => {
-        onDelete();
+        onDelete?.();
         handleClose();
       },
       showError,
