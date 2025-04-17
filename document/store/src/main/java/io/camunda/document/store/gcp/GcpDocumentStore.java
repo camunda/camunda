@@ -42,6 +42,8 @@ public class GcpDocumentStore implements DocumentStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GcpDocumentStore.class);
 
+  private static final int UPLOAD_BUFFER_SIZE_BYTES = 256 * 1024;
+
   private static final String CONTENT_HASH_METADATA_KEY = "contentHash";
   private static final String METADATA_PROCESS_DEFINITION_ID = "camunda.processDefinitionId";
   private static final String METADATA_PROCESS_INSTANCE_KEY = "camunda.processInstanceKey";
@@ -160,7 +162,8 @@ public class GcpDocumentStore implements DocumentStore {
       hash =
           InputStreamHashCalculator.streamAndCalculateHash(
               request.contentInputStream(),
-              stream -> storage.createFrom(blobInfoBuilder.build(), stream));
+              stream ->
+                  storage.createFrom(blobInfoBuilder.build(), stream, UPLOAD_BUFFER_SIZE_BYTES));
 
       applyMetadata(blobInfoBuilder, request.metadata(), fileName, hash);
       storage.update(blobInfoBuilder.build());
