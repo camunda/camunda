@@ -45,10 +45,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
     if (errorType != null && errorType.isResolvedViaRetries()) {
       operationServicesAdapter.updateJobRetries(incident.getJobKey(), 1, operation.getId());
     }
-    final var resolveIncidentCommand =
-        withOperationReference(
-            camundaClient.newResolveIncidentCommand(incident.getKey()), operation.getId());
-    resolveIncidentCommand.send().join();
+    operationServicesAdapter.resolveIncident(incident.getKey(), operation.getId());
     // mark operation as sent
     markAsSent(operation);
   }

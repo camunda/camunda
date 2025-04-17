@@ -60,6 +60,13 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
     updateRetriesJobCommand.send().join();
   }
 
+  @Override
+  public void resolveIncident(final long incidentKey, final String operationId) throws Exception {
+    final var resolveIncidentCommand =
+        withOperationReference(camundaClient.newResolveIncidentCommand(incidentKey), operationId);
+    resolveIncidentCommand.send().join();
+  }
+
   protected static <T extends CommandWithOperationReferenceStep<T>> T withOperationReference(
       final T command, final String id) {
     try {
