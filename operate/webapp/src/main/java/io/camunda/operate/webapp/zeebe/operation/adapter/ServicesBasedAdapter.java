@@ -80,6 +80,11 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
     jobServices.updateJob(jobKey, new UpdateJobChangeset(retries, null));
   }
 
+  @Override
+  public void resolveIncident(final long incidentKey, final String operationId) throws Exception {
+    incidentServices.resolveIncident(incidentKey);
+  }
+
   protected static void withOperationReference(final Consumer<Long> command, final String id) {
     try {
       final long operationReference = Long.parseLong(id);
