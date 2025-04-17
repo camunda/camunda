@@ -14,4 +14,6 @@ public interface OperateServicesAdapter {
   void cancelProcessInstance(long processInstanceKey, String operationId) throws Exception;
 
   void updateJobRetries(long jobKey, int retries, String operationId) throws Exception;
+
+  void resolveIncident(long incidentKey, String operationId) throws Exception;
 }
