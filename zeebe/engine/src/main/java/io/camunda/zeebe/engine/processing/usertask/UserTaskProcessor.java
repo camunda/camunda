@@ -365,14 +365,12 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     final var userTaskIntent =
         switch (lifecycleState) {
+          case CREATING -> UserTaskIntent.CREATE;
           case ASSIGNING -> UserTaskIntent.ASSIGN;
           case CLAIMING -> UserTaskIntent.CLAIM;
           case UPDATING -> UserTaskIntent.UPDATE;
           case COMPLETING -> UserTaskIntent.COMPLETE;
-          case CREATING, CANCELING ->
-              throw new UnsupportedOperationException(
-                  "Conversion from '%s' user task lifecycle state to a user task command is not yet supported"
-                      .formatted(lifecycleState));
+          case CANCELING -> UserTaskIntent.CANCEL;
           default ->
               throw new IllegalArgumentException(
                   "Unexpected user task lifecycle state: '%s'".formatted(lifecycleState));

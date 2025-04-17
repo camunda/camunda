@@ -218,6 +218,17 @@ public final class ZeebeAssertHelper {
     consumer.accept(userTask);
   }
 
+  public static void assertUserTaskCanceled(
+      final long userTaskKey, final Consumer<UserTaskRecordValue> consumer) {
+    final UserTaskRecordValue userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue();
+
+    consumer.accept(userTask);
+  }
+
   public static void assertClockPinned(final Consumer<ClockRecordValue> consumer) {
     assertClockRecordValue(ClockIntent.PINNED, consumer);
   }

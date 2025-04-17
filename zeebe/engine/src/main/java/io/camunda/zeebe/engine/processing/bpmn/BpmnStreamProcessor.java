@@ -196,6 +196,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                   context, String.format("Unexpected element state: '%s'", elementState));
         }
         break;
+      case CONTINUE_TERMINATING_ELEMENT:
+        processor.finalizeTermination(element, context);
+        break;
       default:
         throw new BpmnProcessingException(
             context,
