@@ -33,7 +33,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
-public class CamundaProcessTestContextTest {
+public class CamundaProcessTestContextIT {
   private static final int TIMEOUT = 40;
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
@@ -140,6 +140,72 @@ public class CamundaProcessTestContextTest {
     // Then
     CamundaAssert.assertThat(processInstanceEvent).isCompleted();
     CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+  }
+
+  @Test
+  void shouldCompleteJob() {
+    // Given
+    final long processDefinitionKey = deployProcessModel();
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When
+    processTestContext.completeJob("test");
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+  }
+
+  @Test
+  void shouldCompleteJobWithVariables() {
+    // Given
+    final long processDefinitionKey = deployProcessModel();
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("abc", 123);
+
+    // When
+    processTestContext.completeJob("test", variables);
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  void shouldThrowBpmnErrorFromJob() {
+    // Given
+    final long processDefinitionKey = deployProcessModel();
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When
+    processTestContext.throwBpmnErrorFromJob("test", "bpmn-error");
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("error-end");
+  }
+
+  @Test
+  void shouldThrowBpmnErrorFromJobWithVariables() {
+    // Given
+    final long processDefinitionKey = deployProcessModel();
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("abc", 123);
+
+    // When
+    processTestContext.throwBpmnErrorFromJob("test", "bpmn-error", variables);
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("error-end");
+    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   /**

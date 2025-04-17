@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /** The injected context for a process test. */
@@ -105,4 +106,13 @@ public interface CamundaProcessTestContext {
    * @return a `JobWorkerMock` instance for configuring the mock behavior.
    */
   JobWorkerMock mockJobWorker(final String jobId);
+
+  void completeJob(final String jobId);
+
+  void completeJob(final String jobId, final Map<String, Object> variables);
+
+  void throwBpmnErrorFromJob(final String jobId, final String errorCode);
+
+  void throwBpmnErrorFromJob(
+      final String jobId, final String errorCode, final Map<String, Object> variables);
 }
