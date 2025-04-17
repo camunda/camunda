@@ -7,13 +7,18 @@
  */
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
+import io.camunda.client.api.command.MigrationPlan;
+
 public interface OperateServicesAdapter {
 
-  void deleteResource(long resourceKey, String operationId) throws Exception;
+  void deleteResource(final long resourceKey, final String operationId);
 
-  void cancelProcessInstance(long processInstanceKey, String operationId) throws Exception;
+  void migrateProcessInstance(
+      final long processInstanceKey, final MigrationPlan migrationPlan, final String operationId);
 
-  void updateJobRetries(long jobKey, int retries, String operationId) throws Exception;
+  void cancelProcessInstance(final long processInstanceKey, final String operationId);
 
-  void resolveIncident(long incidentKey, String operationId) throws Exception;
+  void updateJobRetries(final long jobKey, final int retries, final String operationId);
+
+  void resolveIncident(final long incidentKey, final String operationId);
 }
