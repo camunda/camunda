@@ -45,10 +45,7 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler
     }
 
     final String id = operation.getId();
-    final var cancelInstanceCommand =
-        withOperationReference(
-            camundaClient.newCancelInstanceCommand(processInstance.getKey()), id);
-    cancelInstanceCommand.send().join();
+    operationServicesAdapter.cancelProcessInstance(processInstance.getKey(), id);
 
     // mark operation as sent
     markAsSent(operation);

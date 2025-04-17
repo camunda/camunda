@@ -12,6 +12,7 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.VariableServices;
 import org.slf4j.Logger;
@@ -44,5 +45,20 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
     this.incidentServices = incidentServices;
     this.permissionsService = permissionsService;
     this.tenantService = tenantService;
+  }
+
+  @Override
+  public void cancelProcessInstance(final long processInstanceKey, final String operationId)
+      throws Exception {
+
+    try {
+      final long operationReference = Long.parseLong(operationId);
+      processInstanceServices.cancelProcessInstance(
+          new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
+    } catch (final NumberFormatException e) {
+      LOGGER.debug(
+          "The operation reference provided is not a number: {}. Ignoring propagating it to zeebe commands.",
+          operationId);
+    }
   }
 }
