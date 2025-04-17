@@ -7,9 +7,10 @@
  */
 
 import { expect } from "@playwright/test";
-import { loginTest as test } from "../text-fixtures";
+import { test } from "../text-fixtures";
 import { Paths } from "../utils/paths";
 import { relativizePath } from "../utils/relativizePaths";
+import { LOGIN_CREDENTIALS } from "../utils/constants";
 
 test.beforeEach(async ({ loginPage }) => {
   await loginPage.navigateToLogin();
@@ -35,22 +36,16 @@ test.describe("login page", () => {
   });
 
   test("Log in with valid user account", async ({ loginPage, page }) => {
-    await loginPage.login({
-      username: "demo",
-      password: "demo",
-    });
+    await loginPage.login(LOGIN_CREDENTIALS);
 
     await expect(page).toHaveURL(relativizePath(Paths.users()));
   });
 
-  test("Log out", async ({ loginPage, commonPage, page }) => {
-    await loginPage.login({
-      username: "demo",
-      password: "demo",
-    });
+  test("Log out", async ({ loginPage, header, page }) => {
+    await loginPage.login(LOGIN_CREDENTIALS);
 
     await expect(page).toHaveURL(relativizePath(Paths.users()));
-    await commonPage.logout();
+    await header.logout();
     await expect(page).toHaveURL(
       `${relativizePath(Paths.login())}?next=/identity/`,
     );
@@ -63,10 +58,7 @@ test.describe("login page", () => {
       `${relativizePath(Paths.login())}?next=/identity${Paths.users()}`,
     );
 
-    await loginPage.login({
-      username: "demo",
-      password: "demo",
-    });
+    await loginPage.login(LOGIN_CREDENTIALS);
 
     await expect(page).toHaveURL(relativizePath(Paths.users()));
   });

@@ -9,7 +9,7 @@
 import { Page, Locator } from "@playwright/test";
 import { Paths } from "../utils/paths";
 
-export class Login {
+export class LoginPage {
   private page: Page;
   readonly usernameInput: Locator;
   readonly passwordInput: Locator;

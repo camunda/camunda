@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const URL_API_PATTERN = /^.*\/(v2).*$/i;
-
-export { URL_API_PATTERN };
+export function createFixture(Constructor) {
+  return async ({ page }, use) => {
+    await use(new Constructor(page));
+  };
+}
