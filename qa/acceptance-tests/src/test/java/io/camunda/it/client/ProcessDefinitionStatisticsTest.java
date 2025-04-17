@@ -530,20 +530,20 @@ public class ProcessDefinitionStatisticsTest {
   void shouldReturnStatisticsAndFilterByHasRetriesLeft() {
     // given
     final var processDefinitionKey =
-        TestHelper.deployResource(camundaClient, "process/service_tasks_v1.bpmn")
+        TestHelper.deployResource(camundaClient, "process/service_tasks_v2.bpmn")
             .getProcesses()
             .getFirst()
             .getProcessDefinitionKey();
-    TestHelper.startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"foo\"}");
+    TestHelper.startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}");
 
     try (final JobWorker ignored =
         camundaClient
             .newWorker()
-            .jobType("taskA")
+            .jobType("taskC")
             .handler((client, job) -> client.newFailCommand(job).retries(1).send().join())
             .open()) {
 
-      waitUntilJobWorkerHasFailedJob(camundaClient, 2);
+      waitUntilJobWorkerHasFailedJob(camundaClient, 1);
 
       // when
       final var actual =
@@ -554,11 +554,12 @@ public class ProcessDefinitionStatisticsTest {
               .join();
 
       // then
-      assertThat(actual).hasSize(2);
+      assertThat(actual).hasSize(3);
       assertThat(actual)
           .containsExactlyInAnyOrder(
-              new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 1L),
-              new ProcessElementStatisticsImpl("taskA", 1L, 0L, 0L, 0L));
+              new ProcessElementStatisticsImpl("startEvent", 0L, 0L, 0L, 1L),
+              new ProcessElementStatisticsImpl("exclusiveGateway", 0L, 0L, 0L, 1L),
+              new ProcessElementStatisticsImpl("taskC", 1L, 0L, 0L, 0L));
     }
   }
 
