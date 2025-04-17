@@ -68,6 +68,7 @@ import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
+import io.camunda.exporter.notifier.HttpClientWrapper;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.notifier.M2mTokenManager;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -100,7 +101,6 @@ import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.net.http.HttpClient;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -149,14 +149,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new CaffeineCacheStatsCounter(NAMESPACE, "form", meterRegistry));
 
     final M2mTokenManager m2mTokenManager =
-        new M2mTokenManager(configuration.getNotifier(), HttpClient.newHttpClient(), objectMapper);
+        new M2mTokenManager(
+            configuration.getNotifier(), HttpClientWrapper.newHttpClient(), objectMapper);
     executor = Executors.newVirtualThreadPerTaskExecutor();
     final IncidentNotifier incidentNotifier =
         new IncidentNotifier(
             m2mTokenManager,
             processCache,
             configuration.getNotifier(),
-            HttpClient.newHttpClient(),
+            HttpClientWrapper.newHttpClient(),
             executor,
             objectMapper);
     exportHandlers =
