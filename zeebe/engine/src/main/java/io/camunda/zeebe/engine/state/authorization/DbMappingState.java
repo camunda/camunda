@@ -115,9 +115,9 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void addRole(final long mappingKey, final long roleKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+  public void addRole(final String mappingId, final long roleKey) {
+    this.mappingId.wrapString(mappingId);
+    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
@@ -151,9 +151,9 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void removeRole(final long mappingKey, final long roleKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+  public void removeRole(final String mappingId, final long roleKey) {
+    this.mappingId.wrapString(mappingId);
+    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);

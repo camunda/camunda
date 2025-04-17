@@ -38,7 +38,7 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return memberId;
   }
 
-  public RoleEntity setMemberKey(final String memberId) {
+  public RoleEntity setMemberId(final String memberId) {
     this.memberId = memberId;
     return this;
   }
@@ -52,7 +52,7 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public static String getChildKey(final long roleKey, final long memberKey) {
-    return "%d-%d".formatted(roleKey, memberKey);
+  public static String getChildKey(final long roleKey, final String memberId) {
+    return "%d-%s".formatted(roleKey, memberId);
   }
 }

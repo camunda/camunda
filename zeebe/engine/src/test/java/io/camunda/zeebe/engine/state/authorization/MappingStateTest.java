@@ -133,39 +133,39 @@ public class MappingStateTest {
   @Test
   void shouldAddRole() {
     // given
-    final long key = 1L;
+    final var mappingId = "mappingId";
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+        new MappingRecord().setMappingId(mappingId).setClaimName(claimName).setClaimValue(claimValue);
     mappingState.create(mapping);
     final long roleKey = 1L;
 
     // when
-    mappingState.addRole(key, roleKey);
+    mappingState.addRole(mappingId, roleKey);
 
     // then
-    final var persistedMapping = mappingState.get(key).get();
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getRoleKeysList()).containsExactly(roleKey);
   }
 
   @Test
   void shouldRemoveRole() {
     // given
-    final long key = 1L;
+    final var entityId = "entityId";
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+        new MappingRecord().setMappingId(entityId).setClaimName(claimName).setClaimValue(claimValue);
     mappingState.create(mapping);
     final long roleKey = 1L;
-    mappingState.addRole(key, roleKey);
+    mappingState.addRole(entityId, roleKey);
 
     // when
-    mappingState.removeRole(key, roleKey);
+    mappingState.removeRole(entityId, roleKey);
 
     // then
-    final var persistedMapping = mappingState.get(key).get();
+    final var persistedMapping = mappingState.get(entityId).get();
     assertThat(persistedMapping.getRoleKeysList()).isEmpty();
   }
 
