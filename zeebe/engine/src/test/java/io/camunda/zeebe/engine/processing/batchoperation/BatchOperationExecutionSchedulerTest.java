@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static io.camunda.zeebe.engine.processing.batchoperation.BatchOperationExecutionScheduler.CHUNK_SIZE_IN_RECORD;
+import static io.camunda.zeebe.protocol.record.value.BatchOperationType.MIGRATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.PROCESS_CANCELLATION;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.RESOLVE_INCIDENT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -134,6 +135,30 @@ public class BatchOperationExecutionSchedulerTest {
 
     // given
     when(entityKeyProvider.fetchIncidentKeys(queryCaptor.capture(), any()))
+        .thenReturn(Set.of(1L, 2L, 3L));
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(), eq(BatchOperationIntent.START), any(BatchOperationCreationRecord.class));
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
+    final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
+    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldAppendChunkOfProcessMigrationItemKeys() {
+    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
+    when(batchOperation.getBatchOperationType()).thenReturn(MIGRATE_PROCESS_INSTANCE);
+
+    // given
+    when(entityKeyProvider.fetchProcessInstanceKeys(queryCaptor.capture(), any()))
         .thenReturn(Set.of(1L, 2L, 3L));
 
     // when our scheduler fires

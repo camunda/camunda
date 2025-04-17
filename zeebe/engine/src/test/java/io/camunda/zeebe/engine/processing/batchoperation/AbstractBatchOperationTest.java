@@ -19,6 +19,8 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -113,6 +115,40 @@ abstract class AbstractBatchOperationTest {
         .batchOperation()
         .newCreation(BatchOperationType.RESOLVE_INCIDENT)
         .withFilter(filterBuffer)
+        .create()
+        .getValue()
+        .getBatchOperationKey();
+  }
+
+  protected long createNewMigrateProcessesBatchOperation(
+      final Set<Long> itemKeys,
+      final long targetProcessDefinitionId,
+      final String sourceElementId,
+      final String targetElementId) {
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                itemKeys.stream().map(this::mockProcessInstanceEntity).collect(Collectors.toList()))
+            .total(itemKeys.size())
+            .build();
+    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(result);
+
+    final var filterBuffer = convertToBuffer(new ProcessInstanceFilter.Builder().build());
+
+    final var migrationPlan = new BatchOperationProcessInstanceMigrationPlan();
+    migrationPlan.setTargetProcessDefinitionKey(targetProcessDefinitionId);
+
+    final var mappingInstruction = new ProcessInstanceMigrationMappingInstruction();
+    mappingInstruction.setSourceElementId(sourceElementId);
+    mappingInstruction.setTargetElementId(targetElementId);
+    migrationPlan.addMappingInstruction(mappingInstruction);
+
+    return engine
+        .batchOperation()
+        .newCreation(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
+        .withFilter(filterBuffer)
+        .withMigrationPlan(migrationPlan)
         .create()
         .getValue()
         .getBatchOperationKey();
