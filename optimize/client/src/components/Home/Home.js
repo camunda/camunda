@@ -208,10 +208,9 @@ export function Home({mightFail, user}) {
                   icon: <Save />,
                   text: t('common.export'),
                   action: () => {
-                    window.location.href =
-                      `api/export/${entityType}/json/${
-                        entity.id
-                      }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
+                    window.location.href = `api/export/${entityType}/json/${
+                      entity.id
+                    }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
                   },
                 });
               }
