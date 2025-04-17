@@ -8,9 +8,13 @@
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
+import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.IncidentServices;
@@ -21,9 +25,16 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,5 +146,58 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
           id);
     }
     return null;
+  }
+
+  private <T> T executeCamundaServiceAuthenticated(
+      final Function<Authentication, CompletableFuture<T>> method) {
+    return executeCamundaService(method, RequestMapper.getAuthentication());
+  }
+
+  private <T> T executeCamundaServiceAnonymously(
+      final Function<Authentication, CompletableFuture<T>> method) {
+    return executeCamundaService(method, RequestMapper.getAnonymousAuthentication());
+  }
+
+  private <T> T executeCamundaService(
+      final Function<Authentication, CompletableFuture<T>> method,
+      final Authentication authentication) {
+    try {
+      return method.apply(authentication).join();
+    } catch (final Exception e) {
+      throw handleException(e);
+    }
+  }
+
+  private RuntimeException handleException(final Throwable error) {
+    return switch (error) {
+      case final CompletionException ce -> handleException(ce.getCause());
+      case final CamundaBrokerException cbe -> mapCamundaBrokerException(cbe);
+      default -> new RuntimeException("Failed to execute request: " + error.getMessage(), error);
+    };
+  }
+
+  private RuntimeException mapCamundaBrokerException(final CamundaBrokerException exception) {
+    if (exception.getCause() instanceof final BrokerRejectionException brokerRejection) {
+      final var rejection = brokerRejection.getRejection();
+      final String message =
+          String.format(
+              "Request '%s' rejected with code '%s': %s",
+              rejection.intent(), rejection.type(), rejection.reason());
+      final var type = rejection.type();
+      if (type.equals(RejectionType.NOT_FOUND)) {
+        return new NotFoundException(message, exception);
+      }
+      if (type.equals(RejectionType.UNAUTHORIZED) || type.equals(RejectionType.FORBIDDEN)) {
+        return new NotAuthorizedException(message, exception);
+      }
+    }
+    if (exception.getCause() instanceof final BrokerErrorException brokerError) {
+      final var errorCode = brokerError.getError().getCode();
+      if (errorCode.equals(ErrorCode.PROCESS_NOT_FOUND)) {
+        return new NotAuthorizedException("Process not found", exception);
+      }
+    }
+    return new OperateRuntimeException(
+        String.format("Failed to execute request with %s", exception.getMessage()), exception);
   }
 }
