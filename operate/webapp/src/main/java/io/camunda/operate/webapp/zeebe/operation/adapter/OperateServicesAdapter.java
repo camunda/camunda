@@ -9,5 +9,7 @@ package io.camunda.operate.webapp.zeebe.operation.adapter;
 
 public interface OperateServicesAdapter {
 
+  void deleteResource(long resourceKey, String operationId) throws Exception;
+
   void cancelProcessInstance(long processInstanceKey, String operationId) throws Exception;
 }

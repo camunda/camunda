@@ -14,7 +14,9 @@ import io.camunda.service.IncidentServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ResourceServices;
+import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.VariableServices;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -48,17 +50,32 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
+  public void deleteResource(final long resourceKey, final String operationId) throws Exception {
+    withOperationReference(
+        operationReference ->
+            resourceServices.deleteResource(
+                new ResourceDeletionRequest(resourceKey, operationReference)),
+        operationId);
+  }
+
+  @Override
   public void cancelProcessInstance(final long processInstanceKey, final String operationId)
       throws Exception {
+    withOperationReference(
+        operationReference ->
+            processInstanceServices.cancelProcessInstance(
+                new ProcessInstanceCancelRequest(processInstanceKey, operationReference)),
+        operationId);
+  }
 
+  protected static void withOperationReference(final Consumer<Long> command, final String id) {
     try {
-      final long operationReference = Long.parseLong(operationId);
-      processInstanceServices.cancelProcessInstance(
-          new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
+      final long operationReference = Long.parseLong(id);
+      command.accept(operationReference);
     } catch (final NumberFormatException e) {
       LOGGER.debug(
           "The operation reference provided is not a number: {}. Ignoring propagating it to zeebe commands.",
-          operationId);
+          id);
     }
   }
 }
