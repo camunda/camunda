@@ -88,6 +88,7 @@ export default withErrorHandling(
             bulkActions={
               !readOnly && [
                 <BulkDeleter
+                  key="userListBulkDeleter"
                   type="remove"
                   deleteEntities={async (selectedUsers) =>
                     await removeUsers(collection, selectedUsers)

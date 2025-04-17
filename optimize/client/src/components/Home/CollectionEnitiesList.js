@@ -118,6 +118,7 @@ export default function CollectionEnitiesList({
         bulkActions={
           hasEditRights && [
             <BulkDeleter
+              key="collectionBulkDeleter"
               type="delete"
               deleteEntities={async (selected) => await removeEntities(selected, collection)}
               checkConflicts={async (selected) => await checkConflicts(selected, collection)}
@@ -175,10 +176,9 @@ export default function CollectionEnitiesList({
                   icon: <Save />,
                   text: t('common.export'),
                   action: () => {
-                    window.location.href =
-                      `api/export/${entityType}/json/${
-                        entity.id
-                      }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
+                    window.location.href = `api/export/${entityType}/json/${
+                      entity.id
+                    }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
                   },
                 }
               );
