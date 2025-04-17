@@ -11,6 +11,8 @@ import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
@@ -19,9 +21,10 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.VariableServices;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
-import java.util.function.Consumer;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -34,7 +37,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   private final ProcessInstanceServices processInstanceServices;
   private final ResourceServices resourceServices;
-  private final VariableServices variableServices;
+  private final ElementInstanceServices elementInstanceServices;
   private final JobServices<?> jobServices;
   private final IncidentServices incidentServices;
   private final PermissionsService permissionsService;
@@ -43,14 +46,14 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   public ServicesBasedAdapter(
       final ProcessInstanceServices processInstanceServices,
       final ResourceServices resourceServices,
-      final VariableServices variableServices,
+      final ElementInstanceServices elementInstanceServices,
       final JobServices<?> jobServices,
       final IncidentServices incidentServices,
       final PermissionsService permissionsService,
       final TenantService tenantService) {
     this.processInstanceServices = processInstanceServices;
     this.resourceServices = resourceServices;
-    this.variableServices = variableServices;
+    this.elementInstanceServices = elementInstanceServices;
     this.jobServices = jobServices;
     this.incidentServices = incidentServices;
     this.permissionsService = permissionsService;
@@ -106,14 +109,31 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
     incidentServices.resolveIncident(incidentKey);
   }
 
-  protected static void withOperationReference(final Consumer<Long> command, final String id) {
+  @Override
+  public long setVariables(
+      final long scopeKey,
+      final Map<String, Object> variables,
+      final boolean local,
+      final String operationId) {
+    final var variableDocumentRecord =
+        withOperationReference(
+            operationReference ->
+                elementInstanceServices.setVariables(
+                    new SetVariablesRequest(scopeKey, variables, local, operationReference)),
+            operationId);
+    return variableDocumentRecord.getScopeKey();
+  }
+
+  protected static <T> T withOperationReference(
+      final Function<Long, CompletableFuture<T>> command, final String id) {
     try {
       final long operationReference = Long.parseLong(id);
-      command.accept(operationReference);
+      return command.apply(operationReference).join();
     } catch (final NumberFormatException e) {
       LOGGER.debug(
           "The operation reference provided is not a number: {}. Ignoring propagating it to zeebe commands.",
           id);
     }
+    return null;
   }
 }
