@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceFilter;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
@@ -62,5 +63,32 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
     final ProcessInstanceFilter filter = gatewayService.getLastRequest(ProcessInstanceFilter.class);
     assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+  }
+
+  @Test
+  public void shouldSendProcessInstanceModificationCommand() {
+    // when
+    client
+        .newCreateBatchOperationCommand()
+        .processInstanceModify()
+        .moveInstruction("source", "target")
+        .moveInstruction("source2", "target2")
+        .filter(filter -> filter.processDefinitionId("test-01"))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/batch-operations/modification");
+
+    final ProcessInstanceModificationBatchOperationInstruction lastRequest =
+        gatewayService.getLastRequest(ProcessInstanceModificationBatchOperationInstruction.class);
+    assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+    assertThat(lastRequest.getMoveInstructions()).hasSize(2);
+    assertThat(lastRequest.getMoveInstructions().get(0).getSourceElementId()).isEqualTo("source");
+    assertThat(lastRequest.getMoveInstructions().get(0).getTargetElementId()).isEqualTo("target");
+    assertThat(lastRequest.getMoveInstructions().get(1).getSourceElementId()).isEqualTo("source2");
+    assertThat(lastRequest.getMoveInstructions().get(1).getTargetElementId()).isEqualTo("target2");
   }
 }
