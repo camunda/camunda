@@ -543,7 +543,7 @@ public class ProcessDefinitionStatisticsTest {
             .handler((client, job) -> client.newFailCommand(job).retries(1).send().join())
             .open()) {
 
-      waitUntilJobWorkerHasFailedJob(camundaClient);
+      waitUntilJobWorkerHasFailedJob(camundaClient, 2);
 
       // when
       final var actual =
