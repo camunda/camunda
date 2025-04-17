@@ -82,7 +82,7 @@ export default function ReportView({report, error, loadReport}) {
   };
 
   const getTotalEntries = ({result}) => {
-    return result.instanceCount;
+    return result?.instanceCount || 0;
   };
 
   const {id, name, description, currentUserRole, data} = report;
