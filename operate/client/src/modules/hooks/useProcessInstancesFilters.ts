@@ -21,16 +21,21 @@ function mapFiltersToRequest(
   filters: ProcessInstanceFilters,
 ): GetProcessDefinitionStatisticsRequestBody {
   const {
+    flowNodeId,
     startDateAfter,
     startDateBefore,
     endDateAfter,
     endDateBefore,
+    errorMessage,
     ids,
     active,
+    incidentErrorHashCode,
     incidents,
     completed,
     canceled,
+    operationId,
     parentInstanceId,
+    retriesLeft,
     tenant,
     variableName,
     variableValues,
@@ -67,6 +72,32 @@ function mapFiltersToRequest(
 
   if (incidents) {
     request.filter.hasIncident = true;
+  }
+
+  if (operationId) {
+    request.filter.batchOperationId = {
+      $eq: operationId,
+    };
+  }
+
+  if (errorMessage) {
+    request.filter.errorMessage = {
+      $in: [errorMessage],
+    };
+  }
+
+  if (retriesLeft) {
+    request.filter.hasRetriesLeft = true;
+  }
+
+  if (flowNodeId) {
+    request.filter.elementId = {
+      $eq: flowNodeId,
+    };
+  }
+
+  if (incidentErrorHashCode) {
+    request.filter.incidentErrorHashCode = incidentErrorHashCode;
   }
 
   if (tenant) {
