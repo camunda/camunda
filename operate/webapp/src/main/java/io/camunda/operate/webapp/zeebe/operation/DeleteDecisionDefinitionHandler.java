@@ -51,10 +51,7 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
         String.format(
             "Operation [%s]: Sending Zeebe delete command for decisionRequirementsKey [%s]...",
             operation.getId(), decisionRequirementsKey));
-    final var deleteResourceCommand =
-        withOperationReference(
-            camundaClient.newDeleteResourceCommand(decisionRequirementsKey), operation.getId());
-    deleteResourceCommand.send().join();
+    operationServicesAdapter.deleteResource(decisionRequirementsKey, operation.getId());
     markAsSent(operation);
     LOGGER.info(
         String.format(
