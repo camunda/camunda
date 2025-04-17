@@ -36,6 +36,13 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
   }
 
   @Override
+  public void deleteResource(final long resourceKey, final String operationId) throws Exception {
+    final var deleteResourceCommand =
+        withOperationReference(camundaClient.newDeleteResourceCommand(resourceKey), operationId);
+    deleteResourceCommand.send().join();
+  }
+
+  @Override
   public void cancelProcessInstance(final long processInstanceKey, final String operationId)
       throws Exception {
     final var cancelInstanceCommand =
