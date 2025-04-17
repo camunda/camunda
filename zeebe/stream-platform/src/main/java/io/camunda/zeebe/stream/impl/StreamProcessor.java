@@ -378,6 +378,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             (ignored, error) -> {
               if (error != null) {
                 onFailure(error);
+                return;
               }
               startProcessing(lastProcessingPositions);
             },
