@@ -1566,11 +1566,11 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     try (final JobWorker ignored =
         camundaClient
             .newWorker()
-            .jobType("taskA")
+            .jobType("taskC")
             .handler((client, job) -> client.newFailCommand(job).retries(1).send().join())
             .open()) {
 
-      waitUntilJobWorkerHasFailedJob(camundaClient, 2);
+      waitUntilJobWorkerHasFailedJob(camundaClient, 1);
 
       // when
       final var result =
@@ -1581,10 +1581,10 @@ public class ProcessInstanceAndElementInstanceSearchTest {
               .join();
 
       // then
-      assertThat(result.items().size()).isEqualTo(2);
+      assertThat(result.items().size()).isEqualTo(1);
       assertThat(result.items())
           .extracting("processDefinitionId")
-          .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v1");
+          .containsExactlyInAnyOrder("service_tasks_v2");
     }
   }
 
