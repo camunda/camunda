@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {SequenceFlow} from '@vzeta/camunda-api-zod-schemas/operate';
 import {createIncident, createSequenceFlows} from 'modules/testUtils';
 
 const mockIncidents = {
@@ -36,5 +37,31 @@ const mockIncidents = {
 };
 
 const mockSequenceFlows = createSequenceFlows();
+const mockSequenceFlowsV2: SequenceFlow[] = [
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowKey: 'SequenceFlow_0drux68',
+    processDefinitionId: '123',
+    processDefinitionKey: 123,
+  },
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowKey: 'SequenceFlow_0j6tsnn',
+    processDefinitionId: '123',
+    processDefinitionKey: 123,
+  },
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowKey: 'SequenceFlow_1dwqvrt',
+    processDefinitionId: '123',
+    processDefinitionKey: 123,
+  },
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowKey: 'SequenceFlow_1fgekwd',
+    processDefinitionId: '123',
+    processDefinitionKey: 123,
+  },
+];
 
-export {mockIncidents, mockSequenceFlows};
+export {mockIncidents, mockSequenceFlows, mockSequenceFlowsV2};

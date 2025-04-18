@@ -9,11 +9,10 @@
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
-import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenceFlows';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockIncidents} from 'modules/mocks/incidents';
 import {testData} from '../index.setup';
-import {mockSequenceFlows} from '../TopPanel/index.setup';
+import {mockSequenceFlowsV2} from '../TopPanel/index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
   createVariable,
@@ -34,7 +33,6 @@ import {
 import {useEffect} from 'react';
 import {waitFor} from '@testing-library/react';
 import {variablesStore} from 'modules/stores/variables';
-import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
@@ -47,6 +45,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
+import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
@@ -56,7 +55,7 @@ const mockRequests = (contextPath: string = '') => {
   );
   mockFetchProcessXML(contextPath).withSuccess('');
   mockFetchProcessDefinitionXml({contextPath}).withSuccess('');
-  mockFetchSequenceFlows(contextPath).withSuccess(mockSequenceFlows);
+  mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
   mockFetchFlowNodeInstances(contextPath).withSuccess(
     processInstancesMock.level1,
   );
@@ -144,7 +143,6 @@ function getWrapper(options?: {
 const waitForPollingsToBeComplete = async () => {
   await waitFor(() => {
     expect(variablesStore.isPollRequestRunning).toBe(false);
-    expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
     expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
     expect(incidentsStore.isPollRequestRunning).toBe(false);
     expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
