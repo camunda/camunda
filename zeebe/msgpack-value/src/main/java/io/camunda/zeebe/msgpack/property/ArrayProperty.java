@@ -62,4 +62,8 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
   public boolean isEmpty() {
     return value.isEmpty();
   }
+
+  public int size() {
+    return value.size();
+  }
 }
