@@ -9,10 +9,10 @@ package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.*;
 
-import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -34,7 +34,8 @@ public record ProcessDefinitionStatisticsFilter(
     List<Operation<String>> flowNodeIdOperations,
     Boolean hasFlowNodeInstanceIncident,
     List<Operation<String>> flowNodeInstanceStateOperations,
-    List<Integer> incidentErrorHashCodes)
+    List<Integer> incidentErrorHashCodes,
+    List<ProcessDefinitionStatisticsFilter> orFilters)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -70,6 +71,7 @@ public record ProcessDefinitionStatisticsFilter(
     private Boolean hasFlowNodeInstanceIncident;
     private List<Operation<String>> flowNodeInstanceStateOperations;
     private List<Integer> incidentErrorHashCodes;
+    private List<ProcessDefinitionStatisticsFilter> orFilters;
 
     public Builder(final long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
@@ -269,6 +271,14 @@ public record ProcessDefinitionStatisticsFilter(
       return this;
     }
 
+    public Builder addOrOperation(final ProcessDefinitionStatisticsFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
     @Override
     public ProcessDefinitionStatisticsFilter build() {
       return new ProcessDefinitionStatisticsFilter(
@@ -288,7 +298,8 @@ public record ProcessDefinitionStatisticsFilter(
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
           hasFlowNodeInstanceIncident,
           Objects.requireNonNullElse(flowNodeInstanceStateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(incidentErrorHashCodes, Collections.emptyList()));
+          Objects.requireNonNullElse(incidentErrorHashCodes, Collections.emptyList()),
+          orFilters);
     }
   }
 }

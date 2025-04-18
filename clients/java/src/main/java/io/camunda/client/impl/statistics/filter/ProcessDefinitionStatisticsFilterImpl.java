@@ -24,6 +24,7 @@ import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilterBase;
 import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
@@ -31,6 +32,8 @@ import io.camunda.client.impl.search.filter.builder.ElementInstanceStateProperty
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.ProcessDefinitionStatisticsFilterMapper;
+import io.camunda.client.protocol.rest.BaseProcessInstanceFilterFields;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -38,13 +41,13 @@ import java.util.function.Consumer;
 
 public class ProcessDefinitionStatisticsFilterImpl
     extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.BaseProcessInstanceFilter>
+        io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter>
     implements ProcessDefinitionStatisticsFilter {
 
-  private final io.camunda.client.protocol.rest.BaseProcessInstanceFilter filter;
+  private final io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter filter;
 
   public ProcessDefinitionStatisticsFilterImpl() {
-    filter = new io.camunda.client.protocol.rest.BaseProcessInstanceFilter();
+    filter = new io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter();
   }
 
   @Override
@@ -254,6 +257,22 @@ public class ProcessDefinitionStatisticsFilterImpl
     return this;
   }
 
+  @Override
+  public ProcessDefinitionStatisticsFilter orFilters(
+      final List<Consumer<ProcessDefinitionStatisticsFilterBase>> fns) {
+    for (final Consumer<ProcessDefinitionStatisticsFilterBase> fn : fns) {
+      final ProcessDefinitionStatisticsFilterImpl orFilter =
+          new ProcessDefinitionStatisticsFilterImpl();
+      fn.accept(orFilter);
+      final io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter protocolFilter =
+          orFilter.getSearchRequestProperty();
+      final BaseProcessInstanceFilterFields protocolFilterFields =
+          ProcessDefinitionStatisticsFilterMapper.from(protocolFilter);
+      filter.add$OrItem(protocolFilterFields);
+    }
+    return this;
+  }
+
   static void variableValueNullCheck(final Object value) {
     if (value == null) {
       throw new IllegalArgumentException("Variable value cannot be null");
@@ -261,7 +280,8 @@ public class ProcessDefinitionStatisticsFilterImpl
   }
 
   @Override
-  protected io.camunda.client.protocol.rest.BaseProcessInstanceFilter getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter
+      getSearchRequestProperty() {
     return filter;
   }
 }
