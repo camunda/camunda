@@ -60,7 +60,10 @@ describe('useProcessSequenceFlows', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual(mockData);
+    expect(result.current.data).toEqual([
+      'sequenceFlowKey1',
+      'sequenceFlowKey2',
+    ]);
   });
 
   it('should handle server error while fetching process sequence flows', async () => {
@@ -109,7 +112,7 @@ describe('useProcessSequenceFlows', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual({items: []});
+    expect(result.current.data).toEqual([]);
   });
 
   it('should handle loading state', async () => {
