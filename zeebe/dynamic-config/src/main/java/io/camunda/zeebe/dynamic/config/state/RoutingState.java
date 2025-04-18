@@ -33,6 +33,10 @@ public record RoutingState(
     }
   }
 
+  public RoutingState updateRequestHandling(final RequestHandling requestHandling) {
+    return new RoutingState(version + 1, requestHandling, messageCorrelation);
+  }
+
   public RoutingState merge(final RoutingState other) {
     if (equals(other)) {
       return this;
@@ -133,6 +137,19 @@ public record RoutingState(
         all.addAll(additionalActivePartitions);
         all.removeAll(inactivePartitions);
         return all;
+      }
+
+      public RequestHandling activatePartitions(final Set<Integer> partitions) {
+        final var updatedInactivePartitions = new HashSet<>(inactivePartitions());
+        updatedInactivePartitions.removeAll(partitions);
+        final var updatedAdditionalActivePartitions = new HashSet<>(additionalActivePartitions);
+        updatedAdditionalActivePartitions.addAll(partitions);
+        if (updatedInactivePartitions.isEmpty()) {
+          return new AllPartitions(basePartitionCount + updatedAdditionalActivePartitions.size());
+        } else {
+          return new ActivePartitions(
+              basePartitionCount, updatedAdditionalActivePartitions, updatedInactivePartitions);
+        }
       }
     }
   }
