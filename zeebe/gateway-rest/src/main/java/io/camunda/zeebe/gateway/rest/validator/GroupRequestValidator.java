@@ -17,6 +17,7 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -25,19 +26,41 @@ public final class GroupRequestValidator {
 
   private GroupRequestValidator() {}
 
-  private static void validateGroupId(final String groupId, final List<String> violations) {
-    if (groupId == null || groupId.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("groupId"));
-    } else if (groupId.length() > MAX_LENGTH) {
-      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("id", MAX_LENGTH));
-    } else if (!ID_PATTERN.matcher(groupId).matches()) {
-      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("id", ID_REGEX));
+  private static void validateId(
+      final String id, final String propertyName, final List<String> violations) {
+    if (id == null || id.isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(propertyName));
+    } else if (id.length() > MAX_LENGTH) {
+      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(propertyName, MAX_LENGTH));
+    } else if (!ID_PATTERN.matcher(id).matches()) {
+      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(propertyName, ID_REGEX));
     }
+  }
+
+  public static void validateGroupId(final String id, final List<String> violations) {
+    validateId(id, "groupId", violations);
   }
 
   private static void validateGroupName(final String name, final List<String> violations) {
     if (name == null || name.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+    }
+  }
+
+  public static void validateMemberId(
+      final String entityId, final EntityType entityType, final List<String> violations) {
+    switch (entityType) {
+      case USER:
+        validateId(entityId, "username", violations);
+        break;
+      case GROUP:
+        validateId(entityId, "groupId", violations);
+        break;
+      case MAPPING:
+        validateId(entityId, "mappingId", violations);
+        break;
+      default:
+        validateId(entityId, "entityId", violations);
     }
   }
 
@@ -56,6 +79,15 @@ public final class GroupRequestValidator {
         violations -> {
           validateGroupId(request.getGroupId(), violations);
           validateGroupName(request.getName(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateMemberRequest(
+      final String roleId, final String memberId, final EntityType memberType) {
+    return validate(
+        violations -> {
+          validateGroupId(roleId, violations);
+          validateMemberId(memberId, memberType, violations);
         });
   }
 }

@@ -12,6 +12,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.CreateGroupRequest;
+import io.camunda.service.GroupServices.GroupMemberRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
@@ -79,6 +80,15 @@ public class GroupController {
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .assignMember(groupId, username, EntityType.USER));
+  }
+
+  @CamundaPutMapping(
+      path = "/{groupId}/mapping-rules/{mappingId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> assignMappingToGroup(
+      @PathVariable final String groupId, @PathVariable final String mappingId) {
+    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMapping);
   }
 
   @CamundaDeleteMapping(path = "/{groupId}/users/{username}")
@@ -159,5 +169,13 @@ public class GroupController {
                     updateGroupRequest.name(),
                     updateGroupRequest.description()),
         ResponseMapper::toGroupUpdateResponse);
+  }
+
+  public CompletableFuture<ResponseEntity<Object>> assignMapping(final GroupMemberRequest request) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+        () ->
+            groupServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .assignMember(request.groupId(), request.entityId(), request.entityType()));
   }
 }
