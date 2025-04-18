@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * An operation that changes the configuration. The operation could be a member join or leave a
@@ -44,21 +45,42 @@ public sealed interface ClusterConfigurationChangeOperation {
       implements ClusterConfigurationChangeOperation {}
 
   /**
-   * Operation to initiate partition scale up. This instructs the cluster to redistribute resources
-   * and relocate data.
-   *
-   * @param memberId the id of the member that initiates the scale up
-   * @param desiredPartitionCount the desired partition count after scaling up
-   */
-  record StartPartitionScaleUpOperation(MemberId memberId, int desiredPartitionCount)
-      implements ClusterConfigurationChangeOperation {}
-
-  /**
    * Operation to delete the history of the given member.
    *
    * @param memberId the member id of the member that will apply this operation
    */
   record DeleteHistoryOperation(MemberId memberId) implements ClusterConfigurationChangeOperation {}
+
+  sealed interface ScaleUpOperation extends ClusterConfigurationChangeOperation {
+    /**
+     * Operation to initiate partition scale up. This instructs the cluster to redistribute
+     * resources and relocate data.
+     *
+     * @param memberId the id of the member that initiates the scale up
+     * @param desiredPartitionCount the desired partition count after scaling up
+     */
+    record StartPartitionScaleUp(MemberId memberId, int desiredPartitionCount)
+        implements ScaleUpOperation {}
+
+    /**
+     * @param memberId the id of the member that initiated the scale up
+     * @param desiredPartitionCount the desired partition count after scaling up
+     * @param redistributedPartitions the partitions to add to {@link RoutingState.RequestHandling}
+     */
+    record AwaitRedistributionCompletion(
+        MemberId memberId, int desiredPartitionCount, Set<Integer> redistributedPartitions)
+        implements ScaleUpOperation {}
+
+    /**
+     * @param memberId the id of the member that initiated the scale up
+     * @param desiredPartitionCount the desired partition count after scaling up
+     * @param relocatedPartitions the partitions to add to {@link RoutingState.MessageCorrelation}
+     */
+    // TODO NOT IMPLEMENTED YET
+    record AwaitRelocationCompletion(
+        MemberId memberId, int desiredPartitionCount, Set<Integer> relocatedPartitions)
+        implements ScaleUpOperation {}
+  }
 
   sealed interface PartitionChangeOperation extends ClusterConfigurationChangeOperation {
     int partitionId();
