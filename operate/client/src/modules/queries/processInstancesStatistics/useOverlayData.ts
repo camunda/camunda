@@ -30,18 +30,22 @@ const overlayPositions = {
   completedEndEvents: COMPLETED_END_EVENT_BADGE,
 };
 
-export function overlayParser(
+const overlayParser = (
   data: GetProcessDefinitionStatisticsResponseBody,
-): OverlayData[] {
+): OverlayData[] => {
   const flowNodeStates = flowNodeStatesParser(data);
 
-  return flowNodeStates.map(({flowNodeState, count, flowNodeId}) => ({
-    payload: {flowNodeState, count},
-    type: `statistics-${flowNodeState}`,
-    flowNodeId,
-    position: overlayPositions[flowNodeState],
-  }));
-}
+  return flowNodeStates
+    .filter(
+      (flowNodeData) => flowNodeData.flowNodeState !== 'completedEndEvents',
+    )
+    .map(({flowNodeState, count, flowNodeId}) => ({
+      payload: {flowNodeState, count},
+      type: `statistics-${flowNodeState}`,
+      flowNodeId,
+      position: overlayPositions[flowNodeState],
+    }));
+};
 
 function useProcessInstancesOverlayData(
   payload: GetProcessDefinitionStatisticsRequestBody,
