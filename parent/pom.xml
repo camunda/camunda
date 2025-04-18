@@ -2131,7 +2131,6 @@
         <artifactId>identity-migration</artifactId>
         <version>${project.version}</version>
       </dependency>
-
     </dependencies>
   </dependencyManagement>
 

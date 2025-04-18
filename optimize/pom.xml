@@ -87,11 +87,6 @@
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.0</quartz.version>
 
-    <!-- remove these versions.anything properties once we inherit from zeebe-parent -->
-    <version.node>v20.9.0</version.node>
-    <version.yarn>v1.22.19</version.yarn>
-    <version.jackson>2.18.3</version.jackson>
-
     <!-- testing config -->
     <mockito.version>5.16.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
@@ -111,34 +106,7 @@
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.javadoc.skip>true</maven.javadoc.skip>
-    <spring-boot.version>3.4.3</spring-boot.version>
   </properties>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${spring-boot.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-framework-bom</artifactId>
-        <version>${version.spring}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${version.jackson}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
     <!-- Common test dependencies-->
