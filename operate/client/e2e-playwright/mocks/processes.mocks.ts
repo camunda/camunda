@@ -7,6 +7,7 @@
  */
 
 import {Route} from '@playwright/test';
+import {GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
 import {ProcessInstancesStatisticsDto} from 'modules/api/processInstances/fetchProcessInstancesStatistics';
 import {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
@@ -17,6 +18,7 @@ function mockResponses({
   batchOperation,
   groupedProcesses,
   statistics,
+  statisticsV2,
   processInstances,
   processXml,
   deleteProcess,
@@ -25,6 +27,7 @@ function mockResponses({
   batchOperation?: OperationEntity;
   groupedProcesses?: ProcessDto[];
   statistics?: ProcessInstancesStatisticsDto[];
+  statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   processInstances?: ProcessInstancesDto;
   processXml?: string;
   deleteProcess?: BatchOperationDto;
@@ -74,6 +77,16 @@ function mockResponses({
       return route.fulfill({
         status: groupedProcesses === undefined ? 400 : 200,
         body: JSON.stringify(groupedProcesses),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('statistics/element-instances')) {
+      return route.fulfill({
+        status: statisticsV2 === undefined ? 400 : 200,
+        body: JSON.stringify(statisticsV2),
         headers: {
           'content-type': 'application/json',
         },
@@ -3187,6 +3200,39 @@ const mockStatistics = [
   },
 ];
 
+const mockStatisticsV2 = {
+  items: [
+    {
+      elementId: 'eventSubprocess',
+      active: 9,
+      canceled: 2,
+      incidents: 0,
+      completed: 0,
+    },
+    {
+      elementId: 'EndEvent_1uddjvh',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 9,
+    },
+    {
+      elementId: 'ServiceTask_1daop2o',
+      active: 0,
+      canceled: 20,
+      incidents: 0,
+      completed: 0,
+    },
+    {
+      elementId: 'eventSubprocessTask',
+      active: 0,
+      canceled: 2,
+      incidents: 9,
+      completed: 0,
+    },
+  ],
+};
+
 const mockProcessXml = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.3.0">
   <bpmn:process id="eventSubprocessProcess" name="Event Subprocess Process" isExecutable="true">
@@ -3400,6 +3446,7 @@ export {
   mockProcessInstancesWithOperationError,
   mockProcessInstancesAfterResolvingIncident,
   mockStatistics,
+  mockStatisticsV2,
   mockProcessXml,
   mockResponses,
   mockNewDeleteOperation,

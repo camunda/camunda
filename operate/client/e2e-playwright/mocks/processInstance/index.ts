@@ -7,6 +7,7 @@
  */
 
 import {Route} from '@playwright/test';
+import {GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 import {
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
@@ -21,6 +22,7 @@ type InstanceMock = {
   detail: ProcessInstanceEntity;
   flowNodeInstances: FlowNodeInstancesDto<FlowNodeInstanceDto>;
   statistics: ProcessInstanceDetailStatisticsDto[];
+  statisticsV2: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows: SequenceFlowsDto;
   variables: VariableEntity[];
   incidents?: ProcessInstanceIncidentsDto;
@@ -31,6 +33,7 @@ function mockResponses({
   processInstanceDetail,
   flowNodeInstances,
   statistics,
+  statisticsV2,
   sequenceFlows,
   variables,
   xml,
@@ -40,6 +43,7 @@ function mockResponses({
   processInstanceDetail?: ProcessInstanceEntity;
   flowNodeInstances?: FlowNodeInstancesDto<FlowNodeInstanceDto>;
   statistics?: ProcessInstanceDetailStatisticsDto[];
+  statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows?: SequenceFlowsDto;
   variables?: VariableEntity[];
   xml?: string;
@@ -69,6 +73,16 @@ function mockResponses({
       return route.fulfill({
         status: flowNodeInstances === undefined ? 400 : 200,
         body: JSON.stringify(flowNodeInstances),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('statistics/element-instances')) {
+      return route.fulfill({
+        status: statisticsV2 === undefined ? 400 : 200,
+        body: JSON.stringify(statisticsV2),
         headers: {
           'content-type': 'application/json',
         },

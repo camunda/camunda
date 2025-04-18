@@ -405,6 +405,38 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       completed: 1,
     },
   ],
+  statisticsV2: {
+    items: [
+      {
+        elementId: 'eventBasedGateway',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        elementId: 'messageTask',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+      {
+        elementId: 'timerEvent',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        elementId: 'timerStartEvent',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+    ],
+  },
   incidents: {
     count: 1,
     incidents: [

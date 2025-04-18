@@ -28,6 +28,17 @@ const runningOrderProcessInstance: InstanceMock = {
       completed: 0,
     },
   ],
+  statisticsV2: {
+    items: [
+      {
+        elementId: 'checkPayment',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ],
+  },
   variables: [
     {
       id: '2251799813687144-signalNumber',

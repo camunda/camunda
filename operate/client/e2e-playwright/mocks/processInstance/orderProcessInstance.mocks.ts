@@ -255,6 +255,38 @@ const orderProcessInstance: {
         completed: 1,
       },
     ],
+    statisticsV2: {
+      items: [
+        {
+          elementId: 'Activity_0c23arx',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'Event_0kuuclk',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'Gateway_1qlqb7o',
+          active: 0,
+          canceled: 0,
+          incidents: 1,
+          completed: 0,
+        },
+        {
+          elementId: 'order-placed',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+      ],
+    },
     sequenceFlows: [
       {
         processInstanceId: '2251799813725328',
@@ -459,6 +491,45 @@ const orderProcessInstance: {
         completed: 1,
       },
     ],
+    statisticsV2: {
+      items: [
+        {
+          elementId: 'Activity_089u4uu',
+          active: 1,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
+        },
+        {
+          elementId: 'Activity_0c23arx',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'Event_0kuuclk',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'Gateway_1qlqb7o',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'order-placed',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+      ],
+    },
     sequenceFlows: [
       {
         processInstanceId: '2251799813725328',
@@ -663,6 +734,59 @@ const orderProcessInstance: {
         completed: 1,
       },
     ],
+    statisticsV2: {
+      items: [
+        {
+          elementId: 'Activity_089u4uu',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'Activity_0c23arx',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'Event_0kuuclk',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'Gateway_0jji7r4',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'Gateway_1qlqb7o',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'order-delivered',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'order-placed',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+      ],
+    },
     sequenceFlows: [
       {
         processInstanceId: '2251799813725328',
