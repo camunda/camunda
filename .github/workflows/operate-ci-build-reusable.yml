@@ -9,7 +9,10 @@
 # Environment variables are used to define the image tags used for Docker builds.
 # This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
 # and enables detailed reporting of test results.
-
+# trigger: reusable
+# test location:
+# owner:
+---
 name: Operate CI Reusable
 
 on:
