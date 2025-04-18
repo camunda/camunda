@@ -7,21 +7,40 @@
  */
 
 import {act, render, screen} from 'modules/testing-library';
-import {Bar} from './index';
-import {mockStartNode, mockStartEventBusinessObject} from './index.setup';
+import {Bar} from '../index';
+import {mockStartNode, mockStartEventBusinessObject} from '../index.setup';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {useEffect} from 'react';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {Paths} from 'modules/Routes';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 
 jest.mock('modules/feature-flags', () => ({
   ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: false,
+  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
 }));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => flowNodeTimeStampStore.reset, []);
+  useEffect(() => {
+    return () => {
+      flowNodeTimeStampStore.reset();
+    };
+  }, []);
 
-  return <>{children}</>;
+  return (
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
+  );
 };
 
 describe('<Bar />', () => {

@@ -78,7 +78,7 @@ describe('selectedRunningInstanceCount', () => {
     );
   });
 
-  it.skip('should not render when there are no running instances selected', async () => {
+  it('should not render when there are no running instances selected', async () => {
     modificationsStore.enableModificationMode();
 
     renderPopover();
@@ -104,7 +104,7 @@ describe('selectedRunningInstanceCount', () => {
     ).not.toBeInTheDocument();
   });
 
-  it.skip('should render when there are running instances selected', async () => {
+  it('should render when there are running instances selected', async () => {
     modificationsStore.enableModificationMode();
 
     renderPopover();

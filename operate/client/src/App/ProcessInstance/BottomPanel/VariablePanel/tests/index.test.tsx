@@ -46,6 +46,11 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: false,
+}));
+
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
