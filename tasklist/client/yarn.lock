@@ -311,9 +311,9 @@
     regenerator-runtime "^0.14.0"
 
 "@babel/runtime@^7.23.2":
-  version "7.26.9"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.26.9.tgz#aa4c6facc65b9cb3f87d75125ffd47781b475433"
-  integrity sha512-aA63XwOkcl4xxQa3HjPMqOP6LiK0ZDv3mUPYEFXkpHbaFjtGggE1A61FjFzJnB+p7/oy2gA8E+rcBNl/zC1tMg==
+  version "7.27.0"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.27.0.tgz#fbee7cf97c709518ecc1f590984481d5460d4762"
+  integrity sha512-VtPOkrdPHZsKc/clNqyi9WUA8TINkZ4cGk63UUE3u4pmB2k+ZMQRDuIOagv8UVd6j7k0T3+RRIb7beKTebNbcw==
   dependencies:
     regenerator-runtime "^0.14.0"
 
@@ -4175,9 +4175,9 @@ human-signals@^2.1.0:
   integrity sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==
 
 i18next-browser-languagedetector@^8.0.0:
-  version "8.0.4"
-  resolved "https://registry.yarnpkg.com/i18next-browser-languagedetector/-/i18next-browser-languagedetector-8.0.4.tgz#9b16f6440b6aad3521f2ab1a2ffbb7d917397df2"
-  integrity sha512-f3frU3pIxD50/Tz20zx9TD9HobKYg47fmAETb117GKGPrhwcSSPJDoCposXlVycVebQ9GQohC3Efbpq7/nnJ5w==
+  version "8.0.5"
+  resolved "https://registry.yarnpkg.com/i18next-browser-languagedetector/-/i18next-browser-languagedetector-8.0.5.tgz#6cfdc72820457ce95e69a2788a4f837d1d8f4e9d"
+  integrity sha512-OstebRKqKiQw8xEvQF5aRyUujsCatanj7Q9eo5iiH2gJpoXGZ7483ol3sVBwfqbobTQPNH1J+NAyJ1aCQoEC+w==
   dependencies:
     "@babel/runtime" "^7.23.2"
 
