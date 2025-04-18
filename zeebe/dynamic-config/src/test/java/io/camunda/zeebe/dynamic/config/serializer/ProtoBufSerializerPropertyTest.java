@@ -14,11 +14,12 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ClusterTopologyDomain;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
+import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.domains.Domain;
 import net.jqwik.api.domains.DomainContext;
 
 final class ProtoBufSerializerPropertyTest {
-  @Property(tries = 100)
+  @Property(tries = 100, shrinking = ShrinkingMode.FULL)
   @Domain(ClusterTopologyDomain.class)
   @Domain(DomainContext.Global.class)
   void shouldEncodeAndDecode(@ForAll final ClusterConfiguration clusterConfiguration) {
