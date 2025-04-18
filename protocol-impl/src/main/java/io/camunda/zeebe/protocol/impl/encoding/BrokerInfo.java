@@ -112,6 +112,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public int getNodeId() {
+    if (nodeIdNullValue() == nodeId) {
+      throw new IllegalStateException("nodeId is not set");
+    }
     return nodeId;
   }
 
@@ -121,6 +124,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public int getPartitionsCount() {
+    if (partitionsCountNullValue() == partitionsCount) {
+      throw new IllegalStateException("partitionsCount is not set");
+    }
     return partitionsCount;
   }
 
@@ -130,6 +136,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public int getClusterSize() {
+    if (clusterSizeNullValue() == clusterSize) {
+      throw new IllegalStateException("clusterSize is not set");
+    }
     return clusterSize;
   }
 
@@ -139,6 +148,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public int getReplicationFactor() {
+    if (replicationFactorNullValue() == replicationFactor) {
+      throw new IllegalStateException("replicationFactor is not set");
+    }
     return replicationFactor;
   }
 
