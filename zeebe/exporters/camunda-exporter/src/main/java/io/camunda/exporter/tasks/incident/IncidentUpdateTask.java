@@ -95,6 +95,29 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return "Incident update task";
   }
 
+  /**
+   * To better document which methods run in parallel and which work on the entire batch, this is a
+   * simplified call stack hierarchy for incident processing:
+   *
+   * <p>processNextBatch
+   *
+   * <ul>
+   *   <li>BATCH: getPendingIncidentsBatch
+   *   <li>BATCH: searchForInstances
+   *       <ul>
+   *         <li>PARALLEL: checkDataAndCollectParentTreePaths (modifies state adding treePath)
+   *       </ul>
+   *   <li>BATCH: processIncidents
+   *       <ul>
+   *         <li>PARALLEL: mapActiveIncidentsToAffectedInstances (modifies state w/ computeIfAbsent)
+   *         <li>PARALLEL: processIncident
+   *             <ul>
+   *               <li>PARALLEL: createProcessInstanceUpdates
+   *             </ul>
+   *         <li>BATCH: BulkUpdate
+   *       </ul>
+   * </ul>
+   */
   private CompletableFuture<Integer> processNextBatch() {
     final var data = new AdditionalData();
     return getPendingIncidentsBatch(data)
