@@ -107,6 +107,8 @@ message TopologyChangeOperation {
     PartitionBootstrapOperation partitionBootstrap = 11;
     StartPartitionScaleUpOperation initiateScaleUpPartitions = 12;
     DeleteHistoryOperation deleteHistory = 13;
+    AwaitRedistributionCompletion awaitRedistributionCompletion= 14;
+    AwaitRelocationCompletion awaitRelocationCompletion= 15;
   }
 }
 
@@ -154,6 +156,16 @@ message PartitionBootstrapOperation {
 
 message StartPartitionScaleUpOperation {
   int32 desiredPartitionCount = 2;
+}
+
+message AwaitRedistributionCompletion{
+  int32 desiredPartitionCount = 1;
+  repeated int32 redistributedPartitions= 2;
+}
+
+message AwaitRelocationCompletion{
+  int32 desiredPartitionCount = 1;
+  repeated int32 relocatedPartitions = 2;
 }
 
 message DeleteHistoryOperation {
