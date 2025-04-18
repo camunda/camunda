@@ -7,17 +7,31 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.scaling;
 
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
+import java.util.Collection;
 
 public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue {
   private final IntegerProperty desiredPartitionCountProp =
       new IntegerProperty("desiredPartitionCount", -1);
 
+  // partitions that have been activated because of this scale up operation
+  // activated = completed redistribution
+  private final ArrayProperty<IntegerValue> redistributedPartitions =
+      new ArrayProperty<>("redistributedPartitions", IntegerValue::new);
+  // partitions that are ready to take part of processing completely:
+  // ready = completed relocation
+  private final ArrayProperty<IntegerValue> relocatedPartitions =
+      new ArrayProperty<>("relocatedPartitions", IntegerValue::new);
+
   public ScaleRecord() {
-    super(1);
-    declareProperty(desiredPartitionCountProp);
+    super(3);
+    declareProperty(desiredPartitionCountProp)
+        .declareProperty(redistributedPartitions)
+        .declareProperty(relocatedPartitions);
   }
 
   @Override
@@ -27,6 +41,32 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   public ScaleRecord setDesiredPartitionCount(final int desiredPartitionCount) {
     desiredPartitionCountProp.setValue(desiredPartitionCount);
+    return this;
+  }
+
+  @Override
+  public Collection<Integer> getRedistributedPartitions() {
+    return redistributedPartitions.stream().map(IntegerValue::getValue).toList();
+  }
+
+  @Override
+  public Collection<Integer> getRelocatedPartitions() {
+    return relocatedPartitions.stream().map(IntegerValue::getValue).toList();
+  }
+
+  public ScaleRecord setRedistributedPartitionsProperty(final Collection<Integer> partitions) {
+    redistributedPartitions.reset();
+    for (final int partition : partitions) {
+      redistributedPartitions.add().setValue(partition);
+    }
+    return this;
+  }
+
+  public ScaleRecord setRelocatedPartitionsProperty(final Collection<Integer> partitions) {
+    relocatedPartitions.reset();
+    for (final int partition : partitions) {
+      relocatedPartitions.add().setValue(partition);
+    }
     return this;
   }
 }

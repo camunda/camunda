@@ -139,9 +139,9 @@ final class StartPartitionScaleUpApplier implements ClusterOperationApplier {
                 .collect(Collectors.toSet());
         yield new ActivePartitions(currentPartitionCount, Set.of(), newPartitions);
       }
-      default ->
+      case final ActivePartitions activePartitions ->
           throw new IllegalStateException(
-              "Unexpected request handling state: %s".formatted(requestHandling));
+              "Unexpected request handling state: %s".formatted(activePartitions));
     };
   }
 }
