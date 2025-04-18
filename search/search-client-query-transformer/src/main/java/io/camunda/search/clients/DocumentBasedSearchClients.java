@@ -36,7 +36,6 @@ import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
-import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -69,8 +68,10 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -187,24 +188,52 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
-    if (!filter.incidentErrorHashCodes().isEmpty()) {
-      return mapIncidentErrorHashCodesToProcessInstanceKeys(
-          filter.incidentErrorHashCodes(),
-          filter.processInstanceKeyOperations(),
-          List::of,
-          processInstanceKeys -> {
-            // Create a new filter that narrows the results to only process instances with
-            // matching incident error hashes and existing key filters
-            final var updatedFilter =
-                filter.toBuilder()
-                    .replaceProcessInstanceKeyOperations(
-                        List.of(Operation.in(List.copyOf(processInstanceKeys))))
-                    .hasIncident(true)
-                    .build();
-            return executeProcessDefinitionFlowNodeStatistics(updatedFilter);
-          });
+
+    // map or filters
+    final var updatedOrFilters = new ArrayList<ProcessDefinitionStatisticsFilter>();
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      for (final ProcessDefinitionStatisticsFilter orFilter : filter.orFilters()) {
+        final var updatedOrFilter =
+            mapIncidentErrorHashCodesToProcessInstanceKeys(
+                orFilter.incidentErrorHashCodes(),
+                orFilter.processInstanceKeyOperations(),
+                () -> orFilter,
+                () -> null,
+                processInstanceKeys -> {
+                  // Create a new filter that narrows the results to only process instances with
+                  // matching incident error hashes and existing key filters
+                  return orFilter.toBuilder()
+                      .replaceProcessInstanceKeyOperations(
+                          List.of(Operation.in(List.copyOf(processInstanceKeys))))
+                      .hasIncident(true)
+                      .build();
+                });
+        Optional.ofNullable(updatedOrFilter).ifPresent(updatedOrFilters::add);
+      }
     }
-    return executeProcessDefinitionFlowNodeStatistics(filter);
+
+    // replace or filters
+    final var updatedFilterBuilder = filter.toBuilder();
+    if (!updatedOrFilters.isEmpty()) {
+      updatedFilterBuilder.replaceOrFilters(updatedOrFilters).build();
+    }
+
+    // map root filter
+    return mapIncidentErrorHashCodesToProcessInstanceKeys(
+        filter.incidentErrorHashCodes(),
+        filter.processInstanceKeyOperations(),
+        () -> executeProcessDefinitionFlowNodeStatistics(updatedFilterBuilder.build()),
+        List::of,
+        processInstanceKeys -> {
+          // Create a new filter that narrows the results to only process instances with
+          // matching incident error hashes and existing key filters
+          updatedFilterBuilder
+              .replaceProcessInstanceKeyOperations(
+                  List.of(Operation.in(List.copyOf(processInstanceKeys))))
+              .replaceOrFilters(updatedOrFilters)
+              .hasIncident(true);
+          return executeProcessDefinitionFlowNodeStatistics(updatedFilterBuilder.build());
+        });
   }
 
   public List<ProcessFlowNodeStatisticsEntity> executeProcessDefinitionFlowNodeStatistics(
@@ -223,6 +252,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
       return mapIncidentErrorHashCodesToProcessInstanceKeys(
           filter.filter().incidentErrorHashCodes(),
           filter.filter().processInstanceKeyOperations(),
+          null,
           SearchQueryResult::empty,
           processInstanceKeys -> {
             // Create a new filter that narrows the results to only process instances with
@@ -264,35 +294,53 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
   }
 
+  /**
+   * @param incidentErrorHashCodes The requested {@code incidentErrorHashCodes}
+   * @param existingProcessInstanceKeyOperations The already present {@code
+   *     processInstanceOperations}
+   * @param fnNoData No data callback, when no {@code incidentErrorHashCodes} were provided
+   * @param fnNoResult No result callback, when no {@code incidentErrorHashCodes} were found
+   * @param fnResult Result callback with mapped {@code processInstanceKeys}
+   * @return Data provided by callbacks {@code R}
+   * @param <R> Result type
+   */
   private <R> R mapIncidentErrorHashCodesToProcessInstanceKeys(
       final List<Integer> incidentErrorHashCodes,
       final List<Operation<Long>> existingProcessInstanceKeyOperations,
-      final Supplier<R> fnEmptyResult,
+      final Supplier<R> fnNoData,
+      final Supplier<R> fnNoResult,
       final Function<Set<Long>, R> fnResult) {
+    final Set<Long> processInstanceKeys;
 
-    // Search for active incidents that match the given error message hash codes
-    final var incidentFilter =
-        FilterBuilders.incident(
-            f -> f.errorMessageHashes(incidentErrorHashCodes).states(IncidentState.ACTIVE));
+    if (incidentErrorHashCodes != null && !incidentErrorHashCodes.isEmpty()) {
+      // Search for active incidents that match the given error message hash codes
+      final var incidentResult =
+          searchIncidents(
+              IncidentQuery.of(
+                  q ->
+                      q.filter(
+                          f ->
+                              f.errorMessageHashes(incidentErrorHashCodes)
+                                  .states(IncidentState.ACTIVE))));
 
-    final var incidentResult = searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
-
-    if (incidentResult.items().isEmpty()) {
-      return fnEmptyResult.get();
-    }
-
-    // Collect all relevant process instance keys (from both incidents and existing filter)
-    final Set<Long> processInstanceKeys = new HashSet<>();
-    incidentResult.items().forEach(i -> processInstanceKeys.add(i.processInstanceKey()));
-
-    for (final var op : existingProcessInstanceKeyOperations) {
-      if (op.operator().equals(Operator.EQUALS)) {
-        processInstanceKeys.add(op.value());
-      } else if (op.operator().equals(Operator.IN)) {
-        processInstanceKeys.addAll(op.values());
+      if (incidentResult.items().isEmpty()) {
+        return fnNoResult.get();
       }
+
+      // Collect all relevant process instance keys (from both incidents and existing filter)
+      processInstanceKeys = new HashSet<>();
+      incidentResult.items().forEach(i -> processInstanceKeys.add(i.processInstanceKey()));
+
+      for (final var op : existingProcessInstanceKeyOperations) {
+        if (op.operator().equals(Operator.EQUALS)) {
+          processInstanceKeys.add(op.value());
+        } else if (op.operator().equals(Operator.IN)) {
+          processInstanceKeys.addAll(op.values());
+        }
+      }
+      return fnResult.apply(processInstanceKeys);
     }
-    return fnResult.apply(processInstanceKeys);
+    return fnNoData.get();
   }
 
   @Override

@@ -91,6 +91,11 @@ public record ProcessDefinitionStatisticsFilter(
       return this;
     }
 
+    public Builder replaceOrFilters(final List<ProcessDefinitionStatisticsFilter> orFilters) {
+      this.orFilters = orFilters;
+      return this;
+    }
+
     @SafeVarargs
     public final Builder processInstanceKeyOperations(
         final Operation<Long> operation, final Operation<Long>... operations) {

@@ -18,6 +18,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
@@ -56,6 +57,22 @@ public class ProcessDefinitionStatisticsTest {
                             .send()
                             .join()
                             .items())
+                    .hasSize(count));
+  }
+
+  private static void waitForIncidents(final int count, final long processDefinitionKey) {
+    waitForIncidents(
+        count, f -> f.processDefinitionKey(processDefinitionKey).state(IncidentState.ACTIVE));
+  }
+
+  private static void waitForIncidents(final int count, final Consumer<IncidentFilter> fn) {
+    Awaitility.await("should receive data from ES")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient.newIncidentSearchRequest().filter(fn).send().join().items())
                     .hasSize(count));
   }
 
@@ -784,28 +801,49 @@ public class ProcessDefinitionStatisticsTest {
             .getProcessDefinitionKey();
     createInstance(processDefinitionKey);
     waitForProcessInstances(1, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
-    Awaitility.await("should receive data from ES")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () ->
-                assertThat(
-                        camundaClient
-                            .newIncidentSearchRequest()
-                            .filter(
-                                f ->
-                                    f.processDefinitionKey(processDefinitionKey)
-                                        .state(IncidentState.ACTIVE))
-                            .send()
-                            .join()
-                            .items())
-                    .hasSize(1));
+    waitForIncidents(1, processDefinitionKey);
 
     // when
     final var actual =
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 1L, 0L));
+  }
+
+  @Test
+  void shouldReturnStatisticsAndFilterByErrorHashCodeOrFilters() {
+    // given
+    final var processDefinitionKey =
+        TestHelper.deployResource(camundaClient, "process/incident_process_v2.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    final var pi1 = createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+    waitForIncidents(2, processDefinitionKey);
+    camundaClient.newCancelInstanceCommand(pi1.getProcessInstanceKey()).send().join();
+    waitForIncidents(
+        1, f -> f.processDefinitionKey(processDefinitionKey).state(IncidentState.RESOLVED));
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(
+                f ->
+                    // f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))
+                    f.orFilters(
+                        List.of(f1 -> f1.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))))
             .send()
             .join();
 
