@@ -50,7 +50,7 @@ const MoveAction: React.FC = observer(() => {
 
   const businessObject: BusinessObject | null = flowNodeId
     ? (getFlowNode({
-        diagramModel: processDefinitionData?.diagramModel,
+        businessObjects: processDefinitionData?.diagramModel.elementsById,
         flowNodeId,
       }) ?? null)
     : null;

@@ -70,7 +70,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(
       await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.getByText(/Add/)).toBeInTheDocument();
   });
@@ -210,7 +210,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
         ).not.toBeNull(),
       );
 
-      modificationsStore.cancelAllTokens('TaskB');
+      modificationsStore.cancelAllTokens('TaskB', {});
 
       act(() => {
         flowNodeSelectionStore.selectFlowNode({
@@ -265,7 +265,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
         ).not.toBeNull(),
       );
 
-      modificationsStore.cancelAllTokens('TaskB');
+      modificationsStore.cancelAllTokens('TaskB', {});
 
       act(() => {
         flowNodeSelectionStore.selectFlowNode({

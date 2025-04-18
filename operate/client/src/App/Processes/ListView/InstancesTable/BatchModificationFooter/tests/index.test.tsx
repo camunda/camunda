@@ -13,6 +13,7 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {BatchModificationFooter} from '..';
+import {MemoryRouter} from 'react-router-dom';
 
 jest.mock('modules/hooks/useCallbackPrompt', () => {
   return {
@@ -46,7 +47,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
     });
 
     return (
-      <>
+      <MemoryRouter>
         {children}
         <button
           onClick={processInstancesSelectionStore.selectAllProcessInstances}
@@ -67,7 +68,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
         >
           select target flow node
         </button>
-      </>
+      </MemoryRouter>
     );
   },
 );

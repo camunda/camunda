@@ -154,8 +154,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                                     id: flowNodeId,
                                     name:
                                       getFlowNodeName({
-                                        diagramModel:
-                                          processDefinitionData?.diagramModel,
+                                        businessObjects,
                                         flowNodeId,
                                       }) ?? '',
                                   },
@@ -177,7 +176,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                       )}
 
                     {availableModifications.includes('cancel-instance') &&
-                      !isNil(flowNodeInstanceId) && (
+                      !isNil(flowNodeInstanceId) &&
+                      businessObjects && (
                         <Button
                           kind="ghost"
                           title="Cancel selected instance in this flow node"
@@ -192,6 +192,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                             modificationsStore.cancelToken(
                               flowNodeId,
                               flowNodeInstanceId,
+                              businessObjects,
                             );
                             flowNodeSelectionStore.clearSelection();
                           }}
@@ -200,29 +201,31 @@ const ModificationDropdown: React.FC<Props> = observer(
                         </Button>
                       )}
 
-                    {availableModifications.includes('cancel-all') && (
-                      <Button
-                        kind="ghost"
-                        title="Cancel all running flow node instances in this flow node"
-                        aria-label="Cancel all running flow node instances in this flow node"
-                        size="sm"
-                        renderIcon={Error}
-                        onClick={() => {
-                          tracking.track({
-                            eventName: 'cancel-token',
-                          });
+                    {availableModifications.includes('cancel-all') &&
+                      businessObjects && (
+                        <Button
+                          kind="ghost"
+                          title="Cancel all running flow node instances in this flow node"
+                          aria-label="Cancel all running flow node instances in this flow node"
+                          size="sm"
+                          renderIcon={Error}
+                          onClick={() => {
+                            tracking.track({
+                              eventName: 'cancel-token',
+                            });
 
-                          cancelAllTokens(
-                            flowNodeId,
-                            totalRunningInstances ?? 0,
-                            totalRunningInstancesVisible ?? 0,
-                          );
-                          flowNodeSelectionStore.clearSelection();
-                        }}
-                      >
-                        Cancel all
-                      </Button>
-                    )}
+                            cancelAllTokens(
+                              flowNodeId,
+                              totalRunningInstances ?? 0,
+                              totalRunningInstancesVisible ?? 0,
+                              businessObjects,
+                            );
+                            flowNodeSelectionStore.clearSelection();
+                          }}
+                        >
+                          Cancel all
+                        </Button>
+                      )}
 
                     {availableModifications.includes('move-instance') &&
                       !isNil(flowNodeInstanceId) && (

@@ -170,7 +170,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     act(() => {
       modificationsStore.enableModificationMode();
-      modificationsStore.cancelAllTokens('peterJoin');
+      modificationsStore.cancelAllTokens('peterJoin', {});
     });
 
     expect(
