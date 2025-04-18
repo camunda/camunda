@@ -36,7 +36,6 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.GetScaleUpProgress;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -56,9 +55,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -566,9 +565,7 @@ public final class PartitionManagerImpl
         new GetScaleUpProgress(desiredPartitionCount),
         (key, response) -> {
           final Set<Integer> currentlyRedistributedPartitions =
-              response.getRedistributedPartitions().stream()
-                  .map(IntegerValue::getValue)
-                  .collect(Collectors.toSet());
+              new TreeSet<>(response.getRedistributedPartitions());
           if (currentlyRedistributedPartitions.equals(redistributedPartitions)) {
             result.complete(null);
           } else {

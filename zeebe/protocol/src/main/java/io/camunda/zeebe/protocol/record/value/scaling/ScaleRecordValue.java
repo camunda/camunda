@@ -17,10 +17,15 @@ package io.camunda.zeebe.protocol.record.value.scaling;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.Collection;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableScaleRecordValue.Builder.class)
 public interface ScaleRecordValue extends RecordValue {
   int getDesiredPartitionCount();
+
+  Collection<Integer> getRedistributedPartitions();
+
+  Collection<Integer> getRelocatedPartitions();
 }

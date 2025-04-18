@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
+import java.util.Collection;
 
 public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue {
   private final IntegerProperty desiredPartitionCountProp =
@@ -20,17 +21,17 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   // partitions that have been activated because of this scale up operation
   // activated = completed redistribution
   private final ArrayProperty<IntegerValue> redistributedPartitions =
-      new ArrayProperty<>("activePartitions", IntegerValue::new);
+      new ArrayProperty<>("redistributedPartitions", IntegerValue::new);
   // partitions that are ready to take part of processing completely:
   // ready = completed relocation
-  private final ArrayProperty<IntegerValue> readyPartitions =
-      new ArrayProperty<>("readyPartitions", IntegerValue::new);
+  private final ArrayProperty<IntegerValue> relocatedPartitions =
+      new ArrayProperty<>("relocatedPartitions", IntegerValue::new);
 
   public ScaleRecord() {
     super(3);
     declareProperty(desiredPartitionCountProp)
         .declareProperty(redistributedPartitions)
-        .declareProperty(readyPartitions);
+        .declareProperty(relocatedPartitions);
   }
 
   @Override
@@ -43,11 +44,29 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
     return this;
   }
 
-  public ArrayProperty<IntegerValue> getRedistributedPartitions() {
-    return redistributedPartitions;
+  @Override
+  public Collection<Integer> getRedistributedPartitions() {
+    return redistributedPartitions.stream().map(IntegerValue::getValue).toList();
   }
 
-  public ArrayProperty<IntegerValue> getReadyPartitions() {
-    return readyPartitions;
+  @Override
+  public Collection<Integer> getRelocatedPartitions() {
+    return relocatedPartitions.stream().map(IntegerValue::getValue).toList();
+  }
+
+  public ScaleRecord setRedistributedPartitionsProperty(final Collection<Integer> partitions) {
+    redistributedPartitions.reset();
+    for (final int partition : partitions) {
+      redistributedPartitions.add().setValue(partition);
+    }
+    return this;
+  }
+
+  public ScaleRecord setRelocatedPartitionsProperty(final Collection<Integer> partitions) {
+    relocatedPartitions.reset();
+    for (final int partition : partitions) {
+      relocatedPartitions.add().setValue(partition);
+    }
+    return this;
   }
 }
