@@ -268,7 +268,8 @@ public final class TestHelper {
             });
   }
 
-  public static void waitUntilJobWorkerHasFailedJob(final CamundaClient camundaClient) {
+  public static void waitUntilJobWorkerHasFailedJob(
+      final CamundaClient camundaClient, final int expectedProcesses) {
     await("should wait until the process instance has been updated to reflect retries left.")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
@@ -279,7 +280,7 @@ public final class TestHelper {
                       .filter(f -> f.hasRetriesLeft(true))
                       .send()
                       .join();
-              assertThat(result.items().size()).isGreaterThan(0);
+              assertThat(result.items().size()).isEqualTo(expectedProcesses);
             });
   }
 
