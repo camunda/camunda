@@ -49,6 +49,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final String PROCESS_INSTANCES_BY_KEY_URL =
       "/v2/process-instances/{processInstanceKey}";
 
+  private static final String PROCESS_INSTANCE_CALL_HIERARCHY_BY_KEY_URL =
+      "/v2/process-instances/{processInstanceKey}/call-hierarchy";
+
   private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
       new ProcessInstanceEntity(
           123L,
@@ -63,7 +66,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           null,
           ProcessInstanceState.ACTIVE,
           false,
-          "tenant");
+          "tenant",
+          "PI_123");
 
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
@@ -111,6 +115,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               }
           }
           """;
+
+  private static final String EXPECTED_CALL_HIERARCHY =
+      """
+        [
+          {
+             "processInstanceKey": "123",
+             "processDefinitionKey": "789",
+             "processDefinitionName": "Demo Process"
+          }
+        ]
+      """;
 
   private static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessInstanceEntity>()
@@ -628,5 +643,28 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build());
+  }
+
+  @Test
+  public void shouldReturnCallHierarchyForGivenKey() {
+    // given
+    final var processInstanceKey = 123L;
+
+    when(processInstanceServices.callHierarchy(processInstanceKey))
+        .thenReturn(List.of(PROCESS_INSTANCE_ENTITY));
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_INSTANCE_CALL_HIERARCHY_BY_KEY_URL, processInstanceKey)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_CALL_HIERARCHY);
+
+    // Verify that the service was called with the valid key
+    verify(processInstanceServices).callHierarchy(processInstanceKey);
   }
 }

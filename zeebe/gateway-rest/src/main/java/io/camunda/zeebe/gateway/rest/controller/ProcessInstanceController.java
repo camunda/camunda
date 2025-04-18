@@ -104,6 +104,21 @@ public class ProcessInstanceController {
       return mapErrorToResponse(e);
     }
   }
+  @CamundaGetMapping(path = "/{processInstanceKey}/call-hierarchy")
+  public ResponseEntity<Object> getCallHierarchy(
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntries(
+                  processInstanceServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .callHierarchy(processInstanceKey)));
+
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
 
   @CamundaGetMapping(path = "/{processInstanceKey}/statistics/element-instances")
   public ResponseEntity<Object> elementStatistics(
