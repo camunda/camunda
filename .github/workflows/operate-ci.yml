@@ -1,5 +1,9 @@
-# This GitHub Actions workflow that is triggered on push to `main` and `stable/**` branch or on any pull request creation
-# and invokes `ci-build-reusable` and `ci-test-reusable` workflows.
+# This workflow runs backend CI tests for Operate. This includes Unit tests and Integration tests.
+# Integration tests are run in two stages, and each stage is defined by a profile. The profile
+# is defined in operate/pom.xml
+# trigger: Pull Request. On push to main, stable, and release
+# test location: operate/common, operate/schema, operate/webapp
+# owner:
 ---
 name: Operate CI
 on:
