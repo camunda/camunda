@@ -35,6 +35,8 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPartitionScaleUpRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.GetScaleUpProgress;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -45,14 +47,18 @@ import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +66,9 @@ public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   public static final String GROUP_NAME = "raft-partition";
+  // TODO make it configurable
+  private static final Duration SCALE_UP_TIMEOUT = Duration.ofMinutes(2);
+  private static final Duration SCALE_UP_INTERVAL = Duration.ofMillis(500);
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
   private final ConcurrencyControl concurrencyControl;
@@ -536,6 +545,58 @@ public final class PartitionManagerImpl
           if (error instanceof final BrokerRejectionException rejection
               && rejection.getRejection().type() == RejectionType.ALREADY_EXISTS) {
             LOGGER.debug("Scale up request already succeeded before", rejection);
+            result.complete(null);
+          } else {
+            result.completeExceptionally(error);
+          }
+        });
+
+    return result;
+  }
+
+  @Override
+  public ActorFuture<Void> awaitRedistributionCompletion(
+      final int desiredPartitionCount,
+      final Set<Integer> redistributedPartitions,
+      final Duration timeout) {
+    final var result = concurrencyControl.<Void>createFuture();
+    final var startTime = System.currentTimeMillis();
+
+    brokerClient.sendRequestWithRetry(
+        new GetScaleUpProgress(desiredPartitionCount),
+        (key, response) -> {
+          final Set<Integer> currentlyRedistributedPartitions =
+              response.getRedistributedPartitions().stream()
+                  .map(IntegerValue::getValue)
+                  .collect(Collectors.toSet());
+          if (currentlyRedistributedPartitions.equals(redistributedPartitions)) {
+            result.complete(null);
+          } else {
+            // TODO implement something in BrokerImpl for polling until a condition
+            final var elapsed = System.currentTimeMillis() - startTime;
+            final var newTimeout =
+                Duration.ofMillis(
+                    Optional.ofNullable(timeout).orElse(SCALE_UP_TIMEOUT).toMillis() - elapsed);
+            if (newTimeout.isNegative()) {
+              result.completeExceptionally(
+                  new TimeoutException(
+                      "Timeout reached while waiting for redistribution completion"));
+            } else {
+              final var sleep = concurrencyControl.createFuture();
+              concurrencyControl.schedule(SCALE_UP_INTERVAL, () -> sleep.complete(null));
+              sleep.andThen(
+                  () ->
+                      awaitRedistributionCompletion(
+                          desiredPartitionCount, redistributedPartitions, newTimeout),
+                  concurrencyControl);
+            }
+          }
+        },
+        error -> {
+          if (error instanceof final BrokerRejectionException rejection) {
+            if (rejection.getRejection().type() == RejectionType.INVALID_ARGUMENT) {
+              LOGGER.debug("Await redistribution request is invalid", rejection);
+            }
             result.complete(null);
           } else {
             result.completeExceptionally(error);
