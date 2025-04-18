@@ -7,22 +7,14 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import org.slf4j.Logger;
+import io.camunda.exporter.tasks.RunnableTask;
 
-public class ApplyRolloverPeriodJob implements Runnable {
+public class ApplyRolloverPeriodJob implements RunnableTask {
 
   private final ArchiverRepository repository;
-  private final CamundaExporterMetrics metrics;
-  private final Logger logger;
 
-  public ApplyRolloverPeriodJob(
-      final ArchiverRepository repository,
-      final CamundaExporterMetrics metrics,
-      final Logger logger) {
+  public ApplyRolloverPeriodJob(final ArchiverRepository repository) {
     this.repository = repository;
-    this.metrics = metrics;
-    this.logger = logger;
   }
 
   @Override

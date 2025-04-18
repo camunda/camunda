@@ -8,15 +8,13 @@
 package io.camunda.exporter.tasks;
 
 import io.camunda.zeebe.util.CloseableSilently;
-import java.util.concurrent.CompletionStage;
 
-public interface BackgroundTask extends CloseableSilently {
-  CompletionStage<Integer> execute();
-
-  default String getCaption() {
-    return getClass().getSimpleName();
-  }
-
+/**
+ * A task that can be run and canceled via the {@link RunnableTask#close()} method. The task may be
+ * running asynchronously or synchronously.
+ */
+@FunctionalInterface
+public interface RunnableTask extends Runnable, CloseableSilently {
   @Override
   default void close() {}
 }
