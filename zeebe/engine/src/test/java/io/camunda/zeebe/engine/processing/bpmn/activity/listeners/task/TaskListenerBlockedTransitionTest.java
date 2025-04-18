@@ -242,12 +242,14 @@ public class TaskListenerBlockedTransitionTest {
                 t ->
                     t.zeebeAssignee(assignee)
                         .zeebeTaskListener(l -> l.creating().type(listenerType + "_creating"))
+                        .zeebeTaskListener(l -> l.creating().type(listenerType + "_creating_2"))
                         .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning"))
                         .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning_2"))
                         .zeebeTaskListener(
                             l -> l.assigning().type(listenerType + "_assigning_3"))));
 
-    helper.completeJobs(processInstanceKey, listenerType + "_creating");
+    helper.completeJobs(
+        processInstanceKey, listenerType + "_creating", listenerType + "_creating_2");
 
     // when
     helper.completeJobs(
@@ -279,7 +281,9 @@ public class TaskListenerBlockedTransitionTest {
         .containsExactly(
             // assignee should be present in the CREATING
             tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
-            // creating task listener completion, assignee should NOT be present
+            // creating first task listener completion, assignee should NOT be present
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, StringUtils.EMPTY, action, List.of()),
+            // creating second task listener completion, assignee should NOT be present
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, StringUtils.EMPTY, action, List.of()),
             // assignee should NOT be present in the CREATED
             tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
