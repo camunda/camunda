@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -126,6 +127,15 @@ public class TaskListenerIncidentsTest {
         UnaryOperator.identity(),
         pik -> ENGINE.userTask().ofInstance(pik).complete(),
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldCreateJobNoRetriesIncidentForCancelingListenerAndContinueAfterResolution() {
+    verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
+        ZeebeTaskListenerEventType.canceling,
+        UnaryOperator.identity(),
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
+        UserTaskIntent.CANCELED);
   }
 
   private long verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
@@ -410,5 +420,78 @@ public class TaskListenerIncidentsTest {
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
         userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction(""));
+  }
+
+  @Test
+  public void shouldRetryCancelingListenerJobAfterExtractValueErrorDuringUserTaskInterruption() {
+
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .userTask(
+                    "user_task",
+                    t ->
+                        t.zeebeUserTask()
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType))
+                            .zeebeTaskListener(
+                                l -> l.canceling().typeExpression("canceling_listener_var_name"))
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType + "_3")))
+                .boundaryEvent(
+                    "msg_boundary_event",
+                    e -> e.message(m -> m.name("my_message").zeebeCorrelationKey("=\"my_key-1\"")))
+                .endEvent("boundary_end")
+                .moveToActivity("user_task")
+                .endEvent("main_end")
+                .done());
+
+    // when: interrupt the user task via message boundary event to trigger canceling transition
+    ENGINE.message().withName("my_message").withCorrelationKey("my_key-1").publish();
+
+    // complete the first task listener job
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
+
+    // then: expect incident due to missing variable in canceling listener expression
+    final var incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+                Expected result of the expression '%s' to be 'STRING', but was 'NULL'. \
+                The evaluation reported the following warnings:
+                [NO_VARIABLE_FOUND] No variable found with name '%s'"""
+                .formatted("canceling_listener_var_name", "canceling_listener_var_name"));
+
+    // when: fix the missing variable and resolve the incident
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("canceling_listener_var_name", listenerType + "_2"))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
+
+    // complete the retried task listener job and remaining task listeners
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
+
+    // then
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        helper.mapToJobListenerEventType(ZeebeTaskListenerEventType.canceling),
+        listenerType,
+        listenerType, // re-created task listener job
+        listenerType + "_2",
+        listenerType + "_3");
+
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CANCELED,
+        userTask -> assertThat(userTask.getAction()).isEmpty());
   }
 }
