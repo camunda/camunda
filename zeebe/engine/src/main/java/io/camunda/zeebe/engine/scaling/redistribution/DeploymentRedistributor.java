@@ -32,16 +32,15 @@ public final class DeploymentRedistributor
 
     final var previousDeploymentKey = progress.getDeploymentKey();
 
-    // TODO: Rehydrate the deployment record with all referenced resources
+    // Note: at this stage the deployment contains already the binary resources
     final var deployment = deploymentState.nextDeployment(previousDeploymentKey);
     if (deployment == null) {
       return List.of();
     }
     final var deploymentKey = deployment.getDeploymentKey();
 
-    // TODO: Should also contain all the resources within the deployment, i.e. processes etc.
-    final var resources =
-        Set.<RedistributableResource>of(new RedistributableResource.Deployment(deploymentKey));
+    final Set<RedistributableResource> resources =
+        Set.of(new RedistributableResource.Deployment(deploymentKey));
 
     return List.of(
         new Redistribution<>(
