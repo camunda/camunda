@@ -132,13 +132,19 @@ public class TaskListenerTaskHeadersTest {
     // when
     final long processInstanceKey =
         helper.createProcessInstance(
-            helper.createUserTaskWithTaskListenersAndAssignee(
-                ZeebeTaskListenerEventType.creating, assignee, listenerType));
+            helper.createProcessWithZeebeUserTask(
+                t ->
+                    t.zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.creating().type(listenerType))));
 
     // then
-    final var firstListenerJob = helper.activateJob(processInstanceKey, listenerType);
-    assertThat(firstListenerJob.getCustomHeaders())
-        .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
+    helper.assertActivatedJob(
+        processInstanceKey,
+        listenerType,
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs("Expect first listener job to receive assignee header.")
+                .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee"));
     helper.completeJobs(processInstanceKey, listenerType);
   }
 
