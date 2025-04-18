@@ -1,3 +1,8 @@
+# This workflow is a reuseable job that builds operate and reports the status
+# trigger: reusable
+# test location:
+# owner:
+---
 name: Operate CI Build Observability Reusable
 
 on:
