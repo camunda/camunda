@@ -184,7 +184,7 @@ public class BackupRestoreIT {
 
   @ParameterizedTest
   @MethodSource(value = {"sources"})
-  public void shonldBackupAndRestoreToPreviousState(final BackupRestoreTestConfig config)
+  public void shouldBackupAndRestoreToPreviousState(final BackupRestoreTestConfig config)
       throws Exception {
     // given
     setup(config);
@@ -265,6 +265,15 @@ public class BackupRestoreIT {
                 throw new AssertionError("Backup not found:", e);
               }
             });
+    // verify that getBackups API returns correctly with all flags
+    final var flags = List.of(true, false);
+    for (final var verbose : flags) {
+      assertThat(historyBackupClient.getBackups(verbose))
+          .allSatisfy(
+              state -> {
+                assertThat(state.getState()).isEqualTo(BackupStateDto.COMPLETED);
+              });
+    }
     return snapshots;
   }
 
