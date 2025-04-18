@@ -52,6 +52,6 @@ public class RoleReader extends AbstractEntityReader<RoleEntity> {
     return new RoleEntity(
         model.roleKey(),
         model.name(),
-        model.members().stream().map(RoleMemberDbModel::entityKey).collect(Collectors.toSet()));
+        model.members().stream().map(RoleMemberDbModel::entityId).collect(Collectors.toSet()));
   }
 }

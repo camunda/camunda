@@ -23,7 +23,7 @@
     r.ROLE_KEY,
     r.NAME,
     rm.ROLE_KEY AS MEMBER_ROLE_KEY,
-    rm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
+    rm.ENTITY_ID AS MEMBER_ENTITY_ID,
     rm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
     FROM ${prefix}ROLES r
     LEFT JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_KEY = rm.ROLE_KEY
@@ -47,7 +47,7 @@
       javaType="java.util.List">
       <constructor>
         <idArg column="MEMBER_ROLE_KEY" javaType="java.lang.Long"/>
-        <idArg column="MEMBER_ENTITY_KEY" javaType="java.lang.Long"/>
+        <idArg column="MEMBER_ENTITY_ID" javaType="java.lang.String"/>
         <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
       </constructor>
     </collection>
@@ -80,8 +80,8 @@
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}ROLE_MEMBER (ROLE_KEY, ENTITY_KEY, ENTITY_TYPE)
-    VALUES (#{roleKey}, #{entityKey}, #{entityType})
+    INSERT INTO ${prefix}ROLE_MEMBER (ROLE_KEY, ENTITY_ID, ENTITY_TYPE)
+    VALUES (#{roleKey}, #{entityId}, #{entityType})
   </insert>
 
   <delete
@@ -91,7 +91,7 @@
     DELETE
     FROM ${prefix}ROLE_MEMBER
     WHERE ROLE_KEY = #{roleKey}
-      AND ENTITY_KEY = #{entityKey}
+      AND ENTITY_ID = #{entityId}
       AND ENTITY_TYPE = #{entityType}
   </delete>
 
