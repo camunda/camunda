@@ -122,14 +122,14 @@ public class TenantController {
                 .addMember(tenantId, EntityType.MAPPING, mappingId));
   }
 
-  @CamundaPutMapping(path = "/{tenantId}/groups/{groupKey}")
+  @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
-      @PathVariable final String tenantId, @PathVariable final long groupKey) {
+      @PathVariable final String tenantId, @PathVariable final String groupId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantId, EntityType.GROUP, groupKey));
+                .addMember(tenantId, EntityType.GROUP, groupId));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}")
