@@ -68,14 +68,16 @@ public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
-    final var initialAssignee = userTaskState.findInitialAssignee(userTaskKey);
 
-    if (initialAssignee.isPresent()) {
-      // clean up the changed attributes because we have already finished the creation,
-      // and are now starting a new transition to assigning
-      userTaskRecord.resetChangedAttributes();
-      assignUserTask(userTaskRecord, initialAssignee.get());
-    }
+    userTaskState
+        .findInitialAssignee(userTaskKey)
+        .ifPresent(
+            initialAssignee -> {
+              // clean up the changed attributes because we have already finished the creation,
+              // and are now starting a new transition to assigning
+              userTaskRecord.resetChangedAttributes();
+              assignUserTask(userTaskRecord, initialAssignee);
+            });
   }
 
   private void assignUserTask(final UserTaskRecord userTaskRecord, final String assignee) {
