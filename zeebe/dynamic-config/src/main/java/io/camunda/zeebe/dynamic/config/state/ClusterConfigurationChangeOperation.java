@@ -10,7 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.Set;
+import java.util.SortedSet;
 
 /**
  * An operation that changes the configuration. The operation could be a member join or leave a
@@ -68,7 +68,7 @@ public sealed interface ClusterConfigurationChangeOperation {
      * @param redistributedPartitions the partitions to add to {@link RoutingState.RequestHandling}
      */
     record AwaitRedistributionCompletion(
-        MemberId memberId, int desiredPartitionCount, Set<Integer> redistributedPartitions)
+        MemberId memberId, int desiredPartitionCount, SortedSet<Integer> redistributedPartitions)
         implements ScaleUpOperation {}
 
     /**
@@ -78,7 +78,7 @@ public sealed interface ClusterConfigurationChangeOperation {
      */
     // TODO NOT IMPLEMENTED YET
     record AwaitRelocationCompletion(
-        MemberId memberId, int desiredPartitionCount, Set<Integer> relocatedPartitions)
+        MemberId memberId, int desiredPartitionCount, SortedSet<Integer> relocatedPartitions)
         implements ScaleUpOperation {}
   }
 

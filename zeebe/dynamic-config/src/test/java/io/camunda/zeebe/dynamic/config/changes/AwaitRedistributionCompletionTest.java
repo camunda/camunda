@@ -18,13 +18,14 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.Has
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 
-public class AwaitRedistributionCompletionTest {
+public class AwaitRedistributionCompletionTest extends AbstractApplierTest {
 
   MemberId memberId = new MemberId("1");
 
@@ -51,14 +52,15 @@ public class AwaitRedistributionCompletionTest {
 
   @Test
   public void shouldFailWhenNoRoutingStateIsPresent() {
-    final var changeOperation = new AwaitRedistributionCompletion(memberId, 6, Set.of(2, 3));
+    final var changeOperation =
+        new AwaitRedistributionCompletion(memberId, 6, new TreeSet<>(List.of(2, 3)));
     final var applier = new AwaitRedistributionCompletionApplier(executor, changeOperation);
     EitherAssert.assertThat(applier.init(empty)).isLeft();
   }
 
   @Test
   public void shouldFailWhenListOfPartitionIsEmpty() {
-    final var changeOperation = new AwaitRedistributionCompletion(memberId, 6, Set.of());
+    final var changeOperation = new AwaitRedistributionCompletion(memberId, 6, new TreeSet<>());
     final var applier = new AwaitRedistributionCompletionApplier(executor, changeOperation);
     EitherAssert.assertThat(applier.init(validAllPartitionConfig))
         .isLeft()
@@ -66,15 +68,14 @@ public class AwaitRedistributionCompletionTest {
   }
 
   @Test
-  public void shouldAddNewPartitionToRequestHandling()
-      throws ExecutionException, InterruptedException {
-    final var operation = new AwaitRedistributionCompletion(memberId, 6, Set.of(4, 5));
+  public void shouldAddNewPartitionToRequestHandling() {
+    // given
+    final var operation =
+        new AwaitRedistributionCompletion(memberId, 6, new TreeSet<>(List.of(4, 5)));
     final var applier = new AwaitRedistributionCompletionApplier(executor, operation);
-    final var transformer =
-        EitherAssert.assertThat(applier.init(valid3OutOf6Partitions)).isRight().right();
-    final var initialized = transformer.actual().apply(valid3OutOf6Partitions);
-    final var modified = applier.apply().get().apply(initialized);
-
+    // when
+    final var modified = runApplier(applier, valid3OutOf6Partitions);
+    // then
     assertThat(modified.routingState())
         .isNotEmpty()
         .satisfies(
@@ -84,15 +85,15 @@ public class AwaitRedistributionCompletionTest {
   }
 
   @Test
-  public void shouldSetRequestHandlingAsAllPartition()
-      throws ExecutionException, InterruptedException {
-    final var operation = new AwaitRedistributionCompletion(memberId, 6, Set.of(4, 5, 6));
+  public void shouldSetRequestHandlingAsAllPartition() {
+    // given
+    final var operation =
+        new AwaitRedistributionCompletion(memberId, 6, new TreeSet<>(List.of(4, 5, 6)));
     final var applier = new AwaitRedistributionCompletionApplier(executor, operation);
-    final var transformer =
-        EitherAssert.assertThat(applier.init(valid3OutOf6Partitions)).isRight().right();
-    final var initialized = transformer.actual().apply(valid3OutOf6Partitions);
-    final var modified = applier.apply().get().apply(initialized);
+    // when
+    final var modified = runApplier(applier, valid3OutOf6Partitions);
 
+    // then
     assertThat(modified.routingState())
         .isNotEmpty()
         .satisfies(

@@ -66,6 +66,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class ProtoBufSerializer
@@ -434,11 +435,11 @@ public class ProtoBufSerializer
               Topology.StartPartitionScaleUpOperation.newBuilder()
                   .setDesiredPartitionCount(desiredPartitionCount)
                   .build());
-      case final AwaitRedistributionCompletion awaitRedistribution ->
+      case final AwaitRedistributionCompletion msg ->
           builder.setAwaitRedistributionCompletion(
               Topology.AwaitRedistributionCompletion.newBuilder()
-                  .setDesiredPartitionCount(awaitRedistribution.desiredPartitionCount())
-                  .addAllRedistributedPartitions(awaitRedistribution.redistributedPartitions())
+                  .setDesiredPartitionCount(msg.desiredPartitionCount())
+                  .addAllRedistributedPartitions(msg.redistributedPartitions())
                   .build());
       case final AwaitRelocationCompletion msg ->
           builder.setAwaitRelocationCompletion(
@@ -662,13 +663,13 @@ public class ProtoBufSerializer
       return new AwaitRedistributionCompletion(
           memberId,
           redistribution.getDesiredPartitionCount(),
-          new HashSet<>(redistribution.getRedistributedPartitionsList()));
+          new TreeSet<>(redistribution.getRedistributedPartitionsList()));
     } else if (topologyChangeOperation.hasAwaitRelocationCompletion()) {
-      final var redistribution = topologyChangeOperation.getAwaitRelocationCompletion();
-      return new AwaitRedistributionCompletion(
+      final var relocation = topologyChangeOperation.getAwaitRelocationCompletion();
+      return new AwaitRelocationCompletion(
           memberId,
-          redistribution.getDesiredPartitionCount(),
-          new HashSet<>(redistribution.getRelocatedPartitionsList()));
+          relocation.getDesiredPartitionCount(),
+          new TreeSet<>(relocation.getRelocatedPartitionsList()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
