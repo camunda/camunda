@@ -18,7 +18,7 @@ const fetchFlownodeInstancesStatistics = async (
   return requestWithThrow<GetProcessInstanceStatisticsResponseBody>({
     url: endpoints.getProcessInstanceStatistics.getUrl({
       processInstanceKey,
-      statisticName: 'flownode-instances',
+      statisticName: 'element-instances',
     }),
     method: endpoints.getProcessInstanceStatistics.method,
   });

@@ -104,14 +104,14 @@ describe('TopPanel', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'service-task-1',
+          elementId: 'service-task-1',
           active: 0,
           incidents: 1,
           completed: 0,
           canceled: 0,
         },
         {
-          flowNodeId: 'service-task-7',
+          elementId: 'service-task-7',
           active: 5,
           incidents: 1,
           completed: 0,

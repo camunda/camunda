@@ -50,9 +50,9 @@ const useWillAllFlowNodesBeCanceled = () => {
 
   return (
     statistics?.items.every(
-      ({flowNodeId, active, incidents}) =>
+      ({elementId, active, incidents}) =>
         (active === 0 && incidents === 0) ||
-        modificationsByFlowNode[flowNodeId]?.areAllTokensCanceled,
+        modificationsByFlowNode[elementId]?.areAllTokensCanceled,
     ) || false
   );
 };
@@ -75,8 +75,8 @@ const useModificationsByFlowNode = () => {
     );
   }, [flowNodeIds, flowNodeDataArray]);
 
-  const elementIds = flowNodeIds.flatMap((flowNodeId) =>
-    getFlowElementIds(businessObjects?.[flowNodeId]),
+  const elementIds = flowNodeIds.flatMap((elementId) =>
+    getFlowElementIds(businessObjects?.[elementId]),
   );
 
   const {data: elementCancelledTokens} =
@@ -192,12 +192,12 @@ const useModificationsByFlowNode = () => {
   }, {});
 };
 
-const useNewScopeIdForFlowNode = (flowNodeId?: string) => {
+const useNewScopeIdForFlowNode = (elementId?: string) => {
   const modificationsByFlowNode = useModificationsByFlowNode();
 
   if (
-    flowNodeId === undefined ||
-    (modificationsByFlowNode[flowNodeId]?.newTokens ?? 0) !== 1
+    elementId === undefined ||
+    (modificationsByFlowNode[elementId]?.newTokens ?? 0) !== 1
   ) {
     return null;
   }
@@ -205,7 +205,7 @@ const useNewScopeIdForFlowNode = (flowNodeId?: string) => {
   const addTokenModification = modificationsStore.flowNodeModifications.find(
     (modification) =>
       modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
-      modification.flowNode.id === flowNodeId,
+      modification.flowNode.id === elementId,
   );
 
   if (addTokenModification !== undefined && 'scopeId' in addTokenModification) {
@@ -215,7 +215,7 @@ const useNewScopeIdForFlowNode = (flowNodeId?: string) => {
   const moveTokenModification = modificationsStore.flowNodeModifications.find(
     (modification) =>
       modification.operation === TOKEN_OPERATIONS.MOVE_TOKEN &&
-      modification.targetFlowNode.id === flowNodeId,
+      modification.targetFlowNode.id === elementId,
   );
 
   if (

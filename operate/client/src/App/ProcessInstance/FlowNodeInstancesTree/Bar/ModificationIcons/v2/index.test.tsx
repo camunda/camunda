@@ -37,21 +37,21 @@ describe('<ModificationIcons />', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'parent_sub_process',
+          elementId: 'parent_sub_process',
           active: 3,
           incidents: 0,
           completed: 0,
           canceled: 0,
         },
         {
-          flowNodeId: 'inner_sub_process',
+          elementId: 'inner_sub_process',
           active: 3,
           incidents: 0,
           completed: 0,
           canceled: 0,
         },
         {
-          flowNodeId: 'user_task',
+          elementId: 'user_task',
           active: 3,
           incidents: 0,
           completed: 0,

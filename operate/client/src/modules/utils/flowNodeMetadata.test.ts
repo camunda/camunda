@@ -65,14 +65,14 @@ describe('flowNodeMetadata', () => {
     it('should set up a reaction to flowNodeSelectionStore.state.selection', () => {
       const statistics: ProcessDefinitionStatistic[] = [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 0,
           canceled: 0,
           incidents: 0,
           completed: 0,
         },
         {
-          flowNodeId: 'node2',
+          elementId: 'node2',
           active: 0,
           canceled: 0,
           incidents: 0,
@@ -102,7 +102,7 @@ describe('flowNodeMetadata', () => {
     it('should not fetch metadata if isPlaceholder is true', async () => {
       const statistics: ProcessDefinitionStatistic[] = [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 0,
           canceled: 0,
           incidents: 0,
@@ -111,7 +111,7 @@ describe('flowNodeMetadata', () => {
       ];
       await fetchMetaData(statistics, {
         isPlaceholder: true,
-        flowNodeId: 'node1',
+        elementId: 'node1',
       });
 
       expect(fetchFlowNodeMetaData).not.toHaveBeenCalled();
@@ -120,7 +120,7 @@ describe('flowNodeMetadata', () => {
     it('should not fetch metadata if processInstanceId is undefined', async () => {
       const statistics: ProcessDefinitionStatistic[] = [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 0,
           canceled: 0,
           incidents: 0,
@@ -130,16 +130,16 @@ describe('flowNodeMetadata', () => {
       processInstanceDetailsStore.state.processInstance = null;
 
       await fetchMetaData(statistics, {
-        flowNodeId: 'node1',
+        elementId: 'node1',
       });
 
       expect(fetchFlowNodeMetaData).not.toHaveBeenCalled();
     });
 
-    it('should not fetch metadata if flowNodeId is undefined', async () => {
+    it('should not fetch metadata if elementId is undefined', async () => {
       const statistics: ProcessDefinitionStatistic[] = [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 0,
           canceled: 0,
           incidents: 0,
@@ -157,7 +157,7 @@ describe('flowNodeMetadata', () => {
     it('should fetch metadata and handle success', async () => {
       const statistics: ProcessDefinitionStatistic[] = [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 0,
           canceled: 0,
           incidents: 0,
@@ -212,7 +212,7 @@ describe('flowNodeMetadata', () => {
     it('should handle error if fetch fails', async () => {
       const statistics: ProcessDefinitionStatistic[] = [
         {
-          flowNodeId: 'node1',
+          elementId: 'node1',
           active: 0,
           canceled: 0,
           incidents: 0,

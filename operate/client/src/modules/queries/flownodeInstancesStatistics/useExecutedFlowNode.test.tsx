@@ -47,21 +47,21 @@ describe('useExecutedFlowNodes', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'StartEvent_1',
+          elementId: 'StartEvent_1',
           active: 0,
           completed: 10,
           canceled: 0,
           incidents: 0,
         },
         {
-          flowNodeId: 'Activity_0qtp1k6',
+          elementId: 'Activity_0qtp1k6',
           active: 0,
           completed: 7,
           canceled: 0,
           incidents: 0,
         },
         {
-          flowNodeId: 'Gateway_1',
+          elementId: 'Gateway_1',
           active: 0,
           completed: 0,
           canceled: 0,
@@ -80,14 +80,14 @@ describe('useExecutedFlowNodes', () => {
 
     expect(result.current.data).toEqual([
       {
-        flowNodeId: 'StartEvent_1',
+        elementId: 'StartEvent_1',
         active: 0,
         completed: 10,
         canceled: 0,
         incidents: 0,
       },
       {
-        flowNodeId: 'Activity_0qtp1k6',
+        elementId: 'Activity_0qtp1k6',
         active: 0,
         completed: 7,
         canceled: 0,

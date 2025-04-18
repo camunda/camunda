@@ -22,7 +22,7 @@ const useFlowNodes = () => {
 
   return Object.values(businessObjects ?? {}).map((flowNode) => {
     const flowNodeState = statistics?.items.find(
-      ({flowNodeId}) => flowNodeId === flowNode.id,
+      ({elementId}) => elementId === flowNode.id,
     );
 
     return {

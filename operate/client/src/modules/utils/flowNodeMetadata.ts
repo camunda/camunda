@@ -54,7 +54,7 @@ const fetchMetaData = flowNodeMetaDataStore.retryOnConnectionLost(
       processInstanceId === undefined ||
       flowNodeId === undefined ||
       (modificationsStore.isModificationModeEnabled &&
-        !statistics.some(({flowNodeId: id}) => id === flowNodeId))
+        !statistics.some(({elementId: id}) => id === flowNodeId))
     ) {
       return;
     }

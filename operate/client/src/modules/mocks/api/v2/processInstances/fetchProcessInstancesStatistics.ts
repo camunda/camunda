@@ -11,7 +11,7 @@ import {GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod
 
 const mockFetchProcessInstancesStatistics = () =>
   mockPostRequest<GetProcessDefinitionStatisticsResponseBody>(
-    '/v2/process-definitions/:processDefinitionKey/statistics/flownode-instances',
+    '/v2/process-definitions/:processDefinitionKey/statistics/element-instances',
   );
 
 export {mockFetchProcessInstancesStatistics};

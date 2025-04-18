@@ -13,14 +13,14 @@ describe('getInstancesCount', () => {
   it('should return the correct count of active and incident instances for a given flowNodeId', () => {
     const data: ProcessDefinitionStatistic[] = [
       {
-        flowNodeId: 'node1',
+        elementId: 'node1',
         active: 5,
         incidents: 2,
         canceled: 0,
         completed: 0,
       },
       {
-        flowNodeId: 'node2',
+        elementId: 'node2',
         active: 3,
         incidents: 1,
         canceled: 0,
@@ -35,7 +35,7 @@ describe('getInstancesCount', () => {
   it('should return 0 if the flowNodeId is not found in the data', () => {
     const data: ProcessDefinitionStatistic[] = [
       {
-        flowNodeId: 'node1',
+        elementId: 'node1',
         active: 5,
         incidents: 2,
         canceled: 0,

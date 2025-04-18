@@ -68,14 +68,14 @@ describe('getStatisticsByFlowNode', () => {
   it('should return statistics for valid flow nodes', () => {
     const data = [
       {
-        flowNodeId: 'StartEvent_1',
+        elementId: 'StartEvent_1',
         active: 5,
         incidents: 2,
         completed: 10,
         canceled: 1,
       },
       {
-        flowNodeId: 'Activity_0qtp1k6',
+        elementId: 'Activity_0qtp1k6',
         active: 3,
         incidents: 1,
         completed: 7,
@@ -113,14 +113,14 @@ describe('getStatisticsByFlowNode', () => {
   it('should handle missing business objects', () => {
     const data = [
       {
-        flowNodeId: 'StartEvent_1',
+        elementId: 'StartEvent_1',
         active: 5,
         incidents: 2,
         completed: 10,
         canceled: 1,
       },
       {
-        flowNodeId: 'missing_node',
+        elementId: 'missing_node',
         active: 3,
         incidents: 1,
         completed: 7,
@@ -152,7 +152,7 @@ describe('getStatisticsByFlowNode', () => {
 
     const data = [
       {
-        flowNodeId: 'StartEvent_1',
+        elementId: 'StartEvent_1',
         active: 5,
         incidents: 2,
         completed: 10,
@@ -182,7 +182,7 @@ describe('getStatisticsByFlowNode', () => {
   it('should handle end events correctly', () => {
     const data = [
       {
-        flowNodeId: 'Event_0bonl61',
+        elementId: 'Event_0bonl61',
         active: 0,
         incidents: 0,
         completed: 10,
@@ -212,7 +212,7 @@ describe('getStatisticsByFlowNode', () => {
   it('should return an empty object if no valid data is provided', () => {
     const data = [
       {
-        flowNodeId: 'node1',
+        elementId: 'node1',
         active: 5,
         incidents: 2,
         completed: 10,

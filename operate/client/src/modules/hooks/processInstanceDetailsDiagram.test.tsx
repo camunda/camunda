@@ -61,8 +61,8 @@ describe('processInstanceDetailsDiagram hooks', () => {
       .mockReturnValue({
         data: {
           items: [
-            {flowNodeId: 'StartEvent_1', active: 5, incidents: 0},
-            {flowNodeId: 'Activity_0qtp1k6', active: 0, incidents: 1},
+            {elementId: 'StartEvent_1', active: 5, incidents: 0},
+            {elementId: 'Activity_0qtp1k6', active: 0, incidents: 1},
           ],
         },
       });

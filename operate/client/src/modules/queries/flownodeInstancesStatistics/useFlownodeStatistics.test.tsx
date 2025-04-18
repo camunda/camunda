@@ -47,14 +47,14 @@ describe('useFlownodeStatistics', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'StartEvent_1',
+          elementId: 'StartEvent_1',
           active: 5,
           completed: 10,
           canceled: 0,
           incidents: 0,
         },
         {
-          flowNodeId: 'Activity_0qtp1k6',
+          elementId: 'Activity_0qtp1k6',
           active: 3,
           completed: 7,
           canceled: 0,

@@ -14,7 +14,7 @@ import {RequestHandler, RestRequest, rest} from 'msw';
 
 const mockEndpoints = [
   rest.post(
-    '/v2/process-definitions/:processDefinitionKey/statistics/flownode-instances',
+    '/v2/process-definitions/:processDefinitionKey/statistics/element-instances',
     async (
       req: RestRequest<GetProcessDefinitionStatisticsRequestBody>,
       res,
@@ -23,35 +23,35 @@ const mockEndpoints = [
       const mockResponse: GetProcessDefinitionStatisticsResponseBody = {
         items: [
           {
-            flowNodeId: 'Gateway_15jzrqe',
+            elementId: 'Gateway_15jzrqe',
             active: 0,
             canceled: 0,
             incidents: 20,
             completed: 0,
           },
           {
-            flowNodeId: 'exclusiveGateway',
+            elementId: 'exclusiveGateway',
             active: 0,
             canceled: 0,
             incidents: 20,
             completed: 0,
           },
           {
-            flowNodeId: 'alwaysFailingTask',
+            elementId: 'alwaysFailingTask',
             active: 20,
             canceled: 0,
             incidents: 0,
             completed: 0,
           },
           {
-            flowNodeId: 'messageCatchEvent',
+            elementId: 'messageCatchEvent',
             active: 0,
             canceled: 0,
             incidents: 20,
             completed: 0,
           },
           {
-            flowNodeId: 'upperTask',
+            elementId: 'upperTask',
             active: 20,
             canceled: 0,
             incidents: 0,
@@ -61,45 +61,6 @@ const mockEndpoints = [
       };
 
       return res(ctx.json(mockResponse));
-    },
-  ),
-  rest.get(
-    '/v2/process-instances/:processInstanceKey/statistics/flownode-instances',
-    async (req: RestRequest<any>, res, ctx) => {
-      return res(
-        ctx.json({
-          items: [
-            {
-              flowNodeId: 'inclGatewayFork',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              flowNodeId: 'lowerTask',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              flowNodeId: 'startEvent',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              flowNodeId: 'upperTask',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-          ],
-        }),
-      );
     },
   ),
 ];

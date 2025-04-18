@@ -470,14 +470,14 @@ describe('Modification Summary Modal', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'multi-instance-subprocess',
+          elementId: 'multi-instance-subprocess',
           active: 6,
           incidents: 1,
           completed: 0,
           canceled: 0,
         },
         {
-          flowNodeId: 'subprocess-service-task',
+          elementId: 'subprocess-service-task',
           active: 4,
           incidents: 2,
           completed: 0,
@@ -650,14 +650,14 @@ describe('Modification Summary Modal', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'service-task-2',
+          elementId: 'service-task-2',
           active: 0,
           canceled: 0,
           incidents: 1,
           completed: 0,
         },
         {
-          flowNodeId: 'service-task-3',
+          elementId: 'service-task-3',
           active: 1,
           canceled: 0,
           incidents: 0,
@@ -741,7 +741,7 @@ describe('Modification Summary Modal', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
-          flowNodeId: 'taskA',
+          elementId: 'taskA',
           active: 0,
           canceled: 0,
           incidents: 1,
