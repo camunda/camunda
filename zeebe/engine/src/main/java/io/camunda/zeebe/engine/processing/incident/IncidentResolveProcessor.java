@@ -164,7 +164,9 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   }
 
   private boolean isUserTaskRelatedIncident(final ElementInstance elementInstance) {
-    return elementInstance.getState() == ProcessInstanceIntent.ELEMENT_ACTIVATED
+    final var state = elementInstance.getState();
+    return (state == ProcessInstanceIntent.ELEMENT_ACTIVATED
+        || state == ProcessInstanceIntent.ELEMENT_TERMINATING)
         && elementInstance.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
         && elementInstance.getUserTaskKey() > 0;
   }
