@@ -169,6 +169,7 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   @Override
+<<<<<<< HEAD:webapps-backup/src/main/java/io/camunda/webapps/backup/repository/opensearch/OpensearchBackupRepository.java
   public Optional<Metadata> getMetadata(final String repositoryName, final Long backupId) {
     final var snapshots = findSnapshots(repositoryName, backupId);
     if (snapshots.isEmpty()) {
@@ -204,6 +205,20 @@ public class OpensearchBackupRepository implements BackupRepository {
   public List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
     final var requestBuilder =
         getSnapshotRequestBuilder(repositoryName, snapshotNameProvider.snapshotNamePrefix() + "*")
+=======
+  public List<GetBackupStateResponseDto> getBackups(
+      final String repositoryName, final boolean verbose, final String pattern) {
+    final var validatedPattern = BackupRepository.validPattern(pattern);
+
+    validatedPattern.ifLeft(
+        ex -> {
+          throw new InvalidRequestException(ex.getMessage(), ex);
+        });
+    final var request =
+        getSnapshotRequestBuilder(
+                repositoryName, Metadata.SNAPSHOT_NAME_PREFIX + validatedPattern.get())
+            .verbose(verbose)
+>>>>>>> ada179d3 (feat: add pattern queryparam to BackupController list API to filter snapshots in ES/OS):operate/webapp/src/main/java/io/camunda/operate/webapp/opensearch/backup/OpensearchBackupRepository.java
             .build();
     final OpenSearchGetSnapshotResponse response;
     try {

@@ -490,11 +490,24 @@ public class BackupControllerIT {
 
   @Test
   public void shouldFailGetBackupsOnNonExistingRepository() throws IOException {
+<<<<<<< HEAD
     final ElasticsearchException elsEx =
         mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
     when(elsEx.error().type()).thenReturn("repository_missing_exception");
     mockGetRepoWithException(elsEx);
     mockGetWithException(elsEx);
+=======
+    final ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
+    when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
+    when(esClient.snapshot()).thenThrow(elsEx);
+
+    final Exception exception =
+        assertThrows(
+            OperateRuntimeException.class,
+            () -> {
+              backupController.getBackups(true, null);
+            });
+>>>>>>> ada179d3 (feat: add pattern queryparam to BackupController list API to filter snapshots in ES/OS)
 
     final String expectedMessage =
         String.format(
@@ -513,7 +526,11 @@ public class BackupControllerIT {
     mockGetWithException(elsEx);
     final var response = backupController.getBackups();
 
+<<<<<<< HEAD
     assertThat((List<HistoryBackupInfo>) response.getBody()).isEmpty();
+=======
+    assertThat(backupController.getBackups(true, null)).isEmpty();
+>>>>>>> ada179d3 (feat: add pattern queryparam to BackupController list API to filter snapshots in ES/OS)
   }
 
   @Test
@@ -522,6 +539,15 @@ public class BackupControllerIT {
     mockGetRepoWithException(elsEx);
     mockGetWithException(elsEx);
 
+<<<<<<< HEAD
+=======
+    final Exception exception =
+        assertThrows(
+            OperateElasticsearchConnectionException.class,
+            () -> {
+              backupController.getBackups(true, null);
+            });
+>>>>>>> ada179d3 (feat: add pattern queryparam to BackupController list API to filter snapshots in ES/OS)
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
@@ -564,10 +590,14 @@ public class BackupControllerIT {
               snapshotInfo32
             });
 
+<<<<<<< HEAD
     mockGetWithReturn(
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final var backups = (List<HistoryBackupInfo>) backupController.getBackups().getBody();
+=======
+    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true, null);
+>>>>>>> ada179d3 (feat: add pattern queryparam to BackupController list API to filter snapshots in ES/OS)
     assertThat(backups).hasSize(3);
 
     final var backup3 =
@@ -625,7 +655,11 @@ public class BackupControllerIT {
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1));
     mockGetWithReturn(returnedResponse);
 
+<<<<<<< HEAD
     final var backups = (List<HistoryBackupInfo>) backupController.getBackups().getBody();
+=======
+    final List<GetBackupStateResponseDto> backups = backupController.getBackups(true, null);
+>>>>>>> ada179d3 (feat: add pattern queryparam to BackupController list API to filter snapshots in ES/OS)
     assertThat(backups).hasSize(1);
     final HistoryBackupInfo backup1 = backups.get(0);
     assertThat(backup1.getState()).isEqualTo(COMPLETED);
@@ -634,6 +668,51 @@ public class BackupControllerIT {
     assertBackupDetails(List.of(snapshotInfo11, snapshotInfo12), backup1);
   }
 
+<<<<<<< HEAD
+=======
+  @Test
+  public void shouldRespectVerboseFlag() throws IOException {
+    final Long backupId = 2L;
+    // when using verbose=false, ES/OS will return something like this:
+    //    {
+    //      "snapshot": "camunda_operate_20250320000001_8.6.9_part_1_of_6",
+    //        "uuid": "3V4JXZ5GRE2Yy5VnDKTF5w",
+    //        "indices": [
+    //      "operate-import-position-8.3.0_"
+    //        ],
+    //      "data_streams": [],
+    //      "state": "SUCCESS"
+    //    }
+
+    final Metadata metadata =
+        new Metadata().setBackupId(backupId).setVersion("8.8.8").setPartNo(1).setPartCount(1);
+
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, Answers.RETURNS_DEEP_STUBS);
+    when(snapshotInfo.snapshotId())
+        .thenReturn(new SnapshotId(metadata.buildSnapshotName(), "snapshot-uuid"));
+    when(snapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    final List<SnapshotInfo> snapshotInfos = asList(new SnapshotInfo[] {snapshotInfo});
+    when(snapshotClient.get(any(), any()))
+        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+
+    final var backups = backupController.getBackups(false, null);
+    assertThat(backups)
+        .allSatisfy(
+            backupState -> {
+              assertThat(backupState.getState()).isEqualTo(COMPLETED);
+              assertThat(backupState.getBackupId()).isEqualTo(backupId);
+              assertThat(backupState.getDetails())
+                  .singleElement()
+                  .satisfies(
+                      info -> {
+                        System.out.println(info);
+                        assertThat(info.getState()).isEqualTo("SUCCESS");
+                      });
+            });
+  }
+
+>>>>>>> ada179d3 (feat: add pattern queryparam to BackupController list API to filter snapshots in ES/OS)
   private void assertBackupDetails(
       final List<SnapshotInfo> snapshotInfos, final HistoryBackupInfo backupState) {
     assertThat(backupState.getDetails()).hasSize(snapshotInfos.size());
