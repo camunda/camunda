@@ -1799,6 +1799,44 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /process-instances/{processInstanceKey}/call-hierarchy:
+    get:
+      tags:
+        - Process instance
+      operationId: getProcessInstanceCallHierarchy
+      summary: Get call hierarchy for process instance
+      description: |
+        Returns the call hierarchy for a given process instance, showing its ancestry up to the root instance.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to fetch the hierarchy for.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The call hierarchy is successfully returned.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProcessInstanceCallHierarchyEntry"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /element-instances/search:
     post:
@@ -5392,6 +5430,22 @@ components:
         - ACTIVE
         - COMPLETED
         - TERMINATED
+    ProcessInstanceCallHierarchyEntry:
+      type: object
+      required:
+        - processInstanceKey
+        - processDefinitionKey
+        - processDefinitionName
+      properties:
+        processInstanceKey:
+          type: string
+          description: The key of the process instance.
+        processDefinitionKey:
+          type: string
+          description: The key of the process definition.
+        processDefinitionName:
+          type: string
+          description: The name of the process definition (fallbacks to process definition ID if not available).
     ProcessDefinitionElementStatisticsQuery:
       description: Process definition element statistics request.
       type: object

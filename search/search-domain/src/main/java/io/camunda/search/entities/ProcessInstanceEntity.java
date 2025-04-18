@@ -24,7 +24,8 @@ public record ProcessInstanceEntity(
     OffsetDateTime endDate,
     ProcessInstanceState state,
     Boolean hasIncident,
-    String tenantId) {
+    String tenantId,
+    String treePath) {
 
   public enum ProcessInstanceState {
     ACTIVE,
