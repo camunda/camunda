@@ -112,7 +112,8 @@ public class OpensearchProcessDefinitionDao
                       ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()),
                   queryDSLWrapper.term(ProcessDefinition.TENANT_ID, filter.getTenantId()),
                   queryDSLWrapper.term(ProcessDefinition.VERSION, filter.getVersion()),
-                  queryDSLWrapper.term(ProcessDefinition.KEY, filter.getKey()))
+                  queryDSLWrapper.term(ProcessDefinition.KEY, filter.getKey()),
+                  queryDSLWrapper.term(ProcessDefinition.VERSION_TAG, filter.getVersionTag()))
               .filter(Objects::nonNull)
               .collect(Collectors.toList());
 
