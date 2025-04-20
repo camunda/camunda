@@ -7,14 +7,13 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
@@ -64,10 +63,10 @@ class RoleSearchingAuthorizationIT {
           ADMIN,
           DEFAULT_PASSWORD,
           List.of(
-              new Permissions(ResourceTypeEnum.ROLE, PermissionTypeEnum.CREATE, List.of("*")),
-              new Permissions(ResourceTypeEnum.ROLE, PermissionTypeEnum.UPDATE, List.of("*")),
-              new Permissions(ResourceTypeEnum.ROLE, PermissionTypeEnum.READ, List.of("*")),
-              new Permissions(AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*"))));
+              new Permissions(ResourceType.ROLE, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.ROLE, PermissionType.UPDATE, List.of("*")),
+              new Permissions(ResourceType.ROLE, PermissionType.READ, List.of("*")),
+              new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
   private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
@@ -77,7 +76,7 @@ class RoleSearchingAuthorizationIT {
       new User(
           RESTRICTED_WITH_READ,
           DEFAULT_PASSWORD,
-          List.of(new Permissions(ResourceTypeEnum.ROLE, PermissionTypeEnum.READ, List.of("*"))));
+          List.of(new Permissions(ResourceType.ROLE, PermissionType.READ, List.of("*"))));
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private boolean initialized;

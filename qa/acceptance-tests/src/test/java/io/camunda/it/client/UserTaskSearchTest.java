@@ -14,10 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.StringFilterProperty;
+import io.camunda.client.api.search.filter.UserTaskVariableFilterRequest;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.impl.ResponseMapper;
-import io.camunda.client.protocol.rest.StringFilterProperty;
-import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
@@ -251,7 +250,7 @@ class UserTaskSearchTest {
 
     // given
     final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("process01");
+        new UserTaskVariableFilterRequest().setName("process01");
 
     // when
     final var exception =
@@ -260,10 +259,7 @@ class UserTaskSearchTest {
             () ->
                 camundaClient
                     .newUserTaskSearchRequest()
-                    .filter(
-                        f ->
-                            f.processInstanceVariables(
-                                List.of(ResponseMapper.fromProtocolObject(variableValueFilter))))
+                    .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
                     .send()
                     .join());
     // then
@@ -296,16 +292,13 @@ class UserTaskSearchTest {
   public void shouldRetrieveTaskByLocalVariablesLike() {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest()
-            .name("task01")
-            .value(new StringFilterProperty().$like("\"te*\""));
+            .setName("task01")
+            .setValue(new StringFilterProperty().setLike("\"te*\""));
 
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(
-                f ->
-                    f.localVariables(
-                        List.of(ResponseMapper.fromProtocolObject(variableValueFilter1))))
+            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -315,16 +308,13 @@ class UserTaskSearchTest {
   public void shouldRetrieveTaskByLocalVariablesIn() {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest()
-            .name("task01")
-            .value(new StringFilterProperty().add$InItem("\"test\""));
+            .setName("task01")
+            .setValue(new StringFilterProperty().addInItem("\"test\""));
 
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(
-                f ->
-                    f.localVariables(
-                        List.of(ResponseMapper.fromProtocolObject(variableValueFilter1))))
+            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
