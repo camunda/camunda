@@ -10,6 +10,7 @@ import {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
   GetProcessSequenceFlowsResponseBody,
+  GetProcessInstanceCallHierarchyResponseBody,
   ProcessInstance,
 } from '@vzeta/camunda-api-zod-schemas/operate';
 import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
@@ -126,6 +127,25 @@ const mockEndpoints = [
         tenantId: '\u003Cdefault\u003E',
         processInstanceKey: '2251799814752788',
         processDefinitionKey: '2251799814751761',
+      };
+
+      return res(ctx.json(mockResponse));
+    },
+  ),
+  rest.get(
+    '/v2/process-instances/:processInstanceKey/call-hierarchy',
+    async (req, res, ctx) => {
+      const mockResponse: GetProcessInstanceCallHierarchyResponseBody = {
+        items: [
+          {
+            processInstanceKey: '2251799833223965',
+            processDefinitionName: 'Call Activity Process',
+          },
+          {
+            processInstanceKey: '2251799833223971',
+            processDefinitionName: 'called-process',
+          },
+        ],
       };
 
       return res(ctx.json(mockResponse));
