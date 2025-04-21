@@ -28,6 +28,7 @@ import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
+import {IS_PROCESS_SEQUENCE_FLOWS_V2_ENABLED} from 'modules/feature-flags';
 
 const CarbonLogin = loadable(() => import('./Login/index'), {
   resolveComponent: (components) => components.Login,
@@ -48,6 +49,13 @@ const CarbonDecisions = loadable(() => import('./Decisions/index'), {
 const CarbonProcesses = loadable(() => import('./Processes/index'), {
   resolveComponent: (components) => components.Processes,
 });
+
+const CarbonProcessInstance = loadable(
+  () => import('./ProcessInstance/index'),
+  {
+    resolveComponent: (components) => components.ProcessInstance,
+  },
+);
 
 const CarbonProcessInstanceV2 = loadable(
   () => import('./ProcessInstance/v2/index'),
@@ -101,7 +109,13 @@ const App: React.FC = () => {
               <Route path={Paths.processes()} element={<CarbonProcesses />} />
               <Route
                 path={Paths.processInstance()}
-                element={<CarbonProcessInstanceV2 />}
+                element={
+                  IS_PROCESS_SEQUENCE_FLOWS_V2_ENABLED ? (
+                    <CarbonProcessInstanceV2 />
+                  ) : (
+                    <CarbonProcessInstance />
+                  )
+                }
               />
               <Route path={Paths.decisions()} element={<CarbonDecisions />} />
               <Route

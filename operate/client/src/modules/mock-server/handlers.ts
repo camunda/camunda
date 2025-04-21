@@ -10,7 +10,9 @@ import {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
   GetProcessSequenceFlowsResponseBody,
+  ProcessInstance,
 } from '@vzeta/camunda-api-zod-schemas/operate';
+import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {RequestHandler, RestRequest, rest} from 'msw';
 
 const mockEndpoints = [
@@ -106,6 +108,24 @@ const mockEndpoints = [
             processDefinitionId: '2251799814751761',
           },
         ],
+      };
+
+      return res(ctx.json(mockResponse));
+    },
+  ),
+  rest.get(
+    '/v2/process-instances/:processInstanceKey',
+    async (req, res, ctx) => {
+      const mockResponse: ProcessInstance = {
+        processDefinitionId: 'complexProcess',
+        processDefinitionName: 'complexProcess',
+        processDefinitionVersion: 156,
+        startDate: '2025-04-17T11:20:09.654Z',
+        state: ProcessInstanceState.ACTIVE,
+        hasIncident: true,
+        tenantId: '\u003Cdefault\u003E',
+        processInstanceKey: '2251799814752788',
+        processDefinitionKey: '2251799814751761',
       };
 
       return res(ctx.json(mockResponse));
