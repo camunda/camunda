@@ -8,7 +8,7 @@
 
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {InstanceDetail} from '../../Layout/InstanceDetail';
-import {Breadcrumb} from '../Breadcrumb';
+import {Breadcrumb} from '../Breadcrumb/v2';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
@@ -24,7 +24,7 @@ import {Locations} from 'modules/Routes';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
-import {ProcessInstanceHeader} from '../ProcessInstanceHeader';
+import {ProcessInstanceHeader} from '../ProcessInstanceHeader/v2';
 import {TopPanel} from '../TopPanel/v2';
 import {BottomPanel, ModificationFooter, Buttons} from '../styled';
 import {FlowNodeInstanceLog} from '../FlowNodeInstanceLog';

@@ -16,16 +16,16 @@ import {
   DataTable,
   Modal,
   EmptyCell,
-} from '../styled';
+} from './styled';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getProcessName} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
 import {StateProps} from 'modules/components/ModalStateManager';
-import {Warning} from '../Messages/Warning';
-import {Error} from '../Messages/v2/Error';
-import {VariableModification} from '../VariableModification';
+import {Warning} from './Messages/Warning';
+import {Error} from './Messages/Error';
+import {VariableModification} from './VariableModification';
 import {JSONEditor} from 'modules/components/JSONEditor';
 import {DiffEditor} from 'modules/components/DiffEditor';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';

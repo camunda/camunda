@@ -30,7 +30,7 @@ import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
 import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
-import {MetadataPopover} from '../MetadataPopover';
+import {MetadataPopover} from '../MetadataPopover/v2';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
 import {ModificationInfoBanner} from '../ModificationInfoBanner';
 import {ModificationDropdown} from '../ModificationDropdown/v2';

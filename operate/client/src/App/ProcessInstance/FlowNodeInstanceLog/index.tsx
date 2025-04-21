@@ -8,6 +8,7 @@
 
 import React, {useRef} from 'react';
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
+import {FlowNodeInstancesTree as FlowNodeInstancesTreeV2} from '../FlowNodeInstancesTree/v2';
 import {observer} from 'mobx-react';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {
@@ -24,6 +25,7 @@ import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {IS_PROCESS_INSTANCE_V2_ENABLED} from 'modules/feature-flags';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const {
@@ -59,12 +61,21 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
               label={`${instanceExecutionHistory!.flowNodeId} instance history`}
               hideLabel
             >
-              <FlowNodeInstancesTree
-                rowRef={flowNodeInstanceRowRef}
-                scrollableContainerRef={instanceHistoryRef}
-                flowNodeInstance={instanceExecutionHistory!}
-                isRoot
-              />
+              {IS_PROCESS_INSTANCE_V2_ENABLED ? (
+                <FlowNodeInstancesTreeV2
+                  rowRef={flowNodeInstanceRowRef}
+                  scrollableContainerRef={instanceHistoryRef}
+                  flowNodeInstance={instanceExecutionHistory!}
+                  isRoot
+                />
+              ) : (
+                <FlowNodeInstancesTree
+                  rowRef={flowNodeInstanceRowRef}
+                  scrollableContainerRef={instanceHistoryRef}
+                  flowNodeInstance={instanceExecutionHistory!}
+                  isRoot
+                />
+              )}
             </TreeView>
           </NodeContainer>
         </InstanceHistory>
