@@ -172,7 +172,7 @@
     <profile>
       <id>operateItOpensearch</id>
       <properties>
-        <includeITNames>**/api/v1/**/*IT.java, **/OpensearchFinishedImportingIT.java</includeITNames>
+        <includeITNames>**/api/v1/**/*IT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>
