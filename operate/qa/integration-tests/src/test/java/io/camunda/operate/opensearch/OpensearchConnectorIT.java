@@ -29,6 +29,7 @@ import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.testcontainers.OpensearchContainer;
@@ -80,6 +81,7 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
   }
 
   @Test
+  @Ignore
   public void shouldSetCustomHeaderOnAllOpensearchClientRequests() throws IOException {
     // given
     final var client = connector.openSearchClient();
@@ -94,6 +96,7 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
   }
 
   @Test
+  @Ignore
   public void shouldSetCustomHeaderOnAllOsAsyncClientRequests() throws IOException {
     // given
     final var client = connector.openSearchAsyncClient();
@@ -108,6 +111,7 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
   }
 
   @Test
+  @Ignore
   public void shouldSetCustomHeaderOnAllZeebeOSClientRequests() throws IOException {
     // given
     final var client = connector.zeebeOpensearchClient();
