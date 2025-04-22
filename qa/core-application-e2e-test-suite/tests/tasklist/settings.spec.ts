@@ -8,10 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {test} from 'fixtures';
-import {
-  navigateToApp,
-  assertElementVisibilityByName,
-} from '@pages/UtilitiesPage';
+import {navigateToApp} from '@pages/UtilitiesPage';
 
 test.beforeEach(async ({page, taskListLoginPage}) => {
   await navigateToApp(page, 'tasklist');
@@ -20,15 +17,14 @@ test.beforeEach(async ({page, taskListLoginPage}) => {
 });
 
 test.describe('settings', () => {
-  // eslint-disable-next-line playwright/expect-expect
   test('change language', async ({page, tasklistHeader}) => {
     await tasklistHeader.changeLanguage('Français');
-    await assertElementVisibilityByName(
-      page,
-      'heading',
-      'Bienvenue dans Tasklist',
-    );
-    await assertElementVisibilityByName(page, 'heading', 'Tâches ouvertes');
-    await assertElementVisibilityByName(page, 'button', 'Déconnexion');
+    await expect(
+      page.getByRole('heading', {name: 'Bienvenue dans Tasklist'}),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', {name: 'Tâches ouvertes'}),
+    ).toBeVisible();
+    await expect(page.getByRole('button', {name: 'Déconnexion'})).toBeVisible();
   });
 });
