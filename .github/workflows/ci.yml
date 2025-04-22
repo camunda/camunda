@@ -1093,7 +1093,7 @@ jobs:
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 25
     permissions: {}  # GITHUB_TOKEN unused in this job
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-maven-snapshot
       cancel-in-progress: false
@@ -1137,7 +1137,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-camunda-docker-snapshot
       cancel-in-progress: false
