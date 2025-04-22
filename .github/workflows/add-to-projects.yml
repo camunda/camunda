@@ -108,3 +108,12 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/79
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/feel-js
+      - id: add-to-devops
+        name: Add to Monorepo DevOps Team project
+        uses: actions/add-to-project@v1.0.2
+        if: ${{ steps.has-project.outputs.result == 'false' }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/115
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+          # any of the following labels:
+          labeled: component/build-pipeline, component/release, area/build
