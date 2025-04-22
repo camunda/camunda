@@ -6,18 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  Search,
-  Grid,
-  Column,
-  Stack,
-  Link,
-  Layer,
-  Dropdown,
-  SkeletonPlaceholder,
-  type InlineLoadingProps,
-} from '@carbon/react';
-import {ProcessTile} from 'common/processes/ProcessTile';
+import {type InlineLoadingProps} from '@carbon/react';
 import debounce from 'lodash/debounce';
 import {
   useLocation,
@@ -27,8 +16,6 @@ import {
 } from 'react-router-dom';
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {C3EmptyState} from '@camunda/camunda-composite-components';
-import EmptyMessageImage from './empty-message-image.svg';
 import {observer} from 'mobx-react-lite';
 import {newProcessInstance} from 'v1/newProcessInstance';
 import {FirstTimeModal} from 'common/processes/FirstTimeModal';
@@ -40,8 +27,6 @@ import {useProcesses} from 'v1/api/useProcesses.query';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
 import {pages} from 'common/routing';
-import {useIsMultitenancyEnabled} from 'common/multitenancy/useIsMultitenancyEnabled';
-import {MultitenancyDropdown} from 'common/multitenancy/MultitenancyDropdown';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {getClientConfig} from 'common/config/getClientConfig';
@@ -51,76 +36,19 @@ import {useForm} from 'v1/api/useForm.query';
 import {getProcessDisplayName} from 'v1/utils/getProcessDisplayName';
 import {useStartProcess} from 'v1/api/useStartProcess.mutation';
 import type {Process} from 'v1/api/types';
+import {ProcessesList} from 'common/processes/ProcessesList';
+import {START_FORM_FILTER_OPTIONS} from 'common/processes/ProcessesList/constants';
 
 type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
-type UseProcessesFilterParams = Omit<
-  Parameters<typeof useProcesses>[0],
-  'query' | 'tenantId'
->;
-
-type FilterOption = {
-  id: string;
-  textKey: string;
-  searchParamValue: 'yes' | 'no' | undefined;
-  params: UseProcessesFilterParams;
-};
-
-const START_FORM_FILTER_OPTIONS: FilterOption[] = [
-  {
-    id: 'ignore',
-    textKey: 'processFiltersAllProcesses',
-    searchParamValue: undefined,
-    params: {
-      isStartedByForm: undefined,
-    },
-  },
-  {
-    id: 'yes',
-    textKey: 'processesFormFilterRequiresForm',
-    searchParamValue: 'yes',
-    params: {
-      isStartedByForm: true,
-    },
-  },
-  {
-    id: 'no',
-    textKey: 'processesFormFilterRequiresNoForm',
-    searchParamValue: 'no',
-    params: {
-      isStartedByForm: false,
-    },
-  },
-];
-
-const FilterDropdown: React.FC<{
-  items: FilterOption[];
-  selected?: FilterOption;
-  onChange?: (option: FilterOption) => void;
-}> = ({items, selected, onChange}) => {
-  const {t} = useTranslation();
-
-  return (
-    <Dropdown
-      id="process-filters"
-      data-testid="process-filters"
-      className={styles.dropdown}
-      hideLabel
-      selectedItem={selected}
-      titleText={t('processesFilterDropdownLabel')}
-      label={t('processesFilterDropdownLabel')}
-      items={items}
-      itemToString={(item) => (item ? t(item.textKey) : '')}
-      onChange={(data) => {
-        if (data.selectedItem && onChange) {
-          onChange(data.selectedItem);
-        }
-      }}
-    />
-  );
-};
+function getIsStartedByForm(searchParamValue: string | undefined) {
+  if (searchParamValue === undefined) {
+    return undefined;
+  }
+  return searchParamValue === 'yes';
+}
 
 const Processes: React.FC = observer(() => {
   const [startProcessStatus, setStartProcessStatus] =
@@ -128,7 +56,7 @@ const Processes: React.FC = observer(() => {
   const {t} = useTranslation();
   const {instance} = newProcessInstance;
   const {data: currentUser} = useCurrentUser();
-  const {isMultitenancyEnabled} = useIsMultitenancyEnabled();
+
   const hasMultipleTenants = (currentUser?.tenants.length ?? 0) > 1;
   const defaultTenant = currentUser?.tenants[0];
   const location = useLocation();
@@ -157,14 +85,15 @@ const Processes: React.FC = observer(() => {
   const startFormFilter =
     (startFormFilterSearchParam
       ? START_FORM_FILTER_OPTIONS.find(
-          (opt) => opt.searchParamValue === startFormFilterSearchParam,
+          ({searchParamValue}) =>
+            searchParamValue === startFormFilterSearchParam,
         )
       : undefined) ?? START_FORM_FILTER_OPTIONS[0];
   const {data, error, isLoading} = useProcesses(
     {
       query: searchParams.get('search') ?? undefined,
       tenantId: selectedTenantId,
-      ...(startFormFilter?.params ?? {}),
+      isStartedByForm: getIsStartedByForm(startFormFilter.searchParamValue),
     },
     {
       refetchInterval: 5000,
@@ -179,7 +108,6 @@ const Processes: React.FC = observer(() => {
     searchParams.get('search') ?? '',
   );
   const isFiltered = data?.query !== undefined && data.query !== '';
-  const processes = data?.processes ?? [];
   const match = useMatch(pages.internalStartProcessFromForm());
   const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
   const {mutateAsync: uploadDocuments} = useUploadDocuments();
@@ -291,258 +219,107 @@ const Processes: React.FC = observer(() => {
     }
   }
 
-  const processSearchProps: React.ComponentProps<typeof Search> = {
-    size: 'md',
-    placeholder: t('processesFilterFieldLabel'),
-    labelText: t('processesFilterFieldLabel'),
-    closeButtonLabelText: t('processesClearFilterFieldButtonLabel'),
-    value: searchValue,
-    onChange: (event) => {
-      setSearchValue(event.target.value);
-      debouncedNavigate(searchParams, {
-        name: 'search',
-        value: event.target.value,
-      });
-    },
-    disabled: isLoading,
-  } as const;
-  const filterDropdownProps: React.ComponentProps<typeof FilterDropdown> = {
-    items: START_FORM_FILTER_OPTIONS,
-    selected: startFormFilter,
-    onChange: (value) =>
-      debouncedNavigate(searchParams, {
-        name: 'hasStartForm',
-        value: value.searchParamValue ?? '',
-      }),
-  } as const;
-
   return (
     <main className={cn('cds--content', styles.splitPane)}>
-      <div className={styles.container}>
-        <NewProcessInstanceTasksPolling />
-        <Stack className={styles.content} gap={2}>
-          <div className={styles.searchContainer}>
-            <Stack className={styles.searchContainerInner} gap={6}>
-              <Grid narrow>
-                <Column sm={4} md={8} lg={16}>
-                  <Stack gap={4}>
-                    <h1>{t('headerNavItemProcesses')}</h1>
-                    <p>{t('processesSubtitle')}</p>
-                  </Stack>
-                </Column>
-              </Grid>
-              {isMultitenancyEnabled ? (
-                <Grid narrow>
-                  <Column
-                    className={styles.searchFieldWrapper}
-                    sm={4}
-                    md={8}
-                    lg={10}
-                  >
-                    <Search {...processSearchProps} />
-                  </Column>
-                  <Column
-                    className={styles.searchFieldWrapper}
-                    sm={2}
-                    md={4}
-                    lg={3}
-                  >
-                    <FilterDropdown {...filterDropdownProps} />
-                  </Column>
-                  <Column
-                    className={styles.searchFieldWrapper}
-                    sm={2}
-                    md={4}
-                    lg={2}
-                  >
-                    <MultitenancyDropdown
-                      initialSelectedItem={currentUser?.tenants.find(
-                        ({tenantId}) =>
-                          [
-                            searchParams.get('tenantId') ?? undefined,
-                            getStateLocally('tenantId'),
-                          ]
-                            .filter((tenantId) => tenantId !== undefined)
-                            .includes(tenantId),
-                      )}
-                      onChange={(tenant) => {
-                        updateSearchParams(searchParams, {
-                          name: 'tenantId',
-                          value: tenant,
-                        });
-                        storeStateLocally('tenantId', tenant);
-                      }}
-                    />
-                  </Column>
-                </Grid>
-              ) : (
-                <Grid narrow>
-                  <Column
-                    className={styles.searchFieldWrapper}
-                    sm={4}
-                    md={5}
-                    lg={10}
-                  >
-                    <Search {...processSearchProps} />
-                  </Column>
-                  <Column
-                    className={styles.searchFieldWrapper}
-                    sm={4}
-                    md={3}
-                    lg={5}
-                  >
-                    <FilterDropdown {...filterDropdownProps} />
-                  </Column>
-                </Grid>
-              )}
-            </Stack>
-          </div>
+      <NewProcessInstanceTasksPolling />
 
-          <div className={styles.processTilesContainer}>
-            <div className={styles.processTilesContainerInner}>
-              {!isLoading && processes.length === 0 ? (
-                <Layer>
-                  <C3EmptyState
-                    icon={
-                      isFiltered
-                        ? undefined
-                        : {path: EmptyMessageImage, altText: ''}
-                    }
-                    heading={
-                      isFiltered
-                        ? t('processesProcessNotFoundError')
-                        : t('processesProcessNotPublishedError')
-                    }
-                    description={
-                      <span data-testid="empty-message">
-                        {t('processesErrorBody')}
-                        <Link
-                          href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          inline
-                          onClick={() => {
-                            tracking.track({
-                              eventName: 'processes-empty-message-link-clicked',
-                            });
-                          }}
-                        >
-                          {t('processesErrorBodyLinkLabel')}
-                        </Link>
-                      </span>
-                    }
-                  />
-                </Layer>
-              ) : (
-                <Grid narrow as={Layer}>
-                  {isLoading
-                    ? Array.from({length: 5}).map((_, index) => (
-                        <Column
-                          className={styles.processTileWrapper}
-                          sm={4}
-                          md={4}
-                          lg={5}
-                          key={index}
-                        >
-                          <SkeletonPlaceholder
-                            className={styles.tileSkeleton}
-                            data-testid="process-skeleton"
-                          />
-                        </Column>
-                      ))
-                    : processes.map((process, idx) => (
-                        <Column
-                          className={styles.processTileWrapper}
-                          sm={4}
-                          md={4}
-                          lg={5}
-                          key={process.id}
-                        >
-                          <ProcessTile
-                            process={process}
-                            displayName={getProcessDisplayName(process)}
-                            isFirst={idx === 0}
-                            isStartButtonDisabled={
-                              instance !== null &&
-                              instance.id !== process.bpmnProcessId
-                            }
-                            data-testid="process-tile"
-                            tenantId={selectedTenantId}
-                            onStartProcess={async () => {
-                              setSelectedProcess(process);
-                              const {bpmnProcessId} = process;
-                              if (process.startEventFormId === null) {
-                                setStartProcessStatus('active');
-                                tracking.track({
-                                  eventName: 'process-start-clicked',
-                                });
-                                try {
-                                  await startProcess({
-                                    bpmnProcessId,
-                                    tenantId: selectedTenantId,
-                                  });
-                                } catch (error) {
-                                  logger.error(error);
-                                  setStartProcessStatus('error');
-                                }
-                              } else {
-                                navigate({
-                                  ...location,
-                                  pathname:
-                                    pages.internalStartProcessFromForm(
-                                      bpmnProcessId,
-                                    ),
-                                });
-                              }
-                            }}
-                            onStartProcessError={() => {
-                              setSelectedProcess(null);
-                              const displayName =
-                                getProcessDisplayName(process);
-                              tracking.track({
-                                eventName: 'process-start-failed',
-                              });
-                              setStartProcessStatus('inactive');
-                              if (
-                                getClientConfig().isMultiTenancyEnabled &&
-                                selectedTenantId === undefined
-                              ) {
-                                notificationsStore.displayNotification({
-                                  isDismissable: false,
-                                  kind: 'error',
-                                  title: t(
-                                    'processesStartProcessFailedMissingTenant',
-                                  ),
-                                  subtitle: displayName,
-                                });
-                              } else {
-                                notificationsStore.displayNotification({
-                                  isDismissable: false,
-                                  kind: 'error',
-                                  title: t('processesStartProcessFailed'),
-                                  subtitle: displayName,
-                                });
-                              }
-                            }}
-                            onStartProcessSuccess={() => {
-                              setSelectedProcess(null);
-                              setStartProcessStatus('inactive');
-                            }}
-                            status={
-                              selectedProcess?.bpmnProcessId ===
-                              process.bpmnProcessId
-                                ? startProcessStatus
-                                : 'inactive'
-                            }
-                          />
-                        </Column>
-                      ))}
-                </Grid>
-              )}
-            </div>
-          </div>
-        </Stack>
-      </div>
+      <ProcessesList
+        processes={data?.processes ?? []}
+        searchValue={searchValue}
+        isLoading={isLoading}
+        isFiltered={isFiltered}
+        onSearch={(event) => {
+          setSearchValue(event.target.value);
+          debouncedNavigate(searchParams, {
+            name: 'search',
+            value: event.target.value,
+          });
+        }}
+        initialTenant={currentUser?.tenants.find(({tenantId}) =>
+          [
+            searchParams.get('tenantId') ?? undefined,
+            getStateLocally('tenantId'),
+          ]
+            .filter((tenantId) => tenantId !== undefined)
+            .includes(tenantId),
+        )}
+        onTenantChange={(tenant) => {
+          updateSearchParams(searchParams, {
+            name: 'tenantId',
+            value: tenant,
+          });
+          storeStateLocally('tenantId', tenant);
+        }}
+        startFormFilterValue={startFormFilter}
+        onStartFormFilterChange={(value) =>
+          debouncedNavigate(searchParams, {
+            name: 'hasStartForm',
+            value: value.searchParamValue ?? '',
+          })
+        }
+        isStartButtonDisabled={instance !== null}
+        getUniqueId={(process) => process.id}
+        onStartProcess={(process: Process) => async () => {
+          setSelectedProcess(process);
+          const {bpmnProcessId} = process;
+          if (process.startEventFormId === null) {
+            setStartProcessStatus('active');
+            tracking.track({
+              eventName: 'process-start-clicked',
+            });
+            try {
+              await startProcess({
+                bpmnProcessId,
+                tenantId: selectedTenantId,
+              });
+            } catch (error) {
+              logger.error(error);
+              setStartProcessStatus('error');
+            }
+          } else {
+            navigate({
+              ...location,
+              pathname: pages.internalStartProcessFromForm(bpmnProcessId),
+            });
+          }
+        }}
+        onStartProcessError={(process: Process) => () => {
+          setSelectedProcess(null);
+          const displayName = getProcessDisplayName(process);
+          tracking.track({
+            eventName: 'process-start-failed',
+          });
+          setStartProcessStatus('inactive');
+          if (
+            getClientConfig().isMultiTenancyEnabled &&
+            selectedTenantId === undefined
+          ) {
+            notificationsStore.displayNotification({
+              isDismissable: false,
+              kind: 'error',
+              title: t('processesStartProcessFailedMissingTenant'),
+              subtitle: displayName,
+            });
+          } else {
+            notificationsStore.displayNotification({
+              isDismissable: false,
+              kind: 'error',
+              title: t('processesStartProcessFailed'),
+              subtitle: displayName,
+            });
+          }
+        }}
+        onStartProcessSuccess={() => {
+          setSelectedProcess(null);
+          setStartProcessStatus('inactive');
+        }}
+        selectedTenantId={selectedTenantId}
+        getStartProcessStatus={(process: Process) =>
+          selectedProcess?.bpmnProcessId === process.bpmnProcessId
+            ? startProcessStatus
+            : 'inactive'
+        }
+      />
 
       <FormModal
         processDisplayName={
@@ -555,7 +332,7 @@ const Processes: React.FC = observer(() => {
         onClose={() => {
           navigate({
             ...location,
-            pathname: '/processes',
+            pathname: pages.processes(),
           });
         }}
         onSubmit={async (variables) => {
@@ -572,7 +349,7 @@ const Processes: React.FC = observer(() => {
           });
           navigate({
             ...location,
-            pathname: '/processes',
+            pathname: pages.processes(),
           });
         }}
         onFileUpload={async (files: Map<string, File[]>) => {
