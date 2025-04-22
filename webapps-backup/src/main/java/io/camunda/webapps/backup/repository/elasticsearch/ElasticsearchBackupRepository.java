@@ -209,18 +209,18 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   @Override
   public List<GetBackupStateResponseDto> getBackups(
       final String repositoryName, final boolean verbose, final String pattern) {
-    final var validatedPattern = BackupRepository.validPattern(pattern);
-
-    validatedPattern.ifLeft(
-        ex -> {
-          throw new InvalidRequestException(ex.getMessage());
-        });
+    final String validPattern;
+    try {
+      validPattern = BackupRepository.validPattern(pattern);
+    } catch (final IllegalArgumentException ex) {
+      throw new InvalidRequestException(ex.getMessage());
+    }
 
     final GetSnapshotRequest snapshotsStatusRequest =
         GetSnapshotRequest.of(
             b -> {
               b.repository(repositoryName)
-                  .snapshot(snapshotNameProvider.snapshotNamePrefix() + validatedPattern.get())
+                  .snapshot(snapshotNameProvider.snapshotNamePrefix() + validPattern)
                   .verbose(verbose);
               if (verbose) {
                 // it looks like sorting as well as size/offset are not working, need to sort

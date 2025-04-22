@@ -9,7 +9,6 @@ package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
-import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -57,14 +56,14 @@ public interface BackupRepository {
     }
   }
 
-  static Either<Throwable, String> validPattern(final String pattern) {
+  static String validPattern(final String pattern) {
     if (pattern == null || pattern.isEmpty()) {
-      return Either.right("*");
+      return "*";
     } else if (pattern.length() <= (LONG_MAX_LENGTH_AS_STRING + 1)
         && BACKUPID_PATTERN.matcher(pattern).matches()) {
-      return Either.right(pattern);
+      return pattern;
     } else {
-      return Either.left(new IllegalArgumentException("Invalid pattern: " + pattern));
+      throw new IllegalArgumentException("Invalid pattern: " + pattern);
     }
   }
 }

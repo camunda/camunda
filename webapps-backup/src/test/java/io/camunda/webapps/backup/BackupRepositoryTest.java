@@ -8,8 +8,8 @@
 package io.camunda.webapps.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.util.Either;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -21,13 +21,13 @@ public class BackupRepositoryTest {
     @ParameterizedTest
     @ValueSource(strings = {""})
     public void shouldMatchDefaultPattern(final String pattern) {
-      assertThat(BackupRepository.validPattern(pattern)).isEqualTo(Either.right("*"));
+      assertThat(BackupRepository.validPattern(pattern)).isEqualTo("*");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"23", "*", "12390*", "1230891283*", "20250401*", "20250401"})
     public void shouldBeAValidPattern(final String pattern) {
-      assertThat(BackupRepository.validPattern(pattern)).isEqualTo(Either.right(pattern));
+      assertThat(BackupRepository.validPattern(pattern)).isEqualTo(pattern);
     }
 
     @ParameterizedTest
@@ -44,8 +44,8 @@ public class BackupRepositoryTest {
           "123*?query=all"
         })
     public void shouldNotBeAvalidPattern(final String pattern) {
-      assertThat(BackupRepository.validPattern(pattern))
-          .satisfies(p -> assertThat(p.isLeft()).withFailMessage("result is " + p).isTrue());
+      assertThatThrownBy(() -> BackupRepository.validPattern(pattern))
+          .isInstanceOf(IllegalArgumentException.class);
     }
   }
 }
