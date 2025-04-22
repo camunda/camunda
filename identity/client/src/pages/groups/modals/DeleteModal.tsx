@@ -29,7 +29,7 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
 
   const handleSubmit = async () => {
     const { success } = await callDeleteGroup({
-      groupKey: group.groupKey,
+      groupId: group.groupId,
     });
     if (success) {
       enqueueNotification({
@@ -53,10 +53,10 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
       <p>
         <Translate
           i18nKey="deleteGroupConfirmation"
-          values={{ groupKey: group.groupKey }}
+          values={{ groupId: group.groupId }}
         >
-          Are you sure you want to delete <strong>{group.groupKey}</strong>?{" "}
-          This action cannot be undone.
+          Are you sure you want to delete <strong>{group.groupId}</strong>? This
+          action cannot be undone.
         </Translate>
       </p>
     </Modal>
