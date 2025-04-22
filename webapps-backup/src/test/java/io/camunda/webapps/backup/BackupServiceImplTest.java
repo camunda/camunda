@@ -231,7 +231,7 @@ public class BackupServiceImplTest {
 
     @Override
     public List<GetBackupStateResponseDto> getBackups(
-        final String repositoryName, final boolean verbose) {
+        final String repositoryName, final boolean verbose, final String pattern) {
       validateRepositoryExists(repositoryName);
       if (!verbose) {
         // only return minimal information when verbose = false

@@ -44,8 +44,9 @@ public class BackupControllerStandalone {
   @ReadOperation
   public WebEndpointResponse<?> getBackups(
       @RequestParam(value = "verbose", defaultValue = "true", required = false)
-          final boolean verbose) {
-    return backupController.getBackups(verbose);
+          final boolean verbose,
+      @RequestParam(value = "pattern", defaultValue = "*", required = false) final String pattern) {
+    return backupController.getBackups(verbose, pattern);
   }
 
   @DeleteOperation

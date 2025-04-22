@@ -502,7 +502,7 @@ public class BackupControllerIT {
         String.format(
             "No repository with name [%s] could be found.",
             operateProperties.getBackup().getRepositoryName());
-    assertReturnsError(() -> backupController.getBackups(true), 404, expectedMessage);
+    assertReturnsError(() -> backupController.getBackups(true, null), 404, expectedMessage);
 
     verify(elasticsearchClient, times(1)).snapshot();
   }
@@ -513,7 +513,7 @@ public class BackupControllerIT {
         mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
     when(elsEx.error().type()).thenReturn(SNAPSHOT_MISSING_EXCEPTION_TYPE);
     mockGetWithException(elsEx);
-    final var response = backupController.getBackups(true);
+    final var response = backupController.getBackups(true, null);
 
     assertThat((List<HistoryBackupInfo>) response.getBody()).isEmpty();
   }
@@ -528,7 +528,7 @@ public class BackupControllerIT {
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
             operateProperties.getBackup().getRepositoryName());
-    assertReturnsError(() -> backupController.getBackups(true), 502, expectedMessage);
+    assertReturnsError(() -> backupController.getBackups(true, null), 502, expectedMessage);
   }
 
   @Test
@@ -569,7 +569,7 @@ public class BackupControllerIT {
     mockGetWithReturn(
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
-    final var backups = (List<HistoryBackupInfo>) backupController.getBackups(true).getBody();
+    final var backups = (List<HistoryBackupInfo>) backupController.getBackups(true, null).getBody();
     assertThat(backups).hasSize(3);
 
     final var backup3 =
@@ -627,7 +627,7 @@ public class BackupControllerIT {
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1));
     mockGetWithReturn(returnedResponse);
 
-    final var backups = (List<HistoryBackupInfo>) backupController.getBackups(true).getBody();
+    final var backups = (List<HistoryBackupInfo>) backupController.getBackups(true, null).getBody();
     assertThat(backups).hasSize(1);
     final HistoryBackupInfo backup1 = backups.get(0);
     assertThat(backup1.getState()).isEqualTo(COMPLETED);
@@ -659,7 +659,7 @@ public class BackupControllerIT {
     when(snapshotClient.get(any(GetSnapshotRequest.class)))
         .thenReturn(GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).total(1).remaining(0)));
 
-    final var backups = backupController.getBackups(false);
+    final var backups = backupController.getBackups(false, null);
     assertThat((List<HistoryBackupInfo>) backups.getBody())
         .allSatisfy(
             backupState -> {

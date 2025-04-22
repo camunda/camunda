@@ -392,7 +392,7 @@ public class ElasticsearchBackupRepositoryTest {
 
   @Test
   public void shouldForwardVerboseFlagToES() throws IOException {
-    // mock calls to `findSnapshot` and `operateProperties`
+    // given
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
     when(snapshotInfo.state()).thenReturn(SnapshotState.IN_PROGRESS.toString());
     when(snapshotInfo.snapshot()).thenReturn(snapshotName);
@@ -400,7 +400,7 @@ public class ElasticsearchBackupRepositoryTest {
     when(response.snapshots()).thenReturn(List.of(snapshotInfo));
     when(esClient.snapshot().get(any(GetSnapshotRequest.class))).thenReturn(response);
 
-    final var responses = backupRepository.getBackups(repositoryName, false);
+    final var responses = backupRepository.getBackups(repositoryName, false, null);
     verify(esClient.snapshot()).get(argThat((GetSnapshotRequest req) -> !req.verbose()));
     assertThat(responses)
         .singleElement()
@@ -416,5 +416,23 @@ public class ElasticsearchBackupRepositoryTest {
                         assertThat(detail.getStartTime()).isNull();
                       });
             });
+  }
+
+  @Test
+  public void shouldForwardThePatternToES() throws IOException {
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+    when(snapshotInfo.state()).thenReturn(SnapshotState.IN_PROGRESS.toString());
+    when(snapshotInfo.snapshot()).thenReturn(snapshotName);
+    final var response = mock(GetSnapshotResponse.class, RETURNS_DEEP_STUBS);
+    when(response.snapshots()).thenReturn(List.of(snapshotInfo));
+
+    when(esClient.snapshot().get(any(GetSnapshotRequest.class))).thenReturn(response);
+
+    // when
+    backupRepository.getBackups(repositoryName, true, "2023*");
+
+    // then
+    verify(esClient.snapshot())
+        .get(argThat((GetSnapshotRequest req) -> req.snapshot().contains("camunda_webapps_2023*")));
   }
 }
