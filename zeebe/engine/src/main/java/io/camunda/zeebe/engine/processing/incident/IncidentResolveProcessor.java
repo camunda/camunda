@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -163,10 +164,22 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     }
   }
 
-  private boolean isUserTaskRelatedIncident(final ElementInstance elementInstance) {
-    return elementInstance.getState() == ProcessInstanceIntent.ELEMENT_ACTIVATED
-        && elementInstance.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
-        && elementInstance.getUserTaskKey() > 0;
+  private boolean isUserTaskListenerRelatedIncident(
+      final IncidentRecord incidentRecord, final ElementInstance elementInstance) {
+
+    final boolean isExpressionFailure =
+        incidentRecord.getErrorType() == ErrorType.EXTRACT_VALUE_ERROR;
+
+    final boolean isCamundaUserTask =
+        elementInstance.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
+            && elementInstance.getUserTaskKey() > 0;
+
+    final var currentState = elementInstance.getState();
+    final boolean isInRelevantState =
+        currentState == ProcessInstanceIntent.ELEMENT_ACTIVATED
+            || currentState == ProcessInstanceIntent.ELEMENT_TERMINATING;
+
+    return isExpressionFailure && isCamundaUserTask && isInRelevantState;
   }
 
   private Either<String, TypedRecord<? extends UnifiedRecordValue>> getFailedCommand(
@@ -180,7 +193,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
               elementInstanceKey));
     }
 
-    return isUserTaskRelatedIncident(elementInstance)
+    return isUserTaskListenerRelatedIncident(incidentRecord, elementInstance)
         ? createUserTaskCommand(elementInstance)
         : createProcessInstanceCommand(elementInstance);
   }
@@ -201,7 +214,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
             intent -> {
               final var userTaskRecord = new UserTaskRecord();
               userTaskRecord.wrap(intermediateState.getRecord());
-              return new IncidentRecordWrapper<UserTaskRecord>(userTaskKey, intent, userTaskRecord);
+              return new IncidentRecordWrapper<>(userTaskKey, intent, userTaskRecord);
             });
   }
 
@@ -213,8 +226,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
             intent -> {
               final var record = new ProcessInstanceRecord();
               record.wrap(elementInstance.getValue());
-              return new IncidentRecordWrapper<ProcessInstanceRecord>(
-                  elementInstance.getKey(), intent, record);
+              return new IncidentRecordWrapper<>(elementInstance.getKey(), intent, record);
             });
   }
 
