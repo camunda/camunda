@@ -1,4 +1,4 @@
-# Reuseable workflow that executes the passed maven command
+# description: Reuseable workflow that executes the passed maven command
 # trigger: reusable
 # test location:
 # owner:

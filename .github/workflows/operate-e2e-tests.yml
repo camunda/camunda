@@ -1,4 +1,4 @@
-# Workflow for Front-End end to end tests. Tests will use a running instance of Operate for the API
+# description: Workflow for Front-End end to end tests. Tests will use a running instance of Operate for the API
 # trigger: Pull Request. On push to main, stable, and release
 # test location: operate/client/e2e-playwright/tests
 # owner:

@@ -1,6 +1,4 @@
-# This workflow runs backend CI tests for Operate. This includes Unit tests and Integration tests.
-# Integration tests are run in two stages, and each stage is defined by a profile. The profile
-# is defined in operate/pom.xml
+# description: This workflow runs backend CI tests for Operate. This includes Unit tests and Integration tests. Integration tests are run in two stages, and each stage is defined by a profile. The profile is defined in operate/pom.xml
 # trigger: Pull Request. On push to main, stable, and release
 # test location: operate/common, operate/schema, operate/webapp
 # owner:
