@@ -14,15 +14,20 @@ import org.camunda.feel.syntaxtree.ValContext;
 import org.camunda.feel.syntaxtree.ValError;
 import org.camunda.feel.syntaxtree.ValString;
 
-public abstract class FromAiFunctions {
+public class FromAiFunction extends JavaFunction {
   public static final List<JavaFunction> INSTANCES =
       List.of(
-          new FromAiFunction2(),
-          new FromAiFunction3(),
-          new FromAiFunction4(),
-          new FromAiFunction5());
+          new FromAiFunction(List.of("context", "name")),
+          new FromAiFunction(List.of("context", "name", "description")),
+          new FromAiFunction(List.of("context", "name", "description", "type")),
+          new FromAiFunction(List.of("context", "name", "description", "type", "schema")));
 
-  private static final MessagePackValueMapper MAPPER = new MessagePackValueMapper();
+  private static final MessagePackValueMapper MESSAGE_PACK_VALUE_MAPPER =
+      new MessagePackValueMapper();
+
+  public FromAiFunction(final List<String> params) {
+    super(params, FromAiFunction::invoke);
+  }
 
   private static Val invoke(final List<Val> args) {
     if (args.size() < 2) {
@@ -52,30 +57,6 @@ public abstract class FromAiFunctions {
               .formatted(nameStr.value()));
     }
 
-    return MAPPER.toVal(variable.get(), null).get();
-  }
-
-  public static class FromAiFunction2 extends JavaFunction {
-    public FromAiFunction2() {
-      super(List.of("context", "name"), FromAiFunctions::invoke);
-    }
-  }
-
-  public static class FromAiFunction3 extends JavaFunction {
-    public FromAiFunction3() {
-      super(List.of("context", "name", "description"), FromAiFunctions::invoke);
-    }
-  }
-
-  public static class FromAiFunction4 extends JavaFunction {
-    public FromAiFunction4() {
-      super(List.of("context", "name", "description", "type"), FromAiFunctions::invoke);
-    }
-  }
-
-  public static class FromAiFunction5 extends JavaFunction {
-    public FromAiFunction5() {
-      super(List.of("context", "name", "description", "type", "schema"), FromAiFunctions::invoke);
-    }
+    return MESSAGE_PACK_VALUE_MAPPER.toVal(variable.get(), null).get();
   }
 }

@@ -27,7 +27,7 @@ public class FeelFunctionProvider extends JavaFunctionProvider {
           "cycle",
           List.of(CycleFunction.INSTANCE, CycleInfiniteFunction.INSTANCE),
           "fromAi",
-          FromAiFunctions.INSTANCES);
+          FromAiFunction.INSTANCES);
 
   @Override
   public Optional<JavaFunction> resolveFunction(final String functionName) {
