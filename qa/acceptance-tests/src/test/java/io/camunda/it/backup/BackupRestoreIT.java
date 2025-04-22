@@ -268,7 +268,7 @@ public class BackupRestoreIT {
     // verify that getBackups API returns correctly with all flags
     final var flags = List.of(true, false);
     for (final var verbose : flags) {
-      assertThat(historyBackupClient.getBackups(verbose))
+      assertThat(historyBackupClient.getBackups(verbose, BACKUP_ID + "*"))
           .allSatisfy(
               state -> {
                 assertThat(state.getState()).isEqualTo(BackupStateDto.COMPLETED);
