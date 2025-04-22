@@ -123,4 +123,41 @@ public class TaskListenerTaskHeadersTest {
               helper.completeJobs(processInstanceKey, listener);
             });
   }
+
+  @Test
+  public void shouldHaveAccessToAssigneeInCreatingListenerWhenDefinedOnModel() {
+    // given
+    final var assignee = "initial_assignee";
+
+    // when
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
+                t ->
+                    t.zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.creating().type(listenerType))));
+
+    // then
+    helper.assertActivatedJob(
+        processInstanceKey,
+        listenerType,
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs("Expect first listener job to receive assignee header.")
+                .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee"));
+    helper.completeJobs(processInstanceKey, listenerType);
+  }
+
+  @Test
+  public void shouldNotHaveAccessToAssigneeInCreatingListenerWhenNotDefinedOnModel() {
+    // when
+    final long processInstanceKey =
+        helper.createProcessInstance(helper.createProcessWithCreatingTaskListeners(listenerType));
+
+    // then
+    final var activatedJob = helper.activateJob(processInstanceKey, listenerType);
+
+    assertThat(activatedJob.getCustomHeaders())
+        .doesNotContainKey(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME);
+  }
 }
