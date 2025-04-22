@@ -20,6 +20,7 @@ import {
   mockOrderProcessInstances,
   mockStatistics,
   mockResponses as mockProcessesResponses,
+  mockStatisticsV2,
 } from '../mocks/processes.mocks';
 
 import {
@@ -65,6 +66,7 @@ test.describe('get familiar with operate', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statistics: mockStatistics,
+        statisticsV2: mockStatisticsV2,
         processXml: open('orderProcess.bpmn'),
       }),
     );
@@ -120,6 +122,7 @@ test.describe('get familiar with operate', () => {
         processInstanceDetail: runningOrderProcessInstance.detail,
         flowNodeInstances: runningOrderProcessInstance.flowNodeInstances,
         statistics: runningOrderProcessInstance.statistics,
+        statisticsV2: runningOrderProcessInstance.statisticsV2,
         sequenceFlows: runningOrderProcessInstance.sequenceFlows,
         variables: runningOrderProcessInstance.variables,
         xml: runningOrderProcessInstance.xml,
