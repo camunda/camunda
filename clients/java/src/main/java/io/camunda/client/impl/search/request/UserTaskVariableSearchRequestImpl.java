@@ -32,9 +32,9 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
+import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.client.protocol.rest.UserTaskVariableSearchQueryRequest;
 import io.camunda.client.protocol.rest.VariableSearchQueryResult;
-import io.camunda.client.protocol.rest.VariableUserTaskFilterRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -80,7 +80,7 @@ public class UserTaskVariableSearchRequestImpl
 
   @Override
   public UserTaskVariableSearchRequest filter(final UserTaskVariableFilter value) {
-    final VariableUserTaskFilterRequest filter = provideSearchRequestProperty(value);
+    final UserTaskVariableFilterRequest filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }

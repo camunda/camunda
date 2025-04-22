@@ -15,14 +15,17 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
-import io.camunda.client.api.search.filter.BasicStringFilterProperty;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
-import io.camunda.client.impl.ResponseMapper;
+import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
+import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class BasicLongPropertyImpl implements BasicLongProperty {
+public class BasicLongPropertyImpl
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.BasicStringFilterProperty>
+    implements BasicLongProperty {
   private final io.camunda.client.protocol.rest.BasicStringFilterProperty filterProperty =
       new io.camunda.client.protocol.rest.BasicStringFilterProperty();
 
@@ -55,9 +58,8 @@ public class BasicLongPropertyImpl implements BasicLongProperty {
     return in(CollectionUtil.toList(values));
   }
 
-  @Override
-  public BasicStringFilterProperty build() {
-    return ResponseMapper.fromProtocolObject(filterProperty);
+  public io.camunda.client.protocol.rest.BasicStringFilterProperty build() {
+    return filterProperty;
   }
 
   @Override
@@ -69,5 +71,10 @@ public class BasicLongPropertyImpl implements BasicLongProperty {
   @Override
   public BasicLongProperty notIn(final Long... value) {
     return notIn(CollectionUtil.toList(value));
+  }
+
+  @Override
+  protected BasicStringFilterProperty getSearchRequestProperty() {
+    return filterProperty;
   }
 }

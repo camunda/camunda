@@ -23,7 +23,8 @@ public class GroupChangeset {
     return name;
   }
 
-  public void setName(String name) {
+  public GroupChangeset setName(final String name) {
     this.name = name;
+    return this;
   }
 }

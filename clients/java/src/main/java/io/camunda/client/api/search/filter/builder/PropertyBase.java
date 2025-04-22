@@ -17,7 +17,7 @@ package io.camunda.client.api.search.filter.builder;
 
 import java.util.List;
 
-public interface PropertyBase<T, R, SELF extends PropertyBase<T, R, SELF>> {
+public interface PropertyBase<T, SELF extends PropertyBase<T, SELF>> {
   SELF eq(final T value);
 
   SELF neq(final T value);
@@ -27,6 +27,4 @@ public interface PropertyBase<T, R, SELF extends PropertyBase<T, R, SELF>> {
   SELF in(final List<T> values);
 
   SELF in(final T... values);
-
-  R build();
 }

@@ -14,8 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
-import io.camunda.client.api.search.filter.StringFilterProperty;
-import io.camunda.client.api.search.filter.UserTaskVariableFilterRequest;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -24,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -248,10 +247,6 @@ class UserTaskSearchTest {
   @Test
   public void shouldThrowExceptionIfVariableValueNull() {
 
-    // given
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().setName("process01");
-
     // when
     final var exception =
         assertThrows(
@@ -259,7 +254,8 @@ class UserTaskSearchTest {
             () ->
                 camundaClient
                     .newUserTaskSearchRequest()
-                    .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+                    .filter(
+                        f -> f.processInstanceVariables(Arrays.asList(vf -> vf.name("process01"))))
                     .send()
                     .join());
     // then
@@ -290,15 +286,14 @@ class UserTaskSearchTest {
 
   @Test
   public void shouldRetrieveTaskByLocalVariablesLike() {
-    final UserTaskVariableFilterRequest variableValueFilter1 =
-        new UserTaskVariableFilterRequest()
-            .setName("task01")
-            .setValue(new StringFilterProperty().setLike("\"te*\""));
 
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(
+                        Arrays.asList(vf -> vf.name("task01").value(v -> v.like("\"te*\"")))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -306,15 +301,14 @@ class UserTaskSearchTest {
 
   @Test
   public void shouldRetrieveTaskByLocalVariablesIn() {
-    final UserTaskVariableFilterRequest variableValueFilter1 =
-        new UserTaskVariableFilterRequest()
-            .setName("task01")
-            .setValue(new StringFilterProperty().addInItem("\"test\""));
 
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(
+                        Arrays.asList(vf -> vf.name("task01").value(v -> v.in("\test\"")))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);

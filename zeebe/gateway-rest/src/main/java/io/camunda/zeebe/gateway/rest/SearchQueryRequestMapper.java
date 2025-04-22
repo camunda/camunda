@@ -447,7 +447,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static VariableFilter toUserTaskVariableFilter(
-      final VariableUserTaskFilterRequest filter) {
+      final UserTaskVariableFilterRequest filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();
     }
@@ -1194,7 +1194,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFiltersForUserTask(
-      final List<UserTaskVariableFilterRequest> filters) {
+      final List<VariableValueFilterRequest> filters) {
     if (CollectionUtils.isEmpty(filters)) {
       return Either.right(null);
     }
@@ -1206,8 +1206,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static Either<List<String>, List<VariableValueFilter>>
-      toVariableValueFiltersForProcessInstance(
-          final List<ProcessInstanceVariableFilterRequest> filters) {
+      toVariableValueFiltersForProcessInstance(final List<VariableValueFilterRequest> filters) {
     if (CollectionUtils.isEmpty(filters)) {
       return Either.right(null);
     }

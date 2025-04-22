@@ -21,7 +21,6 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.GroupChangeset;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.response.UpdateGroupResponse;
-import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateGroupResponseImpl;
@@ -50,7 +49,8 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
 
   @Override
   public UpdateGroupCommandStep1 update(final GroupChangeset groupChangeset) {
-    request.setChangeset(RequestMapper.toProtocolObject(groupChangeset));
+    request.setChangeset(
+        new io.camunda.client.protocol.rest.GroupChangeset().name(groupChangeset.getName()));
     return this;
   }
 

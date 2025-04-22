@@ -16,12 +16,12 @@
 package io.camunda.client.impl.http;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.MalformedResponseException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.impl.HttpStatusCode;
-import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
@@ -111,8 +111,17 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       return;
     }
 
+    final io.camunda.client.protocol.rest.ProblemDetail problem = body.problem();
     response.completeExceptionally(
-        new ProblemException(code, reason, ResponseMapper.fromProtocolObject(body.problem())));
+        new ProblemException(
+            code,
+            reason,
+            new ProblemDetail()
+                .setDetail(problem.getDetail())
+                .setInstance(problem.getInstance())
+                .setStatus(problem.getStatus())
+                .setTitle(problem.getTitle())
+                .setType(problem.getType())));
   }
 
   private void handleSuccessResponse(

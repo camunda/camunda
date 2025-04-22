@@ -66,12 +66,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
-    final List<ProcessInstanceVariableFilterRequest> variables =
+    final List<VariableValueFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest()
-                .name("n1")
-                .value(new StringFilterProperty().$eq("v1")),
-            new ProcessInstanceVariableFilterRequest()
+            new VariableValueFilterRequest().name("n1").value(new StringFilterProperty().$eq("v1")),
+            new VariableValueFilterRequest()
                 .name("n2")
                 .value(new StringFilterProperty().$eq("v2")));
     client
@@ -210,12 +208,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
-    final List<ProcessInstanceVariableFilterRequest> variables =
+    final List<VariableValueFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest()
-                .name("n1")
-                .value(new StringFilterProperty().$eq("v1")),
-            new ProcessInstanceVariableFilterRequest()
+            new VariableValueFilterRequest().name("n1").value(new StringFilterProperty().$eq("v1")),
+            new VariableValueFilterRequest()
                 .name("n2")
                 .value(new StringFilterProperty().$eq("v2")));
 
