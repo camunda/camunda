@@ -4,7 +4,6 @@
 # owner:
 ---
 name: Operate Run Test Importer
-description: sds
 
 on:
   schedule:
