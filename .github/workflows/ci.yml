@@ -102,7 +102,8 @@ jobs:
     steps:
       - name: Determine fetch depth for checkout
         id: depth
-        run: echo "depth=$(expr ${{ github.event.pull_request.commits }} + 1)" >> $GITHUB_OUTPUT
+        run: |
+          echo "depth=$(expr ${{ github.event.pull_request.commits }} + 1)" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -1055,9 +1056,9 @@ jobs:
       checks: read
     needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
-      - commitlint
       - build-operate-backend
       - build-platform-frontend
+      - commitlint
       - detect-changes
       - docker-checks
       - elasticsearch-integration-tests
@@ -1132,7 +1133,7 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ docker-checks, check-results ]
+    needs: [ check-results ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
