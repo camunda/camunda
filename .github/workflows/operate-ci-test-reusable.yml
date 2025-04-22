@@ -13,6 +13,7 @@
 # CI IT test reusable GitHub Actions Workflow
 # Triggers on a workflow_call event and accepts inputs for branch name and fork count
 # Performs integration tests for the tasklist service with parallel execution.
+# description: Automates the CI test porcess for operate
 # trigger: reusable
 # test location:
 # owner:

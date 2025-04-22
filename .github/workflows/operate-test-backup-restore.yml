@@ -1,4 +1,4 @@
-# Workflow that runs the backup restore tests for Operate
+# description: Workflow that runs the backup restore tests for Operate
 # trigger: Chron schedule. Runs daily on weekdays
 # test location: operate/qa/backup-restore-tests
 # owner:

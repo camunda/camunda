@@ -1,4 +1,4 @@
-# Workflow for tests for running Integration tests on a docker image
+# description:  Workflow for tests for running Integration tests on a docker image
 # trigger: Pull Request. On push to main, stable, and release
 # test location: operate/qa/integration-tests
 # owner:
