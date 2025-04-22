@@ -1,9 +1,9 @@
-# description: This workflow runs backend CI tests for Operate. This includes Unit tests and Integration tests. Integration tests are run in two stages, and each stage is defined by a profile. The profile is defined in operate/pom.xml
+# description: This workflow runs backend CI tests for Operate. Runs a test build, unit tests, and java checks
 # trigger: Pull Request. On push to main, stable, and release
 # test location: operate/common, operate/schema, operate/webapp
 # owner:
 ---
-name: Operate CI
+name: Operate Core Features CI
 on:
   workflow_dispatch:
   push:
@@ -41,7 +41,7 @@ concurrency:
 
 jobs:
   run-build:
-    name: Operate Build
+    name: Operate Build - Backend, Frontend, Docker Image
     uses: ./.github/workflows/operate-ci-build-reusable.yml
     secrets: inherit
     with:
@@ -72,16 +72,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: ./mvnw -f operate/qa/integration-tests verify -P operateItStage1 -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
+      command: ./mvnw -f operate/qa/integration-tests verify -P operateBackendIt -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
       test-type: Integration Tests
       runner-type: gcp-core-32-default
 
-  run-opensearch-tests:
-    name: Operate Backend Opensearch ITs
-    uses: ./.github/workflows/operate-ci-test-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref || github.ref_name }}
-      command: ./mvnw -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
-      test-type: Opensearch ITs
-      runner-type: gcp-core-32-default
