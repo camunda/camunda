@@ -17,6 +17,7 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.FormStore.FormIdView;
 import io.camunda.tasklist.store.TaskMetricsStore;
@@ -61,6 +62,7 @@ public class TaskService {
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
   @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
+  @Autowired private TasklistProperties tasklistProperties;
 
   public List<TaskDTO> getTasks(final TaskQueryDTO query) {
     return getTasks(query, emptySet(), false);
@@ -152,8 +154,11 @@ public class TaskService {
     if (StringUtils.isEmpty(assignee) && currentUser.isApiUser()) {
       throw new InvalidRequestException("Assignee must be specified");
     }
-
-    if (StringUtils.isNotEmpty(assignee)
+    final boolean allowNonSelfAssignment =
+        Optional.ofNullable(tasklistProperties.getFeatureFlag().getAllowNonSelfAssignment())
+            .orElse(false);
+    if (!allowNonSelfAssignment
+        && StringUtils.isNotEmpty(assignee)
         && !currentUser.isApiUser()
         && !assignee.equals(currentUser.getUserId())) {
       throw new ForbiddenActionException(
