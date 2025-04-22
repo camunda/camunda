@@ -160,7 +160,7 @@ public class MappingAppliersTest {
     // create group
     final var groupId = "1";
     final var groupKey = Long.parseLong(groupId);
-    mappingState.addGroup(mappingId, groupKey);
+    membershipState.insertRelation(EntityType.MAPPING, mappingId, RelationType.GROUP, groupId);
     final var group =
         new GroupRecord()
             .setGroupKey(groupKey)
@@ -169,7 +169,6 @@ public class MappingAppliersTest {
             .setEntityId(String.valueOf(mappingKey))
             .setEntityType(EntityType.MAPPING);
     groupState.create(group);
-    groupState.addEntity(group);
     // create authorization
     authorizationState.create(
         5L,

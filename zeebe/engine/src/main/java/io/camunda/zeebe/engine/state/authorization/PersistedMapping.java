@@ -9,14 +9,9 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class PersistedMapping extends UnpackedObject implements DbValue {
 
@@ -25,16 +20,13 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty mappingIdProp = new StringProperty("mappingId", "");
-  private final ArrayProperty<LongValue> groupKeysProp =
-      new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedMapping() {
-    super(6);
+    super(5);
     declareProperty(mappingKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
-        .declareProperty(groupKeysProp)
         .declareProperty(mappingIdProp);
   }
 
@@ -86,23 +78,6 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
 
   public PersistedMapping setMappingId(final String mappingId) {
     mappingIdProp.setValue(mappingId);
-    return this;
-  }
-
-  public List<Long> getGroupKeysList() {
-    return StreamSupport.stream(groupKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
-        .collect(Collectors.toList());
-  }
-
-  public PersistedMapping setGroupKeysList(final List<Long> groupKeys) {
-    groupKeysProp.reset();
-    groupKeys.forEach(groupKey -> groupKeysProp.add().setValue(groupKey));
-    return this;
-  }
-
-  public PersistedMapping addGroupKey(final long groupKey) {
-    groupKeysProp.add().setValue(groupKey);
     return this;
   }
 }

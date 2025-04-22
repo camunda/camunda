@@ -154,14 +154,15 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
               .setEntityKey(mappingKey)
               .setEntityType(EntityType.MAPPING));
     }
-    for (final var groupKey : mapping.getGroupKeysList()) {
+    for (final var groupKey :
+        membershipState.getMemberships(
+            EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP)) {
       stateWriter.appendFollowUpEvent(
-          groupKey,
+          Long.parseLong(groupKey),
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
-              .setGroupKey(groupKey)
-              // TODO: revisit with https://github.com/camunda/camunda/issues/30092
-              .setEntityId(String.valueOf(mappingKey))
+              .setGroupKey(Long.parseLong(groupKey))
+              .setEntityId(mapping.getMappingId())
               .setEntityType(EntityType.MAPPING));
     }
     stateWriter.appendFollowUpEvent(

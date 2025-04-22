@@ -17,7 +17,6 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import java.util.List;
 import java.util.Optional;
 
 public class DbMappingState implements MutableMappingState {
@@ -112,32 +111,6 @@ public class DbMappingState implements MutableMappingState {
                       "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
                       mappingRecord.getMappingId()));
             });
-  }
-
-  @Override
-  public void addGroup(final String mappingId, final long groupKey) {
-    this.mappingId.wrapString(mappingId);
-    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
-    if (fkClaim != null) {
-      final var claim = fkClaim.inner();
-      final var persistedMapping = mappingColumnFamily.get(claim);
-      persistedMapping.addGroupKey(groupKey);
-      mappingColumnFamily.update(claim, persistedMapping);
-    }
-  }
-
-  @Override
-  public void removeGroup(final String mappingId, final long groupKey) {
-    this.mappingId.wrapString(mappingId);
-    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
-    if (fkClaim != null) {
-      final var claim = fkClaim.inner();
-      final var persistedMapping = mappingColumnFamily.get(claim);
-      final List<Long> groupKeys = persistedMapping.getGroupKeysList();
-      groupKeys.remove(groupKey);
-      persistedMapping.setGroupKeysList(groupKeys);
-      mappingColumnFamily.update(claim, persistedMapping);
-    }
   }
 
   @Override
