@@ -11,6 +11,7 @@ import java.util.List;
 import org.camunda.feel.context.JavaFunction;
 import org.camunda.feel.syntaxtree.Val;
 import org.camunda.feel.syntaxtree.ValError;
+import org.camunda.feel.syntaxtree.ValNull$;
 
 public class FromAiFunction extends JavaFunction {
   public static final List<JavaFunction> INSTANCES =
@@ -25,11 +26,12 @@ public class FromAiFunction extends JavaFunction {
   }
 
   private static Val invoke(final List<Val> args) {
-    if (args.isEmpty()) {
+    final var firstArg = !args.isEmpty() ? args.getFirst() : null;
+    if (firstArg == null || firstArg instanceof ValNull$) {
       return new ValError(
-          "fromAi function expected at least one parameter (value), but found none");
+          "fromAi function expected at least one parameter (value), but received null");
     }
 
-    return args.getFirst();
+    return firstArg;
   }
 }
