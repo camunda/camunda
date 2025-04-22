@@ -75,20 +75,20 @@ export const getGroupsByTenantId: ApiDefinition<
   GetTenantGroupsParams
 > = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/groups/search`);
 
-type AssignTenantGroupParams = GetTenantGroupsParams & { groupKey: string };
+type AssignTenantGroupParams = GetTenantGroupsParams & { groupId: string };
 export const assignTenantGroup: ApiDefinition<
   undefined,
   AssignTenantGroupParams
-> = ({ tenantId, groupKey }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/groups/${groupKey}`);
+> = ({ tenantId, groupId }) => {
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/groups/${groupId}`);
 };
 
 type UnassignTenantGroupParams = AssignTenantGroupParams;
 export const unassignTenantGroup: ApiDefinition<
   undefined,
   UnassignTenantGroupParams
-> = ({ tenantId, groupKey }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/groups/${groupKey}`);
+> = ({ tenantId, groupId }) =>
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/groups/${groupId}`);
 
 // ----------------- Roles within a Tenant -----------------
 

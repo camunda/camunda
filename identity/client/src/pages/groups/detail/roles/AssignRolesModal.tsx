@@ -23,10 +23,7 @@ const SelectedRoles = styled.div`
 `;
 
 const AssignRolesModal: FC<
-  UseEntityModalCustomProps<
-    { id: Group["groupKey"] },
-    { assignedRoles: Role[] }
-  >
+  UseEntityModalCustomProps<{ id: Group["groupId"] }, { assignedRoles: Role[] }>
 > = ({ entity: group, assignedRoles, onSuccess, open, onClose }) => {
   const { t, Translate } = useTranslate("groups");
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);

@@ -43,9 +43,9 @@ const AssignGroupsModal: FC<
 
   const unassignedGroups =
     groupSearchResults?.items.filter(
-      ({ groupKey }) =>
-        !assignedGroups.some((group) => group.groupKey === groupKey) &&
-        !selectedGroups.some((group) => group.groupKey === groupKey),
+      ({ groupId }) =>
+        !assignedGroups.some((group) => group.groupId === groupId) &&
+        !selectedGroups.some((group) => group.groupId === groupId),
     ) || [];
 
   const onSelectGroup = (group: Group) => {
@@ -53,10 +53,10 @@ const AssignGroupsModal: FC<
   };
 
   const onUnselectGroup =
-    ({ groupKey }: Group) =>
+    ({ groupId }: Group) =>
     () => {
       setSelectedGroups(
-        selectedGroups.filter((group) => group.groupKey !== groupKey),
+        selectedGroups.filter((group) => group.groupId !== groupId),
       );
     };
 
@@ -68,8 +68,8 @@ const AssignGroupsModal: FC<
     setLoadingAssignGroup(true);
 
     const results = await Promise.all(
-      selectedGroups.map(({ groupKey }) =>
-        callAssignGroup({ groupKey, tenantId: tenant.id }),
+      selectedGroups.map(({ groupId }) =>
+        callAssignGroup({ groupId, tenantId: tenant.id }),
       ),
     );
 
@@ -107,13 +107,13 @@ const AssignGroupsModal: FC<
         <SelectedGroups>
           {selectedGroups.map((group) => (
             <Tag
-              key={group.groupKey}
+              key={group.groupId}
               onClose={onUnselectGroup(group)}
               size="md"
               type="blue"
               filter
             >
-              {group.groupKey}
+              {group.groupId}
             </Tag>
           ))}
         </SelectedGroups>
@@ -121,7 +121,7 @@ const AssignGroupsModal: FC<
       <DropdownSearch
         autoFocus
         items={unassignedGroups}
-        itemTitle={({ groupKey }) => groupKey}
+        itemTitle={({ groupId }) => groupId}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByGroupId")}
         onSelect={onSelectGroup}

@@ -45,7 +45,7 @@ const Details: FC = () => {
     data: group,
     loading,
     reload,
-  } = useApi(getGroupDetails, { groupKey: id });
+  } = useApi(getGroupDetails, { groupId: id });
   const [editGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
@@ -83,7 +83,7 @@ const Details: FC = () => {
                     </OverflowMenu>
                   </Stack>
                   <p>
-                    {t("groupId")}: {group.groupKey}
+                    {t("groupId")}: {group.groupId}
                   </p>
                   {group?.description && (
                     <Description>
@@ -107,7 +107,7 @@ const Details: FC = () => {
                         {
                           key: "users",
                           label: t("users"),
-                          content: <Members groupId={group?.groupKey} />,
+                          content: <Members groupId={group?.groupId} />,
                         },
                       ]
                     : []),
@@ -116,7 +116,7 @@ const Details: FC = () => {
                         {
                           key: "roles",
                           label: t("roles"),
-                          content: <Roles groupId={group?.groupKey} />,
+                          content: <Roles groupId={group?.groupId} />,
                         },
                       ]
                     : []),
@@ -125,7 +125,7 @@ const Details: FC = () => {
                         {
                           key: "mappings",
                           label: t("mappings"),
-                          content: <Mappings groupId={group?.groupKey} />,
+                          content: <Mappings groupId={group?.groupId} />,
                         },
                       ]
                     : []),
