@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, RoleEntity> {
 
@@ -53,12 +54,17 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   public SearchQueryResult<RoleEntity> getMemberRoles(final long memberKey, final RoleQuery query) {
+    // todo use memberId (String) in https://github.com/camunda/camunda/issues/30111
     return search(
-        query.toBuilder().filter(query.filter().toBuilder().memberKey(memberKey).build()).build());
+        query.toBuilder()
+            .filter(query.filter().toBuilder().memberId(String.valueOf(memberKey)).build())
+            .build());
   }
 
   public List<RoleEntity> getRolesByMemberKeys(final Set<Long> memberKeys) {
-    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberKeys(memberKeys))));
+    // todo use memberIds (String) in https://github.com/camunda/camunda/issues/30111
+    final var memberIds = memberKeys.stream().map(String::valueOf).collect(Collectors.toSet());
+    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberIds))));
   }
 
   public List<RoleEntity> findAll(final RoleQuery query) {

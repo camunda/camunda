@@ -55,7 +55,8 @@ public class RoleMemberAddedHandler implements ExportHandler<RoleEntity, RoleRec
   @Override
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     entity
-        .setMemberKey(record.getValue().getEntityKey())
+        // todo remove parsing in https://github.com/camunda/camunda/issues/30111
+        .setMemberKey(String.valueOf(record.getValue().getEntityKey()))
         .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createChild(record.getValue().getRoleKey()));
   }
 
