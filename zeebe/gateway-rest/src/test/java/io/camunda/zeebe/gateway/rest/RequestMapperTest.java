@@ -19,8 +19,14 @@ import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.entity.OAuthContext;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -31,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -136,6 +143,65 @@ class RequestMapperTest {
     assertThat(authContext.authenticatedTenantIds())
         .containsExactlyInAnyOrder("tenant-1", "tenant-2");
     assertThat(authContext.authenticatedUsername()).isEqualTo(username);
+  }
+
+  @Test
+  void shouldMapToProcessInstanceMigrationBatchOperationRequest() {
+    // given
+    final var migrationInstruction = new ProcessInstanceMigrationInstruction();
+    migrationInstruction.setTargetProcessDefinitionKey("123");
+    final var mappingInstruction = new MigrateProcessInstanceMappingInstruction();
+    mappingInstruction.setSourceElementId("source1");
+    mappingInstruction.setTargetElementId("target1");
+    migrationInstruction.setMappingInstructions(List.of(mappingInstruction));
+
+    final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationInstruction();
+    batchOperationInstruction.setMigrationPlan(migrationInstruction);
+    final var filter = new ProcessInstanceFilter();
+    batchOperationInstruction.setFilter(filter);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceMigrationBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationInstruction);
+
+    // then
+    assertTrue(result.isRight());
+    final var request = result.get();
+    assertThat(request.targetProcessDefinitionKey()).isEqualTo(123L);
+    assertThat(request.mappingInstructions())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            instruction -> {
+              assertThat(instruction.getSourceElementId()).isEqualTo("source1");
+              assertThat(instruction.getTargetElementId()).isEqualTo("target1");
+            });
+  }
+
+  @Test
+  void shouldReturnProblemDetailForInvalidInput() {
+    // given
+    final var migrationInstruction = new ProcessInstanceMigrationInstruction();
+    migrationInstruction.setTargetProcessDefinitionKey("123");
+    final var mappingInstruction = new MigrateProcessInstanceMappingInstruction();
+    mappingInstruction.setSourceElementId(null);
+    mappingInstruction.setTargetElementId(null);
+    migrationInstruction.setMappingInstructions(List.of(mappingInstruction));
+
+    final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationInstruction();
+    batchOperationInstruction.setMigrationPlan(migrationInstruction);
+    final var filter = new ProcessInstanceFilter();
+    batchOperationInstruction.setFilter(filter);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceMigrationBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationInstruction);
+
+    // then
+    assertTrue(result.isLeft());
+    final var problemDetail = result.getLeft();
+    assertThat(problemDetail.getStatus()).isEqualTo(400); // Bad Request
+    assertThat(problemDetail.getDetail()).contains("are required");
   }
 
   private void setJwtAuthenticationInContext(final String sub, final String aud) {

@@ -62,6 +62,7 @@ import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
@@ -95,6 +96,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
@@ -780,6 +782,31 @@ public class RequestMapper {
                                 .setTargetElementId(instruction.getTargetElementId()))
                     .toList(),
                 request.getOperationReference()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceMigrationBatchOperationRequest>
+      toProcessInstanceMigrationBatchOperationRequest(
+          final ProcessInstanceMigrationBatchOperationInstruction request) {
+    // First validate filter and return early
+    final var filter = SearchQueryRequestMapper.toProcessInstanceFilter(request.getFilter());
+    if (filter.isLeft()) {
+      return Either.left(createProblemDetail(filter.getLeft()).get());
+    }
+
+    final var migrationPlan = request.getMigrationPlan();
+    return getResult(
+        validateMigrateProcessInstanceRequest(migrationPlan),
+        () ->
+            new ProcessInstanceMigrationBatchOperationRequest(
+                filter.get(),
+                KeyUtil.keyToLong(migrationPlan.getTargetProcessDefinitionKey()),
+                migrationPlan.getMappingInstructions().stream()
+                    .map(
+                        instruction ->
+                            new ProcessInstanceMigrationMappingInstruction()
+                                .setSourceElementId(instruction.getSourceElementId())
+                                .setTargetElementId(instruction.getTargetElementId()))
+                    .toList()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceModifyRequest> toModifyProcessInstance(

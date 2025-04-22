@@ -17,6 +17,8 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
+import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -31,4 +33,26 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
    * @return filter to apply in the batch operation to select the entities to operate on (as JSON)
    */
   String getEntityFilter();
+
+  /**
+   * @return the migration plan, this is only used for {@link
+   *     BatchOperationType#MIGRATE_PROCESS_INSTANCE}
+   */
+  BatchOperationProcessInstanceMigrationPlanValue getMigrationPlan();
+
+  @Value.Immutable
+  @ImmutableProtocol(
+      builder = ImmutableBatchOperationProcessInstanceMigrationPlanValue.Builder.class)
+  interface BatchOperationProcessInstanceMigrationPlanValue {
+
+    /**
+     * @return the key of the process definition to migrate to
+     */
+    long getTargetProcessDefinitionKey();
+
+    /**
+     * @return the mapping instructions, or an empty list if no instructions are available
+     */
+    List<ProcessInstanceMigrationMappingInstructionValue> getMappingInstructions();
+  }
 }
