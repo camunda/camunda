@@ -124,7 +124,7 @@ export const getMappingsByTenantId: ApiDefinition<
   SearchResponse<Mapping>,
   GetTenantMappingsParams
 > = ({ tenantId }) =>
-  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/search`);
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mappings/search`);
 
 type AssignTenantMappingParams = GetTenantMappingsParams & {
   mappingId: string;
@@ -133,7 +133,7 @@ export const assignTenantMapping: ApiDefinition<
   undefined,
   AssignTenantMappingParams
 > = ({ tenantId, mappingId }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingId}`);
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/mappings/${mappingId}`);
 };
 
 type UnassignTenantMappingParams = AssignTenantMappingParams;
@@ -141,4 +141,4 @@ export const unassignTenantMapping: ApiDefinition<
   undefined,
   UnassignTenantMappingParams
 > = ({ tenantId, mappingId }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingId}`);
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/mappings/${mappingId}`);
