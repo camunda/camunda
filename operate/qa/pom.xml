@@ -17,7 +17,6 @@
     <module>util</module>
     <module>data-generator</module>
     <module>integration-tests</module>
-    <module>query-performance-tests</module>
     <module>backup-restore-tests</module>
   </modules>
 
