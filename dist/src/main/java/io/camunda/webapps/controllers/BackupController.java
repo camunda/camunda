@@ -37,6 +37,7 @@ import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
 @WebEndpoint(id = "backupHistory")
@@ -86,10 +87,12 @@ public class BackupController {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> getBackups() {
+  public WebEndpointResponse<?> getBackups(
+      @RequestParam(value = "verbose", defaultValue = "true", required = false)
+          final boolean verbose) {
     try {
       validateRepositoryNameIsConfigured();
-      final var respDTO = backupService.getBackups();
+      final var respDTO = backupService.getBackups(verbose);
       final var resp = respDTO.stream().map(this::mapTo).toList();
       return new WebEndpointResponse<>(resp);
     } catch (final Exception e) {

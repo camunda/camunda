@@ -9,6 +9,14 @@ package io.camunda.webapps.backup;
 
 public record Metadata(Long backupId, String version, Integer partNo, Integer partCount) {
 
+  public boolean isInitialized() {
+    return partNo != null
+        && partCount != null
+        && partCount > 0
+        && version != null
+        && !version.isEmpty();
+  }
+
   public Metadata withPart(final int part) {
     return new Metadata(backupId, version, part, partCount);
   }

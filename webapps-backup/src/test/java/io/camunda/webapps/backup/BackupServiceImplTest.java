@@ -14,7 +14,7 @@ import io.camunda.webapps.backup.BackupException.IndexNotFoundException;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
-import io.camunda.webapps.backup.repository.TestSnapshotProvider;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -71,7 +71,7 @@ public class BackupServiceImplTest {
 
   @BeforeEach
   public void setUp() {
-    backupRepository = new MockBackupRepository(repositoryName, new TestSnapshotProvider());
+    backupRepository = new MockBackupRepository(repositoryName, new WebappsSnapshotNameProvider());
     executor = Executors.newSingleThreadExecutor();
     backupService = makeBackupService(DEFAULT_BACKUP_PRIORITIES);
   }
@@ -90,11 +90,11 @@ public class BackupServiceImplTest {
     assertThat(backup.getScheduledSnapshots())
         .isEqualTo(
             List.of(
-                "test_snapshot_1_1_5",
-                "test_snapshot_1_2_5",
-                "test_snapshot_1_3_5",
-                "test_snapshot_1_4_5",
-                "test_snapshot_1_5_5"));
+                "camunda_webapps_1_8.3_part_1_of_5",
+                "camunda_webapps_1_8.3_part_2_of_5",
+                "camunda_webapps_1_8.3_part_3_of_5",
+                "camunda_webapps_1_8.3_part_4_of_5",
+                "camunda_webapps_1_8.3_part_5_of_5"));
 
     Awaitility.await("All backups are done")
         .untilAsserted(
@@ -152,7 +152,10 @@ public class BackupServiceImplTest {
     assertThat(backupRepository.backups.get(1L)).isNull();
     // all the snapshot parts created are removed
     assertThat(backupRepository.removedSnasphotNames)
-        .containsExactly("test_snapshot_1_1_3", "test_snapshot_1_3_3", "test_snapshot_1_2_3");
+        .contains(
+            "camunda_webapps_1_8.3_part_1_of_3",
+            "camunda_webapps_1_8.3_part_2_of_3",
+            "camunda_webapps_1_8.3_part_3_of_3");
   }
 
   private void waitForAllTasks() {
@@ -227,8 +230,27 @@ public class BackupServiceImplTest {
     }
 
     @Override
-    public List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
+    public List<GetBackupStateResponseDto> getBackups(
+        final String repositoryName, final boolean verbose) {
       validateRepositoryExists(repositoryName);
+      if (!verbose) {
+        // only return minimal information when verbose = false
+        return backups.values().stream()
+            .map(
+                b ->
+                    new GetBackupStateResponseDto()
+                        .setState(b.getState())
+                        .setBackupId(b.getBackupId())
+                        .setDetails(
+                            b.getDetails().stream()
+                                .map(
+                                    d ->
+                                        new GetBackupStateResponseDetailDto()
+                                            .setState(d.getState())
+                                            .setSnapshotName(d.getSnapshotName()))
+                                .toList()))
+            .collect(Collectors.toList());
+      }
       return backups.values().stream().toList();
     }
 
