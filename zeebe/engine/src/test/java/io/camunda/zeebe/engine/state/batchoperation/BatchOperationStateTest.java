@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +69,47 @@ public class BatchOperationStateTest {
     assertThat(batchOperation.getKey()).isEqualTo(batchOperationKey);
     assertThat(batchOperation.getBatchOperationType()).isEqualTo(type);
     assertThat(recordFilter).isEqualTo(filter);
+    assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
+  }
+
+  @Test
+  void shouldCreateBatchOperationForMigration() throws JsonProcessingException {
+    // given
+    final var batchOperationKey = 1L;
+    final var type = BatchOperationType.MIGRATE_PROCESS_INSTANCE;
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .processDefinitionIds("process")
+            .processDefinitionVersions(1)
+            .build();
+
+    final var migrationPlan = new BatchOperationProcessInstanceMigrationPlan();
+    migrationPlan.setTargetProcessDefinitionKey(2L);
+    final var mappingInstruction =
+        new ProcessInstanceMigrationMappingInstruction()
+            .setSourceElementId("source")
+            .setTargetElementId("target");
+    migrationPlan.addMappingInstruction(mappingInstruction);
+
+    final var record =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(type)
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setMigrationPlan(migrationPlan);
+
+    // when
+    state.create(batchOperationKey, record);
+
+    // then
+    final var batchOperation = state.get(batchOperationKey).get();
+    final var recordFilter =
+        new ObjectMapper().readValue(batchOperation.getEntityFilter(), ProcessInstanceFilter.class);
+
+    assertThat(batchOperation.getKey()).isEqualTo(batchOperationKey);
+    assertThat(batchOperation.getBatchOperationType()).isEqualTo(type);
+    assertThat(recordFilter).isEqualTo(filter);
+    assertThat(batchOperation.getMigrationPlan()).isEqualTo(migrationPlan);
     assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
   }
 
