@@ -100,7 +100,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
 
   private String getUrl() {
     switch (type) {
-      case PROCESS_CANCELLATION:
+      case CANCEL_PROCESS_INSTANCE:
         return "/process-instances/batch-operations/cancellation";
       case RESOLVE_INCIDENT:
         return "/process-instances/batch-operations/incident-resolution";
@@ -126,7 +126,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
       return new CreateBatchOperationCommandImpl<>(
           httpClient,
           jsonMapper,
-          BatchOperationTypeEnum.PROCESS_CANCELLATION,
+          BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE,
           SearchRequestBuilders::processInstanceFilter);
     }
 

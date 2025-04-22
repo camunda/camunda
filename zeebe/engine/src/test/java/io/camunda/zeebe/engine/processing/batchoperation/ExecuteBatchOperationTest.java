@@ -19,11 +19,10 @@ import org.junit.Test;
 public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest {
 
   @Test
-  public void shouldExecuteBatchOperationForProcessInstanceCancellation() {
+  public void shouldExecuteBatchOperationForCancelProcessInstance() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final var batchOperationKey =
-        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
     // then we have executed and completed event
     assertThat(
@@ -42,7 +41,7 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
-    // and we have several process cancellation commands
+    // and we have several cancel process commands
     processInstanceKeys.forEach(
         key -> {
           assertThat(RecordingExporter.processInstanceRecords().withProcessInstanceKey(key))

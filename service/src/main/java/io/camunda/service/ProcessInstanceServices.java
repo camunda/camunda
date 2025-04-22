@@ -168,7 +168,7 @@ public final class ProcessInstanceServices
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(rootInstanceFilter)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
 
     return sendBrokerRequest(brokerRequest);
   }

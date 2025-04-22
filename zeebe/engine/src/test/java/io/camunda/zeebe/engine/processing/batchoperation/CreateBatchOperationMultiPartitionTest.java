@@ -45,7 +45,7 @@ public final class CreateBatchOperationMultiPartitionTest {
     final long batchOperationKey =
         engine
             .batchOperation()
-            .newCreation(BatchOperationType.PROCESS_CANCELLATION)
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .withFilter(new UnsafeBuffer("{\"processInstanceKeys\": [1, 2, 3]}".getBytes()))
             .create()
             .getValue()

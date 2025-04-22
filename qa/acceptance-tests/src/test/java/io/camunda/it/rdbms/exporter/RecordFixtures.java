@@ -520,7 +520,7 @@ public class RecordFixtures {
         .build();
   }
 
-  protected static ImmutableRecord<RecordValue> getBatchOperationProcessCancelledRecord(
+  protected static ImmutableRecord<RecordValue> getCanceledProcessRecord(
       final Long processInstanceKey, final Long batchOperationKey, final Long position) {
     final Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
@@ -542,7 +542,7 @@ public class RecordFixtures {
         .build();
   }
 
-  protected static ImmutableRecord<RecordValue> getFailedBatchOperationProcessCancelledRecord(
+  protected static ImmutableRecord<RecordValue> getRejectedCancelProcessRecord(
       final Long processInstanceKey, final Long batchOperationKey, final Long position) {
     final Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);

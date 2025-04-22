@@ -39,7 +39,7 @@ public final class BatchOperationSetupProcessors {
       final int partitionId) {
     final var batchExecutionHandlers =
         Map.of(
-            BatchOperationType.PROCESS_CANCELLATION,
+            BatchOperationType.CANCEL_PROCESS_INSTANCE,
             new CancelProcessInstanceBatchOperationExecutor(writers.command()),
             BatchOperationType.RESOLVE_INCIDENT,
             new ResolveIncidentBatchOperationExecutor(
