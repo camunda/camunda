@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.exporter.CamundaExporter;
 import io.camunda.exporter.notifier.HttpClientWrapper;
 import io.camunda.it.util.HttpRequestBodyTestUtility;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -58,10 +59,10 @@ public class IncidentNotifierIT {
   public void shouldNotifyWebhookAboutIncident() throws IOException, InterruptedException {
     // given
     stubHttpClientResponses();
-
+    final var camundaExporter = CamundaExporter.class.getSimpleName().toLowerCase();
     STANDALONE_CAMUNDA.withBrokerConfig(
         c -> {
-          final var newArgs = new HashMap<>(c.getExporters().get("CamundaExporter").getArgs());
+          final var newArgs = new HashMap<>(c.getExporters().get(camundaExporter).getArgs());
           newArgs.put(
               "notifier",
               Map.of(
@@ -70,7 +71,7 @@ public class IncidentNotifierIT {
                   "auth0Domain",
                   "camunda.domain"));
 
-          c.getExporters().get("CamundaExporter").setArgs(newArgs);
+          c.getExporters().get(camundaExporter).setArgs(newArgs);
         });
 
     // when
