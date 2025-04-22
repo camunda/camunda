@@ -30,7 +30,7 @@ public class OpensearchExporterConfiguration {
   public final RetentionConfiguration retention = new RetentionConfiguration();
   public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
-  private boolean exportLegacyRecords = false;
+  private boolean includeEnabledRecords = false;
 
   public boolean hasAuthenticationPresent() {
     return getAuthentication().isPresent();
@@ -137,12 +137,12 @@ public class OpensearchExporterConfiguration {
     };
   }
 
-  public boolean getIsExportLegacyRecords() {
-    return exportLegacyRecords;
+  public boolean getIsIncludeEnabledRecords() {
+    return includeEnabledRecords;
   }
 
-  public void setExportLegacyRecords(final boolean exportLegacyRecords) {
-    this.exportLegacyRecords = exportLegacyRecords;
+  public void setIncludeEnabledRecords(final boolean includeEnabledRecords) {
+    this.includeEnabledRecords = includeEnabledRecords;
   }
 
   public static class IndexConfiguration {

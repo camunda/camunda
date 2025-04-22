@@ -201,7 +201,7 @@ final class ElasticsearchExporterTest {
     void shouldPutValueTypeTemplate(final ValueType valueType) {
       // given
       config.index.createTemplate = true;
-      config.setExportLegacyRecords(true);
+      config.setIncludeEnabledRecords(true);
       TestSupport.setIndexingForValueType(config.index, valueType, true);
       exporter.configure(context);
       exporter.open(controller);
@@ -240,7 +240,7 @@ final class ElasticsearchExporterTest {
     void shouldCreateAllTemplatesOnPreviousVersion(final ValueType valueType) {
       // given
       config.index.createTemplate = true;
-      config.setExportLegacyRecords(false);
+      config.setIncludeEnabledRecords(false);
       TestSupport.setIndexingForValueType(config.index, valueType, true);
       exporter.configure(context);
       exporter.open(controller);
@@ -414,7 +414,7 @@ final class ElasticsearchExporterTest {
 
     @BeforeEach
     void initExporter() {
-      config.setExportLegacyRecords(true);
+      config.setIncludeEnabledRecords(true);
       exporter.configure(context);
       exporter.open(controller);
     }
