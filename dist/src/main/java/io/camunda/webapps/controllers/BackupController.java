@@ -89,10 +89,11 @@ public class BackupController {
   @ReadOperation
   public WebEndpointResponse<?> getBackups(
       @RequestParam(value = "verbose", defaultValue = "true", required = false)
-          final boolean verbose) {
+          final boolean verbose,
+      @RequestParam(value = "pattern", defaultValue = "*", required = false) final String pattern) {
     try {
       validateRepositoryNameIsConfigured();
-      final var respDTO = backupService.getBackups(verbose);
+      final var respDTO = backupService.getBackups(verbose, pattern);
       final var resp = respDTO.stream().map(this::mapTo).toList();
       return new WebEndpointResponse<>(resp);
     } catch (final Exception e) {

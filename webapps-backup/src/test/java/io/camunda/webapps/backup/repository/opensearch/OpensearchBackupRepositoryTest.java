@@ -81,7 +81,7 @@ class OpensearchBackupRepositoryTest {
     final var response = emptyResponse();
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(response);
 
-    assertThat(repository.getBackups("repo", true)).isEmpty();
+    assertThat(repository.getBackups("repo", true, null)).isEmpty();
   }
 
   @Test
@@ -99,7 +99,7 @@ class OpensearchBackupRepositoryTest {
 
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(response);
 
-    final var snapshotDtoList = repository.getBackups("repo", true);
+    final var snapshotDtoList = repository.getBackups("repo", true, null);
     assertThat(snapshotDtoList).hasSize(1);
 
     final var snapshotDto = snapshotDtoList.get(0);
@@ -434,6 +434,7 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void shouldForwardVerboseFlagToOpensearch() throws IOException {
+    // given
     final var metadata = new Metadata(5L, "1", 1, 3);
     final var snapshotInfos = List.of(mock(SnapshotInfo.class));
     when(snapshotInfos.getFirst().snapshot())
@@ -442,7 +443,11 @@ class OpensearchBackupRepositoryTest {
     final var response = mock(GetSnapshotResponse.class, RETURNS_DEEP_STUBS);
     when(response.snapshots()).thenReturn(snapshotInfos);
     when(openSearchClient.snapshot().get(any(GetSnapshotRequest.class))).thenReturn(response);
-    final var snapshotDtoList = repository.getBackups("repo", false);
+
+    // when
+    final var snapshotDtoList = repository.getBackups("repo", false, null);
+
+    // then
     verify(openSearchClient.snapshot()).get(argThat((GetSnapshotRequest req) -> !req.verbose()));
 
     assertThat(snapshotDtoList)
@@ -458,6 +463,26 @@ class OpensearchBackupRepositoryTest {
                         assertThat(d.getState()).isEqualTo(BackupStateDto.IN_PROGRESS.name());
                       });
             });
+  }
+
+  @Test
+  void shouldForwardSnapshotPatternFlagToOpensearch() throws IOException {
+    // given
+    final var metadata = new Metadata(5L, "1", 1, 3);
+    final var snapshotInfos = List.of(mock(SnapshotInfo.class));
+    when(snapshotInfos.getFirst().snapshot())
+        .thenReturn(snapshotNameProvider.getSnapshotName(metadata));
+    when(snapshotInfos.getLast().state()).thenReturn(SnapshotState.IN_PROGRESS.name());
+    final var response = mock(GetSnapshotResponse.class, RETURNS_DEEP_STUBS);
+    when(response.snapshots()).thenReturn(snapshotInfos);
+    when(openSearchClient.snapshot().get(any(GetSnapshotRequest.class))).thenReturn(response);
+
+    // when
+    repository.getBackups("repo", false, "2023*");
+
+    // then
+    verify(openSearchClient.snapshot())
+        .get(argThat((GetSnapshotRequest req) -> req.snapshot().contains("camunda_webapps_2023*")));
   }
 
   private SnapshotInfo.Builder defaultFields(final SnapshotInfo.Builder b) {

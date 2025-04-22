@@ -10,6 +10,7 @@ package io.camunda.webapps.controllers;
 import static io.camunda.management.backups.HistoryStateCode.COMPLETED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -88,7 +89,7 @@ public abstract sealed class BackupControllerTest {
 
   private void mockErrorWith(final Exception e) {
     when(backupService.getBackupState(anyLong())).thenThrow(e);
-    when(backupService.getBackups()).thenThrow(e);
+    when(backupService.getBackups(anyBoolean(), any())).thenThrow(e);
     when(backupService.takeBackup(any())).thenThrow(e);
     doThrow(e).when(backupService).deleteBackup(any());
   }
@@ -152,7 +153,7 @@ public abstract sealed class BackupControllerTest {
 
   @Test
   public void shouldGetBackups() {
-    when(backupService.getBackups())
+    when(backupService.getBackups(anyBoolean(), any()))
         .thenReturn(
             List.of(
                 new GetBackupStateResponseDto()
@@ -160,7 +161,7 @@ public abstract sealed class BackupControllerTest {
                     .setState(BackupStateDto.FAILED)
                     .setFailureReason("Out of disk space")
                     .setDetails(List.of(DETAIL_DTO))));
-    final var response = backupController.getBackups(true);
+    final var response = backupController.getBackups(true, null);
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getBody()).isEqualTo(List.of(EXPECTED_INFO));
   }
@@ -224,7 +225,7 @@ public abstract sealed class BackupControllerTest {
       // given
       setupMocks.run();
       // when
-      final var response = backupController.getBackups(true);
+      final var response = backupController.getBackups(true, null);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
     }

@@ -82,8 +82,8 @@ public class BackupServiceImpl implements BackupService {
   }
 
   @Override
-  public List<GetBackupStateResponseDto> getBackups(final boolean verbose) {
-    return repository.getBackups(backupProps.repositoryName(), verbose);
+  public List<GetBackupStateResponseDto> getBackups(final boolean verbose, final String pattern) {
+    return repository.getBackups(backupProps.repositoryName(), verbose, pattern);
   }
 
   TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
