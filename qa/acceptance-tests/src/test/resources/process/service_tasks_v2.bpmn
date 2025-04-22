@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.33.1">
   <bpmn:process id="service_tasks_v2" name="Service tasks v2" isExecutable="true">
-    <bpmn:startEvent id="StartEvent_nyzldfv">
+    <bpmn:startEvent id="startEvent">
       <bpmn:outgoing>SequenceFlow_1sz6737</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1sz6737" sourceRef="StartEvent_nyzldfv" targetRef="exclusiveGateway" />
+    <bpmn:sequenceFlow id="SequenceFlow_1sz6737" sourceRef="startEvent" targetRef="exclusiveGateway" />
     <bpmn:sequenceFlow id="SequenceFlow_06ytcxw" sourceRef="taskA" targetRef="taskB" />
     <bpmn:sequenceFlow id="SequenceFlow_1oh45y7" sourceRef="taskB" targetRef="EndEvent_0szldfv" />
     <bpmn:endEvent id="EndEvent_0szldfv">
@@ -54,7 +54,7 @@
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="service_tasks_v2">
-      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_nyzldfv">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="startEvent">
         <dc:Bounds x="114" y="153" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="121" y="189" width="22" height="14" />
