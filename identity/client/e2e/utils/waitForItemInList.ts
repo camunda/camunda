@@ -18,6 +18,7 @@ export const waitForItemInList = async (
     async () => {
       await page.reload();
       await page.getByRole("table").waitFor();
+      await page.getByRole("cell").first().waitFor();
       const isVisible = await item.isVisible();
 
       return isVisible;
