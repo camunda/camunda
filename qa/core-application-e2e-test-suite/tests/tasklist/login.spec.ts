@@ -11,11 +11,11 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
-test.beforeEach(async ({page}) => {
-  await navigateToApp(page, 'tasklist');
-});
-
 test.describe.parallel('Login Tests', () => {
+  test.beforeEach(async ({page}) => {
+    await navigateToApp(page, 'tasklist');
+  });
+
   test.afterEach(async ({page}, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
