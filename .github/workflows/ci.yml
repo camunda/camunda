@@ -99,7 +99,8 @@ jobs:
     steps:
       - name: Determine fetch depth for checkout
         id: depth
-        run: echo "depth=$(expr ${{ github.event.pull_request.commits }} + 1)" >> $GITHUB_OUTPUT
+        run: |
+          echo "depth=$(expr ${{ github.event.pull_request.commits }} + 1)" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -600,9 +601,9 @@ jobs:
       checks: read
     needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
-      - commitlint
       - build-operate-backend
       - build-platform-frontend
+      - commitlint
       - detect-changes
       - docker-checks
       - identity-frontend-tests
@@ -631,7 +632,7 @@ jobs:
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 25
     permissions: {}  # GITHUB_TOKEN unused in this job
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
       group: deploy-maven-snapshot8.7
       cancel-in-progress: false
@@ -671,11 +672,11 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ docker-checks, check-results ]
+    needs: [ check-results ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
       group: deploy-camunda-docker-snapshot8.7
       cancel-in-progress: false
