@@ -29,13 +29,13 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   });
 
   const [groupName, setGroupName] = useState(group.name);
-  const [groupId, setGroupId] = useState(group.groupKey);
+  const [groupId, setGroupId] = useState(group.groupId);
   const [description, setDescription] = useState(group.description);
   const [isGroupIdValid, setIsGroupIdValid] = useState(true);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateGroup({
-      groupKey: group.groupKey,
+      groupId: group.groupId,
       name: groupName.trim(),
     });
 
