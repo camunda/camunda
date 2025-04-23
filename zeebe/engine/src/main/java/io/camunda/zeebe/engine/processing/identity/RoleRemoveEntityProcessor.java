@@ -30,8 +30,13 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
+
+  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to update role with ID '%s', but a role with this ID does not exist.";
+  public static final String ENTITY_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to remove an entity with ID '%s' and type '%s' from role with ID '%s', but the entity doesn't exist.";
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
-      "Expected to remove entity with id '%s' from role with id '%s', but the entity is not assigned to this role.";
+      "Expected to remove entity with ID '%s' from role with ID '%s', but the entity is not assigned to this role.";
   private final RoleState roleState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
@@ -75,9 +80,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
     final var persistedRecord = roleState.getRole(record.getRoleId());
     if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to update role with id '%s', but a role with this id does not exist."
-              .formatted(record.getRoleId());
+      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -87,8 +90,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     final var entityType = record.getEntityType();
     if (!isEntityPresent(entityId, entityType)) {
       final var errorMessage =
-          "Expected to remove an entity with id '%s' and type '%s' from role with id '%s', but the entity doesn't exist."
-              .formatted(entityId, entityType, record.getRoleId());
+          ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
