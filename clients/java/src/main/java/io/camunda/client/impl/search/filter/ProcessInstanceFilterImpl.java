@@ -59,7 +59,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
@@ -73,7 +73,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionId(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.processDefinitionId(provideSearchRequestProperty(property));
     return this;
@@ -87,7 +87,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionName(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setProcessDefinitionName(provideSearchRequestProperty(property));
     return this;
@@ -101,7 +101,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionVersion(final Consumer<IntegerProperty> fn) {
-    final IntegerPropertyImpl property = new IntegerPropertyImpl();
+    final IntegerProperty property = new IntegerPropertyImpl();
     fn.accept(property);
     filter.setProcessDefinitionVersion(provideSearchRequestProperty(property));
     return this;
@@ -116,7 +116,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionVersionTag(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setProcessDefinitionVersionTag(provideSearchRequestProperty(property));
     return this;
@@ -130,7 +130,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
     return this;
@@ -144,7 +144,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setParentProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
@@ -158,7 +158,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter parentElementInstanceKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setParentElementInstanceKey(provideSearchRequestProperty(property));
     return this;
@@ -172,7 +172,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter startDate(final Consumer<DateTimeProperty> fn) {
-    final DateTimePropertyImpl property = new DateTimePropertyImpl();
+    final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
     filter.setStartDate(provideSearchRequestProperty(property));
     return this;
@@ -186,7 +186,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter endDate(final Consumer<DateTimeProperty> fn) {
-    final DateTimePropertyImpl property = new DateTimePropertyImpl();
+    final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
     filter.setEndDate(provideSearchRequestProperty(property));
     return this;
@@ -199,7 +199,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter state(final Consumer<ProcessInstanceStateProperty> fn) {
-    final ProcessInstanceStatePropertyImpl property = new ProcessInstanceStatePropertyImpl();
+    final ProcessInstanceStateProperty property = new ProcessInstanceStatePropertyImpl();
     fn.accept(property);
     filter.setState(provideSearchRequestProperty(property));
     return this;
@@ -219,7 +219,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter tenantId(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setTenantId(provideSearchRequestProperty(property));
     return this;
@@ -248,7 +248,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setBatchOperationId(provideSearchRequestProperty(property));
     return this;
@@ -262,7 +262,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setErrorMessage(provideSearchRequestProperty(property));
     return this;
@@ -282,7 +282,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter elementId(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setElementId(provideSearchRequestProperty(property));
     return this;
@@ -298,7 +298,7 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter elementInstanceState(
       final Consumer<ElementInstanceStateProperty> fn) {
-    final ElementInstanceStatePropertyImpl property = new ElementInstanceStatePropertyImpl();
+    final ElementInstanceStateProperty property = new ElementInstanceStatePropertyImpl();
     fn.accept(property);
     filter.setElementInstanceState(provideSearchRequestProperty(property));
     return this;

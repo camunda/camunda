@@ -63,7 +63,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter assignee(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setAssignee(provideSearchRequestProperty(property));
     return this;
@@ -77,7 +77,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter priority(final Consumer<IntegerProperty> fn) {
-    final IntegerPropertyImpl property = new IntegerPropertyImpl();
+    final IntegerProperty property = new IntegerPropertyImpl();
     fn.accept(property);
     filter.setPriority(provideSearchRequestProperty(property));
     return this;
@@ -97,7 +97,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter candidateGroup(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setCandidateGroup(provideSearchRequestProperty(property));
     return this;
@@ -111,7 +111,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter candidateUser(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setCandidateUser(provideSearchRequestProperty(property));
     return this;
@@ -189,7 +189,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter creationDate(final Consumer<DateTimeProperty> fn) {
-    final DateTimePropertyImpl property = new DateTimePropertyImpl();
+    final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
     filter.setCreationDate(provideSearchRequestProperty(property));
     return this;
@@ -203,7 +203,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter completionDate(final Consumer<DateTimeProperty> fn) {
-    final DateTimePropertyImpl property = new DateTimePropertyImpl();
+    final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
     filter.setCompletionDate(provideSearchRequestProperty(property));
     return this;
@@ -217,7 +217,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter followUpDate(final Consumer<DateTimeProperty> fn) {
-    final DateTimePropertyImpl property = new DateTimePropertyImpl();
+    final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
     filter.setFollowUpDate(provideSearchRequestProperty(property));
     return this;
@@ -231,7 +231,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter dueDate(final Consumer<DateTimeProperty> fn) {
-    final DateTimePropertyImpl property = new DateTimePropertyImpl();
+    final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
     filter.setDueDate(provideSearchRequestProperty(property));
     return this;

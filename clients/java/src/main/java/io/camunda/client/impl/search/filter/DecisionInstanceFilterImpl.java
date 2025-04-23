@@ -89,7 +89,7 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter evaluationDate(final Consumer<DateTimeProperty> fn) {
-    final DateTimePropertyImpl property = new DateTimePropertyImpl();
+    final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
     filter.setEvaluationDate(provideSearchRequestProperty(property));
     return null;
@@ -115,7 +115,7 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
+    final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setDecisionDefinitionKey(provideSearchRequestProperty(property));
     return this;

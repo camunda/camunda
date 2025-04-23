@@ -40,7 +40,7 @@ public class UserTaskVariableFilterImpl
 
   @Override
   public UserTaskVariableFilter name(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setName(provideSearchRequestProperty(property));
     return this;

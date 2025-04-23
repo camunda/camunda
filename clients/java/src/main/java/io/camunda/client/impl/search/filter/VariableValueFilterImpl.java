@@ -46,7 +46,7 @@ public class VariableValueFilterImpl
 
   @Override
   public VariableValueFilter value(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setValue(provideSearchRequestProperty(property));
     return this;

@@ -73,7 +73,7 @@ public class ElementInstanceFilterImpl
 
   @Override
   public ElementInstanceFilter state(final Consumer<ElementInstanceStateProperty> fn) {
-    final ElementInstanceStatePropertyImpl property = new ElementInstanceStatePropertyImpl();
+    final ElementInstanceStateProperty property = new ElementInstanceStatePropertyImpl();
     fn.accept(property);
     filter.setState(provideSearchRequestProperty(property));
     return this;
