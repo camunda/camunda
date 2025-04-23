@@ -20,8 +20,11 @@ import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public interface VariableStore {
+  int DEFAULT_MAX_TERMS_COUNT = 65536;
+  String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
 
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
       List<String> flowNodeInstanceIds, List<String> varNames, final Set<String> fieldNames);
@@ -40,8 +43,28 @@ public interface VariableStore {
   public SnapshotTaskVariableEntity getTaskVariable(
       final String variableId, Set<String> fieldNames);
 
+  void refreshMaxTermsCount();
+
   public List<String> getProcessInstanceIdsWithMatchingVars(
       List<String> varNames, List<String> varValues);
+
+  default List<List<String>> chunkQueryTerms(final List<String> terms, final int maxTermsCount) {
+    if (terms.size() <= maxTermsCount) {
+      return Collections.singletonList(terms);
+    }
+
+    final int numberOfChunks = (terms.size() + maxTermsCount - 1) / maxTermsCount;
+
+    return IntStream.range(0, numberOfChunks)
+        .mapToObj(
+            i -> {
+              final int startIndex = i * maxTermsCount;
+              final int endIndex = Math.min((i + 1) * maxTermsCount, terms.size());
+
+              return terms.subList(startIndex, endIndex);
+            })
+        .collect(Collectors.toList());
+  }
 
   private static Optional<String> getTaskVariableElsFieldByGraphqlField(final String fieldName) {
     switch (fieldName) {
