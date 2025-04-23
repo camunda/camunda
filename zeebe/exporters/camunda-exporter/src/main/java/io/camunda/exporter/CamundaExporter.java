@@ -8,6 +8,7 @@
 package io.camunda.exporter;
 
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
@@ -420,7 +421,8 @@ processing records from previous version
             DECISION_EVALUATION,
             PROCESS,
             FORM,
-            USER_TASK);
+            USER_TASK,
+            BATCH_OPERATION_CREATION);
 
     @Override
     public boolean acceptType(final RecordType recordType) {
