@@ -41,6 +41,7 @@ import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -212,12 +213,30 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   @Override
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
+    final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+
     final TermsQueryBuilder processInstanceKeyQuery =
         termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds);
     final var flowNodeInstanceStateQuery =
         termsQuery(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE.toString());
+
+    queryBuilder.must(flowNodeInstanceStateQuery);
+    queryBuilder.must(processInstanceKeyQuery);
+
+    final TermsQueryBuilder typeQuery =
+        QueryBuilders.termsQuery(
+            FlowNodeInstanceTemplate.TYPE,
+            FlowNodeType.AD_HOC_SUB_PROCESS.toString(),
+            FlowNodeType.USER_TASK.toString(),
+            FlowNodeType.SUB_PROCESS.toString(),
+            FlowNodeType.EVENT_SUB_PROCESS.toString(),
+            FlowNodeType.MULTI_INSTANCE_BODY.toString(),
+            FlowNodeType.PROCESS.toString());
+    queryBuilder.must(typeQuery);
+
     final var query =
-        ElasticsearchUtil.joinWithAnd(processInstanceKeyQuery, flowNodeInstanceStateQuery);
+        ElasticsearchUtil.joinWithAnd(
+            typeQuery, processInstanceKeyQuery, flowNodeInstanceStateQuery);
     final SearchRequest searchRequest =
         new SearchRequest(flowNodeInstanceIndex.getFullQualifiedName())
             .source(

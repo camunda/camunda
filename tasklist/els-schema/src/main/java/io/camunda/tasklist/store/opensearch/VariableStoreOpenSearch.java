@@ -32,6 +32,7 @@ import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -240,6 +241,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
   @Override
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
+
     final var processInstanceKeyQuery =
         TermsQuery.of(
                 t ->
@@ -257,19 +259,33 @@ public class VariableStoreOpenSearch implements VariableStore {
                     t.field(FlowNodeInstanceTemplate.STATE)
                         .value(v -> v.stringValue(FlowNodeState.ACTIVE.toString())))
             .toQuery();
+
+    final Query.Builder typeQuery = new Query.Builder();
+    typeQuery.terms(
+        terms ->
+            terms
+                .field(FlowNodeInstanceTemplate.TYPE)
+                .terms(
+                    t ->
+                        t.value(
+                            Arrays.asList(
+                                FieldValue.of(FlowNodeType.AD_HOC_SUB_PROCESS.toString()),
+                                FieldValue.of(FlowNodeType.USER_TASK.toString()),
+                                FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
+                                FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
+                                FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString())))));
+
+    final Query.Builder combinedQuery = new Query.Builder();
+    combinedQuery.constantScore(
+        cs ->
+            cs.filter(
+                OpenSearchUtil.joinWithAnd(
+                    processInstanceKeyQuery, flowNodeInstanceStateQuery, typeQuery.build())));
+
     final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
     searchRequestBuilder
-        .index(flowNodeInstanceIndex.getFullQualifiedName())
-        .query(
-            q ->
-                q.constantScore(
-                    cs ->
-                        cs.filter(
-                            f ->
-                                f.bool(
-                                    b ->
-                                        b.must(
-                                            processInstanceKeyQuery, flowNodeInstanceStateQuery)))))
+        .index(flowNodeInstanceIndex.getAlias())
+        .query(combinedQuery.build())
         .sort(
             sort ->
                 sort.field(f -> f.field(FlowNodeInstanceTemplate.POSITION).order(SortOrder.Asc)))
