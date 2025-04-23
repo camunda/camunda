@@ -146,7 +146,7 @@ public class RoleTest {
   }
 
   @Test
-  public void shouldRejectIfEntityIsNotPresent() {
+  public void shouldRejectIfMappingIsNotPresent() {
     // given
     final var roleId = UUID.randomUUID().toString();
     final var roleRecord = engine.role().newRole(roleId).create();
@@ -159,7 +159,7 @@ public class RoleTest {
             .role()
             .addEntity(roleId)
             .withEntityId(entityId)
-            .withEntityType(EntityType.USER)
+            .withEntityType(EntityType.MAPPING)
             .expectRejection()
             .add();
 
@@ -167,7 +167,28 @@ public class RoleTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to add an entity with ID '%s' and type '%s' to role with ID '%s', but the entity doesn't exist."
-                .formatted(entityId, EntityType.USER, roleId));
+                .formatted(entityId, EntityType.MAPPING, roleId));
+  }
+
+  @Test
+  public void shouldNotRejectIfUserIsNotPresent() {
+    // given
+    final var roleId = UUID.randomUUID().toString();
+    final var roleRecord = engine.role().newRole(roleId).create();
+
+    // when
+    roleRecord.getValue();
+    final var entityId = "non-existing-entity";
+    final var updatedRecord =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(entityId)
+            .withEntityType(EntityType.USER)
+            .add()
+            .getValue();
+
+    assertThat(updatedRecord).hasEntityId(entityId);
   }
 
   @Test
