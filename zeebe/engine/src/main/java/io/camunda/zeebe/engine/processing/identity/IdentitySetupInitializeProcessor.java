@@ -138,7 +138,10 @@ public final class IdentitySetupInitializeProcessor
                         persistedUser -> {
                           user.setUserKey(persistedUser.getUserKey());
                           if (assignEntityToRole(
-                              role, persistedUser.getUsername(), EntityType.USER)) {
+                              role,
+                              persistedUser.getUsername(),
+                              EntityType.USER,
+                              persistedUser.getUserKey())) {
                             createdNewEntities.set(true);
                           }
                           if (assignEntityToTenant(
@@ -164,7 +167,10 @@ public final class IdentitySetupInitializeProcessor
                           mapping.setMappingKey(persistedMapping.getMappingKey());
                           mapping.setMappingId(persistedMapping.getMappingId());
                           if (assignEntityToRole(
-                              role, persistedMapping.getMappingId(), EntityType.MAPPING)) {
+                              role,
+                              persistedMapping.getMappingId(),
+                              EntityType.MAPPING,
+                              persistedMapping.getMappingKey())) {
                             createdNewEntities.set(true);
                           }
                           if (assignEntityToTenant(
@@ -204,7 +210,11 @@ public final class IdentitySetupInitializeProcessor
                     .getUser(user.getUsername())
                     .ifPresentOrElse(
                         persistedUser -> {
-                          assignEntityToRole(role, persistedUser.getUsername(), EntityType.USER);
+                          assignEntityToRole(
+                              role,
+                              persistedUser.getUsername(),
+                              EntityType.USER,
+                              persistedUser.getUserKey());
                           assignEntityToTenant(
                               tenant, persistedUser.getUsername(), EntityType.USER);
                         },
@@ -219,7 +229,10 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         persistedMapping -> {
                           assignEntityToRole(
-                              role, persistedMapping.getMappingId(), EntityType.MAPPING);
+                              role,
+                              persistedMapping.getMappingId(),
+                              EntityType.MAPPING,
+                              persistedMapping.getMappingKey());
                           assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
                         },
                         () -> createMapping(mapping, role, tenant)));
@@ -231,7 +244,7 @@ public final class IdentitySetupInitializeProcessor
 
   private void createUser(final UserRecord user, final RoleRecord role, final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(user.getUserKey(), UserIntent.CREATED, user);
-    assignEntityToRole(role, user.getUsername(), EntityType.USER);
+    assignEntityToRole(role, user.getUsername(), EntityType.USER, user.getUserKey());
     assignEntityToTenant(tenant, user.getUsername(), EntityType.USER);
   }
 
@@ -242,12 +255,15 @@ public final class IdentitySetupInitializeProcessor
   private void createMapping(
       final MappingRecord mapping, final RoleRecord role, final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
-    assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING);
+    assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING, mapping.getMappingKey());
     assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
   }
 
   private boolean assignEntityToRole(
-      final RoleRecord role, final String entityId, final EntityType entityType) {
+      final RoleRecord role,
+      final String entityId,
+      final EntityType entityType,
+      final long entityKey) {
     final var roleId = role.getRoleId();
     final var roleKey = role.getRoleKey();
     final var isAlreadyAssigned =
@@ -264,6 +280,8 @@ public final class IdentitySetupInitializeProcessor
         new RoleRecord()
             .setRoleKey(roleKey)
             .setRoleId(roleId)
+            // TODO remove entityKey from record https://github.com/camunda/camunda/issues/30126
+            .setEntityKey(entityKey)
             .setEntityId(entityId)
             .setEntityType(entityType);
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.ENTITY_ADDED, record);
