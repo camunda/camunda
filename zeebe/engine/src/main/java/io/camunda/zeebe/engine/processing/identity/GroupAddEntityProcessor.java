@@ -136,7 +136,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
-      case EntityType.USER -> userState.getUser(entityId).isPresent();
+      case EntityType.USER -> true; // With simple mappings, any username can be assigned
       case EntityType.MAPPING -> mappingState.get(entityId).isPresent();
       default -> false;
     };

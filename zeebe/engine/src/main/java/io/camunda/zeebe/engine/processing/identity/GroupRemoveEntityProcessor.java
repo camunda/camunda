@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -34,7 +33,6 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
       "Expected to remove entity with ID '%s' from group with key '%s', but the entity is not assigned to this group.";
   private final GroupState groupState;
-  private final UserState userState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -51,7 +49,6 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     groupState = processingState.getGroupState();
-    userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
@@ -137,7 +134,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
-      case USER -> userState.getUser(entityId).isPresent();
+      case USER -> true; // With simple mappings, any username can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
       default -> false;
     };
