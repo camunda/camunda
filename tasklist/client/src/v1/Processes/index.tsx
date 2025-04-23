@@ -332,7 +332,7 @@ const Processes: React.FC = observer(() => {
         onClose={() => {
           navigate({
             ...location,
-            pathname: pages.processes(),
+            pathname: `/${pages.processes()}`,
           });
         }}
         onSubmit={async (variables) => {
@@ -349,7 +349,7 @@ const Processes: React.FC = observer(() => {
           });
           navigate({
             ...location,
-            pathname: pages.processes(),
+            pathname: `/${pages.processes()}`,
           });
         }}
         onFileUpload={async (files: Map<string, File[]>) => {
