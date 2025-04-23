@@ -35,7 +35,7 @@ func QueryCamunda(c8 opener, name string, settings types.C8RunSettings) error {
 			fmt.Println("Failed to open browser")
 			return nil
 		}
-		if err := printStatus(settings.Port); err != nil {
+		if err := PrintStatus(settings); err != nil {
 			fmt.Println("Failed to print status:", err)
 			return err
 		}
@@ -58,7 +58,15 @@ func isRunning(name, url string, retries int, delay time.Duration) bool {
 	return false
 }
 
-func printStatus(port int) error {
+func PrintStatus(settings types.C8RunSettings) error {
+        var operatePort, tasklistPort int
+        if settings.Docker {
+                operatePort = 8081
+                tasklistPort = 8082
+        } else {
+                operatePort = 8080
+                tasklistPort = 8080
+        }
 	endpoints, _ := os.ReadFile("endpoints.txt")
 	t, err := template.New("endpoints").Parse(string(endpoints))
 	if err != nil {
@@ -66,9 +74,11 @@ func printStatus(port int) error {
 	}
 
 	data := struct {
-		ServerPort int
+		OperatePort int
+                TasklistPort int
 	}{
-		ServerPort: port,
+		OperatePort: operatePort,
+                TasklistPort: tasklistPort,
 	}
 
 	err = t.Execute(os.Stdout, data)
