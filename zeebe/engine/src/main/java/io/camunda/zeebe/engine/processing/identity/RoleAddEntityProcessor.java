@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -39,7 +38,6 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
       "Expected to add entity with ID '%s' to role with ID '%s', but the entity is already assigned to this role.";
   private final RoleState roleState;
-  private final UserState userState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -56,7 +54,6 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
-    userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
@@ -134,13 +131,11 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   }
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
-    if (EntityType.USER == entityType) {
-      return userState.getUser(entityId).isPresent();
-    }
-    if (EntityType.MAPPING == entityType) {
-      return mappingState.get(entityId).isPresent();
-    }
-    return false;
+    return switch (entityType) {
+      case USER -> true; // With simple mappings, any username can be assigned
+      case MAPPING -> mappingState.get(entityId).isPresent();
+      default -> false;
+    };
   }
 
   private boolean isEntityAssigned(final RoleRecord record) {

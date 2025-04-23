@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -34,7 +33,6 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
       "Expected to remove entity with key '%s' from role with key '%s', but the entity is not assigned to this role.";
   private final RoleState roleState;
-  private final UserState userState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -51,7 +49,6 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
-    userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
@@ -138,7 +135,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
   private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
     return switch (entityType) {
-      case USER -> userState.getUser(entityKey).isPresent();
+      case USER -> true; // With simple mappings, any username can be assigned
       // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
       case MAPPING -> mappingState.get(String.valueOf(entityKey)).isPresent();
       default -> false;
