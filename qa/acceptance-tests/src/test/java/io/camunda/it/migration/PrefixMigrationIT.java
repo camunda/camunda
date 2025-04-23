@@ -52,6 +52,17 @@ import org.testcontainers.utility.DockerImageName;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+/**
+ * How to run this test locally:
+ *
+ * <ul>
+ *   <li>Start a local ES/OS instance on port 9200
+ *   <li>Change the DEFAULT_ES_OS_URL_FOR_MULTI_DB to http://host.docker.internal:9200
+ *   <li>Change the {@link CamundaMultiDBExtension#currentMultiDbDatabaseType()} to always return
+ *       {@link DatabaseType#ES}
+ *   <li>Make sure to not commit the changes when you're done
+ * </ul>
+ */
 public class PrefixMigrationIT {
   private static final String DEFAULT_ES_OS_URL_FOR_MULTI_DB =
       "http://host.testcontainers.internal:9200";
@@ -249,7 +260,7 @@ public class PrefixMigrationIT {
     final var event =
         camunda87Client
             .newDeployResourceCommand()
-            .addResourceFromClasspath("process/incident_process_v1.bpmn")
+            .addResourceFromClasspath("process/service_tasks_v1.bpmn")
             .send()
             .join();
 
