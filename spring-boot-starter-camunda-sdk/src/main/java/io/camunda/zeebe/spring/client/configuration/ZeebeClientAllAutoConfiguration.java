@@ -45,16 +45,10 @@ import org.springframework.context.annotation.Import;
 })
 public class ZeebeClientAllAutoConfiguration {
 
-  private final ZeebeClientConfigurationProperties configurationProperties;
-
-  public ZeebeClientAllAutoConfiguration(
-      final ZeebeClientConfigurationProperties configurationProperties) {
-    this.configurationProperties = configurationProperties;
-  }
-
   @Bean
   @ConditionalOnMissingBean
-  public ZeebeClientExecutorService zeebeClientExecutorService() {
+  public ZeebeClientExecutorService zeebeClientExecutorService(
+      final ZeebeClientConfigurationProperties configurationProperties) {
     return ZeebeClientExecutorService.createDefault(
         configurationProperties.getNumJobWorkerExecutionThreads());
   }
@@ -87,7 +81,8 @@ public class ZeebeClientAllAutoConfiguration {
 
   @Bean("propertyBasedZeebeWorkerValueCustomizer")
   @ConditionalOnMissingBean(name = "propertyBasedZeebeWorkerValueCustomizer")
-  public ZeebeWorkerValueCustomizer propertyBasedZeebeWorkerValueCustomizer() {
+  public ZeebeWorkerValueCustomizer propertyBasedZeebeWorkerValueCustomizer(
+      final ZeebeClientConfigurationProperties configurationProperties) {
     return new PropertyBasedZeebeWorkerValueCustomizer(configurationProperties);
   }
 }
