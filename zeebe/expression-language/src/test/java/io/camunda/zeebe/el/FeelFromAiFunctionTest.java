@@ -140,16 +140,10 @@ public class FeelFromAiFunctionTest {
   }
 
   @Test
-  void createsWarningWhenFirstParameterIsNull() {
-    final var evaluationResult = evaluateExpression("fromAi(toolCall.c)", CONTEXT_VALUES::get);
-
-    assertThat(evaluationResult.isFailure()).isFalse();
-    assertThat(evaluationResult.getWarnings())
-        .extracting(EvaluationWarning::getType, EvaluationWarning::getMessage)
-        .contains(
-            tuple(
-                "FUNCTION_INVOCATION_FAILURE",
-                "Failed to invoke function 'fromAi': fromAi function expected at least one parameter (value), but received null"));
+  void returnsNullWhenInputValueIsNull() {
+    final var evaluationResult =
+        evaluateSuccessfulExpression("fromAi(toolCall.c)", CONTEXT_VALUES::get);
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.NULL);
   }
 
   private EvaluationResult evaluateSuccessfulExpression(
