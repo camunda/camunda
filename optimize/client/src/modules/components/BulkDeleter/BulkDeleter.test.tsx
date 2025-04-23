@@ -9,6 +9,7 @@
 import {shallow} from 'enzyme';
 
 import {Deleter} from 'components';
+import {EntityListEntity} from 'modules/types';
 
 import BulkDeleter from './BulkDeleter';
 
@@ -21,8 +22,8 @@ jest.mock('hooks', () => ({
 const props = {
   deleteEntities: jest.fn(),
   onDelete: jest.fn(),
-  selectedEntries: [{id: 'reportId'}],
-  type: 'delete',
+  selectedEntries: [{id: 'reportId'} as EntityListEntity],
+  type: 'delete' as 'delete' | 'remove',
 };
 
 beforeEach(() => {
@@ -34,7 +35,7 @@ it('should delete selected entities, reset selected items and any conflicts on c
   const node = shallow(<BulkDeleter {...props} />);
 
   node.find('TableBatchAction').simulate('click');
-  node.find(Deleter).prop('deleteEntity')();
+  (node.find(Deleter).prop('deleteEntity') as jest.Mock)();
 
   expect(props.deleteEntities).toHaveBeenCalledWith(props.selectedEntries);
   expect(props.onDelete).toHaveBeenCalled();
@@ -46,7 +47,7 @@ it('should show conflict message if a conflict has happend', () => {
   );
 
   node.find('TableBatchAction').simulate('click');
-  node.find(Deleter).prop('onConflict')();
+  node.find(Deleter).simulate('conflict');
 
   expect(node.find(Deleter).prop('descriptionText')).toMatchSnapshot();
 });
@@ -56,7 +57,7 @@ it('should check for conflicts in the selected entries', () => {
   const node = shallow(<BulkDeleter {...props} checkConflicts={spy} />);
 
   node.find('TableBatchAction').simulate('click');
-  node.find(Deleter).prop('checkConflicts')(props.selectedEntries);
+  (node.find(Deleter).prop('checkConflicts') as jest.Mock)(props.selectedEntries);
 
   expect(spy).toHaveBeenCalledWith(props.selectedEntries);
 });
