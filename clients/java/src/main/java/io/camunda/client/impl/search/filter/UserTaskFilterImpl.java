@@ -24,7 +24,6 @@ import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.client.impl.search.request.SearchRequestMapper;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
@@ -66,7 +65,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter assignee(final Consumer<StringProperty> fn) {
     final StringPropertyImpl property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setAssignee(property.build());
+    filter.setAssignee(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -80,7 +79,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter priority(final Consumer<IntegerProperty> fn) {
     final IntegerPropertyImpl property = new IntegerPropertyImpl();
     fn.accept(property);
-    filter.setPriority(property.build());
+    filter.setPriority(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -100,7 +99,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter candidateGroup(final Consumer<StringProperty> fn) {
     final StringPropertyImpl property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setCandidateGroup(property.build());
+    filter.setCandidateGroup(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -114,7 +113,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter candidateUser(final Consumer<StringProperty> fn) {
     final StringPropertyImpl property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setCandidateUser(property.build());
+    filter.setCandidateUser(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -147,8 +146,7 @@ public class UserTaskFilterImpl
       final List<Consumer<VariableValueFilter>> variableFilters) {
 
     filter.setProcessInstanceVariables(
-        SearchRequestMapper.toVariableValueFilterRequest(
-            variableFilters, VariableValueFilterImpl::getSearchRequestProperty));
+        VariableFilterMapper.toVariableValueFilterRequest(variableFilters));
     return this;
   }
 
@@ -156,16 +154,14 @@ public class UserTaskFilterImpl
   public UserTaskFilter processInstanceVariables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
       filter.setProcessInstanceVariables(
-          SearchRequestMapper.toVariableValueFilterRequest(variableValueFilters));
+          VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
     }
     return this;
   }
 
   @Override
   public UserTaskFilter localVariables(final List<Consumer<VariableValueFilter>> variableFilters) {
-    filter.setLocalVariables(
-        SearchRequestMapper.toVariableValueFilterRequest(
-            variableFilters, VariableValueFilterImpl::getSearchRequestProperty));
+    filter.setLocalVariables(VariableFilterMapper.toVariableValueFilterRequest(variableFilters));
     return this;
   }
 
@@ -173,7 +169,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter localVariables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
       filter.setLocalVariables(
-          SearchRequestMapper.toVariableValueFilterRequest(variableValueFilters));
+          VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
     }
     return this;
   }
@@ -195,7 +191,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter creationDate(final Consumer<DateTimeProperty> fn) {
     final DateTimePropertyImpl property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setCreationDate(property.build());
+    filter.setCreationDate(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -209,7 +205,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter completionDate(final Consumer<DateTimeProperty> fn) {
     final DateTimePropertyImpl property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setCompletionDate(property.build());
+    filter.setCompletionDate(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -223,7 +219,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter followUpDate(final Consumer<DateTimeProperty> fn) {
     final DateTimePropertyImpl property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setFollowUpDate(property.build());
+    filter.setFollowUpDate(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -237,7 +233,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter dueDate(final Consumer<DateTimeProperty> fn) {
     final DateTimePropertyImpl property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setDueDate(property.build());
+    filter.setDueDate(provideSearchRequestProperty(property));
     return this;
   }
 

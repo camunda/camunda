@@ -19,17 +19,17 @@ import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.protocol.rest.VariableValueFilterRequest;
 import java.util.function.Consumer;
 
 public class VariableValueFilterImpl
-    extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.VariableValueFilterRequest>
+    extends TypedSearchRequestPropertyProvider<VariableValueFilterRequest>
     implements VariableValueFilter {
 
-  private final io.camunda.client.protocol.rest.VariableValueFilterRequest filter;
+  private final VariableValueFilterRequest filter;
 
   public VariableValueFilterImpl() {
-    filter = new io.camunda.client.protocol.rest.VariableValueFilterRequest();
+    filter = new VariableValueFilterRequest();
   }
 
   @Override
@@ -48,7 +48,7 @@ public class VariableValueFilterImpl
   public VariableValueFilter value(final Consumer<StringProperty> fn) {
     final StringPropertyImpl property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setValue(property.build());
+    filter.setValue(provideSearchRequestProperty(property));
     return this;
   }
 

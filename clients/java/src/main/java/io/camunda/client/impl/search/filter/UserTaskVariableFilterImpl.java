@@ -42,7 +42,7 @@ public class UserTaskVariableFilterImpl
   public UserTaskVariableFilter name(final Consumer<StringProperty> fn) {
     final StringPropertyImpl property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setName(property.build());
+    filter.setName(provideSearchRequestProperty(property));
     return this;
   }
 

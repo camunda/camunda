@@ -31,7 +31,6 @@ import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.impl.search.sort.VariableSortImpl;
 import io.camunda.client.protocol.rest.VariableSearchQuery;
 import io.camunda.client.protocol.rest.VariableSearchQueryResult;
 import java.time.Duration;
@@ -76,9 +75,7 @@ public class VariableSearchRequestImpl
 
   @Override
   public VariableSearchRequest filter(final VariableFilter value) {
-    final io.camunda.client.protocol.rest.VariableFilter filter =
-        provideSearchRequestProperty(value);
-    request.setFilter(filter);
+    request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
@@ -89,10 +86,9 @@ public class VariableSearchRequestImpl
 
   @Override
   public VariableSearchRequest sort(final VariableSort value) {
-    final VariableSortImpl sorting = (VariableSortImpl) value;
     request.setSort(
         SearchRequestSortMapper.toVariableSearchQuerySortRequest(
-            sorting.getSearchRequestProperty()));
+            provideSearchRequestProperty(value)));
     return this;
   }
 
@@ -103,8 +99,7 @@ public class VariableSearchRequestImpl
 
   @Override
   public VariableSearchRequest page(final SearchRequestPage value) {
-    final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
-    request.setPage(page.getSearchRequestProperty());
+    request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 

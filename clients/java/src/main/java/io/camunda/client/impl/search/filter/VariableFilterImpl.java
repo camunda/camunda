@@ -43,7 +43,7 @@ public class VariableFilterImpl
   public VariableFilter variableKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setVariableKey(property.build());
+    filter.setVariableKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -55,9 +55,9 @@ public class VariableFilterImpl
 
   @Override
   public VariableFilter value(final Consumer<StringProperty> fn) {
-    final StringPropertyImpl property = new StringPropertyImpl();
+    final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setValue(property.build());
+    filter.setValue(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -71,7 +71,7 @@ public class VariableFilterImpl
   public VariableFilter name(final Consumer<StringProperty> fn) {
     final StringPropertyImpl property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setName(property.build());
+    filter.setName(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -85,7 +85,7 @@ public class VariableFilterImpl
   public VariableFilter scopeKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setScopeKey(property.build());
+    filter.setScopeKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -99,7 +99,7 @@ public class VariableFilterImpl
   public VariableFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setProcessInstanceKey(property.build());
+    filter.setProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 

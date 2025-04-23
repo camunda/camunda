@@ -49,8 +49,12 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
 
   @Override
   public UpdateGroupCommandStep1 update(final GroupChangeset groupChangeset) {
-    request.setChangeset(
-        new io.camunda.client.protocol.rest.GroupChangeset().name(groupChangeset.getName()));
+    final io.camunda.client.protocol.rest.GroupChangeset changeset =
+        new io.camunda.client.protocol.rest.GroupChangeset();
+    if (groupChangeset != null) {
+      changeset.name(groupChangeset.getName());
+    }
+    request.setChangeset(changeset);
     return this;
   }
 

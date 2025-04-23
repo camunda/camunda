@@ -305,7 +305,7 @@ public class JobUpdateRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldAcceptNullChangeset() {
+  public void shouldSendNullValuesWithNullChangeset() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);
     Mockito.when(job.getKey()).thenReturn(12L);
@@ -315,7 +315,9 @@ public class JobUpdateRestTest extends ClientRestTest {
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
-    assertThat(request.getChangeset()).isNull();
+    assertThat(request.getChangeset()).isNotNull();
+    assertThat(request.getChangeset().getRetries()).isNull();
+    assertThat(request.getChangeset().getTimeout()).isNull();
   }
 
   @Test

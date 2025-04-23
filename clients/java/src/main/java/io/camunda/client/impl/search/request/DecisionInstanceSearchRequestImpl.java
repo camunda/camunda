@@ -32,9 +32,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryResult;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -59,9 +57,7 @@ public class DecisionInstanceSearchRequestImpl
 
   @Override
   public DecisionInstanceSearchRequest filter(final DecisionInstanceFilter value) {
-    final io.camunda.client.protocol.rest.DecisionInstanceFilter filter =
-        provideSearchRequestProperty(value);
-    request.setFilter(filter);
+    request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
@@ -72,9 +68,9 @@ public class DecisionInstanceSearchRequestImpl
 
   @Override
   public DecisionInstanceSearchRequest sort(final DecisionInstanceSort value) {
-    final List<io.camunda.client.impl.search.request.SearchRequestSort> sorting =
-        provideSearchRequestProperty(value);
-    request.setSort(SearchRequestSortMapper.toDecisionInstanceSearchQuerySortRequest(sorting));
+    request.setSort(
+        SearchRequestSortMapper.toDecisionInstanceSearchQuerySortRequest(
+            provideSearchRequestProperty(value)));
     return this;
   }
 
@@ -85,8 +81,7 @@ public class DecisionInstanceSearchRequestImpl
 
   @Override
   public DecisionInstanceSearchRequest page(final SearchRequestPage value) {
-    final SearchQueryPageRequest page = provideSearchRequestProperty(value);
-    request.setPage(page);
+    request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 

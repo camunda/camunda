@@ -23,11 +23,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class BasicLongPropertyImpl
-    extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.BasicStringFilterProperty>
+    extends TypedSearchRequestPropertyProvider<BasicStringFilterProperty>
     implements BasicLongProperty {
-  private final io.camunda.client.protocol.rest.BasicStringFilterProperty filterProperty =
-      new io.camunda.client.protocol.rest.BasicStringFilterProperty();
+  private final BasicStringFilterProperty filterProperty = new BasicStringFilterProperty();
 
   @Override
   public BasicLongProperty eq(final Long value) {
@@ -58,7 +56,7 @@ public class BasicLongPropertyImpl
     return in(CollectionUtil.toList(values));
   }
 
-  public io.camunda.client.protocol.rest.BasicStringFilterProperty build() {
+  public BasicStringFilterProperty build() {
     return filterProperty;
   }
 

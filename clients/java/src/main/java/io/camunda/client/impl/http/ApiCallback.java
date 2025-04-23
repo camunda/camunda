@@ -111,17 +111,16 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       return;
     }
 
-    final io.camunda.client.protocol.rest.ProblemDetail problem = body.problem();
-    response.completeExceptionally(
-        new ProblemException(
-            code,
-            reason,
-            new ProblemDetail()
-                .setDetail(problem.getDetail())
-                .setInstance(problem.getInstance())
-                .setStatus(problem.getStatus())
-                .setTitle(problem.getTitle())
-                .setType(problem.getType())));
+    final ProblemDetail problem = new ProblemDetail();
+    if (body.problem() != null) {
+      problem
+          .setDetail(body.problem().getDetail())
+          .setInstance(body.problem().getInstance())
+          .setStatus(body.problem().getStatus())
+          .setTitle(body.problem().getTitle())
+          .setType(body.problem().getType());
+    }
+    response.completeExceptionally(new ProblemException(code, reason, problem));
   }
 
   private void handleSuccessResponse(

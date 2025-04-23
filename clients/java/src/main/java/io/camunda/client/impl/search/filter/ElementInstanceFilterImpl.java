@@ -75,7 +75,7 @@ public class ElementInstanceFilterImpl
   public ElementInstanceFilter state(final Consumer<ElementInstanceStateProperty> fn) {
     final ElementInstanceStatePropertyImpl property = new ElementInstanceStatePropertyImpl();
     fn.accept(property);
-    filter.setState(property.build());
+    filter.setState(provideSearchRequestProperty(property));
     return this;
   }
 

@@ -17,15 +17,19 @@ package io.camunda.client.impl.search.filter.builder;
 
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
+import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStateProperty {
-  private final io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty filterProperty =
-      new io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty();
+public class ProcessInstanceStatePropertyImpl
+    extends TypedSearchRequestPropertyProvider<ProcessInstanceStateFilterProperty>
+    implements ProcessInstanceStateProperty {
+  private final ProcessInstanceStateFilterProperty filterProperty =
+      new ProcessInstanceStateFilterProperty();
 
   @Override
   public ProcessInstanceStateProperty eq(final ProcessInstanceState value) {
@@ -59,7 +63,8 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
     return in(CollectionUtil.toList(values));
   }
 
-  public io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty build() {
+  @Override
+  protected ProcessInstanceStateFilterProperty getSearchRequestProperty() {
     return filterProperty;
   }
 

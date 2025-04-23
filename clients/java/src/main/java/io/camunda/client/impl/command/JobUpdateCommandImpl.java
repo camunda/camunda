@@ -62,10 +62,12 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
 
   @Override
   public UpdateJobCommandStep2 update(final JobChangeset jobChangeset) {
-    httpRequestObject.setChangeset(
-        new io.camunda.client.protocol.rest.JobChangeset()
-            .retries(jobChangeset.getRetries())
-            .timeout(jobChangeset.getTimeout()));
+    final io.camunda.client.protocol.rest.JobChangeset changeset =
+        new io.camunda.client.protocol.rest.JobChangeset();
+    if (jobChangeset != null) {
+      changeset.retries(jobChangeset.getRetries()).timeout(jobChangeset.getTimeout());
+    }
+    httpRequestObject.setChangeset(changeset);
     return this;
   }
 

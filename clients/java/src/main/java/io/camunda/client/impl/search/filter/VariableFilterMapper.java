@@ -13,30 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.search.request;
+package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.VariableValueFilter;
-import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
+import io.camunda.client.api.search.request.SearchRequestBuilders;
+import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.*;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class SearchRequestMapper {
+public class VariableFilterMapper {
 
   public static List<VariableValueFilterRequest> toVariableValueFilterRequest(
-      final List<Consumer<VariableValueFilter>> variableValueFilters,
-      final Function<VariableValueFilterImpl, VariableValueFilterRequest> valueExtractor) {
+      final List<Consumer<VariableValueFilter>> variableValueFilters) {
     return variableValueFilters.stream()
+        .map(SearchRequestBuilders::variableValueFilter)
         .map(
-            vvfc -> {
-              final VariableValueFilterImpl vvf = new VariableValueFilterImpl();
-              vvfc.accept(vvf);
-              return vvf;
-            })
-        .map(valueExtractor)
+            TypedSearchRequestPropertyProvider
+                ::<VariableValueFilterRequest>provideSearchRequestProperty)
         .collect(Collectors.toList());
   }
 
