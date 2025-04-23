@@ -451,8 +451,11 @@ jobs:
       - id: check
         shell: bash
         run: |
-          [[ '${{ github.ref_name }}' =~ ^stable\/[0-9]+\.[0-9]+$ ]] && \
+          if [[ '${{ github.ref_name }}' =~ ^stable\/[0-9]+\.[0-9]+$ ]]; then
             echo "test=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "test=false" >> "$GITHUB_OUTPUT"
+          fi
   deploy-snyk-projects:
     name: Deploy Snyk development projects
     needs: [ test-summary, is-stable-branch ]
