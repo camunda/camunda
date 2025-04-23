@@ -281,10 +281,10 @@ public class TaskListenerBlockedTransitionTest {
         .containsExactly(
             // assignee should be present in the CREATING
             tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
-            // creating first task listener completion, assignee should NOT be present
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, StringUtils.EMPTY, action, List.of()),
-            // creating second task listener completion, assignee should NOT be present
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, StringUtils.EMPTY, action, List.of()),
+            // creating first task listener completion
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            // creating second task listener completion
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
             // assignee should NOT be present in the CREATED
             tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
             // assignee should be present in the ASSIGNING
