@@ -52,6 +52,15 @@ public class TaskListenerIncidentsTest {
   }
 
   @Test
+  public void shouldCreateJobNoRetriesIncidentForCreatingListenerAndContinueAfterResolution() {
+    verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
+        ZeebeTaskListenerEventType.creating,
+        UnaryOperator.identity(),
+        ignored -> {},
+        UserTaskIntent.CREATED);
+  }
+
+  @Test
   public void
       shouldCreateJobNoRetriesIncidentForAssigningListenerAndContinueAfterResolutionOnTaskAssignAfterCreation() {
     verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
@@ -219,6 +228,17 @@ public class TaskListenerIncidentsTest {
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
             tuple(ValueType.USER_TASK, terminalActionIntent));
     return processInstanceKey;
+  }
+
+  @Test
+  public void shouldRetryUserTaskCreateCommandAfterExtractValueErrorIncidentResolution() {
+    testUserTaskCommandRetryAfterExtractValueError(
+        ZeebeTaskListenerEventType.creating,
+        "creating_listener_var_name",
+        "expression_creating_listener_2",
+        ignored -> {},
+        UserTaskIntent.CREATED,
+        userTask -> Assertions.assertThat(userTask).hasAction(""));
   }
 
   @Test
