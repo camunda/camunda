@@ -140,17 +140,17 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
               .setEntityId(mapping.getMappingId())
               .setEntityType(EntityType.MAPPING));
     }
-    for (final var roleId :
+    for (final var roleKey :
         membershipState.getMemberships(
             EntityType.MAPPING, mapping.getMappingId(), RelationType.ROLE)) {
       stateWriter.appendFollowUpEvent(
           // TODO: Use the role id instead of the key.
-          Long.parseLong(roleId),
+          Long.parseLong(roleKey),
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
               // TODO: Use the role id instead of the key.
-              .setRoleId(roleId)
-              .setRoleKey(Long.parseLong(roleId))
+              .setRoleId(roleKey)
+              .setRoleKey(Long.parseLong(roleKey))
               .setEntityKey(mappingKey)
               .setEntityType(EntityType.MAPPING));
     }
