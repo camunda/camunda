@@ -41,6 +41,16 @@ public class UserTaskSelectors {
     return new UserTaskNameSelector(taskName);
   }
 
+  /**
+   * Select the BPMN user task by its task name.
+   *
+   * @param taskName the name of the BPMN element.
+   * @return the selector
+   */
+  public static UserTaskSelector byName(final String name, final long processInstanceKey) {
+    return new UserTaskNameSelector(name, processInstanceKey);
+  }
+
   private static final class UserTaskElementIdSelector implements UserTaskSelector {
 
     private final String elementId;
@@ -68,9 +78,15 @@ public class UserTaskSelectors {
   private static final class UserTaskNameSelector implements UserTaskSelector {
 
     private final String taskName;
+    private final Long processInstanceKey;
 
     private UserTaskNameSelector(final String taskName) {
+      this(taskName, null);
+    }
+
+    private UserTaskNameSelector(final String taskName, final Long processInstanceKey) {
       this.taskName = taskName;
+      this.processInstanceKey = processInstanceKey;
     }
 
     @Override
@@ -81,6 +97,13 @@ public class UserTaskSelectors {
     @Override
     public String describe() {
       return taskName;
+    }
+
+    @Override
+    public void applyFilter(final UserTaskFilter filter) {
+      if (processInstanceKey != null) {
+        filter.processInstanceKey(processInstanceKey);
+      }
     }
   }
 }
