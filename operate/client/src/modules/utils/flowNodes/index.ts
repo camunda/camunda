@@ -30,7 +30,7 @@ export function getFlowNodeName({
   businessObjects?: BusinessObjects;
   flowNodeId?: string;
 }) {
-  return getFlowNode({businessObjects, flowNodeId})?.name ?? flowNodeId;
+  return getFlowNode({businessObjects, flowNodeId})?.name ?? flowNodeId ?? '';
 }
 
 export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {

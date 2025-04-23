@@ -48,7 +48,7 @@ const BatchModificationNotification: React.FC<Props> = observer(
           kind="info"
           title=""
           subtitle={
-            sourceFlowNodeName === undefined || targetFlowNodeName === undefined
+            sourceFlowNodeName === '' || targetFlowNodeName === ''
               ? 'Please select where you want to move the selected instances on the diagram.'
               : `Modification scheduled: Move ${pluralSuffix(
                   instancesCount,

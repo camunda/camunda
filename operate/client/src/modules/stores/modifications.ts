@@ -771,7 +771,7 @@ class Modifications {
         operation: 'CANCEL_TOKEN',
         flowNode: {
           id: flowNodeId,
-          name: getFlowNodeName({businessObjects, flowNodeId}) ?? '',
+          name: getFlowNodeName({businessObjects, flowNodeId}),
         },
         flowNodeInstanceKey,
         affectedTokenCount,
@@ -832,16 +832,18 @@ class Modifications {
         operation: 'MOVE_TOKEN',
         flowNode: {
           id: sourceFlowNodeId,
-          name:
-            getFlowNodeName({businessObjects, flowNodeId: sourceFlowNodeId}) ??
-            '',
+          name: getFlowNodeName({
+            businessObjects,
+            flowNodeId: sourceFlowNodeId,
+          }),
         },
         flowNodeInstanceKey: sourceFlowNodeInstanceKey,
         targetFlowNode: {
           id: targetFlowNodeId,
-          name:
-            getFlowNodeName({businessObjects, flowNodeId: targetFlowNodeId}) ??
-            '',
+          name: getFlowNodeName({
+            businessObjects,
+            flowNodeId: targetFlowNodeId,
+          }),
         },
         affectedTokenCount,
         visibleAffectedTokenCount,

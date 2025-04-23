@@ -152,11 +152,10 @@ const ModificationDropdown: React.FC<Props> = observer(
                                   scopeId: generateUniqueID(),
                                   flowNode: {
                                     id: flowNodeId,
-                                    name:
-                                      getFlowNodeName({
-                                        businessObjects,
-                                        flowNodeId,
-                                      }) ?? '',
+                                    name: getFlowNodeName({
+                                      businessObjects,
+                                      flowNodeId,
+                                    }),
                                   },
                                   affectedTokenCount: 1,
                                   visibleAffectedTokenCount: 1,
