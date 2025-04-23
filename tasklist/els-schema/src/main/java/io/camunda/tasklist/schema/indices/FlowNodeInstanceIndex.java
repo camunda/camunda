@@ -22,6 +22,7 @@ public class FlowNodeInstanceIndex extends AbstractIndexDescriptor
   public static final String POSITION = "position";
   public static final String PARENT_FLOW_NODE_ID = "parentFlowNodeId";
   public static final String TENANT_ID = "tenantId";
+  public static final String TYPE = "type";
 
   @Override
   public String getIndexName() {

@@ -10,8 +10,12 @@ package io.camunda.tasklist.store;
 import io.camunda.tasklist.entities.*;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public interface VariableStore {
+  int DEFAULT_MAX_TERMS_COUNT = 65536;
+  String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
 
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
       List<String> flowNodeInstanceIds, List<String> varNames, final Set<String> fieldNames);
@@ -29,16 +33,37 @@ public interface VariableStore {
 
   public TaskVariableEntity getTaskVariable(final String variableId, Set<String> fieldNames);
 
+  void refreshMaxTermsCount();
+
   public List<String> getProcessInstanceIdsWithMatchingVars(
       List<String> varNames, List<String> varValues);
 
+  default List<List<String>> chunkQueryTerms(final List<String> terms, final int maxTermsCount) {
+    if (terms.size() <= maxTermsCount) {
+      return Collections.singletonList(terms);
+    }
+
+    final int numberOfChunks = (terms.size() + maxTermsCount - 1) / maxTermsCount;
+
+    return IntStream.range(0, numberOfChunks)
+        .mapToObj(
+            i -> {
+              final int startIndex = i * maxTermsCount;
+              final int endIndex = Math.min((i + 1) * maxTermsCount, terms.size());
+
+              return terms.subList(startIndex, endIndex);
+            })
+        .collect(Collectors.toList());
+  }
+
   static class FlowNodeTree extends HashMap<String, String> {
 
-    public String getParent(String currentFlowNodeInstanceId) {
+    public String getParent(final String currentFlowNodeInstanceId) {
       return super.get(currentFlowNodeInstanceId);
     }
 
-    public void setParent(String currentFlowNodeInstanceId, String parentFlowNodeInstanceId) {
+    public void setParent(
+        final String currentFlowNodeInstanceId, final String parentFlowNodeInstanceId) {
       super.put(currentFlowNodeInstanceId, parentFlowNodeInstanceId);
     }
 
@@ -50,7 +75,7 @@ public interface VariableStore {
   static class VariableMap extends HashMap<String, VariableEntity> {
 
     public void putAll(final VariableMap m) {
-      for (Entry<String, VariableEntity> entry : m.entrySet()) {
+      for (final Entry<String, VariableEntity> entry : m.entrySet()) {
         // since we build variable map from bottom to top of the flow node tree, we don't overwrite
         // the values from lower (inner) scopes with those from upper (outer) scopes
         putIfAbsent(entry.getKey(), entry.getValue());
@@ -73,7 +98,8 @@ public interface VariableStore {
     private List<String> varNames;
     private Set<String> fieldNames = new HashSet<>();
 
-    public static GetVariablesRequest createFrom(TaskEntity taskEntity, Set<String> fieldNames) {
+    public static GetVariablesRequest createFrom(
+        final TaskEntity taskEntity, final Set<String> fieldNames) {
       return new GetVariablesRequest()
           .setTaskId(taskEntity.getId())
           .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
@@ -82,7 +108,7 @@ public interface VariableStore {
           .setFieldNames(fieldNames);
     }
 
-    public static GetVariablesRequest createFrom(TaskEntity taskEntity) {
+    public static GetVariablesRequest createFrom(final TaskEntity taskEntity) {
       return new GetVariablesRequest()
           .setTaskId(taskEntity.getId())
           .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
@@ -91,7 +117,9 @@ public interface VariableStore {
     }
 
     public static GetVariablesRequest createFrom(
-        TaskSearchView taskSearchView, List<String> varNames, Set<String> fieldNames) {
+        final TaskSearchView taskSearchView,
+        final List<String> varNames,
+        final Set<String> fieldNames) {
       return new GetVariablesRequest()
           .setTaskId(taskSearchView.getId())
           .setFlowNodeInstanceId(taskSearchView.getFlowNodeInstanceId())
@@ -156,7 +184,13 @@ public interface VariableStore {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public int hashCode() {
+      return Objects.hash(
+          taskId, state, flowNodeInstanceId, processInstanceId, varNames, fieldNames);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }
@@ -170,12 +204,6 @@ public interface VariableStore {
           && Objects.equals(processInstanceId, that.processInstanceId)
           && Objects.equals(varNames, that.varNames)
           && Objects.equals(fieldNames, that.fieldNames);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(
-          taskId, state, flowNodeInstanceId, processInstanceId, varNames, fieldNames);
     }
   }
 }

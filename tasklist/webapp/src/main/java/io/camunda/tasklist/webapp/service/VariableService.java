@@ -360,9 +360,7 @@ public class VariableService {
 
   private FlowNodeTree getFlowNodeTree(
       final Map<String, FlowNodeTree> flowNodeTrees, final String processInstanceId) {
-    if (flowNodeTrees.get(processInstanceId) == null) {
-      flowNodeTrees.put(processInstanceId, new FlowNodeTree());
-    }
+    flowNodeTrees.computeIfAbsent(processInstanceId, pi -> new FlowNodeTree());
     return flowNodeTrees.get(processInstanceId);
   }
 
