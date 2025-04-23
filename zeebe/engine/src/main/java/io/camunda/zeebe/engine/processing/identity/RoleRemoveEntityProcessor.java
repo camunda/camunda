@@ -94,6 +94,14 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       return;
     }
 
+    if (!isEntityAssigned(record)) {
+      final var errorMessage =
+          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), record.getRoleKey());
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record);
     responseWriter.writeEventOnCommand(
         record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record, command);
@@ -108,8 +116,20 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
-    final var isAssigned =
-        switch (record.getEntityType()) {
+
+    if (isEntityAssigned(record)) {
+      stateWriter.appendFollowUpEvent(
+          command.getKey(), RoleIntent.ENTITY_REMOVED, command.getValue());
+    } else {
+      final var errorMessage =
+          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), record.getRoleKey());
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+    }
+    commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private boolean isEntityAssigned(final RoleRecord record) {
+    return switch (record.getEntityType()) {
       case USER, MAPPING ->
           membershipState.hasRelation(
               record.getEntityType(),
@@ -120,17 +140,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
               Long.toString(record.getRoleKey()));
       default ->
           throw new IllegalArgumentException("Unsupported entity type: " + record.getEntityType());
-        };
-
-    if (isAssigned) {
-      stateWriter.appendFollowUpEvent(
-          command.getKey(), RoleIntent.ENTITY_REMOVED, command.getValue());
-    } else {
-      final var errorMessage =
-          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), record.getRoleKey());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-    }
-    commandDistributionBehavior.acknowledgeCommand(command);
+    };
   }
 
   private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
