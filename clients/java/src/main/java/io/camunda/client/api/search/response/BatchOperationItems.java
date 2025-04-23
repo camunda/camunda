@@ -25,7 +25,9 @@ public interface BatchOperationItems {
   interface BatchOperationItem {
     Long getBatchOperationKey();
 
-    Long getKey();
+    Long getItemKey();
+
+    Long getProcessInstanceKey();
 
     BatchOperationItemState getStatus();
   }

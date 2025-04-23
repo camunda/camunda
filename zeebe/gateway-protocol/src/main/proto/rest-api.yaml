@@ -8423,6 +8423,9 @@ components:
         itemKey:
           description: Key of the item, e.g. a process instance key.
           type: string
+        processInstanceKey:
+          description: the process instance key of the processed item.
+          type: string
         state:
           description: State of the item.
           type: string
