@@ -234,31 +234,47 @@ public class VariableStoreOpenSearch implements VariableStore {
 
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
 
+    final Query.Builder processInstanceKeyQuery = new Query.Builder();
+    processInstanceKeyQuery.terms(
+        terms ->
+            terms
+                .field(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID)
+                .terms(
+                    t ->
+                        t.value(
+                            processInstanceIds.stream()
+                                .map(FieldValue::of)
+                                .collect(Collectors.toList()))));
+
+    final Query.Builder typeQuery = new Query.Builder();
+    typeQuery.terms(
+        terms ->
+            terms
+                .field(FlowNodeInstanceIndex.TYPE)
+                .terms(
+                    t ->
+                        t.value(
+                            Arrays.asList(
+                                FieldValue.of(FlowNodeType.AD_HOC_SUB_PROCESS.toString()),
+                                FieldValue.of(FlowNodeType.USER_TASK.toString()),
+                                FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
+                                FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
+                                FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString())))));
+
+    final Query.Builder combinedQuery = new Query.Builder();
+    combinedQuery.constantScore(
+        cs -> cs.filter(OpenSearchUtil.joinWithAnd(processInstanceKeyQuery, typeQuery)));
+
     final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
     searchRequestBuilder
         .index(flowNodeInstanceIndex.getAlias())
-        .query(
-            q ->
-                q.constantScore(
-                    cs ->
-                        cs.filter(
-                            f ->
-                                f.terms(
-                                    terms ->
-                                        terms
-                                            .field(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID)
-                                            .terms(
-                                                t ->
-                                                    t.value(
-                                                        processInstanceIds.stream()
-                                                            .map(m -> FieldValue.of(m))
-                                                            .collect(toList())))))))
+        .query(combinedQuery.build())
         .sort(sort -> sort.field(f -> f.field(FlowNodeInstanceIndex.POSITION).order(SortOrder.Asc)))
         .size(tasklistProperties.getOpenSearch().getBatchSize());
 
     try {
       return OpenSearchUtil.scroll(searchRequestBuilder, FlowNodeInstanceEntity.class, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all flow nodes: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
