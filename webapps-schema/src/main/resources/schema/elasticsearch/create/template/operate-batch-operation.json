@@ -30,7 +30,19 @@
 			},
 			"username": {
 				"type": "keyword"
-			}
-		}
+      },
+      "batchOperationKey": {
+        "type": "long"
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "operationsFailedCount": {
+        "type": "long"
+      },
+      "operationsCompletedCount": {
+        "type": "long"
+      }
+    }
 	}
 }
