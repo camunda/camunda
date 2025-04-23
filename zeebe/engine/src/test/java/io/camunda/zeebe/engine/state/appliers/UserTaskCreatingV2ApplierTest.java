@@ -73,10 +73,10 @@ public class UserTaskCreatingV2ApplierTest {
     userTaskCreatingV2Applier.applyState(userTaskKey, userTaskRecord);
 
     // then
-    // ensure the intermediate state is present without an assignee
+    // ensure the intermediate state is present and has an assignee
     assertThat(userTaskState.getIntermediateState(userTaskKey).getRecord().getAssignee())
-        .describedAs("Expect that intermediate state to be present")
-        .isEmpty();
+        .describedAs("Expect that intermediate state is present with the assignee")
+        .isEqualTo(initialAssignee);
 
     // ensure the intermediate assignee is stored
     assertThat(userTaskState.findInitialAssignee(userTaskKey))

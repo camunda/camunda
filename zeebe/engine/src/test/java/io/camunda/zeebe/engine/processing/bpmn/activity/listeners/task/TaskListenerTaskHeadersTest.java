@@ -128,24 +128,26 @@ public class TaskListenerTaskHeadersTest {
   public void shouldHaveAccessToAssigneeInCreatingListenerWhenDefinedOnModel() {
     // given
     final var assignee = "initial_assignee";
+    final var listenerTypes = new String[] {listenerType, listenerType + "_2"};
 
     // when
     final long processInstanceKey =
         helper.createProcessInstance(
-            helper.createProcessWithZeebeUserTask(
-                t ->
-                    t.zeebeAssignee(assignee)
-                        .zeebeTaskListener(l -> l.creating().type(listenerType))));
+            helper.createUserTaskWithTaskListenersAndAssignee(
+                ZeebeTaskListenerEventType.creating, assignee, listenerTypes));
 
-    // then
-    helper.assertActivatedJob(
-        processInstanceKey,
-        listenerType,
+    final Consumer<JobRecordValue> assertInitialAssigneeHeader =
         job ->
             assertThat(job.getCustomHeaders())
-                .describedAs("Expect first listener job to receive assignee header.")
-                .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee"));
-    helper.completeJobs(processInstanceKey, listenerType);
+                .describedAs("Expect creating listeners to receive assignee header.")
+                .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee");
+
+    Stream.of(listenerTypes)
+        .forEach(
+            listener -> {
+              helper.assertActivatedJob(processInstanceKey, listener, assertInitialAssigneeHeader);
+              helper.completeJobs(processInstanceKey, listener);
+            });
   }
 
   @Test

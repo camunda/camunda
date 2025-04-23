@@ -67,7 +67,9 @@ public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
+    // unset assignee as we're not supposed to write CREATED with an assignee
+    final var valueWithoutAssignee = userTaskRecord.copy().unsetAssignee();
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, valueWithoutAssignee);
 
     userTaskState
         .findInitialAssignee(userTaskKey)
@@ -75,8 +77,8 @@ public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
             initialAssignee -> {
               // clean up the changed attributes because we have already finished the creation,
               // and are now starting a new transition to assigning
-              userTaskRecord.resetChangedAttributes();
-              assignUserTask(userTaskRecord, initialAssignee);
+              valueWithoutAssignee.resetChangedAttributes();
+              assignUserTask(valueWithoutAssignee, initialAssignee);
             });
   }
 
