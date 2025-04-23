@@ -45,7 +45,7 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
         const data = await response.json();
 
         if (data.length === 0) {
-          return;
+          return null;
         }
 
         newProcessInstance.removeInstance();
@@ -63,7 +63,7 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
 
           navigate({pathname: pages.taskDetails(id)});
 
-          return;
+          return null;
         }
 
         return data;

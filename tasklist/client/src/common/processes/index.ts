@@ -6,14 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-@use '@carbon/layout';
+import type {ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/operate';
+import type {Process} from 'v1/api/types';
 
-.splitPane {
-  --header-height: 48px;
-  width: 100%;
-  height: calc(100% - var(--header-height));
-  padding: 0;
-  display: flex;
-  flex-direction: row;
-  background: var(--cds-layer);
-}
+type MultiModeProcess = Process | ProcessDefinition;
+
+export type {MultiModeProcess};

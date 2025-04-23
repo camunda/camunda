@@ -6,14 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-@use '@carbon/layout';
+import {getProcessDisplayName} from 'v1/utils/getProcessDisplayName';
+import type {MultiModeProcess} from './index';
 
-.splitPane {
-  --header-height: 48px;
-  width: 100%;
-  height: calc(100% - var(--header-height));
-  padding: 0;
-  display: flex;
-  flex-direction: row;
-  background: var(--cds-layer);
+function getMultiModeProcessDisplayName(process: MultiModeProcess) {
+  if ('bpmnProcessId' in process) {
+    return getProcessDisplayName(process);
+  }
+
+  return process.name ?? process.processDefinitionId;
 }
+
+export {getMultiModeProcessDisplayName};
