@@ -811,6 +811,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     if (!operations.isEmpty()) {
       log.info("Executing bulk request on {} items of {}", operations.size(), itemName);
 
+<<<<<<< HEAD
       final String errorMessage =
           String.format("There were errors while performing a bulk on %s.", itemName);
       final BulkResponse bulkResponse =
@@ -849,11 +850,55 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         } else {
           throw new OptimizeRuntimeException(
               String.format("There were failures while performing bulk on %s.", itemName));
+=======
+    LOG.info("Executing bulk request on {} items of {}", operations.size(), itemName);
+    final String errorMessage =
+        String.format("There were errors while performing a bulk on %s.", itemName);
+    final BulkResponse bulkResponse =
+        bulk(bulkReqBuilderSupplier.get().operations(operations), errorMessage);
+    if (bulkResponse.errors()) {
+      final Set<String> failedOperationIds = getFailedOperationIds(bulkResponse);
+      if (!failedOperationIds.isEmpty()) {
+        LOG.warn(
+            "There were failures while performing bulk on {} due to the nested document limit being reached."
+                + " Removing {} failed items and retrying",
+            itemName,
+            failedOperationIds.size());
+
+        final List<BulkOperation> nonFailedOperations =
+            operations.stream()
+                .filter(request -> !failedOperationIds.contains(typeByBulkOperation(request).id()))
+                .toList();
+        if (!nonFailedOperations.isEmpty()) {
+          doBulkRequestWithNestedDocHandling(bulkReqBuilderSupplier, nonFailedOperations, itemName);
+>>>>>>> e768ab28 (fix: log failed operation IDs when bulk fails for nested document error)
         }
       }
     } else {
       log.debug("Bulk request on {} not executed because it contains no actions.", itemName);
     }
+  }
+
+  private Set<String> getFailedOperationIds(final BulkResponse bulkResponse) {
+    final Map<String, List<String>> failedNestedDocLimitItemIdsByIndexName =
+        bulkResponse.items().stream()
+            .filter(operation -> Objects.nonNull(operation.error()))
+            .filter(operation -> Objects.nonNull(operation.error().reason()))
+            .filter(operation -> Objects.nonNull(operation.id()))
+            .filter(operation -> operation.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
+            .collect(
+                Collectors.groupingBy(
+                    BulkResponseItem::index,
+                    Collectors.mapping(BulkResponseItem::id, Collectors.toList())));
+    if (!failedNestedDocLimitItemIdsByIndexName.isEmpty()) {
+      final Set<String> failedOperationIds =
+          failedNestedDocLimitItemIdsByIndexName.values().stream()
+              .flatMap(Collection::stream)
+              .collect(Collectors.toSet());
+      LOG.debug("Failed operation IDs by Index: {}", failedNestedDocLimitItemIdsByIndexName);
+      return failedOperationIds;
+    }
+    return Set.of();
   }
 
   private void doBulkRequestWithoutRetries(
@@ -865,6 +910,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
           String.format("There were errors while performing a bulk on %s.", itemName);
       final BulkResponse bulkResponse = bulk(bulkReqBuilder.operations(operations), errorMessage);
       if (bulkResponse.errors()) {
+        final Set<String> failedOperationIds = getFailedOperationIds(bulkResponse);
         final boolean isReachedNestedDocLimit =
             bulkResponse.items().stream()
                 .map(BulkResponseItem::error)
@@ -874,8 +920,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                 .anyMatch(reason -> reason.contains(NESTED_DOC_LIMIT_MESSAGE));
         throw new OptimizeRuntimeException(
             String.format(
-                "There were failures while performing bulk on %s.%n%s",
-                itemName, getHintForErrorMsg(isReachedNestedDocLimit)));
+                "There were %s failures while performing bulk on %s.%n%s",
+                failedOperationIds.size(), itemName, getHintForErrorMsg(isReachedNestedDocLimit)));
       }
     } else {
       log.debug("Bulk request on {} not executed because it contains no actions.", itemName);
