@@ -308,7 +308,7 @@ class UserTaskSearchTest {
             .filter(
                 f ->
                     f.localVariables(
-                        Arrays.asList(vf -> vf.name("task01").value(v -> v.in("\test\"")))))
+                        Arrays.asList(vf -> vf.name("task01").value(v -> v.in("\"test\"")))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);

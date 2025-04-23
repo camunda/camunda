@@ -19,6 +19,7 @@ import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.request.SearchRequestBuilders;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -38,15 +39,15 @@ public class VariableFilterMapper {
 
   public static List<VariableValueFilterRequest> toVariableValueFilterRequest(
       final Map<String, Object> variableValueFilters) {
-    return variableValueFilters.entrySet().stream()
-        .map(
-            e -> {
-              variableValueNullCheck(e.getValue());
-              return new VariableValueFilterRequest()
-                  .name(e.getKey())
-                  .value(new StringFilterProperty().$eq(e.getValue().toString()));
-            })
-        .collect(Collectors.toList());
+    final List<VariableValueFilterRequest> requests = new ArrayList<>();
+    for (final Map.Entry<String, Object> entry : variableValueFilters.entrySet()) {
+      variableValueNullCheck(entry.getValue());
+      requests.add(
+          new VariableValueFilterRequest()
+              .name(entry.getKey())
+              .value(new StringFilterProperty().$eq(entry.getValue().toString())));
+    }
+    return requests;
   }
 
   static void variableValueNullCheck(final Object value) {
