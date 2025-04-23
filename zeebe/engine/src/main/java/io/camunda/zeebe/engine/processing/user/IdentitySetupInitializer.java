@@ -29,6 +29,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware, Task {
   public static final String DEFAULT_ROLE_NAME = "Admin";
+  public static final String DEFAULT_ROLE_ID = "admin";
   public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
@@ -69,7 +70,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     final var setupRecord = new IdentitySetupRecord();
 
-    final var defaultRole = new RoleRecord().setName(DEFAULT_ROLE_NAME);
+    final var defaultRole = new RoleRecord().setRoleId(DEFAULT_ROLE_ID).setName(DEFAULT_ROLE_NAME);
     setupRecord.setDefaultRole(defaultRole);
 
     securityConfig

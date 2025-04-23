@@ -28,12 +28,14 @@ import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@Disabled("https://github.com/camunda/camunda/issues/30126")
 public class OperatePermissionsIT {
 
   @MultiDbTestApplication

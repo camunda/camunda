@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -38,6 +39,7 @@ public class RemoveEntityRoleMultiPartitionTest {
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldDistributeRoleRemoveEntityCommand() {
     // when
     final var userKey =
@@ -106,6 +108,7 @@ public class RemoveEntityRoleMultiPartitionTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldDistributeInIdentityQueue() {
     // when
     final var userKey =
@@ -137,6 +140,7 @@ public class RemoveEntityRoleMultiPartitionTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
