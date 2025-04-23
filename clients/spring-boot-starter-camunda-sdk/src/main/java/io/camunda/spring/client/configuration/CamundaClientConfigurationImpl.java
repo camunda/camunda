@@ -262,7 +262,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
   private String composeAddressWithPort(
       final String host, final int port, final String debugMessage) {
     final String gatewayAddress = host + ":" + port;
-    LOG.debug(debugMessage + ", address will be '{}'", gatewayAddress);
+    LOG.debug("{}, address will be '{}'", debugMessage, gatewayAddress);
     return gatewayAddress;
   }
 
@@ -290,6 +290,13 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
         + chainHandlers
         + ", zeebeClientExecutorService="
         + zeebeClientExecutorService
+        + ", credentialsProvider="
+        + (credentialsProvider == null ? "null" : credentialsProvider.getClass())
+        + ", gatewayAddress='"
+        + gatewayAddress
+        + '\''
+        + ", plaintext="
+        + plaintext
         + '}';
   }
 }

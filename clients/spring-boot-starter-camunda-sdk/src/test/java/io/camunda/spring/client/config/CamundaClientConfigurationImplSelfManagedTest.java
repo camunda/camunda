@@ -36,7 +36,8 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
     properties = {
       "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=my-client-id",
-      "camunda.client.auth.client-secret=my-client-secret"
+      "camunda.client.auth.client-secret=my-client-secret",
+      "logging.level.io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration=debug"
     })
 @ExtendWith(OutputCaptureExtension.class)
 public class CamundaClientConfigurationImplSelfManagedTest {

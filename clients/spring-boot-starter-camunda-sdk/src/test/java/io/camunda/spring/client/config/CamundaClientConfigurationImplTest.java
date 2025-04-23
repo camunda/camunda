@@ -16,6 +16,7 @@
 package io.camunda.spring.client.config;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
@@ -90,5 +91,14 @@ public class CamundaClientConfigurationImplTest {
             credentialsProvider());
     assertThat(configuration.isPlaintextConnectionEnabled()).isEqualTo(plaintext);
     assertThat(configuration.getGatewayAddress()).isEqualTo("some-host:21500");
+  }
+
+  @Test
+  void shouldPrintToString() {
+    final CamundaClientConfigurationImpl camundaClientConfiguration =
+        new CamundaClientConfigurationImpl(
+            mock(CamundaClientProperties.class), null, null, null, null, null);
+    final String toStringOutput = camundaClientConfiguration.toString();
+    assertThat(toStringOutput).matches("CamundaClientConfigurationImpl\\{.*}");
   }
 }

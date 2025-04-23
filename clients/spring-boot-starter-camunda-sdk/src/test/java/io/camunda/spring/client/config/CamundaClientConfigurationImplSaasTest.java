@@ -37,10 +37,11 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
     classes = {CamundaClientAllAutoConfiguration.class, CamundaClientProdAutoConfiguration.class},
     properties = {
       "camunda.client.mode=saas",
-      "camunda.client.cluster-id=12345",
-      "camunda.client.region=bru-2",
+      "camunda.client.cloud.cluster-id=12345",
+      "camunda.client.cloud.region=bru-2",
       "camunda.client.auth.client-id=my-client-id",
-      "camunda.client.auth.client-secret=my-client-secret"
+      "camunda.client.auth.client-secret=my-client-secret",
+      "logging.level.io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration=debug"
     })
 @ExtendWith(OutputCaptureExtension.class)
 public class CamundaClientConfigurationImplSaasTest {
