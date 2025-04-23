@@ -610,7 +610,7 @@ describe('stores/flowNodeSelection', () => {
     );
 
     // cancel all tokens
-    modificationsStore.cancelAllTokens('userTask');
+    modificationsStore.cancelAllTokens('userTask', {});
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
@@ -633,9 +633,9 @@ describe('stores/flowNodeSelection', () => {
     modificationsStore.removeLastModification();
 
     // cancel all tokens one by one
-    modificationsStore.cancelToken('userTask', '2251799813689409');
-    modificationsStore.cancelToken('userTask', '2251799813689410');
-    modificationsStore.cancelToken('userTask', '2251799813689411');
+    modificationsStore.cancelToken('userTask', '2251799813689409', {});
+    modificationsStore.cancelToken('userTask', '2251799813689410', {});
+    modificationsStore.cancelToken('userTask', '2251799813689411', {});
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
@@ -662,7 +662,7 @@ describe('stores/flowNodeSelection', () => {
     modificationsStore.removeLastModification();
 
     // cancel one token
-    modificationsStore.cancelToken('userTask', '2251799813689409');
+    modificationsStore.cancelToken('userTask', '2251799813689409', {});
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
@@ -725,6 +725,7 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 3,
       visibleAffectedTokenCount: 3,
       newScopeCount: 3,
+      businessObjects: {},
     });
 
     flowNodeSelectionStore.setSelection({
@@ -755,6 +756,7 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'userTask',
@@ -763,6 +765,7 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'userTask',
@@ -771,6 +774,7 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
 
     flowNodeSelectionStore.setSelection({
@@ -804,6 +808,7 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
 
     flowNodeSelectionStore.setSelection({

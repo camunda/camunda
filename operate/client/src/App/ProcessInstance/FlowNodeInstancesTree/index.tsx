@@ -222,8 +222,12 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
           ) : undefined;
         }}
         onSelect={() => {
-          if (modificationsStore.state.status === 'adding-token') {
+          if (
+            modificationsStore.state.status === 'adding-token' &&
+            processInstanceXmlData?.businessObjects
+          ) {
             modificationsStore.finishAddingToken(
+              processInstanceXmlData.businessObjects,
               flowNodeInstance.flowNodeId,
               flowNodeInstance.id,
             );

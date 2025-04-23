@@ -204,28 +204,36 @@ const TopPanel: React.FC = observer(() => {
           isOpen={incidentsStore.state.isIncidentBarOpen}
         />
       )}
-      {modificationsStore.state.status === 'moving-token' && (
-        <ModificationInfoBanner
-          text="Select the target flow node in the diagram"
-          button={{
-            onClick: () => modificationsStore.finishMovingToken(),
-            label: 'Discard',
-          }}
-        />
-      )}
+      {modificationsStore.state.status === 'moving-token' &&
+        processDefinitionData?.businessObjects && (
+          <ModificationInfoBanner
+            text="Select the target flow node in the diagram"
+            button={{
+              onClick: () =>
+                modificationsStore.finishMovingToken(
+                  processDefinitionData.businessObjects,
+                ),
+              label: 'Discard',
+            }}
+          />
+        )}
       {modificationsStore.isModificationModeEnabled &&
         flowNodeSelectionStore.selectedRunningInstanceCount > 1 && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
-      {modificationsStore.state.status === 'adding-token' && (
-        <ModificationInfoBanner
-          text="Flow node has multiple parent scopes. Please select parent node from Instance History to Add."
-          button={{
-            onClick: () => modificationsStore.finishAddingToken(),
-            label: 'Discard',
-          }}
-        />
-      )}
+      {modificationsStore.state.status === 'adding-token' &&
+        processDefinitionData?.businessObjects && (
+          <ModificationInfoBanner
+            text="Flow node has multiple parent scopes. Please select parent node from Instance History to Add."
+            button={{
+              onClick: () =>
+                modificationsStore.finishAddingToken(
+                  processDefinitionData.businessObjects,
+                ),
+              label: 'Discard',
+            }}
+          />
+        )}
       <DiagramPanel>
         <DiagramShell status={getStatus()}>
           {processDefinitionData?.xml !== undefined && (
@@ -242,9 +250,15 @@ const TopPanel: React.FC = observer(() => {
                   : undefined
               }
               onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
-                if (modificationsStore.state.status === 'moving-token') {
+                if (
+                  modificationsStore.state.status === 'moving-token' &&
+                  processDefinitionData?.businessObjects
+                ) {
                   flowNodeSelectionStore.clearSelection();
-                  modificationsStore.finishMovingToken(flowNodeId);
+                  modificationsStore.finishMovingToken(
+                    processDefinitionData.businessObjects,
+                    flowNodeId,
+                  );
                 } else {
                   if (modificationsStore.state.status !== 'adding-token') {
                     flowNodeSelectionStore.selectFlowNode({

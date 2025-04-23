@@ -12,6 +12,7 @@ import {processStatisticsStore} from 'modules/stores/processStatistics/processSt
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
+import {MemoryRouter} from 'react-router-dom';
 
 type Props = {
   children?: React.ReactNode;
@@ -27,31 +28,35 @@ const Wrapper = ({children}: Props) => {
   });
 
   return (
-    <QueryClientProvider client={getMockQueryClient()}>
-      {children}
-      <button
-        onClick={() => processInstanceMigrationStore.setCurrentStep('summary')}
-      >
-        Summary
-      </button>
-      <button
-        onClick={() =>
-          processInstanceMigrationStore.setCurrentStep('elementMapping')
-        }
-      >
-        Element Mapping
-      </button>
-      <button
-        onClick={() => {
-          processInstanceMigrationStore.updateFlowNodeMapping({
-            sourceId: 'ServiceTask_0kt6c5i',
-            targetId: 'ServiceTask_0kt6c5i',
-          });
-        }}
-      >
-        map elements
-      </button>
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        {children}
+        <button
+          onClick={() =>
+            processInstanceMigrationStore.setCurrentStep('summary')
+          }
+        >
+          Summary
+        </button>
+        <button
+          onClick={() =>
+            processInstanceMigrationStore.setCurrentStep('elementMapping')
+          }
+        >
+          Element Mapping
+        </button>
+        <button
+          onClick={() => {
+            processInstanceMigrationStore.updateFlowNodeMapping({
+              sourceId: 'ServiceTask_0kt6c5i',
+              targetId: 'ServiceTask_0kt6c5i',
+            });
+          }}
+        >
+          map elements
+        </button>
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 };
 

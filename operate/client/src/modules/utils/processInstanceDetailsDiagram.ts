@@ -74,4 +74,4 @@ const getFlowNodeParents = (
   return getFlowNodesInBetween(businessObjects, flowNodeId, bpmnProcessId);
 };
 
-export {getFlowNodeParents, hasMultipleScopes};
+export {getFlowNodeParents, hasMultipleScopes, getFlowNodesInBetween};

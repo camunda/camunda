@@ -108,7 +108,7 @@ describe('LastModification', () => {
     expect(screen.getByText(/Add "service-task-1"/)).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('service-task-2');
+      modificationsStore.cancelAllTokens('service-task-2', {});
     });
 
     expect(

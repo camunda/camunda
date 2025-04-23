@@ -168,7 +168,7 @@ describe('stores/modifications', () => {
     });
 
     expect(modificationsStore.state.modifications.length).toEqual(1);
-    modificationsStore.cancelAllTokens('service-task-2');
+    modificationsStore.cancelAllTokens('service-task-2', {});
 
     expect(modificationsStore.state.modifications.length).toEqual(2);
 
@@ -393,7 +393,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelAllTokens('service-task-2');
+    modificationsStore.cancelAllTokens('service-task-2', {});
 
     expect(modificationsStore.lastModification).toEqual({
       payload: {
@@ -456,7 +456,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelAllTokens('service-task-2');
+    modificationsStore.cancelAllTokens('service-task-2', {});
 
     modificationsStore.addModification({
       type: 'token',
@@ -496,7 +496,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelAllTokens('multi-instance-subprocess');
+    modificationsStore.cancelAllTokens('multi-instance-subprocess', {});
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       'service-task-1': {
@@ -597,7 +597,7 @@ describe('stores/modifications', () => {
       modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
     ).toBe(false);
 
-    modificationsStore.cancelAllTokens('service-task-1');
+    modificationsStore.cancelAllTokens('service-task-1', {});
 
     expect(
       modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
@@ -648,7 +648,7 @@ describe('stores/modifications', () => {
       'StartEvent_1',
     );
 
-    modificationsStore.finishMovingToken('end-event');
+    modificationsStore.finishMovingToken({}, 'end-event');
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       StartEvent_1: {
@@ -681,7 +681,7 @@ describe('stores/modifications', () => {
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
     modificationsStore.startMovingToken('multi-instance-service-task');
-    modificationsStore.finishMovingToken('service-task-7');
+    modificationsStore.finishMovingToken({}, 'service-task-7');
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       'multi-instance-service-task': {
@@ -1140,7 +1140,7 @@ describe('stores/modifications', () => {
         },
       },
     });
-    modificationsStore.cancelAllTokens('flow_node_2');
+    modificationsStore.cancelAllTokens('flow_node_2', {});
 
     modificationsStore.addModification({
       type: 'token',
@@ -1291,7 +1291,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelToken('flow_node_5', 'some_instance_key');
+    modificationsStore.cancelToken('flow_node_5', 'some_instance_key', {});
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'flow_node_6',
       sourceFlowNodeInstanceKey: 'some_instance_key_2',
@@ -1299,6 +1299,7 @@ describe('stores/modifications', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
 
     modificationsStore.addModification({
@@ -1512,6 +1513,7 @@ describe('stores/modifications', () => {
     );
 
     modificationsStore.finishAddingToken(
+      {},
       'multi-instance-subprocess',
       'some-instance-key',
     );
