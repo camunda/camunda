@@ -186,6 +186,7 @@ runs:
           - 'dist/**'
           - 'parent/**'
           - '**/pom.xml'
+          - '.mvn/**'
 
         dockerfile-change:
           - 'Dockerfile'
