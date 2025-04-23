@@ -291,7 +291,7 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
         + ", zeebeClientExecutorService="
         + zeebeClientExecutorService
         + ", credentialsProvider="
-        + credentialsProvider.getClass()
+        + (credentialsProvider == null ? "null" : credentialsProvider.getClass())
         + ", gatewayAddress='"
         + gatewayAddress
         + '\''
