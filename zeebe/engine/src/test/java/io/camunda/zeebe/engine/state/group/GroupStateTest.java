@@ -13,10 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -110,83 +107,12 @@ public class GroupStateTest {
   }
 
   @Test
-  void shouldAddEntity() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
-    groupState.create(groupRecord);
-
-    // when
-    final var username = Strings.newRandomValidIdentityId();
-    final var userEntityType = EntityType.USER;
-    groupRecord.setEntityId(username).setEntityType(userEntityType);
-    groupState.addEntity(groupRecord);
-
-    // then
-    final var entityType = groupState.getEntityType(groupId, username);
-    assertThat(entityType.isPresent()).isTrue();
-    assertThat(entityType.get()).isEqualTo(userEntityType);
-  }
-
-  @Test
-  void shouldReturnEntitiesByType() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
-    groupState.create(groupRecord);
-    final var username = Strings.newRandomValidIdentityId();
-    groupRecord.setEntityId(username).setEntityType(EntityType.USER);
-    groupState.addEntity(groupRecord);
-    final var mappingId = Strings.newRandomValidIdentityId();
-    groupRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
-    groupState.addEntity(groupRecord);
-
-    // when
-    final var entities = groupState.getEntitiesByType(groupId);
-
-    // then
-    assertThat(entities)
-        .containsEntry(EntityType.USER, List.of(username))
-        .containsEntry(EntityType.MAPPING, List.of(mappingId));
-  }
-
-  @Test
-  void shouldRemoveEntity() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
-    groupState.create(groupRecord);
-    final var username = Strings.newRandomValidIdentityId();
-    groupRecord.setEntityId(username).setEntityType(EntityType.USER);
-    groupState.addEntity(groupRecord);
-    final var mappingId = Strings.newRandomValidIdentityId();
-    groupRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
-    groupState.addEntity(groupRecord);
-
-    // when
-    groupState.removeEntity(groupId, username);
-
-    // then
-    final var entityType = groupState.getEntitiesByType(groupId);
-    assertThat(entityType).containsOnly(Map.entry(EntityType.MAPPING, List.of(mappingId)));
-  }
-
-  @Test
   void shouldDeleteGroup() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "group";
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    final var username = Strings.newRandomValidIdentityId();
-    groupRecord.setEntityId(username).setEntityType(EntityType.USER);
-    groupState.addEntity(groupRecord);
-    final var mappingId = Strings.newRandomValidIdentityId();
-    groupRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
-    groupState.addEntity(groupRecord);
 
     // when
     groupState.delete(groupId);
@@ -194,8 +120,5 @@ public class GroupStateTest {
     // then
     final var group = groupState.get(groupId);
     assertThat(group).isEmpty();
-
-    final var entitiesByGroup = groupState.getEntitiesByType(groupId);
-    assertThat(entitiesByGroup).isEmpty();
   }
 }

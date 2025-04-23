@@ -21,8 +21,6 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -135,6 +133,7 @@ public class GroupAppliersTest {
     final var mappingId = String.valueOf(entityKey);
     final var mappingRecord =
         new MappingRecord()
+            .setMappingId(mappingId)
             .setMappingKey(entityKey)
             .setClaimName("claimName")
             .setClaimValue("claimValue");
@@ -150,8 +149,9 @@ public class GroupAppliersTest {
     groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // then
-    final var entitiesByType = groupState.getEntitiesByType(groupId);
-    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(mappingId)));
+    assertThat(
+            membershipState.hasRelation(EntityType.MAPPING, mappingId, RelationType.GROUP, groupId))
+        .isTrue();
   }
 
   @Test
@@ -204,10 +204,9 @@ public class GroupAppliersTest {
     groupEntityRemovedApplier.applyState(1L, groupRecord);
 
     // then
-    final var entitiesByType = groupState.getEntitiesByType(groupId);
-    assertThat(entitiesByType).isEmpty();
-    final var persistedMapping = mappingState.get(mappingId).get();
-    assertThat(persistedMapping.getGroupKeysList()).isEmpty();
+    assertThat(
+            membershipState.hasRelation(EntityType.MAPPING, mappingId, RelationType.GROUP, groupId))
+        .isFalse();
   }
 
   @Test
@@ -224,7 +223,5 @@ public class GroupAppliersTest {
     // then
     final var group = groupState.get(groupId);
     assertThat(group.isPresent()).isFalse();
-    final var entitiesByGroup = groupState.getEntitiesByType(groupId);
-    assertThat(entitiesByGroup).isEmpty();
   }
 }
