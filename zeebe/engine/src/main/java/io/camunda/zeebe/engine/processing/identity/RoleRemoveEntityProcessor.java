@@ -73,7 +73,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       return;
     }
 
-    final var persistedRecord = roleState.getRole(record.getRoleKey());
+    final var persistedRecord = roleState.getRole(record.getRoleId());
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           "Expected to update role with id '%s', but a role with this id does not exist."
@@ -83,12 +83,12 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       return;
     }
 
-    final var entityKey = record.getEntityKey();
+    final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
+    if (!isEntityPresent(entityId, entityType)) {
       final var errorMessage =
           "Expected to remove an entity with id '%s' and type '%s' from role with id '%s', but the entity doesn't exist."
-              .formatted(record.getEntityId(), entityType, record.getRoleId());
+              .formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -133,21 +133,18 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       case USER, MAPPING ->
           membershipState.hasRelation(
               record.getEntityType(),
-              // TODO: Use entity id instead of key
-              Long.toString(record.getEntityKey()),
+              record.getEntityId(),
               RelationType.ROLE,
-              // TODO: Use role id instead of key
-              Long.toString(record.getRoleKey()));
+              record.getRoleId());
       default ->
           throw new IllegalArgumentException("Unsupported entity type: " + record.getEntityType());
     };
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
+  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
       case USER -> true; // With simple mappings, any username can be assigned
-      // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
-      case MAPPING -> mappingState.get(String.valueOf(entityKey)).isPresent();
+      case MAPPING -> mappingState.get(entityId).isPresent();
       default -> false;
     };
   }
