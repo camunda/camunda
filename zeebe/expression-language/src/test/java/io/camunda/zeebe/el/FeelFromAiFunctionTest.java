@@ -72,6 +72,12 @@ public class FeelFromAiFunctionTest {
             EvaluationResult::getNumber,
             10),
         new FeelFromAiFunctionTest.FromAiExpressionTestCase<>(
+            "Value, description, type, schema & options",
+            "fromAi(toolCall.a, \"The a parameter.\", \"integer\", { multipleOf: 1 }, { optional: true })",
+            ResultType.NUMBER,
+            EvaluationResult::getNumber,
+            10),
+        new FeelFromAiFunctionTest.FromAiExpressionTestCase<>(
             "Only value (named params)",
             "fromAi(value: toolCall.a)",
             ResultType.NUMBER,
@@ -96,8 +102,14 @@ public class FeelFromAiFunctionTest {
             EvaluationResult::getNumber,
             10),
         new FeelFromAiFunctionTest.FromAiExpressionTestCase<>(
-            "Value, description, type & schema (named params, mixed order)",
-            "fromAi(schema: { multipleOf: 1 }, description: \"The a parameter.\", value: toolCall.a, type: \"integer\")",
+            "Value, description, type, schema & options (named params)",
+            "fromAi(value: toolCall.a, description: \"The a parameter.\", type: \"integer\", schema: { multipleOf: 1 }, options: { optional: true })",
+            ResultType.NUMBER,
+            EvaluationResult::getNumber,
+            10),
+        new FeelFromAiFunctionTest.FromAiExpressionTestCase<>(
+            "Value, description, type, schema & options (named params, mixed order)",
+            "fromAi(schema: { multipleOf: 1 }, description: \"The a parameter.\", options: { optional: true }, value: toolCall.a, type: \"integer\")",
             ResultType.NUMBER,
             EvaluationResult::getNumber,
             10));
@@ -123,8 +135,8 @@ public class FeelFromAiFunctionTest {
     return Stream.of(
         arguments("fromAi()", 0),
         arguments(
-            "fromAi(toolCall.a, \"The a parameter.\", \"integer\", { multipleOf: 1 }, \"testme\")",
-            5));
+            "fromAi(toolCall.a, \"The a parameter.\", \"integer\", { multipleOf: 1 }, { optional: true }, \"testme\")",
+            6));
   }
 
   @Test

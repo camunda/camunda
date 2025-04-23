@@ -19,7 +19,8 @@ public class FromAiFunction extends JavaFunction {
           new FromAiFunction(List.of("value")),
           new FromAiFunction(List.of("value", "description")),
           new FromAiFunction(List.of("value", "description", "type")),
-          new FromAiFunction(List.of("value", "description", "type", "schema")));
+          new FromAiFunction(List.of("value", "description", "type", "schema")),
+          new FromAiFunction(List.of("value", "description", "type", "schema", "options")));
 
   public FromAiFunction(final List<String> params) {
     super(params, FromAiFunction::invoke);
