@@ -206,17 +206,15 @@ public final class AuthorizationCheckBehavior {
   private boolean isUserAuthorizedForTenant(
       final AuthorizationRequest request, final PersistedUser user) {
     final var tenantId = request.tenantId;
-    if (membershipState.hasRelation(
-        EntityType.USER, user.getUsername(), RelationType.TENANT, tenantId)) {
+    final var username = user.getUsername();
+    if (membershipState.hasRelation(EntityType.USER, username, RelationType.TENANT, tenantId)) {
       return true;
     }
-    for (final var groupId :
-        membershipState.getMemberships(EntityType.USER, user.getUsername(), RelationType.GROUP)) {
-      if (membershipState.hasRelation(EntityType.GROUP, groupId, RelationType.TENANT, tenantId)) {
-        return true;
-      }
-    }
-    return false;
+    return membershipState.getMemberships(EntityType.USER, username, RelationType.GROUP).stream()
+        .anyMatch(
+            groupId ->
+                membershipState.hasRelation(
+                    EntityType.GROUP, groupId, RelationType.TENANT, tenantId));
   }
 
   private boolean isMappingAuthorizedForTenant(
