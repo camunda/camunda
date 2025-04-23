@@ -17,7 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import java.util.Set;
+import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -25,7 +25,15 @@ import org.immutables.value.Value;
 public interface BatchOperationChunkRecordValue extends BatchOperationRelated, RecordValue {
 
   /**
-   * @return subset of item keys for the batch operation
+   * @return subset of items for the batch operation
    */
-  Set<Long> getItemKeys();
+  List<BatchOperationItemValue> getItems();
+
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableBatchOperationItemValue.Builder.class)
+  interface BatchOperationItemValue {
+    long getItemKey();
+
+    long getProcessInstanceKey();
+  }
 }

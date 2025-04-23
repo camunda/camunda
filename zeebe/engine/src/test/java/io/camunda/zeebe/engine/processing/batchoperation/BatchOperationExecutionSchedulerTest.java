@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState.BatchOperationVisitor;
@@ -25,14 +26,18 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class BatchOperationExecutionSchedulerTest {
 
   @Mock private Supplier<ScheduledTaskState> scheduledTaskStateFactory;
-  @Mock private BatchOperationItemKeyProvider entityKeyProvider;
+  @Mock private BatchOperationItemProvider entityKeyProvider;
   @Mock private TaskResultBuilder taskResultBuilder;
   @Mock private ReadonlyStreamProcessorContext streamProcessorContext;
   @Mock private ProcessingScheduleService scheduleService;
@@ -110,8 +115,8 @@ public class BatchOperationExecutionSchedulerTest {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
 
     // given
-    when(entityKeyProvider.fetchProcessInstanceKeys(queryCaptor.capture(), any()))
-        .thenReturn(Set.of(1L, 2L, 3L));
+    when(entityKeyProvider.fetchProcessInstanceItems(queryCaptor.capture(), any()))
+        .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
     execute();
@@ -125,7 +130,7 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
-    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(3);
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
   }
 
   @Test
@@ -134,8 +139,8 @@ public class BatchOperationExecutionSchedulerTest {
     when(batchOperation.getBatchOperationType()).thenReturn(RESOLVE_INCIDENT);
 
     // given
-    when(entityKeyProvider.fetchIncidentKeys(queryCaptor.capture(), any()))
-        .thenReturn(Set.of(1L, 2L, 3L));
+    when(entityKeyProvider.fetchIncidentItems(queryCaptor.capture(), any()))
+        .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
     execute();
@@ -149,7 +154,7 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
-    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(3);
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
   }
 
   @Test
@@ -158,8 +163,8 @@ public class BatchOperationExecutionSchedulerTest {
     when(batchOperation.getBatchOperationType()).thenReturn(MIGRATE_PROCESS_INSTANCE);
 
     // given
-    when(entityKeyProvider.fetchProcessInstanceKeys(queryCaptor.capture(), any()))
-        .thenReturn(Set.of(1L, 2L, 3L));
+    when(entityKeyProvider.fetchProcessInstanceItems(queryCaptor.capture(), any()))
+        .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
     execute();
@@ -173,7 +178,7 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
-    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(3);
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
   }
 
   @Test
@@ -181,9 +186,9 @@ public class BatchOperationExecutionSchedulerTest {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
 
     // given
-    final var queryItemKeys = LongStream.range(0, CHUNK_SIZE_IN_RECORD * 2).boxed().toList();
-    when(entityKeyProvider.fetchProcessInstanceKeys(queryCaptor.capture(), any()))
-        .thenReturn(new HashSet<>(queryItemKeys));
+    final var queryItems = createItems(LongStream.range(0, CHUNK_SIZE_IN_RECORD * 2).toArray());
+    when(entityKeyProvider.fetchProcessInstanceItems(queryCaptor.capture(), any()))
+        .thenReturn(new HashSet<>(queryItems));
 
     // when our scheduler fires
     execute();
@@ -196,17 +201,16 @@ public class BatchOperationExecutionSchedulerTest {
     verify(taskResultBuilder, times(2))
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
-    var batchOperationChunkRecord = chunkRecordCaptor.getAllValues().get(0);
-    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
-    assertThat(batchOperationChunkRecord.getItemKeys())
+    var batchOperationChunkRecord = chunkRecordCaptor.getAllValues().getFirst();
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
+    assertThat(extractRecordItemKeys(batchOperationChunkRecord.getItems()))
         .containsExactlyInAnyOrder(
-            queryItemKeys.subList(0, CHUNK_SIZE_IN_RECORD).toArray(Long[]::new));
+            extractQueryItemKeys(queryItems, 0, CHUNK_SIZE_IN_RECORD).toArray(Long[]::new));
     batchOperationChunkRecord = chunkRecordCaptor.getAllValues().get(1);
-    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
-    assertThat(batchOperationChunkRecord.getItemKeys())
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
+    assertThat(extractRecordItemKeys(batchOperationChunkRecord.getItems()))
         .containsExactlyInAnyOrder(
-            queryItemKeys
-                .subList(CHUNK_SIZE_IN_RECORD, CHUNK_SIZE_IN_RECORD * 2)
+            extractQueryItemKeys(queryItems, CHUNK_SIZE_IN_RECORD, CHUNK_SIZE_IN_RECORD)
                 .toArray(Long[]::new));
   }
 
@@ -215,8 +219,8 @@ public class BatchOperationExecutionSchedulerTest {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
 
     // given
-    when(entityKeyProvider.fetchProcessInstanceKeys(queryCaptor.capture(), any()))
-        .thenReturn(Set.of(1L));
+    when(entityKeyProvider.fetchProcessInstanceItems(queryCaptor.capture(), any()))
+        .thenReturn(new HashSet<>(createItems(1L)));
 
     // when our scheduler fires
     execute();
@@ -236,5 +240,36 @@ public class BatchOperationExecutionSchedulerTest {
     when(scheduledTaskStateFactory.get().getBatchOperationState()).thenReturn(batchOperationState);
     when(streamProcessorContext.getScheduleService()).thenReturn(scheduleService);
     when(scheduleService.runDelayedAsync(any(), taskCaptor.capture(), any())).thenReturn(null);
+  }
+
+  private Set<Item> createItems(final long... itemKeys) {
+    return LongStream.of(itemKeys)
+        .mapToObj(itemKey -> new Item(itemKey, itemKey))
+        .collect(Collectors.toSet());
+  }
+
+  private static Collection<Long> extractQueryItemKeys(final Set<Item> items) {
+    return extractQueryItemKeys(items, 0, items.size());
+  }
+
+  private static Collection<Long> extractQueryItemKeys(
+      final Collection<Item> items, final int offset, final int limit) {
+    return items.stream().map(Item::itemKey).skip(offset).limit(limit).collect(Collectors.toSet());
+  }
+
+  private static Collection<Long> extractRecordItemKeys(
+      final Collection<BatchOperationItemValue> items) {
+    return extractRecordItemKeys(items, 0, items.size());
+  }
+
+  private static Collection<Long> extractRecordItemKeys(
+      final Collection<BatchOperationChunkRecordValue.BatchOperationItemValue> items,
+      final int offset,
+      final int limit) {
+    return items.stream()
+        .map(BatchOperationItemValue::getItemKey)
+        .skip(offset)
+        .limit(limit)
+        .collect(Collectors.toSet());
   }
 }

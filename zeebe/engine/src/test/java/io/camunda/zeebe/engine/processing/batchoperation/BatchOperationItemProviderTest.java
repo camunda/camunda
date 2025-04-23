@@ -18,17 +18,18 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-class BatchOperationItemKeyProviderTest {
+class BatchOperationItemProviderTest {
 
   private final SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
 
-  private final BatchOperationItemKeyProvider provider =
-      new BatchOperationItemKeyProvider(searchClientsProxy);
+  private final BatchOperationItemProvider provider =
+      new BatchOperationItemProvider(searchClientsProxy);
 
   @Test
   public void shouldFetchProcessInstanceKeys() {
@@ -48,10 +49,10 @@ class BatchOperationItemKeyProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceKeys(filter, () -> false);
+    final var resultKeys = provider.fetchProcessInstanceItems(filter, () -> false);
 
     // then
-    assertThat(resultKeys).containsExactly(1L, 2L, 3L);
+    assertThat(resultKeys).containsExactly(new Item(1L, 1L), new Item(2L, 2L), new Item(3L, 3L));
   }
 
   @Test
@@ -83,10 +84,17 @@ class BatchOperationItemKeyProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceKeys(filter, () -> false);
+    final var resultKeys = provider.fetchProcessInstanceItems(filter, () -> false);
 
     // then
-    assertThat(resultKeys).containsExactly(1L, 2L, 3L, 4L, 5L, 6L);
+    assertThat(resultKeys)
+        .containsExactly(
+            new Item(1L, 1L),
+            new Item(2L, 2L),
+            new Item(3L, 3L),
+            new Item(4L, 4L),
+            new Item(5L, 5L),
+            new Item(6L, 6L));
   }
 
   @Test
@@ -111,10 +119,10 @@ class BatchOperationItemKeyProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceKeys(filter, () -> false);
+    final var resultKeys = provider.fetchProcessInstanceItems(filter, () -> false);
 
     // then
-    assertThat(resultKeys).containsExactly(1L, 2L, 3L);
+    assertThat(resultKeys).containsExactly(new Item(1L, 1L), new Item(2L, 2L), new Item(3L, 3L));
   }
 
   @Test
@@ -151,14 +159,14 @@ class BatchOperationItemKeyProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceKeys(filter, shouldAbort::get);
+    final var resultItems = provider.fetchProcessInstanceItems(filter, shouldAbort::get);
 
     // then
-    assertThat(resultKeys).isEmpty();
+    assertThat(resultItems).isEmpty();
   }
 
   @Test
-  public void shouldFetchIncidentKeys() {
+  public void shouldFetchIncidentItems() {
     // given
     final var processInstanceResult =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
@@ -175,17 +183,20 @@ class BatchOperationItemKeyProviderTest {
     final var incidentResult =
         new SearchQueryResult.Builder<IncidentEntity>()
             .items(
-                List.of(mockIncidentEntity(11L), mockIncidentEntity(12L), mockIncidentEntity(13L)))
+                List.of(
+                    mockIncidentEntity(11L, 1L),
+                    mockIncidentEntity(12L, 2L),
+                    mockIncidentEntity(13L, 3L)))
             .total(3)
             .build();
     when(searchClientsProxy.searchIncidents(any())).thenReturn(incidentResult);
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchIncidentKeys(filter, () -> false);
+    final var resultKeys = provider.fetchIncidentItems(filter, () -> false);
 
     // then
-    assertThat(resultKeys).containsExactly(11L, 12L, 13L);
+    assertThat(resultKeys).containsExactly(new Item(11L, 1L), new Item(12L, 2L), new Item(13L, 3L));
   }
 
   private ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
@@ -194,9 +205,10 @@ class BatchOperationItemKeyProviderTest {
     return entity;
   }
 
-  private IncidentEntity mockIncidentEntity(final long incidentKey) {
+  private IncidentEntity mockIncidentEntity(final long incidentKey, final long processInstanceKey) {
     final var entity = mock(IncidentEntity.class);
     when(entity.incidentKey()).thenReturn(incidentKey);
+    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
     return entity;
   }
 }

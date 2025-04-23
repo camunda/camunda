@@ -7,12 +7,17 @@
  */
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
+import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
+import java.util.Collection;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +44,16 @@ public class BatchOperationChunkExportHandler
   public void export(final Record<BatchOperationChunkRecordValue> record) {
     final var value = record.getValue();
     batchOperationWriter.updateBatchAndInsertItems(
-        value.getBatchOperationKey(), value.getItemKeys());
+        value.getBatchOperationKey(), mapItems(value.getItems()));
+  }
+
+  private List<BatchOperationItemDbModel> mapItems(
+      final Collection<BatchOperationItemValue> items) {
+    return items.stream().map(this::mapItem).toList();
+  }
+
+  private BatchOperationItemDbModel mapItem(final BatchOperationItemValue value) {
+    return new BatchOperationItemDbModel(
+        value.getItemKey(), value.getProcessInstanceKey(), BatchOperationItemState.ACTIVE);
   }
 }

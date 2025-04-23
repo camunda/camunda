@@ -8,12 +8,14 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -39,14 +41,14 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   private final BatchOperationState batchOperationState;
   private ReadonlyStreamProcessorContext processingContext;
-  private final BatchOperationItemKeyProvider entityKeyProvider;
+  private final BatchOperationItemProvider entityKeyProvider;
 
   /** Marks if this scheduler is currently executing or not. */
   private final AtomicBoolean executing = new AtomicBoolean(false);
 
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final BatchOperationItemKeyProvider entityKeyProvider,
+      final BatchOperationItemProvider entityKeyProvider,
       final Duration pollingInterval) {
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
     this.entityKeyProvider = entityKeyProvider;
@@ -101,7 +103,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       // Then append the chunks
       final var keys = queryAllKeys(batchOperation);
       for (int i = 0; i < keys.size(); i += CHUNK_SIZE_IN_RECORD) {
-        final Set<Long> chunkKeys =
+        final Set<Item> chunkKeys =
             keys.stream().skip(i).limit(CHUNK_SIZE_IN_RECORD).collect(Collectors.toSet());
         appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
       }
@@ -139,13 +141,20 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private void appendChunk(
       final Long batchOperationKey,
       final TaskResultBuilder taskResultBuilder,
-      final Set<Long> keys) {
+      final Set<Item> items) {
     final var command = new BatchOperationChunkRecord();
     command.setBatchOperationKey(batchOperationKey);
-    command.setItemKeys(keys);
+    command.setItems(
+        items.stream()
+            .map(
+                i ->
+                    new BatchOperationItem()
+                        .setItemKey(i.itemKey())
+                        .setProcessInstanceKey(i.processInstanceKey()))
+            .collect(Collectors.toSet()));
 
     LOG.debug(
-        "Appending batch operation {} subbatch with {} items.", batchOperationKey, keys.size());
+        "Appending batch operation {} subbatch with {} items.", batchOperationKey, items.size());
     taskResultBuilder.appendCommandRecord(
         batchOperationKey, BatchOperationChunkIntent.CREATE, command);
   }
@@ -160,16 +169,16 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         batchOperationKey, BatchOperationExecutionIntent.EXECUTE, command, batchOperationKey);
   }
 
-  private Set<Long> queryAllKeys(final PersistedBatchOperation batchOperation) {
+  private Set<Item> queryAllKeys(final PersistedBatchOperation batchOperation) {
     final Supplier<Boolean> abortCondition =
         () -> !batchOperationState.exists(batchOperation.getKey());
 
     return switch (batchOperation.getBatchOperationType()) {
       case CANCEL_PROCESS_INSTANCE, MIGRATE_PROCESS_INSTANCE, MODIFY_PROCESS_INSTANCE ->
-          entityKeyProvider.fetchProcessInstanceKeys(
+          entityKeyProvider.fetchProcessInstanceItems(
               batchOperation.getEntityFilter(ProcessInstanceFilter.class), abortCondition);
       case RESOLVE_INCIDENT ->
-          entityKeyProvider.fetchIncidentKeys(
+          entityKeyProvider.fetchIncidentItems(
               batchOperation.getEntityFilter(ProcessInstanceFilter.class), abortCondition);
       default ->
           throw new IllegalArgumentException(
