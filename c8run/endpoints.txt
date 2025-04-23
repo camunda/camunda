@@ -1,8 +1,9 @@
 -------------------------------------------
 Access each component at the following urls:
 
-Operate:                     http://localhost:{{.ServerPort}}/operate
-Tasklist:                    http://localhost:{{.ServerPort}}/tasklist
+Operate:                     http://localhost:{{.OperatePort}}/operate
+Tasklist:                    http://localhost:{{.TasklistPort}}/tasklist
+Identity:                    http://localhost:{{.IdentityPort}}/identity
 Zeebe Cluster Endpoint:      http://localhost:26500
 Inbound Connectors Endpoint: http://localhost:8085
 
