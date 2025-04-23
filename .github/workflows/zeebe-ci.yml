@@ -1,8 +1,18 @@
 name: Zeebe CI
 
 on:
-  workflow_dispatch: { }
-  workflow_call: { }
+  workflow_dispatch:
+    inputs:
+      stable-branch:
+        description: "Set to true if the change is running on a stable branch"
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      stable-branch:
+        description: "Set to true if the change is running on a stable branch"
+        type: boolean
+        default: false
 
 defaults:
   run:
@@ -455,7 +465,7 @@ jobs:
     if: |
       github.repository == 'camunda/camunda' &&
       github.event_name == 'push' &&
-      (startsWith(github.ref_name, 'stable/') || github.ref_name == 'main')
+      ( inputs.stable-branch || github.ref_name == 'main')
     concurrency:
       group: deploy-snyk-projects
       cancel-in-progress: false
