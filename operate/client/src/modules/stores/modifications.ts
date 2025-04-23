@@ -22,6 +22,7 @@ import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
 import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {generateParentScopeIds} from 'modules/utils/modifications';
 
 type FlowNodeModificationPayload =
   | {
@@ -145,33 +146,6 @@ class Modifications {
   startAddingToken = (sourceFlowNodeId: string) => {
     this.state.status = 'adding-token';
     this.state.sourceFlowNodeIdForAddOperation = sourceFlowNodeId;
-  };
-
-  generateParentScopeIds = (targetFlowNodeId: string) => {
-    const parentFlowNodeIds =
-      processInstanceDetailsDiagramStore.getFlowNodeParents(targetFlowNodeId);
-
-    return parentFlowNodeIds.reduce<{[flowNodeId: string]: string}>(
-      (parentFlowNodeScopes, flowNodeId) => {
-        const hasExistingParentScopeId =
-          this.flowNodeModifications.some(
-            (modification) =>
-              (modification.operation === 'ADD_TOKEN' ||
-                modification.operation === 'MOVE_TOKEN') &&
-              Object.keys(modification.parentScopeIds).includes(flowNodeId),
-          ) ||
-          processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-            flowNodeId,
-          ) === 1;
-
-        if (!hasExistingParentScopeId) {
-          parentFlowNodeScopes[flowNodeId] = generateUniqueID();
-        }
-
-        return parentFlowNodeScopes;
-      },
-      {},
-    );
   };
 
   generateScopeIdsInBetween = (
@@ -850,7 +824,10 @@ class Modifications {
         scopeIds: Array.from({
           length: newScopeCount,
         }).map(() => generateUniqueID()),
-        parentScopeIds: this.generateParentScopeIds(targetFlowNodeId),
+        parentScopeIds: generateParentScopeIds(
+          businessObjects,
+          targetFlowNodeId,
+        ),
       },
     });
   };

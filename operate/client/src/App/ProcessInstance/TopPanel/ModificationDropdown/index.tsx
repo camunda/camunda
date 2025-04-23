@@ -30,6 +30,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getParentElement} from 'modules/bpmn-js/utils/getParentElement';
+import {generateParentScopeIds} from 'modules/utils/modifications';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -94,59 +95,58 @@ const ModificationDropdown: React.FC<Props> = observer(
                     </SelectedInstanceCount>
                   )}
                   <Stack gap={2}>
-                    {availableModifications.includes('add') && (
-                      <Button
-                        kind="ghost"
-                        title="Add single flow node instance"
-                        aria-label="Add single flow node instance"
-                        size="sm"
-                        renderIcon={Add}
-                        onClick={() => {
-                          const parentElement = getParentElement(
-                            processDefinitionData?.businessObjects?.[
-                              flowNodeId
-                            ],
-                          );
-                          if (
-                            processInstanceDetailsDiagramStore.hasMultipleScopes(
-                              parentElement,
-                            )
-                          ) {
-                            modificationsStore.startAddingToken(flowNodeId);
-                          } else {
-                            tracking.track({
-                              eventName: 'add-token',
-                            });
+                    {availableModifications.includes('add') &&
+                      processDefinitionData?.businessObjects && (
+                        <Button
+                          kind="ghost"
+                          title="Add single flow node instance"
+                          aria-label="Add single flow node instance"
+                          size="sm"
+                          renderIcon={Add}
+                          onClick={() => {
+                            const parentElement = getParentElement(
+                              processDefinitionData.businessObjects[flowNodeId],
+                            );
+                            if (
+                              processInstanceDetailsDiagramStore.hasMultipleScopes(
+                                parentElement,
+                              )
+                            ) {
+                              modificationsStore.startAddingToken(flowNodeId);
+                            } else {
+                              tracking.track({
+                                eventName: 'add-token',
+                              });
 
-                            modificationsStore.addModification({
-                              type: 'token',
-                              payload: {
-                                operation: 'ADD_TOKEN',
-                                scopeId: generateUniqueID(),
-                                flowNode: {
-                                  id: flowNodeId,
-                                  name: getFlowNodeName({
-                                    businessObjects:
-                                      processDefinitionData?.businessObjects,
-                                    flowNodeId,
-                                  }),
-                                },
-                                affectedTokenCount: 1,
-                                visibleAffectedTokenCount: 1,
-                                parentScopeIds:
-                                  modificationsStore.generateParentScopeIds(
+                              modificationsStore.addModification({
+                                type: 'token',
+                                payload: {
+                                  operation: 'ADD_TOKEN',
+                                  scopeId: generateUniqueID(),
+                                  flowNode: {
+                                    id: flowNodeId,
+                                    name: getFlowNodeName({
+                                      businessObjects:
+                                        processDefinitionData.businessObjects,
+                                      flowNodeId,
+                                    }),
+                                  },
+                                  affectedTokenCount: 1,
+                                  visibleAffectedTokenCount: 1,
+                                  parentScopeIds: generateParentScopeIds(
+                                    processDefinitionData.businessObjects,
                                     flowNodeId,
                                   ),
-                              },
-                            });
-                          }
+                                },
+                              });
+                            }
 
-                          flowNodeSelectionStore.clearSelection();
-                        }}
-                      >
-                        Add
-                      </Button>
-                    )}
+                            flowNodeSelectionStore.clearSelection();
+                          }}
+                        >
+                          Add
+                        </Button>
+                      )}
 
                     {availableModifications.includes('cancel-instance') &&
                       !isNil(flowNodeInstanceId) &&
