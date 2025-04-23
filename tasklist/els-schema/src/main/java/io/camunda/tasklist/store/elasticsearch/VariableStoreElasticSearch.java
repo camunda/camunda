@@ -221,18 +221,33 @@ public class VariableStoreElasticSearch implements VariableStore {
   }
 
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
+    final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+
     final TermsQueryBuilder processInstanceKeyQuery =
         termsQuery(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
+    queryBuilder.must(processInstanceKeyQuery);
+
+    final TermsQueryBuilder typeQuery =
+        QueryBuilders.termsQuery(
+            FlowNodeInstanceIndex.TYPE,
+            FlowNodeType.AD_HOC_SUB_PROCESS.toString(),
+            FlowNodeType.USER_TASK.toString(),
+            FlowNodeType.SUB_PROCESS.toString(),
+            FlowNodeType.EVENT_SUB_PROCESS.toString(),
+            FlowNodeType.MULTI_INSTANCE_BODY.toString(),
+            FlowNodeType.PROCESS.toString());
+    queryBuilder.must(typeQuery);
+
     final SearchRequest searchRequest =
         new SearchRequest(flowNodeInstanceIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(constantScoreQuery(processInstanceKeyQuery))
+                    .query(constantScoreQuery(queryBuilder))
                     .sort(FlowNodeInstanceIndex.POSITION, SortOrder.ASC)
                     .size(tasklistProperties.getElasticsearch().getBatchSize()));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all flow nodes: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
