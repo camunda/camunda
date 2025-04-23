@@ -120,7 +120,6 @@ public class RoleAppliersTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/30117")
   void shouldRemoveEntityFromRoleWithTypeUser() {
     // given
     final var username = "foo";
@@ -133,18 +132,17 @@ public class RoleAppliersTest {
             .setEmail("foo@bar.com")
             .setPassword("password"));
     final long roleKey = 11L;
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = new RoleRecord().setRoleId(roleId).setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
+    roleRecord.setRoleId(roleId).setEntityId(username).setEntityType(EntityType.USER);
     roleEntityAddedApplier.applyState(roleKey, roleRecord);
 
     // when
     roleEntityRemovedApplier.applyState(roleKey, roleRecord);
 
     // then
-    assertThat(
-            membershipState.getMemberships(
-                EntityType.USER, Long.toString(userKey), RelationType.ROLE))
+    assertThat(membershipState.getMemberships(EntityType.USER, username, RelationType.ROLE))
         .isEmpty();
   }
 }
