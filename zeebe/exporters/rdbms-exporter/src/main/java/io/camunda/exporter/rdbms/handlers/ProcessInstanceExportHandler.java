@@ -12,6 +12,10 @@ import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDb
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.exporter.rdbms.cache.CachedProcessEntity;
+import io.camunda.exporter.rdbms.cache.ExporterEntityCache;
+import io.camunda.exporter.rdbms.utils.ProcessCacheUtil;
+import io.camunda.exporter.rdbms.utils.TreePath;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -20,20 +24,28 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProcessInstanceExportHandler
     implements RdbmsExportHandler<ProcessInstanceRecordValue> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstanceExportHandler.class);
 
   public static final long NO_PARENT_EXISTS_KEY = -1L;
 
   private final ProcessInstanceWriter processInstanceWriter;
   private final HistoryCleanupService historyCleanupService;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
   public ProcessInstanceExportHandler(
       final ProcessInstanceWriter processInstanceWriter,
-      final HistoryCleanupService historyCleanupService) {
+      final HistoryCleanupService historyCleanupService,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.processInstanceWriter = processInstanceWriter;
     this.historyCleanupService = historyCleanupService;
+    this.processCache = processCache;
   }
 
   @Override
@@ -89,6 +101,46 @@ public class ProcessInstanceExportHandler
         .parentElementInstanceKey(parentElementInstanceKey)
         .version(value.getVersion())
         .partitionId(record.getPartitionId())
+        .treePath(createTreePath(record).toString())
         .build();
+  }
+
+  public TreePath createTreePath(final Record<ProcessInstanceRecordValue> record) {
+    final var value = record.getValue();
+    final var elementInstancePath = value.getElementInstancePath();
+    final var processDefinitionPath = value.getProcessDefinitionPath();
+    final var callingElementPath = value.getCallingElementPath();
+    final Long processInstanceKey = value.getProcessInstanceKey();
+    if (elementInstancePath == null || elementInstancePath.isEmpty()) {
+      return new TreePath().startTreePath(processInstanceKey);
+    }
+
+    final TreePath treePath = new TreePath();
+    for (int i = 0; i < elementInstancePath.size(); i++) {
+      final List<Long> keysWithinOnePI = elementInstancePath.get(i);
+      treePath.appendProcessInstance(keysWithinOnePI.getFirst());
+      if (keysWithinOnePI.getFirst().equals(processInstanceKey)) {
+        // we reached the leaf of the tree path, when we reached current processInstanceKey
+        break;
+      }
+      final var callActivity =
+          ProcessCacheUtil.getCallActivityId(
+              processCache, processDefinitionPath.get(i), callingElementPath.get(i));
+      if (callActivity.isPresent()) {
+        treePath.appendFlowNode(callActivity.get());
+      } else {
+        final var index = callingElementPath.get(i);
+        LOGGER.warn(
+            "Expected to find process in cache. TreePath won't contain proper callActivityId, will use the lexicographic index instead {}. [processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}]",
+            processInstanceKey,
+            processDefinitionPath.get(i),
+            record.getKey(),
+            index);
+
+        treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
+      }
+      treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.getLast()));
+    }
+    return treePath;
   }
 }
