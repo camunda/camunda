@@ -7,19 +7,30 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "Select the branch to test"
+        description: "Enter the branch to test"
         required: true
         default: "main"
-        type: choice
-        options:
-          - main
-          - stable/8.6
-          - stable/8.7
 
 permissions:
   contents: read
 
 jobs:
+  validate-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Branches
+        id: fetch-branches
+        run: |
+          echo "Fetching branches..."
+          branches=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/branches | jq -r '.[].name')
+          echo "Available branches: $branches"
+          if [[ ! " $branches " =~ " ${{ github.event.inputs.branch }} " ]]; then
+            echo "Error: Branch '${{ github.event.inputs.branch }}' does not exist."
+            exit 1
+          fi
+          echo "Branch '${{ github.event.inputs.branch }}' is valid."
+
   core-e2e-component-tests:
     runs-on: ubuntu-latest
     steps:
