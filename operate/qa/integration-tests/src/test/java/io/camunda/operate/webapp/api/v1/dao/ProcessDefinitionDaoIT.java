@@ -48,6 +48,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Demo process")
             .setVersion(1)
+            .setVersionTag("v1")
             .setBpmnProcessId("demoProcess")
             .setBpmnXml(resourceXml));
 
@@ -59,6 +60,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Error process")
             .setVersion(1)
+            .setVersionTag("version1")
             .setBpmnProcessId("errorProcess")
             .setBpmnXml(resourceXml));
 
@@ -132,6 +134,19 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
     assertThat(processDefinitionResults.getItems().get(0).getBpmnProcessId())
         .isEqualTo("demoProcess");
+  }
+
+  @Test
+  public void shouldFilterProcessDefinitionsByVersionTag() {
+    final Results<ProcessDefinition> processDefinitionResults =
+        dao.search(
+            new Query<ProcessDefinition>()
+                .setFilter(new ProcessDefinition().setVersionTag("version1")));
+
+    assertThat(processDefinitionResults.getItems()).hasSize(1);
+    final var processDefinition = processDefinitionResults.getItems().get(0);
+    assertThat(processDefinition.getKey()).isEqualTo(2251799813685251L);
+    assertThat(processDefinition.getVersionTag()).isEqualTo("version1");
   }
 
   @Test
