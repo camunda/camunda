@@ -113,16 +113,16 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     final var record = command.getValue();
     final var isAssigned =
         switch (record.getEntityType()) {
-          case USER, MAPPING ->
-              membershipState.hasRelation(
-                  record.getEntityType(),
-                  // TODO: Use entity id instead of key
-                  Long.toString(record.getEntityKey()),
-                  RelationType.ROLE,
-                  // TODO: Use role id instead of key
-                  Long.toString(record.getRoleKey()));
-          default ->
-              roleState.getEntityType(record.getRoleKey(), record.getEntityKey()).isPresent();
+      case USER, MAPPING ->
+          membershipState.hasRelation(
+              record.getEntityType(),
+              // TODO: Use entity id instead of key
+              Long.toString(record.getEntityKey()),
+              RelationType.ROLE,
+              // TODO: Use role id instead of key
+              Long.toString(record.getRoleKey()));
+      default ->
+          throw new IllegalArgumentException("Unsupported entity type: " + record.getEntityType());
         };
 
     if (isAssigned) {

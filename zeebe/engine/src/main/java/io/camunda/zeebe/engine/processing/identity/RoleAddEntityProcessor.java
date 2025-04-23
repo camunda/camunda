@@ -148,7 +148,8 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       case USER, MAPPING ->
           membershipState.hasRelation(
               record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
-      default -> roleState.getEntityType(record.getRoleId(), record.getEntityId()).isPresent();
+      default ->
+          throw new IllegalArgumentException("Unsupported entity type: " + record.getEntityType());
     };
   }
 }
