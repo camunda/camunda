@@ -23,7 +23,11 @@ import org.camunda.feel.syntaxtree.ValYearMonthDuration;
 
 public class FeelFunctionProvider extends JavaFunctionProvider {
   private static final Map<String, List<JavaFunction>> FUNCTIONS =
-      Map.of("cycle", List.of(CycleFunction.INSTANCE, CycleInfiniteFunction.INSTANCE));
+      Map.of(
+          "cycle",
+          List.of(CycleFunction.INSTANCE, CycleInfiniteFunction.INSTANCE),
+          "fromAi",
+          FromAiFunction.INSTANCES);
 
   @Override
   public Optional<JavaFunction> resolveFunction(final String functionName) {
