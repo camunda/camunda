@@ -120,11 +120,18 @@ function parseToJSX(translationString: string): JSX.Element[] {
   return JSXNodes;
 }
 
+const attributeMap: Record<string, string> = {
+  class: 'className',
+  for: 'htmlFor',
+};
+
 function getAllAttributes(el: Element): Record<string, string> {
   return el.getAttributeNames().reduce((obj, name) => {
+    const reactAttr = attributeMap[name] || name;
+
     return {
       ...obj,
-      [name]: el.getAttribute(name) ?? '',
+      [reactAttr]: el.getAttribute(name) ?? '',
     };
   }, {});
 }

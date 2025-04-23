@@ -151,6 +151,7 @@ export function Home({mightFail, user}) {
           bulkActions={
             isEditor && [
               <BulkDeleter
+                key="homeBulkDeleter"
                 type="delete"
                 deleteEntities={removeEntities}
                 checkConflicts={checkConflicts}

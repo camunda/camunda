@@ -145,7 +145,11 @@ const AlertList = ({collection, readOnly}) => {
         }
         isLoading={isLoading}
         headers={[t('common.name'), t('report.label'), t('common.condition'), t('alert.recipient')]}
-        bulkActions={!readOnly && [<BulkDeleter type="delete" deleteEntities={removeAlerts} />]}
+        bulkActions={
+          !readOnly && [
+            <BulkDeleter key="alertListBulkDeleter" type="delete" deleteEntities={removeAlerts} />,
+          ]
+        }
         onChange={syncAlerts}
         rows={
           !isLoading &&
