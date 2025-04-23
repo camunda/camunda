@@ -10,6 +10,9 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.exporter.rdbms.cache.CachedProcessEntity;
+import io.camunda.exporter.rdbms.cache.ExporterEntityCache;
+import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionRequirementsExportHandler;
@@ -55,6 +58,8 @@ public class RdbmsExporterWrapper implements Exporter {
 
   private RdbmsExporter exporter;
 
+  private ExporterEntityCache<Long, CachedProcessEntity> processCache;
+
   public RdbmsExporterWrapper(final RdbmsService rdbmsService) {
     this.rdbmsService = rdbmsService;
   }
@@ -85,6 +90,9 @@ public class RdbmsExporterWrapper implements Exporter {
     createBatchOperationHandlers(rdbmsWriter, builder);
 
     exporter = new RdbmsExporter(builder.build());
+    processCache =
+        new ExporterEntityCache<>(
+            new RdbmsProcessCacheLoader(rdbmsService.getProcessDefinitionReader()));
   }
 
   @Override
@@ -156,13 +164,15 @@ public class RdbmsExporterWrapper implements Exporter {
     }
   }
 
-  private static void createHandlers(
+  private void createHandlers(
       final long partitionId,
       final RdbmsWriter rdbmsWriter,
       final RdbmsExporterConfig.Builder builder) {
+
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       builder.withHandler(
-          ValueType.PROCESS, new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter()));
+          ValueType.PROCESS,
+          new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter(), processCache));
       builder.withHandler(
           ValueType.MAPPING, new MappingExportHandler(rdbmsWriter.getMappingWriter()));
       builder.withHandler(ValueType.TENANT, new TenantExportHandler(rdbmsWriter.getTenantWriter()));
@@ -193,7 +203,9 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceExportHandler(
-            rdbmsWriter.getProcessInstanceWriter(), rdbmsWriter.getHistoryCleanupService()));
+            rdbmsWriter.getProcessInstanceWriter(),
+            rdbmsWriter.getHistoryCleanupService(),
+            processCache));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter()));

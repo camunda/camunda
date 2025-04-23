@@ -62,6 +62,7 @@
     pi.PARENT_ELEMENT_INSTANCE_KEY,
     pi.ELEMENT_ID,
     pi.VERSION PROCESS_DEFINITION_VERSION,
+    pi.TREE_PATH,
     pd.NAME AS PROCESS_DEFINITION_NAME,
     pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
     FROM ${prefix}PROCESS_INSTANCE pi
@@ -261,6 +262,7 @@
       <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
       <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="TREE_PATH" javaType="java.lang.String"/>
     </constructor>
 
   </resultMap>
@@ -294,9 +296,9 @@
     parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
     flushCache="true">
     INSERT INTO ${prefix}PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
-                                           NUM_INCIDENTS, VERSION, PARTITION_ID, HISTORY_CLEANUP_DATE)
+                                           NUM_INCIDENTS, VERSION, PARTITION_ID, TREE_PATH, HISTORY_CLEANUP_DATE)
     VALUES (#{processInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state}, #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId}, #{parentProcessInstanceKey},
-            #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId}, #{treePath}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
   <update
@@ -314,6 +316,7 @@
         PARENT_ELEMENT_INSTANCE_KEY = #{parentElementInstanceKey},
         NUM_INCIDENTS               = #{numIncidents},
         VERSION                     = #{version},
+        TREE_PATH                   = #{treePath},
         HISTORY_CLEANUP_DATE        = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>

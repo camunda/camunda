@@ -26,6 +26,7 @@ public record ProcessInstanceDbModel(
     String elementId,
     int version,
     int partitionId,
+    String treePath,
     OffsetDateTime historyCleanupDate)
     implements DbModel<ProcessInstanceDbModel> {
 
@@ -69,6 +70,7 @@ public record ProcessInstanceDbModel(
     private int numIncidents = 0;
     private int version;
     private int partitionId;
+    private String treePath;
     private OffsetDateTime historyCleanupDate;
 
     // Public constructor to initialize the builder
@@ -146,6 +148,11 @@ public record ProcessInstanceDbModel(
       return this;
     }
 
+    public ProcessInstanceDbModelBuilder treePath(final String treePath) {
+      this.treePath = treePath;
+      return this;
+    }
+
     public ProcessInstanceDbModelBuilder historyCleanupDate(final OffsetDateTime value) {
       historyCleanupDate = value;
       return this;
@@ -167,6 +174,7 @@ public record ProcessInstanceDbModel(
           elementId,
           version,
           partitionId,
+          treePath,
           historyCleanupDate);
     }
   }
