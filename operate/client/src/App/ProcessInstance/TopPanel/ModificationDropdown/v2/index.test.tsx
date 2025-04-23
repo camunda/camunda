@@ -6,17 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {screen, waitForElementToBeRemoved} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {mockProcessWithEventBasedGateway} from 'modules/mocks/mockProcessWithEventBasedGateway';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {incidentFlowNodeMetaData} from 'modules/mocks/metadata';
 import {open} from 'modules/mocks/diagrams';
@@ -93,7 +87,6 @@ describe('Modification Dropdown', () => {
       items: statisticsData,
     });
 
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
     );
@@ -106,12 +99,6 @@ describe('Modification Dropdown', () => {
 
   it('should not render dropdown when no flow node is selected', async () => {
     renderPopover();
-
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
 
     expect(
       screen.queryByText(/Flow Node Modifications/),
@@ -140,10 +127,10 @@ describe('Modification Dropdown', () => {
       await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
     expect(
-      screen.getByTitle(/Add single flow node instance/),
+      await screen.findByTitle(/Add single flow node instance/),
     ).toHaveTextContent(/Add/);
     expect(
-      screen.getByTitle(
+      await screen.findByTitle(
         /Cancel all running flow node instances in this flow node/,
       ),
     ).toHaveTextContent(/Cancel/);
@@ -156,12 +143,6 @@ describe('Modification Dropdown', () => {
 
   it('should not render dropdown when moving token', async () => {
     const {user} = renderPopover();
-
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
 
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
@@ -183,12 +164,6 @@ describe('Modification Dropdown', () => {
   it('should only render add option for completed flow nodes', async () => {
     renderPopover();
 
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
-
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
         flowNodeId: 'service-task-3',
@@ -198,19 +173,13 @@ describe('Modification Dropdown', () => {
     expect(
       await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Add/)).toBeInTheDocument();
+    expect(await screen.findByText(/Add/)).toBeInTheDocument();
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
   });
 
   it('should only render move and cancel options for boundary events', async () => {
     renderPopover();
-
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
 
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
@@ -229,12 +198,6 @@ describe('Modification Dropdown', () => {
   it('should render unsupported flow node type for non modifiable flow nodes', async () => {
     renderPopover();
 
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
-
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
         flowNodeId: 'boundary-event',
@@ -244,7 +207,9 @@ describe('Modification Dropdown', () => {
     expect(
       await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Unsupported flow node type/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Unsupported flow node type/),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
@@ -291,18 +256,11 @@ describe('Modification Dropdown', () => {
       ],
     });
 
-    mockFetchProcessXML().withSuccess(mockProcessWithEventBasedGateway);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithEventBasedGateway,
     );
 
     renderPopover();
-
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
 
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
@@ -313,7 +271,7 @@ describe('Modification Dropdown', () => {
     expect(
       await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
 
@@ -363,7 +321,6 @@ describe('Modification Dropdown', () => {
   });
 
   it('should not support move operation for sub processes', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
     );
@@ -401,12 +358,6 @@ describe('Modification Dropdown', () => {
 
     renderPopover();
 
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
-
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
     act(() => {
@@ -421,18 +372,12 @@ describe('Modification Dropdown', () => {
       screen.getByTestId('dropdown-spinner'),
     );
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Move instance/)).toBeInTheDocument();
+    expect(await screen.findByText(/Move instance/)).toBeInTheDocument();
     expect(screen.getByText(/Cancel instance/)).toBeInTheDocument();
   });
 
   it('should support cancel instance when flow node has 1 running instance', async () => {
     renderPopover();
-
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
 
     // select a flow node that has 1 running instance
 

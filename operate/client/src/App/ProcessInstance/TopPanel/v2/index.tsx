@@ -46,7 +46,10 @@ import {
   useTotalRunningInstancesForFlowNode,
   useTotalRunningInstancesVisibleForFlowNode,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
-import {finishMovingToken} from 'modules/utils/modifications';
+import {
+  finishMovingToken,
+  hasPendingCancelOrMoveModification,
+} from 'modules/utils/modifications';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {init} from 'modules/utils/flowNodeMetadata';
@@ -337,8 +340,10 @@ const TopPanel: React.FC = observer(() => {
                       state={payload.flowNodeState}
                       count={payload.count}
                       container={overlay.container}
-                      isFaded={modificationsStore.hasPendingCancelOrMoveModification(
+                      isFaded={hasPendingCancelOrMoveModification(
                         overlay.flowNodeId,
+                        undefined,
+                        modificationsByFlowNode,
                       )}
                       title={
                         payload.flowNodeState === 'completed'
