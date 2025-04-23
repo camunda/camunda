@@ -62,6 +62,17 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   @Override
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
+    final var authorizationRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
+            .addResourceId(record.getRoleId());
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var persistedRecord = roleState.getRole(record.getRoleKey());
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
@@ -69,17 +80,6 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
               .formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
-    final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
-            .addResourceId(persistedRecord.get().getName());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
