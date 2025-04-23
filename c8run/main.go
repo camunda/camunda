@@ -130,6 +130,10 @@ func handleDockerCommand(settings types.C8RunSettings, baseCommand string, compo
 	switch baseCommand {
 	case "start":
 		err = runDockerCommand(composeExtractedFolder, "up", "-d")
+		if err != nil {
+			return err
+		}
+		err = health.PrintStatus(settings)
 	case "stop":
 		err = runDockerCommand(composeExtractedFolder, "down")
 	default:
