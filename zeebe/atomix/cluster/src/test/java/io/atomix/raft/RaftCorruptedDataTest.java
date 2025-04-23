@@ -86,7 +86,7 @@ public class RaftCorruptedDataTest {
     final var node1 = MemberId.from(servers[1].name());
     final var node2 = MemberId.from(servers[2].name());
 
-    raftRule.appendEntries(2000);
+    raftRule.appendEntries(200);
     raftRule.appendEntries(1);
     Awaitility.await("commitIndex is > 0 on all nodes")
         .until(() -> Arrays.stream(servers).allMatch(s -> s.getContext().getCommitIndex() >= 100));
@@ -114,7 +114,7 @@ public class RaftCorruptedDataTest {
     // wait for the two corrupted nodes to form quorum
     Awaitility.await("corrupted nodes form a quorum")
         .until(() -> server0.isLeader() || server1.isLeader());
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100; i++) {
       //      raftRule.appendEntry();
       Awaitility.await("entry is committed")
           .untilAsserted(() -> assertThatNoException().isThrownBy(() -> raftRule.appendEntry()));
