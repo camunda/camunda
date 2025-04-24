@@ -25,6 +25,7 @@ import {tracking} from 'common/tracking';
 import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import styles from './Header.module.scss';
+import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {ERRORS_THAT_SHOULD_FETCH_MORE} from 'v1/TaskDetails/constants';
 
 const getAssignmentToggleLabels = () =>
@@ -53,12 +54,15 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
   const {t} = useTranslation();
 
   return (
-    <header className={styles.header} title={t('taskDetailsHeader')}>
-      <div className={styles.headerLeftContainer}>
+    <header
+      className={taskDetailsLayoutCommon.header}
+      title={t('taskDetailsHeader')}
+    >
+      <div className={taskDetailsLayoutCommon.headerLeftContainer}>
         <span className={styles.taskName}>{name}</span>
         <span className={styles.processName}>{processName}</span>
       </div>
-      <div className={styles.headerRightContainer}>
+      <div className={taskDetailsLayoutCommon.headerRightContainer}>
         {taskState === 'COMPLETED' ? (
           <span
             className={styles.taskStatus}

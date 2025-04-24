@@ -14,12 +14,12 @@ import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {useTask} from 'v1/api/useTask.query';
 import {useProcessDefinition} from 'v1/api/useProcessDefinition.query';
 import {useTaskDetailsParams, pages} from 'common/routing';
-import {DetailsSkeleton} from './DetailsSkeleton';
-import {TabListNav} from './TabListNav';
-import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
-import {Aside} from './Aside';
+import {DetailsSkeleton} from 'common/tasks/details/DetailsSkeleton';
+import {TabListNav} from 'common/tasks/details/TabListNav';
+import {TurnOnNotificationPermission} from 'common/tasks/details/TurnOnNotificationPermission';
+import {Aside} from 'common/tasks/details/Aside';
 import {Header} from './Header';
-import styles from './styles.module.scss';
+import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from 'common/notifications/notifications.store';
@@ -91,8 +91,11 @@ const TaskDetailsLayout: React.FC = () => {
   }
 
   return (
-    <div className={styles.container} data-testid="details-info">
-      <Section className={styles.content} level={4}>
+    <div
+      className={taskDetailsLayoutCommon.container}
+      data-testid="details-info"
+    >
+      <Section className={taskDetailsLayoutCommon.content} level={4}>
         <TurnOnNotificationPermission />
         <Header
           task={task}
@@ -106,7 +109,17 @@ const TaskDetailsLayout: React.FC = () => {
           }
         />
       </Section>
-      <Aside task={task} user={currentUser} />
+      <Aside
+        creationDate={task.creationDate}
+        completionDate={task.completionDate}
+        dueDate={task.dueDate}
+        followUpDate={task.followUpDate}
+        priority={task.priority}
+        candidateUsers={task.candidateUsers}
+        candidateGroups={task.candidateGroups}
+        tenantId={task.tenantId}
+        user={currentUser}
+      />
     </div>
   );
 };

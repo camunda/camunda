@@ -11,7 +11,7 @@ import {requestPermission} from 'common/os-notifications/requestPermission';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import styles from './TurnOnNotificationPermission.module.scss';
+import styles from './styles.module.scss';
 
 const TurnOnNotificationPermission: React.FC = () => {
   const {t} = useTranslation();

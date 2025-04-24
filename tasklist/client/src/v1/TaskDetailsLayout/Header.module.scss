@@ -8,29 +8,6 @@
 
 @use '@carbon/type';
 
-.header {
-  width: 100%;
-  padding: 0 var(--cds-spacing-05);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--cds-spacing-05);
-}
-
-.headerLeftContainer {
-  display: flex;
-  flex-direction: column;
-}
-
-.headerRightContainer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--cds-spacing-05);
-  margin-left: auto;
-}
-
 .taskName {
   color: var(--cds-text-primary);
   @include type.type-style('body-short-02');

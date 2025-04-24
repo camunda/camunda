@@ -6,11 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.tabs {
-  border-top: 1px solid var(--cds-border-subtle);
-  border-bottom: 1px solid var(--cds-border-subtle);
-}
-
 :global(.cds--tabs__nav-link).hidden {
   display: none;
   visibility: hidden;

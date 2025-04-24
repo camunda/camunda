@@ -10,12 +10,11 @@ import {render, screen} from 'common/testing/testing-library';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
-import * as taskMocks from 'v1/mocks/task';
 import * as userMocks from 'common/mocks/current-user';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
-import {Aside} from './Aside';
+import {Aside} from './index';
 import {getClientConfig} from 'common/config/getClientConfig';
 import {vi} from 'vitest';
 
@@ -31,6 +30,28 @@ const {getClientConfig: actualGetClientConfig} = await vi.importActual<
   typeof import('common/config/getClientConfig')
 >('common/config/getClientConfig');
 const mockGetClientConfig = vi.mocked(getClientConfig);
+
+const completedTaskMock = {
+  creationDate: '2024-01-01T00:00:00.000Z',
+  completionDate: '2025-01-01T00:00:00.000Z',
+  dueDate: '2025-02-15T00:00:00.000Z',
+  followUpDate: null,
+  priority: 50,
+  candidateUsers: [],
+  candidateGroups: [],
+  tenantId: 'default',
+};
+
+const unassignedTaskMock = {
+  creationDate: '2024-01-01T00:00:00.000Z',
+  completionDate: null,
+  dueDate: null,
+  followUpDate: null,
+  priority: 50,
+  candidateUsers: ['jane candidate'],
+  candidateGroups: ['accounting candidate'],
+  tenantId: 'default',
+};
 
 const UserName = () => {
   const {data: currentUser} = useCurrentUser();
@@ -69,7 +90,17 @@ describe('<Aside />', () => {
 
   it('should render completed task details', async () => {
     render(
-      <Aside task={taskMocks.completedTask()} user={userMocks.currentUser} />,
+      <Aside
+        creationDate={completedTaskMock.creationDate}
+        completionDate={completedTaskMock.completionDate}
+        dueDate={completedTaskMock.dueDate}
+        followUpDate={completedTaskMock.followUpDate}
+        priority={completedTaskMock.priority}
+        candidateUsers={completedTaskMock.candidateUsers}
+        candidateGroups={completedTaskMock.candidateGroups}
+        tenantId={completedTaskMock.tenantId}
+        user={userMocks.currentUser}
+      />,
       {
         wrapper: getWrapper(),
       },
@@ -83,7 +114,17 @@ describe('<Aside />', () => {
 
   it('should render unassigned task details', async () => {
     render(
-      <Aside task={taskMocks.unassignedTask()} user={userMocks.currentUser} />,
+      <Aside
+        creationDate={unassignedTaskMock.creationDate}
+        completionDate={unassignedTaskMock.completionDate}
+        dueDate={unassignedTaskMock.dueDate}
+        followUpDate={unassignedTaskMock.followUpDate}
+        priority={unassignedTaskMock.priority}
+        candidateUsers={unassignedTaskMock.candidateUsers}
+        candidateGroups={unassignedTaskMock.candidateGroups}
+        tenantId={unassignedTaskMock.tenantId}
+        user={userMocks.currentUser}
+      />,
       {
         wrapper: getWrapper(),
       },
@@ -102,10 +143,14 @@ describe('<Aside />', () => {
 
     render(
       <Aside
-        task={{
-          ...taskMocks.unassignedTask(),
-          tenantId: 'tenantA',
-        }}
+        creationDate={unassignedTaskMock.creationDate}
+        completionDate={unassignedTaskMock.completionDate}
+        dueDate={unassignedTaskMock.dueDate}
+        followUpDate={unassignedTaskMock.followUpDate}
+        priority={unassignedTaskMock.priority}
+        candidateUsers={unassignedTaskMock.candidateUsers}
+        candidateGroups={unassignedTaskMock.candidateGroups}
+        tenantId={'tenantA'}
         user={userMocks.currentUserWithTenants}
       />,
       {
@@ -135,10 +180,14 @@ describe('<Aside />', () => {
 
     render(
       <Aside
-        task={{
-          ...taskMocks.unassignedTask(),
-          tenantId: 'tenantA',
-        }}
+        creationDate={unassignedTaskMock.creationDate}
+        completionDate={unassignedTaskMock.completionDate}
+        dueDate={unassignedTaskMock.dueDate}
+        followUpDate={unassignedTaskMock.followUpDate}
+        priority={unassignedTaskMock.priority}
+        candidateUsers={unassignedTaskMock.candidateUsers}
+        candidateGroups={unassignedTaskMock.candidateGroups}
+        tenantId={'tenantA'}
         user={currentUserWithSingleTenant}
       />,
       {
@@ -157,7 +206,14 @@ describe('<Aside />', () => {
   ])('should render priority - $label', ({priority, label}) => {
     render(
       <Aside
-        task={{...taskMocks.unassignedTask(), priority}}
+        creationDate={unassignedTaskMock.creationDate}
+        completionDate={unassignedTaskMock.completionDate}
+        dueDate={unassignedTaskMock.dueDate}
+        followUpDate={unassignedTaskMock.followUpDate}
+        priority={priority}
+        candidateUsers={unassignedTaskMock.candidateUsers}
+        candidateGroups={unassignedTaskMock.candidateGroups}
+        tenantId={unassignedTaskMock.tenantId}
         user={userMocks.currentUser}
       />,
       {

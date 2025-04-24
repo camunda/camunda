@@ -8,28 +8,35 @@
 
 import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
 import {formatDate} from 'common/dates/formatDate';
-import styles from './Aside.module.scss';
-import type {Task} from 'v1/api/types';
+import styles from './styles.module.scss';
+import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
 import {useTranslation} from 'react-i18next';
 import {getPriorityLabel} from 'common/tasks/getPriorityLabel';
 
 type Props = {
-  task: Task;
+  creationDate: string;
+  completionDate: string | null;
+  dueDate: string | null;
+  followUpDate: string | null;
+  priority: number | null;
+  candidateUsers: string[];
+  candidateGroups: string[];
+  tenantId: string;
   user: CurrentUser;
 };
 
-const Aside: React.FC<Props> = ({task, user}) => {
-  const {
-    creationDate,
-    completionDate,
-    dueDate,
-    followUpDate,
-    priority,
-    candidateUsers,
-    candidateGroups,
-    tenantId,
-  } = task;
+const Aside: React.FC<Props> = ({
+  creationDate,
+  completionDate,
+  dueDate,
+  followUpDate,
+  priority,
+  candidateUsers,
+  candidateGroups,
+  tenantId,
+  user,
+}) => {
   const taskTenant =
     user.tenants.length > 1
       ? user.tenants.find((tenant) => tenant.tenantId === tenantId)
@@ -38,7 +45,10 @@ const Aside: React.FC<Props> = ({task, user}) => {
   const {t} = useTranslation();
 
   return (
-    <aside className={styles.aside} aria-label={t('taskDetailsRightPanel')}>
+    <aside
+      className={taskDetailsLayoutCommon.aside}
+      aria-label={t('taskDetailsRightPanel')}
+    >
       <ContainedList label={t('taskDetailsDetailsLabel')} kind="disclosed">
         <>
           {taskTenant === undefined ? null : (

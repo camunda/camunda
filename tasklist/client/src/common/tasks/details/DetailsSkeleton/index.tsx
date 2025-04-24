@@ -17,9 +17,7 @@ import {
 } from '@carbon/react';
 import {TaskDetailsRow} from 'common/tasks/details/TaskDetailsLayout';
 import styles from './styles.module.scss';
-import headerStyles from './Header.module.scss';
-import asideStyles from './Aside.module.scss';
-import tabStyles from './TabListNav/styles.module.scss';
+import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 
 type Props = {
   'data-testid'?: string;
@@ -27,19 +25,22 @@ type Props = {
 
 const DetailsSkeleton: React.FC<Props> = (props) => {
   return (
-    <div className={styles.container} data-testid={props['data-testid']}>
-      <Section className={styles.content}>
-        <header className={headerStyles.header}>
-          <div className={headerStyles.headerLeftContainer}>
+    <div
+      className={taskDetailsLayoutCommon.container}
+      data-testid={props['data-testid']}
+    >
+      <Section className={taskDetailsLayoutCommon.content}>
+        <header className={taskDetailsLayoutCommon.header}>
+          <div className={taskDetailsLayoutCommon.headerLeftContainer}>
             <SkeletonText width="150px" />
             <SkeletonText width="100px" className={styles.margin0} />
           </div>
-          <div className={headerStyles.headerRightContainer}>
+          <div className={taskDetailsLayoutCommon.headerRightContainer}>
             <SkeletonText width="100px" className={styles.margin0} />
             <ButtonSkeleton size="sm" />
           </div>
         </header>
-        <TabsSkeleton className={tabStyles.tabs} />
+        <TabsSkeleton className={taskDetailsLayoutCommon.tabs} />
         <TaskDetailsRow>
           <SkeletonText width="150px" heading />
         </TaskDetailsRow>
@@ -47,7 +48,7 @@ const DetailsSkeleton: React.FC<Props> = (props) => {
           <StructuredListSkeleton />
         </TaskDetailsRow>
       </Section>
-      <aside className={asideStyles.aside}>
+      <aside className={taskDetailsLayoutCommon.aside}>
         <ContainedList
           label={<SkeletonText width="100px" className={styles.margin0} />}
           kind="disclosed"
