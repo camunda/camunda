@@ -8,6 +8,7 @@ body:
     attributes:
       label: <!-- Component -->
       description: In which component did the issue occur?
+      # The components should be kept in alphabetical order, with "Not sure" at the top
       options:
         - <!-- Not sure- -->
         - <!-- C8-API- -->
