@@ -47,11 +47,12 @@ import org.awaitility.Awaitility;
 
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
+  private static final int TIMEOUT = 40;
+
   private final CamundaContainer camundaContainer;
   private final ConnectorsContainer connectorsContainer;
   private final Consumer<AutoCloseable> clientCreationCallback;
   private final CamundaManagementClient camundaManagementClient;
-  private final int TIMEOUT = 40;
 
   public CamundaProcessTestContextImpl(
       final CamundaContainer camundaContainer,
