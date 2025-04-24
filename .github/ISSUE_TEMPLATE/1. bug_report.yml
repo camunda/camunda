@@ -8,15 +8,17 @@ body:
     attributes:
       label: <!-- Component -->
       description: In which component did the issue occur?
+      # The components should be kept in alphabetical order, with "Not sure" at the top
       options:
         - <!-- Not sure- -->
+        - <!-- C8-API- -->
+        - <!-- C8Run- -->
+        - <!-- Feel- -->
+        - <!-- Identity- -->
         - <!-- Operate- -->
         - <!-- Optimize- -->
         - <!-- Tasklist- -->
-        - <!-- Identity- -->
         - <!-- Zeebe- -->
-        - <!-- C8Run- -->
-        - <!-- Feel- -->
       default: null
     validations:
       required: true
@@ -84,14 +86,14 @@ body:
     id: current-behavior
     attributes:
       label: Current behavior
-      description: A clear and concise description of what is currently happening. 
+      description: A clear and concise description of what is currently happening.
     validations:
       required: true
   - type: textarea
     id: expected-behavior
     attributes:
       label: Expected behavior
-      description: A clear and concise description of what you expected to happen. 
+      description: A clear and concise description of what you expected to happen.
     validations:
       required: true
   - type: dropdown
