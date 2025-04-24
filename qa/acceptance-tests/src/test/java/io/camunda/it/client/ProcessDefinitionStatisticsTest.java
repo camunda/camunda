@@ -16,6 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,8 @@ import org.junit.jupiter.api.Test;
 @MultiDbTest
 public class ProcessDefinitionStatisticsTest {
 
+  public static final String INCIDENT_ERROR_MESSAGE_V1 =
+      "Expected result of the expression 'retriesA' to be 'NUMBER', but was 'STRING'.";
   public static final int INCIDENT_ERROR_HASH_CODE_V2 = 17551445;
   private static CamundaClient camundaClient;
 
@@ -78,6 +82,130 @@ public class ProcessDefinitionStatisticsTest {
 
     // then
     assertThat(actual).hasSize(0);
+  }
+
+  @Test
+  void shouldGetStatisticsAndFilterByProcessInstanceKeyOrFilters() {
+    // given
+    final var processDefinitionKey = deployCompleteBPMN();
+    final var pi1 = createInstance(processDefinitionKey);
+    final var pi2 = createInstance(processDefinitionKey);
+    final var pi3 = createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(
+        4, f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED));
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            f1 -> f1.processInstanceKey(pi1.getProcessInstanceKey()),
+                            f2 -> f2.processInstanceKey(pi2.getProcessInstanceKey()),
+                            f3 -> f3.processInstanceKey(pi3.getProcessInstanceKey()))))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 3L),
+            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 3L));
+  }
+
+  @Test
+  void shouldGetStatisticsAndFilterByElementIdOrFilters() {
+    // given
+    final var processDefinitionKey = deployIncidentBPMN();
+    final var pi1 = createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            f1 -> f1.elementId(b -> b.like("*Event")),
+                            f2 ->
+                                f2.processInstanceKey(pi1.getProcessInstanceKey())
+                                    .hasElementInstanceIncident(true))))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("ScriptTask", 0L, 0L, 1L, 0L));
+  }
+
+  @Test
+  void shouldGetStatisticsAndFilterByElementIdLikeOrFilters() {
+    // given
+    final var processDefinitionKey = deployIncidentBPMN();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            f1 -> f1.elementId(b -> b.like("*Event")),
+                            f2 -> f2.hasElementInstanceIncident(false))))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(1);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L));
+  }
+
+  @Test
+  void shouldGetStatisticsAndFilterByErrorMessageOrFilters() {
+    // given
+    final var processDefinitionKey =
+        TestHelper.deployResource(camundaClient, "process/incident_process_v1.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            f1 -> f1.elementId(b -> b.neq("start")),
+                            f2 -> f2.errorMessage(INCIDENT_ERROR_MESSAGE_V1))))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 2L, 0L));
   }
 
   @Test
@@ -657,6 +785,7 @@ public class ProcessDefinitionStatisticsTest {
             .getProcessDefinitionKey();
     createInstance(processDefinitionKey);
     waitForProcessInstances(1, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+    waitForIncidents(processDefinitionKey);
 
     // when
     final var actual =
@@ -672,6 +801,25 @@ public class ProcessDefinitionStatisticsTest {
         .containsExactlyInAnyOrder(
             new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 1L),
             new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 1L, 0L));
+  }
+
+  private static void waitForIncidents(final long processDefinitionKey) {
+    Awaitility.await("should receive data from ES")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newIncidentSearchRequest()
+                            .filter(
+                                f ->
+                                    f.processDefinitionKey(processDefinitionKey)
+                                        .state(IncidentState.ACTIVE))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1));
   }
 
   private static DeploymentEvent deployResource(

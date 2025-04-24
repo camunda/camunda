@@ -21,12 +21,14 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.protocol.rest.BaseProcessInstanceFilter;
+import io.camunda.client.protocol.rest.BaseProcessInstanceFilterFields;
 import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import io.camunda.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.client.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
+import io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.VariableValueFilterRequest;
 import io.camunda.client.util.ClientRestTest;
@@ -95,7 +97,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     // then
     final ProcessDefinitionElementStatisticsQuery query =
         gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
-    final BaseProcessInstanceFilter filter = query.getFilter();
+    final ProcessDefinitionStatisticsFilter filter = query.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getProcessInstanceKey().get$Eq())
         .isEqualTo(String.valueOf(PROCESS_DEFINITION_KEY));
@@ -129,7 +131,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     // then
     final ProcessDefinitionElementStatisticsQuery request =
         gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
-    final BaseProcessInstanceFilter filter = request.getFilter();
+    final ProcessDefinitionStatisticsFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
@@ -148,7 +150,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     // then
     final ProcessDefinitionElementStatisticsQuery request =
         gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
-    final BaseProcessInstanceFilter filter = request.getFilter();
+    final ProcessDefinitionStatisticsFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final StringFilterProperty tenantId = filter.getTenantId();
     assertThat(tenantId).isNotNull();
@@ -168,7 +170,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     // then
     final ProcessDefinitionElementStatisticsQuery request =
         gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
-    final BaseProcessInstanceFilter filter = request.getFilter();
+    final ProcessDefinitionStatisticsFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final DateTimeFilterProperty startDate = filter.getStartDate();
     assertThat(startDate).isNotNull();
@@ -198,8 +200,39 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     // then
     final ProcessDefinitionElementStatisticsQuery request =
         gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
-    final BaseProcessInstanceFilter filter = request.getFilter();
+    final ProcessDefinitionStatisticsFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getVariables()).isEqualTo(variables);
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByOrFilters() {
+    // when
+    client
+        .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
+        .filter(
+            f ->
+                f.state(ProcessInstanceState.ACTIVE)
+                    .orFilters(
+                        Arrays.asList(
+                            f1 -> f1.processInstanceKey(123L).elementId("elementId"),
+                            f3 -> f3.hasElementInstanceIncident(true))))
+        .send()
+        .join();
+
+    // then
+    final ProcessDefinitionElementStatisticsQuery request =
+        gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
+    final ProcessDefinitionStatisticsFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getState())
+        .isEqualTo(new ProcessInstanceStateFilterProperty().$eq(ProcessInstanceStateEnum.ACTIVE));
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or())
+        .containsExactlyInAnyOrder(
+            new BaseProcessInstanceFilterFields()
+                .processInstanceKey(new BasicStringFilterProperty().$eq("123"))
+                .elementId(new StringFilterProperty().$eq("elementId")),
+            new BaseProcessInstanceFilterFields().hasElementInstanceIncident(true));
   }
 }

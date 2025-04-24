@@ -142,7 +142,8 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build());
     }
-    final var filter = toBaseProcessInstanceFilter(processDefinitionKey, request.getFilter());
+    final var filter =
+        toProcessDefinitionStatisticsFilter(processDefinitionKey, request.getFilter());
 
     if (filter.isLeft()) {
       final var problem = RequestValidator.createProblemDetail(filter.getLeft());
@@ -153,9 +154,39 @@ public final class SearchQueryRequestMapper {
     return Either.right(filter.get());
   }
 
-  private static Either<List<String>, ProcessDefinitionStatisticsFilter>
-      toBaseProcessInstanceFilter(
-          final long processDefinitionKey, final BaseProcessInstanceFilter filter) {
+  public static Either<List<String>, ProcessDefinitionStatisticsFilter>
+      toProcessDefinitionStatisticsFilter(
+          final long processDefinitionKey,
+          final io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionStatisticsFilter filter) {
+    final List<String> validationErrors = new ArrayList<>();
+
+    final Either<List<String>, ProcessDefinitionStatisticsFilter.Builder> builder =
+        toBaseProcessInstanceFilterFields(processDefinitionKey, filter);
+    if (builder.isLeft()) {
+      validationErrors.addAll(builder.getLeft());
+    }
+
+    if (filter != null) {
+      if (filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+        for (final BaseProcessInstanceFilterFields or : filter.get$Or()) {
+          final var orBuilder = toBaseProcessInstanceFilterFields(processDefinitionKey, or);
+          if (orBuilder.isLeft()) {
+            validationErrors.addAll(orBuilder.getLeft());
+          } else {
+            builder.get().addOrOperation(orBuilder.get().build());
+          }
+        }
+      }
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.get().build())
+        : Either.left(validationErrors);
+  }
+
+  private static Either<List<String>, ProcessDefinitionStatisticsFilter.Builder>
+      toBaseProcessInstanceFilterFields(
+          final long processDefinitionKey, final BaseProcessInstanceFilterFields filter) {
     final var builder = FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -207,9 +238,7 @@ public final class SearchQueryRequestMapper {
         }
       }
     }
-    return validationErrors.isEmpty()
-        ? Either.right(builder.build())
-        : Either.left(validationErrors);
+    return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(

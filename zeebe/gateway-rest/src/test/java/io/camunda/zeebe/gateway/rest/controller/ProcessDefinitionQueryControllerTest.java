@@ -290,6 +290,66 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  public void shouldGetElementStatisticsWithOrOperator() {
+    // given
+    final long processDefinitionKey = 1L;
+    final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
+    when(processDefinitionServices.elementStatistics(any())).thenReturn(stats);
+    final var request =
+        """
+            {
+              "filter": {
+                "state": "ACTIVE",
+                "$or": [
+                  { "elementId": "elementId" },
+                  { "processInstanceKey": "123", "hasElementInstanceIncident": true }
+                ]
+              }
+            }""";
+    final var response =
+        """
+            {"items":[
+              {
+                "elementId": "node1",
+                "active": 1,
+                "canceled": 1,
+                "incidents": 1,
+                "completed": 1
+              }
+            ]}""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "1/statistics/element-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response);
+
+    verify(processDefinitionServices)
+        .elementStatistics(
+            new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
+                .states("ACTIVE")
+                .addOrOperation(
+                    new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
+                        .flowNodeIds("elementId")
+                        .build())
+                .addOrOperation(
+                    new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
+                        .processInstanceKeys(123L)
+                        .hasFlowNodeInstanceIncident(true)
+                        .build())
+                .build());
+  }
+
+  @Test
   public void shouldGetProcessDefinitionXml() {
     // given
     when(processDefinitionServices.getProcessDefinitionXml(23L)).thenReturn(Optional.of("<xml/>"));
