@@ -27,5 +27,5 @@ import org.springframework.context.annotation.Conditional;
 @Target({TYPE, METHOD})
 @Retention(RUNTIME)
 @Documented
-@Conditional(CamundaClientEnabledCondition.class)
+@ConditionalOnProperty(name = "camunda.client.enabled", havingValue = "true", matchIfMissing = true)
 public @interface ConditionalOnCamundaClientEnabled {}
