@@ -56,6 +56,7 @@ const getWrapper = (
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
+        processInstanceDetailsStore.reset();
       };
     }, []);
 
@@ -120,11 +121,6 @@ describe('VariablePanel', () => {
   afterEach(async () => {
     jest.clearAllMocks();
     jest.clearAllTimers();
-    variablesStore.reset();
-    flowNodeSelectionStore.reset();
-    flowNodeMetaDataStore.reset();
-    modificationsStore.reset();
-    processInstanceDetailsStore.reset();
     await new Promise(process.nextTick);
   });
 

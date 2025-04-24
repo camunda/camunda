@@ -15,7 +15,6 @@ import {createInstance} from 'modules/testUtils';
 import {createRef, useEffect} from 'react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ModificationDropdown} from '.';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {Paths} from 'modules/Routes';
@@ -69,7 +68,6 @@ const renderPopover = (
 
 const initializeStores = () => {
   flowNodeSelectionStore.init();
-  processInstanceDetailsStatisticsStore.init('processId');
   processInstanceDetailsDiagramStore.init();
   processInstanceDetailsStore.setProcessInstance(
     createInstance({
@@ -84,7 +82,6 @@ const resetStores = () => {
   flowNodeSelectionStore.reset();
   processInstanceDetailsStore.reset();
   modificationsStore.reset();
-  processInstanceDetailsStatisticsStore.reset();
   processInstanceDetailsDiagramStore.reset();
   flowNodeMetaDataStore.reset();
 };

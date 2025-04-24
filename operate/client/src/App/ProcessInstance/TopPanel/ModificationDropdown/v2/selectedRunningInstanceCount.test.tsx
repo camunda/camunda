@@ -79,9 +79,6 @@ describe('selectedRunningInstanceCount', () => {
   });
 
   afterEach(async () => {
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-    modificationsStore.reset();
     await new Promise(process.nextTick);
   });
 

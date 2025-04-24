@@ -89,6 +89,9 @@ describe('Modification Dropdown', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statisticsData,
     });
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statisticsData,
+    });
 
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
@@ -98,15 +101,10 @@ describe('Modification Dropdown', () => {
   });
 
   afterEach(async () => {
-    flowNodeSelectionStore.reset();
-    modificationsStore.reset();
     await new Promise(process.nextTick);
   });
 
   it('should not render dropdown when no flow node is selected', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statisticsData,
-    });
     renderPopover();
 
     await waitFor(() =>

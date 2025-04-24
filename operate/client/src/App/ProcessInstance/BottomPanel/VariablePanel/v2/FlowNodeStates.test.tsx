@@ -57,6 +57,7 @@ const getWrapper = (
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
+        processInstanceDetailsStore.reset();
       };
     }, []);
 
@@ -97,15 +98,13 @@ describe('VariablePanel', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statistics,
-    });
 
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     init(statistics);
@@ -121,11 +120,6 @@ describe('VariablePanel', () => {
   afterEach(async () => {
     jest.clearAllMocks();
     jest.clearAllTimers();
-    variablesStore.reset();
-    flowNodeSelectionStore.reset();
-    flowNodeMetaDataStore.reset();
-    modificationsStore.reset();
-    processInstanceDetailsStore.reset();
     await new Promise(process.nextTick);
   });
 

@@ -58,6 +58,7 @@ const getWrapper = (
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
+        processInstanceDetailsStore.reset();
       };
     }, []);
 
@@ -122,11 +123,6 @@ describe('VariablePanel', () => {
   afterEach(async () => {
     jest.clearAllMocks();
     jest.clearAllTimers();
-    variablesStore.reset();
-    flowNodeSelectionStore.reset();
-    flowNodeMetaDataStore.reset();
-    modificationsStore.reset();
-    processInstanceDetailsStore.reset();
     await new Promise(process.nextTick);
   });
 
@@ -348,7 +344,7 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     // add one new token
-    act(() => {
+    await act(async () => {
       modificationsStore.addModification({
         type: 'token',
         payload: {

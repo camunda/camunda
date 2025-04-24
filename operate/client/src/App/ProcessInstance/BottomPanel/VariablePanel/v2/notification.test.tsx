@@ -70,6 +70,7 @@ const getWrapper = (
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
+        processInstanceDetailsStore.reset();
       };
     }, []);
 
@@ -134,11 +135,6 @@ describe('VariablePanel', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.clearAllTimers();
-    variablesStore.reset();
-    flowNodeSelectionStore.reset();
-    flowNodeMetaDataStore.reset();
-    modificationsStore.reset();
-    processInstanceDetailsStore.reset();
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
