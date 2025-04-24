@@ -22,7 +22,7 @@ import {
   TaskDetailsContainer,
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
-import {Separator} from 'v1/TaskDetails/Variables/Separator';
+import {Separator} from './Separator';
 import {useAllVariables} from 'v1/api/useAllVariables.query';
 import {useTranslation} from 'react-i18next';
 import {FailedVariableFetchError} from 'common/tasks/details/FailedVariableFetchError';
