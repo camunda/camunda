@@ -22,7 +22,7 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   private final StringProperty roleIdProp = new StringProperty("roleId", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty descriptionProp = new StringProperty("description", "");
-  // TODO remove entityKeyProp https://github.com/camunda/camunda/issues/30117
+  // TODO remove entityKeyProp https://github.com/camunda/camunda/issues/30111
   private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
   private final StringProperty entityIdProp = new StringProperty("entityId", "");
   private final EnumProperty<EntityType> entityTypeProp =
