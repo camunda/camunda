@@ -69,9 +69,9 @@ const finishMovingToken = (
     });
   }
 
-  modificationsStore.state.status = 'enabled';
-  modificationsStore.state.sourceFlowNodeIdForMoveOperation = null;
-  modificationsStore.state.sourceFlowNodeInstanceKeyForMoveOperation = null;
+  modificationsStore.setStatus('enabled');
+  modificationsStore.setSourceFlowNodeIdForMoveOperation(null);
+  modificationsStore.setSourceFlowNodeInstanceKeyForMoveOperation(null);
 };
 
 const generateParentScopeIds = (
