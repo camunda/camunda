@@ -98,7 +98,7 @@ public final class AzureBackupStore implements BackupStore {
         client.getBlobContainerClient(config.containerName());
 
     if (!config.createContainer()) {
-      LOG.info(
+      LOG.debug(
           "Setting up Azure Store with existing container: {}",
           blobContainerClient.getBlobContainerName());
       if (!blobContainerClient.exists()) {

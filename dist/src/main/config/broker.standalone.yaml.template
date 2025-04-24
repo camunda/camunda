@@ -455,7 +455,7 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_BASEPATH
           # basePath:
 
-          # Defines if the container is created initially or if a existing one
+          # Defines if the container is created initially or if an existing one
           # should be used.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_CREATECONTAINER
           # createContainer: true
