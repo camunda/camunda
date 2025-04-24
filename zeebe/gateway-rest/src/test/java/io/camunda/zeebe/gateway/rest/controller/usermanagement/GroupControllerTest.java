@@ -365,6 +365,40 @@ public class GroupControllerTest extends RestControllerTest {
     verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "foo~", "foo!", "foo$", "foo&", "foo*", "foo(", "foo)", "foo=", "foo+", "foo:", "foo'",
+        "foo,"
+      })
+  void shouldRejectGroupUpdateWithIllegalCharactersInId(final String groupId) {
+    // when then
+    final var path = "%s/%s".formatted(GROUP_BASE_URL, groupId);
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            new GroupUpdateRequest()
+                .changeset(new GroupChangeset().name("updatedName").description("description")))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided id contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(groupServices);
+  }
+
   @Test
   void deleteGroupShouldReturnNoContent() {
     // given

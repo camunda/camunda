@@ -349,7 +349,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
       final GroupUpdateRequest groupUpdateRequest, final String groupId) {
     return getResult(
-        GroupRequestValidator.validateUpdateRequest(groupUpdateRequest),
+        GroupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest),
         () ->
             new GroupDTO(
                 groupId,
