@@ -29,7 +29,7 @@ import {decodeTaskOpenedRef} from 'common/tracking/reftags';
 import {useTasks} from 'v1/api/useTasks.query';
 import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTask';
 import {autoSelectNextTaskStore} from 'common/tasks/next-task/autoSelectFirstTask';
-import type {OutletContext} from './Details';
+import type {OutletContext} from 'v1/TaskDetailsLayout';
 import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
@@ -46,7 +46,7 @@ function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
   return formKey.replace(CAMUNDA_FORMS_PREFIX, '');
 }
 
-const Task: React.FC = observer(() => {
+const TaskDetails: React.FC = observer(() => {
   const {
     task,
     currentUser,
@@ -215,6 +215,6 @@ const Task: React.FC = observer(() => {
   }
 });
 
-Task.displayName = 'Task';
+TaskDetails.displayName = 'Task';
 
-export {Task as Component};
+export {TaskDetails as Component};

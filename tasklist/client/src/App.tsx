@@ -69,13 +69,13 @@ const v1Routes = createRoutesFromElements(
         />
         <Route
           path=":id"
-          lazy={() => import('./v1/Tasks/Task/Details')}
+          lazy={() => import('./v1/TaskDetailsLayout')}
           ErrorBoundary={ErrorWithinLayout}
         >
-          <Route index lazy={() => import('./v1/Tasks/Task')} />
+          <Route index lazy={() => import('./v1/TaskDetails')} />
           <Route
             path="process"
-            lazy={() => import('./v1/Tasks/Task/ProcessView')}
+            lazy={() => import('./v1/TaskDetailsProcessView')}
           />
         </Route>
       </Route>

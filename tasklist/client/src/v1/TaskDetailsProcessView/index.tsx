@@ -10,11 +10,11 @@ import {useOutletContext} from 'react-router-dom';
 import {Layer, Tag} from '@carbon/react';
 import {BPMNDiagram} from 'common/bpmn-js/BPMNDiagram';
 import {SomethingWentWrong} from 'common/error-handling/SomethingWentWrong';
-import type {OutletContext} from '../Details';
+import type {OutletContext} from 'v1/TaskDetailsLayout';
 import styles from './index.module.scss';
 import {useTranslation} from 'react-i18next';
 
-const ProcessView: React.FC = () => {
+const TaskDetailsProcessView: React.FC = () => {
   const {task, process} = useOutletContext<OutletContext>();
   const {t} = useTranslation();
 
@@ -42,4 +42,4 @@ const ProcessView: React.FC = () => {
   );
 };
 
-export {ProcessView as Component};
+export {TaskDetailsProcessView as Component};

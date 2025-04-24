@@ -31,7 +31,7 @@ type OutletContext = {
   process: Process | undefined;
 };
 
-const Details: React.FC = () => {
+const TaskDetailsLayout: React.FC = () => {
   const {id} = useTaskDetailsParams();
   const {t} = useTranslation();
   const {data: task, refetch} = useTask(id, {
@@ -111,5 +111,5 @@ const Details: React.FC = () => {
   );
 };
 
-export {Details as Component};
+export {TaskDetailsLayout as Component};
 export type {OutletContext};
