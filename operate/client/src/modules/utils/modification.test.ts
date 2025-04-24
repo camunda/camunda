@@ -21,6 +21,9 @@ jest.mock('modules/stores/modifications', () => ({
     },
     addCancelModification: jest.fn(),
     addMoveModification: jest.fn(),
+    setStatus: jest.fn(),
+    setSourceFlowNodeIdForMoveOperation: jest.fn(),
+    setSourceFlowNodeInstanceKeyForMoveOperation: jest.fn(),
   },
 }));
 
@@ -135,12 +138,12 @@ describe('finishMovingToken', () => {
   it('should reset the modification state after finishing the move', () => {
     finishMovingToken(5, 3, businessObjects, 'targetNode');
 
-    expect(modificationsStore.state.status).toBe('enabled');
+    expect(modificationsStore.setStatus).toHaveBeenCalledWith('enabled');
     expect(
-      modificationsStore.state.sourceFlowNodeIdForMoveOperation,
-    ).toBeNull();
+      modificationsStore.setSourceFlowNodeIdForMoveOperation,
+    ).toHaveBeenCalledWith(null);
     expect(
-      modificationsStore.state.sourceFlowNodeInstanceKeyForMoveOperation,
-    ).toBeNull();
+      modificationsStore.setSourceFlowNodeInstanceKeyForMoveOperation,
+    ).toHaveBeenCalledWith(null);
   });
 });

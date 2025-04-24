@@ -137,14 +137,15 @@ class Modifications {
     sourceFlowNodeId: string,
     sourceFlowNodeInstanceKey?: string,
   ) => {
-    this.state.status = 'moving-token';
-    this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
-    this.state.sourceFlowNodeInstanceKeyForMoveOperation =
-      sourceFlowNodeInstanceKey ?? null;
+    this.setStatus('moving-token');
+    this.setSourceFlowNodeIdForMoveOperation(sourceFlowNodeId);
+    this.setSourceFlowNodeInstanceKeyForMoveOperation(
+      sourceFlowNodeInstanceKey ?? null,
+    );
   };
 
   startAddingToken = (sourceFlowNodeId: string) => {
-    this.state.status = 'adding-token';
+    this.setStatus('adding-token');
     this.state.sourceFlowNodeIdForAddOperation = sourceFlowNodeId;
   };
 
@@ -206,23 +207,38 @@ class Modifications {
       });
     }
 
-    this.state.status = 'enabled';
+    this.setStatus('enabled');
     this.state.sourceFlowNodeIdForAddOperation = null;
+  };
+
+  setStatus = (status: State['status']) => {
+    this.state.status = status;
+  };
+
+  setSourceFlowNodeIdForMoveOperation = (sourceFlowNodeId: string | null) => {
+    this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
+  };
+
+  setSourceFlowNodeInstanceKeyForMoveOperation = (
+    sourceFlowNodeInstanceKey: string | null,
+  ) => {
+    this.state.sourceFlowNodeInstanceKeyForMoveOperation =
+      sourceFlowNodeInstanceKey;
   };
 
   enableModificationMode = () => {
     tracking.track({
       eventName: 'enable-modification-mode',
     });
-    this.state.status = 'enabled';
+    this.setStatus('enabled');
   };
 
   disableModificationMode = () => {
-    this.state.status = 'disabled';
+    this.setStatus('disabled');
   };
 
   startApplyingModifications = () => {
-    this.state.status = 'applying-modifications';
+    this.setStatus('applying-modifications');
   };
 
   addModification = (modification: Modification) => {
