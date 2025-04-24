@@ -71,6 +71,89 @@ public class TaskListenerCorrectionsTest {
   }
 
   @Test
+  public void shouldAppendUserTaskCorrectedWhenCreatingTaskListenerCompletesWithCorrections() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithCreatingTaskListeners(listenerType, listenerType + "_2"));
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setAssignee("new_assignee")
+                        .setCandidateUsersList(List.of("new_candidate_user"))
+                        .setCandidateGroupsList(List.of("new_candidate_group"))
+                        .setDueDate("new_due_date")
+                        .setFollowUpDate("new_follow_up_date")
+                        .setPriority(100))
+                .setCorrectedAttributes(
+                    List.of(
+                        "assignee",
+                        "candidateUsersList",
+                        "candidateGroupsList",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CORRECTED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasChangedAttributes(
+            "assignee",
+            "candidateUsersList",
+            "candidateGroupsList",
+            "dueDate",
+            "followUpDate",
+            "priority")
+        .hasAssignee("new_assignee")
+        .hasCandidateUsersList(List.of("new_candidate_user"))
+        .hasCandidateGroupsList(List.of("new_candidate_group"))
+        .hasDueDate("new_due_date")
+        .hasFollowUpDate("new_follow_up_date")
+        .hasPriority(100)
+        .hasAction("");
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_2")
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setPriority(3))
+                .setCorrectedAttributes(List.of("priority")))
+        .complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CORRECTED)
+                .withProcessInstanceKey(processInstanceKey)
+                .skip(1)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect only the corrected attributes are mentioned")
+        .hasChangedAttributes("priority")
+        .describedAs("Expect that the corrected attribute is updated")
+        .hasPriority(3)
+        .describedAs("Expect that the other corrected data remains unchanged")
+        .hasAssignee("new_assignee")
+        .hasCandidateUsersList(List.of("new_candidate_user"))
+        .hasCandidateGroupsList(List.of("new_candidate_group"))
+        .hasDueDate("new_due_date")
+        .hasFollowUpDate("new_follow_up_date")
+        .hasAction("");
+  }
+
+  @Test
   public void shouldAppendUserTaskCorrectedWhenAssigningTaskListenerCompletesWithCorrections() {
     testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
         ZeebeTaskListenerEventType.assigning,
@@ -1269,6 +1352,144 @@ public class TaskListenerCorrectionsTest {
         u -> u,
         pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
         UserTaskIntent.CANCELED);
+  }
+
+  @Test
+  public void
+      shouldPersistCorrectedUserTaskDataWhenCreatingTaskListenerCompletedWithInitialAssignee() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListenersAndAssignee(
+                ZeebeTaskListenerEventType.creating,
+                "initial_assignee",
+                listenerType,
+                listenerType + "_2"));
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        // Current assumption: there can not be corrections of the assignee if there
+                        // is an initial assignee.
+                        .setCandidateUsersList(List.of("new_candidate_user"))
+                        .setCandidateGroupsList(List.of("new_candidate_group"))
+                        .setDueDate("new_due_date")
+                        .setFollowUpDate("new_follow_up_date")
+                        .setPriority(100))
+                .setCorrectedAttributes(
+                    List.of(
+                        "candidateUsersList",
+                        "candidateGroupsList",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_2")
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setCandidateGroupsList(List.of("twice_corrected_candidate_group")))
+                .setCorrectedAttributes(List.of("candidateGroupsList")))
+        .complete();
+
+    // then
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        userTaskRecord ->
+            Assertions.assertThat(userTaskRecord)
+                .describedAs(
+                    "Expect that the last user task event contains the corrected data, but no assignee")
+                .hasChangedAttributes(
+                    "candidateUsersList",
+                    "candidateGroupsList",
+                    "dueDate",
+                    "followUpDate",
+                    "priority")
+                .hasCandidateUsersList("new_candidate_user")
+                .describedAs("Expect that the most recent group correction takes precedence")
+                .hasCandidateGroupsList("twice_corrected_candidate_group")
+                .hasDueDate("new_due_date")
+                .hasFollowUpDate("new_follow_up_date")
+                .hasPriority(100)
+                .hasAssignee(""));
+  }
+
+  @Test
+  public void
+      shouldPersistCorrectedUserTaskDataWhenCreatingTaskListenerCompletedWithNoInitialAssignee() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithCreatingTaskListeners(listenerType, listenerType + "_2"));
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setAssignee("new_assignee")
+                        .setCandidateUsersList(List.of("new_candidate_user"))
+                        .setCandidateGroupsList(List.of("new_candidate_group"))
+                        .setDueDate("new_due_date")
+                        .setFollowUpDate("new_follow_up_date")
+                        .setPriority(100))
+                .setCorrectedAttributes(
+                    List.of(
+                        "assignee",
+                        "candidateUsersList",
+                        "candidateGroupsList",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_2")
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setCandidateGroupsList(List.of("twice_corrected_candidate_group")))
+                .setCorrectedAttributes(List.of("candidateGroupsList")))
+        .complete();
+
+    // then
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        userTaskRecord ->
+            Assertions.assertThat(userTaskRecord)
+                .describedAs("Expect that the last user task event contains the corrected data")
+                .hasChangedAttributes(
+                    "assignee",
+                    "candidateUsersList",
+                    "candidateGroupsList",
+                    "dueDate",
+                    "followUpDate",
+                    "priority")
+                .hasCandidateUsersList("new_candidate_user")
+                .describedAs("Expect that the most recent group correction takes precedence")
+                .hasAssignee("new_assignee")
+                .hasCandidateGroupsList("twice_corrected_candidate_group")
+                .hasDueDate("new_due_date")
+                .hasFollowUpDate("new_follow_up_date")
+                .hasPriority(100));
   }
 
   private void testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
