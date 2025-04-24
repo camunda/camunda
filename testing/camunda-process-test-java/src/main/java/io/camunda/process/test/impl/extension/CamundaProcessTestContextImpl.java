@@ -32,6 +32,8 @@ import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.mock.JobWorkerMockImpl;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -139,6 +141,32 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void mockChildProcess(final String childProcessId, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final BpmnModelInstance processModel =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .endEvent(
+                "child-end",
+                e ->
+                    variables.forEach(
+                        (k, v) ->
+                            e.zeebeOutput(
+                                "=" + client.getConfiguration().getJsonMapper().toJson(v), k)))
+            .done();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(processModel, "test-process.bpmn")
+        .send()
+        .join();
+  }
+
+  @Override
+  public void mockChildProcess(final String childProcessId) {
+    mockChildProcess(childProcessId, new HashMap<>());
+  }
+
+  @Override
   public void completeJob(final String jobType) {
     completeJob(jobType, new HashMap<>());
   }
@@ -161,27 +189,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final CamundaClient client = createClient();
     final ActivatedJob job = getActivatedJob(jobType);
     client.newThrowErrorCommand(job).errorCode(errorCode).variables(variables).send().join();
-  }
-
-  private ActivatedJob getActivatedJob(final String jobType) {
-    final CamundaClient client = createClient();
-    final AtomicReference<ActivatedJob> activatedJob = new AtomicReference<>();
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(
-            () -> {
-              final List<ActivatedJob> jobs =
-                  client
-                      .newActivateJobsCommand()
-                      .jobType(jobType)
-                      .maxJobsToActivate(1)
-                      .send()
-                      .join()
-                      .getJobs();
-              assertThat(jobs).isNotEmpty();
-              activatedJob.set(jobs.get(0));
-            });
-    return activatedJob.get();
   }
 
   @Override
@@ -227,5 +234,26 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
 
     client.newUserTaskCompleteCommand(userTaskKey.get()).variables(variables).send().join();
+  }
+
+  private ActivatedJob getActivatedJob(final String jobType) {
+    final CamundaClient client = createClient();
+    final AtomicReference<ActivatedJob> activatedJob = new AtomicReference<>();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              final List<ActivatedJob> jobs =
+                  client
+                      .newActivateJobsCommand()
+                      .jobType(jobType)
+                      .maxJobsToActivate(1)
+                      .send()
+                      .join()
+                      .getJobs();
+              assertThat(jobs).isNotEmpty();
+              activatedJob.set(jobs.get(0));
+            });
+    return activatedJob.get();
   }
 }
