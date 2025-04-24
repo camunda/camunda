@@ -12,7 +12,8 @@ public record AzureBackupConfig(
     String accountName,
     String accountKey,
     String connectionString,
-    String containerName) {
+    String containerName,
+    boolean createContainer) {
 
   public static class Builder {
 
@@ -20,6 +21,7 @@ public record AzureBackupConfig(
     private String accountName;
     private String accountKey;
     private String conectionString;
+    private boolean createContainer = true;
 
     // maps to the basePath env variable
     private String containerName;
@@ -49,10 +51,15 @@ public record AzureBackupConfig(
       return this;
     }
 
+    public Builder withCreateContainer(final boolean createContainer) {
+      this.createContainer = createContainer;
+      return this;
+    }
+
     public AzureBackupConfig build() {
 
       return new AzureBackupConfig(
-          endpoint, accountName, accountKey, conectionString, containerName);
+          endpoint, accountName, accountKey, conectionString, containerName, createContainer);
     }
   }
 }
