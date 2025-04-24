@@ -155,6 +155,107 @@ public class BatchOperationMigrateProcessInstanceTest {
     }
   }
 
+
+  @Test
+  void shouldMigrateProcessInstancesWithFailuresWithBatch() {
+    // given
+    final long sourceProcessDefinitionKey =
+        deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
+    final var targetProcessDefinitionKey =
+        deployProcessFromClasspath(client, "process/migration-process_v2.bpmn");
+
+    IntStream.range(0, 10)
+        .forEach(
+            i -> {
+              final var processInstanceKey =
+                  startProcessInstance(
+                      client, sourceProcessDefinitionKey, Map.of("foo", "bar", "fail", i > 5));
+              PROCESS_INSTANCES.add(processInstanceKey);
+            });
+
+    waitForProcessInstancesToStart(client, PROCESS_INSTANCES.size());
+
+    // when
+    final var batchCreated =
+        batchMigrateProcessInstance(
+            client,
+            sourceProcessDefinitionKey,
+            MigrationPlan.newBuilder()
+                .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+                .addMappingInstruction("taskA", "taskA2")
+                .addMappingInstruction("taskB", "taskB2")
+                .addMappingInstruction("taskC", "taskC2")
+                .addMappingInstruction("notExit", "taskA2")
+                .build());
+
+    // then
+    Awaitility.await("should complete batch operation")
+        .atMost(Duration.ofSeconds(15))
+        .pollInterval(Duration.ofMillis(100))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              // and
+              final var batch =
+                  client
+                      .newBatchOperationGetRequest(batchCreated.getBatchOperationKey())
+                      .send()
+                      .join();
+              assertThat(batch).isNotNull();
+              assertThat(batch.getEndDate()).isNotNull();
+              assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batch.getOperationsTotalCount()).isEqualTo(PROCESS_INSTANCES.size());
+              assertThat(batch.getOperationsCompletedCount()).isEqualTo(5);
+              assertThat(batch.getOperationsFailedCount()).isEqualTo(5);
+            });
+
+    Awaitility.await("should update batch operation items")
+        .atMost(Duration.ofSeconds(15))
+        .pollInterval(Duration.ofMillis(100))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              // and
+              final var batchItems =
+                  client
+                      .newBatchOperationItemsGetRequest(batchCreated.getBatchOperationKey())
+                      .send()
+                      .join()
+                      .items();
+              assertThat(batchItems).isNotEmpty();
+              assertThat(batchItems).hasSize(PROCESS_INSTANCES.size());
+              assertThat(batchItems.stream().map(BatchOperationItem::getStatus).distinct().toList())
+                  .containsExactly(BatchOperationItemState.COMPLETED);
+            });
+
+    // and
+    for (final var processInstanceKey : PROCESS_INSTANCES) {
+      processInstanceExistAndMatches(
+          client,
+          f -> f.processInstanceKey(processInstanceKey).processDefinitionId("migration-process_v2"),
+          f -> assertThat(f).hasSize(1));
+      processInstanceHasUserTask(
+          client,
+          processInstanceKey,
+          userTask -> {
+            assertThat(userTask.getElementId()).isEqualTo("taskA2");
+            assertThat(userTask.getBpmnProcessId()).isEqualTo("migration-process_v2");
+            assertThat(userTask.getProcessDefinitionVersion()).isEqualTo(1);
+          });
+      processInstanceHasElementInstances(
+          client,
+          processInstanceKey,
+          Map.of(
+              "start", fni -> fni.getProcessDefinitionId().equals("migration-process_v1"),
+              "gateway1", fni -> fni.getProcessDefinitionId().equals("migration-process_v1"),
+              "gateway3", fni -> fni.getProcessDefinitionId().equals("migration-process_v1"),
+              "taskA2", fni -> fni.getProcessDefinitionId().equals("migration-process_v2"),
+              "taskB2", fni -> fni.getProcessDefinitionId().equals("migration-process_v2")));
+      processInstanceHasVariables(
+          client, processInstanceKey, Map.of("foo", v -> v.getValue().equals("\"bar\"")));
+    }
+  }
+
   public CreateBatchOperationResponse batchMigrateProcessInstance(
       final CamundaClient client,
       final long sourceProcessDefinitionKey,
