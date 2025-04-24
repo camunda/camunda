@@ -59,7 +59,7 @@ const v1Routes = createRoutesFromElements(
       </Route>
       <Route
         path="/"
-        lazy={() => import('./v1/Tasks')}
+        lazy={() => import('./v1/TasksTab')}
         ErrorBoundary={ErrorWithinLayout}
       >
         <Route
@@ -95,7 +95,7 @@ const v2Routes = createRoutesFromElements(
       />
       <Route
         path="/"
-        lazy={() => import('./v2/Tasks')}
+        lazy={() => import('./v2/TasksTab')}
         ErrorBoundary={ErrorWithinLayout}
       >
         <Route
