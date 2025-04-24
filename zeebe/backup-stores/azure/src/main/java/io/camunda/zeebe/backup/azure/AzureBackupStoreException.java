@@ -13,9 +13,19 @@ public abstract class AzureBackupStoreException extends RuntimeException {
     super(message, cause);
   }
 
+  protected AzureBackupStoreException(final String message) {
+    super(message);
+  }
+
   public static final class BlobAlreadyExists extends AzureBackupStoreException {
     public BlobAlreadyExists(final String message, final Throwable cause) {
       super(message, cause);
+    }
+  }
+
+  public static final class ContainerDoesNotExist extends AzureBackupStoreException {
+    public ContainerDoesNotExist(final String message) {
+      super(message);
     }
   }
 }
