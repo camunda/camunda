@@ -87,22 +87,6 @@ test.describe.serial("users CRUD", () => {
     await usersPage.deleteUserModalDeleteButton.click();
     await expect(usersPage.deleteUserModal).not.toBeVisible();
 
-    await expect
-      .poll(
-        async () => {
-          await page.reload();
-          await page.waitForTimeout(1000); // this timeout is needed to give time for the table to load when the page loads, regular assertions do not have the same effect
-          const isVisible = await usersPage.usersList
-            .getByRole("cell", { name: EDITED_USER.email })
-            .isVisible();
-          return isVisible;
-        },
-        {
-          timeout: 10000,
-        },
-      )
-      .toBeFalsy();
-
     const item = usersPage.usersList.getByRole("cell", {
       name: EDITED_USER.email,
     });
