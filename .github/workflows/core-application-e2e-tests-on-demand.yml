@@ -18,20 +18,23 @@ jobs:
   validate-branch:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch Branches
-        id: fetch-branches
+      - name: Check if branch exists
         run: |
-          echo "Fetching branches..."
-          branches=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/branches | jq -r '.[].name')
-          echo "Available branches: $branches"
-          if [[ ! " $branches " =~ " ${{ github.event.inputs.branch }} " ]]; then
-            echo "Error: Branch '${{ github.event.inputs.branch }}' does not exist."
+          echo "Checking if branch '${{ github.event.inputs.branch }}' exists..."
+          branch_name="${{ github.event.inputs.branch }}"
+          branch_check=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/branches/$branch_name)
+
+          if [[ "$branch_check" != "200" ]]; then
+            echo "Error: Branch '$branch_name' does not exist (HTTP $branch_check)."
             exit 1
           fi
-          echo "Branch '${{ github.event.inputs.branch }}' is valid."
+
+          echo "Branch '$branch_name' exists."
 
   core-e2e-component-tests:
+    needs: validate-branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -9,14 +9,17 @@
 import {Page, TestInfo} from '@playwright/test';
 import {randomUUID} from 'crypto';
 import axios from 'axios';
+import path from 'path';
 
 export async function captureScreenshot(page: Page, testInfo: TestInfo) {
-  const screenshotPath = `test-results/screenshots/screenshot-${randomUUID()}.png`;
+  const screenshotFileName = `screenshot-${randomUUID()}.png`;
+  const screenshotPath = path.resolve(testInfo.outputDir, screenshotFileName);
   await page.screenshot({
     path: screenshotPath,
     fullPage: true,
     timeout: 200000,
   });
+
   testInfo.annotations.push({
     type: 'testrail_attachment',
     description: screenshotPath,
@@ -25,7 +28,8 @@ export async function captureScreenshot(page: Page, testInfo: TestInfo) {
 
 export async function captureFailureVideo(page: Page, testInfo: TestInfo) {
   if (testInfo.status === 'failed') {
-    const videoPath = `test-results/videos/video-${testInfo.title}-chromium.webm`;
+    const videoFileName = `video-${randomUUID()}.webm`;
+    const videoPath = path.resolve(testInfo.outputDir, videoFileName);
     const video = page.video();
     if (video) {
       await video.saveAs(videoPath);
