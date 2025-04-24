@@ -51,6 +51,7 @@ export default defineConfig({
   use: {
     baseURL: getBaseURL(),
     actionTimeout: 10000,
+    screenshot: 'only-on-failure',
   },
   projects: [
     {

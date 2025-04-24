@@ -163,34 +163,6 @@ jobs:
             --close-run \
             -f $JUNIT_RESULTS_FILE
 
-      - name: Upload screenshots to TestRail
-        if: always()
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
-        run: |
-          echo "Uploading screenshots..."
-            for path in qa/core-application-e2e-test-suite/test-results/screenshots/*.png; do
-              echo "Checking $path"          
-              # Assume filename like: screenshot-<UUID>.png
-              # Look for a matching annotation line in the JUnit XML
-              case_id=$(grep -oP '\[C\K\d+(?=\])' <<< "$(basename "$path")")      
-              if [[ -n "$case_id" ]]; then
-                echo "Uploading $path to case C$case_id"
-                trcli -y -h "$TESTRAIL_HOST" \
-                  --project "Core Application" \
-                  --username "$TESTRAIL_USERNAME" \
-                  --key "$TESTRAIL_KEY" \
-                  add_attachment_for_case \
-                  --case-id "$case_id" \
-                  --file "$path"
-              else
-                echo "No case ID found for $path"
-              fi
-            done
-
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
