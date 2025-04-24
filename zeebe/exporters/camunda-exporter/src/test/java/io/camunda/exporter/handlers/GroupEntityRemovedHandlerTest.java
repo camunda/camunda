@@ -15,7 +15,6 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
-import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -38,7 +37,7 @@ public class GroupEntityRemovedHandlerTest {
 
   @Test
   void testGetEntityType() {
-    assertThat(underTest.getEntityType()).isEqualTo(GroupEntity.class);
+    assertThat(underTest.getEntityType()).isEqualTo(GroupMemberEntity.class);
   }
 
   @Test
@@ -63,7 +62,7 @@ public class GroupEntityRemovedHandlerTest {
     // then
     final var value = groupRecord.getValue();
     assertThat(idList)
-        .containsExactly(GroupEntity.getChildKey(value.getGroupId(), value.getEntityId()));
+        .containsExactly(GroupMemberEntity.getChildKey(value.getGroupId(), value.getEntityId()));
   }
 
   @Test

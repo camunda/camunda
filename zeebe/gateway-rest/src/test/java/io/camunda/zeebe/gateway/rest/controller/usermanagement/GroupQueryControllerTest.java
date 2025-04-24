@@ -75,9 +75,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
 
   private static final List<UserEntity> USER_ENTITIES =
       List.of(
-          new UserEntity(1L, Strings.newRandomValidIdentityId(), "user1", "user1@email.com", "password"),
-          new UserEntity(2L, Strings.newRandomValidIdentityId(), "user2", "user2@email.com", "password"),
-          new UserEntity(3L, Strings.newRandomValidIdentityId(), "user3", "user3@email.com", "password"));
+          new UserEntity(
+              1L, Strings.newRandomValidIdentityId(), "user1", "user1@email.com", "password"),
+          new UserEntity(
+              2L, Strings.newRandomValidIdentityId(), "user2", "user2@email.com", "password"),
+          new UserEntity(
+              3L, Strings.newRandomValidIdentityId(), "user3", "user3@email.com", "password"));
 
   private static final String USER_RESPONSE =
       """

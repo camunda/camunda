@@ -10,8 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.GroupQuery;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
