@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -245,7 +246,7 @@ class UserTaskSearchTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfVariableValueNull() {
+  public void shouldThrowExceptionIfVariableValueNullInConsumer() {
 
     // when
     final var exception =
@@ -255,6 +256,47 @@ class UserTaskSearchTest {
                 camundaClient
                     .newUserTaskSearchRequest()
                     .filter(f -> f.processInstanceVariables(List.of(vf -> vf.name("process01"))))
+                    .send()
+                    .join());
+    // then
+    assertThat(exception.getMessage())
+        .contains("Variable value cannot be null for variable 'process01'");
+  }
+
+  @Test
+  public void shouldThrowExceptionIfVariableValueNullInMap() {
+    // given
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("process01", null);
+
+    // when
+    final var exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                camundaClient
+                    .newUserTaskSearchRequest()
+                    .filter(f -> f.processInstanceVariables(variables))
+                    .send()
+                    .join());
+    // then
+    assertThat(exception.getMessage())
+        .contains("Variable value cannot be null for variable 'process01'");
+  }
+
+  @Test
+  public void shouldThrowExceptionIfVariableValueEmptyFilter() {
+    // when
+    final var exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                camundaClient
+                    .newUserTaskSearchRequest()
+                    .filter(
+                        f ->
+                            f.processInstanceVariables(
+                                List.of(vf -> vf.name("process01").value(v -> {}))))
                     .send()
                     .join());
     // then
