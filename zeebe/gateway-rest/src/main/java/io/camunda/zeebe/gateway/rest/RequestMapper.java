@@ -601,7 +601,7 @@ public class RequestMapper {
   public static Authentication getAuthentication() {
     String authenticatedUsername = null;
     final Map<String, Object> claims = new HashMap<>();
-    final List<Long> authenticatedRoleKeys = new ArrayList<>();
+    final List<String> authenticatedRoleIds = new ArrayList<>();
     final List<String> authenticatedTenantIds = new ArrayList<>();
     final List<String> authenticatedMappingIds = new ArrayList<>();
 
@@ -611,8 +611,8 @@ public class RequestMapper {
           instanceof final CamundaPrincipal authenticatedPrincipal) {
         final var authenticationContext = authenticatedPrincipal.getAuthenticationContext();
 
-        authenticatedRoleKeys.addAll(
-            authenticationContext.roles().stream().map(RoleEntity::roleKey).toList());
+        authenticatedRoleIds.addAll(
+            authenticationContext.roles().stream().map(RoleEntity::roleId).toList());
 
         authenticatedTenantIds.addAll(
             authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
@@ -634,7 +634,7 @@ public class RequestMapper {
     return new Builder()
         .claims(claims)
         .user(authenticatedUsername)
-        .roleKeys(authenticatedRoleKeys)
+        .roleIds(authenticatedRoleIds)
         .tenants(authenticatedTenantIds)
         .mapping(authenticatedMappingIds)
         .build();

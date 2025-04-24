@@ -23,7 +23,7 @@ import java.util.function.Function;
 public final class Authentication {
   private final String authenticatedUsername;
   private final List<Long> authenticatedGroupKeys;
-  private final List<Long> authenticatedRoleKeys;
+  private final List<String> authenticatedRoleIds;
   private final List<String> authenticatedTenantIds;
   private final List<String> authenticatedMappingIds;
   private final Map<String, Object> claims;
@@ -32,13 +32,13 @@ public final class Authentication {
   public Authentication(
       final @JsonProperty("authenticated_username") String authenticatedUsername,
       final @JsonProperty("authenticated_group_keys") List<Long> authenticatedGroupKeys,
-      final @JsonProperty("authenticated_role_keys") List<Long> authenticatedRoleKeys,
+      final @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
       final @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
       final @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
       final @JsonProperty("claims") Map<String, Object> claims) {
     this.authenticatedUsername = authenticatedUsername;
     this.authenticatedGroupKeys = authenticatedGroupKeys;
-    this.authenticatedRoleKeys = authenticatedRoleKeys;
+    this.authenticatedRoleIds = authenticatedRoleIds;
     this.authenticatedTenantIds = authenticatedTenantIds;
     this.authenticatedMappingIds = authenticatedMappingIds;
     this.claims = claims;
@@ -60,8 +60,8 @@ public final class Authentication {
     return authenticatedGroupKeys;
   }
 
-  public List<Long> authenticatedRoleKeys() {
-    return authenticatedRoleKeys;
+  public List<String> authenticatedRoleIds() {
+    return authenticatedRoleIds;
   }
 
   public List<String> authenticatedTenantIds() {
@@ -81,7 +81,7 @@ public final class Authentication {
     return Objects.hash(
         authenticatedUsername,
         authenticatedGroupKeys,
-        authenticatedRoleKeys,
+        authenticatedRoleIds,
         authenticatedTenantIds,
         authenticatedMappingIds,
         claims);
@@ -98,7 +98,7 @@ public final class Authentication {
     final Authentication that = (Authentication) obj;
     return Objects.equals(authenticatedUsername, that.authenticatedUsername)
         && Objects.equals(authenticatedGroupKeys, that.authenticatedGroupKeys)
-        && Objects.equals(authenticatedRoleKeys, that.authenticatedRoleKeys)
+        && Objects.equals(authenticatedRoleIds, that.authenticatedRoleIds)
         && Objects.equals(authenticatedTenantIds, that.authenticatedTenantIds)
         && Objects.equals(authenticatedMappingIds, that.authenticatedMappingIds)
         && Objects.equals(claims, that.claims);
@@ -107,14 +107,14 @@ public final class Authentication {
   @Override
   public String toString() {
     return "Authentication["
-        + "authenticatedUserKey="
+        + "authenticatedUsername="
         + authenticatedUsername
         + ", "
         + "authenticatedGroupKeys="
         + authenticatedGroupKeys
         + ", "
-        + "authenticatedRoleKeys="
-        + authenticatedRoleKeys
+        + "authenticatedRoleIds="
+        + authenticatedRoleIds
         + ", "
         + "authenticatedTenantIds="
         + authenticatedTenantIds
@@ -131,7 +131,7 @@ public final class Authentication {
 
     private String username;
     private final List<Long> groupKeys = new ArrayList<>();
-    private final List<Long> roleKeys = new ArrayList<>();
+    private final List<String> roleIds = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
     private final List<String> mappings = new ArrayList<>();
     private Map<String, Object> claims;
@@ -152,13 +152,13 @@ public final class Authentication {
       return this;
     }
 
-    public Builder role(final Long value) {
-      return roleKeys(Collections.singletonList(value));
+    public Builder role(final String value) {
+      return roleIds(Collections.singletonList(value));
     }
 
-    public Builder roleKeys(final List<Long> values) {
+    public Builder roleIds(final List<String> values) {
       if (values != null) {
-        roleKeys.addAll(values);
+        roleIds.addAll(values);
       }
       return this;
     }
@@ -194,7 +194,7 @@ public final class Authentication {
       return new Authentication(
           username,
           unmodifiableList(groupKeys),
-          unmodifiableList(roleKeys),
+          unmodifiableList(roleIds),
           unmodifiableList(tenants),
           unmodifiableList(mappings),
           claims);

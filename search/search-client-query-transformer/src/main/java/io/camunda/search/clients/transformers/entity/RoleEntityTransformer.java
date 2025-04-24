@@ -17,6 +17,6 @@ public class RoleEntityTransformer
   @Override
   public RoleEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.RoleEntity value) {
-    return new RoleEntity(value.getKey(), value.getName());
+    return new RoleEntity(value.getKey(), value.getRoleId(), value.getName());
   }
 }
