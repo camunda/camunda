@@ -7,8 +7,12 @@
  */
 package io.camunda.search.schema;
 
-import static io.camunda.search.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.CONFIG_PREFIX;
+import static io.camunda.search.schema.utils.SchemaTestUtil.createSchemaManager;
+import static io.camunda.search.schema.utils.SchemaTestUtil.mappingsMatch;
+import static io.camunda.search.schema.utils.SchemaTestUtil.mockIndex;
+import static io.camunda.search.schema.utils.SchemaTestUtil.mockIndexTemplate;
+import static io.camunda.search.schema.utils.SchemaTestUtil.searchEngineClientFromConfig;
 import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -17,13 +21,9 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
-import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
@@ -63,7 +63,7 @@ public class SchemaManagerIT {
   public void refresh() throws IOException {
     objectMapper = TestObjectMapper.objectMapper();
     indexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
+        mockIndexTemplate(
             "index_name",
             "test*",
             "template_alias",
@@ -71,31 +71,9 @@ public class SchemaManagerIT {
             CONFIG_PREFIX + "-template_name",
             "/mappings.json");
 
-    index =
-        SchemaTestUtil.mockIndex(
-            CONFIG_PREFIX + "-qualified_name", "alias", "index_name", "/mappings.json");
+    index = mockIndex(CONFIG_PREFIX + "-qualified_name", "alias", "index_name", "/mappings.json");
 
     when(indexTemplate.getFullQualifiedName()).thenReturn(CONFIG_PREFIX + "-qualified_name");
-  }
-
-  private SearchEngineClient searchEngineClientFromConfig(final SearchEngineConfiguration config) {
-    switch (config.connect().getTypeEnum()) {
-      case ELASTICSEARCH -> {
-        final var connector = new ElasticsearchConnector(config.connect());
-        final var client = connector.createClient();
-        objectMapper = connector.objectMapper();
-        return new ElasticsearchEngineClient(client, objectMapper);
-      }
-      case OPENSEARCH -> {
-        final var connector = new OpensearchConnector(config.connect());
-        final var client = connector.createClient();
-        objectMapper = connector.objectMapper();
-        return new OpensearchEngineClient(client, objectMapper);
-      }
-      default ->
-          throw new IllegalArgumentException(
-              "Unknown connection type: " + config.connect().getTypeEnum());
-    }
   }
 
   @TestTemplate
@@ -302,10 +280,9 @@ public class SchemaManagerIT {
 
     // when
     final var newIndex =
-        SchemaTestUtil.mockIndex(
-            "new_index_qualified", "new_alias", "new_index", "/mappings-added-property.json");
+        mockIndex("new_index_qualified", "new_alias", "new_index", "/mappings-added-property.json");
     final var newIndexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
+        mockIndexTemplate(
             "new_template_name",
             "new_test*",
             "new_template_alias",
@@ -690,7 +667,7 @@ public class SchemaManagerIT {
       named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Ineligible test for AWS OS integration")
-  void shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
+  void shouldHaveCorrectSchemaUpdatesWithMultipleRuns(
       final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
     // given
@@ -723,24 +700,19 @@ public class SchemaManagerIT {
       named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Ineligible test for AWS OS integration")
-  void shouldNotErrorIfOldSchemaManagerStartsWhileNewSchemaManagerHasAlreadyStarted(
+  void shouldHaveCorrectSchemaUpdatesWithConcurrentRuns(
       final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
     // given
-    final var updatedSchemaManager =
-        createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
-    final var oldSchemaManager = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
+    final var schemaManager1 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
+    final var schemaManager2 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
 
-    // when
     when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
     when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
 
-    updatedSchemaManager.startup();
-
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings.json");
-
-    oldSchemaManager.startup();
+    // when
+    schemaManager1.startup();
+    schemaManager2.startup();
 
     // then
     final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
@@ -813,17 +785,5 @@ public class SchemaManagerIT {
             newPrefix + "-tasklist-task-variable-8.3.0_",
             newPrefix + "-tasklist-import-position-8.2.0_",
             newPrefix + "-tasklist-user-1.4.0_");
-  }
-
-  private SchemaManager createSchemaManager(
-      final Collection<IndexDescriptor> indexDescriptors,
-      final Collection<IndexTemplateDescriptor> templateDescriptors,
-      final SearchEngineConfiguration config) {
-    return new SchemaManager(
-        searchEngineClientFromConfig(config),
-        indexDescriptors,
-        templateDescriptors,
-        config,
-        objectMapper);
   }
 }
