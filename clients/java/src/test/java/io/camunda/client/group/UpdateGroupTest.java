@@ -19,7 +19,6 @@ import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.GroupChangeset;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.GroupUpdateRequest;
 import io.camunda.client.protocol.rest.ProblemDetail;
