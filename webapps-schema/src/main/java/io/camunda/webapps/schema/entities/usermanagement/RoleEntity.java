@@ -15,7 +15,7 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
   private String roleId;
   private String name;
   private String description;
-  private EntityJoinRelation<Long> join;
+  private EntityJoinRelation<String> join;
 
   public Long getKey() {
     return key;
@@ -53,16 +53,16 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public EntityJoinRelation<Long> getJoin() {
+  public EntityJoinRelation<String> getJoin() {
     return join;
   }
 
-  public RoleEntity setJoin(final EntityJoinRelation<Long> join) {
+  public RoleEntity setJoin(final EntityJoinRelation<String> join) {
     this.join = join;
     return this;
   }
 
-  public static String getChildKey(final long roleKey, final long memberKey) {
-    return "%d-%d".formatted(roleKey, memberKey);
+  public static String getChildKey(final String roleId, final String memberId) {
+    return "%s-%s".formatted(roleId, memberId);
   }
 }
