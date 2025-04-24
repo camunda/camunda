@@ -15,21 +15,21 @@
  */
 package io.camunda.spring.client.exception;
 
-import java.util.Map;
-
 /**
  * Indicates an error in sense of BPMN occured, that should be handled by the BPMN process, see <a
  * href="https://docs.camunda.io/docs/reference/bpmn-processes/error-events/error-events/">...</a>
  */
-public class CamundaBpmnError extends RuntimeException {
-
+public class BpmnError extends CamundaError {
   private final String errorCode;
   private final String errorMessage;
-  private final Map<String, Object> variables;
+  private final Object variables;
 
-  public CamundaBpmnError(
-      final String errorCode, final String errorMessage, final Map<String, Object> variables) {
-    super("[" + errorCode + "] " + errorMessage);
+  public BpmnError(
+      final String errorCode,
+      final String errorMessage,
+      final Object variables,
+      final Throwable cause) {
+    super("[" + errorCode + "] " + errorMessage, cause);
     this.errorCode = errorCode;
     this.errorMessage = errorMessage;
     this.variables = variables;
@@ -43,7 +43,7 @@ public class CamundaBpmnError extends RuntimeException {
     return errorCode;
   }
 
-  public Map<String, Object> getVariables() {
+  public Object getVariables() {
     return variables;
   }
 }

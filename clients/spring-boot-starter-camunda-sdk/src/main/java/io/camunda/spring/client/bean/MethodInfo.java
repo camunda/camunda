@@ -104,7 +104,7 @@ public class MethodInfo implements BeanInfo {
       LOG.warn(
           "Parameter names of method "
               + method.getName()
-              + " could not be discoverd. Please set compiler flag -parameters if you rely on parameter names (e.g. for variable names to fetch from Zeebe)");
+              + " could not be discovered. Please set compiler flag -parameters if you rely on parameter names (e.g. for variable names to fetch from Zeebe)");
       // use default names to avoid null pointer exceptions
       final Parameter[] parameters = method.getParameters();
       parameterNames = new String[parameters.length];

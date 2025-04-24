@@ -15,14 +15,34 @@
  */
 package io.camunda.spring.client.exception;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.time.Duration;
 
-import io.camunda.zeebe.spring.common.exception.ZeebeBpmnError;
-import org.junit.jupiter.api.Test;
+public class JobError extends CamundaError {
+  private final Object variables;
+  private final Integer retries;
+  private final Duration timeout;
 
-public class CamundaBpmnErrorTest {
-  @Test
-  void shouldBeBackwardCompatible() {
-    assertThat(ZeebeBpmnError.class).isAssignableTo(CamundaBpmnError.class);
+  public JobError(
+      final String message,
+      final Object variables,
+      final Integer retries,
+      final Duration timeout,
+      final Throwable cause) {
+    super(message, cause);
+    this.variables = variables;
+    this.retries = retries;
+    this.timeout = timeout;
+  }
+
+  public Object getVariables() {
+    return variables;
+  }
+
+  public Integer getRetries() {
+    return retries;
+  }
+
+  public Duration getTimeout() {
+    return timeout;
   }
 }

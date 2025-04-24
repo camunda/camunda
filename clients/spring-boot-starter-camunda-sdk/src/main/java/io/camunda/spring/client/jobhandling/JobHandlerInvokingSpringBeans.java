@@ -16,15 +16,18 @@
 package io.camunda.spring.client.jobhandling;
 
 import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
+import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.exception.CamundaBpmnError;
+import io.camunda.spring.client.exception.BpmnError;
+import io.camunda.spring.client.exception.JobError;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.result.ResultProcessor;
@@ -32,8 +35,12 @@ import io.camunda.spring.client.jobhandling.result.ResultProcessorContext;
 import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.slf4j.Logger;
 
 /** Zeebe JobHandler that invokes a Spring bean */
@@ -99,9 +106,13 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
                 workerValue.getMaxRetries());
         command.executeAsyncWithMetrics(
             MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
+      } else {
+        if (result != null) {
+          LOG.warn("Result provided but auto complete disabled for job {}", job);
+        }
       }
-    } catch (final CamundaBpmnError bpmnError) {
-      LOG.trace("Catched BPMN error on {}", job);
+    } catch (final BpmnError bpmnError) {
+      LOG.trace("Caught BPMN error on {}", job);
       final CommandWrapper command =
           new CommandWrapper(
               createThrowErrorCommand(jobClient, job, bpmnError),
@@ -111,6 +122,16 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
               workerValue.getMaxRetries());
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_BPMN_ERROR, job.getType());
+    } catch (final JobError jobError) {
+      LOG.trace("Caught job error on {}", job);
+      final CommandWrapper command =
+          new CommandWrapper(
+              createFailJobCommand(jobClient, job, jobError),
+              job,
+              commandExceptionHandlingStrategy,
+              metricsRecorder,
+              workerValue.getMaxRetries());
+      command.executeAsync();
     }
   }
 
@@ -120,31 +141,73 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
 
   private FinalCommandStep<CompleteJobResponse> createCompleteCommand(
       final JobClient jobClient, final ActivatedJob job, final Object result) {
-    CompleteJobCommandStep1 completeCommand = jobClient.newCompleteCommand(job.getKey());
-    if (result != null) {
-      if (result.getClass().isAssignableFrom(Map.class)) {
-        completeCommand = completeCommand.variables((Map) result);
-      } else if (result.getClass().isAssignableFrom(String.class)) {
-        completeCommand = completeCommand.variables((String) result);
-      } else if (result.getClass().isAssignableFrom(InputStream.class)) {
-        completeCommand = completeCommand.variables((InputStream) result);
-      } else {
-        completeCommand = completeCommand.variables(result);
-      }
-    }
-    return completeCommand;
+    final CompleteJobCommandStep1 completeCommand = jobClient.newCompleteCommand(job.getKey());
+    return applyVariables(
+        result,
+        completeCommand::variables,
+        completeCommand::variables,
+        completeCommand::variables,
+        completeCommand::variables,
+        completeCommand);
   }
 
   private FinalCommandStep<Void> createThrowErrorCommand(
-      final JobClient jobClient, final ActivatedJob job, final CamundaBpmnError bpmnError) {
+      final JobClient jobClient, final ActivatedJob job, final BpmnError bpmnError) {
     final ThrowErrorCommandStep2 command =
         jobClient
             .newThrowErrorCommand(job.getKey())
             .errorCode(bpmnError.getErrorCode())
             .errorMessage(bpmnError.getErrorMessage());
-    if (bpmnError.getVariables() != null) {
-      command.variables(bpmnError.getVariables());
+    return applyVariables(
+        bpmnError.getVariables(),
+        command::variables,
+        command::variables,
+        command::variables,
+        command::variables,
+        command);
+  }
+
+  private <T> T applyVariables(
+      final Object variables,
+      final Function<Map<String, Object>, T> mapApplier,
+      final Function<String, T> stringApplier,
+      final Function<InputStream, T> inputStreamApplier,
+      final Function<Object, T> objectApplier,
+      final T onNull) {
+    if (variables == null) {
+      return onNull;
+    } else if (variables.getClass().isAssignableFrom(Map.class)) {
+      return mapApplier.apply((Map<String, Object>) variables);
+    } else if (variables.getClass().isAssignableFrom(String.class)) {
+      return stringApplier.apply((String) variables);
+    } else if (variables.getClass().isAssignableFrom(InputStream.class)) {
+      return inputStreamApplier.apply((InputStream) variables);
+    } else {
+      return objectApplier.apply(variables);
     }
-    return command;
+  }
+
+  private FinalCommandStep<FailJobResponse> createFailJobCommand(
+      final JobClient jobClient, final ActivatedJob job, final JobError jobError) {
+    final int retries =
+        jobError.getRetries() == null ? (job.getRetries() - 1) : jobError.getRetries();
+    final StringWriter stringWriter = new StringWriter();
+    final PrintWriter printWriter = new PrintWriter(stringWriter);
+    jobError.printStackTrace(printWriter);
+    final String message = stringWriter.toString();
+    final Duration backoff = jobError.getTimeout() == null ? Duration.ZERO : jobError.getTimeout();
+    final FailJobCommandStep2 command =
+        jobClient
+            .newFailCommand(job.getKey())
+            .retries(retries)
+            .errorMessage(message)
+            .retryBackoff(backoff);
+    return applyVariables(
+        jobError.getVariables(),
+        command::variables,
+        command::variables,
+        command::variables,
+        command::variables,
+        command);
   }
 }

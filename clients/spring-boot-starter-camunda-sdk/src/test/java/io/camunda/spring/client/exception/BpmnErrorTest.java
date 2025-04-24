@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.common.exception;
+package io.camunda.spring.client.exception;
 
-import io.camunda.spring.client.exception.BpmnError;
-import java.util.Map;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Indicates an error in sense of BPMN occured, that should be handled by the BPMN process, see <a
- * href="https://docs.camunda.io/docs/reference/bpmn-processes/error-events/error-events/">...</a>
- */
-@Deprecated(since = "8.8", forRemoval = true)
-public class ZeebeBpmnError extends BpmnError {
+import io.camunda.zeebe.spring.common.exception.ZeebeBpmnError;
+import org.junit.jupiter.api.Test;
 
-  public ZeebeBpmnError(
-      final String errorCode, final String errorMessage, final Map<String, Object> variables) {
-    super(errorCode, errorMessage, variables, null);
+public class BpmnErrorTest {
+  @Test
+  void shouldBeBackwardCompatible() {
+    assertThat(ZeebeBpmnError.class).isAssignableTo(BpmnError.class);
   }
 }
