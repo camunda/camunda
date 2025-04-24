@@ -71,7 +71,7 @@ public class UserTaskAssertTest {
                         .priority(60))));
 
     // then
-    assertThat(UserTaskSelectors.byName("a"))
+    assertThat(UserTaskSelectors.byTaskName("a"))
         .isActive()
         .hasElementId("test_element")
         .hasPriority(60)
@@ -93,7 +93,7 @@ public class UserTaskAssertTest {
                           .state(StateEnum.CREATED))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).isActive();
+      assertThat(UserTaskSelectors.byTaskName("a")).isActive();
     }
 
     @Test
@@ -109,7 +109,7 @@ public class UserTaskAssertTest {
                           .state(StateEnum.COMPLETED))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).isCompleted();
+      assertThat(UserTaskSelectors.byTaskName("a")).isCompleted();
     }
 
     @Test
@@ -125,7 +125,7 @@ public class UserTaskAssertTest {
                           .state(StateEnum.CANCELED))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).isCanceled();
+      assertThat(UserTaskSelectors.byTaskName("a")).isCanceled();
     }
 
     @Test
@@ -141,7 +141,7 @@ public class UserTaskAssertTest {
                           .state(StateEnum.FAILED))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).isFailed();
+      assertThat(UserTaskSelectors.byTaskName("a")).isFailed();
     }
 
     @Test
@@ -162,7 +162,7 @@ public class UserTaskAssertTest {
                           .state(StateEnum.CREATED))));
 
       // then
-      assertThat(UserTaskSelectors.byName("mult")).isActive();
+      assertThat(UserTaskSelectors.byTaskName("mult")).isActive();
     }
 
     @Test
@@ -179,7 +179,7 @@ public class UserTaskAssertTest {
           .thenReturn(Collections.singletonList(activeTask));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).isActive();
+      assertThat(UserTaskSelectors.byTaskName("a")).isActive();
     }
 
     @Test
@@ -187,7 +187,7 @@ public class UserTaskAssertTest {
       when(camundaDataSource.findUserTasks(any())).thenReturn(Collections.emptyList());
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byName("a")).isActive())
+      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isActive())
           .hasMessage(
               "Expected at least one active user task [name: a], but none found. User tasks:\n<None>");
     }
@@ -203,7 +203,7 @@ public class UserTaskAssertTest {
           .thenReturn(Collections.singletonList(completedTask));
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byName("a")).isActive())
+      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isActive())
           .hasMessage(
               "Expected at least one active user task [name: a], but none found. User tasks:\n"
                   + "\t- (instanceKey: 1): completed");
@@ -220,7 +220,8 @@ public class UserTaskAssertTest {
           .thenReturn(Collections.singletonList(completedTask));
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byName("a")).isCanceled())
+      Assertions.assertThatThrownBy(
+              () -> assertThat(UserTaskSelectors.byTaskName("a")).isCanceled())
           .hasMessage(
               "Expected at least one canceled user task [name: a], but none found. User tasks:\n"
                   + "\t- (instanceKey: 1): active");
@@ -247,7 +248,7 @@ public class UserTaskAssertTest {
       when(camundaDataSource.findUserTasks(any())).thenReturn(tasks);
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byName("a")).isActive())
+      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isActive())
           .hasMessage(
               "Expected at least one active user task [name: a], but none found. User tasks:\n"
                   + "\t- (instanceKey: 1): completed\n"
@@ -274,7 +275,7 @@ public class UserTaskAssertTest {
                           .priority(PRIORITY))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).hasPriority(PRIORITY);
+      assertThat(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY);
     }
 
     @Test
@@ -302,7 +303,7 @@ public class UserTaskAssertTest {
                           .priority(PRIORITY))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).hasPriority(PRIORITY);
+      assertThat(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY);
     }
 
     @Test
@@ -320,7 +321,7 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byName("a")).hasPriority(PRIORITY))
+              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY))
           .hasMessage(
               "Expected at least one user task with priority 60, but found none. User tasks:\n"
                   + "\t- (instanceKey: 1): 40");
@@ -345,7 +346,7 @@ public class UserTaskAssertTest {
                           .elementId(ELEMENT_ID))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).hasElementId(ELEMENT_ID);
+      assertThat(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID);
     }
 
     @Test
@@ -373,7 +374,7 @@ public class UserTaskAssertTest {
                           .elementId(ELEMENT_ID))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).hasElementId(ELEMENT_ID);
+      assertThat(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID);
     }
 
     @Test
@@ -391,7 +392,7 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byName("a")).hasElementId(ELEMENT_ID))
+              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID))
           .hasMessage(
               "Expected at least one user task with elementId element_id, but found none. User tasks:\n"
                   + "\t- (instanceKey: 1): other_element_id");
@@ -416,7 +417,7 @@ public class UserTaskAssertTest {
                           .assignee(ASSIGNEE))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).hasAssignee(ASSIGNEE);
+      assertThat(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE);
     }
 
     @Test
@@ -444,7 +445,7 @@ public class UserTaskAssertTest {
                           .assignee(ASSIGNEE))));
 
       // then
-      assertThat(UserTaskSelectors.byName("a")).hasAssignee(ASSIGNEE);
+      assertThat(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE);
     }
 
     @Test
@@ -462,7 +463,7 @@ public class UserTaskAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byName("a")).hasAssignee(ASSIGNEE))
+              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE))
           .hasMessage(
               "Expected at least one user task with assignee tester, but found none. User tasks:\n"
                   + "\t- (instanceKey: 1): other");

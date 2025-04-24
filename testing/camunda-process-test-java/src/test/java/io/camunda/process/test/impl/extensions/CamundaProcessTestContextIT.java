@@ -336,6 +336,26 @@ public class CamundaProcessTestContextIT {
     CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
   }
 
+  @Test
+  void shouldFindUserTaskByElementId() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+
+    client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then
+    CamundaAssert.assertThat(UserTaskSelectors.byElementId("user-task-1")).isActive();
+  }
+
+  @Test
+  void shouldFindUserTaskByElementIdAndProcessDefinitionKey() {}
+
+  @Test
+  void shouldFindUserTaskByTaskName() {}
+
+  @Test
+  void shouldFindUserTaskByTaskNameAndProcessDefinitionKey() {}
+
   /**
    * Deploys a process model and waits until it is accessible via the API.
    *

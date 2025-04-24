@@ -24,8 +24,8 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
-import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -39,24 +39,11 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
     implements UserTaskAssert {
 
   private final CamundaDataSource dataSource;
-  private final UserTaskSelector selector;
-
-  private final AtomicReference<UserTask> actualUserTask = new AtomicReference<>();
-
-  public UserTaskAssertj(final CamundaDataSource dataSource, final String taskName) {
-    this(dataSource, UserTaskSelectors.byName(taskName));
-  }
-
-  public UserTaskAssertj(
-      final CamundaDataSource dataSource, final String taskName, final long processInstanceKey) {
-    this(dataSource, UserTaskSelectors.byName(taskName, processInstanceKey));
-  }
 
   public UserTaskAssertj(final CamundaDataSource dataSource, final UserTaskSelector selector) {
     super(selector, UserTaskAssert.class);
 
     this.dataSource = dataSource;
-    this.selector = selector;
   }
 
   @Override
@@ -85,98 +72,58 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
 
   @Override
   public UserTaskAssert hasAssignee(final String assignee) {
-    hasAtLeastOneUserTaskWithProperty(
+    hasProperty(
         userTask -> assignee.trim().equalsIgnoreCase(userTask.getAssignee()),
-        String.format("Expected at least one user task with assignee %s, but found none", assignee),
         userTask ->
             String.format(
-                "\t- (instanceKey: %d): %s",
-                userTask.getElementInstanceKey(), userTask.getAssignee()));
+                "Expected [%s] to have assignee %s, but was %s",
+                actual.describe(), assignee, userTask.getAssignee()));
     return this;
   }
 
   @Override
   public UserTaskAssert hasPriority(final int priority) {
-    hasAtLeastOneUserTaskWithProperty(
+    hasProperty(
         userTask -> priority == userTask.getPriority(),
-        String.format("Expected at least one user task with priority %d, but found none", priority),
         userTask ->
             String.format(
-                "\t- (instanceKey: %d): %d",
-                userTask.getElementInstanceKey(), userTask.getPriority()));
+                "Expected [%s] to have priority %d, but was %d",
+                actual.describe(), priority, userTask.getPriority()));
     return this;
   }
 
   @Override
   public UserTaskAssert hasElementId(final String elementId) {
-    hasAtLeastOneUserTaskWithProperty(
+    hasProperty(
         userTask -> elementId.trim().equalsIgnoreCase(userTask.getElementId()),
-        String.format(
-            "Expected at least one user task with elementId %s, but found none", elementId),
         userTask ->
             String.format(
-                "\t- (instanceKey: %d): %s",
-                userTask.getElementInstanceKey(), userTask.getElementId()));
+                "Expected [%s] to have elementId %s, but was %s",
+                actual.describe(), elementId, userTask.getElementId()));
     return this;
   }
 
-  private void hasAtLeastOneUserTaskWithProperty(
+  private void hasProperty(
       final Predicate<UserTask> assertionPredicate,
-      final String failureMessageBase,
-      final Function<UserTask, String> userTaskPrinter) {
+      final Function<UserTask, String> failureMessageFn) {
 
     awaitUserTaskAssertion(
-        selector::applyFilter,
-        userTasks -> {
-          final List<UserTask> relevantUserTasks =
-              userTasks.stream().filter(selector::test).collect(Collectors.toList());
-
-          assertThat(relevantUserTasks)
-              .withFailMessage(
-                  formatPropertyAssertionErrorMessage(
-                      relevantUserTasks, failureMessageBase, userTaskPrinter))
-              .anyMatch(assertionPredicate);
-        });
-  }
-
-  private String formatPropertyAssertionErrorMessage(
-      final List<UserTask> tasks,
-      final String failureMessageBase,
-      final Function<UserTask, String> taskPrinter) {
-
-    return String.format(
-        "%s. User tasks:\n%s",
-        failureMessageBase,
-        tasks.isEmpty()
-            ? "<None>"
-            : tasks.stream().map(taskPrinter).collect(Collectors.joining("\n")));
+        actual::applyFilter,
+        userTask ->
+            assertThat(userTask)
+                .withFailMessage(failureMessageFn.apply(userTask))
+                .matches(assertionPredicate));
   }
 
   private void hasUserTaskInState(final UserTaskState expectedState) {
     awaitUserTaskAssertion(
-        selector::applyFilter,
-        userTasks -> {
-          final List<UserTask> relevantUserTasks =
-              userTasks.stream().filter(selector::test).collect(Collectors.toList());
-          final List<UserTask> activeUserTasks =
-              getUserTasksInState(relevantUserTasks, expectedState);
-
-          assertThat(activeUserTasks)
-              .withFailMessage(
-                  "Expected at least one %s user task [name: %s], but none found. User tasks:\n%s",
-                  formatState(expectedState),
-                  selector.describe(),
-                  relevantUserTasks.isEmpty()
-                      ? "<None>"
-                      : relevantUserTasks.stream()
-                          .map(
-                              ut ->
-                                  String.format(
-                                      "\t- (instanceKey: %d): %s",
-                                      ut.getElementInstanceKey(), formatState(ut.getState())))
-                          .collect(Collectors.joining("\n")))
-              .isNotEmpty();
-        });
+        actual::applyFilter,
+        userTask ->
+            assertThat(userTask.getState())
+                .withFailMessage(
+                    "Expected [%s] to be %s, but was %s",
+                    actual.describe(), formatState(expectedState), formatState(userTask.getState()))
+                .isEqualTo(expectedState));
   }
 
   private static List<UserTask> getUserTasksInState(
@@ -191,35 +138,47 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
       return "not activated";
     }
 
-    switch (state) {
-      case UNKNOWN_ENUM_VALUE:
-        return "not activated";
-
-      case CREATED:
-        return "active";
-
-      default:
-        return state.name().toLowerCase();
-    }
+    return state.name().toLowerCase();
   }
 
-  private void awaitUserTaskAssertion(
-      final Consumer<UserTaskFilter> filter, final Consumer<List<UserTask>> assertion) {
-    final AtomicReference<String> failureMessage = new AtomicReference<>("?");
+  private UserTask awaitUserTask(final Consumer<UserTaskFilter> filter) {
+    final AtomicReference<UserTask> actualUserTask = new AtomicReference<>();
+
     try {
       Awaitility.await()
           .ignoreException(ClientException.class)
           .untilAsserted(
               () -> dataSource.findUserTasks(filter),
               userTasks -> {
+                final Optional<UserTask> userTask =
+                    userTasks.stream().filter(actual::test).findFirst();
+                assertThat(userTask).isPresent();
+                actualUserTask.set(userTask.get());
+              });
+    } catch (final ConditionTimeoutException ignore) {
+      fail("No user task [%s] found.", actual.describe());
+    }
+
+    return actualUserTask.get();
+  }
+
+  private void awaitUserTaskAssertion(
+      final Consumer<UserTaskFilter> filter, final Consumer<UserTask> assertion) {
+
+    final AtomicReference<String> failureMessage = new AtomicReference<>("?");
+    try {
+      Awaitility.await()
+          .ignoreException(ClientException.class)
+          .untilAsserted(
+              () -> awaitUserTask(filter),
+              userTask -> {
                 try {
-                  assertion.accept(userTasks);
+                  assertion.accept(userTask);
                 } catch (final AssertionError e) {
                   failureMessage.set(e.getMessage());
                   throw e;
                 }
               });
-
     } catch (final ConditionTimeoutException ignore) {
       fail(failureMessage.get());
     }
