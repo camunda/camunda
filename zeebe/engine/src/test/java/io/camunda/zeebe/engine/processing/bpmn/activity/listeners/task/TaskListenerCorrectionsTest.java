@@ -569,6 +569,12 @@ public class TaskListenerCorrectionsTest {
   }
 
   @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskCreation() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.creating, true, ignored -> {}, UserTaskIntent.CREATED);
+  }
+
+  @Test
   public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskAssignment() {
     verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
         ZeebeTaskListenerEventType.assigning,
