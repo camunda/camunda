@@ -28,7 +28,6 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,7 +71,7 @@ public class UserTaskAssertTest {
 
     // then
     assertThat(UserTaskSelectors.byTaskName("a"))
-        .isActive()
+        .isCreated()
         .hasElementId("test_element")
         .hasPriority(60)
         .hasAssignee("tester");
@@ -93,7 +92,7 @@ public class UserTaskAssertTest {
                           .state(StateEnum.CREATED))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).isActive();
+      assertThat(UserTaskSelectors.byTaskName("a")).isCreated();
     }
 
     @Test
@@ -152,7 +151,7 @@ public class UserTaskAssertTest {
               Arrays.asList(
                   new UserTaskImpl(
                       new UserTaskResult()
-                          .name("mult")
+                          .name("a")
                           .elementInstanceKey("1")
                           .state(StateEnum.FAILED)),
                   new UserTaskImpl(
@@ -162,7 +161,7 @@ public class UserTaskAssertTest {
                           .state(StateEnum.CREATED))));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("mult")).isActive();
+      assertThat(UserTaskSelectors.byTaskName("mult")).isCreated();
     }
 
     @Test
@@ -179,7 +178,7 @@ public class UserTaskAssertTest {
           .thenReturn(Collections.singletonList(activeTask));
 
       // then
-      assertThat(UserTaskSelectors.byTaskName("a")).isActive();
+      assertThat(UserTaskSelectors.byTaskName("a")).isCreated();
     }
 
     @Test
@@ -187,9 +186,8 @@ public class UserTaskAssertTest {
       when(camundaDataSource.findUserTasks(any())).thenReturn(Collections.emptyList());
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isActive())
-          .hasMessage(
-              "Expected at least one active user task [name: a], but none found. User tasks:\n<None>");
+      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isCreated())
+          .hasMessage("No user task [a] found");
     }
 
     @Test
@@ -203,57 +201,8 @@ public class UserTaskAssertTest {
           .thenReturn(Collections.singletonList(completedTask));
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isActive())
-          .hasMessage(
-              "Expected at least one active user task [name: a], but none found. User tasks:\n"
-                  + "\t- (instanceKey: 1): completed");
-    }
-
-    @Test
-    public void displaysCreatedTasksAsActive() {
-      // when
-      final UserTask completedTask =
-          new UserTaskImpl(
-              new UserTaskResult().name("a").elementInstanceKey("1").state(StateEnum.CREATED));
-
-      when(camundaDataSource.findUserTasks(any()))
-          .thenReturn(Collections.singletonList(completedTask));
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> assertThat(UserTaskSelectors.byTaskName("a")).isCanceled())
-          .hasMessage(
-              "Expected at least one canceled user task [name: a], but none found. User tasks:\n"
-                  + "\t- (instanceKey: 1): active");
-    }
-
-    @Test
-    public void formatsMultipleUserTasksInAssertionError() {
-      // when
-      final List<UserTask> tasks =
-          Arrays.asList(
-              new UserTaskImpl(
-                  new UserTaskResult()
-                      .name("a")
-                      .elementInstanceKey("1")
-                      .state(StateEnum.COMPLETED)),
-              new UserTaskImpl(
-                  new UserTaskResult().name("a").elementInstanceKey("2").state(StateEnum.FAILED)),
-              new UserTaskImpl(
-                  new UserTaskResult()
-                      .name("a")
-                      .elementInstanceKey("3")
-                      .state(StateEnum.CANCELED)));
-
-      when(camundaDataSource.findUserTasks(any())).thenReturn(tasks);
-
-      // then
-      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isActive())
-          .hasMessage(
-              "Expected at least one active user task [name: a], but none found. User tasks:\n"
-                  + "\t- (instanceKey: 1): completed\n"
-                  + "\t- (instanceKey: 2): failed\n"
-                  + "\t- (instanceKey: 3): canceled");
+      Assertions.assertThatThrownBy(() -> assertThat(UserTaskSelectors.byTaskName("a")).isCreated())
+          .hasMessage("Expected [a] to be created, but was completed");
     }
   }
 
@@ -286,12 +235,12 @@ public class UserTaskAssertTest {
               Arrays.asList(
                   new UserTaskImpl(
                       new UserTaskResult()
-                          .name("a")
+                          .name("b")
                           .elementInstanceKey("1")
                           .state(StateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
-                          .name("a")
+                          .name("c")
                           .elementInstanceKey("1")
                           .state(StateEnum.CREATED)
                           .priority(40)),
@@ -322,9 +271,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY))
-          .hasMessage(
-              "Expected at least one user task with priority 60, but found none. User tasks:\n"
-                  + "\t- (instanceKey: 1): 40");
+          .hasMessage("Expected [a] to have priority 60, but was 40");
     }
   }
 
@@ -357,12 +304,12 @@ public class UserTaskAssertTest {
               Arrays.asList(
                   new UserTaskImpl(
                       new UserTaskResult()
-                          .name("a")
+                          .name("b")
                           .elementInstanceKey("1")
                           .state(StateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
-                          .name("a")
+                          .name("c")
                           .elementInstanceKey("1")
                           .state(StateEnum.CREATED)
                           .elementId("other")),
@@ -393,9 +340,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID))
-          .hasMessage(
-              "Expected at least one user task with elementId element_id, but found none. User tasks:\n"
-                  + "\t- (instanceKey: 1): other_element_id");
+          .hasMessage("Expected [a] to have elementId element_id, but was other_element_id");
     }
   }
 
@@ -428,12 +373,12 @@ public class UserTaskAssertTest {
               Arrays.asList(
                   new UserTaskImpl(
                       new UserTaskResult()
-                          .name("a")
+                          .name("b")
                           .elementInstanceKey("1")
                           .state(StateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
-                          .name("a")
+                          .name("c")
                           .elementInstanceKey("1")
                           .state(StateEnum.CREATED)
                           .assignee("other")),
@@ -464,9 +409,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE))
-          .hasMessage(
-              "Expected at least one user task with assignee tester, but found none. User tasks:\n"
-                  + "\t- (instanceKey: 1): other");
+          .hasMessage("Expected [a] to have assignee tester, but was other");
     }
   }
 }

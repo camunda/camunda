@@ -18,20 +18,20 @@ package io.camunda.process.test.api.assertions;
 /** The assertion object to verify a user task. */
 public interface UserTaskAssert {
   /**
-   * Verifies that the user task is active. The verification fails if the task is completed,
+   * Verifies that the user task is created. The verification fails if the task is completed,
    * cancelled, failed or not created.
    *
    * <p>The assertion waits until the user task is created.
    *
    * @return the assertion object
    */
-  UserTaskAssert isActive();
+  UserTaskAssert isCreated();
 
   /**
    * Verifies that the user task is completed. The verification fails if the task is active,
    * cancelled, failed or not created.
    *
-   * <p>The assertion waits until the user task is ended.
+   * <p>The assertion waits until the user task is completed.
    *
    * @return the assertion object
    */
@@ -41,7 +41,7 @@ public interface UserTaskAssert {
    * Verifies that the user task is cancelled. The verification fails if the task is active,
    * completed, failed or not created.
    *
-   * <p>The assertion waits until the user task is ended.
+   * <p>The assertion waits until the user task is canceled.
    *
    * @return the assertion object
    */
@@ -51,7 +51,7 @@ public interface UserTaskAssert {
    * Verifies that the user task is failed. The verification fails if the task is active, completed,
    * cancelled or not created.
    *
-   * <p>The assertion waits until the user task is ended.
+   * <p>The assertion waits until the user task is failed.
    *
    * @return the assertion object
    */
@@ -80,4 +80,12 @@ public interface UserTaskAssert {
    * @return
    */
   UserTaskAssert hasElementId(final String elementId);
+
+  /**
+   * TODO
+   *
+   * @param processInstanceKey
+   * @return
+   */
+  UserTaskAssert hasProcessInstanceKey(final long processInstanceKey);
 }

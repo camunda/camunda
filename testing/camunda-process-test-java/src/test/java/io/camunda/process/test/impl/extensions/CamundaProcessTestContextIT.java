@@ -344,17 +344,51 @@ public class CamundaProcessTestContextIT {
     client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(UserTaskSelectors.byElementId("user-task-1")).isActive();
+    CamundaAssert.assertThat(UserTaskSelectors.byElementId("user-task-1")).isCreated();
   }
 
   @Test
-  void shouldFindUserTaskByElementIdAndProcessDefinitionKey() {}
+  void shouldFindUserTaskByElementIdAndProcessDefinitionKey() {
+    // Given
+    final long firstInstanceKey = deployProcessModel(processModelWithUserTask());
+    final long secondInstanceKey = deployProcessModel(processModelWithUserTask());
+    final long thirdInstanceKey = deployProcessModel(processModelWithUserTask());
+
+    client.newCreateInstanceCommand().processDefinitionKey(firstInstanceKey).send().join();
+    client.newCreateInstanceCommand().processDefinitionKey(secondInstanceKey).send().join();
+    client.newCreateInstanceCommand().processDefinitionKey(thirdInstanceKey).send().join();
+
+    // Then
+    CamundaAssert.assertThat(UserTaskSelectors.byElementId("user-task-1", secondInstanceKey))
+        .hasProcessInstanceKey(secondInstanceKey);
+  }
 
   @Test
-  void shouldFindUserTaskByTaskName() {}
+  void shouldFindUserTaskByTaskName() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+
+    client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then
+    CamundaAssert.assertThat(UserTaskSelectors.byTaskName("User Task")).isCreated();
+  }
 
   @Test
-  void shouldFindUserTaskByTaskNameAndProcessDefinitionKey() {}
+  void shouldFindUserTaskByTaskNameAndProcessDefinitionKey() {
+    // Given
+    final long firstInstanceKey = deployProcessModel(processModelWithUserTask());
+    final long secondInstanceKey = deployProcessModel(processModelWithUserTask());
+    final long thirdInstanceKey = deployProcessModel(processModelWithUserTask());
+
+    client.newCreateInstanceCommand().processDefinitionKey(firstInstanceKey).send().join();
+    client.newCreateInstanceCommand().processDefinitionKey(secondInstanceKey).send().join();
+    client.newCreateInstanceCommand().processDefinitionKey(thirdInstanceKey).send().join();
+
+    // Then
+    CamundaAssert.assertThat(UserTaskSelectors.byTaskName("User Task", secondInstanceKey))
+        .hasProcessInstanceKey(secondInstanceKey);
+  }
 
   /**
    * Deploys a process model and waits until it is accessible via the API.
@@ -386,9 +420,15 @@ public class CamundaProcessTestContextIT {
   }
 
   private BpmnModelInstance processModelWithUserTask() {
+    return processModelWithUserTask("User Task", "user-task-1");
+  }
+
+  private BpmnModelInstance processModelWithUserTask(
+      final String taskName, final String elementId) {
     return Bpmn.createExecutableProcess("test-process")
         .startEvent()
-        .userTask("user-task-1")
+        .userTask(elementId)
+        .name(taskName)
         .zeebeUserTask()
         .name("user-task")
         .boundaryEvent("error-boundary-event")
