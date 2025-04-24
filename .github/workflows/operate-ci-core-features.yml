@@ -59,12 +59,12 @@ jobs:
       runner-type: gcp-core-4-default
 
   run-unit-tests:
-    name: Operate Backend Unit Tests
+    name: TESTTESTTEST Operate Core Features Backend Unit Tests
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: ./mvnw -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipDockerProfile -DskipChecks
+      command: ./mvnw -f operate verify -T1C -B -P operateCoreFeaturesUnitTests,skipFrontendBuild -DskipITs -DskipDockerProfile -DskipChecks
       test-type: Unit Tests
       runner-type: gcp-core-4-default
 
