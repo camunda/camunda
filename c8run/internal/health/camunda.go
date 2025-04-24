@@ -14,7 +14,8 @@ import (
 	"os"
 	"text/template"
 	"time"
-        "github.com/camunda/camunda/c8run/internal/types"
+
+	"github.com/camunda/camunda/c8run/internal/types"
 )
 
 type opener interface {

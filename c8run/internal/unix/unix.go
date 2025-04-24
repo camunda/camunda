@@ -11,6 +11,8 @@ import (
 	"runtime/debug"
 	"strconv"
 	"syscall"
+
+	"github.com/camunda/camunda/c8run/internal/types"
 )
 
 func (w *UnixC8Run) OpenBrowser(protocol string, port int) error {
@@ -31,11 +33,11 @@ func (w *UnixC8Run) OpenBrowser(protocol string, port int) error {
 	return nil
 }
 
-func (w *UnixC8Run) ProcessTree(commandPid int) []*os.Process {
+func (w *UnixC8Run) ProcessTree(commandPid int) []types.C8RunProcess {
 	// For unix systems we can kill all processes within a process group by setting a pgid
 	// therefore, only the main process needs put in here.
 	process := os.Process{Pid: commandPid}
-	processes := []*os.Process{&process}
+	processes := []types.C8RunProcess{types.Wrap(&process)}
 	return processes
 }
 
