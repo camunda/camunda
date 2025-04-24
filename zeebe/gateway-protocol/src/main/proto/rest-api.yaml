@@ -8434,6 +8434,13 @@ components:
             - COMPLETED
             - CANCELED
             - FAILED
+        processedDate:
+          description: the date this item was processed. This can be either completed, canceled or failed.
+          type: string
+          format: date-time
+        errorMessage:
+          description: the error message from the engine in case of a failed operation.
+          type: string
     ProcessInstanceModificationBatchOperationInstruction:
       type: object
       description: |
