@@ -27,6 +27,11 @@ describe('Modification Dropdown - Multi Scopes', () => {
     modificationsStore.enableModificationMode();
   });
 
+  afterEach(async () => {
+    modificationsStore.reset();
+    await new Promise(process.nextTick);
+  });
+
   it('should support add modification for task with multiple scopes', async () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [

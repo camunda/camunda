@@ -33,7 +33,7 @@ import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
-import {useEffect, act} from 'react';
+import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -131,7 +131,7 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     jest.clearAllMocks();
     jest.clearAllTimers();
     variablesStore.reset();
@@ -139,18 +139,9 @@ describe('VariablePanel', () => {
     flowNodeMetaDataStore.reset();
     modificationsStore.reset();
     processInstanceDetailsStore.reset();
-    await new Promise(process.nextTick);
   });
 
-  it('should render variables', async () => {
-    render(<VariablePanel />, {wrapper: getWrapper()});
-
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-  });
-
-  it('should add new variable', async () => {
-    jest.useFakeTimers();
-
+  it('should display error notification if add variable operation could not be created', async () => {
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
@@ -165,7 +156,6 @@ describe('VariablePanel', () => {
         name: /add variable/i,
       }),
     );
-
     expect(
       screen.queryByRole('button', {
         name: /add variable/i,
@@ -185,9 +175,7 @@ describe('VariablePanel', () => {
       '"bar"',
     );
 
-    mockFetchVariables().withSuccess([createVariable()]);
-
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockApplyOperation().withDelayedServerError();
 
     await waitFor(() =>
       expect(
@@ -197,42 +185,11 @@ describe('VariablePanel', () => {
       ).toBeEnabled(),
     );
 
-    mockFetchVariables().withSuccess([
-      createVariable(),
-      createVariable({
-        id: '2251799813725337-foo',
-        name: 'foo',
-        value: '"bar"',
-        isFirst: false,
-        sortValues: ['foo'],
-      }),
-    ]);
-
-    mockApplyOperation().withSuccess(
-      createBatchOperation({id: 'batch-operation-id'}),
-    );
-
-    mockGetOperation().withSuccess([createOperation({state: 'COMPLETED'})]);
-
     await user.click(
       screen.getByRole('button', {
         name: /save variable/i,
       }),
     );
-    expect(
-      screen.queryByRole('button', {
-        name: /add variable/i,
-      }),
-    ).not.toBeInTheDocument();
-
-    expect(
-      within(screen.getByTestId('foo')).getByTestId(
-        'variable-operation-spinner',
-      ),
-    ).toBeInTheDocument();
-
-    const withinVariablesList = within(screen.getByTestId('variables-list'));
-    expect(withinVariablesList.queryByTestId('foo')).not.toBeInTheDocument();
 
     await waitForElementToBeRemoved(
       within(screen.getByTestId('foo')).getByTestId(
@@ -248,216 +205,103 @@ describe('VariablePanel', () => {
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       isDismissable: true,
-      kind: 'success',
-      title: 'Variable added',
-    });
-
-    expect(
-      await withinVariablesList.findByTestId('variable-foo'),
-    ).toBeInTheDocument();
-
-    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should remove pending variable if scope id changes', async () => {
-    jest.useFakeTimers();
-
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: '2251799813686104',
-      instanceCount: 1,
-    });
-
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /add variable/i,
-        }),
-      ).toBeEnabled(),
-    );
-
-    await user.click(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    );
-    expect(
-      screen.queryByRole('button', {
-        name: /add variable/i,
-      }),
-    ).not.toBeInTheDocument();
-
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /name/i,
-      }),
-      'foo',
-    );
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /value/i,
-      }),
-      '"bar"',
-    );
-
-    mockFetchVariables().withSuccess([]);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockApplyOperation().withSuccess(
-      createBatchOperation({id: 'batch-operation-id'}),
-    );
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /save variable/i,
-        }),
-      ).toBeEnabled(),
-    );
-    await user.click(
-      screen.getByRole('button', {
-        name: /save variable/i,
-      }),
-    );
-    expect(
-      screen.queryByRole('button', {
-        name: /add variable/i,
-      }),
-    ).not.toBeInTheDocument();
-
-    expect(
-      within(screen.getByTestId('foo')).getByTestId(
-        'variable-operation-spinner',
-      ),
-    ).toBeInTheDocument();
-
-    mockFetchVariables().withSuccess([]);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'TEST_FLOW_NODE',
-        flowNodeInstanceId: '2',
-      });
-    });
-
-    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-spinner'),
-    );
-    expect(
-      screen.queryByTestId('variable-operation-spinner'),
-    ).not.toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    ).toBeInTheDocument();
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should display validation error if backend validation fails while adding variable', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /add variable/i,
-        }),
-      ).toBeEnabled(),
-    );
-
-    await user.click(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    );
-    expect(
-      screen.queryByRole('button', {
-        name: /add variable/i,
-      }),
-    ).not.toBeInTheDocument();
-
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /name/i,
-      }),
-      'foo',
-    );
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /value/i,
-      }),
-      '"bar"',
-    );
-
-    mockApplyOperation().withServerError(400);
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /save variable/i,
-        }),
-      ).toBeEnabled(),
-    );
-    await user.click(
-      screen.getByRole('button', {
-        name: /save variable/i,
-      }),
-    );
-
-    await waitFor(() =>
-      expect(
-        screen.queryByTestId('variable-operation-spinner'),
-      ).not.toBeInTheDocument(),
-    );
-
-    expect(
-      screen.queryByRole('button', {
-        name: /add variable/i,
-      }),
-    ).not.toBeInTheDocument();
-
-    expect(notificationsStore.displayNotification).not.toHaveBeenCalledWith({
-      isDismissable: true,
       kind: 'error',
       title: 'Variable could not be saved',
     });
-
-    expect(
-      await screen.findByText('Name should be unique'),
-    ).toBeInTheDocument();
-
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /name/i,
-      }),
-      '2',
-    );
-    await waitFor(() =>
-      expect(
-        screen.queryByText('Name should be unique'),
-      ).not.toBeInTheDocument(),
-    );
-
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /name/i,
-      }),
-      '{backspace}',
-    );
-
-    expect(
-      await screen.findByText('Name should be unique'),
-    ).toBeInTheDocument();
   });
 
-  it('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
+  it('should display error notification if add variable operation could not be created because of auth error', async () => {
+    const statistics = [
+      {
+        elementId: 'TEST_FLOW_NODE',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        elementId: 'Activity_0qtp1k6',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+    ];
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statistics,
+    });
+
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: /add variable/i,
+        }),
+      ).toBeEnabled(),
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /add variable/i,
+      }),
+    );
+    expect(
+      screen.queryByRole('button', {
+        name: /add variable/i,
+      }),
+    ).not.toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /name/i,
+      }),
+      'foo',
+    );
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /value/i,
+      }),
+      '"bar"',
+    );
+
+    mockApplyOperation().withDelayedServerError(403);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: /save variable/i,
+        }),
+      ).toBeEnabled(),
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /save variable/i,
+      }),
+    );
+
+    await waitForElementToBeRemoved(
+      within(screen.getByTestId('foo')).getByTestId(
+        'variable-operation-spinner',
+      ),
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /add variable/i,
+      }),
+    ).toBeInTheDocument();
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'error',
+      title: 'Variable could not be saved',
+      subtitle: 'You do not have permission',
+    });
+  });
+
+  it('should display error notification if add variable operation fails', async () => {
     jest.useFakeTimers();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
@@ -474,6 +318,11 @@ describe('VariablePanel', () => {
         name: /add variable/i,
       }),
     );
+    expect(
+      screen.queryByRole('button', {
+        name: /add variable/i,
+      }),
+    ).not.toBeInTheDocument();
 
     await user.type(
       screen.getByRole('textbox', {
@@ -489,8 +338,8 @@ describe('VariablePanel', () => {
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
+
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockApplyOperation().withSuccess(createBatchOperation());
 
     jest.runOnlyPendingTimers();
     await waitFor(() =>
@@ -501,128 +350,44 @@ describe('VariablePanel', () => {
       ).toBeEnabled(),
     );
 
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockApplyOperation().withSuccess(
+      createBatchOperation({id: 'batch-operation-id'}),
+    );
+
+    mockGetOperation().withSuccess([createOperation({state: 'FAILED'})]);
+
     await user.click(
       screen.getByRole('button', {
         name: /save variable/i,
       }),
     );
-    expect(
-      screen.queryByRole('button', {
-        name: /add variable/i,
-      }),
-    ).not.toBeInTheDocument();
 
     expect(
-      screen.getByTestId('variable-operation-spinner'),
+      within(screen.getByTestId('foo')).getByTestId(
+        'variable-operation-spinner',
+      ),
     ).toBeInTheDocument();
 
-    mockFetchVariables().withSuccess([
-      createVariable(),
-      createVariable({id: 'instance_id-foo', name: 'foo', value: 'bar'}),
-    ]);
-
-    mockGetOperation().withSuccess([createOperation()]);
-
     jest.runOnlyPendingTimers();
-    await waitForElementToBeRemoved(
-      screen.getByTestId('variable-operation-spinner'),
-    );
-    expect(await screen.findByRole('cell', {name: 'foo'})).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(screen.getByTestId('foo'));
 
     expect(
       screen.getByRole('button', {
         name: /add variable/i,
       }),
     ).toBeInTheDocument();
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      isDismissable: true,
+      kind: 'error',
+      title: 'Variable could not be saved',
+    });
+
+    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
+
     jest.clearAllTimers();
     jest.useRealTimers();
-  });
-
-  it('should select correct tab when navigating between flow nodes', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-
-    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessDefinitionXml().withSuccess('');
-
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'Activity_0qtp1k6',
-        flowNodeInstanceId: '2',
-      });
-    });
-
-    expect(await screen.findByText('test2')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
-
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
-    mockFetchProcessDefinitionXml().withSuccess('');
-
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'Event_0bonl61',
-      });
-    });
-
-    await waitFor(() =>
-      expect(flowNodeSelectionStore.state.selection?.flowNodeId).toBe(
-        'Event_0bonl61',
-      ),
-    );
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
-    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
-
-    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    act(() => {
-      flowNodeSelectionStore.clearSelection();
-    });
-
-    expect(
-      screen.queryByText('No Input Mappings defined'),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole('tab', {name: 'Variables'})).toBeInTheDocument();
-    expect(
-      screen.queryByRole('tab', {name: 'Input Mappings'}),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('tab', {name: 'Output Mappings'}),
-    ).not.toBeInTheDocument();
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockFetchVariables().withSuccess([]);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'StartEvent_1',
-      });
-    });
-
-    expect(
-      await screen.findByText('No Input Mappings defined'),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('heading', {name: 'Variables'}),
-    ).not.toBeInTheDocument();
-
-    expect(screen.getByRole('tab', {name: 'Variables'})).toBeInTheDocument();
-    expect(
-      screen.getByRole('tab', {name: 'Input Mappings'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('tab', {name: 'Output Mappings'}),
-    ).toBeInTheDocument();
-
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
   });
 });
