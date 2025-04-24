@@ -42,6 +42,7 @@ public class PermissionsServiceTest {
   private final String username = "foo";
   private final String tenantId = "default";
   private final long roleKey = 456L;
+  private final String roleId = "roleId";
 
   @BeforeEach
   public void setUp() {
@@ -60,7 +61,7 @@ public class PermissionsServiceTest {
         .thenReturn(
             new AuthenticationContext(
                 "test",
-                List.of(new RoleEntity(roleKey, "roleName")),
+                List.of(new RoleEntity(roleKey, roleId, "roleName")),
                 List.of(),
                 List.of(new TenantDTO(123L, tenantId, "tenantName", "")),
                 List.of()));
@@ -90,7 +91,7 @@ public class PermissionsServiceTest {
   public void testGetProcessDefinitionPermission() {
 
     final io.camunda.security.auth.Authentication authentication =
-        createCamundaAuthentication(username, List.of(tenantId), List.of(roleKey));
+        createCamundaAuthentication(username, List.of(tenantId), List.of(roleId));
 
     when(mockAuthorizationChecker.collectPermissionTypes(
             "bpmnProcessId", AuthorizationResourceType.PROCESS_DEFINITION, authentication))
@@ -112,7 +113,7 @@ public class PermissionsServiceTest {
   public void testGetDecisionDefinitionPermission() {
 
     final io.camunda.security.auth.Authentication authentication =
-        createCamundaAuthentication(username, List.of(tenantId), List.of(roleKey));
+        createCamundaAuthentication(username, List.of(tenantId), List.of(roleId));
 
     when(mockAuthorizationChecker.collectPermissionTypes(
             "decisionId", AuthorizationResourceType.DECISION_DEFINITION, authentication))
@@ -141,11 +142,11 @@ public class PermissionsServiceTest {
   }
 
   private io.camunda.security.auth.Authentication createCamundaAuthentication(
-      final String username, final List<String> tenants, final List<Long> roleKeys) {
+      final String username, final List<String> tenants, final List<String> roleIds) {
     return new io.camunda.security.auth.Authentication.Builder()
         .user(username)
         .tenants(tenants)
-        .roleKeys(roleKeys)
+        .roleIds(roleIds)
         .build();
   }
 }
