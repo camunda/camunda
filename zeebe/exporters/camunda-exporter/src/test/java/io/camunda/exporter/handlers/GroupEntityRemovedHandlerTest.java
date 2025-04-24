@@ -16,6 +16,7 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
+import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -78,15 +79,10 @@ public class GroupEntityRemovedHandlerTest {
   @Test
   void shouldUpdateGroupEntityOnFlush() throws PersistenceException {
     // given
-    final var groupId = Strings.newRandomValidIdentityId();
     final var memberId = Strings.newRandomValidIdentityId();
-    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(groupId);
-    final GroupEntity inputEntity =
-        new GroupEntity()
-            .setId("111")
-            .setGroupId(groupId)
-            .setMemberId(memberId)
-            .setJoin(joinRelation);
+    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild("111");
+    final var inputEntity =
+        new GroupMemberEntity().setId("111").setMemberId(memberId).setJoin(joinRelation);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

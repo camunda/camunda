@@ -8,13 +8,20 @@
 package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
 
 public record GroupFilter(
-    Long groupKey, String groupId, String name, String description, Set<String> memberIds)
+    Long groupKey,
+    String groupId,
+    String name,
+    String description,
+    Set<String> memberIds,
+    EntityType memberType)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
+    EntityType memberType;
     private Long groupKey;
     private String groupId;
     private String name;
@@ -50,9 +57,14 @@ public record GroupFilter(
       return this;
     }
 
+    public Builder memberType(final EntityType value) {
+      memberType = value;
+      return this;
+    }
+
     @Override
     public GroupFilter build() {
-      return new GroupFilter(groupKey, groupId, name, description, memberIds);
+      return new GroupFilter(groupKey, groupId, name, description, memberIds, memberType);
     }
   }
 }

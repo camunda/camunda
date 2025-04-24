@@ -24,7 +24,6 @@ import io.camunda.service.GroupServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,7 +87,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "groupName";
     final var groupDescription = "groupDescription";
-    final var group = new GroupEntity(groupKey, groupId, groupName, groupDescription, Set.of());
+    final var group = new GroupEntity(groupKey, groupId, groupName, groupDescription);
     when(groupServices.getGroup(group.groupId())).thenReturn(group);
 
     // when
@@ -171,9 +170,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
-                        new GroupEntity(groupKey1, groupId1, groupName1, description1, Set.of()),
-                        new GroupEntity(groupKey2, groupId2, groupName2, description2, Set.of()),
-                        new GroupEntity(groupKey3, groupId3, groupName3, description3, Set.of())))
+                        new GroupEntity(groupKey1, groupId1, groupName1, description1),
+                        new GroupEntity(groupKey2, groupId2, groupName2, description2),
+                        new GroupEntity(groupKey3, groupId3, groupName3, description3)))
                 .build());
 
     // when / then
@@ -259,9 +258,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new GroupEntity(groupKey1, groupId1, groupName1, description1, Set.of()),
-                        new GroupEntity(groupKey2, groupId2, groupName2, description2, Set.of()),
-                        new GroupEntity(groupKey3, groupId3, groupName3, description3, Set.of())))
+                        new GroupEntity(groupKey1, groupId1, groupName1, description1),
+                        new GroupEntity(groupKey2, groupId2, groupName2, description2),
+                        new GroupEntity(groupKey3, groupId3, groupName3, description3)))
                 .firstSortValues(new Object[] {"f"})
                 .lastSortValues(new Object[] {"v"})
                 .build());

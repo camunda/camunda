@@ -11,7 +11,13 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Set;
 
 public record UserFilter(
-    Long key, String username, Set<String> usernames, String name, String email, String tenantId)
+    Long key,
+    String username,
+    Set<String> usernames,
+    String name,
+    String email,
+    String tenantId,
+    String groupId)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -20,7 +26,8 @@ public record UserFilter(
         .usernames(usernames)
         .name(name)
         .email(email)
-        .tenantId(tenantId);
+        .tenantId(tenantId)
+        .groupId(groupId);
   }
 
   public static final class Builder implements ObjectBuilder<UserFilter> {
@@ -30,6 +37,7 @@ public record UserFilter(
     private String name;
     private String email;
     private String tenantId;
+    private String groupId;
 
     public Builder key(final Long value) {
       key = value;
@@ -61,9 +69,14 @@ public record UserFilter(
       return this;
     }
 
+    public Builder groupId(final String value) {
+      groupId = value;
+      return this;
+    }
+
     @Override
     public UserFilter build() {
-      return new UserFilter(key, username, usernames, name, email, tenantId);
+      return new UserFilter(key, username, usernames, name, email, tenantId, groupId);
     }
   }
 }

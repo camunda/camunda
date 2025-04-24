@@ -23,6 +23,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.MappingEntity;
@@ -336,6 +337,8 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     var query = userQuery;
     if (query.filter().tenantId() != null) {
       query = expandTenantFilter(query);
+    } else if (query.filter().groupId() != null) {
+      query = expandGroupFilter(query);
     }
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
@@ -427,6 +430,22 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                 io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
     final var usernames =
         tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
+  }
+
+  private UserQuery expandGroupFilter(final UserQuery userQuery) {
+    final List<GroupMemberEntity> groupMembers =
+        getSearchExecutor()
+            .findAll(
+                new GroupQuery.Builder()
+                    .filter(f -> f.groupId(userQuery.filter().groupId()).memberType(USER))
+                    .build(),
+                io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
+    final var usernames =
+        groupMembers.stream().map(GroupMemberEntity::id).collect(Collectors.toSet());
 
     return userQuery.toBuilder()
         .filter(userQuery.filter().toBuilder().usernames(usernames).build())

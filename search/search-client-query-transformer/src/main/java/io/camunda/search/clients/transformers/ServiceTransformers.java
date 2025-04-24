@@ -179,6 +179,7 @@ import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
+import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
 import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
@@ -286,6 +287,7 @@ public final class ServiceTransformers {
     mappers.put(TenantEntity.class, new TenantEntityTransformer());
     mappers.put(TenantMemberEntity.class, new TenantMemberEntityTransformer());
     mappers.put(GroupEntity.class, new GroupEntityTransformer());
+    mappers.put(GroupMemberEntity.class, new GroupEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(MappingEntity.class, new MappingEntityTransformer());
     mappers.put(UsageMetricsEntity.class, new UsageMetricsEntityTransformer());
