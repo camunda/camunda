@@ -168,10 +168,7 @@ public final class IdentitySetupInitializeProcessor
                           mapping.setMappingId(persistedMapping.getMappingId());
                           // todo refactor with https://github.com/camunda/camunda/issues/30094
                           if (assignEntityToRole(
-                              role,
-                              persistedMapping.getMappingId(),
-                              EntityType.MAPPING,
-                              persistedMapping.getMappingKey())) {
+                              role, persistedMapping.getMappingId(), EntityType.MAPPING)) {
                             createdNewEntities.set(true);
                           }
                           if (assignEntityToTenant(
@@ -230,10 +227,7 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         persistedMapping -> {
                           assignEntityToRole(
-                              role,
-                              persistedMapping.getMappingId(),
-                              EntityType.MAPPING,
-                              persistedMapping.getMappingKey());
+                              role, persistedMapping.getMappingId(), EntityType.MAPPING);
                           assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
                         },
                         () -> createMapping(mapping, role, tenant)));
@@ -258,6 +252,12 @@ public final class IdentitySetupInitializeProcessor
     stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
     assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING, mapping.getMappingKey());
     assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
+  }
+
+  // todo delete
+  private boolean assignEntityToRole(
+      final RoleRecord role, final String entityId, final EntityType entityType) {
+    return assignEntityToRole(role, entityId, entityType, Long.parseLong(entityId));
   }
 
   private boolean assignEntityToRole(

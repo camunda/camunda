@@ -110,6 +110,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     final var record = command.getValue();
     mappingState
         .get(record.getMappingId())
+        // todo
         .ifPresentOrElse(
             r -> deleteMapping(r, record.getMappingKey()),
             () -> {
@@ -121,7 +122,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void deleteMapping(final PersistedMapping mapping) {
+  private void deleteMapping(final PersistedMapping mapping, final long key) {
     final var mappingId = mapping.getMappingId();
     deleteAuthorizations(mappingId);
     for (final var tenantId :
@@ -148,7 +149,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
               // TODO: Use the role id instead of the key.
               .setRoleId(roleKey)
               .setRoleKey(Long.parseLong(roleKey))
-              .setEntityKey(mappingKey)
+              .setEntityId(mappingId)
               .setEntityType(EntityType.MAPPING));
     }
     for (final var groupKey :
