@@ -1,8 +1,9 @@
 version: 3
 
 project:
-  id: camunda/optimize
+  id: camunda/camunda@optimize
   labels:
+  - camunda8
   - optimize
   policy: Camunda8 Distribution
   url: https://github.com/camunda/connectors
