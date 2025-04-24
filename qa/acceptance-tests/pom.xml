@@ -452,6 +452,11 @@
       <artifactId>logback-classic</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>process-migration</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <repositories>
     <repository>

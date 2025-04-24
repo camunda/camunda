@@ -17,6 +17,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import io.camunda.client.CamundaClient;
+import io.camunda.migration.process.MigrationRunner;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -195,7 +196,7 @@ public class MigrationITExtension
   }
 
   private void awaitProcessMigrationFinished() {
-    final var logger = (Logger) LoggerFactory.getLogger("io.camunda.migration.process");
+    final var logger = (Logger) LoggerFactory.getLogger(MigrationRunner.class);
     final var appender = new LogAppender();
     appender.setContext(logger.getLoggerContext());
     appender.start();
