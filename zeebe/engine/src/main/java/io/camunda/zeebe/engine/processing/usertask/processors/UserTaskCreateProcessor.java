@@ -66,20 +66,30 @@ public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
   @Override
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    final long userTaskKey = command.getKey();
-    // unset assignee as we're not supposed to write CREATED with an assignee
-    final var valueWithoutAssignee = userTaskRecord.copy().unsetAssignee();
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, valueWithoutAssignee);
 
+    // Current assumption: there can not be corrections of the assignee if there is an initial
+    // assignee.
+    final long userTaskKey = command.getKey();
     userTaskState
         .findInitialAssignee(userTaskKey)
-        .ifPresent(
+        .ifPresentOrElse(
+            // if there is initial assignee -> remove the assignee from UT record as we are going
+            // to assign user task to initial assignee via assigning event
             initialAssignee -> {
+              final var valueWithoutAssignee = userTaskRecord.copy().unsetAssignee();
+              stateWriter.appendFollowUpEvent(
+                  userTaskKey, UserTaskIntent.CREATED, valueWithoutAssignee);
+
               // clean up the changed attributes because we have already finished the creation,
               // and are now starting a new transition to assigning
               valueWithoutAssignee.resetChangedAttributes();
               assignUserTask(valueWithoutAssignee, initialAssignee);
-            });
+            },
+            () ->
+                // if no initial assignee -> keep the assignee on the UT record in CREATED event
+                // it could be a corrected assignee or no assignee at all
+                stateWriter.appendFollowUpEvent(
+                    userTaskKey, UserTaskIntent.CREATED, userTaskRecord));
   }
 
   private void assignUserTask(final UserTaskRecord userTaskRecord, final String assignee) {
