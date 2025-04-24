@@ -30,6 +30,16 @@ on:
         type: boolean
         required: false
         default: false
+      operate-tag:
+        description: 'Specifies the tag of operate, when Operate should be included in the Benchmark'
+        type: string
+        default: ""
+        required: false
+      realistic:
+        description: 'Should run a realistic benchmark, with real-world process and load'
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       name:
@@ -60,11 +70,6 @@ on:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitrary helm arguments, like --set starter.rate=100'
         type: string
         required: false
-      measure:
-        description: 'Measure impact of network latency'
-        type: boolean
-        required: false
-        default: true
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
         default: ""
@@ -72,6 +77,16 @@ on:
         required: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
+        type: boolean
+        required: false
+        default: false
+      operate-tag:
+        description: 'Specifies the tag of operate, when Operate should be included in the Benchmark'
+        type: string
+        default: ""
+        required: false
+      realistic:
+        description: 'Should run a realistic benchmark, with real-world process and load'
         type: boolean
         required: false
         default: false
@@ -233,6 +248,7 @@ jobs:
           --set camunda-platform.zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
+          ${{ inputs.realistic && '-f https://raw.githubusercontent.com/zeebe-io/benchmark-helm/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml' || '' }}
           ${{ inputs.benchmark-load }}
       - name: Summarize deployment
         if: success()
