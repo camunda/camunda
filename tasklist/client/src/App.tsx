@@ -51,10 +51,10 @@ const v1Routes = createRoutesFromElements(
     <Route path="/" lazy={() => import('./common/components/Layout')}>
       <Route path="forbidden" element={<Forbidden />} />
       <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
-        <Route index lazy={() => import('./v1/Processes')} />
+        <Route index lazy={() => import('./v1/ProcessesTab')} />
         <Route
           path=":bpmnProcessId/start"
-          lazy={() => import('./v1/Processes')}
+          lazy={() => import('./v1/ProcessesTab')}
         />
       </Route>
       <Route

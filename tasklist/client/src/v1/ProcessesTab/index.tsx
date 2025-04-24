@@ -50,7 +50,7 @@ function getIsStartedByForm(searchParamValue: string | undefined) {
   return searchParamValue === 'yes';
 }
 
-const Processes: React.FC = observer(() => {
+const ProcessesTab: React.FC = observer(() => {
   const [startProcessStatus, setStartProcessStatus] =
     useState<LoadingStatus>('inactive');
   const {t} = useTranslation();
@@ -370,6 +370,6 @@ const Processes: React.FC = observer(() => {
   );
 });
 
-Processes.displayName = 'Processes';
+ProcessesTab.displayName = 'Processes';
 
-export {Processes as Component};
+export {ProcessesTab as Component};
