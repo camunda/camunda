@@ -66,11 +66,12 @@ public final class ManifestManager {
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
-  private boolean containerCreated = false;
+  private boolean containerCreated;
   private final BlobContainerClient blobContainerClient;
 
-  ManifestManager(final BlobContainerClient blobContainerClient) {
+  ManifestManager(final BlobContainerClient blobContainerClient, final boolean createContainer) {
     this.blobContainerClient = blobContainerClient;
+    containerCreated = !createContainer;
   }
 
   PersistedManifest createInitialManifest(final Backup backup) {

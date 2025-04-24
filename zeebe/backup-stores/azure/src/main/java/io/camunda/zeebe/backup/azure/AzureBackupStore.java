@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ContainerDoesNotExist;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
@@ -56,11 +57,10 @@ public final class AzureBackupStore implements BackupStore {
 
   public AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
     executor = Executors.newVirtualThreadPerTaskExecutor();
-    final BlobContainerClient blobContainerClient =
-        client.getBlobContainerClient(config.containerName());
+    final BlobContainerClient blobContainerClient = getContainerClient(client, config);
 
     fileSetManager = new FileSetManager(blobContainerClient);
-    manifestManager = new ManifestManager(blobContainerClient);
+    manifestManager = new ManifestManager(blobContainerClient, config.createContainer());
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
@@ -90,6 +90,28 @@ public final class AzureBackupStore implements BackupStore {
           .credential(new DefaultAzureCredentialBuilder().build())
           .buildClient();
     }
+  }
+
+  BlobContainerClient getContainerClient(
+      final BlobServiceClient client, final AzureBackupConfig config) {
+    final BlobContainerClient blobContainerClient =
+        client.getBlobContainerClient(config.containerName());
+
+    if (!config.createContainer()) {
+      LOG.info(
+          "Setting up Azure Store with existing container: {}",
+          blobContainerClient.getBlobContainerName());
+      if (!blobContainerClient.exists()) {
+        throw new ContainerDoesNotExist(
+            ("The container %s does not exist. Please create it before using "
+                    + "the backup store. Otherwise set createContainer to true, "
+                    + "to enable the creation of the container during Azure "
+                    + "backup store initialization.")
+                .formatted(blobContainerClient.getBlobContainerName()));
+      }
+    }
+
+    return blobContainerClient;
   }
 
   @Override
