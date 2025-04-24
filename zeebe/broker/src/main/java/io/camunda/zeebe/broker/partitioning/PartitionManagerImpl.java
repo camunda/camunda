@@ -579,13 +579,15 @@ public final class PartitionManagerImpl
                   new TimeoutException(
                       "Timeout reached while waiting for redistribution completion"));
             } else {
-              final var sleep = concurrencyControl.createFuture();
-              concurrencyControl.schedule(SCALE_UP_INTERVAL, () -> sleep.complete(null));
-              sleep.andThen(
-                  () ->
-                      awaitRedistributionCompletion(
-                          desiredPartitionCount, redistributedPartitions, newTimeout),
-                  concurrencyControl);
+              if (!result.isCancelled()) {
+                final var sleep = concurrencyControl.createFuture();
+                concurrencyControl.schedule(SCALE_UP_INTERVAL, () -> sleep.complete(null));
+                sleep.andThen(
+                    () ->
+                        awaitRedistributionCompletion(
+                            desiredPartitionCount, redistributedPartitions, newTimeout),
+                    concurrencyControl);
+              }
             }
           }
         },
