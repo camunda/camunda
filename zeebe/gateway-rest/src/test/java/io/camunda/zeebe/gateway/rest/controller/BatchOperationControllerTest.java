@@ -155,7 +155,12 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     final var batchOperationItem =
         new BatchOperationEntity.BatchOperationItemEntity(
-            batchOperationKey, 11L, 12L, BatchOperationItemState.COMPLETED);
+            batchOperationKey,
+            11L,
+            12L,
+            BatchOperationItemState.COMPLETED,
+            OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
+            null);
     when(batchOperationServices.getItemsByKey(batchOperationKey))
         .thenReturn(List.of(batchOperationItem));
 

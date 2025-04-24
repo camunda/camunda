@@ -73,7 +73,11 @@ public class BatchOperationWriter {
   }
 
   public void updateItem(
-      final long batchOperationKey, final long itemKey, final BatchOperationItemState state) {
+      final long batchOperationKey,
+      final long itemKey,
+      final BatchOperationItemState state,
+      final OffsetDateTime endDate,
+      final String errorMessage) {
 
     // TODO merging this into one statement would be more efficient
     executionQueue.executeInQueue(
@@ -82,7 +86,7 @@ public class BatchOperationWriter {
             WriteStatementType.UPDATE,
             batchOperationKey,
             "io.camunda.db.rdbms.sql.BatchOperationMapper.updateItem",
-            new BatchOperationItemDto(batchOperationKey, itemKey, state)));
+            new BatchOperationItemDto(batchOperationKey, itemKey, state, endDate, errorMessage)));
 
     if (state == BatchOperationItemState.FAILED) {
       executionQueue.executeInQueue(

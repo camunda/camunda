@@ -48,7 +48,11 @@ public interface BatchOperationMapper {
   record BatchOperationItemsDto(Long batchOperationKey, List<BatchOperationItemDbModel> items) {}
 
   record BatchOperationItemDto(
-      Long batchOperationKey, Long itemKey, BatchOperationEntity.BatchOperationItemState state) {}
+      Long batchOperationKey,
+      Long itemKey,
+      BatchOperationEntity.BatchOperationItemState state,
+      OffsetDateTime processedDate,
+      String errorMessage) {}
 
   record BatchOperationItemStatusUpdateDto(
       Long batchOperationKey,

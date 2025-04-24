@@ -25,7 +25,9 @@ public record BatchOperationEntity(
       Long batchOperationKey,
       Long itemKey,
       Long processInstanceKey,
-      BatchOperationItemState state) {}
+      BatchOperationItemState state,
+      OffsetDateTime processedDate,
+      String errorMessage) {}
 
   public enum BatchOperationState {
     CREATED,

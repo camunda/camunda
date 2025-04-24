@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class BatchOperationIT {
+  public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
   public void shouldReturnTrueForExists(final CamundaRdbmsTestApplication testApplication) {
@@ -126,7 +127,9 @@ public class BatchOperationIT {
         .updateItem(
             batchOperation.batchOperationKey(),
             items.getFirst(),
-            BatchOperationItemState.COMPLETED);
+            BatchOperationItemState.COMPLETED,
+            NOW,
+            null);
     writer.flush();
 
     // then
@@ -150,6 +153,9 @@ public class BatchOperationIT {
             .findFirst()
             .get();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+    assertThat(firstItem.processedDate())
+        .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(firstItem.errorMessage()).isNull();
 
     final var lastItem =
         updatedItems.stream()
@@ -181,7 +187,11 @@ public class BatchOperationIT {
     writer
         .getBatchOperationWriter()
         .updateItem(
-            batchOperation.batchOperationKey(), items.getFirst(), BatchOperationItemState.FAILED);
+            batchOperation.batchOperationKey(),
+            items.getFirst(),
+            BatchOperationItemState.FAILED,
+            NOW,
+            "error");
     writer.flush();
 
     // then
@@ -205,6 +215,9 @@ public class BatchOperationIT {
             .findFirst()
             .get();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.FAILED);
+    assertThat(firstItem.processedDate())
+        .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(firstItem.errorMessage()).isEqualTo("error");
 
     final var lastItem =
         updatedItems.stream()
@@ -232,7 +245,9 @@ public class BatchOperationIT {
         .updateItem(
             batchOperation.batchOperationKey(),
             items.getFirst(),
-            BatchOperationItemState.COMPLETED);
+            BatchOperationItemState.COMPLETED,
+            NOW,
+            null);
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
