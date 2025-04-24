@@ -15,8 +15,8 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-public interface ComparisonProperty<T, R, SELF extends PropertyBase<T, R, SELF>>
-    extends PropertyBase<T, R, SELF> {
+public interface ComparisonProperty<T, SELF extends PropertyBase<T, SELF>>
+    extends PropertyBase<T, SELF> {
   SELF gt(final T value);
 
   SELF gte(final T value);

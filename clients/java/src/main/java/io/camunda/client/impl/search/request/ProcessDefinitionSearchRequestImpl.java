@@ -33,9 +33,7 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryResult;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -78,9 +76,7 @@ public class ProcessDefinitionSearchRequestImpl
 
   @Override
   public ProcessDefinitionSearchRequest filter(final ProcessDefinitionFilter value) {
-    final io.camunda.client.protocol.rest.ProcessDefinitionFilter filter =
-        provideSearchRequestProperty(value);
-    request.setFilter(filter);
+    request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
@@ -91,9 +87,9 @@ public class ProcessDefinitionSearchRequestImpl
 
   @Override
   public ProcessDefinitionSearchRequest sort(final ProcessDefinitionSort value) {
-    final List<io.camunda.client.impl.search.request.SearchRequestSort> sorting =
-        provideSearchRequestProperty(value);
-    request.setSort(SearchRequestSortMapper.toProcessDefinitionSearchQuerySortRequest(sorting));
+    request.setSort(
+        SearchRequestSortMapper.toProcessDefinitionSearchQuerySortRequest(
+            provideSearchRequestProperty(value)));
     return this;
   }
 
@@ -104,8 +100,7 @@ public class ProcessDefinitionSearchRequestImpl
 
   @Override
   public ProcessDefinitionSearchRequest page(final SearchRequestPage value) {
-    final SearchQueryPageRequest page = provideSearchRequestProperty(value);
-    request.setPage(page);
+    request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 

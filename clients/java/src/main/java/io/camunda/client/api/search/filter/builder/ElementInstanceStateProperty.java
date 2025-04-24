@@ -16,11 +16,6 @@
 package io.camunda.client.api.search.filter.builder;
 
 import io.camunda.client.api.search.enums.ElementInstanceState;
-import io.camunda.client.api.search.filter.ElementInstanceStateFilterProperty;
 
 public interface ElementInstanceStateProperty
-    extends LikeProperty<
-        ElementInstanceState,
-        String,
-        ElementInstanceStateFilterProperty,
-        ElementInstanceStateProperty> {}
+    extends LikeProperty<ElementInstanceState, String, ElementInstanceStateProperty> {}

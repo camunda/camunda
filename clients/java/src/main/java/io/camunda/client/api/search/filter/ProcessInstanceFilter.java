@@ -132,8 +132,7 @@ public interface ProcessInstanceFilter extends ProcessInstanceFilterBase {
 
   /** Filter by variables */
   @Override
-  ProcessInstanceFilter variables(
-      final List<ProcessInstanceVariableFilterRequest> variableValueFilters);
+  ProcessInstanceFilter variables(final List<Consumer<VariableValueFilter>> variableValueFilters);
 
   /** Filter by variables map */
   @Override

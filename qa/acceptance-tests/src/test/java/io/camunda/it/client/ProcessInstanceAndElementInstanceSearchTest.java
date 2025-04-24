@@ -21,6 +21,7 @@ import static io.camunda.it.util.TestHelper.waitUntilJobWorkerHasFailedJob;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
@@ -30,8 +31,6 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
-import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
@@ -768,17 +767,12 @@ public class ProcessInstanceAndElementInstanceSearchTest {
   void shouldQueryProcessInstancesByVariableSingle() {
     // given
     final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
-    final List<ProcessInstanceVariableFilterRequest> variables =
-        List.of(
-            new ProcessInstanceVariableFilterRequest()
-                .setName("xyz")
-                .setValue(new StringFilterProperty().setEq("\"bar\"")));
 
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(variables))
+            .filter(f -> f.variables(List.of(vf -> vf.name("xyz").value(v -> v.eq("\"bar\"")))))
             .send()
             .join();
     // then
@@ -810,20 +804,17 @@ public class ProcessInstanceAndElementInstanceSearchTest {
   void shouldQueryProcessInstancesByVariableMulti() {
     // given
     final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
-    final List<ProcessInstanceVariableFilterRequest> variables =
-        List.of(
-            new ProcessInstanceVariableFilterRequest()
-                .setName("xyz")
-                .setValue(new StringFilterProperty().setLike("\"ba*\"")),
-            new ProcessInstanceVariableFilterRequest()
-                .setName("abc")
-                .setValue(new StringFilterProperty().addInItem("\"mnp\"")));
 
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(variables))
+            .filter(
+                f ->
+                    f.variables(
+                        List.of(
+                            vf -> vf.name("xyz").value(v -> v.like("\"ba*\"")),
+                            vf -> vf.name("abc").value(v -> v.in("\"mnp\"")))))
             .send()
             .join();
 
@@ -837,20 +828,17 @@ public class ProcessInstanceAndElementInstanceSearchTest {
   void shouldQueryProcessInstancesByVariableAllVariablesMustMatch() {
     // given
     final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
-    final List<ProcessInstanceVariableFilterRequest> variables =
-        List.of(
-            new ProcessInstanceVariableFilterRequest()
-                .setName("xyz")
-                .setValue(new StringFilterProperty().setEq("\"bar\"")),
-            new ProcessInstanceVariableFilterRequest()
-                .setName("abc")
-                .setValue(new StringFilterProperty().addInItem("\"foo\"")));
 
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(variables))
+            .filter(
+                f ->
+                    f.variables(
+                        List.of(
+                            vf -> vf.name("xyz").value(v -> v.eq("\"bar\"")),
+                            vf -> vf.name("abc").value(v -> v.in("\"foo\"")))))
             .send()
             .join();
 
@@ -862,16 +850,15 @@ public class ProcessInstanceAndElementInstanceSearchTest {
   void shouldQueryProcessInstancesByVariableAdvancedFilterIn() {
     // given
     final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1", "service_tasks_v1");
-    final List<ProcessInstanceVariableFilterRequest> variables =
-        List.of(
-            new ProcessInstanceVariableFilterRequest()
-                .setName("xyz")
-                .setValue(new StringFilterProperty().addInItem("\"foo\"").addInItem("\"bar\"")));
+
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(variables))
+            .filter(
+                f ->
+                    f.variables(
+                        List.of(vf -> vf.name("xyz").value(v -> v.in("\"foo\"", "\"bar\"")))))
             .send()
             .join();
 
@@ -885,16 +872,12 @@ public class ProcessInstanceAndElementInstanceSearchTest {
   void shouldQueryProcessInstancesByVariableAdvancedFilterLike() {
     // given
     final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
-    final List<ProcessInstanceVariableFilterRequest> variables =
-        List.of(
-            new ProcessInstanceVariableFilterRequest()
-                .setName("xyz")
-                .setValue(new StringFilterProperty().setLike("\"fo*\"")));
+
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(variables))
+            .filter(f -> f.variables(List.of(vf -> vf.name("xyz").value(v -> v.like("\"fo*\"")))))
             .send()
             .join();
 
@@ -902,6 +885,23 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfVariableValueNull() {
+
+    // when
+    final var exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                camundaClient
+                    .newProcessInstanceSearchRequest()
+                    .filter(f -> f.variables(Arrays.asList(vf -> vf.name("xyz"))))
+                    .send()
+                    .join());
+    // then
+    assertThat(exception.getMessage()).contains("Variable value cannot be null for variable 'xyz'");
   }
 
   @Test

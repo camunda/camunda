@@ -15,39 +15,45 @@
  */
 package io.camunda.client.impl.search.filter;
 
-import io.camunda.client.api.search.filter.UserTaskVariableFilter;
+import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
+import io.camunda.client.protocol.rest.VariableValueFilterRequest;
 import java.util.function.Consumer;
 
-public class UserTaskVariableFilterImpl
-    extends TypedSearchRequestPropertyProvider<UserTaskVariableFilterRequest>
-    implements UserTaskVariableFilter {
+public class VariableValueFilterImpl
+    extends TypedSearchRequestPropertyProvider<VariableValueFilterRequest>
+    implements VariableValueFilter {
 
-  private final UserTaskVariableFilterRequest filter;
+  private final VariableValueFilterRequest filter;
 
-  public UserTaskVariableFilterImpl() {
-    filter = new UserTaskVariableFilterRequest();
+  public VariableValueFilterImpl() {
+    filter = new VariableValueFilterRequest();
   }
 
   @Override
-  public UserTaskVariableFilter name(final String name) {
-    name(b -> b.eq(name));
+  public VariableValueFilter name(final String name) {
+    filter.setName(name);
     return this;
   }
 
   @Override
-  public UserTaskVariableFilter name(final Consumer<StringProperty> fn) {
+  public VariableValueFilter value(final String value) {
+    value(b -> b.eq(value));
+    return this;
+  }
+
+  @Override
+  public VariableValueFilter value(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setName(provideSearchRequestProperty(property));
+    filter.setValue(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
-  protected UserTaskVariableFilterRequest getSearchRequestProperty() {
+  protected VariableValueFilterRequest getSearchRequestProperty() {
     return filter;
   }
 }

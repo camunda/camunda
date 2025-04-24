@@ -19,7 +19,6 @@ import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
-import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.ElementInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
@@ -76,7 +75,7 @@ public class ElementInstanceFilterImpl
   public ElementInstanceFilter state(final Consumer<ElementInstanceStateProperty> fn) {
     final ElementInstanceStateProperty property = new ElementInstanceStatePropertyImpl();
     fn.accept(property);
-    filter.setState(RequestMapper.toProtocolObject(property.build()));
+    filter.setState(provideSearchRequestProperty(property));
     return this;
   }
 

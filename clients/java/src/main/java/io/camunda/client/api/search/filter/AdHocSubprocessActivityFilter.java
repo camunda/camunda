@@ -34,11 +34,4 @@ public interface AdHocSubprocessActivityFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   AdHocSubprocessActivityFilter adHocSubprocessId(final String adHocSubprocessId);
-
-  /**
-   * Returns prepared REST API filter object.
-   *
-   * @return the API filter object
-   */
-  AdHocSubprocessActivityRequestFilter getRequestFilter();
 }

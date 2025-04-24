@@ -15,7 +15,4 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.api.search.filter.StringFilterProperty;
-
-public interface StringProperty
-    extends LikeProperty<String, String, StringFilterProperty, StringProperty> {}
+public interface StringProperty extends LikeProperty<String, String, StringProperty> {}

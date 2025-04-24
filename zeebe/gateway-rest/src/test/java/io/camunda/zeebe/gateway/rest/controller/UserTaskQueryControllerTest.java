@@ -332,6 +332,184 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldInvalidateUserTasksSearchQueryWithEmptyLocalVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "localVariables": [
+                        {
+                            "name": "creationDate",
+                            "value": {}
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
+  }
+
+  @Test
+  void shouldInvalidateUserTasksSearchQueryMissingLocalVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "localVariables": [
+                        {
+                            "name": "creationDate"
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
+  }
+
+  @Test
+  void shouldInvalidateUserTasksSearchQueryWithEmptyProcessInstanceVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "processInstanceVariables": [
+                        {
+                            "name": "creationDate",
+                            "value": {}
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
+  }
+
+  @Test
+  void shouldInvalidateUserTasksSearchQueryMissingProcessInstanceVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "processInstanceVariables": [
+                        {
+                            "name": "creationDate"
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
+  }
+
+  @Test
   void shouldInvalidateUserTasksSearchQueryWithBadSortOrder() {
     // given
     final var request =
@@ -672,8 +850,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("provideAdvancedSearchParameters")
-  void shouldSearchVariablesWithAdvancedFilter(
-      final String filterString, final UserTaskFilter filter) {
+  void shouldSearchTasksWithAdvancedFilter(final String filterString, final UserTaskFilter filter) {
     // given
     final var request =
         """

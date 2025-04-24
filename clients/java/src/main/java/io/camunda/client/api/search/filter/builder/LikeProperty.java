@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-public interface LikeProperty<T, L, R, SELF extends PropertyBase<T, R, SELF>>
-    extends PropertyBase<T, R, SELF> {
+public interface LikeProperty<T, L, SELF extends PropertyBase<T, SELF>>
+    extends PropertyBase<T, SELF> {
   SELF like(final L value);
 }

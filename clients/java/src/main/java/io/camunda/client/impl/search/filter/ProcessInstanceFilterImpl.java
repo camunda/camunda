@@ -19,14 +19,13 @@ import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
-import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
+import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ElementInstanceStatePropertyImpl;
@@ -62,7 +61,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setProcessInstanceKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -76,7 +75,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processDefinitionId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.processDefinitionId(RequestMapper.toProtocolObject(property.build()));
+    filter.processDefinitionId(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -90,7 +89,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processDefinitionName(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setProcessDefinitionName(RequestMapper.toProtocolObject(property.build()));
+    filter.setProcessDefinitionName(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -102,9 +101,9 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionVersion(final Consumer<IntegerProperty> fn) {
-    final IntegerPropertyImpl property = new IntegerPropertyImpl();
+    final IntegerProperty property = new IntegerPropertyImpl();
     fn.accept(property);
-    filter.setProcessDefinitionVersion(RequestMapper.toProtocolObject(property.build()));
+    filter.setProcessDefinitionVersion(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -119,7 +118,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processDefinitionVersionTag(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setProcessDefinitionVersionTag(RequestMapper.toProtocolObject(property.build()));
+    filter.setProcessDefinitionVersionTag(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -133,7 +132,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setProcessDefinitionKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -147,7 +146,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setParentProcessInstanceKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setParentProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -161,7 +160,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter parentElementInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setParentElementInstanceKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setParentElementInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -175,7 +174,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter startDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setStartDate(RequestMapper.toProtocolObject(property.build()));
+    filter.setStartDate(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -189,7 +188,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter endDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setEndDate(RequestMapper.toProtocolObject(property.build()));
+    filter.setEndDate(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -202,7 +201,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter state(final Consumer<ProcessInstanceStateProperty> fn) {
     final ProcessInstanceStateProperty property = new ProcessInstanceStatePropertyImpl();
     fn.accept(property);
-    filter.setState(RequestMapper.toProtocolObject(property.build()));
+    filter.setState(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -222,26 +221,21 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter tenantId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setTenantId(RequestMapper.toProtocolObject(property.build()));
+    filter.setTenantId(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public ProcessInstanceFilter variables(
-      final List<ProcessInstanceVariableFilterRequest> variableFilters) {
-    if (variableFilters != null) {
-      variableFilters.forEach(v -> variableValueNullCheck(v.getValue()));
-    }
-    filter.setVariables(RequestMapper.toProtocolList(variableFilters));
+      final List<Consumer<VariableValueFilter>> variableFilters) {
+    filter.setVariables(VariableFilterMapper.toVariableValueFilterRequest(variableFilters));
     return this;
   }
 
   @Override
   public ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
-      filter.setVariables(
-          RequestMapper.toProtocolList(
-              RequestMapper.toProcessInstanceVariableFilterRequestList(variableValueFilters)));
+      filter.setVariables(VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
     }
     return this;
   }
@@ -256,7 +250,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setBatchOperationId(RequestMapper.toProtocolObject(property.build()));
+    filter.setBatchOperationId(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -270,7 +264,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setErrorMessage(RequestMapper.toProtocolObject(property.build()));
+    filter.setErrorMessage(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -290,7 +284,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter elementId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setElementId(RequestMapper.toProtocolObject(property.build()));
+    filter.setElementId(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -306,7 +300,7 @@ public class ProcessInstanceFilterImpl
       final Consumer<ElementInstanceStateProperty> fn) {
     final ElementInstanceStateProperty property = new ElementInstanceStatePropertyImpl();
     fn.accept(property);
-    filter.setElementInstanceState(RequestMapper.toProtocolObject(property.build()));
+    filter.setElementInstanceState(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -340,11 +334,5 @@ public class ProcessInstanceFilterImpl
   @Override
   protected io.camunda.client.protocol.rest.ProcessInstanceFilter getSearchRequestProperty() {
     return filter;
-  }
-
-  static void variableValueNullCheck(final Object value) {
-    if (value == null) {
-      throw new IllegalArgumentException("Variable value cannot be null");
-    }
   }
 }

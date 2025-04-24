@@ -74,7 +74,6 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StateEnum;
-import io.camunda.zeebe.gateway.rest.util.GenericVariable;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -86,11 +85,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
 import org.springframework.util.CollectionUtils;
 
 public final class SearchQueryRequestMapper {
+
+  public static final AdvancedStringFilter EMPTY_ADVANCED_STRING_FILTER =
+      new AdvancedStringFilter();
+  public static final BasicStringFilter EMPTY_BASIC_STRING_FILTER = new BasicStringFilter();
 
   private SearchQueryRequestMapper() {}
 
@@ -195,7 +199,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            toVariableValueFiltersForProcessInstance(filter.getVariables());
+            toVariableValueFilters(filter.getVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {
@@ -447,7 +451,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static VariableFilter toUserTaskVariableFilter(
-      final VariableUserTaskFilterRequest filter) {
+      final UserTaskVariableFilterRequest filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();
     }
@@ -698,7 +702,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            toVariableValueFiltersForProcessInstance(filter.getVariables());
+            toVariableValueFilters(filter.getVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {
@@ -840,7 +844,7 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::elementInstanceKeys);
       if (!CollectionUtils.isEmpty(filter.getProcessInstanceVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            toVariableValueFiltersForUserTask(filter.getProcessInstanceVariables());
+            toVariableValueFilters(filter.getProcessInstanceVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {
@@ -849,7 +853,7 @@ public final class SearchQueryRequestMapper {
       }
       if (!CollectionUtils.isEmpty(filter.getLocalVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            toVariableValueFiltersForUserTask(filter.getLocalVariables());
+            toVariableValueFilters(filter.getLocalVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {
@@ -1193,52 +1197,34 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
-  private static Either<List<String>, List<VariableValueFilter>> toVariableValueFiltersForUserTask(
-      final List<UserTaskVariableFilterRequest> filters) {
-    if (CollectionUtils.isEmpty(filters)) {
-      return Either.right(null);
-    }
-
-    final List<GenericVariable<StringFilterProperty>> genericVariables = new ArrayList<>();
-    filters.forEach(
-        filter -> genericVariables.add(new GenericVariable<>(filter.getName(), filter.getValue())));
-    return toVariableValueFilters(genericVariables);
-  }
-
-  private static Either<List<String>, List<VariableValueFilter>>
-      toVariableValueFiltersForProcessInstance(
-          final List<ProcessInstanceVariableFilterRequest> filters) {
-    if (CollectionUtils.isEmpty(filters)) {
-      return Either.right(null);
-    }
-
-    final List<GenericVariable<StringFilterProperty>> genericVariables = new ArrayList<>();
-    filters.forEach(
-        filter -> genericVariables.add(new GenericVariable<>(filter.getName(), filter.getValue())));
-    return toVariableValueFilters(genericVariables);
-  }
-
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
-      final List<GenericVariable<StringFilterProperty>> genericVariables) {
-    final List<String> validationErrors = new ArrayList<>();
-    final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
-    genericVariables.forEach(
-        filter -> {
-          if (filter.name() == null) {
-            validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_NAME);
-          }
-          if (filter.value() == null) {
-            validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_VALUE);
-          }
-          if (validationErrors.isEmpty()) {
-            variableValueFilters.addAll(toVariableValueFilters(filter.name(), filter.value()));
-          }
-        });
-    if (validationErrors.isEmpty()) {
-      return Either.right(variableValueFilters);
-    } else {
-      return Either.left(validationErrors);
+      final List<VariableValueFilterRequest> filters) {
+    if (CollectionUtils.isEmpty(filters)) {
+      return Either.right(List.of());
     }
+
+    final List<String> validationErrors = new ArrayList<>();
+    final List<VariableValueFilter> variableValueFilters =
+        filters.stream()
+            .flatMap(
+                filter -> {
+                  if (filter.getName() == null) {
+                    validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_NAME);
+                  }
+                  if (filter.getValue() == null
+                      || filter.getValue().equals(EMPTY_ADVANCED_STRING_FILTER)
+                      || filter.getValue().equals(EMPTY_BASIC_STRING_FILTER)) {
+                    validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_VALUE);
+                  }
+                  // if there is no validation error overall, process the filter
+                  return validationErrors.isEmpty()
+                      ? toVariableValueFilters(filter.getName(), filter.getValue()).stream()
+                      : Stream.empty();
+                })
+            .toList();
+    return validationErrors.isEmpty()
+        ? Either.right(variableValueFilters)
+        : Either.left(validationErrors);
   }
 
   private static List<VariableValueFilter> toVariableValueFilters(

@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.statistics.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.processDefinitionStatisticsFilter;
+
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
@@ -24,9 +26,7 @@ import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
 import io.camunda.client.impl.statistics.response.StatisticsResponseMapper;
-import io.camunda.client.protocol.rest.BaseProcessInstanceFilter;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import java.time.Duration;
@@ -77,19 +77,14 @@ public class ProcessDefinitionElementStatisticsRequestImpl
   @Override
   public ProcessDefinitionElementStatisticsRequest filter(
       final ProcessDefinitionStatisticsFilter value) {
-    final BaseProcessInstanceFilter filter = provideSearchRequestProperty(value);
-    request.setFilter(filter);
+    request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
   public ProcessDefinitionElementStatisticsRequest filter(
       final Consumer<ProcessDefinitionStatisticsFilter> fn) {
-    final ProcessDefinitionStatisticsFilter value = new ProcessDefinitionStatisticsFilterImpl();
-    fn.accept(value);
-    final BaseProcessInstanceFilter filter = provideSearchRequestProperty(value);
-    request.setFilter(filter);
-    return this;
+    return filter(processDefinitionStatisticsFilter(fn));
   }
 
   @Override

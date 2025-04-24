@@ -26,11 +26,6 @@ public class DecisionRequirementsFilterImpl
 
   private final io.camunda.client.protocol.rest.DecisionRequirementsFilter filter;
 
-  public DecisionRequirementsFilterImpl(
-      final io.camunda.client.protocol.rest.DecisionRequirementsFilter filter) {
-    this.filter = new io.camunda.client.protocol.rest.DecisionRequirementsFilter();
-  }
-
   public DecisionRequirementsFilterImpl() {
     filter = new io.camunda.client.protocol.rest.DecisionRequirementsFilter();
   }

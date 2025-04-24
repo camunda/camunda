@@ -27,8 +27,8 @@ import io.camunda.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.client.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.protocol.rest.StringFilterProperty;
+import io.camunda.client.protocol.rest.VariableValueFilterRequest;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -63,12 +63,10 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
-    final List<ProcessInstanceVariableFilterRequest> variables =
+    final List<VariableValueFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest()
-                .name("n1")
-                .value(new StringFilterProperty().$eq("v1")),
-            new ProcessInstanceVariableFilterRequest()
+            new VariableValueFilterRequest().name("n1").value(new StringFilterProperty().$eq("v1")),
+            new VariableValueFilterRequest()
                 .name("n2")
                 .value(new StringFilterProperty().$eq("v2")));
     client
@@ -183,12 +181,10 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
-    final List<ProcessInstanceVariableFilterRequest> variables =
+    final List<VariableValueFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest()
-                .name("n1")
-                .value(new StringFilterProperty().$eq("v1")),
-            new ProcessInstanceVariableFilterRequest()
+            new VariableValueFilterRequest().name("n1").value(new StringFilterProperty().$eq("v1")),
+            new VariableValueFilterRequest()
                 .name("n2")
                 .value(new StringFilterProperty().$eq("v2")));
 

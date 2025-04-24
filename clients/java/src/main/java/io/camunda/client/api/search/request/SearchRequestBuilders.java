@@ -26,6 +26,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
+import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
@@ -35,6 +36,7 @@ import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
+import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.impl.search.filter.AdHocSubprocessActivityFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
@@ -46,6 +48,7 @@ import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
+import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
 import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
@@ -56,245 +59,159 @@ import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
 import io.camunda.client.impl.search.sort.UserTaskSortImpl;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
+import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
 import java.util.function.Consumer;
 
 public final class SearchRequestBuilders {
 
   private SearchRequestBuilders() {}
 
-  /** Create a process definition filter. */
-  public static ProcessDefinitionFilter processDefinitionFilter() {
-    return new ProcessDefinitionFilterImpl();
-  }
-
-  /** Create a process definition filter by using a fluent builder. */
   public static ProcessDefinitionFilter processDefinitionFilter(
       final Consumer<ProcessDefinitionFilter> fn) {
-    final ProcessDefinitionFilter filter = processDefinitionFilter();
+    final ProcessDefinitionFilter filter = new ProcessDefinitionFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  /** Create a process instance filter. */
-  public static ProcessInstanceFilter processInstanceFilter() {
-    return new ProcessInstanceFilterImpl();
-  }
-
-  /** Create a process instance filter by using a fluent builder. */
   public static ProcessInstanceFilter processInstanceFilter(
       final Consumer<ProcessInstanceFilter> fn) {
-    final ProcessInstanceFilter filter = processInstanceFilter();
+    final ProcessInstanceFilter filter = new ProcessInstanceFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  /** Create a decision definition filter. */
-  public static DecisionDefinitionFilter decisionDefinitionFilter() {
-    return new DecisionDefinitionFilterImpl() {};
-  }
-
-  /** Create a decision definition filter by using a fluent builder. */
   public static DecisionDefinitionFilter decisionDefinitionFilter(
       final Consumer<DecisionDefinitionFilter> fn) {
-    final DecisionDefinitionFilter filter = decisionDefinitionFilter();
+    final DecisionDefinitionFilter filter = new DecisionDefinitionFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  /** Create an incident filter. */
-  public static IncidentFilter incidentFilter() {
-    return new IncidentFilterImpl() {};
-  }
-
-  /** Create an incident filter by using a fluent builder. */
   public static IncidentFilter incidentFilter(final Consumer<IncidentFilter> fn) {
-    final IncidentFilter filter = incidentFilter();
+    final IncidentFilter filter = new IncidentFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  /** Create a process definition sort option. */
-  public static ProcessDefinitionSort processDefinitionSort() {
-    return new ProcessDefinitionSortImpl();
-  }
-
-  /** Create a process definition sort option by using a fluent builder. */
   public static ProcessDefinitionSort processDefinitionSort(
       final Consumer<ProcessDefinitionSort> fn) {
-    final ProcessDefinitionSort sort = processDefinitionSort();
+    final ProcessDefinitionSort sort = new ProcessDefinitionSortImpl();
     fn.accept(sort);
     return sort;
   }
 
-  /** Create a process instance sort option. */
-  public static ProcessInstanceSort processInstanceSort() {
-    return new ProcessInstanceSortImpl();
-  }
-
-  /** Create a process instance sort option by using a fluent builder. */
   public static ProcessInstanceSort processInstanceSort(final Consumer<ProcessInstanceSort> fn) {
-    final ProcessInstanceSort sort = processInstanceSort();
+    final ProcessInstanceSort sort = new ProcessInstanceSortImpl();
     fn.accept(sort);
     return sort;
   }
 
-  /** Create a decision definition sort option. */
-  public static DecisionDefinitionSort decisionDefinitionSort() {
-    return new DecisionDefinitionSortImpl() {};
-  }
-
-  /** Create a decision definition sort option by using a fluent builder. */
   public static DecisionDefinitionSort decisionDefinitionSort(
       final Consumer<DecisionDefinitionSort> fn) {
-    final DecisionDefinitionSort sort = decisionDefinitionSort();
+    final DecisionDefinitionSort sort = new DecisionDefinitionSortImpl();
     fn.accept(sort);
     return sort;
-  }
-
-  public static IncidentSort incidentSort() {
-    return new IncidentSortImpl() {};
   }
 
   public static IncidentSort incidentSort(final Consumer<IncidentSort> fn) {
-    final IncidentSort sort = incidentSort();
+    final IncidentSort sort = new IncidentSortImpl();
     fn.accept(sort);
     return sort;
   }
 
-  /** Create a search page. */
-  public static SearchRequestPage searchRequestPage() {
-    return new SearchRequestPageImpl();
-  }
-
-  /** Create a search page by using a fluent builder. */
   public static SearchRequestPage searchRequestPage(final Consumer<SearchRequestPage> fn) {
-    final SearchRequestPage filter = searchRequestPage();
+    final SearchRequestPage filter = new SearchRequestPageImpl();
     fn.accept(filter);
     return filter;
-  }
-
-  public static UserTaskFilter userTaskFilter() {
-    return new UserTaskFilterImpl();
   }
 
   public static UserTaskFilter userTaskFilter(final Consumer<UserTaskFilter> fn) {
-    final UserTaskFilter filter = userTaskFilter();
+    final UserTaskFilter filter = new UserTaskFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  public static UserTaskSort userTaskSort() {
-    return new UserTaskSortImpl();
-  }
-
   public static UserTaskSort userTaskSort(final Consumer<UserTaskSort> fn) {
-    final UserTaskSort sort = userTaskSort();
+    final UserTaskSort sort = new UserTaskSortImpl();
     fn.accept(sort);
     return sort;
-  }
-
-  public static DecisionRequirementsFilter decisionRequirementsFilter() {
-    return new DecisionRequirementsFilterImpl();
   }
 
   public static DecisionRequirementsFilter decisionRequirementsFilter(
       final Consumer<DecisionRequirementsFilter> fn) {
-    final DecisionRequirementsFilter filter = decisionRequirementsFilter();
+    final DecisionRequirementsFilter filter = new DecisionRequirementsFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  public static DecisionRequirementsSort decisionRequirementsSort() {
-    return new DecisionRequirementsSortImpl();
-  }
-
   public static DecisionRequirementsSort decisionRequirementsSort(
       final Consumer<DecisionRequirementsSort> fn) {
-    final DecisionRequirementsSort sort = decisionRequirementsSort();
+    final DecisionRequirementsSort sort = new DecisionRequirementsSortImpl();
     fn.accept(sort);
     return sort;
   }
 
   public static DecisionInstanceFilter decisionInstanceFilter(
       final Consumer<DecisionInstanceFilter> fn) {
-    final DecisionInstanceFilter filter = decisionInstanceFilter();
+    final DecisionInstanceFilter filter = new DecisionInstanceFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  public static DecisionInstanceFilter decisionInstanceFilter() {
-    return new DecisionInstanceFilterImpl();
-  }
-
   public static DecisionInstanceSort decisionInstanceSort(final Consumer<DecisionInstanceSort> fn) {
-    final DecisionInstanceSort sort = decisionInstanceSort();
+    final DecisionInstanceSort sort = new DecisionInstanceSortImpl();
     fn.accept(sort);
     return sort;
-  }
-
-  public static DecisionInstanceSort decisionInstanceSort() {
-    return new DecisionInstanceSortImpl();
-  }
-
-  public static ElementInstanceFilter elementInstanceFilter() {
-    return new ElementInstanceFilterImpl();
   }
 
   public static ElementInstanceFilter elementInstanceFilter(
       final Consumer<ElementInstanceFilter> fn) {
-    final ElementInstanceFilter filter = elementInstanceFilter();
+    final ElementInstanceFilter filter = new ElementInstanceFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  public static ElementInstanceSort elementInstanceSort() {
-    return new ElementInstanceSortImpl();
-  }
-
   public static ElementInstanceSort elementInstanceSort(final Consumer<ElementInstanceSort> fn) {
-    final ElementInstanceSort sort = elementInstanceSort();
+    final ElementInstanceSort sort = new ElementInstanceSortImpl();
     fn.accept(sort);
     return sort;
-  }
-
-  public static AdHocSubprocessActivityFilter adHocSubprocessActivityFilter() {
-    return new AdHocSubprocessActivityFilterImpl();
   }
 
   public static AdHocSubprocessActivityFilter adHocSubprocessActivityFilter(
       final Consumer<AdHocSubprocessActivityFilter> fn) {
-    final AdHocSubprocessActivityFilter filter = adHocSubprocessActivityFilter();
+    final AdHocSubprocessActivityFilter filter = new AdHocSubprocessActivityFilterImpl();
     fn.accept(filter);
     return filter;
-  }
-
-  public static VariableFilter variableFilter() {
-    return new VariableFilterImpl();
   }
 
   public static VariableFilter variableFilter(final Consumer<VariableFilter> fn) {
-    final VariableFilter filter = variableFilter();
+    final VariableFilter filter = new VariableFilterImpl();
     fn.accept(filter);
     return filter;
   }
 
-  public static VariableSort variableSort() {
-    return new VariableSortImpl();
-  }
-
   public static VariableSort variableSort(final Consumer<VariableSort> fn) {
-    final VariableSort sort = variableSort();
+    final VariableSort sort = new VariableSortImpl();
     fn.accept(sort);
     return sort;
   }
 
-  public static UserTaskVariableFilter userTaskVariableFilter() {
-    return new UserTaskVariableFilterImpl();
-  }
-
   public static UserTaskVariableFilter userTaskVariableFilter(
       final Consumer<UserTaskVariableFilter> fn) {
-    final UserTaskVariableFilter filter = userTaskVariableFilter();
+    final UserTaskVariableFilter filter = new UserTaskVariableFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static VariableValueFilter variableValueFilter(final Consumer<VariableValueFilter> fn) {
+    final VariableValueFilterImpl filter = new VariableValueFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static ProcessDefinitionStatisticsFilter processDefinitionStatisticsFilter(
+      final Consumer<ProcessDefinitionStatisticsFilter> fn) {
+    final ProcessDefinitionStatisticsFilter filter = new ProcessDefinitionStatisticsFilterImpl();
     fn.accept(filter);
     return filter;
   }

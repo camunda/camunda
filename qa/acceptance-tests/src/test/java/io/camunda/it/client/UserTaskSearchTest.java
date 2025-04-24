@@ -14,9 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
-import io.camunda.client.api.search.filter.StringFilterProperty;
-import io.camunda.client.api.search.filter.UserTaskVariableFilterRequest;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
@@ -25,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -77,7 +77,7 @@ class UserTaskSearchTest {
     assertThat(result.items().size()).isEqualTo(1);
 
     // Validate that names "P1" and "P2" exist in the result
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(UserTask::getName))
         .containsExactlyInAnyOrder("P1")
         .doesNotContain("P2");
   }
@@ -93,7 +93,7 @@ class UserTaskSearchTest {
     assertThat(result.items().size()).isEqualTo(1);
 
     // Validate that names "P1" and "P2" exist in the result
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(UserTask::getName))
         .containsExactlyInAnyOrder("P1")
         .doesNotContain("P2");
   }
@@ -111,7 +111,7 @@ class UserTaskSearchTest {
     assertThat(result.items()).hasSize(2);
 
     // Validate that names "P1" and "P2" exist in the result
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(UserTask::getName))
         .containsExactlyInAnyOrder("P1", "P2");
   }
 
@@ -128,7 +128,7 @@ class UserTaskSearchTest {
     assertThat(result.items()).hasSize(2);
 
     // Validate that names "P1" and "P2" exist in the result
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(UserTask::getName))
         .containsExactlyInAnyOrder("P1", "P2");
   }
 
@@ -149,7 +149,7 @@ class UserTaskSearchTest {
     assertThat(result.items()).hasSize(1);
 
     // Validate that name "P1" exists in the result
-    assertThat(result.items().stream().map(item -> item.getName())).containsExactlyInAnyOrder("P1");
+    assertThat(result.items().stream().map(UserTask::getName)).containsExactlyInAnyOrder("P1");
   }
 
   @Test
@@ -246,11 +246,7 @@ class UserTaskSearchTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfVariableValueNull() {
-
-    // given
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().setName("process01");
+  public void shouldThrowExceptionIfVariableValueNullInConsumer() {
 
     // when
     final var exception =
@@ -259,11 +255,53 @@ class UserTaskSearchTest {
             () ->
                 camundaClient
                     .newUserTaskSearchRequest()
-                    .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+                    .filter(f -> f.processInstanceVariables(List.of(vf -> vf.name("process01"))))
                     .send()
                     .join());
     // then
-    assertThat(exception.getMessage()).isEqualTo("Variable value cannot be null");
+    assertThat(exception.getMessage())
+        .contains("Variable value cannot be null for variable 'process01'");
+  }
+
+  @Test
+  public void shouldThrowExceptionIfVariableValueNullInMap() {
+    // given
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("process01", null);
+
+    // when
+    final var exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                camundaClient
+                    .newUserTaskSearchRequest()
+                    .filter(f -> f.processInstanceVariables(variables))
+                    .send()
+                    .join());
+    // then
+    assertThat(exception.getMessage())
+        .contains("Variable value cannot be null for variable 'process01'");
+  }
+
+  @Test
+  public void shouldThrowExceptionIfVariableValueEmptyFilter() {
+    // when
+    final var exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                camundaClient
+                    .newUserTaskSearchRequest()
+                    .filter(
+                        f ->
+                            f.processInstanceVariables(
+                                List.of(vf -> vf.name("process01").value(v -> {}))))
+                    .send()
+                    .join());
+    // then
+    assertThat(exception.getMessage())
+        .contains("Variable value cannot be null for variable 'process01'");
   }
 
   @Test
@@ -290,15 +328,14 @@ class UserTaskSearchTest {
 
   @Test
   public void shouldRetrieveTaskByLocalVariablesLike() {
-    final UserTaskVariableFilterRequest variableValueFilter1 =
-        new UserTaskVariableFilterRequest()
-            .setName("task01")
-            .setValue(new StringFilterProperty().setLike("\"te*\""));
 
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(
+                        List.of(vf -> vf.name("task01").value(v -> v.like("\"te*\"")))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -306,15 +343,13 @@ class UserTaskSearchTest {
 
   @Test
   public void shouldRetrieveTaskByLocalVariablesIn() {
-    final UserTaskVariableFilterRequest variableValueFilter1 =
-        new UserTaskVariableFilterRequest()
-            .setName("task01")
-            .setValue(new StringFilterProperty().addInItem("\"test\""));
 
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(List.of(vf -> vf.name("task01").value(v -> v.in("\"test\"")))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -678,7 +713,7 @@ class UserTaskSearchTest {
             .join();
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getName()).isEqualTo("localVariable");
+    assertThat(result.items().getFirst().getName()).isEqualTo("localVariable");
   }
 
   @Test
@@ -699,7 +734,7 @@ class UserTaskSearchTest {
 
     // Then
     assertThat(result.items()).hasSize(2);
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(Variable::getName))
         .containsExactlyInAnyOrder("processVariable", "subProcessVariable");
   }
 
@@ -721,7 +756,7 @@ class UserTaskSearchTest {
 
     // Then
     assertThat(result.items()).hasSize(2);
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(Variable::getName))
         .containsExactlyInAnyOrder("processVariable", "subProcessVariable");
   }
 

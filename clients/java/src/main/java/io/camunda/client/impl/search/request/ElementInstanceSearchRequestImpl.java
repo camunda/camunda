@@ -31,7 +31,6 @@ import io.camunda.client.api.search.sort.ElementInstanceSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
 import io.camunda.client.protocol.rest.ElementInstanceSearchQuery;
 import io.camunda.client.protocol.rest.ElementInstanceSearchQueryResult;
 import java.time.Duration;
@@ -77,9 +76,7 @@ public class ElementInstanceSearchRequestImpl
 
   @Override
   public ElementInstanceSearchRequest filter(final ElementInstanceFilter value) {
-    final io.camunda.client.protocol.rest.ElementInstanceFilter filter =
-        provideSearchRequestProperty(value);
-    request.setFilter(filter);
+    request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
@@ -90,10 +87,9 @@ public class ElementInstanceSearchRequestImpl
 
   @Override
   public ElementInstanceSearchRequest sort(final ElementInstanceSort value) {
-    final ElementInstanceSortImpl sorting = (ElementInstanceSortImpl) value;
     request.setSort(
         SearchRequestSortMapper.toElementInstanceSearchQuerySortRequest(
-            sorting.getSearchRequestProperty()));
+            provideSearchRequestProperty(value)));
     return this;
   }
 
@@ -104,8 +100,7 @@ public class ElementInstanceSearchRequestImpl
 
   @Override
   public ElementInstanceSearchRequest page(final SearchRequestPage value) {
-    final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
-    request.setPage(page.getSearchRequestProperty());
+    request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 

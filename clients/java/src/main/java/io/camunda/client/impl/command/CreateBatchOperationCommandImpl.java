@@ -36,7 +36,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
@@ -46,14 +46,14 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   private final RequestConfig.Builder httpRequestConfig;
 
   private final BatchOperationTypeEnum type;
-  private final Supplier<E> filterFactory;
+  private final Function<Consumer<E>, E> filterFactory;
   private E filter;
 
   public CreateBatchOperationCommandImpl(
       final HttpClient httpClient,
       final JsonMapper jsonMapper,
       final BatchOperationTypeEnum type,
-      final Supplier<E> filterFactory) {
+      final Function<Consumer<E>, E> filterFactory) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -71,8 +71,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   @Override
   public CreateBatchOperationCommandStep3<E> filter(final Consumer<E> fn) {
     Objects.requireNonNull(fn, "must specify a filter consumer");
-    filter = filterFactory.get();
-    fn.accept(filter);
+    filter = filterFactory.apply(fn);
     return this;
   }
 

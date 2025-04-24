@@ -16,36 +16,45 @@
 package io.camunda.client.impl.search.filter.builder;
 
 import io.camunda.client.api.search.enums.ElementInstanceState;
-import io.camunda.client.api.search.filter.ElementInstanceStateFilterProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
+import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
+import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.ElementInstanceStateEnum;
+import io.camunda.client.protocol.rest.ElementInstanceStateFilterProperty;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class ElementInstanceStatePropertyImpl implements ElementInstanceStateProperty {
+public class ElementInstanceStatePropertyImpl
+    extends TypedSearchRequestPropertyProvider<ElementInstanceStateFilterProperty>
+    implements ElementInstanceStateProperty {
   private final ElementInstanceStateFilterProperty filterProperty =
       new ElementInstanceStateFilterProperty();
 
   @Override
   public ElementInstanceStateProperty eq(final ElementInstanceState value) {
-    filterProperty.setEq(value);
+    filterProperty.set$Eq(EnumUtil.convert(value, ElementInstanceStateEnum.class));
     return this;
   }
 
   @Override
   public ElementInstanceStateProperty neq(final ElementInstanceState value) {
-    filterProperty.setNeq(value);
+    filterProperty.set$Neq(EnumUtil.convert(value, ElementInstanceStateEnum.class));
     return this;
   }
 
   @Override
   public ElementInstanceStateProperty exists(final boolean value) {
-    filterProperty.setExists(value);
+    filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
   public ElementInstanceStateProperty in(final List<ElementInstanceState> values) {
-    filterProperty.setIn(values);
+    filterProperty.set$In(
+        values.stream()
+            .map(value -> EnumUtil.convert(value, ElementInstanceStateEnum.class))
+            .collect(Collectors.toList()));
     return this;
   }
 
@@ -55,13 +64,13 @@ public class ElementInstanceStatePropertyImpl implements ElementInstanceStatePro
   }
 
   @Override
-  public ElementInstanceStateFilterProperty build() {
+  protected ElementInstanceStateFilterProperty getSearchRequestProperty() {
     return filterProperty;
   }
 
   @Override
   public ElementInstanceStateProperty like(final String value) {
-    filterProperty.setLike(value);
+    filterProperty.set$Like(value);
     return this;
   }
 }
