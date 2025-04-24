@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -115,4 +116,13 @@ public interface CamundaProcessTestContext {
 
   void throwBpmnErrorFromJob(
       final String jobType, final String errorCode, final Map<String, Object> variables);
+
+  void completeUserTask(final String taskName);
+
+  void completeUserTask(final String taskName, final Map<String, Object> variables);
+
+  void completeUserTask(final UserTaskSelector userTaskSelector);
+
+  void completeUserTask(
+      final UserTaskSelector userTaskSelector, final Map<String, Object> variables);
 }

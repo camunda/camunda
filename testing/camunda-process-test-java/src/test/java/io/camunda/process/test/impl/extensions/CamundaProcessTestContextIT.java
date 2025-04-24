@@ -21,6 +21,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ public class CamundaProcessTestContextIT {
   void shouldThrowBpmnErrorWithoutVariables() {
     // Given
     processTestContext.mockJobWorker("test").thenThrowBpmnError("bpmn-error");
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
 
     // When
     final ProcessInstanceEvent processInstanceEvent =
@@ -53,7 +54,7 @@ public class CamundaProcessTestContextIT {
     final Map<String, Object> variables = new HashMap<>();
     variables.put("abc", 123);
     processTestContext.mockJobWorker("test").thenThrowBpmnError("bpmn-error", variables);
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
 
     // When
     final ProcessInstanceEvent processInstanceEvent =
@@ -68,7 +69,7 @@ public class CamundaProcessTestContextIT {
   void shouldMockJobWorkerWithoutVariables() {
     // Given
     processTestContext.mockJobWorker("test").thenComplete();
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
 
     // When
     final ProcessInstanceEvent processInstanceEvent =
@@ -85,7 +86,7 @@ public class CamundaProcessTestContextIT {
     final Map<String, Object> variables = new HashMap<>();
     variables.put("abc", 123);
     processTestContext.mockJobWorker("test").thenComplete(variables);
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
 
     // When
     final ProcessInstanceEvent processInstanceEvent =
@@ -106,7 +107,7 @@ public class CamundaProcessTestContextIT {
             (jobClient, job) -> {
               jobClient.newThrowErrorCommand(job).errorCode("bpmn-error").send().join();
             });
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
 
     // When
     final ProcessInstanceEvent processInstanceEvent =
@@ -126,7 +127,7 @@ public class CamundaProcessTestContextIT {
             (jobClient, job) -> {
               jobClient.newCompleteCommand(job).send().join();
             });
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
 
     // When
     final ProcessInstanceEvent processInstanceEvent =
@@ -140,7 +141,7 @@ public class CamundaProcessTestContextIT {
   @Test
   void shouldCompleteJob() {
     // Given
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
     final ProcessInstanceEvent processInstanceEvent =
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
@@ -155,7 +156,7 @@ public class CamundaProcessTestContextIT {
   @Test
   void shouldCompleteJobWithVariables() {
     // Given
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
     final ProcessInstanceEvent processInstanceEvent =
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
     final Map<String, Object> variables = new HashMap<>();
@@ -173,7 +174,7 @@ public class CamundaProcessTestContextIT {
   @Test
   void shouldThrowBpmnErrorFromJob() {
     // Given
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
     final ProcessInstanceEvent processInstanceEvent =
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
@@ -188,7 +189,7 @@ public class CamundaProcessTestContextIT {
   @Test
   void shouldThrowBpmnErrorFromJobWithVariables() {
     // Given
-    final long processDefinitionKey = deployProcessModel();
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
     final ProcessInstanceEvent processInstanceEvent =
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
     final Map<String, Object> variables = new HashMap<>();
@@ -203,23 +204,144 @@ public class CamundaProcessTestContextIT {
     CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
   }
 
+  @Test
+  void shouldCompleteUserTask() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When
+    processTestContext.completeUserTask("user-task");
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+  }
+
+  @Test
+  void shouldCompleteUserTaskWithVariables() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("abc", 123);
+
+    // When
+    processTestContext.completeUserTask("user-task", variables);
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  void shouldCompleteUserTaskByTaskName() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When
+    processTestContext.completeUserTask(UserTaskSelectors.byTaskName("user-task"));
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+  }
+
+  @Test
+  void shouldCompleteUserTaskByTaskNameWithVariable() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("abc", 123);
+
+    // When
+    processTestContext.completeUserTask(UserTaskSelectors.byTaskName("user-task"), variables);
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  void shouldCompleteUserTaskByElementId() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When
+    processTestContext.completeUserTask(UserTaskSelectors.byElementId("user-task-1"));
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+  }
+
+  @Test
+  void shouldCompleteUserTaskByElementIdWithVariables() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("abc", 123);
+
+    // When
+    processTestContext.completeUserTask(UserTaskSelectors.byElementId("user-task-1"), variables);
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  void shouldCompleteUserTaskBySelector() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When
+    processTestContext.completeUserTask(t -> t.getName().equals("user-task"));
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+  }
+
+  @Test
+  void shouldCompleteUserTaskBySelectorWithVariables() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("abc", 123);
+
+    // When
+    processTestContext.completeUserTask(t -> t.getName().equals("user-task"), variables);
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
   /**
    * Deploys a process model and waits until it is accessible via the API.
    *
    * @return the process definition key
    */
-  private long deployProcessModel() {
-    final BpmnModelInstance processModel =
-        Bpmn.createExecutableProcess("test-process")
-            .startEvent()
-            .serviceTask("service-task-1")
-            .zeebeJobType("test")
-            .boundaryEvent("error-boundary-event")
-            .error("bpmn-error")
-            .endEvent("error-end")
-            .moveToActivity("service-task-1")
-            .endEvent("success-end")
-            .done();
+  private long deployProcessModel(final BpmnModelInstance processModel) {
 
     final DeploymentEvent deploymentEvent =
         client
@@ -228,5 +350,32 @@ public class CamundaProcessTestContextIT {
             .send()
             .join();
     return deploymentEvent.getProcesses().stream().findFirst().get().getProcessDefinitionKey();
+  }
+
+  private BpmnModelInstance processModelWithServiceTask() {
+    return Bpmn.createExecutableProcess("test-process")
+        .startEvent()
+        .serviceTask("service-task-1")
+        .zeebeJobType("test")
+        .boundaryEvent("error-boundary-event")
+        .error("bpmn-error")
+        .endEvent("error-end")
+        .moveToActivity("service-task-1")
+        .endEvent("success-end")
+        .done();
+  }
+
+  private BpmnModelInstance processModelWithUserTask() {
+    return Bpmn.createExecutableProcess("test-process")
+        .startEvent()
+        .userTask("user-task-1")
+        .zeebeUserTask()
+        .name("user-task")
+        .boundaryEvent("error-boundary-event")
+        .error("bpmn-error")
+        .endEvent("error-end")
+        .moveToActivity("user-task-1")
+        .endEvent("success-end")
+        .done();
   }
 }

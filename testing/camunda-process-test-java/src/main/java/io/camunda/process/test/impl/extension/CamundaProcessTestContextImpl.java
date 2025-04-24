@@ -20,7 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.UserTaskSelector;
+import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
@@ -34,11 +38,16 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
+
+  private static final int TIMEOUT = 40;
 
   private final CamundaContainer camundaContainer;
   private final ConnectorsContainer connectorsContainer;
@@ -173,5 +182,50 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               activatedJob.set(jobs.get(0));
             });
     return activatedJob.get();
+  }
+
+  @Override
+  public void completeUserTask(final String taskName) {
+    completeUserTask(UserTaskSelectors.byTaskName(taskName), new HashMap<>());
+  }
+
+  @Override
+  public void completeUserTask(final String taskName, final Map<String, Object> variables) {
+    completeUserTask(UserTaskSelectors.byTaskName(taskName), variables);
+  }
+
+  @Override
+  public void completeUserTask(final UserTaskSelector userTaskSelector) {
+    completeUserTask(userTaskSelector, new HashMap<>());
+  }
+
+  @Override
+  public void completeUserTask(
+      final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final SearchResponse<UserTask> result = client.newUserTaskSearchRequest().send().join();
+    final AtomicReference<Long> userTaskKey = new AtomicReference<>();
+    Awaitility.await("until user task is active")
+        .ignoreExceptions()
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
+        .untilAsserted(
+            () -> {
+              final Future<SearchResponse<UserTask>> userTaskFuture =
+                  client.newUserTaskSearchRequest().send();
+              Assertions.assertThat(userTaskFuture)
+                  .succeedsWithin(Duration.ofSeconds(TIMEOUT))
+                  .extracting(SearchResponse::items)
+                  .satisfies(
+                      items -> {
+                        final List<UserTask> tasks =
+                            items.stream()
+                                .filter(userTaskSelector::test)
+                                .collect(Collectors.toList());
+                        Assertions.assertThat(tasks).isNotEmpty();
+                        userTaskKey.set(items.get(0).getUserTaskKey());
+                      });
+            });
+
+    client.newUserTaskCompleteCommand(userTaskKey.get()).variables(variables).send().join();
   }
 }
