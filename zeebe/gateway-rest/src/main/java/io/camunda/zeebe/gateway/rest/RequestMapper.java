@@ -352,9 +352,7 @@ public class RequestMapper {
         GroupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest),
         () ->
             new GroupDTO(
-                groupId,
-                groupUpdateRequest.getChangeset().getName(),
-                groupUpdateRequest.getChangeset().getDescription()));
+                groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
   }
 
   public static Either<ProblemDetail, GroupMemberRequest> toGroupMemberRequest(

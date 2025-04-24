@@ -19,7 +19,6 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.gateway.protocol.rest.GroupChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -247,9 +246,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            new GroupUpdateRequest()
-                .changeset(new GroupChangeset().name(groupName).description(description)))
+        .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
         .exchange()
         .expectStatus()
         .isOk()
@@ -282,9 +279,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            new GroupUpdateRequest()
-                .changeset(new GroupChangeset().name(emptyGroupName).description("description")))
+        .bodyValue(new GroupUpdateRequest().name(emptyGroupName).description("description"))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -316,7 +311,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(name)))
+        .bodyValue(new GroupUpdateRequest().name(name))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -355,9 +350,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            new GroupUpdateRequest()
-                .changeset(new GroupChangeset().name(groupName).description(description)))
+        .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
         .exchange()
         .expectStatus()
         .isNotFound();
@@ -379,9 +372,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            new GroupUpdateRequest()
-                .changeset(new GroupChangeset().name("updatedName").description("description")))
+        .bodyValue(new GroupUpdateRequest().name("updatedName").description("description"))
         .exchange()
         .expectStatus()
         .isBadRequest()

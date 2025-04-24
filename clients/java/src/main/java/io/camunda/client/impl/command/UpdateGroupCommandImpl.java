@@ -49,18 +49,14 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
 
   @Override
   public UpdateGroupCommandStep1 update(final GroupChangeset groupChangeset) {
-    final io.camunda.client.protocol.rest.GroupChangeset changeset =
-        new io.camunda.client.protocol.rest.GroupChangeset();
-    if (groupChangeset != null) {
-      changeset.name(groupChangeset.getName());
-    }
-    request.setChangeset(changeset);
+    // TODO: refactor with https://github.com/camunda/camunda/issues/30015
+    //    request.setChangeset(RequestMapper.toProtocolObject(groupChangeset));
     return this;
   }
 
   @Override
   public UpdateGroupCommandStep1 updateName(final String name) {
-    getChangesetEnsureInitialized().setName(name);
+    request.setName(name);
     return this;
   }
 
@@ -83,14 +79,5 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
         response::setResponse,
         result);
     return result;
-  }
-
-  private io.camunda.client.protocol.rest.GroupChangeset getChangesetEnsureInitialized() {
-    io.camunda.client.protocol.rest.GroupChangeset changeset = request.getChangeset();
-    if (changeset == null) {
-      changeset = new io.camunda.client.protocol.rest.GroupChangeset();
-      request.setChangeset(changeset);
-    }
-    return changeset;
   }
 }

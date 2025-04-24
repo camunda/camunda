@@ -6367,22 +6367,15 @@ components:
     GroupUpdateRequest:
       type: object
       properties:
-        changeset:
-          description: The set of changed group attributes.
-          allOf:
-            - $ref: "#/components/schemas/GroupChangeset"
-      required:
-        - changeset
-    GroupChangeset:
-      description: A set of changed group attributes.
-      type: object
-      properties:
         name:
           type: string
-          description: The updated display name of the group.
+          description: The new name of the tenant.
         description:
           type: string
-          description: The updated description of the group.
+          description: The new description of the tenant.
+      required:
+        - name
+        - description
     GroupUpdateResult:
       type: object
       properties:
