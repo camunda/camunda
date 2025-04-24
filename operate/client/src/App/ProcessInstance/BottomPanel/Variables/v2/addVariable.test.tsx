@@ -388,6 +388,7 @@ describe('Add variable', () => {
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
     const withinVariable = within(screen.getByTestId('variable-clientNo'));

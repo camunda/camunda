@@ -37,7 +37,6 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 
@@ -133,6 +132,7 @@ describe('TopPanel', () => {
         },
       ],
     });
+    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
   });
 
   afterEach(() => {
@@ -372,8 +372,7 @@ describe('TopPanel', () => {
       screen.queryByText(/select the target flow node in the diagram/i),
     ).not.toBeInTheDocument();
 
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
-    await user.click(screen.getByRole('button', {name: /move/i}));
+    await user.click(await screen.findByRole('button', {name: /move/i}));
 
     expect(
       await screen.findByText(/select the target flow node in the diagram/i),

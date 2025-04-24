@@ -121,6 +121,7 @@ describe('Edit variable', () => {
     expect(
       await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
     );
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
@@ -161,6 +162,7 @@ describe('Edit variable', () => {
     expect(
       await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
     );
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
@@ -197,9 +199,11 @@ describe('Edit variable', () => {
       screen.getByTestId(`variable-${firstVariable!.name}`),
     );
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
+
     await user.type(
       screen.getByTestId('edit-variable-value'),
       "{{invalidKey: 'value'}}",
@@ -255,6 +259,7 @@ describe('Edit variable', () => {
     );
 
     expect(await screen.findByTestId('variable-clientNo'));
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-clientNo')).getByRole('button', {
         name: /edit variable/i,
@@ -303,6 +308,7 @@ describe('Edit variable', () => {
     mockFetchVariable().withDelayedServerError();
 
     expect(await screen.findByTestId('variable-testVariableName'));
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
         'button',
@@ -341,6 +347,7 @@ describe('Edit variable', () => {
     expect(screen.getByText('"full-value"')).toBeInTheDocument();
 
     expect(await screen.findByTestId('variable-testVariableName'));
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
         'button',
@@ -386,6 +393,7 @@ describe('Edit variable', () => {
       createVariable({isPreview: false, value: '123456'}),
     );
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByTestId('edit-variable-value'));
 
     expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
@@ -427,6 +435,7 @@ describe('Edit variable', () => {
       createVariable({isPreview: false, value: '123456'}),
     );
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       screen.getByRole('button', {name: /open json editor modal/i}),
     );
@@ -452,6 +461,7 @@ describe('Edit variable', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(await screen.findByRole('button', {name: /edit variable/i}));
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /edit variable/i}));
     await user.click(
       screen.getByRole('button', {name: /open json editor modal/i}),

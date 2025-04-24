@@ -21,6 +21,7 @@ import {Popup} from '@carbon/react/icons';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 type Props = {
   variableName: string;
@@ -32,6 +33,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
   const form = useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const valueFieldName = createNewVariableFieldName(variableName, 'value');
+  const {data: businessObjects} = useBusinessObjects();
 
   const {
     currentName,
@@ -77,6 +79,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
                 id: currentId,
                 name: currentName,
                 value: currentValue,
+                businessObjects,
               });
             }}
           />
