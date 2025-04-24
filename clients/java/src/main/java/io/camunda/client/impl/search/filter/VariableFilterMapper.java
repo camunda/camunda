@@ -24,35 +24,53 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VariableFilterMapper {
 
   public static List<VariableValueFilterRequest> toVariableValueFilterRequest(
       final List<Consumer<VariableValueFilter>> variableValueFilters) {
-    return variableValueFilters.stream()
-        .map(SearchRequestBuilders::variableValueFilter)
-        .map(
-            TypedSearchRequestPropertyProvider
-                ::<VariableValueFilterRequest>provideSearchRequestProperty)
-        .collect(Collectors.toList());
+    return toVariableValueFilterRequest(
+        variableValueFilters.stream()
+            .map(SearchRequestBuilders::variableValueFilter)
+            .map(
+                TypedSearchRequestPropertyProvider
+                    ::<VariableValueFilterRequest>provideSearchRequestProperty));
   }
 
   public static List<VariableValueFilterRequest> toVariableValueFilterRequest(
       final Map<String, Object> variableValueFilters) {
-    final List<VariableValueFilterRequest> requests = new ArrayList<>();
-    for (final Map.Entry<String, Object> entry : variableValueFilters.entrySet()) {
-      variableValueNullCheck(entry.getValue());
-      requests.add(
-          new VariableValueFilterRequest()
-              .name(entry.getKey())
-              .value(new StringFilterProperty().$eq(entry.getValue().toString())));
-    }
-    return requests;
+    return toVariableValueFilterRequest(
+        variableValueFilters.entrySet().stream()
+            .map(
+                entry ->
+                    new VariableValueFilterRequest()
+                        .name(entry.getKey())
+                        .value(
+                            entry.getValue() == null
+                                ? null
+                                : new StringFilterProperty().$eq(entry.getValue().toString()))));
   }
 
-  static void variableValueNullCheck(final Object value) {
-    if (value == null) {
-      throw new IllegalArgumentException("Variable value cannot be null");
+  static List<VariableValueFilterRequest> toVariableValueFilterRequest(
+      final Stream<VariableValueFilterRequest> filterStream) {
+    final List<String> violations = new ArrayList<>();
+    final List<VariableValueFilterRequest> filters =
+        filterStream
+            .map(filter -> checkVariableValueNotNull(filter, violations))
+            .collect(Collectors.toList());
+    if (!violations.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Variable value filters contain violations: " + String.join(". ", violations));
     }
+    return filters;
+  }
+
+  static VariableValueFilterRequest checkVariableValueNotNull(
+      final VariableValueFilterRequest filter, final List<String> violations) {
+    if (filter.getValue() == null) {
+      violations.add("Variable value cannot be null for variable '" + filter.getName() + "'");
+    }
+    return filter;
   }
 }

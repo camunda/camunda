@@ -21,6 +21,7 @@ import static io.camunda.it.util.TestHelper.waitUntilJobWorkerHasFailedJob;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
@@ -884,6 +885,23 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfVariableValueNull() {
+
+    // when
+    final var exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                camundaClient
+                    .newProcessInstanceSearchRequest()
+                    .filter(f -> f.variables(Arrays.asList(vf -> vf.name("xyz"))))
+                    .send()
+                    .join());
+    // then
+    assertThat(exception.getMessage()).contains("Variable value cannot be null for variable 'xyz'");
   }
 
   @Test

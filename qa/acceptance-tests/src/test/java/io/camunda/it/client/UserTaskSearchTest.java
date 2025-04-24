@@ -259,7 +259,8 @@ class UserTaskSearchTest {
                     .send()
                     .join());
     // then
-    assertThat(exception.getMessage()).isEqualTo("Variable value cannot be null");
+    assertThat(exception.getMessage())
+        .contains("Variable value cannot be null for variable 'process01'");
   }
 
   @Test
