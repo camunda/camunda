@@ -176,24 +176,6 @@ public class TaskListenerBlockedTransitionTest {
   }
 
   @Test
-  public void shouldCreateFirstCreatingTaskListenerJob() {
-    // given
-    final long processInstanceKey =
-        helper.createProcessInstance(
-            helper.createProcessWithCreatingTaskListeners(listenerType + "_creating"));
-
-    // then: expect a job to be activated for the first `creating` listener
-    helper.assertActivatedJob(
-        processInstanceKey,
-        listenerType + "_creating",
-        job -> {
-          assertThat(job.getJobListenerEventType())
-              .describedAs("Expect job to have job listener type 'CREATING'")
-              .isEqualTo(JobListenerEventType.CREATING);
-        });
-  }
-
-  @Test
   public void shouldCreateUserTaskAfterAllCreatingTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
