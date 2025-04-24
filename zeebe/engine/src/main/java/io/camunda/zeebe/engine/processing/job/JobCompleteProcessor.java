@@ -28,8 +28,10 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -40,6 +42,13 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   public static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
       "Task Listener job completion with variables payload provided is not yet supported (job key '%d', type '%s', processInstanceKey '%d'). "
           + "Support will be enabled with the resolution of issue #23702";
+  public static final String TL_JOB_COMPLETION_WITH_DENY_NOT_SUPPORTED_MESSAGE =
+      """
+          Denying result is not supported for '%s' task listener jobs. \
+          Only the following listener types support denying: %s. \
+          The job completion will be rejected (job key '%d', type '%s', processInstanceKey '%d').
+          """;
+
   private static final Set<String> CORRECTABLE_PROPERTIES =
       Set.of(
           UserTaskRecord.ASSIGNEE,
@@ -48,6 +57,11 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           UserTaskRecord.DUE_DATE,
           UserTaskRecord.FOLLOW_UP_DATE,
           UserTaskRecord.PRIORITY);
+  private static final Set<JobListenerEventType> LISTENER_TYPES_THAT_SUPPORT_DENY =
+      EnumSet.of(
+          JobListenerEventType.ASSIGNING,
+          JobListenerEventType.UPDATING,
+          JobListenerEventType.COMPLETING);
 
   private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
@@ -70,6 +84,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             authCheckBehavior,
             List.of(
                 this::checkTaskListenerJobForProvidingVariables,
+                this::checkTaskListenerJobForSupportingDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
@@ -168,6 +183,36 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   private boolean hasVariables(final TypedRecord<JobRecord> command) {
     return !DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getVariablesBuffer());
+  }
+
+  private Either<Rejection, JobRecord> checkTaskListenerJobForSupportingDenying(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+      return Either.right(job);
+    }
+
+    final var jobResult = command.getValue().getResult();
+    final var listenerEventType = job.getJobListenerEventType();
+
+    if (jobResult.isDenied() && !LISTENER_TYPES_THAT_SUPPORT_DENY.contains(listenerEventType)) {
+      final var supportedTypes =
+          LISTENER_TYPES_THAT_SUPPORT_DENY.stream()
+              .map(JobListenerEventType::name)
+              .sorted()
+              .collect(Collectors.joining(", ", "[", "]"));
+
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              TL_JOB_COMPLETION_WITH_DENY_NOT_SUPPORTED_MESSAGE.formatted(
+                  listenerEventType,
+                  supportedTypes,
+                  command.getKey(),
+                  job.getType(),
+                  job.getProcessInstanceKey())));
+    }
+
+    return Either.right(job);
   }
 
   private Either<Rejection, JobRecord> checkTaskListenerJobForDenyingWithCorrections(
