@@ -334,7 +334,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
-    var query = applyFilters(userQuery);
+    final var query = applyFilters(userQuery);
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
   }
