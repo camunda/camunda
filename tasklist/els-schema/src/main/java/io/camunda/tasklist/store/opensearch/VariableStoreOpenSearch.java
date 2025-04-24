@@ -289,7 +289,8 @@ public class VariableStoreOpenSearch implements VariableStore {
                                 FieldValue.of(FlowNodeType.USER_TASK.toString()),
                                 FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
                                 FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
-                                FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString())))));
+                                FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString()),
+                                FieldValue.of(FlowNodeType.PROCESS.toString())))));
 
     final Query.Builder combinedQuery = new Query.Builder();
     combinedQuery.constantScore(
