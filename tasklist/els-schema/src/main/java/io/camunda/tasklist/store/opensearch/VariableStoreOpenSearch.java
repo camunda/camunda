@@ -50,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.ListUtils;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -74,6 +75,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class VariableStoreOpenSearch implements VariableStore {
+  private static final int DEFAULT_MAX_TERMS_COUNT = 65536;
+  private static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreOpenSearch.class);
 
   @Autowired
@@ -110,7 +113,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       final Set<String> fieldNames) {
 
     final List<List<String>> flowNodeInstanceIdsChunks =
-        chunkQueryTerms(flowNodeInstanceIds, maxTermsCount);
+        ListUtils.partition(flowNodeInstanceIds, maxTermsCount);
 
     final List<VariableEntity> variableEntities = new ArrayList<>();
     flowNodeInstanceIdsChunks.forEach(
