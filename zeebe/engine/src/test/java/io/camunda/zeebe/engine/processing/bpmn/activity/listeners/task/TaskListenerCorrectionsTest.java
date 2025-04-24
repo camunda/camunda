@@ -72,85 +72,8 @@ public class TaskListenerCorrectionsTest {
 
   @Test
   public void shouldAppendUserTaskCorrectedWhenCreatingTaskListenerCompletesWithCorrections() {
-    // given
-    final long processInstanceKey =
-        helper.createProcessInstance(
-            helper.createProcessWithCreatingTaskListeners(listenerType, listenerType + "_2"));
-    // when
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(listenerType)
-        .withResult(
-            new JobResult()
-                .setCorrections(
-                    new JobResultCorrections()
-                        .setAssignee("new_assignee")
-                        .setCandidateUsersList(List.of("new_candidate_user"))
-                        .setCandidateGroupsList(List.of("new_candidate_group"))
-                        .setDueDate("new_due_date")
-                        .setFollowUpDate("new_follow_up_date")
-                        .setPriority(100))
-                .setCorrectedAttributes(
-                    List.of(
-                        "assignee",
-                        "candidateUsersList",
-                        "candidateGroupsList",
-                        "dueDate",
-                        "followUpDate",
-                        "priority")))
-        .complete();
-
-    // then
-    Assertions.assertThat(
-            RecordingExporter.userTaskRecords(UserTaskIntent.CORRECTED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst()
-                .getValue())
-        .hasChangedAttributes(
-            "assignee",
-            "candidateUsersList",
-            "candidateGroupsList",
-            "dueDate",
-            "followUpDate",
-            "priority")
-        .hasAssignee("new_assignee")
-        .hasCandidateUsersList(List.of("new_candidate_user"))
-        .hasCandidateGroupsList(List.of("new_candidate_group"))
-        .hasDueDate("new_due_date")
-        .hasFollowUpDate("new_follow_up_date")
-        .hasPriority(100)
-        .hasAction("");
-
-    // when
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(listenerType + "_2")
-        .withResult(
-            new JobResult()
-                .setCorrections(new JobResultCorrections().setPriority(3))
-                .setCorrectedAttributes(List.of("priority")))
-        .complete();
-
-    // then
-    Assertions.assertThat(
-            RecordingExporter.userTaskRecords(UserTaskIntent.CORRECTED)
-                .withProcessInstanceKey(processInstanceKey)
-                .skip(1)
-                .getFirst()
-                .getValue())
-        .describedAs("Expect only the corrected attributes are mentioned")
-        .hasChangedAttributes("priority")
-        .describedAs("Expect that the corrected attribute is updated")
-        .hasPriority(3)
-        .describedAs("Expect that the other corrected data remains unchanged")
-        .hasAssignee("new_assignee")
-        .hasCandidateUsersList(List.of("new_candidate_user"))
-        .hasCandidateGroupsList(List.of("new_candidate_group"))
-        .hasDueDate("new_due_date")
-        .hasFollowUpDate("new_follow_up_date")
-        .hasAction("");
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.creating, u -> u, userTask -> {}, "");
   }
 
   @Test
@@ -231,7 +154,7 @@ public class TaskListenerCorrectionsTest {
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
     final var userTaskRecord =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final var userTask = userTaskRecord.getValue();
@@ -469,6 +392,22 @@ public class TaskListenerCorrectionsTest {
             UserTaskIntent.CANCELED));
   }
 
+  @Test
+  public void shouldPropagateCorrectedDataToCreatingListenerJobHeadersOnTaskCreation() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
+        ZeebeTaskListenerEventType.creating,
+        false,
+        ignore -> {},
+        List.of(
+            UserTaskIntent.CREATING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CREATED));
+  }
+
   /**
    * Verifies the propagation of user task data across listener job headers during the task
    * lifecycle.
@@ -517,7 +456,7 @@ public class TaskListenerCorrectionsTest {
                 }));
 
     final var createdUserTaskRecord =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final var userTaskKey = String.valueOf(createdUserTaskRecord.getKey());
@@ -1422,74 +1361,15 @@ public class TaskListenerCorrectionsTest {
                 .hasDueDate("new_due_date")
                 .hasFollowUpDate("new_follow_up_date")
                 .hasPriority(100)
+                // there should be no assignee present in this case
                 .hasAssignee(""));
   }
 
   @Test
   public void
       shouldPersistCorrectedUserTaskDataWhenCreatingTaskListenerCompletedWithNoInitialAssignee() {
-    // given
-    final long processInstanceKey =
-        helper.createProcessInstance(
-            helper.createProcessWithCreatingTaskListeners(listenerType, listenerType + "_2"));
-
-    // when
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(listenerType)
-        .withResult(
-            new JobResult()
-                .setCorrections(
-                    new JobResultCorrections()
-                        .setAssignee("new_assignee")
-                        .setCandidateUsersList(List.of("new_candidate_user"))
-                        .setCandidateGroupsList(List.of("new_candidate_group"))
-                        .setDueDate("new_due_date")
-                        .setFollowUpDate("new_follow_up_date")
-                        .setPriority(100))
-                .setCorrectedAttributes(
-                    List.of(
-                        "assignee",
-                        "candidateUsersList",
-                        "candidateGroupsList",
-                        "dueDate",
-                        "followUpDate",
-                        "priority")))
-        .complete();
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(listenerType + "_2")
-        .withResult(
-            new JobResult()
-                .setCorrections(
-                    new JobResultCorrections()
-                        .setCandidateGroupsList(List.of("twice_corrected_candidate_group")))
-                .setCorrectedAttributes(List.of("candidateGroupsList")))
-        .complete();
-
-    // then
-    helper.assertUserTaskRecordWithIntent(
-        processInstanceKey,
-        UserTaskIntent.CREATED,
-        userTaskRecord ->
-            Assertions.assertThat(userTaskRecord)
-                .describedAs("Expect that the last user task event contains the corrected data")
-                .hasChangedAttributes(
-                    "assignee",
-                    "candidateUsersList",
-                    "candidateGroupsList",
-                    "dueDate",
-                    "followUpDate",
-                    "priority")
-                .hasCandidateUsersList("new_candidate_user")
-                .describedAs("Expect that the most recent group correction takes precedence")
-                .hasAssignee("new_assignee")
-                .hasCandidateGroupsList("twice_corrected_candidate_group")
-                .hasDueDate("new_due_date")
-                .hasFollowUpDate("new_follow_up_date")
-                .hasPriority(100));
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.creating, u -> u, ignored -> {}, UserTaskIntent.CREATED);
   }
 
   private void testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
