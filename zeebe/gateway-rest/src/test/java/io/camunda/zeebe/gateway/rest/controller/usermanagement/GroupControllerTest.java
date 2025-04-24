@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
-import io.camunda.service.GroupServices.CreateGroupRequest;
+import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.GroupChangeset;
@@ -56,7 +56,7 @@ public class GroupControllerTest extends RestControllerTest {
     // given
     final var groupName = "testGroup";
     final var description = "description";
-    final var createGroupRequest = new CreateGroupRequest(groupId, groupName, description);
+    final var createGroupRequest = new GroupDTO(groupId, groupName, description);
     when(groupServices.createGroup(createGroupRequest))
         .thenReturn(
             CompletableFuture.completedFuture(

@@ -11,7 +11,7 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.service.GroupServices;
-import io.camunda.service.GroupServices.CreateGroupRequest;
+import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
@@ -19,7 +19,6 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateGroupRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -157,18 +156,16 @@ public class GroupController {
     }
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createGroup(
-      final CreateGroupRequest createGroupRequest) {
+  private CompletableFuture<ResponseEntity<Object>> createGroup(final GroupDTO groupDTO) {
     return RequestMapper.executeServiceMethod(
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createGroup(createGroupRequest),
+                .createGroup(groupDTO),
         ResponseMapper::toGroupCreateResponse);
   }
 
-  public CompletableFuture<ResponseEntity<Object>> updateGroup(
-      final UpdateGroupRequest updateGroupRequest) {
+  public CompletableFuture<ResponseEntity<Object>> updateGroup(final GroupDTO updateGroupRequest) {
     return RequestMapper.executeServiceMethod(
         () ->
             groupServices

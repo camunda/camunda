@@ -66,12 +66,12 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         brokerClient, securityContextProvider, groupSearchClient, authentication);
   }
 
-  public CompletableFuture<GroupRecord> createGroup(final CreateGroupRequest createGroupRequest) {
+  public CompletableFuture<GroupRecord> createGroup(final GroupDTO groupDTO) {
     return sendBrokerRequest(
         new BrokerGroupCreateRequest()
-            .setGroupId(createGroupRequest.groupId)
-            .setName(createGroupRequest.name)
-            .setDescription(createGroupRequest.description));
+            .setGroupId(groupDTO.groupId)
+            .setName(groupDTO.name)
+            .setDescription(groupDTO.description));
   }
 
   public GroupEntity getGroup(final Long groupKey) {
@@ -148,7 +148,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             .setMemberType(memberType));
   }
 
-  public record CreateGroupRequest(String groupId, String name, String description) {}
+  public record GroupDTO(String groupId, String name, String description) {}
 
   public record GroupMemberRequest(String groupId, String entityId, EntityType entityType) {}
 }
