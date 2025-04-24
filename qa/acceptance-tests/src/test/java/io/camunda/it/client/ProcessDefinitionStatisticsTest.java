@@ -149,7 +149,7 @@ public class ProcessDefinitionStatisticsTest {
   }
 
   @Test
-  void shouldGetStatisticsAndFilterByVariablesOrFilters() {
+  void shouldGetStatisticsAndFilterByElementIdLikeOrFilters() {
     // given
     final var processDefinitionKey = deployIncidentBPMN();
     createInstance(processDefinitionKey);
@@ -785,6 +785,25 @@ public class ProcessDefinitionStatisticsTest {
             .getProcessDefinitionKey();
     createInstance(processDefinitionKey);
     waitForProcessInstances(1, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+    waitForIncidents(processDefinitionKey);
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(f -> f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 1L),
+            new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 1L, 0L));
+  }
+
+  private static void waitForIncidents(final long processDefinitionKey) {
     Awaitility.await("should receive data from ES")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -801,21 +820,6 @@ public class ProcessDefinitionStatisticsTest {
                             .join()
                             .items())
                     .hasSize(1));
-
-    // when
-    final var actual =
-        camundaClient
-            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
-            .filter(f -> f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))
-            .send()
-            .join();
-
-    // then
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 1L),
-            new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 1L, 0L));
   }
 
   private static DeploymentEvent deployResource(
