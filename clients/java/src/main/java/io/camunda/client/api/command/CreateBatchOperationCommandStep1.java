@@ -36,6 +36,13 @@ public interface CreateBatchOperationCommandStep1 {
    */
   CreateBatchOperationCommandStep2<ProcessInstanceFilter> resolveIncident();
 
+  /**
+   * Defines the type of the batch operation to migrate process instances.
+   *
+   * @return the builder for this command
+   */
+  ProcessInstanceMigrationStep<ProcessInstanceFilter> migrateProcessInstance();
+
   interface CreateBatchOperationCommandStep2<E extends SearchRequestFilter> {
 
     /**
@@ -53,6 +60,17 @@ public interface CreateBatchOperationCommandStep1 {
      * @return the builder for fluent use
      */
     CreateBatchOperationCommandStep3<E> filter(Consumer<E> filter);
+  }
+
+  interface ProcessInstanceMigrationStep<E extends SearchRequestFilter>
+      extends CreateBatchOperationCommandStep2<E> {
+
+    ProcessInstanceMigrationStep<E> migrationPlan(MigrationPlan migrationPlan);
+
+    ProcessInstanceMigrationStep<E> addMappingInstruction(
+        String sourceElementId, String targetElementId);
+
+    ProcessInstanceMigrationStep<E> targetProcessDefinitionKey(long targetProcessDefinitionKey);
   }
 
   interface CreateBatchOperationCommandStep3<E extends SearchRequestFilter>

@@ -15,10 +15,10 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
 /** This aggregates the batch operation status of process instance cancellations */
-public class ProcessInstanceBatchOperationCanceledExportHandler
+public class ProcessInstanceCancellationBatchOperationExportHandler
     extends RdbmsBatchOperationStatusExportHandler<ProcessInstanceRecordValue> {
 
-  public ProcessInstanceBatchOperationCanceledExportHandler(
+  public ProcessInstanceCancellationBatchOperationExportHandler(
       final BatchOperationWriter batchOperationWriter) {
     super(batchOperationWriter);
   }

@@ -160,13 +160,13 @@ public class RdbmsExporter {
   }
 
   private void updatePositionInBroker() {
-    LOG.debug("[RDBMS Exporter] Updating position to {} in broker", lastPosition);
+    LOG.trace("[RDBMS Exporter] Updating position to {} in broker", lastPosition);
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
   private void updatePositionInRdbms() {
     if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
-      LOG.debug("[RDBMS Exporter] Updating position to {} in rdbms", lastPosition);
+      LOG.trace("[RDBMS Exporter] Updating position to {} in rdbms", lastPosition);
       exporterRdbmsPosition =
           new ExporterPositionModel(
               exporterRdbmsPosition.partitionId(),

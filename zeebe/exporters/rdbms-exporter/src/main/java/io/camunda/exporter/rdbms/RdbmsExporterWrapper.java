@@ -33,7 +33,8 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCompleted
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationExportHandler;
-import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceBatchOperationCanceledExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancellationBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -223,10 +224,14 @@ public class RdbmsExporterWrapper implements Exporter {
     // Handlers per batch operation to track status
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
-        new ProcessInstanceBatchOperationCanceledExportHandler(
+        new ProcessInstanceCancellationBatchOperationExportHandler(
             rdbmsWriter.getBatchOperationWriter()));
     builder.withHandler(
         ValueType.INCIDENT,
         new IncidentBatchOperationExportHandler(rdbmsWriter.getBatchOperationWriter()));
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE_MIGRATION,
+        new ProcessInstanceMigrationBatchOperationExportHandler(
+            rdbmsWriter.getBatchOperationWriter()));
   }
 }
