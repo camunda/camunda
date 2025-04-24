@@ -334,12 +334,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
-    var query = userQuery;
-    if (query.filter().tenantId() != null) {
-      query = expandTenantFilter(query);
-    } else if (query.filter().groupId() != null) {
-      query = expandGroupFilter(query);
-    }
+    var query = applyFilters(userQuery);
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
   }
@@ -418,6 +413,16 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return mappingQuery.toBuilder()
         .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
         .build();
+  }
+
+  private UserQuery applyFilters(final UserQuery userQuery) {
+    if (userQuery.filter().tenantId() != null) {
+      return expandTenantFilter(userQuery);
+    }
+    if (userQuery.filter().groupId() != null) {
+      return expandGroupFilter(userQuery);
+    }
+    return userQuery;
   }
 
   private UserQuery expandTenantFilter(final UserQuery userQuery) {
