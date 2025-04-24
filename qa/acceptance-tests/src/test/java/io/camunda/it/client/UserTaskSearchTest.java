@@ -15,6 +15,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
@@ -22,7 +23,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +76,7 @@ class UserTaskSearchTest {
     assertThat(result.items().size()).isEqualTo(1);
 
     // Validate that names "P1" and "P2" exist in the result
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(UserTask::getName))
         .containsExactlyInAnyOrder("P1")
         .doesNotContain("P2");
   }
@@ -92,7 +92,7 @@ class UserTaskSearchTest {
     assertThat(result.items().size()).isEqualTo(1);
 
     // Validate that names "P1" and "P2" exist in the result
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(UserTask::getName))
         .containsExactlyInAnyOrder("P1")
         .doesNotContain("P2");
   }
@@ -110,7 +110,7 @@ class UserTaskSearchTest {
     assertThat(result.items()).hasSize(2);
 
     // Validate that names "P1" and "P2" exist in the result
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(UserTask::getName))
         .containsExactlyInAnyOrder("P1", "P2");
   }
 
@@ -127,7 +127,7 @@ class UserTaskSearchTest {
     assertThat(result.items()).hasSize(2);
 
     // Validate that names "P1" and "P2" exist in the result
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(UserTask::getName))
         .containsExactlyInAnyOrder("P1", "P2");
   }
 
@@ -148,7 +148,7 @@ class UserTaskSearchTest {
     assertThat(result.items()).hasSize(1);
 
     // Validate that name "P1" exists in the result
-    assertThat(result.items().stream().map(item -> item.getName())).containsExactlyInAnyOrder("P1");
+    assertThat(result.items().stream().map(UserTask::getName)).containsExactlyInAnyOrder("P1");
   }
 
   @Test
@@ -254,8 +254,7 @@ class UserTaskSearchTest {
             () ->
                 camundaClient
                     .newUserTaskSearchRequest()
-                    .filter(
-                        f -> f.processInstanceVariables(Arrays.asList(vf -> vf.name("process01"))))
+                    .filter(f -> f.processInstanceVariables(List.of(vf -> vf.name("process01"))))
                     .send()
                     .join());
     // then
@@ -294,7 +293,7 @@ class UserTaskSearchTest {
             .filter(
                 f ->
                     f.localVariables(
-                        Arrays.asList(vf -> vf.name("task01").value(v -> v.like("\"te*\"")))))
+                        List.of(vf -> vf.name("task01").value(v -> v.like("\"te*\"")))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -308,8 +307,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(
                 f ->
-                    f.localVariables(
-                        Arrays.asList(vf -> vf.name("task01").value(v -> v.in("\"test\"")))))
+                    f.localVariables(List.of(vf -> vf.name("task01").value(v -> v.in("\"test\"")))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -673,7 +671,7 @@ class UserTaskSearchTest {
             .join();
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getName()).isEqualTo("localVariable");
+    assertThat(result.items().getFirst().getName()).isEqualTo("localVariable");
   }
 
   @Test
@@ -694,7 +692,7 @@ class UserTaskSearchTest {
 
     // Then
     assertThat(result.items()).hasSize(2);
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(Variable::getName))
         .containsExactlyInAnyOrder("processVariable", "subProcessVariable");
   }
 
@@ -716,7 +714,7 @@ class UserTaskSearchTest {
 
     // Then
     assertThat(result.items()).hasSize(2);
-    assertThat(result.items().stream().map(item -> item.getName()))
+    assertThat(result.items().stream().map(Variable::getName))
         .containsExactlyInAnyOrder("processVariable", "subProcessVariable");
   }
 

@@ -53,7 +53,7 @@ public class VariableValueFilterImpl
   }
 
   @Override
-  protected io.camunda.client.protocol.rest.VariableValueFilterRequest getSearchRequestProperty() {
+  protected VariableValueFilterRequest getSearchRequestProperty() {
     return filter;
   }
 }
