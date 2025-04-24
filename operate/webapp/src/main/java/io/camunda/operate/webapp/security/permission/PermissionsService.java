@@ -206,14 +206,14 @@ public class PermissionsService {
     return null;
   }
 
-  private List<Long> getAuthenticatedUserRoleKeys() {
+  private List<String> getAuthenticatedUserRoleIds() {
     final Authentication requestAuthentication =
         SecurityContextHolder.getContext().getAuthentication();
     if (requestAuthentication != null) {
       final Object principal = requestAuthentication.getPrincipal();
       if (principal instanceof final CamundaPrincipal authenticatedPrincipal) {
         return authenticatedPrincipal.getAuthenticationContext().roles().stream()
-            .map(RoleEntity::roleKey)
+            .map(RoleEntity::roleId)
             .toList();
       }
     }
@@ -249,12 +249,12 @@ public class PermissionsService {
 
   private io.camunda.security.auth.Authentication getAuthentication() {
     final var authenticatedUsername = getAuthenticatedUsername();
-    final List<Long> authenticatedRoleKeys = getAuthenticatedUserRoleKeys();
+    final List<String> authenticatedRoleIds = getAuthenticatedUserRoleIds();
     final List<String> authenticatedTenantIds = getAuthenticatedUserTenantIds();
     // groups  will come later
     return new io.camunda.security.auth.Authentication.Builder()
         .user(authenticatedUsername)
-        .roleKeys(authenticatedRoleKeys)
+        .roleIds(authenticatedRoleIds)
         .tenants(authenticatedTenantIds)
         .build();
   }
