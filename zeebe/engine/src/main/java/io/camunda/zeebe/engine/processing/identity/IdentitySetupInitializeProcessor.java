@@ -138,10 +138,7 @@ public final class IdentitySetupInitializeProcessor
                         persistedUser -> {
                           user.setUserKey(persistedUser.getUserKey());
                           if (assignEntityToRole(
-                              role,
-                              persistedUser.getUsername(),
-                              EntityType.USER,
-                              persistedUser.getUserKey())) {
+                              role, persistedUser.getUsername(), EntityType.USER)) {
                             createdNewEntities.set(true);
                           }
                           if (assignEntityToTenant(
@@ -164,7 +161,6 @@ public final class IdentitySetupInitializeProcessor
                     .get(mapping.getClaimName(), mapping.getClaimValue())
                     .ifPresentOrElse(
                         persistedMapping -> {
-                          mapping.setMappingKey(Long.parseLong(persistedMapping.getMappingId()));
                           mapping.setMappingId(persistedMapping.getMappingId());
                           // todo refactor with https://github.com/camunda/camunda/issues/30094
                           if (assignEntityToRole(
@@ -208,11 +204,7 @@ public final class IdentitySetupInitializeProcessor
                     .getUser(user.getUsername())
                     .ifPresentOrElse(
                         persistedUser -> {
-                          assignEntityToRole(
-                              role,
-                              persistedUser.getUsername(),
-                              EntityType.USER,
-                              persistedUser.getUserKey());
+                          assignEntityToRole(role, persistedUser.getUsername(), EntityType.USER);
                           assignEntityToTenant(
                               tenant, persistedUser.getUsername(), EntityType.USER);
                         },
@@ -239,7 +231,7 @@ public final class IdentitySetupInitializeProcessor
 
   private void createUser(final UserRecord user, final RoleRecord role, final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(user.getUserKey(), UserIntent.CREATED, user);
-    assignEntityToRole(role, user.getUsername(), EntityType.USER, user.getUserKey());
+    assignEntityToRole(role, user.getUsername(), EntityType.USER);
     assignEntityToTenant(tenant, user.getUsername(), EntityType.USER);
   }
 
@@ -250,21 +242,12 @@ public final class IdentitySetupInitializeProcessor
   private void createMapping(
       final MappingRecord mapping, final RoleRecord role, final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
-    assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING, mapping.getMappingKey());
+    assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING);
     assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
   }
 
-  // todo delete
   private boolean assignEntityToRole(
       final RoleRecord role, final String entityId, final EntityType entityType) {
-    return assignEntityToRole(role, entityId, entityType, Long.parseLong(entityId));
-  }
-
-  private boolean assignEntityToRole(
-      final RoleRecord role,
-      final String entityId,
-      final EntityType entityType,
-      final long entityKey) {
     final var roleId = role.getRoleId();
     final var roleKey = role.getRoleKey();
     final var isAlreadyAssigned =
@@ -281,8 +264,9 @@ public final class IdentitySetupInitializeProcessor
         new RoleRecord()
             .setRoleKey(roleKey)
             .setRoleId(roleId)
-            // TODO remove entityKey from record https://github.com/camunda/camunda/issues/30126
-            .setEntityKey(entityKey)
+            //            // TODO remove entityKey from record
+            // https://github.com/camunda/camunda/issues/30126
+            //            .setEntityKey(entityKey)
             .setEntityId(entityId)
             .setEntityType(entityType);
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.ENTITY_ADDED, record);
