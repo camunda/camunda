@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
@@ -37,6 +38,7 @@ public class RdbmsWriterFactory {
   private final RdbmsWriterMetrics metrics;
   private final BatchOperationReader batchOperationReader;
   private final JobMapper jobMapper;
+  private final SequenceFlowMapper sequenceFlowMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -51,7 +53,8 @@ public class RdbmsWriterFactory {
       final VariableMapper variableMapper,
       final RdbmsWriterMetrics metrics,
       final BatchOperationReader batchOperationReader,
-      final JobMapper jobMapper) {
+      final JobMapper jobMapper,
+      final SequenceFlowMapper sequenceFlowMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -65,6 +68,7 @@ public class RdbmsWriterFactory {
     this.jobMapper = jobMapper;
     this.metrics = metrics;
     this.batchOperationReader = batchOperationReader;
+    this.sequenceFlowMapper = sequenceFlowMapper;
   }
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
@@ -85,6 +89,7 @@ public class RdbmsWriterFactory {
         variableMapper,
         vendorDatabaseProperties,
         batchOperationReader,
-        jobMapper);
+        jobMapper,
+        sequenceFlowMapper);
   }
 }

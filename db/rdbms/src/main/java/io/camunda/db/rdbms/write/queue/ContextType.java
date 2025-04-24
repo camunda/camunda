@@ -25,7 +25,8 @@ public enum ContextType {
   FORM(false),
   MAPPING(false),
   BATCH_OPERATION(false),
-  JOB(false);
+  JOB(false),
+  SEQUENCE_FLOW(false);
 
   private final boolean preserveOrder;
 
