@@ -156,7 +156,7 @@ outputs:
         steps.filter-common.outputs.openapi-change == 'true'
       }}
   stable-branch-changes:
-    description: Output whether the change is occurring on a stable branch or not
+    description: Output whether the change is occurring on a stable/X.Y branch or not
     value: >-
       ${{
         github.event_name == 'push' &&
