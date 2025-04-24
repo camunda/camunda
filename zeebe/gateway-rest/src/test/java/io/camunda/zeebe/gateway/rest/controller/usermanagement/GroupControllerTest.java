@@ -27,7 +27,6 @@ import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.concurrent.CompletableFuture;
@@ -497,7 +496,7 @@ public class GroupControllerTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
                     new BrokerRejection(
-                        RoleIntent.ENTITY_ADDED,
+                        GroupIntent.ENTITY_ADDED,
                         1L,
                         RejectionType.NOT_FOUND,
                         "Mapping rule not found"))));
@@ -525,7 +524,10 @@ public class GroupControllerTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
                     new BrokerRejection(
-                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+                        GroupIntent.ENTITY_ADDED,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Group not found"))));
 
     // when
     webClient
@@ -541,7 +543,7 @@ public class GroupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToRole() {
+  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToGroup() {
     // given
     final String groupId = Strings.newRandomValidIdentityId();
     final String mappingId = "mappingId!";
@@ -708,7 +710,7 @@ public class GroupControllerTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
                     new BrokerRejection(
-                        RoleIntent.ENTITY_ADDED,
+                        GroupIntent.ENTITY_ADDED,
                         1L,
                         RejectionType.NOT_FOUND,
                         "Mapping not found"))));
@@ -736,7 +738,10 @@ public class GroupControllerTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
                     new BrokerRejection(
-                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Group not found"))));
+                        GroupIntent.ENTITY_ADDED,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Group not found"))));
 
     // when
     webClient
