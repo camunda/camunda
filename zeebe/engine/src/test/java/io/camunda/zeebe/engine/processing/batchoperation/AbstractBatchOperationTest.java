@@ -44,7 +44,7 @@ abstract class AbstractBatchOperationTest {
   public final EngineRule engine =
       EngineRule.singlePartition().withSearchClientsProxy(searchClientsProxy);
 
-  protected long createNewProcessInstanceCancellationBatchOperation(final Set<Long> itemKeys) {
+  protected long createNewCancelProcessInstanceBatchOperation(final Set<Long> itemKeys) {
     final var result =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
@@ -60,14 +60,14 @@ abstract class AbstractBatchOperationTest {
 
     return engine
         .batchOperation()
-        .newCreation(BatchOperationType.PROCESS_CANCELLATION)
+        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
         .create()
         .getValue()
         .getBatchOperationKey();
   }
 
-  protected long createNewFailedProcessInstanceCancellationBatchOperation() {
+  protected long createNewFailedCancelProcessInstanceBatchOperation() {
     Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
         .thenThrow(new RuntimeException("You are playing with fire!"));
 
@@ -77,7 +77,7 @@ abstract class AbstractBatchOperationTest {
 
     return engine
         .batchOperation()
-        .newCreation(BatchOperationType.PROCESS_CANCELLATION)
+        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
         .waitForStarted()
         .create()
@@ -156,10 +156,6 @@ abstract class AbstractBatchOperationTest {
         .create()
         .getValue()
         .getBatchOperationKey();
-  }
-
-  protected void cancelBatchOperation(final Long batchOperationKey) {
-    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).cancel();
   }
 
   protected static UnsafeBuffer convertToBuffer(final Object object) {

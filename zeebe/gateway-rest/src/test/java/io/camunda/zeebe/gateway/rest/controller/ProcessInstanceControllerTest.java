@@ -1309,7 +1309,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var record = new BatchOperationCreationRecord();
     record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+    record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
 
     when(processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
             any(ProcessInstanceFilter.class)))
@@ -1336,7 +1336,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-          {"batchOperationKey":"123","batchOperationType":"PROCESS_CANCELLATION"}
+          {"batchOperationKey":"123","batchOperationType":"CANCEL_PROCESS_INSTANCE"}
         """);
 
     verify(processInstanceServices)

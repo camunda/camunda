@@ -151,7 +151,7 @@ public final class ProcessInstanceServiceTest {
     final long batchOperationKey = 123L;
     final var record = new BatchOperationCreationRecord();
     record.setBatchOperationKey(batchOperationKey);
-    record.setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+    record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
     when(authentication.claims()).thenReturn(emptyMap());
@@ -163,7 +163,8 @@ public final class ProcessInstanceServiceTest {
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
-    assertThat(result.getBatchOperationType()).isEqualTo(BatchOperationType.PROCESS_CANCELLATION);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
 
     // and our filter got enriched
     final var filterBuffer = captor.getValue().getRequestWriter().getEntityFilterBuffer();

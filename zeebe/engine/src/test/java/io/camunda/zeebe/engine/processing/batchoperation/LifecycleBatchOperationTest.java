@@ -23,8 +23,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   public void shouldCancelBatchOperation() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final var batchOperationKey =
-        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
     // when we cancel the batch operation
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).cancel();
@@ -50,8 +49,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   public void shouldPauseBatchOperationInScheduler() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final var batchOperationKey =
-        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
     // when we pause the batch operation
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
@@ -77,8 +75,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   public void shouldPauseBatchOperationInExecutor() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final var batchOperationKey =
-        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
     // when we pause the batch operation
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
@@ -140,7 +137,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   @Test
   public void shouldRejectPauseBatchOperationIfInvalidState() {
     // given a failed batch operation
-    final var batchOperationKey = createNewFailedProcessInstanceCancellationBatchOperation();
+    final var batchOperationKey = createNewFailedCancelProcessInstanceBatchOperation();
 
     // when we pause the batch operation which does not exist
     engine
@@ -171,8 +168,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   public void shouldResumeBatchOperation() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final var batchOperationKey =
-        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
     // and we pause the batch operation
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
@@ -230,8 +226,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   public void shouldRejectResumeBatchOperationIfInvalidState() {
     // given a batch operation wich is not paused
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final var batchOperationKey =
-        createNewProcessInstanceCancellationBatchOperation(processInstanceKeys);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
     // when we resume the batch operation which is not paused
     engine

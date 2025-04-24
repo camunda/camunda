@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static io.camunda.zeebe.engine.processing.batchoperation.BatchOperationExecutionScheduler.CHUNK_SIZE_IN_RECORD;
+import static io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.MIGRATE_PROCESS_INSTANCE;
-import static io.camunda.zeebe.protocol.record.value.BatchOperationType.PROCESS_CANCELLATION;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.RESOLVE_INCIDENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -62,7 +62,7 @@ public class BatchOperationExecutionSchedulerTest {
   public void setUp() {
     setUpBasicSchedulerBehaviour();
 
-    when(batchOperation.getBatchOperationType()).thenReturn(PROCESS_CANCELLATION);
+    when(batchOperation.getBatchOperationType()).thenReturn(CANCEL_PROCESS_INSTANCE);
     lenient()
         .when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
         .thenReturn(mock(ProcessInstanceFilter.class));

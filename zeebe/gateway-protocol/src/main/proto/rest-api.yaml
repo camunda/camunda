@@ -8212,9 +8212,9 @@ components:
       description: The type of the batch operation.
       type: string
       enum:
-      - PROCESS_CANCELLATION
-      - RESOLVE_INCIDENT
-      - MIGRATE_PROCESS_INSTANCE
+        - CANCEL_PROCESS_INSTANCE
+        - RESOLVE_INCIDENT
+        - MIGRATE_PROCESS_INSTANCE
     BatchOperationCreatedResult:
       type: object
       properties:

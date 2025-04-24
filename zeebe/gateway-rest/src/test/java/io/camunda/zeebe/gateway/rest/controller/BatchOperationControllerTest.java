@@ -61,7 +61,7 @@ class BatchOperationControllerTest extends RestControllerTest {
           {
               "batchOperationKey":"1",
               "state":"COMPLETED",
-              "batchOperationType":"PROCESS_CANCELLATION",
+              "batchOperationType":"CANCEL_PROCESS_INSTANCE",
               "startDate":"2025-03-18T10:57:44.000+01:00",
               "endDate":"2025-03-18T10:57:45.000+01:00",
               "operationsTotalCount":10,
@@ -96,7 +96,7 @@ class BatchOperationControllerTest extends RestControllerTest {
           {
             "batchOperationKey":"1",
             "state":"COMPLETED",
-            "batchOperationType":"PROCESS_CANCELLATION",
+            "batchOperationType":"CANCEL_PROCESS_INSTANCE",
             "startDate":"2025-03-18T10:57:44.000+01:00",
             "endDate":"2025-03-18T10:57:45.000+01:00",
             "operationsTotalCount":10,
@@ -182,7 +182,7 @@ class BatchOperationControllerTest extends RestControllerTest {
     return new BatchOperationEntity(
         batchOperationKey,
         BatchOperationState.COMPLETED,
-        "PROCESS_CANCELLATION",
+        "CANCEL_PROCESS_INSTANCE",
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
         10,
