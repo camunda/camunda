@@ -19,6 +19,9 @@ import {OnLastVariableModificationRemoved} from '../OnLastVariableModificationRe
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {createInstance} from 'modules/testUtils';
 import {useEffect} from 'react';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 type Props = {
   children?: React.ReactNode;
@@ -35,19 +38,23 @@ const Wrapper: React.FC<Props> = ({children}) => {
   }, []);
 
   return (
-    <MemoryRouter>
-      <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
-        {({handleSubmit}) => {
-          return (
-            <>
-              <form onSubmit={handleSubmit}>{children} </form>
-              <OnLastVariableModificationRemoved />
-              <LastModification />
-            </>
-          );
-        }}
-      </Form>
-    </MemoryRouter>
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter>
+          <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
+            {({handleSubmit}) => {
+              return (
+                <>
+                  <form onSubmit={handleSubmit}>{children} </form>
+                  <OnLastVariableModificationRemoved />
+                  <LastModification />
+                </>
+              );
+            }}
+          </Form>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
   );
 };
 

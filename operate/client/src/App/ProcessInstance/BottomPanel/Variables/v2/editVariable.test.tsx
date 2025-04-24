@@ -23,6 +23,7 @@ import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariab
 import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
 import {act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -33,6 +34,10 @@ jest.mock('modules/stores/notifications', () => ({
 const instanceMock = createInstance({id: '1'});
 
 describe('Edit variable', () => {
+  beforeEach(() => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+  });
+
   it('should show/hide edit button next to variable according to it having an active operation', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -137,6 +142,7 @@ describe('Edit variable', () => {
       withinFirstVariable.queryByRole('button', {name: /save variable/i}),
     ).not.toBeInTheDocument();
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
@@ -174,6 +180,7 @@ describe('Edit variable', () => {
       screen.getByTestId(`variable-${firstVariable!.name}`),
     );
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
@@ -205,9 +212,11 @@ describe('Edit variable', () => {
       screen.getByTestId(`variable-${firstVariable!.name}`),
     );
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
+
     await user.type(
       screen.getByTestId('edit-variable-value'),
       "{{invalidKey: 'value'}}",
@@ -262,6 +271,7 @@ describe('Edit variable', () => {
       }),
     );
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-clientNo')).getByRole('button', {
         name: /edit variable/i,
@@ -309,6 +319,7 @@ describe('Edit variable', () => {
 
     mockFetchVariable().withDelayedServerError();
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
         'button',
@@ -346,6 +357,7 @@ describe('Edit variable', () => {
 
     expect(screen.getByText('"full-value"')).toBeInTheDocument();
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
         'button',
@@ -386,6 +398,7 @@ describe('Edit variable', () => {
       createVariable({isPreview: false, value: '123456'}),
     );
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByTestId('edit-variable-value'));
 
     expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
@@ -427,6 +440,7 @@ describe('Edit variable', () => {
       createVariable({isPreview: false, value: '123456'}),
     );
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       screen.getByRole('button', {name: /open json editor modal/i}),
     );
@@ -451,6 +465,7 @@ describe('Edit variable', () => {
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /edit variable/i}));
     await user.click(
       screen.getByRole('button', {name: /open json editor modal/i}),

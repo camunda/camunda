@@ -10,7 +10,6 @@ import {IReactionDisposer, makeAutoObservable, when, reaction} from 'mobx';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from './modifications';
-import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
 
@@ -184,27 +183,6 @@ class FlowNodeSelection {
     return (
       this.state.selection?.flowNodeInstanceId ??
       flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId
-    );
-  }
-
-  get selectedFlowNodeName() {
-    if (
-      processInstanceDetailsStore.state.processInstance === null ||
-      this.state.selection === null
-    ) {
-      return '';
-    }
-
-    if (this.isRootNodeSelected) {
-      return processInstanceDetailsStore.state.processInstance.processName;
-    }
-
-    if (this.state.selection.flowNodeId === undefined) {
-      return '';
-    }
-
-    return processInstanceDetailsDiagramStore.getFlowNodeName(
-      this.state.selection.flowNodeId,
     );
   }
 

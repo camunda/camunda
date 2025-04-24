@@ -20,10 +20,15 @@ import {getWrapper, mockVariables} from './mocks';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {act} from 'react';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const instanceMock = createInstance({id: '1'});
 
 describe('Add variable', () => {
+  beforeEach(() => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+  });
+
   it('should show/hide add variable inputs', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -376,6 +381,7 @@ describe('Add variable', () => {
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
+    mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
     const withinVariable = within(screen.getByTestId('variable-clientNo'));
