@@ -383,7 +383,7 @@ public class GroupControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "status": 400,
                 "title": "INVALID_ARGUMENT",
-                "detail": "The provided id contains illegal characters. It must match the pattern '%s'.",
+                "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
                 .formatted(IdentifierPatterns.ID_PATTERN, path));

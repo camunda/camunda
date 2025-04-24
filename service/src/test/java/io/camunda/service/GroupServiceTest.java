@@ -156,10 +156,9 @@ public class GroupServiceTest {
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.UPDATE);
-    assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasName(name);
-    assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasGroupId(groupId);
     assertThat(record).hasDescription(description);
   }
 
@@ -177,9 +176,7 @@ public class GroupServiceTest {
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.DELETE);
-    assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
-    assertThat(record).hasGroupKey(groupKey);
     assertThat(record).hasGroupId(groupId);
   }
 
