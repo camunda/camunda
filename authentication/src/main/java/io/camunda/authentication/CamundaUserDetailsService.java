@@ -54,9 +54,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
     final Long userKey = storedUser.userKey();
 
-    // todo use username as memberId in https://github.com/camunda/camunda/issues/30111
-    final var roles =
-        roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(String.valueOf(userKey)))));
+    final var roles = roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(username))));
 
     final var authorizedApplications =
         authorizationServices.getAuthorizedApplications(
