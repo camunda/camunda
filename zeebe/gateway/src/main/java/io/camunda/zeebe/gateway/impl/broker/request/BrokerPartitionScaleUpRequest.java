@@ -22,6 +22,8 @@ public final class BrokerPartitionScaleUpRequest extends BrokerExecuteCommand<Sc
   public BrokerPartitionScaleUpRequest(final int desiredPartitionCount) {
     super(ValueType.SCALE, ScaleIntent.SCALE_UP);
     requestDto.setDesiredPartitionCount(desiredPartitionCount);
+
+    // set the target partition for this request
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
