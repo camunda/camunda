@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
+import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -35,6 +36,7 @@ import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.db.rdbms.write.service.RoleWriter;
+import io.camunda.db.rdbms.write.service.SequenceFlowWriter;
 import io.camunda.db.rdbms.write.service.TenantWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
@@ -63,6 +65,7 @@ public class RdbmsWriter {
   private final MappingWriter mappingWriter;
   private final BatchOperationWriter batchOperationWriter;
   private final JobWriter jobWriter;
+  private final SequenceFlowWriter sequenceFlowWriter;
 
   private final HistoryCleanupService historyCleanupService;
 
@@ -80,7 +83,8 @@ public class RdbmsWriter {
       final VariableMapper variableMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
       final BatchOperationReader batchOperationReader,
-      final JobMapper jobMapper) {
+      final JobMapper jobMapper,
+      final SequenceFlowMapper sequenceFlowMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
@@ -102,6 +106,7 @@ public class RdbmsWriter {
     mappingWriter = new MappingWriter(executionQueue);
     batchOperationWriter = new BatchOperationWriter(batchOperationReader, executionQueue);
     jobWriter = new JobWriter(executionQueue, jobMapper);
+    sequenceFlowWriter = new SequenceFlowWriter(executionQueue, sequenceFlowMapper);
 
     historyCleanupService =
         new HistoryCleanupService(
@@ -113,6 +118,7 @@ public class RdbmsWriter {
             variableWriter,
             decisionInstanceWriter,
             jobWriter,
+            sequenceFlowWriter,
             metrics);
   }
 
@@ -186,6 +192,10 @@ public class RdbmsWriter {
 
   public JobWriter getJobWriter() {
     return jobWriter;
+  }
+
+  public SequenceFlowWriter getSequenceFlowWriter() {
+    return sequenceFlowWriter;
   }
 
   public ExporterPositionService getExporterPositionService() {
