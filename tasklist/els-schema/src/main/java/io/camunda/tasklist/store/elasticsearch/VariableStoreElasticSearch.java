@@ -87,8 +87,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class VariableStoreElasticSearch implements VariableStore {
-  private static final int DEFAULT_MAX_TERMS_COUNT = 65536;
-  private static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
+  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
+  public static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
   @Autowired
@@ -109,7 +109,7 @@ public class VariableStoreElasticSearch implements VariableStore {
   @PostConstruct
   void scheduleUpdateTermsCount() {
     Executors.newSingleThreadScheduledExecutor()
-        .scheduleAtFixedRate(this::refreshMaxTermsCount, 1, 30, TimeUnit.MINUTES);
+        .scheduleAtFixedRate(this::refreshMaxTermsCount, 30, 1800, TimeUnit.SECONDS);
   }
 
   @Override

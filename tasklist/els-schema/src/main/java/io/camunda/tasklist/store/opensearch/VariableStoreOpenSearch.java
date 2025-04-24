@@ -72,8 +72,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class VariableStoreOpenSearch implements VariableStore {
-  private static final int DEFAULT_MAX_TERMS_COUNT = 65536;
-  private static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
+  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
+  public static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreOpenSearch.class);
 
   @Autowired
@@ -90,7 +90,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   @PostConstruct
   void scheduleUpdateTermsCount() {
     Executors.newSingleThreadScheduledExecutor()
-        .scheduleAtFixedRate(this::refreshMaxTermsCount, 1, 30, TimeUnit.MINUTES);
+        .scheduleAtFixedRate(this::refreshMaxTermsCount, 30, 1800, TimeUnit.SECONDS);
   }
 
   @Override
@@ -358,8 +358,9 @@ public class VariableStoreOpenSearch implements VariableStore {
                       .includeDefaults(true)
                       .name(MAX_TERMS_COUNT_SETTING)
                       .build());
-      maxTermsCount = response.get(variableIndex.getFullQualifiedName()).settings().maxTermsCount();
-    } catch (final IOException | NumberFormatException e) {
+      maxTermsCount =
+          response.get(variableIndex.getFullQualifiedName()).settings().index().maxTermsCount();
+    } catch (final IOException e) {
       LOGGER.warn("Failed to update max_terms_count setting", e);
     }
   }
