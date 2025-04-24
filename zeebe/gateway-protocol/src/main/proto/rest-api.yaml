@@ -6369,10 +6369,10 @@ components:
       properties:
         name:
           type: string
-          description: The new name of the tenant.
+          description: The new name of the group.
         description:
           type: string
-          description: The new description of the tenant.
+          description: The new description of the group.
       required:
         - name
         - description
