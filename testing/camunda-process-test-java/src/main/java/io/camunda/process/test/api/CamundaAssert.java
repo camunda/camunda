@@ -169,10 +169,11 @@ public class CamundaAssert {
   }
 
   /**
-   * TODO
+   * To verify a user task.
    *
-   * @param userTaskSelector
-   * @return
+   * @param userTaskSelector the selector of the user task to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.UserTaskSelectors
    */
   public static UserTaskAssert assertThat(final UserTaskSelector userTaskSelector) {
     return new UserTaskAssertj(getDataSource(), userTaskSelector);

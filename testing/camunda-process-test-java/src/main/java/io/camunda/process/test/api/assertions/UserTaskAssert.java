@@ -58,34 +58,34 @@ public interface UserTaskAssert {
   UserTaskAssert isFailed();
 
   /**
-   * TODO
+   * Verifies that the user task has the expected assignee.
    *
-   * @param assignee
-   * @return
+   * @param assignee person assigned to the user task
+   * @return the assertion object
    */
   UserTaskAssert hasAssignee(final String assignee);
 
   /**
-   * TODO
+   * Verifies that the user task has the given priority
    *
-   * @param priority
-   * @return
+   * @param priority the priority of the user task
+   * @return the assertion object
    */
   UserTaskAssert hasPriority(final int priority);
 
   /**
-   * TODO
+   * Verifies that the user task has the expected element id
    *
-   * @param elementId
-   * @return
+   * @param elementId the id of the user task
+   * @return the assertion object
    */
   UserTaskAssert hasElementId(final String elementId);
 
   /**
-   * TODO
+   * Verifies that the user task has the expected process instance key.
    *
-   * @param processInstanceKey
-   * @return
+   * @param processInstanceKey the process instance key
+   * @return the assertion object
    */
   UserTaskAssert hasProcessInstanceKey(final long processInstanceKey);
 }
