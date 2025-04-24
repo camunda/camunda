@@ -7,16 +7,21 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.search.query.UserQuery;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberRequest;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -40,9 +45,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class GroupController {
 
   private final GroupServices groupServices;
+  private final UserServices userServices;
 
-  public GroupController(final GroupServices groupServices) {
+  public GroupController(final GroupServices groupServices, final UserServices userServices) {
     this.groupServices = groupServices;
+    this.userServices = userServices;
   }
 
   @CamundaPostMapping
@@ -109,20 +116,14 @@ public class GroupController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMapping);
   }
 
-  @CamundaGetMapping(path = "/{groupKey}/users")
+  @CamundaPostMapping(path = "/{groupId}/users/search")
   public ResponseEntity<UserSearchResult> usersByGroup(
-      @PathVariable("groupKey") final long groupKey) {
-    return searchUsersByGroupKey(groupKey);
-  }
-
-  private ResponseEntity<UserSearchResult> searchUsersByGroupKey(final long groupKey) {
-    try {
-      // TODO - implement a usersearch by group key
-      final SearchQueryResult result = new Builder().build();
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return RestErrorMapper.mapErrorToResponse(e);
-    }
+      @PathVariable final String groupId,
+      @RequestBody(required = false) final UserSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toUserQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            userQuery -> searchUsersInGroup(groupId, userQuery));
   }
 
   @CamundaGetMapping(path = "/{groupId}")
@@ -183,6 +184,26 @@ public class GroupController {
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .assignMember(request.groupId(), request.entityId(), request.entityType()));
+  }
+
+  private ResponseEntity<UserSearchResult> searchUsersInGroup(
+      final String groupId, final UserQuery userQuery) {
+    try {
+      final var composedUserQuery = buildUserQuery(groupId, userQuery);
+      final var result =
+          userServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(composedUserQuery);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private UserQuery buildUserQuery(final String groupId, final UserQuery userQuery) {
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().groupId(groupId).build())
+        .build();
   }
 
   public CompletableFuture<ResponseEntity<Object>> unassignMapping(
