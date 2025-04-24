@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.BatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -93,6 +94,39 @@ public final class BatchOperationExecuteProcessor
 
     appendBatchOperationExecutionExecutedEvent(command.getValue(), Set.copyOf(entityKeys));
 
+    scheduleNextBatchOperation(command, batchKey);
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<BatchOperationExecutionRecord> command, final Throwable error) {
+    final var result =
+        switch (error) {
+          case final ProcessInstanceMigrationPreconditionFailedException ignored ->
+              ProcessingError.EXPECTED_ERROR;
+          // add more cases
+          default -> ProcessingError.UNEXPECTED_ERROR;
+        };
+    if (result == ProcessingError.EXPECTED_ERROR) {
+      final var batchKey = command.getValue().getBatchOperationKey();
+      // rather than looking up the next item keys here, they could be part of the batch operation
+      // execution EXECUTE command.
+      final var entityKeys = batchOperationState.getNextItemKeys(batchKey, BATCH_SIZE);
+
+      // we fail the entire execution at once, and the reason is lost
+      stateWriter.appendFollowUpEvent(
+          command.getKey(),
+          BatchOperationExecutionIntent.FAILED,
+          command.getValue().setItemKeys(Set.copyOf(entityKeys)));
+
+      // we can still schedule the next batch operation
+      scheduleNextBatchOperation(command, batchKey);
+    }
+    return result;
+  }
+
+  private void scheduleNextBatchOperation(
+      final TypedRecord<BatchOperationExecutionRecord> command, final long batchKey) {
     LOGGER.debug(
         "Scheduling next batch for BatchOperation {} on partition {}", batchKey, partitionId);
     final var followupCommand = new BatchOperationExecutionRecord();
