@@ -12,7 +12,6 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map.Entry;
@@ -45,10 +44,10 @@ public class ScaleUpRequestTransformer implements ConfigurationChangeRequest {
                     desiredPartitionCount)));
       }
       final var operations =
-          // TODO how many operations must be sent?
-          // For which members ID?
-          clusterConfiguration.members().entrySet().stream()
-              .filter(e -> e.getValue().hasPartition(Protocol.START_PARTITION_ID))
+          // Generate the operations for the "coordinator" node, which is the node with the lowest
+          // id.
+          // See ClusterConfigurationCoordinatorSupplier
+          clusterConfiguration.members().entrySet().stream().min(Entry.comparingByKey()).stream()
               .map(Entry::getKey)
               .flatMap(
                   id ->
