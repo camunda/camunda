@@ -39,13 +39,17 @@ public class CommonConfigurationProperties extends Client {
   }
 
   @Override
-  @DeprecatedConfigurationProperty(reason = "not required")
+  @DeprecatedConfigurationProperty(
+      reason = "not required",
+      replacement = "camunda.client.rest-address")
   public String getUrl() {
     return super.getUrl();
   }
 
   @Override
-  @DeprecatedConfigurationProperty(reason = "not required")
+  @DeprecatedConfigurationProperty(
+      reason = "not required",
+      replacement = "camunda.client.rest-address")
   public String getBaseUrl() {
     return super.getBaseUrl();
   }
