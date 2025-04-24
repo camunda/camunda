@@ -21,6 +21,10 @@ import org.slf4j.event.Level;
  * `ConnectException` it logs them on WARN level.
  */
 public class ReschedulingTaskLogger {
+  private static final Set<String> BACKGROUND_SUPPRESSED_ELASTIC_RESPONSE_EXCEPTION_TYPES =
+      Set.of(
+          "\"type\":\"no_shard_available_action_exception\"",
+          "\"type\":\"node_not_connected_exception\"");
   private static final Integer DEFAULT_SKIP_ENTRIES_COUNT = 10;
   private static final Set<Class<? extends Exception>> BACKGROUND_SUPPRESSED_EXCEPTIONS =
       Set.of(SocketTimeoutException.class, ConnectException.class, SocketException.class);
@@ -29,9 +33,15 @@ public class ReschedulingTaskLogger {
   private Integer failureCount = 0;
   private String lastErrorMessage;
   private Object[] lastErrorMessageArgs;
+  private boolean suppressErrorMessages = false;
 
   public ReschedulingTaskLogger(final Logger logger) {
     this.logger = logger;
+  }
+
+  public ReschedulingTaskLogger(final Logger logger, final boolean suppressErrorMessages) {
+    this.logger = logger;
+    this.suppressErrorMessages = suppressErrorMessages;
   }
 
   public ReschedulingTaskLogger(final Integer skipEntriesCount, final Logger logger) {
@@ -53,7 +63,7 @@ public class ReschedulingTaskLogger {
     // every n-th time
     final Level logLevel;
     if (failureCount % skipEntriesCount == 1) {
-      if (shouldBeSupressed(error)) {
+      if (shouldBeSuppressed(error)) {
         logLevel = Level.WARN;
       } else {
         logLevel = Level.ERROR;
@@ -64,9 +74,13 @@ public class ReschedulingTaskLogger {
     logger.atLevel(logLevel).setCause(error).log(errorMessage, args);
   }
 
-  private boolean shouldBeSupressed(final Throwable error) {
-    return BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getClass())
+  private boolean shouldBeSuppressed(final Throwable error) {
+    return suppressErrorMessages
+        || BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getClass())
         || (error.getCause() != null
-            && BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getCause().getClass()));
+            && BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getCause().getClass()))
+        || (error.getCause() != null
+            && BACKGROUND_SUPPRESSED_ELASTIC_RESPONSE_EXCEPTION_TYPES.stream()
+                .anyMatch(error.getCause().getMessage()::contains));
   }
 }
