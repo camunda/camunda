@@ -12,8 +12,9 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
 
   private Long key;
+  private String roleId;
   private String name;
-  private String memberId;
+  private String description;
   private EntityJoinRelation<Long> join;
 
   public Long getKey() {
@@ -34,12 +35,21 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public String getMemberId() {
-    return memberId;
+  public String getRoleId() {
+    return roleId;
   }
 
-  public RoleEntity setMemberKey(final String memberId) {
-    this.memberId = memberId;
+  public RoleEntity setRoleId(final String roleId) {
+    this.roleId = roleId;
+    return this;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public RoleEntity setDescription(final String description) {
+    this.description = description;
     return this;
   }
 
