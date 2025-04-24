@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
+import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_DENY_AND_CORRECTIONS_NOT_SUPPORTED_MESSAGE;
+import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_UNKNOWN_CORRECTIONS_NOT_SUPPORTED_MESSAGE;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -1373,12 +1375,7 @@ public class TaskListenerCorrectionsTest {
     Assertions.assertThat(rejection)
         .describedAs("Expect that the job completion is rejected")
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            """
-            Expected to complete task listener job with corrections, but the job result is denied. \
-            The corrections would be reverted by the denial. Either complete the job with \
-            corrections without setting denied, or complete the job with a denied result but no \
-            corrections.""");
+        .hasRejectionReason(TL_JOB_COMPLETION_WITH_DENY_AND_CORRECTIONS_NOT_SUPPORTED_MESSAGE);
   }
 
   @Test
@@ -1405,10 +1402,8 @@ public class TaskListenerCorrectionsTest {
         .describedAs("Expect that the job completion is rejected")
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            """
-            Expected to complete task listener job with a corrections result, \
-            but property 'unknown_property' cannot be corrected. \
-            Only the following properties can be corrected: \
-            [assignee, candidateGroupsList, candidateUsersList, dueDate, followUpDate, priority].""");
+            TL_JOB_COMPLETION_WITH_UNKNOWN_CORRECTIONS_NOT_SUPPORTED_MESSAGE.formatted(
+                "unknown_property",
+                "[assignee, candidateGroupsList, candidateUsersList, dueDate, followUpDate, priority]"));
   }
 }
