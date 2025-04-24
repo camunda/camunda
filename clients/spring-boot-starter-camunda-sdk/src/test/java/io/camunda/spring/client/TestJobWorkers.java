@@ -89,6 +89,7 @@ public class TestJobWorkers {
         case VARIABLES_AS_TYPE_1 -> parameterTypes.add(VariablesAsType1.class);
         case VARIABLES_AS_TYPE_2 -> parameterTypes.add(VariablesAsType2.class);
         case VARIABLE_COMPLEX -> parameterTypes.add(ComplexVariable.class);
+        default -> throw new RuntimeException("Unexpected parameter type: " + parameter);
       }
     }
     return parameterTypes.toArray(new Class<?>[0]);
@@ -175,6 +176,7 @@ public class TestJobWorkers {
                       "@VariablesAsType VariablesAsType1 varAsType" + counter.getAndIncrement();
                   case VARIABLES_AS_TYPE_2 ->
                       "@VariablesAsType VariablesAsType2 varAsType" + counter.getAndIncrement();
+                  default -> throw new RuntimeException("Unexpected parameter type: " + p);
                 })
         .collect(Collectors.joining(", "));
   }
