@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request.group;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -17,17 +18,10 @@ public class BrokerGroupDeleteRequest extends BrokerExecuteCommand<GroupRecord> 
 
   private final GroupRecord requestDto = new GroupRecord();
 
-  public BrokerGroupDeleteRequest(final long groupKey) {
+  public BrokerGroupDeleteRequest(final String groupId) {
     super(ValueType.GROUP, GroupIntent.DELETE);
-    request.setKey(groupKey);
-    requestDto.setGroupKey(groupKey);
-  }
-
-  // TODO: remove this method and provide the group ID through the constructor once the engine is
-  // implemented https://github.com/camunda/camunda/issues/29902
-  public BrokerGroupDeleteRequest setGroupId(final String groupId) {
+    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
     requestDto.setGroupId(groupId);
-    return this;
   }
 
   @Override
