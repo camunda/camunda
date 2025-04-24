@@ -58,6 +58,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.ListUtils;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -86,6 +87,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class VariableStoreElasticSearch implements VariableStore {
+  private static final int DEFAULT_MAX_TERMS_COUNT = 65536;
+  private static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
   @Autowired
@@ -116,7 +119,7 @@ public class VariableStoreElasticSearch implements VariableStore {
       final Set<String> fieldNames) {
 
     final List<List<String>> flowNodeInstanceIdsChunks =
-        chunkQueryTerms(flowNodeInstanceIds, maxTermsCount);
+        ListUtils.partition(flowNodeInstanceIds, maxTermsCount);
 
     final List<VariableEntity> variableEntities = new ArrayList<>();
     flowNodeInstanceIdsChunks.forEach(
