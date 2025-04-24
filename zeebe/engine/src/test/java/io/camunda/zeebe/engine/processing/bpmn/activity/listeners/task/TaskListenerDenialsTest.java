@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
+import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_DENY_NOT_SUPPORTED_MESSAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -18,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -774,5 +776,56 @@ public class TaskListenerDenialsTest {
                 .hasFollowUpDate("")
                 .hasPriority(50)
                 .hasAssignee(""));
+  }
+
+  @Test
+  public void shouldRejectCreatingTaskListenerCompletionWithDeniedResult() {
+    assertDenyResultIsRejectedForNonDeniableListenerType(
+        ZeebeTaskListenerEventType.creating, ignored -> {});
+  }
+
+  @Test
+  public void shouldRejectCancelingTaskListenerCompletionWithDeniedResult() {
+    assertDenyResultIsRejectedForNonDeniableListenerType(
+        ZeebeTaskListenerEventType.canceling,
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel());
+  }
+
+  private void assertDenyResultIsRejectedForNonDeniableListenerType(
+      final ZeebeTaskListenerEventType listenerEventType, final Consumer<Long> triggerTransition) {
+
+    // given: a process instance with a task listener that doesn't support denying
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(listenerEventType, this.listenerType));
+
+    // trigger transition
+    triggerTransition.accept(processInstanceKey);
+
+    // when: attempting to complete the task listener job with `denied=true`
+    final var result =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(this.listenerType)
+            .withResult(new JobResult().setDenied(true))
+            .expectRejection()
+            .complete();
+
+    // then: job completion should be rejected
+    final var expectedJobListenerType = helper.mapToJobListenerEventType(listenerEventType);
+    Assertions.assertThat(result)
+        .describedAs(
+            "Task listener of type '%s' should reject job completion with 'denied=true' result",
+            expectedJobListenerType)
+        .hasIntent(JobIntent.COMPLETE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            TL_JOB_COMPLETION_WITH_DENY_NOT_SUPPORTED_MESSAGE.formatted(
+                expectedJobListenerType,
+                "[ASSIGNING, COMPLETING, UPDATING]",
+                result.getKey(),
+                result.getValue().getType(),
+                processInstanceKey));
   }
 }
