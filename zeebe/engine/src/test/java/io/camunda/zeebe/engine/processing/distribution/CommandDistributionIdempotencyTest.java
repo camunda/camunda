@@ -663,10 +663,7 @@ public class CommandDistributionIdempotencyTest {
                                 .setName("tenant-name"))
                         .withMapping(
                             new MappingRecord()
-                                .setMappingKey(4)
-                                // todo replace to string with
-                                // https://github.com/camunda/camunda/issues/30389
-                                .setMappingId("1234")
+                                .setMappingId("mapping-id")
                                 .setClaimName("claimName")
                                 .setClaimValue("claimValue"))
                         .initialize()),

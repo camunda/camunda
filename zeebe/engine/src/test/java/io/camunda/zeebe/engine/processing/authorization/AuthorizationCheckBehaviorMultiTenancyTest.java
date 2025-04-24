@@ -484,15 +484,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   private MappingRecordValue createMapping(final String claimName, final String claimValue) {
-    final var mappingKey = random.nextLong();
     final var mapping =
         new MappingRecord()
-            .setMappingKey(mappingKey)
-            .setMappingId(String.valueOf(mappingKey))
+            .setMappingId(UUID.randomUUID().toString())
             .setName(Strings.newRandomValidUsername())
             .setClaimName(claimName)
             .setClaimValue(claimValue);
-    mappingCreatedApplier.applyState(mappingKey, mapping);
+    mappingCreatedApplier.applyState(random.nextLong(), mapping);
     return mapping;
   }
 

@@ -162,7 +162,6 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         persistedMapping -> {
                           mapping.setMappingId(persistedMapping.getMappingId());
-                          // todo refactor with https://github.com/camunda/camunda/issues/30094
                           if (assignEntityToRole(
                               role, persistedMapping.getMappingId(), EntityType.MAPPING)) {
                             createdNewEntities.set(true);
@@ -264,9 +263,6 @@ public final class IdentitySetupInitializeProcessor
         new RoleRecord()
             .setRoleKey(roleKey)
             .setRoleId(roleId)
-            //            // TODO remove entityKey from record
-            // https://github.com/camunda/camunda/issues/30126
-            //            .setEntityKey(entityKey)
             .setEntityId(entityId)
             .setEntityType(entityType);
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.ENTITY_ADDED, record);
