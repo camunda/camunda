@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
-import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_DENY_NOT_SUPPORTED_MESSAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -821,11 +820,15 @@ public class TaskListenerDenialsTest {
         .hasIntent(JobIntent.COMPLETE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            TL_JOB_COMPLETION_WITH_DENY_NOT_SUPPORTED_MESSAGE.formatted(
-                expectedJobListenerType,
-                "[ASSIGNING, COMPLETING, UPDATING]",
-                result.getKey(),
-                result.getValue().getType(),
-                processInstanceKey));
+            """
+                Denying result is not supported for '%s' task listener jobs \
+                (job key '%d', type '%s', processInstanceKey '%d'). \
+                Only the following listener event types support denying: [ASSIGNING, COMPLETING, UPDATING].
+                """
+                .formatted(
+                    expectedJobListenerType,
+                    result.getKey(),
+                    result.getValue().getType(),
+                    processInstanceKey));
   }
 }

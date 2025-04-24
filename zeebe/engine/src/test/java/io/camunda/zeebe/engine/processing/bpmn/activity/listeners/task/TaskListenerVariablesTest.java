@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
-import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -231,8 +230,12 @@ public class TaskListenerVariablesTest {
         .hasIntent(JobIntent.COMPLETE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE.formatted(
-                result.getKey(), listenerType, processInstanceKey));
+            """
+                Task Listener job completion with variables payload provided is not yet supported \
+                (job key '%d', type '%s', processInstanceKey '%d'). \
+                Support will be enabled with the resolution of issue #23702.
+                """
+                .formatted(result.getKey(), listenerType, processInstanceKey));
 
     // complete the listener job without variables to have a completed process
     // and prevent flakiness in other tests
