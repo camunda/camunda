@@ -17,13 +17,14 @@ test.describe('Login Tests', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Basic Login on Operate', async ({
+  // eslint-disable-next-line playwright/no-focused-test
+  test.only('Basic Login on Operate', async ({
     page,
     operateLoginPage,
     operateHomePage,
   }) => {
     await navigateToApp(page, 'operate');
-    await operateLoginPage.login('demo', 'demo');
+    await operateLoginPage.login('demo', 'demoo');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
 });

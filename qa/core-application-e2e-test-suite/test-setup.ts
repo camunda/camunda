@@ -12,15 +12,17 @@ import axios from 'axios';
 
 export async function captureScreenshot(page: Page, testInfo: TestInfo) {
   const screenshotPath = `test-results/screenshots/screenshot-${randomUUID()}.png`;
-  await page.screenshot({
-    path: screenshotPath,
-    fullPage: true,
-    timeout: 200000,
-  });
-  testInfo.annotations.push({
-    type: 'testrail_attachment',
-    description: screenshotPath,
-  });
+  await page.screenshot({path: screenshotPath, fullPage: true});
+
+  const match = testInfo.title.match(/\[C(\d+)\]/);
+  const caseId = match?.[1];
+
+  if (caseId) {
+    testInfo.annotations.push({
+      type: 'testrail_attachment',
+      description: `${caseId}|${screenshotPath}`,
+    });
+  }
 }
 
 export async function captureFailureVideo(page: Page, testInfo: TestInfo) {
