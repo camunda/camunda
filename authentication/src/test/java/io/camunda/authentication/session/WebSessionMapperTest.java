@@ -46,7 +46,7 @@ public class WebSessionMapperTest {
                 .withUsername("test")
                 .withPassword("admin")
                 .withUserKey(1L)
-                .withRoles(List.of(new RoleEntity(1L, "testRole")))
+                .withRoles(List.of(new RoleEntity(1L, "testRole", "testRole")))
                 .build(),
             null);
     securityContext.setAuthentication(authenticationToken);
@@ -138,7 +138,7 @@ public class WebSessionMapperTest {
                 .withUsername("test")
                 .withPassword("admin")
                 .withUserKey(1L)
-                .withRoles(List.of(new RoleEntity(1L, "testRole")))
+                .withRoles(List.of(new RoleEntity(1L, "testRole", "testRole")))
                 .build(),
             null);
     securityContext.setAuthentication(authenticationToken);
