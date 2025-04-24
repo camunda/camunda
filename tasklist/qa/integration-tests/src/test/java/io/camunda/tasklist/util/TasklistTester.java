@@ -343,6 +343,13 @@ public class TasklistTester {
     return this;
   }
 
+  public TasklistTester startProcessInstances(
+      final String bpmnProcessId, final Integer numberOfInstances, final String payload) {
+    IntStream.range(0, numberOfInstances)
+        .forEach(i -> startProcessInstance(bpmnProcessId, payload));
+    return this;
+  }
+
   public TasklistTester startProcessInstance(final String bpmnProcessId, final String payload) {
     processInstanceId = ZeebeTestUtil.startProcessInstance(camundaClient, bpmnProcessId, payload);
     return this;
