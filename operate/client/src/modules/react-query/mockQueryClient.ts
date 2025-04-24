@@ -9,11 +9,12 @@
 import {QueryClient} from '@tanstack/react-query';
 
 function getMockQueryClient() {
-  return new QueryClient({
+  const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
         gcTime: Infinity,
+        staleTime: Infinity,
       },
       mutations: {
         retry: false,
@@ -21,6 +22,9 @@ function getMockQueryClient() {
       },
     },
   });
+
+  queryClient.clear();
+  return queryClient;
 }
 
 export {getMockQueryClient};

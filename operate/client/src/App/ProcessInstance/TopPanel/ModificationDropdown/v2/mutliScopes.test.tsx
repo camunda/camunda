@@ -19,12 +19,44 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Modification Dropdown - Multi Scopes', () => {
+  const stats = {
+    items: [
+      {
+        elementId: 'OuterSubProcess',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        elementId: 'InnerSubProcess',
+        active: 10,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        elementId: 'TaskB',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+    ],
+  };
+
   beforeEach(() => {
     mockFetchProcessXML().withSuccess(open('multipleInstanceSubProcess.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       open('multipleInstanceSubProcess.bpmn'),
     );
+    mockFetchFlownodeInstancesStatistics().withSuccess(stats);
+    mockFetchFlownodeInstancesStatistics().withSuccess(stats);
     modificationsStore.enableModificationMode();
+  });
+
+  afterEach(async () => {
+    await new Promise(process.nextTick);
   });
 
   it('should support add modification for task with multiple scopes', async () => {
@@ -79,32 +111,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
     'should not support add modification for task with multiple inner parent scopes',
     async () => {
-      mockFetchFlownodeInstancesStatistics().withSuccess({
-        items: [
-          {
-            elementId: 'OuterSubProcess',
-            active: 1,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-          {
-            elementId: 'InnerSubProcess',
-            active: 10,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-          {
-            elementId: 'TaskB',
-            active: 1,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-        ],
-      });
-
       renderPopover();
 
       await waitFor(() =>
@@ -183,32 +189,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
     'should render no modifications available',
     async () => {
-      mockFetchFlownodeInstancesStatistics().withSuccess({
-        items: [
-          {
-            elementId: 'OuterSubProcess',
-            active: 1,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-          {
-            elementId: 'InnerSubProcess',
-            active: 10,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-          {
-            elementId: 'TaskB',
-            active: 1,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-        ],
-      });
-
       renderPopover();
 
       await waitFor(() =>
@@ -217,9 +197,8 @@ describe('Modification Dropdown - Multi Scopes', () => {
         ).not.toBeNull(),
       );
 
-      modificationsStore.cancelAllTokens('TaskB', {});
-
       act(() => {
+        modificationsStore.cancelAllTokens('TaskB', {});
         flowNodeSelectionStore.selectFlowNode({
           flowNodeId: 'TaskB',
         });
@@ -240,32 +219,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
     'should render add modification for flow nodes that has multiple running scopes',
     async () => {
-      mockFetchFlownodeInstancesStatistics().withSuccess({
-        items: [
-          {
-            elementId: 'OuterSubProcess',
-            active: 1,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-          {
-            elementId: 'InnerSubProcess',
-            active: 10,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-          {
-            elementId: 'TaskB',
-            active: 1,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-        ],
-      });
-
       renderPopover();
 
       await waitFor(() =>
@@ -274,9 +227,8 @@ describe('Modification Dropdown - Multi Scopes', () => {
         ).not.toBeNull(),
       );
 
-      modificationsStore.cancelAllTokens('TaskB', {});
-
       act(() => {
+        modificationsStore.cancelAllTokens('TaskB', {});
         flowNodeSelectionStore.selectFlowNode({
           flowNodeId: 'TaskB',
         });

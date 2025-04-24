@@ -37,7 +37,6 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 
 jest.mock('react-transition-group', () => {
@@ -323,7 +322,6 @@ describe('TopPanel', () => {
   });
 
   it('should display move token banner in moving mode', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
     );

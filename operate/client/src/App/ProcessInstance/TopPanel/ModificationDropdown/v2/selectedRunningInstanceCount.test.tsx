@@ -78,6 +78,10 @@ describe('selectedRunningInstanceCount', () => {
     );
   });
 
+  afterEach(async () => {
+    await new Promise(process.nextTick);
+  });
+
   it('should not render when there are no running instances selected', async () => {
     modificationsStore.enableModificationMode();
 
@@ -125,6 +129,8 @@ describe('selectedRunningInstanceCount', () => {
       await screen.findByText(/Flow Node Modifications/),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/Selected running instances/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Selected running instances/),
+    ).toBeInTheDocument();
   });
 });

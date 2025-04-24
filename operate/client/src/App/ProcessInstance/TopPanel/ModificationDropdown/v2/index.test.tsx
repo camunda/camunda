@@ -89,12 +89,19 @@ describe('Modification Dropdown', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statisticsData,
     });
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statisticsData,
+    });
 
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
     );
     modificationsStore.enableModificationMode();
+  });
+
+  afterEach(async () => {
+    await new Promise(process.nextTick);
   });
 
   it('should not render dropdown when no flow node is selected', async () => {
