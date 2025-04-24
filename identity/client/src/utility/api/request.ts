@@ -133,7 +133,6 @@ const apiRequest: <R, P>(
 
     for (const handler of handlers) {
       await handler(response);
-      return { data, error: null, status: 200, success: true };
     }
 
     if (response.ok) {
