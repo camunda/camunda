@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.spec.dsl.verifications;
 
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
@@ -30,7 +30,7 @@ public class ElementInstanceStateVerification extends AbstractSpecInstruction
   private String processInstanceAlias;
   private String elementId = null;
   private String elementName = null;
-  private FlowNodeInstanceState state;
+  private ElementInstanceState state;
 
   public String getProcessInstanceAlias() {
     return processInstanceAlias;
@@ -56,11 +56,11 @@ public class ElementInstanceStateVerification extends AbstractSpecInstruction
     this.elementName = elementName;
   }
 
-  public FlowNodeInstanceState getState() {
+  public ElementInstanceState getState() {
     return state;
   }
 
-  public void setState(final FlowNodeInstanceState state) {
+  public void setState(final ElementInstanceState state) {
     this.state = state;
   }
 

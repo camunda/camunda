@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.spec.dsl.verifications;
 
-import io.camunda.client.api.search.response.ProcessInstanceState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.spec.SpecTestContext;
 import io.camunda.process.test.impl.spec.dsl.AbstractSpecInstruction;
@@ -54,7 +54,7 @@ public class ProcessInstanceStateVerification extends AbstractSpecInstruction
     } else if (state == ProcessInstanceState.COMPLETED) {
       testContext.assertThatProcessInstance(processInstanceAlias).isCompleted();
 
-    } else if (state == ProcessInstanceState.CANCELED) {
+    } else if (state == ProcessInstanceState.TERMINATED) {
       testContext.assertThatProcessInstance(processInstanceAlias).isTerminated();
     }
   }
