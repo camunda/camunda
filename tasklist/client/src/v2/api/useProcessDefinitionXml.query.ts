@@ -9,21 +9,20 @@
 import {useQuery} from '@tanstack/react-query';
 import {api} from 'v2/api';
 import {request} from 'common/api/request';
-import type {ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/operate';
 
-function useProcessDefinition(
+function useProcessDefinitionXml(
   processDefinitionKey: string,
   options?: {enabled?: boolean},
 ) {
   return useQuery({
-    queryKey: ['processDefinition', processDefinitionKey],
+    queryKey: ['processDefinitionXml', processDefinitionKey],
     queryFn: async () => {
       const {response, error} = await request(
-        api.getProcessDefinition({processDefinitionKey}),
+        api.getProcessDefinitionXml({processDefinitionKey}),
       );
 
       if (response !== null) {
-        return response.json() as Promise<ProcessDefinition>;
+        return response.text() as Promise<string>;
       }
 
       throw error;
@@ -34,4 +33,4 @@ function useProcessDefinition(
   });
 }
 
-export {useProcessDefinition};
+export {useProcessDefinitionXml};

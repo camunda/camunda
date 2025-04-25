@@ -8,7 +8,6 @@
 
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
 import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
-import type {ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/operate';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {Section} from '@carbon/react';
 import {TurnOnNotificationPermission} from 'common/tasks/details/TurnOnNotificationPermission';
@@ -19,7 +18,7 @@ import {useTranslation} from 'react-i18next';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {Outlet, useMatch, useNavigate} from 'react-router-dom';
 import {DetailsSkeleton} from 'common/tasks/details/DetailsSkeleton';
-import {useProcessDefinition} from 'v2/api/useProcessDefinition.query';
+import {useProcessDefinitionXml} from 'v2/api/useProcessDefinitionXml.query';
 import {useTask} from 'v2/api/useTask.query';
 import {useEffect} from 'react';
 import {notificationsStore} from 'common/notifications/notifications.store';
@@ -28,7 +27,7 @@ type OutletContext = {
   task: UserTask;
   currentUser: CurrentUser;
   refetch: () => void;
-  process: ProcessDefinition | undefined;
+  processXml: string | undefined;
 };
 
 const TaskDetailsLayout: React.FC = () => {
@@ -37,7 +36,7 @@ const TaskDetailsLayout: React.FC = () => {
   const {data: currentUser} = useCurrentUser();
   const {data: task, refetch} = useTask(id);
   const isTaskCompleted = task?.state === 'COMPLETED';
-  const {data: process, isLoading: processLoading} = useProcessDefinition(
+  const {data: processXml, isLoading: processLoading} = useProcessDefinitionXml(
     task?.processDefinitionKey ?? '',
     {
       enabled: task !== undefined && !isTaskCompleted,
@@ -74,6 +73,16 @@ const TaskDetailsLayout: React.FC = () => {
         pathname: pages.taskDetails(id),
       },
     },
+    {
+      key: 'process',
+      title: t('taskDetailsProcessTabLabel'),
+      label: t('taskDetailsShowBpmnProcessLabel'),
+      selected: useMatch(pages.taskDetailsProcess()) !== null,
+      to: {
+        pathname: pages.taskDetailsProcess(id),
+      },
+      visible: !isTaskCompleted && processXml !== undefined,
+    },
   ];
 
   if (task === undefined || currentUser === undefined || processLoading) {
@@ -90,7 +99,7 @@ const TaskDetailsLayout: React.FC = () => {
         <TabListNav label={t('taskDetailsNavLabel')} items={tabs} />
         <Outlet
           context={
-            {task, currentUser, refetch, process} satisfies OutletContext
+            {task, currentUser, refetch, processXml} satisfies OutletContext
           }
         />
       </Section>

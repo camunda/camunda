@@ -43,14 +43,14 @@ const api = {
       },
     );
   },
-  getProcessDefinition: (
+  getProcessDefinitionXml: (
     body: Pick<ProcessDefinition, 'processDefinitionKey'>,
   ) => {
     return new Request(
-      getFullURL(operateEndpoints.getProcessDefinition.getUrl(body)),
+      getFullURL(operateEndpoints.getProcessDefinitionXml.getUrl(body)),
       {
         ...BASE_REQUEST_OPTIONS,
-        method: operateEndpoints.getProcessDefinition.method,
+        method: operateEndpoints.getProcessDefinitionXml.method,
       },
     );
   },

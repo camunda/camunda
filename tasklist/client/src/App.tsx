@@ -107,7 +107,12 @@ const v2Routes = createRoutesFromElements(
           path=":id"
           lazy={() => import('./v2/TaskDetailsLayout')}
           ErrorBoundary={ErrorWithinLayout}
-        />
+        >
+          <Route
+            path="process"
+            lazy={() => import('./v2/TaskDetailsProcessView')}
+          />
+        </Route>
       </Route>
     </Route>
   </Route>,
