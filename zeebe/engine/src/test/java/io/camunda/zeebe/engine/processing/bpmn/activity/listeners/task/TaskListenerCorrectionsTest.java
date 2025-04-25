@@ -1375,10 +1375,12 @@ public class TaskListenerCorrectionsTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             """
-            Expected to complete task listener job with corrections, but the job result is denied. \
-            The corrections would be reverted by the denial. Either complete the job with \
-            corrections without setting denied, or complete the job with a denied result but no \
-            corrections.""");
+                Expected to complete task listener job with corrections, but the job result is denied \
+                (job key '%d', type '%s', processInstanceKey '%d'). \
+                The corrections would be reverted by the denial. Either complete the job with corrections \
+                without setting denied, or complete the job with a denied result but no corrections.
+                """
+                .formatted(rejection.getKey(), listenerType, processInstanceKey));
   }
 
   @Test
@@ -1406,9 +1408,10 @@ public class TaskListenerCorrectionsTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             """
-            Expected to complete task listener job with a corrections result, \
-            but property 'unknown_property' cannot be corrected. \
-            Only the following properties can be corrected: \
-            [assignee, candidateGroupsList, candidateUsersList, dueDate, followUpDate, priority].""");
+                Expected to complete task listener job with a corrections result, but property 'unknown_property' \
+                cannot be corrected (job key '%d', type '%s', processInstanceKey '%d'). \
+                Only the following properties can be corrected: [assignee, candidateGroupsList, candidateUsersList, dueDate, followUpDate, priority].
+                """
+                .formatted(rejection.getKey(), listenerType, processInstanceKey));
   }
 }
