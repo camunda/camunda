@@ -156,31 +156,25 @@ public final class IdentitySetupInitializeProcessor
     record.getMappings().stream()
         .map(MappingRecord.class::cast)
         .forEach(
-            mapping ->
-                mappingState
-                    .get(mapping.getClaimName(), mapping.getClaimValue())
-                    .ifPresentOrElse(
-                        persistedMapping -> {
-                          mapping.setMappingId(persistedMapping.getMappingId());
-                          if (assignEntityToRole(
-                              role, persistedMapping.getMappingId(), EntityType.MAPPING)) {
-                            createdNewEntities.set(true);
-                          }
-                          if (assignEntityToTenant(
-                              tenant, mapping.getMappingId(), EntityType.MAPPING)) {
-                            createdNewEntities.set(true);
-                          }
-                        },
-                        () -> {
-                          createdNewEntities.set(true);
-                          final long mappingKey = keyGenerator.nextKey();
-                          mapping.setMappingKey(mappingKey);
-                          // TODO: Remove null checks after migrating fully to mapping ID #27820
-                          if (mapping.getMappingId() == null || mapping.getMappingId().isBlank()) {
-                            mapping.setMappingId(String.valueOf(mappingKey));
-                          }
-                          createMapping(mapping, role, tenant);
-                        }));
+            mapping -> {
+              final var existingById = mappingState.get(mapping.getMappingId());
+              final var existingByClaim =
+                  mappingState.get(mapping.getClaimName(), mapping.getClaimValue());
+
+              if (existingById.isPresent() || existingByClaim.isPresent()) {
+                final var persistedMapping = existingById.orElseGet(existingByClaim::get);
+                mapping.setMappingId(persistedMapping.getMappingId());
+                if (assignEntityToRole(role, persistedMapping.getMappingId(), EntityType.MAPPING)) {
+                  createdNewEntities.set(true);
+                }
+                if (assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING)) {
+                  createdNewEntities.set(true);
+                }
+              } else {
+                createdNewEntities.set(true);
+                createMapping(mapping, role, tenant);
+              }
+            });
     return createdNewEntities.get();
   }
 
