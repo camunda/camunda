@@ -223,7 +223,6 @@ class RequestMapperTest {
                 jwt,
                 new OAuthContext(
                     new HashSet<>(),
-                    new HashSet<>(),
                     new AuthenticationContext(
                         sub, List.of(), List.of(), List.of(), List.of("g1", "g2")))),
             null,

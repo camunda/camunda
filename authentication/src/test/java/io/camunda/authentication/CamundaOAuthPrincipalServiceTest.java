@@ -80,11 +80,12 @@ public class CamundaOAuthPrincipalServiceTest {
     when(mappingServices.getMatchingMappings(claims))
         .thenReturn(
             List.of(
-                new MappingEntity("test-id",  "role", "R1", "role-r1"),
+                new MappingEntity("test-id", "role", "R1", "role-r1"),
                 new MappingEntity("test-id-2", "group", "G1", "group-g1")));
 
     final var roleR1 = new RoleEntity(8L, "Role R1");
-    when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2"))).thenReturn(List.of(roleR1));
+    when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2")))
+        .thenReturn(List.of(roleR1));
     when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "8")))
         .thenReturn(List.of("*"));
 
@@ -106,8 +107,8 @@ public class CamundaOAuthPrincipalServiceTest {
     // given
     final Map<String, Object> claims = Map.of("sub", "user@example.com");
 
-    final var mapping1 = new MappingEntity("map-1",  "role", "R1", "role-r1");
-    final var mapping2 = new MappingEntity("map-2",  "group", "G1", "group-g1");
+    final var mapping1 = new MappingEntity("map-1", "role", "R1", "role-r1");
+    final var mapping2 = new MappingEntity("map-2", "group", "G1", "group-g1");
 
     when(mappingServices.getMatchingMappings(claims)).thenReturn(List.of(mapping1, mapping2));
 

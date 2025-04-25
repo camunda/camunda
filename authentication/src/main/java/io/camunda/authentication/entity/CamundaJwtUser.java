@@ -8,7 +8,6 @@
 package io.camunda.authentication.entity;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.security.oauth2.jwt.Jwt;

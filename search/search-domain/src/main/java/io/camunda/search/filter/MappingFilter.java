@@ -16,7 +16,6 @@ import java.util.Set;
 
 public record MappingFilter(
     String mappingId,
-    Long mappingKey,
     String claimName,
     List<String> claimNames,
     String claimValue,
@@ -29,7 +28,6 @@ public record MappingFilter(
   public MappingFilter.Builder toBuilder() {
     return new Builder()
         .mappingId(mappingId)
-        .mappingKey(mappingKey)
         .claimName(claimName)
         .claimNames(claimNames)
         .claimValue(claimValue)
@@ -42,7 +40,6 @@ public record MappingFilter(
   public static final class Builder implements ObjectBuilder<MappingFilter> {
     private String mappingId;
     private Set<String> mappingIds;
-    private Long mappingKey;
     private String claimName;
     private List<String> claimNames;
     private String claimValue;
@@ -52,11 +49,6 @@ public record MappingFilter(
 
     public Builder mappingId(final String value) {
       mappingId = value;
-      return this;
-    }
-
-    public Builder mappingKey(final Long value) {
-      mappingKey = value;
       return this;
     }
 
@@ -98,15 +90,7 @@ public record MappingFilter(
     @Override
     public MappingFilter build() {
       return new MappingFilter(
-          mappingId,
-          mappingKey,
-          claimName,
-          claimNames,
-          claimValue,
-          name,
-          claims,
-          tenantId,
-          mappingIds);
+          mappingId, claimName, claimNames, claimValue, name, claims, tenantId, mappingIds);
     }
   }
 

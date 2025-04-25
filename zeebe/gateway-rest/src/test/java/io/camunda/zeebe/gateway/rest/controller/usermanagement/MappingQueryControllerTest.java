@@ -42,7 +42,7 @@ public class MappingQueryControllerTest extends RestControllerTest {
   @Test
   void getMappingShouldReturnOk() {
     // given
-    final var mapping = new MappingEntity("id", 100L, "Claim Name", "Claim Value", "Map Name");
+    final var mapping = new MappingEntity("id", "Claim Name", "Claim Value", "Map Name");
     when(mappingServices.getMapping(mapping.mappingId())).thenReturn(mapping);
 
     // when
@@ -57,7 +57,6 @@ public class MappingQueryControllerTest extends RestControllerTest {
         .json(
             """
                           {
-                            "mappingKey": "100",
                             "claimName": "Claim Name",
                             "claimValue": "Claim Value",
                             "name": "Map Name"
@@ -112,9 +111,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
-                        new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
-                        new MappingEntity("id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
-                        new MappingEntity("id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
+                        new MappingEntity("id1", "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingEntity("id2", "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingEntity("id3", "Claim Name3", "Claim Value3", "Map Name3")))
                 .build());
 
     // when / then
@@ -135,19 +134,16 @@ public class MappingQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "mappingKey": "100",
                  "claimName": "Claim Name1",
                  "claimValue": "Claim Value1",
                  "name": "Map Name1"
                },
                {
-                 "mappingKey": "200",
                  "claimName": "Claim Name2",
                  "claimValue": "Claim Value2",
                  "name": "Map Name2"
                },
                {
-                 "mappingKey": "300",
                  "claimName": "Claim Name3",
                  "claimValue": "Claim Value3",
                  "name": "Map Name3"
@@ -172,9 +168,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
-                        new MappingEntity("id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
-                        new MappingEntity("id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
+                        new MappingEntity("id1", "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingEntity("id2", "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingEntity("id3", "Claim Name3", "Claim Value3", "Map Name3")))
                 .build());
 
     // when / then
@@ -211,9 +207,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name3"),
-                        new MappingEntity("id2", 200L, "Claim Name2", "Claim Value2", "Map Name1"),
-                        new MappingEntity("id3", 300L, "Claim Name3", "Claim Value3", "Map Name2")))
+                        new MappingEntity("id1", "Claim Name1", "Claim Value1", "Map Name3"),
+                        new MappingEntity("id2", "Claim Name2", "Claim Value2", "Map Name1"),
+                        new MappingEntity("id3", "Claim Name3", "Claim Value3", "Map Name2")))
                 .build());
 
     // when / then
