@@ -99,13 +99,6 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
-  public List<GroupEntity> getGroupsByUserKey(final String username) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberId(username)).build())
-        .items()
-        .stream()
-        .toList();
-  }
-
   public List<GroupEntity> getGroupsByMemberKeys(final Set<String> memberKeys) {
     return findAll(
         SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberIds(memberKeys)).build());
