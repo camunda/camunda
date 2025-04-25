@@ -64,7 +64,7 @@ test.describe('HTO User Flow Tests', () => {
   }) => {
     await test.step('View Process Instance in Operate, complete User Task in Tasklist & assert process complete in Operate', async () => {
       await navigateToApp(page, 'operate');
-      await operateLoginPage.login('sero', 'demo');
+      await operateLoginPage.login('demo', 'demo');
       await expect(operateHomePage.operateBanner).toBeVisible();
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();

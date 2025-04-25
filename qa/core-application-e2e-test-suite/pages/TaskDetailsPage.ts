@@ -206,11 +206,9 @@ class TaskDetailsPage {
 
   async fillTextInput(label: string, value: string): Promise<void> {
     const input = this.page.getByLabel(label, {exact: true});
-    await expect(input).toBeVisible();
-    await expect(input).toBeEnabled();
     await input.click({timeout: 60000});
     await input.fill(value);
-    await expect(input).toHaveValue(value);
+    await expect(input).toHaveValue(value, {timeout: 5000});
   }
 
   async priorityAssertion(priority: string): Promise<void> {
