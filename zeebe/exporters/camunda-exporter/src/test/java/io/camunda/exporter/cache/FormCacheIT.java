@@ -43,15 +43,19 @@ class FormCacheIT {
 
   @BeforeEach
   void setup() {
-    new ElasticsearchEngineClient(searchDB.esClient(), searchDB.objectMapper())
-        .createIndex(FORM_INDEX, new IndexConfiguration());
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
+      new ElasticsearchEngineClient(searchDB.esClient(), searchDB.objectMapper())
+          .createIndex(FORM_INDEX, new IndexConfiguration());
+    }
     new OpensearchEngineClient(searchDB.osClient(), searchDB.objectMapper())
         .createIndex(FORM_INDEX, new IndexConfiguration());
   }
 
   @AfterEach
   void cleanup() throws IOException {
-    searchDB.esClient().indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
+      searchDB.esClient().indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+    }
     searchDB.osClient().indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
   }
 
@@ -94,7 +98,7 @@ class FormCacheIT {
   }
 
   static Stream<Arguments> provideFormCache() {
-    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL) == null) {
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
       return Stream.of(
           Arguments.of(
               Named.of("ElasticSearch", getESFormCache(FORM_INDEX.getFullQualifiedName()))),
@@ -106,7 +110,7 @@ class FormCacheIT {
   }
 
   static Stream<Arguments> provideFailingFormCache() {
-    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL) == null) {
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
       return Stream.of(
           Arguments.of(Named.of("ElasticSearch", getESFormCache("invalid-index-name"))),
           Arguments.of(Named.of("OpenSearch", getOSFormCache("invalid-index-name"))));
@@ -131,7 +135,7 @@ class FormCacheIT {
             10,
             new OpenSearchFormCacheLoader(searchDB.osClient(), indexName),
             new CaffeineCacheStatsCounter(
-                DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
+                DefaultExporterResourceProvider.NAMESPACE, "OS", new SimpleMeterRegistry())),
         FormCacheIT::indexInOpenSearch);
   }
 

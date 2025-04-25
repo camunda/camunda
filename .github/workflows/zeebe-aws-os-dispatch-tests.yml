@@ -32,7 +32,7 @@ jobs:
         - os-exporter
         - search-client-os
         - camunda-exporter
-        - camunda-qa-integration-tests
+        - camunda-qa-acceptance-tests
         include:
           - group: os-exporter
             name: "Zeebe OS Exporter Integration Tests"
@@ -52,9 +52,9 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
-          - group: camunda-qa-integration-tests
+          - group: camunda-qa-acceptance-tests
             name: "Camunda QA Integration Module"
-            maven-modules: "'io.camunda:camunda-qa-integration-tests'"
+            maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
             maven-build-threads: 2
             maven-test-fork-count: 2
             runs-on: aws-core-16-default
