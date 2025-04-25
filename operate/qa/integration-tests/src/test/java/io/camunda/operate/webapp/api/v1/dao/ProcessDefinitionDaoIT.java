@@ -37,12 +37,15 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Autowired private ProcessIndex processIndex;
 
+  private ProcessEntity pe1;
+  private ProcessEntity pe2;
+  private ProcessEntity pe3;
+
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
-    String resourceXml =
+    final String resourceXml1 =
         testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn");
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        processIndex.getFullQualifiedName(),
+    pe1 =
         new ProcessEntity()
             .setKey(2251799813685249L)
             .setTenantId(DEFAULT_TENANT_ID)
@@ -50,11 +53,12 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
             .setVersion(1)
             .setVersionTag("v1")
             .setBpmnProcessId("demoProcess")
-            .setBpmnXml(resourceXml));
+            .setBpmnXml(resourceXml1);
+    testSearchRepository.createOrUpdateDocumentFromObject(processIndex.getFullQualifiedName(), pe1);
 
-    resourceXml = testResourceManager.readResourceFileContentsAsString("errorProcess.bpmn");
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        processIndex.getFullQualifiedName(),
+    final String resourceXml2 =
+        testResourceManager.readResourceFileContentsAsString("errorProcess.bpmn");
+    pe2 =
         new ProcessEntity()
             .setKey(2251799813685251L)
             .setTenantId(DEFAULT_TENANT_ID)
@@ -62,18 +66,20 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
             .setVersion(1)
             .setVersionTag("version1")
             .setBpmnProcessId("errorProcess")
-            .setBpmnXml(resourceXml));
+            .setBpmnXml(resourceXml2);
+    testSearchRepository.createOrUpdateDocumentFromObject(processIndex.getFullQualifiedName(), pe2);
 
-    resourceXml = testResourceManager.readResourceFileContentsAsString("complexProcess_v_3.bpmn");
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        processIndex.getFullQualifiedName(),
+    final String resourceXml3 =
+        testResourceManager.readResourceFileContentsAsString("complexProcess_v_3.bpmn");
+    pe3 =
         new ProcessEntity()
             .setKey(2251799813685253L)
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Complex process")
             .setVersion(1)
             .setBpmnProcessId("complexProcess")
-            .setBpmnXml(resourceXml));
+            .setBpmnXml(resourceXml3);
+    testSearchRepository.createOrUpdateDocumentFromObject(processIndex.getFullQualifiedName(), pe3);
 
     searchContainerManager.refreshIndices("*operate-process*");
   }
@@ -85,14 +91,15 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
     assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
     assertThat(processDefinitionResults.getItems())
         .extracting(BPMN_PROCESS_ID)
-        .containsExactlyInAnyOrder("demoProcess", "errorProcess", "complexProcess");
+        .containsExactlyInAnyOrder(
+            pe1.getBpmnProcessId(), pe2.getBpmnProcessId(), pe3.getBpmnProcessId());
   }
 
   @Test
   public void shouldReturnWhenByKey() {
-    final ProcessDefinition processDefinition = dao.byKey(2251799813685249L);
+    final ProcessDefinition processDefinition = dao.byKey(pe1.getKey());
 
-    assertThat(processDefinition.getBpmnProcessId()).isEqualTo("demoProcess");
+    assertThat(processDefinition.getBpmnProcessId()).isEqualTo(pe1.getBpmnProcessId());
     assertThat(processDefinition.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
   }
 
@@ -103,9 +110,9 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldReturnWhenXmlByKey() {
-    final String processDefinitionAsXml = dao.xmlByKey(2251799813685249L);
+    final String processDefinitionAsXml = dao.xmlByKey(pe1.getKey());
 
-    assertThat(processDefinitionAsXml).contains("demoProcess");
+    assertThat(processDefinitionAsXml).contains(pe1.getBpmnProcessId());
 
     // Verify the returned string is xml
     try {
@@ -130,10 +137,10 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
     final Results<ProcessDefinition> processDefinitionResults =
         dao.search(
             new Query<ProcessDefinition>()
-                .setFilter(new ProcessDefinition().setBpmnProcessId("demoProcess")));
+                .setFilter(new ProcessDefinition().setBpmnProcessId(pe1.getBpmnProcessId())));
 
     assertThat(processDefinitionResults.getItems().get(0).getBpmnProcessId())
-        .isEqualTo("demoProcess");
+        .isEqualTo(pe1.getBpmnProcessId());
   }
 
   @Test
@@ -141,12 +148,12 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
     final Results<ProcessDefinition> processDefinitionResults =
         dao.search(
             new Query<ProcessDefinition>()
-                .setFilter(new ProcessDefinition().setVersionTag("version1")));
+                .setFilter(new ProcessDefinition().setVersionTag(pe2.getVersionTag())));
 
     assertThat(processDefinitionResults.getItems()).hasSize(1);
-    final var processDefinition = processDefinitionResults.getItems().get(0);
-    assertThat(processDefinition.getKey()).isEqualTo(2251799813685251L);
-    assertThat(processDefinition.getVersionTag()).isEqualTo("version1");
+    final var processDefinition = processDefinitionResults.getItems().getFirst();
+    assertThat(processDefinition.getKey()).isEqualTo(pe2.getKey());
+    assertThat(processDefinition.getVersionTag()).isEqualTo(pe2.getVersionTag());
   }
 
   @Test
@@ -159,7 +166,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
     assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
     assertThat(processDefinitionResults.getItems())
         .extracting(BPMN_PROCESS_ID)
-        .containsExactly("errorProcess", "demoProcess", "complexProcess");
+        .containsExactly(pe2.getBpmnProcessId(), pe1.getBpmnProcessId(), pe3.getBpmnProcessId());
   }
 
   @Test
@@ -172,7 +179,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
     assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
     assertThat(processDefinitionResults.getItems())
         .extracting(BPMN_PROCESS_ID)
-        .containsExactly("complexProcess", "demoProcess", "errorProcess");
+        .containsExactly(pe3.getBpmnProcessId(), pe1.getBpmnProcessId(), pe2.getBpmnProcessId());
   }
 
   @Test
@@ -188,7 +195,7 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
     assertThat(processDefinitionResults.getItems())
         .extracting(BPMN_PROCESS_ID)
-        .containsExactly("errorProcess", "demoProcess");
+        .containsExactly(pe2.getBpmnProcessId(), pe1.getBpmnProcessId());
 
     final Object[] searchAfter = processDefinitionResults.getSortValues();
     assertThat(processDefinitionResults.getItems().get(1).getBpmnProcessId())
@@ -205,6 +212,6 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
     assertThat(processDefinitionResults.getItems()).hasSize(1);
 
     assertThat(processDefinitionResults.getItems().get(0).getBpmnProcessId())
-        .isEqualTo("complexProcess");
+        .isEqualTo(pe3.getBpmnProcessId());
   }
 }
