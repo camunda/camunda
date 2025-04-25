@@ -42,11 +42,13 @@ type State = {
     | 'fetching-next'
     | 'fetching-prev';
   flowNodeInstances: FlowNodeInstances;
+  flowNodesWithSubProcesses: FlowNodeInstanceType[];
 };
 
 const DEFAULT_STATE: State = {
   status: 'initial',
   flowNodeInstances: {},
+  flowNodesWithSubProcesses: [],
 };
 
 class FlowNodeInstance extends NetworkReconnectionHandler {
@@ -352,6 +354,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
   handleFetchSuccess = (flowNodeInstances: FlowNodeInstances) => {
     Object.entries(flowNodeInstances).forEach(
       ([treePath, flowNodeInstance]) => {
+        this.state.flowNodesWithSubProcesses = flowNodeInstance.children.filter(
+          (instance) => instance.type === 'SUB_PROCESS',
+        );
+
         if (
           !isEqual(this.state.flowNodeInstances[treePath], flowNodeInstance)
         ) {
@@ -370,6 +376,9 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 
     Object.entries(flowNodeInstances).forEach(
       ([treePath, flowNodeInstance]) => {
+        this.state.flowNodesWithSubProcesses = flowNodeInstance.children.filter(
+          (instance) => instance.type === 'SUB_PROCESS',
+        );
         // don't create new trees (this prevents showing a tree when the user collapsed it earlier)
         if (
           this.state.flowNodeInstances[treePath] !== undefined &&
