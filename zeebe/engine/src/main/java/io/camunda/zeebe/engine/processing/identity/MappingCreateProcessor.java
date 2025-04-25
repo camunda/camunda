@@ -111,7 +111,9 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
                       existingMapping.getMappingId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
-            () -> stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), MappingIntent.CREATED, record));
+            () ->
+                stateWriter.appendFollowUpEvent(
+                    keyGenerator.nextKey(), MappingIntent.CREATED, record));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }

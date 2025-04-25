@@ -104,7 +104,8 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
 
   @Override
   public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), MappingIntent.UPDATED, command.getValue());
+    stateWriter.appendFollowUpEvent(
+        keyGenerator.nextKey(), MappingIntent.UPDATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }
