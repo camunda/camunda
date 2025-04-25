@@ -27,8 +27,8 @@ const Selection: FC<SelectionProps> = ({ type, onChange }) => {
           id="userSelection"
           onChange={onChange}
           searchFn={searchUser}
-          getId={(user) => user.userKey.toString()}
-          itemToString={(user) => user.name || user.userKey.toString()}
+          getId={(user) => user.username}
+          itemToString={(user) => user.name || user.username}
         />
       );
     case OwnerType.GROUP:
