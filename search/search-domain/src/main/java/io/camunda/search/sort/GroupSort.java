@@ -29,6 +29,11 @@ public record GroupSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
+    public Builder groupId() {
+      currentOrdering = new FieldSorting("groupId", null);
+      return this;
+    }
+
     public Builder name() {
       currentOrdering = new FieldSorting("name", null);
       return this;

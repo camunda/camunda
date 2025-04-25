@@ -7,9 +7,9 @@
  */
 package io.camunda.it.operate;
 
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_DEFINITION;
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +19,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import java.time.Duration;
@@ -28,17 +28,19 @@ import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@Disabled("https://github.com/camunda/camunda/issues/30126")
 public class OperatePermissionsIT {
 
   @MultiDbTestApplication
-  static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
-      new TestSimpleCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
+  static final TestCamundaApplication STANDALONE_CAMUNDA =
+      new TestCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
 
   private static CamundaClient camundaClient;
 

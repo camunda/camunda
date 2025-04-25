@@ -107,6 +107,34 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasCompletedElements(ElementSelector... elementSelectors);
 
   /**
+   * Verifies that the given BPMN elements are completed in order. Elements that do not match any of
+   * the given element IDs are ignored.
+   *
+   * <p>The verification fails if at least one of the elements is not completed, or the order is not
+   * correct.
+   *
+   * <p>The assertion waits until all elements are left.
+   *
+   * @param elementIds the BPMN element IDs
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasCompletedElementsInOrder(String... elementIds);
+
+  /**
+   * Verifies that the given BPMN elements are completed in order. Elements that do not match any of
+   * the given element selectors are ignored.
+   *
+   * <p>The verification fails if at least one of the elements is not completed, or the order is not
+   * correct.
+   *
+   * <p>The assertion waits until all elements are left.
+   *
+   * @param elementSelectors the selectors for the BPMN elements
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasCompletedElementsInOrder(ElementSelector... elementSelectors);
+
+  /**
    * Verifies that the given BPMN elements are terminated. The verification fails if at least one
    * element is active, completed, or not entered.
    *

@@ -155,10 +155,42 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void cancel(final long batchOperationKey) {
+    LOGGER.trace("Cancel batch operation with key {}", batchOperationKey);
+    deleteBatchOperation(batchOperationKey);
+  }
+
+  @Override
+  public void pause(final long batchOperationKey) {
+    LOGGER.trace("Pausing batch operation with key {}", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+
+    // Set status to PAUSED
+    final var batch = batchOperationColumnFamily.get(batchKey);
+    batch.setStatus(BatchOperationStatus.PAUSED);
+    batchOperationColumnFamily.update(batchKey, batch);
+  }
+
+  @Override
+  public void resume(final long batchOperationKey) {
+    LOGGER.trace("Resume batch operation with key {}", batchOperationKey);
+    this.batchKey.wrapLong(batchOperationKey);
+
+    // Set status to STARTED
+    final var batch = batchOperationColumnFamily.get(this.batchKey);
+    batch.setStatus(BatchOperationStatus.STARTED);
+    batchOperationColumnFamily.update(this.batchKey, batch);
+  }
+
+  @Override
   public void complete(final long batchOperationKey) {
     LOGGER.trace("Completing batch operation with key {}", batchOperationKey);
-    batchKey.wrapLong(batchOperationKey);
-    batchOperationColumnFamily.deleteExisting(batchKey);
+    deleteBatchOperation(batchOperationKey);
+  }
+
+  @Override
+  public boolean exists(final long batchOperationKey) {
+    return get(batchOperationKey).isPresent();
   }
 
   @Override
@@ -197,6 +229,24 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     final var chunkKeys = chunk.getItemKeys();
 
     return chunkKeys.stream().limit(batchSize).toList();
+  }
+
+  /** This deletes everything related to the batch operation. */
+  private void deleteBatchOperation(final long batchOperationKey) {
+    batchKey.wrapLong(batchOperationKey);
+
+    // first delete the batch operation from the pendingBatchOperationColumnFamily if it exists
+    pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
+
+    // then delete all chunks
+    batchOperationChunksColumnFamily.whileEqualPrefix(
+        batchKey,
+        (compositeKey, entityTypeValue) -> {
+          batchOperationChunksColumnFamily.deleteExisting(compositeKey);
+        });
+
+    // finally delete batch operation itself
+    batchOperationColumnFamily.deleteExisting(batchKey);
   }
 
   private PersistedBatchOperationChunk createNewChunk(final PersistedBatchOperation batch) {

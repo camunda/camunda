@@ -107,7 +107,6 @@ public final class AsyncSnapshottingTest {
   private void createAsyncSnapshotDirectorOfProcessingMode() {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofProcessingMode(
-            0,
             1,
             mockStreamProcessor,
             snapshotController,
@@ -119,7 +118,6 @@ public final class AsyncSnapshottingTest {
   private void createAsyncSnapshotDirectorOfReplayMode() {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofReplayMode(
-            0,
             1,
             mockStreamProcessor,
             snapshotController,
@@ -238,12 +236,7 @@ public final class AsyncSnapshottingTest {
 
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofProcessingMode(
-            0,
-            1,
-            mockStreamProcessor,
-            snapshotController,
-            Duration.ofMinutes(1),
-            () -> flushFuture);
+            1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1), () -> flushFuture);
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
     setCommitPosition(100L);
 
@@ -265,12 +258,7 @@ public final class AsyncSnapshottingTest {
 
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofReplayMode(
-            0,
-            1,
-            mockStreamProcessor,
-            snapshotController,
-            Duration.ofMinutes(1),
-            () -> flushFuture);
+            1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1), () -> flushFuture);
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
 
     // when

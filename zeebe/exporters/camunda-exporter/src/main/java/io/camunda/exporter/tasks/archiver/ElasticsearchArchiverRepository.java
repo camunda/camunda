@@ -237,7 +237,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .map(Hit::id)
             .toList();
 
-    metrics.recordArchivingBatchSize(ids.size());
     return new ArchiveBatch(endDate, ids);
   }
 

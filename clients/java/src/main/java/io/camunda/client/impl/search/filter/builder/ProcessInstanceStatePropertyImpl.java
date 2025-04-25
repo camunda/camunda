@@ -16,36 +16,45 @@
 package io.camunda.client.impl.search.filter.builder;
 
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.filter.ProcessInstanceStateFilterProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
+import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
+import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStateProperty {
+public class ProcessInstanceStatePropertyImpl
+    extends TypedSearchRequestPropertyProvider<ProcessInstanceStateFilterProperty>
+    implements ProcessInstanceStateProperty {
   private final ProcessInstanceStateFilterProperty filterProperty =
       new ProcessInstanceStateFilterProperty();
 
   @Override
   public ProcessInstanceStateProperty eq(final ProcessInstanceState value) {
-    filterProperty.setEq(value);
+    filterProperty.set$Eq(EnumUtil.convert(value, ProcessInstanceStateEnum.class));
     return this;
   }
 
   @Override
   public ProcessInstanceStateProperty neq(final ProcessInstanceState value) {
-    filterProperty.setNeq(value);
+    filterProperty.set$Neq(EnumUtil.convert(value, ProcessInstanceStateEnum.class));
     return this;
   }
 
   @Override
   public ProcessInstanceStateProperty exists(final boolean value) {
-    filterProperty.setExists(value);
+    filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
   public ProcessInstanceStateProperty in(final List<ProcessInstanceState> values) {
-    filterProperty.setIn(values);
+    filterProperty.set$In(
+        values.stream()
+            .map(source -> (EnumUtil.convert(source, ProcessInstanceStateEnum.class)))
+            .collect(Collectors.toList()));
     return this;
   }
 
@@ -55,13 +64,13 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
   }
 
   @Override
-  public ProcessInstanceStateFilterProperty build() {
+  protected ProcessInstanceStateFilterProperty getSearchRequestProperty() {
     return filterProperty;
   }
 
   @Override
   public ProcessInstanceStateProperty like(final String value) {
-    filterProperty.setLike(value);
+    filterProperty.set$Like(value);
     return this;
   }
 }

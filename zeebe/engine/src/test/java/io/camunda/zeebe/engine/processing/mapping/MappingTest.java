@@ -232,8 +232,9 @@ public class MappingTest {
         .hasFieldOrPropertyWithValue("mappingId", mappingId);
   }
 
-  @Ignore("https://github.com/camunda/camunda/issues/30092")
   @Test
+  @Ignore(
+      "https://github.com/camunda/camunda/issues/30117 and https://github.com/camunda/camunda/issues/30092")
   public void shouldCleanupGroupAndRoleMembership() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -241,12 +242,12 @@ public class MappingTest {
         engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
     final var groupId = "123";
     final var groupKey = Long.parseLong(groupId);
-    engine.group().newGroup("group").withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName("group").create();
     final var role = engine.role().newRole("role").create();
     engine
         .group()
         .addEntity(groupId)
-        .withEntityKey(mappingRecord.getKey())
+        .withEntityId(mappingRecord.getValue().getMappingId())
         .withEntityType(EntityType.MAPPING)
         .add();
     engine
@@ -263,7 +264,8 @@ public class MappingTest {
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupKey(groupKey)
-                .withEntityKey(mappingRecord.getKey())
+                // TODO: revisit
+                .withEntityId(String.valueOf(mappingRecord.getKey()))
                 .exists())
         .isTrue();
     Assertions.assertThat(

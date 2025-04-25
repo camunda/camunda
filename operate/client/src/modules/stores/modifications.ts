@@ -19,6 +19,10 @@ import {
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {generateParentScopeIds} from 'modules/utils/modifications';
 
 type FlowNodeModificationPayload =
   | {
@@ -144,42 +148,16 @@ class Modifications {
     this.state.sourceFlowNodeIdForAddOperation = sourceFlowNodeId;
   };
 
-  generateParentScopeIds = (targetFlowNodeId: string) => {
-    const parentFlowNodeIds =
-      processInstanceDetailsDiagramStore.getFlowNodeParents(targetFlowNodeId);
-
-    return parentFlowNodeIds.reduce<{[flowNodeId: string]: string}>(
-      (parentFlowNodeScopes, flowNodeId) => {
-        const hasExistingParentScopeId =
-          this.flowNodeModifications.some(
-            (modification) =>
-              (modification.operation === 'ADD_TOKEN' ||
-                modification.operation === 'MOVE_TOKEN') &&
-              Object.keys(modification.parentScopeIds).includes(flowNodeId),
-          ) ||
-          processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-            flowNodeId,
-          ) === 1;
-
-        if (!hasExistingParentScopeId) {
-          parentFlowNodeScopes[flowNodeId] = generateUniqueID();
-        }
-
-        return parentFlowNodeScopes;
-      },
-      {},
-    );
-  };
-
   generateScopeIdsInBetween = (
     targetFlowNodeId: string,
     ancestorFlowNodeId: string,
+    businessObjects: BusinessObjects,
   ) => {
-    const flowNodesInBetween =
-      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
-        targetFlowNodeId,
-        ancestorFlowNodeId,
-      );
+    const flowNodesInBetween = getFlowNodesInBetween(
+      businessObjects,
+      targetFlowNodeId,
+      ancestorFlowNodeId,
+    );
 
     return flowNodesInBetween.reduce<{[flowNodeId: string]: string}>(
       (flowNodeScopes, flowNodeId) => {
@@ -190,54 +168,8 @@ class Modifications {
     );
   };
 
-  finishMovingToken = (targetFlowNodeId?: string) => {
-    tracking.track({
-      eventName: 'move-token',
-    });
-
-    let affectedTokenCount = 1;
-    let visibleAffectedTokenCount = 1;
-    let newScopeCount = 1;
-    if (
-      targetFlowNodeId !== undefined &&
-      this.state.sourceFlowNodeIdForMoveOperation !== null
-    ) {
-      if (this.state.sourceFlowNodeInstanceKeyForMoveOperation === null) {
-        affectedTokenCount =
-          processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-            this.state.sourceFlowNodeIdForMoveOperation,
-          );
-
-        visibleAffectedTokenCount =
-          processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-            this.state.sourceFlowNodeIdForMoveOperation,
-          );
-        newScopeCount = isMultiInstance(
-          processInstanceDetailsDiagramStore.businessObjects[
-            this.state.sourceFlowNodeIdForMoveOperation
-          ],
-        )
-          ? 1
-          : affectedTokenCount;
-      }
-
-      this.addMoveModification({
-        sourceFlowNodeId: this.state.sourceFlowNodeIdForMoveOperation,
-        sourceFlowNodeInstanceKey:
-          this.state.sourceFlowNodeInstanceKeyForMoveOperation ?? undefined,
-        targetFlowNodeId,
-        affectedTokenCount,
-        visibleAffectedTokenCount,
-        newScopeCount,
-      });
-    }
-
-    this.state.status = 'enabled';
-    this.state.sourceFlowNodeIdForMoveOperation = null;
-    this.state.sourceFlowNodeInstanceKeyForMoveOperation = null;
-  };
-
   finishAddingToken = (
+    businessObjects: BusinessObjects,
     ancestorElementId?: string,
     ancestorElementInstanceKey?: string,
   ) => {
@@ -246,16 +178,18 @@ class Modifications {
       ancestorElementId !== undefined &&
       this.state.sourceFlowNodeIdForAddOperation !== null
     ) {
-      modificationsStore.addModification({
+      this.addModification({
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
           flowNode: {
             id: this.state.sourceFlowNodeIdForAddOperation,
-            name: processInstanceDetailsDiagramStore.getFlowNodeName(
-              this.state.sourceFlowNodeIdForAddOperation,
-            ),
+            name:
+              getFlowNodeName({
+                businessObjects,
+                flowNodeId: this.state.sourceFlowNodeIdForAddOperation,
+              }) ?? '',
           },
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
@@ -263,9 +197,10 @@ class Modifications {
             instanceKey: ancestorElementInstanceKey,
             flowNodeId: ancestorElementId,
           },
-          parentScopeIds: modificationsStore.generateScopeIdsInBetween(
+          parentScopeIds: this.generateScopeIdsInBetween(
             this.state.sourceFlowNodeIdForAddOperation,
             ancestorElementId,
+            businessObjects,
           ),
         },
       });
@@ -747,11 +682,13 @@ class Modifications {
     flowNodeInstanceKey,
     affectedTokenCount,
     visibleAffectedTokenCount,
+    businessObjects,
   }: {
     flowNodeId: string;
     flowNodeInstanceKey?: string;
     affectedTokenCount: number;
     visibleAffectedTokenCount: number;
+    businessObjects: BusinessObjects;
   }) => {
     modificationsStore.addModification({
       type: 'token',
@@ -759,7 +696,7 @@ class Modifications {
         operation: 'CANCEL_TOKEN',
         flowNode: {
           id: flowNodeId,
-          name: processInstanceDetailsDiagramStore.getFlowNodeName(flowNodeId),
+          name: getFlowNodeName({businessObjects, flowNodeId}),
         },
         flowNodeInstanceKey,
         affectedTokenCount,
@@ -768,26 +705,17 @@ class Modifications {
     });
   };
 
-  cancelToken = (flowNodeId: string, flowNodeInstanceKey: string) => {
+  cancelToken = (
+    flowNodeId: string,
+    flowNodeInstanceKey: string,
+    businessObjects: BusinessObjects,
+  ) => {
     this.addCancelModification({
       flowNodeId,
       flowNodeInstanceKey,
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
-    });
-  };
-
-  cancelAllTokens = (flowNodeId: string) => {
-    this.addCancelModification({
-      flowNodeId,
-      affectedTokenCount:
-        processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-          flowNodeId,
-        ),
-      visibleAffectedTokenCount:
-        processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-          flowNodeId,
-        ),
+      businessObjects,
     });
   };
 
@@ -798,6 +726,7 @@ class Modifications {
     newScopeCount,
     affectedTokenCount,
     visibleAffectedTokenCount,
+    businessObjects,
   }: {
     sourceFlowNodeId: string;
     sourceFlowNodeInstanceKey?: string;
@@ -805,6 +734,7 @@ class Modifications {
     newScopeCount: number;
     affectedTokenCount: number;
     visibleAffectedTokenCount: number;
+    businessObjects: BusinessObjects;
   }) => {
     modificationsStore.addModification({
       type: 'token',
@@ -812,23 +742,28 @@ class Modifications {
         operation: 'MOVE_TOKEN',
         flowNode: {
           id: sourceFlowNodeId,
-          name: processInstanceDetailsDiagramStore.getFlowNodeName(
-            sourceFlowNodeId,
-          ),
+          name: getFlowNodeName({
+            businessObjects,
+            flowNodeId: sourceFlowNodeId,
+          }),
         },
         flowNodeInstanceKey: sourceFlowNodeInstanceKey,
         targetFlowNode: {
           id: targetFlowNodeId,
-          name: processInstanceDetailsDiagramStore.getFlowNodeName(
-            targetFlowNodeId,
-          ),
+          name: getFlowNodeName({
+            businessObjects,
+            flowNodeId: targetFlowNodeId,
+          }),
         },
         affectedTokenCount,
         visibleAffectedTokenCount,
         scopeIds: Array.from({
           length: newScopeCount,
         }).map(() => generateUniqueID()),
-        parentScopeIds: this.generateParentScopeIds(targetFlowNodeId),
+        parentScopeIds: generateParentScopeIds(
+          businessObjects,
+          targetFlowNodeId,
+        ),
       },
     });
   };

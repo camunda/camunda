@@ -33,7 +33,7 @@ public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSo
 
   ProcessInstanceSort parentProcessInstanceKey();
 
-  ProcessInstanceSort parentFlowNodeInstanceKey();
+  ProcessInstanceSort parentElementInstanceKey();
 
   ProcessInstanceSort startDate();
 

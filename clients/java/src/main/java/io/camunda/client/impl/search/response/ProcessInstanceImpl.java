@@ -30,7 +30,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final String processDefinitionVersionTag;
   private final Long processDefinitionKey;
   private final Long parentProcessInstanceKey;
-  private final Long parentFlowNodeInstanceKey;
+  private final Long parentElementInstanceKey;
   private final String startDate;
   private final String endDate;
   private final ProcessInstanceState state;
@@ -45,7 +45,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     processDefinitionVersionTag = item.getProcessDefinitionVersionTag();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     parentProcessInstanceKey = ParseUtil.parseLongOrNull(item.getParentProcessInstanceKey());
-    parentFlowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getParentFlowNodeInstanceKey());
+    parentElementInstanceKey = ParseUtil.parseLongOrNull(item.getParentElementInstanceKey());
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     state = EnumUtil.convert(item.getState(), ProcessInstanceState.class);
@@ -89,8 +89,8 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
-  public Long getParentFlowNodeInstanceKey() {
-    return parentFlowNodeInstanceKey;
+  public Long getParentElementInstanceKey() {
+    return parentElementInstanceKey;
   }
 
   @Override

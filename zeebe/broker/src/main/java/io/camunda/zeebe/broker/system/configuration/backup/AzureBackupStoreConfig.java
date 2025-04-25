@@ -17,6 +17,7 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
   private String accountKey;
   private String connectionString;
   private String basePath;
+  private boolean createContainer = true;
 
   public String getEndpoint() {
     return endpoint;
@@ -62,6 +63,14 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
     this.basePath = basePath;
   }
 
+  public boolean isCreateContainer() {
+    return createContainer;
+  }
+
+  public void setCreateContainer(final boolean createContainer) {
+    this.createContainer = createContainer;
+  }
+
   public static AzureBackupConfig toStoreConfig(final AzureBackupStoreConfig config) {
     return new AzureBackupConfig.Builder()
         .withEndpoint(config.getEndpoint())
@@ -69,12 +78,14 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         .withAccountKey(config.getAccountKey())
         .withConnectionString(config.getConnectionString())
         .withContainerName(config.getBasePath())
+        .withCreateContainer(config.isCreateContainer())
         .build();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(endpoint, accountName, accountKey, connectionString, basePath);
+    return Objects.hash(
+        endpoint, accountName, accountKey, connectionString, basePath, createContainer);
   }
 
   @Override
@@ -90,7 +101,8 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(accountName, that.accountName)
         && Objects.equals(accountKey, that.accountKey)
         && Objects.equals(connectionString, that.connectionString)
-        && Objects.equals(basePath, that.basePath);
+        && Objects.equals(basePath, that.basePath)
+        && createContainer == that.createContainer;
   }
 
   @Override
@@ -110,6 +122,8 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         + '\''
         + ", basePath='"
         + basePath
+        + ", createContainer="
+        + createContainer
         + '\''
         + '}';
   }

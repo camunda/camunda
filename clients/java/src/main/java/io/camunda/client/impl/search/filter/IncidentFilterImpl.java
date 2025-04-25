@@ -21,6 +21,8 @@ import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
+import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 
 public class IncidentFilterImpl
     extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.IncidentFilter>
@@ -58,9 +60,7 @@ public class IncidentFilterImpl
 
   @Override
   public IncidentFilter errorType(final IncidentErrorType errorType) {
-    filter.errorType(
-        EnumUtil.convert(
-            errorType, io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum.class));
+    filter.errorType(EnumUtil.convert(errorType, ErrorTypeEnum.class));
     return this;
   }
 
@@ -71,14 +71,14 @@ public class IncidentFilterImpl
   }
 
   @Override
-  public IncidentFilter flowNodeId(final String value) {
-    filter.setFlowNodeId(value);
+  public IncidentFilter elementId(final String value) {
+    filter.setElementId(value);
     return this;
   }
 
   @Override
-  public IncidentFilter flowNodeInstanceKey(final Long value) {
-    filter.setFlowNodeInstanceKey(ParseUtil.keyToString(value));
+  public IncidentFilter elementInstanceKey(final Long value) {
+    filter.setElementInstanceKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -90,8 +90,7 @@ public class IncidentFilterImpl
 
   @Override
   public IncidentFilter state(final IncidentState value) {
-    filter.setState(
-        EnumUtil.convert(value, io.camunda.client.protocol.rest.IncidentFilter.StateEnum.class));
+    filter.setState(EnumUtil.convert(value, StateEnum.class));
     return this;
   }
 

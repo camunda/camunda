@@ -11,14 +11,14 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.service.GroupServices;
-import io.camunda.service.GroupServices.CreateGroupRequest;
+import io.camunda.service.GroupServices.GroupDTO;
+import io.camunda.service.GroupServices.GroupMemberRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateGroupRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -81,6 +81,15 @@ public class GroupController {
                 .assignMember(groupId, username, EntityType.USER));
   }
 
+  @CamundaPutMapping(
+      path = "/{groupId}/mapping-rules/{mappingId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> assignMappingToGroup(
+      @PathVariable final String groupId, @PathVariable final String mappingId) {
+    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMapping);
+  }
+
   @CamundaDeleteMapping(path = "/{groupId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromGroup(
       @PathVariable final String groupId, @PathVariable final String username) {
@@ -89,6 +98,15 @@ public class GroupController {
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .removeMember(groupId, username, EntityType.USER));
+  }
+
+  @CamundaDeleteMapping(
+      path = "/{groupId}/mapping-rules/{mappingId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> unassignMappingToGroup(
+      @PathVariable final String groupId, @PathVariable final String mappingId) {
+    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMapping);
   }
 
   @CamundaGetMapping(path = "/{groupKey}/users")
@@ -107,15 +125,15 @@ public class GroupController {
     }
   }
 
-  @CamundaGetMapping(path = "/{groupKey}")
-  public ResponseEntity<Object> getGroup(@PathVariable final long groupKey) {
+  @CamundaGetMapping(path = "/{groupId}")
+  public ResponseEntity<Object> getGroup(@PathVariable final String groupId) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toGroup(
                   groupServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .getGroup(groupKey)));
+                      .getGroup(groupId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -138,18 +156,16 @@ public class GroupController {
     }
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createGroup(
-      final CreateGroupRequest createGroupRequest) {
+  private CompletableFuture<ResponseEntity<Object>> createGroup(final GroupDTO groupDTO) {
     return RequestMapper.executeServiceMethod(
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createGroup(createGroupRequest),
+                .createGroup(groupDTO),
         ResponseMapper::toGroupCreateResponse);
   }
 
-  public CompletableFuture<ResponseEntity<Object>> updateGroup(
-      final UpdateGroupRequest updateGroupRequest) {
+  public CompletableFuture<ResponseEntity<Object>> updateGroup(final GroupDTO updateGroupRequest) {
     return RequestMapper.executeServiceMethod(
         () ->
             groupServices
@@ -159,5 +175,22 @@ public class GroupController {
                     updateGroupRequest.name(),
                     updateGroupRequest.description()),
         ResponseMapper::toGroupUpdateResponse);
+  }
+
+  public CompletableFuture<ResponseEntity<Object>> assignMapping(final GroupMemberRequest request) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+        () ->
+            groupServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .assignMember(request.groupId(), request.entityId(), request.entityType()));
+  }
+
+  public CompletableFuture<ResponseEntity<Object>> unassignMapping(
+      final GroupMemberRequest request) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+        () ->
+            groupServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(request.groupId(), request.entityId(), request.entityType()));
   }
 }

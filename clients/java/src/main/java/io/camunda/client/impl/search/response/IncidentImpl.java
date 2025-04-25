@@ -31,8 +31,8 @@ public class IncidentImpl implements Incident {
   private final Long processInstanceKey;
   private final IncidentErrorType errorType;
   private final String errorMessage;
-  private final String flowNodeId;
-  private final Long flowNodeInstanceKey;
+  private final String elementId;
+  private final Long elementInstanceKey;
   private final String creationTime;
   private final IncidentState state;
   private final Long jobKey;
@@ -45,8 +45,8 @@ public class IncidentImpl implements Incident {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     errorType = EnumUtil.convert(item.getErrorType(), IncidentErrorType.class);
     errorMessage = item.getErrorMessage();
-    flowNodeId = item.getFlowNodeId();
-    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
+    elementId = item.getElementId();
+    elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     creationTime = item.getCreationTime();
     state = EnumUtil.convert(item.getState(), IncidentState.class);
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
@@ -84,13 +84,13 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public String getFlowNodeId() {
-    return flowNodeId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
-  public Long getFlowNodeInstanceKey() {
-    return flowNodeInstanceKey;
+  public Long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -122,8 +122,8 @@ public class IncidentImpl implements Incident {
         processInstanceKey,
         errorType,
         errorMessage,
-        flowNodeId,
-        flowNodeInstanceKey,
+        elementId,
+        elementInstanceKey,
         creationTime,
         state,
         jobKey,
@@ -145,8 +145,8 @@ public class IncidentImpl implements Incident {
         && Objects.equals(processInstanceKey, incident.processInstanceKey)
         && errorType == incident.errorType
         && Objects.equals(errorMessage, incident.errorMessage)
-        && Objects.equals(flowNodeId, incident.flowNodeId)
-        && Objects.equals(flowNodeInstanceKey, incident.flowNodeInstanceKey)
+        && Objects.equals(elementId, incident.elementId)
+        && Objects.equals(elementInstanceKey, incident.elementInstanceKey)
         && Objects.equals(creationTime, incident.creationTime)
         && state == incident.state
         && Objects.equals(jobKey, incident.jobKey)

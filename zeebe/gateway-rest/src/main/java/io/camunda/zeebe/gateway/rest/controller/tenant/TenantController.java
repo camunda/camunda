@@ -9,11 +9,15 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
+import io.camunda.service.MappingServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
@@ -41,10 +45,15 @@ import org.springframework.web.bind.annotation.*;
 public class TenantController {
   private final TenantServices tenantServices;
   private final UserServices userServices;
+  private final MappingServices mappingServices;
 
-  public TenantController(final TenantServices tenantServices, final UserServices userServices) {
+  public TenantController(
+      final TenantServices tenantServices,
+      final UserServices userServices,
+      final MappingServices mappingServices) {
     this.tenantServices = tenantServices;
     this.userServices = userServices;
+    this.mappingServices = mappingServices;
   }
 
   @CamundaPostMapping
@@ -113,14 +122,14 @@ public class TenantController {
                 .addMember(tenantId, EntityType.MAPPING, mappingId));
   }
 
-  @CamundaPutMapping(path = "/{tenantId}/groups/{groupKey}")
+  @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
-      @PathVariable final String tenantId, @PathVariable final long groupKey) {
+      @PathVariable final String tenantId, @PathVariable final String groupId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantId, EntityType.GROUP, groupKey));
+                .addMember(tenantId, EntityType.GROUP, groupId));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}")
@@ -143,6 +152,16 @@ public class TenantController {
                 .removeMember(tenantId, EntityType.USER, username));
   }
 
+  @CamundaPostMapping(path = "/{tenantId}/mappings/search")
+  public ResponseEntity<MappingSearchQueryResult> searchMappingsInTenant(
+      @PathVariable final String tenantId,
+      @RequestBody(required = false) final MappingSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toMappingQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            mappingQuery -> searchMappingsInTenant(tenantId, mappingQuery));
+  }
+
   @CamundaDeleteMapping(path = "/{tenantId}/mappings/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
@@ -153,14 +172,14 @@ public class TenantController {
                 .removeMember(tenantId, EntityType.MAPPING, mappingId));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupKey}")
+  @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> removeGroupFromTenant(
-      @PathVariable final String tenantId, @PathVariable final long groupKey) {
+      @PathVariable final String tenantId, @PathVariable final String groupId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(tenantId, EntityType.GROUP, groupKey));
+                .removeMember(tenantId, EntityType.GROUP, groupId));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {
@@ -182,6 +201,20 @@ public class TenantController {
     }
   }
 
+  private ResponseEntity<MappingSearchQueryResult> searchMappingsInTenant(
+      final String tenantId, final MappingQuery mappingQuery) {
+    try {
+      final var composedMappingQuery = buildMappingQuery(tenantId, mappingQuery);
+      final var result =
+          mappingServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(composedMappingQuery);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   private ResponseEntity<UserSearchResult> searchUsersInTenant(
       final String tenantId, final UserQuery userQuery) {
     try {
@@ -194,6 +227,12 @@ public class TenantController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  private MappingQuery buildMappingQuery(final String tenantId, final MappingQuery mappingQuery) {
+    return mappingQuery.toBuilder()
+        .filter(mappingQuery.filter().toBuilder().tenantId(tenantId).build())
+        .build();
   }
 
   private UserQuery buildUserQuery(final String tenantId, final UserQuery userQuery) {

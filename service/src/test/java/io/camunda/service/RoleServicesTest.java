@@ -19,8 +19,8 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.RoleServices.AddEntityToRoleRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
@@ -153,7 +153,7 @@ public class RoleServicesTest {
     final var entityId = "entityId";
 
     // when
-    services.addMember(new AddEntityToRoleRequest(roleId, entityId, EntityType.USER));
+    services.addMember(new RoleMemberRequest(roleId, entityId, EntityType.USER));
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -168,32 +168,34 @@ public class RoleServicesTest {
   @Test
   public void shouldRemoveUserFromRole() {
     // given
-    final var roleKey = 100L;
-    final var entityKey = 42;
+    final var roleId = "100";
+    final var username = "42";
 
     // when
-    services.removeMember(roleKey, EntityType.USER, entityKey);
+    services.removeMember(new RoleMemberRequest(roleId, username, EntityType.USER));
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.REMOVE_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getRoleId()).isEqualTo(String.valueOf(roleKey));
-    assertThat(brokerRequestValue.getEntityId()).isEqualTo(String.valueOf(entityKey));
+    assertThat(brokerRequestValue.getRoleId()).isEqualTo(roleId);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(username);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 
   @Test
-  public void shouldGetAllRolesByMemberKey() {
+  public void shouldGetAllRolesByMemberId() {
     // given
     final var memberKey = 100L;
+    // todo use memberIds (String) in https://github.com/camunda/camunda/issues/30111
+    final var memberId = String.valueOf(memberKey);
     final var roleEntity = mock(RoleEntity.class);
-    when(client.findAllRoles(RoleQuery.of(q -> q.filter(f -> f.memberKey(memberKey)))))
+    when(client.findAllRoles(RoleQuery.of(q -> q.filter(f -> f.memberId(memberId)))))
         .thenReturn(List.of(roleEntity));
 
     // when
-    final var result = services.findAll(RoleQuery.of(q -> q.filter(f -> f.memberKey(memberKey))));
+    final var result = services.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(memberId))));
 
     // then
     assertThat(result).isEqualTo(List.of(roleEntity));

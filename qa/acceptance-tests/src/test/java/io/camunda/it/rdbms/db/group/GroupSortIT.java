@@ -51,6 +51,22 @@ public class GroupSortIT {
         Comparator.comparing(GroupEntity::groupKey).reversed());
   }
 
+  @TestTemplate
+  public void shouldSortByGroupIdAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.groupId().asc(),
+        Comparator.comparing(GroupEntity::groupId));
+  }
+
+  @TestTemplate
+  public void shouldSortByGroupIdDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.groupId().desc(),
+        Comparator.comparing(GroupEntity::groupId).reversed());
+  }
+
   private void testSorting(
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<GroupSort>> sortBuilder,

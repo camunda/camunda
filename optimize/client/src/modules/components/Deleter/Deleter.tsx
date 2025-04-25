@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useEffect, useRef} from 'react';
+import {useState, useEffect, useRef, ReactNode} from 'react';
 import {Button} from '@carbon/react';
 
 import {Modal, Loading} from 'components';
@@ -14,29 +14,28 @@ import {showError} from 'notifications';
 import {deleteEntity as deleteEntityService} from 'services';
 import {t} from 'translation';
 import {useErrorHandling} from 'hooks';
-import {EntityListEntity} from 'types';
 import {ErrorResponse} from 'request';
 
 const sectionOrder = ['report', 'dashboard', 'alert', 'collection'];
 
-interface DeleterProps {
-  entity: EntityListEntity;
+interface DeleterProps<T> {
+  entity: T | null;
   type: string;
-  descriptionText?: string;
+  descriptionText?: ReactNode;
   deleteText?: string;
   deleteButtonText?: string;
   isReversableAction?: boolean;
-  checkConflicts?: (entity: EntityListEntity) => Promise<{conflictedItems: []}>;
+  checkConflicts?: (entity: T) => Promise<{conflictedItems: []}>;
   onConflict?: () => void;
   onClose: () => void;
-  onDelete: () => void;
-  deleteEntity?: ({entityType, id}: {entityType: string; id: string}) => Promise<Response>;
-  getName?: (entity: EntityListEntity) => string;
+  onDelete?: () => void;
+  deleteEntity?: (entity: T) => Promise<void | Response>;
+  getName?: (entity: T) => string;
 }
 
 type Conflict = {id: string; type: string; name: string};
 
-export default function Deleter({
+export default function Deleter<T>({
   entity,
   type,
   descriptionText,
@@ -47,9 +46,14 @@ export default function Deleter({
   onConflict,
   onClose,
   onDelete,
-  deleteEntity = ({entityType, id}) => deleteEntityService(entityType, id),
-  getName = ({name}) => name,
-}: DeleterProps) {
+  deleteEntity = (entity: T) => deleteSingleEntity(entity),
+  getName = (entity: T) => {
+    if (isEntityWithName(entity)) {
+      return entity.name;
+    }
+    return '';
+  },
+}: DeleterProps<T>) {
   const [conflicts, setConflicts] = useState<Record<string, Conflict[]>>({});
   const [loading, setLoading] = useState(false);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
@@ -106,7 +110,7 @@ export default function Deleter({
     mightFail(
       deleteEntity(entity),
       () => {
-        onDelete();
+        onDelete?.();
         handleClose();
       },
       showError,
@@ -171,4 +175,41 @@ export default function Deleter({
       </Modal.Footer>
     </Modal>
   );
+}
+
+interface EntityWithName {
+  name: string;
+}
+
+function isEntityWithName(entity: unknown): entity is EntityWithName {
+  return (
+    typeof entity === 'object' &&
+    entity !== null &&
+    'name' in entity &&
+    typeof entity.name === 'string'
+  );
+}
+
+interface EntityWithIdAndType {
+  id: string;
+  entityType: string;
+}
+
+function isEntityWithIdAndType(entity: unknown): entity is EntityWithIdAndType {
+  return (
+    typeof entity === 'object' &&
+    entity !== null &&
+    'id' in entity &&
+    'entityType' in entity &&
+    typeof entity.entityType === 'string' &&
+    typeof entity.id === 'string'
+  );
+}
+
+function deleteSingleEntity<T>(entity: T): Promise<Response> {
+  if (isEntityWithIdAndType(entity)) {
+    return deleteEntityService(entity.entityType, entity.id);
+  }
+
+  throw new Error('Entity is not deletable');
 }

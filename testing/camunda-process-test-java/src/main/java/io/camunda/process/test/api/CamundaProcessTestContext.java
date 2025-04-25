@@ -17,11 +17,14 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.process.test.api.assertions.UserTaskSelector;
+import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /** The injected context for a process test. */
@@ -93,4 +96,33 @@ public interface CamundaProcessTestContext {
    * @param timeToAdd the duration to add to the current time
    */
   void increaseTime(final Duration timeToAdd);
+
+  /**
+   * Creates a mock job worker for the specified job type.
+   *
+   * <p>This mock allows simulating job processing behavior, such as completing jobs, throwing BPMN
+   * errors, or handling jobs with custom logic.
+   *
+   * @param jobType the job type to mock, matching the `zeebeJobType` in the BPMN model.
+   * @return a {@see JobWorkerMock} instance for configuring the mock behavior.
+   */
+  JobWorkerMock mockJobWorker(final String jobType);
+
+  void completeJob(final String jobType);
+
+  void completeJob(final String jobType, final Map<String, Object> variables);
+
+  void throwBpmnErrorFromJob(final String jobType, final String errorCode);
+
+  void throwBpmnErrorFromJob(
+      final String jobType, final String errorCode, final Map<String, Object> variables);
+
+  void completeUserTask(final String taskName);
+
+  void completeUserTask(final String taskName, final Map<String, Object> variables);
+
+  void completeUserTask(final UserTaskSelector userTaskSelector);
+
+  void completeUserTask(
+      final UserTaskSelector userTaskSelector, final Map<String, Object> variables);
 }

@@ -40,10 +40,10 @@ describe('useProcessInstancesOverlayStatistics', () => {
     jest.clearAllMocks();
   });
 
-  it('should fetch process instances overlay statistics successfully', async () => {
+  it('should fetch process instances overlay statistics successfully excluding completed non-end events', async () => {
     const mockData = [
       {
-        flowNodeId: 'messageCatchEvent',
+        elementId: 'messageCatchEvent',
         active: 2,
         canceled: 1,
         incidents: 3,
@@ -86,18 +86,6 @@ describe('useProcessInstancesOverlayStatistics', () => {
           left: 0,
         },
         type: 'statistics-canceled',
-      },
-      {
-        flowNodeId: 'messageCatchEvent',
-        payload: {
-          count: 4,
-          flowNodeState: 'completedEndEvents',
-        },
-        position: {
-          bottom: 1,
-          left: 17,
-        },
-        type: 'statistics-completedEndEvents',
       },
     ];
 

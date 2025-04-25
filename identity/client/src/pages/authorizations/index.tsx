@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { FC } from "react";
 import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";

@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.api.assertions;
 
-import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.response.ElementInstance;
 
 /** A selector for BPMN elements. */
 @FunctionalInterface
@@ -28,7 +28,7 @@ public interface ElementSelector {
    * @param element the BPMN element
    * @return {@code true} if the element matches, otherwise {@code false}
    */
-  boolean test(FlowNodeInstance element);
+  boolean test(ElementInstance element);
 
   /**
    * Returns a string representation of the selector. It is used to build the failure message of an
@@ -46,5 +46,5 @@ public interface ElementSelector {
    *
    * @param filter the filter used to limit the element instance search
    */
-  default void applyFilter(final FlownodeInstanceFilter filter) {}
+  default void applyFilter(final ElementInstanceFilter filter) {}
 }

@@ -131,6 +131,21 @@ public class ProcessInstanceAssertj
   }
 
   @Override
+  public ProcessInstanceAssert hasCompletedElementsInOrder(final String... elementIds) {
+    elementAssertj.hasCompletedElementsInOrder(
+        getProcessInstanceKey(), toElementSelectors(elementIds));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCompletedElementsInOrder(
+      final ElementSelector... elementSelectors) {
+    elementAssertj.hasCompletedElementsInOrder(
+        getProcessInstanceKey(), Arrays.asList(elementSelectors));
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasTerminatedElements(final String... elementIds) {
     elementAssertj.hasTerminatedElements(getProcessInstanceKey(), toElementSelectors(elementIds));
     return this;

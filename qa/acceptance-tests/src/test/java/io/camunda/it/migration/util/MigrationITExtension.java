@@ -11,8 +11,13 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.DEFAULT_ES_URL;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.DEFAULT_OS_URL;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATABASE_READINESS;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.AppenderBase;
 import io.camunda.client.CamundaClient;
+import io.camunda.migration.process.MigrationRunner;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -39,6 +44,7 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.platform.commons.support.ModifierSupport;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class MigrationITExtension
@@ -121,6 +127,8 @@ public class MigrationITExtension
     ingestRecordToTriggerImporters(migrator.getCamundaClient());
 
     awaitImportersFinished();
+
+    awaitProcessMigrationFinished();
   }
 
   private boolean isNestedClass(final Class<?> currentClass) {
@@ -187,6 +195,20 @@ public class MigrationITExtension
                     && migrationDatabaseChecks.checkImportPositionsFlushed(TASKLIST));
   }
 
+  private void awaitProcessMigrationFinished() {
+    final var logger = (Logger) LoggerFactory.getLogger(MigrationRunner.class);
+    final var appender = new LogAppender();
+    appender.setContext(logger.getLoggerContext());
+    appender.start();
+    logger.addAppender(appender);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(() -> assertThat(appender.logs.size()).isGreaterThan(0));
+
+    logger.detachAndStopAllAppenders();
+  }
+
   private void ingestRecordToTriggerImporters(final CamundaClient client) {
     client
         .newDeployResourceCommand()
@@ -219,5 +241,17 @@ public class MigrationITExtension
       return migrator;
     }
     return null;
+  }
+
+  static class LogAppender extends AppenderBase<ILoggingEvent> {
+
+    final List<ILoggingEvent> logs = new ArrayList<>();
+
+    @Override
+    protected void append(final ILoggingEvent iLoggingEvent) {
+      if (iLoggingEvent.getMessage().contains("Process Migration completed")) {
+        logs.add(iLoggingEvent);
+      }
+    }
   }
 }

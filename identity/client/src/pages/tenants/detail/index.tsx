@@ -1,6 +1,11 @@
 /*
- * Copyright © Camunda Services GmbH
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
+
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
@@ -24,7 +29,6 @@ import Mappings from "src/pages/tenants/detail/mappings";
 import {
   IS_TENANT_GROUPS_SUPPORTED,
   IS_TENANT_ROLES_SUPPORTED,
-  IS_TENANT_MAPPINGS_SUPPORTED,
 } from "src/feature-flags";
 import { isOIDC } from "src/configuration";
 
@@ -106,7 +110,7 @@ const Details: FC = () => {
                       },
                     ]
                   : []),
-                ...(IS_TENANT_MAPPINGS_SUPPORTED && isOIDC
+                ...(isOIDC
                   ? [
                       {
                         key: "mappings",

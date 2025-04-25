@@ -1,16 +1,21 @@
 version: 3
 
 project:
-  id: camunda/camunda
+  id: camunda/camunda@single-app
   labels:
-  - camunda
+  - camunda8
+  - identity
+  - operate
+  - tasklist
+  - zeebe
   policy: Camunda8 Distribution
   url: https://github.com/camunda/camunda
 
 paths:
   exclude:
   - .github/optimize/scripts/healthStatusReport
-  - c8run/e2e_tests
+  - c8run
+  - optimize
   - qa/core-application-e2e-test-suite
   - tasklist/qa/backup-restore-tests
 
@@ -29,7 +34,7 @@ targets:
     target: io.camunda:camunda-qa
   - type: maven
     path: bom/
-    target: io.camunda:camunda-qa-integration-tests
+    target: io.camunda:camunda-qa-acceptance-tests
   - type: maven
     path: bom/
     target: io.camunda:camunda-qa-util

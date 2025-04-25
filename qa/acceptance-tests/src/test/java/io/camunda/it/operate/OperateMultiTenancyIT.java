@@ -16,7 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -43,8 +43,8 @@ public class OperateMultiTenancyIT {
   private static long procDefKey2;
 
   @MultiDbTestApplication
-  private static final TestSimpleCamundaApplication TEST_INSTANCE =
-      new TestSimpleCamundaApplication().withBasicAuth().withMultiTenancyEnabled();
+  private static final TestCamundaApplication TEST_INSTANCE =
+      new TestCamundaApplication().withBasicAuth().withMultiTenancyEnabled();
 
   @UserDefinition private static final User USER1 = new User(USERNAME_1, PASSWORD, List.of());
 

@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceW
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -79,6 +81,14 @@ public final class ProcessInstanceServices
   public SearchQueryResult<ProcessInstanceEntity> search(
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return search(processInstanceSearchQuery(fn));
+  }
+
+  public List<ProcessFlowNodeStatisticsEntity> elementStatistics(final long processInstanceKey) {
+    return processInstanceSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .processInstanceFlowNodeStatistics(processInstanceKey);
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
@@ -158,7 +168,32 @@ public final class ProcessInstanceServices
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(rootInstanceFilter)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord> resolveIncidentsBatchOperationWithResult(
+      final ProcessInstanceFilter filter) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord> migrateProcessInstancesBatchOperation(
+      final ProcessInstanceMigrationBatchOperationRequest request) {
+    final var migrationPlan = new BatchOperationProcessInstanceMigrationPlan();
+    migrationPlan.setTargetProcessDefinitionKey(request.targetProcessDefinitionKey);
+    request.mappingInstructions.forEach(migrationPlan::addMappingInstruction);
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(request.filter)
+            .setMigrationPlan(migrationPlan)
+            .setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -216,4 +251,9 @@ public final class ProcessInstanceServices
       List<ProcessInstanceModificationActivateInstruction> activateInstructions,
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
       Long operationReference) {}
+
+  public record ProcessInstanceMigrationBatchOperationRequest(
+      ProcessInstanceFilter filter,
+      Long targetProcessDefinitionKey,
+      List<ProcessInstanceMigrationMappingInstruction> mappingInstructions) {}
 }

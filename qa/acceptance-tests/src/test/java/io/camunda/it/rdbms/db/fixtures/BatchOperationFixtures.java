@@ -13,7 +13,7 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.randomEnum;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel.Builder;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
@@ -31,7 +31,7 @@ public final class BatchOperationFixtures {
     final var builder =
         new Builder()
             .batchOperationKey(key)
-            .status(randomEnum(BatchOperationStatus.class))
+            .state(randomEnum(BatchOperationState.class))
             .operationType("some-operation" + RANDOM.nextInt(1000))
             .startDate(OffsetDateTime.now())
             .endDate(OffsetDateTime.now().plusSeconds(1))

@@ -164,7 +164,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               List.of(
                   new UserTaskEntity(
                       0L, // key
-                      "e", // flowNodeBpmnId
+                      "e", // elementBpmnId
                       "b", // bpmnProcessId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // creationTime
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // completionTime
@@ -173,7 +173,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       0L, // formKey (adjusted to match expected value)
                       2L, // processDefinitionId
                       1L, // processInstanceId
-                      3L, // flowNodeInstanceId
+                      3L, // elementInstanceId
                       "t", // tenantId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // dueDate
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // followUpDate
@@ -239,7 +239,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 CamundaSearchException.Reason.NOT_FOUND));
     when(processCache.getUserTaskName(any())).thenReturn("name");
     final var processCacheItem = mock(ProcessCacheItem.class);
-    when(processCacheItem.getFlowNodeName(any())).thenReturn("name");
+    when(processCacheItem.getElementName(any())).thenReturn("name");
     final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
     when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
     when(processCache.getUserTaskNames(any())).thenReturn(processDefinitionMap);
@@ -329,6 +329,184 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                     new UserTaskSort.Builder().creationDate().desc().completionDate().asc().build())
                 .build());
     verify(processCache).getUserTaskNames(any());
+  }
+
+  @Test
+  void shouldInvalidateUserTasksSearchQueryWithEmptyLocalVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "localVariables": [
+                        {
+                            "name": "creationDate",
+                            "value": {}
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
+  }
+
+  @Test
+  void shouldInvalidateUserTasksSearchQueryMissingLocalVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "localVariables": [
+                        {
+                            "name": "creationDate"
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
+  }
+
+  @Test
+  void shouldInvalidateUserTasksSearchQueryWithEmptyProcessInstanceVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "processInstanceVariables": [
+                        {
+                            "name": "creationDate",
+                            "value": {}
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
+  }
+
+  @Test
+  void shouldInvalidateUserTasksSearchQueryMissingProcessInstanceVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "processInstanceVariables": [
+                        {
+                            "name": "creationDate"
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            USER_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -672,8 +850,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("provideAdvancedSearchParameters")
-  void shouldSearchVariablesWithAdvancedFilter(
-      final String filterString, final UserTaskFilter filter) {
+  void shouldSearchTasksWithAdvancedFilter(final String filterString, final UserTaskFilter filter) {
     // given
     final var request =
         """

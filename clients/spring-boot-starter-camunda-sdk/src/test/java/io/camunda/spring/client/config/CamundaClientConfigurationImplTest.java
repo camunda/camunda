@@ -16,6 +16,7 @@
 package io.camunda.spring.client.config;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
@@ -25,9 +26,12 @@ import io.camunda.spring.client.configuration.CamundaClientConfigurationImpl;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
 import java.util.List;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class CamundaClientConfigurationImplTest {
   private static CamundaClientConfigurationImpl configuration(
@@ -70,5 +74,31 @@ public class CamundaClientConfigurationImplTest {
     final CredentialsProvider credentialsProvider1 = configuration.getCredentialsProvider();
     final CredentialsProvider credentialsProvider2 = configuration.getCredentialsProvider();
     assertThat(credentialsProvider1).isSameAs(credentialsProvider2);
+  }
+
+  @ParameterizedTest
+  @CsvSource(value = {"http, true", "https, false", "grpc, true", "grpcs, false"})
+  void shouldConfigurePlaintextAndGatewayAddress(final String protocol, final boolean plaintext) {
+    final CamundaClientProperties properties = properties();
+    properties.setGrpcAddress(URI.create(String.format("%s://some-host:21500", protocol)));
+    final CamundaClientConfigurationImpl configuration =
+        configuration(
+            properties,
+            jsonMapper(),
+            List.of(),
+            List.of(),
+            executorService(),
+            credentialsProvider());
+    assertThat(configuration.isPlaintextConnectionEnabled()).isEqualTo(plaintext);
+    assertThat(configuration.getGatewayAddress()).isEqualTo("some-host:21500");
+  }
+
+  @Test
+  void shouldPrintToString() {
+    final CamundaClientConfigurationImpl camundaClientConfiguration =
+        new CamundaClientConfigurationImpl(
+            mock(CamundaClientProperties.class), null, null, null, null, null);
+    final String toStringOutput = camundaClientConfiguration.toString();
+    assertThat(toStringOutput).matches("CamundaClientConfigurationImpl\\{.*}");
   }
 }

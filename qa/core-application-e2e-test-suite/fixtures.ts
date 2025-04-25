@@ -15,9 +15,14 @@ import {TaskListLoginPage} from '@pages/TaskListLoginPage';
 import {OperateProcessesPage} from '@pages/OperateProcessesPage';
 import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
+import {TasklistHeader} from '@pages/TasklistHeader';
+import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
+import {PublicFormsPage} from '@pages/PublicFormsPage';
+import {sleep} from 'utils/sleep';
 
 type PlaywrightFixtures = {
   makeAxeBuilder: () => AxeBuilder;
+  resetData: () => Promise<void>;
   operateLoginPage: OperateLoginPage;
   operateHomePage: OperateHomePage;
   taskListLoginPage: TaskListLoginPage;
@@ -25,6 +30,9 @@ type PlaywrightFixtures = {
   operateProcessesPage: OperateProcessesPage;
   operateProcessInstancePage: OperateProcessInstancePage;
   taskDetailsPage: TaskDetailsPage;
+  tasklistHeader: TasklistHeader;
+  tasklistProcessesPage: TasklistProcessesPage;
+  publicFormsPage: PublicFormsPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -60,6 +68,24 @@ const test = base.extend<PlaywrightFixtures>({
   },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
+  },
+  tasklistHeader: async ({page}, use) => {
+    await use(new TasklistHeader(page));
+  },
+  tasklistProcessesPage: async ({page}, use) => {
+    await use(new TasklistProcessesPage(page));
+  },
+  resetData: async ({baseURL}, use) => {
+    await use(async () => {
+      await fetch(`${baseURL}../v1/external/devUtil/recreateData`, {
+        method: 'POST',
+      });
+
+      await sleep(1000);
+    });
+  },
+  publicFormsPage: async ({page}, use) => {
+    await use(new PublicFormsPage(page));
   },
 });
 

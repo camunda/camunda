@@ -377,7 +377,7 @@ export const mockProcessStatistics = [
 export const mockProcessStatisticsV2 = {
   items: [
     {
-      flowNodeId: 'ServiceTask_0kt6c5i',
+      elementId: 'ServiceTask_0kt6c5i',
       active: 1,
       canceled: 0,
       incidents: 0,

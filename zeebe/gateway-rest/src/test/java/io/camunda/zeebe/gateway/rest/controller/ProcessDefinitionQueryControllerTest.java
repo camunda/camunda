@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
@@ -243,12 +243,11 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  public void shouldGetFlowNodeStatistics() {
+  public void shouldGetElementStatistics() {
     // given
     final long processDefinitionKey = 1L;
-    final var stats =
-        List.of(new ProcessDefinitionFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
-    when(processDefinitionServices.flowNodeStatistics(any())).thenReturn(stats);
+    final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
+    when(processDefinitionServices.elementStatistics(any())).thenReturn(stats);
     final var request =
         """
             {
@@ -260,7 +259,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         """
             {"items":[
               {
-                "flowNodeId": "node1",
+                "elementId": "node1",
                 "active": 1,
                 "canceled": 1,
                 "incidents": 1,
@@ -271,7 +270,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(PROCESS_DEFINITION_URL + "1/statistics/flownode-instances")
+        .uri(PROCESS_DEFINITION_URL + "1/statistics/element-instances")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -284,9 +283,69 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(response);
 
     verify(processDefinitionServices)
-        .flowNodeStatistics(
+        .elementStatistics(
             new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
                 .hasIncident(true)
+                .build());
+  }
+
+  @Test
+  public void shouldGetElementStatisticsWithOrOperator() {
+    // given
+    final long processDefinitionKey = 1L;
+    final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
+    when(processDefinitionServices.elementStatistics(any())).thenReturn(stats);
+    final var request =
+        """
+            {
+              "filter": {
+                "state": "ACTIVE",
+                "$or": [
+                  { "elementId": "elementId" },
+                  { "processInstanceKey": "123", "hasElementInstanceIncident": true }
+                ]
+              }
+            }""";
+    final var response =
+        """
+            {"items":[
+              {
+                "elementId": "node1",
+                "active": 1,
+                "canceled": 1,
+                "incidents": 1,
+                "completed": 1
+              }
+            ]}""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "1/statistics/element-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response);
+
+    verify(processDefinitionServices)
+        .elementStatistics(
+            new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
+                .states("ACTIVE")
+                .addOrOperation(
+                    new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
+                        .flowNodeIds("elementId")
+                        .build())
+                .addOrOperation(
+                    new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
+                        .processInstanceKeys(123L)
+                        .hasFlowNodeInstanceIncident(true)
+                        .build())
                 .build());
   }
 

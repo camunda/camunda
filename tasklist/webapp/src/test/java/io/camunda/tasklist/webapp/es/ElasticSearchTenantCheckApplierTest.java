@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.webapp.es.tenant.ElasticsearchTenantCheckApplier;
-import io.camunda.tasklist.webapp.security.tenant.TenantService;
+import io.camunda.tasklist.webapp.tenant.TenantService;
 import java.util.Collections;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;

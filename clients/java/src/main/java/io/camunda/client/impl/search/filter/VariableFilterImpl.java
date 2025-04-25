@@ -18,7 +18,6 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
@@ -44,7 +43,7 @@ public class VariableFilterImpl
   public VariableFilter variableKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setVariableKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setVariableKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -58,7 +57,7 @@ public class VariableFilterImpl
   public VariableFilter value(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setValue(RequestMapper.toProtocolObject(property.build()));
+    filter.setValue(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -72,7 +71,7 @@ public class VariableFilterImpl
   public VariableFilter name(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setName(RequestMapper.toProtocolObject(property.build()));
+    filter.setName(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -86,7 +85,7 @@ public class VariableFilterImpl
   public VariableFilter scopeKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setScopeKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setScopeKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -100,7 +99,7 @@ public class VariableFilterImpl
   public VariableFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setProcessInstanceKey(RequestMapper.toProtocolObject(property.build()));
+    filter.setProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 

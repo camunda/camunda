@@ -44,7 +44,7 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupEntity, Group
   @Override
   public List<String> generateIds(final Record<GroupRecordValue> record) {
     final var groupRecord = record.getValue();
-    return List.of(GroupEntity.getChildKey(groupRecord.getGroupKey(), groupRecord.getEntityKey()));
+    return List.of(GroupEntity.getChildKey(groupRecord.getGroupId(), groupRecord.getEntityId()));
   }
 
   @Override
@@ -55,12 +55,8 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupEntity, Group
   @Override
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
-    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(value.getGroupKey());
-    entity
-        .setKey(value.getGroupKey())
-        .setName(value.getName())
-        .setMemberKey(value.getEntityKey())
-        .setJoin(joinRelation);
+    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(value.getGroupId());
+    entity.setMemberId(value.getEntityId()).setJoin(joinRelation);
   }
 
   @Override

@@ -11,7 +11,7 @@ import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
-import static io.camunda.it.util.TestHelper.waitUntilFlowNodeInstanceHasIncidents;
+import static io.camunda.it.util.TestHelper.waitUntilElementInstanceHasIncidents;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.IncidentState;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -107,7 +107,7 @@ class IncidentPropagationTest {
             .getKey();
     camundaClient.newFailCommand(jobKey).retries(0).errorMessage(ERROR_MSG_1).send().join();
     waitUntilProcessInstanceHasIncidents(camundaClient, 3);
-    waitUntilFlowNodeInstanceHasIncidents(camundaClient, 4);
+    waitUntilElementInstanceHasIncidents(camundaClient, 4);
     waitUntilIncidentsAreActive(camundaClient, 2);
   }
 
@@ -129,28 +129,28 @@ class IncidentPropagationTest {
   }
 
   @Test
-  void testFlowNodeInstanceInIncidentState() {
-    final FlowNodeInstance flowNodeInstance1 =
+  void testElementInstanceInIncidentState() {
+    final ElementInstance elementInstance1 =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId(SERVICE_TASK_ID))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(SERVICE_TASK_ID))
             .send()
             .join()
             .items()
             .getFirst();
-    assertThat(flowNodeInstance1).isNotNull();
-    assertThat(flowNodeInstance1.getIncident()).isTrue();
+    assertThat(elementInstance1).isNotNull();
+    assertThat(elementInstance1.getIncident()).isTrue();
 
-    final FlowNodeInstance flowNodeInstance2 =
+    final ElementInstance elementInstance2 =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId(LAST_CALLED_TASK_ID))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(LAST_CALLED_TASK_ID))
             .send()
             .join()
             .items()
             .getFirst();
-    assertThat(flowNodeInstance2).isNotNull();
-    assertThat(flowNodeInstance2.getIncident()).isTrue();
+    assertThat(elementInstance2).isNotNull();
+    assertThat(elementInstance2.getIncident()).isTrue();
   }
 
   @Test
@@ -169,16 +169,16 @@ class IncidentPropagationTest {
 
   @Test
   void testSecondCallActivityHasIncident() {
-    final FlowNodeInstance flowNodeInstance =
+    final ElementInstance elementInstance =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId(CALL_ACTIVITY_2_ID))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(CALL_ACTIVITY_2_ID))
             .send()
             .join()
             .items()
             .getFirst();
-    assertThat(flowNodeInstance).isNotNull();
-    assertThat(flowNodeInstance.getIncident()).isTrue();
+    assertThat(elementInstance).isNotNull();
+    assertThat(elementInstance.getIncident()).isTrue();
   }
 
   @Test
@@ -197,15 +197,15 @@ class IncidentPropagationTest {
 
   @Test
   void testFirstCallActivityHasIncident() {
-    final FlowNodeInstance flowNodeInstance =
+    final ElementInstance elementInstance =
         camundaClient
-            .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.flowNodeId(CALL_ACTIVITY_1_ID))
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementId(CALL_ACTIVITY_1_ID))
             .send()
             .join()
             .items()
             .getFirst();
-    assertThat(flowNodeInstance).isNotNull();
-    assertThat(flowNodeInstance.getIncident()).isTrue();
+    assertThat(elementInstance).isNotNull();
+    assertThat(elementInstance.getIncident()).isTrue();
   }
 }

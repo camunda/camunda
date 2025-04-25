@@ -52,7 +52,7 @@ final class OAuthCredentialsProviderTest {
   private final Identity identity =
       new Identity(
           new IdentityConfiguration(
-              getAuthUrl(""), getAuthUrl(""), "zeebe", "zeebe", "zeebe", Type.AUTH0.name()));
+              getAuthUrl(""), getAuthUrl(""), "zeebe", "zeebe", "zeebe", Type.AUTH0.name(), false));
 
   @BeforeAll
   static void beforeAll() throws IOException, InterruptedException {

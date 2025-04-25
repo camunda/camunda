@@ -49,8 +49,8 @@ const CarbonProcesses = loadable(() => import('./Processes/index'), {
   resolveComponent: (components) => components.Processes,
 });
 
-const CarbonProcessInstance = loadable(
-  () => import('./ProcessInstance/index'),
+const CarbonProcessInstanceV2 = loadable(
+  () => import('./ProcessInstance/v2/index'),
   {
     resolveComponent: (components) => components.ProcessInstance,
   },
@@ -101,7 +101,7 @@ const App: React.FC = () => {
               <Route path={Paths.processes()} element={<CarbonProcesses />} />
               <Route
                 path={Paths.processInstance()}
-                element={<CarbonProcessInstance />}
+                element={<CarbonProcessInstanceV2 />}
               />
               <Route path={Paths.decisions()} element={<CarbonDecisions />} />
               <Route

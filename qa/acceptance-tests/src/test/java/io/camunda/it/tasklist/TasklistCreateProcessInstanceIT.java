@@ -10,9 +10,9 @@ package io.camunda.it.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient.CreateProcessInstanceVariable;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import java.time.Duration;
@@ -34,8 +34,8 @@ public class TasklistCreateProcessInstanceIT {
   private static CamundaClient camundaClient;
 
   @MultiDbTestApplication
-  private static final TestSimpleCamundaApplication CAMUNDA_APPLICATION =
-      new TestSimpleCamundaApplication().withUnauthenticatedAccess();
+  private static final TestCamundaApplication CAMUNDA_APPLICATION =
+      new TestCamundaApplication().withUnauthenticatedAccess();
 
   @BeforeAll
   public static void beforeAll() {

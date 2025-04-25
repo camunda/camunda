@@ -159,7 +159,7 @@ public class RemoveEntityTenantTest {
         .getTenantKey();
     final var name = "foo";
     final var groupId = "123";
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
     engine
         .tenant()
         .addEntity(tenantId)
@@ -203,7 +203,7 @@ public class RemoveEntityTenantTest {
     final var name = UUID.randomUUID().toString();
     final var groupId = "123";
     final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
 
     // when
     final var createdTenant = tenantRecord.getValue();
@@ -236,7 +236,7 @@ public class RemoveEntityTenantTest {
     // when
     final var name = "foo";
     final var groupId = "123";
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
     final var notAssignedUpdateRecord =
         engine
             .tenant()

@@ -13,7 +13,7 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
 
   private Long key;
   private String name;
-  private Long memberKey;
+  private String memberId;
   private EntityJoinRelation<Long> join;
 
   public Long getKey() {
@@ -34,12 +34,12 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public Long getMemberKey() {
-    return memberKey;
+  public String getMemberId() {
+    return memberId;
   }
 
-  public RoleEntity setMemberKey(final Long memberKey) {
-    this.memberKey = memberKey;
+  public RoleEntity setMemberKey(final String memberId) {
+    this.memberId = memberId;
     return this;
   }
 

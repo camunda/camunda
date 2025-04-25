@@ -6,42 +6,81 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import isNil from 'lodash/isNil';
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {TOKEN_OPERATIONS} from 'modules/constants';
+import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {
   useTotalRunningInstancesForFlowNodes,
   useTotalRunningInstancesVisibleForFlowNodes,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   EMPTY_MODIFICATION,
   modificationsStore,
 } from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {useMemo} from 'react';
+import {
+  useAppendableFlowNodes,
+  useCancellableFlowNodes,
+  useNonModifiableFlowNodes,
+} from './processInstanceDetailsDiagram';
+import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
+import {useHasPendingCancelOrMoveModification} from './flowNodeSelection';
+
+type ModificationOption =
+  | 'add'
+  | 'cancel-all'
+  | 'cancel-instance'
+  | 'move-all'
+  | 'move-instance';
+
+const useWillAllFlowNodesBeCanceled = () => {
+  const {data: statistics} = useFlownodeInstancesStatistics();
+  const modificationsByFlowNode = useModificationsByFlowNode();
+
+  if (
+    modificationsStore.flowNodeModifications.some(
+      ({operation}) =>
+        operation === TOKEN_OPERATIONS.ADD_TOKEN ||
+        operation === TOKEN_OPERATIONS.MOVE_TOKEN,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    statistics?.items.every(
+      ({elementId, active, incidents}) =>
+        (active === 0 && incidents === 0) ||
+        modificationsByFlowNode[elementId]?.areAllTokensCanceled,
+    ) || false
+  );
+};
 
 const useModificationsByFlowNode = () => {
   const flowNodeIds = modificationsStore.flowNodeModifications.map(
     (modification) => modification.flowNode.id,
   );
+  const {data: businessObjects} = useBusinessObjects();
+
   const {data: flowNodeDataArray} =
     useTotalRunningInstancesForFlowNodes(flowNodeIds);
   const flowNodeData = useMemo(() => {
     return flowNodeIds.reduce(
-      (acc, id, index) => {
-        acc[id] = flowNodeDataArray?.[index] ?? 0;
+      (acc, id) => {
+        acc[id] = flowNodeDataArray?.[id] ?? 0;
         return acc;
       },
       {} as Record<string, number>,
     );
   }, [flowNodeIds, flowNodeDataArray]);
 
-  const elementIds = useMemo(() => {
-    return flowNodeIds.flatMap((flowNodeId) =>
-      getFlowElementIds(
-        processInstanceDetailsDiagramStore.businessObjects[flowNodeId],
-      ),
-    );
-  }, [flowNodeIds]);
+  const elementIds = flowNodeIds.flatMap((elementId) =>
+    getFlowElementIds(businessObjects?.[elementId]),
+  );
 
   const {data: elementCancelledTokens} =
     useTotalRunningInstancesForFlowNodes(elementIds);
@@ -82,7 +121,7 @@ const useModificationsByFlowNode = () => {
 
     const totalRunningInstancesCount = flowNodeData[flowNode.id] ?? 0;
 
-    if (operation === 'ADD_TOKEN') {
+    if (operation === TOKEN_OPERATIONS.ADD_TOKEN) {
       sourceFlowNode.newTokens += affectedTokenCount;
       modificationsByFlowNode[flowNode.id] = sourceFlowNode;
       return modificationsByFlowNode;
@@ -103,7 +142,7 @@ const useModificationsByFlowNode = () => {
     sourceFlowNode.areAllTokensCanceled =
       sourceFlowNode.cancelledTokens === totalRunningInstancesCount;
 
-    if (operation === 'MOVE_TOKEN') {
+    if (operation === TOKEN_OPERATIONS.MOVE_TOKEN) {
       const targetFlowNode = modificationsByFlowNode[
         payload.targetFlowNode.id
       ] ?? {
@@ -111,7 +150,7 @@ const useModificationsByFlowNode = () => {
       };
 
       targetFlowNode.newTokens += isMultiInstance(
-        processInstanceDetailsDiagramStore.businessObjects[flowNode.id],
+        businessObjects?.[flowNode.id],
       )
         ? 1
         : affectedTokenCount;
@@ -119,12 +158,10 @@ const useModificationsByFlowNode = () => {
       modificationsByFlowNode[payload.targetFlowNode.id] = targetFlowNode;
     }
 
-    if (operation === 'CANCEL_TOKEN') {
+    if (operation === TOKEN_OPERATIONS.CANCEL_TOKEN) {
       if (sourceFlowNode.areAllTokensCanceled) {
         // set cancel token counts for child elements if flow node has any
-        const elementIds = getFlowElementIds(
-          processInstanceDetailsDiagramStore.businessObjects[flowNode.id],
-        );
+        const elementIds = getFlowElementIds(businessObjects?.[flowNode.id]);
 
         let affectedChildTokenCount = 0;
         elementIds.forEach((elementId) => {
@@ -158,4 +195,137 @@ const useModificationsByFlowNode = () => {
   }, {});
 };
 
-export {useModificationsByFlowNode};
+const useNewScopeIdForFlowNode = (elementId?: string) => {
+  const modificationsByFlowNode = useModificationsByFlowNode();
+
+  if (
+    elementId === undefined ||
+    (modificationsByFlowNode[elementId]?.newTokens ?? 0) !== 1
+  ) {
+    return null;
+  }
+
+  const addTokenModification = modificationsStore.flowNodeModifications.find(
+    (modification) =>
+      modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
+      modification.flowNode.id === elementId,
+  );
+
+  if (addTokenModification !== undefined && 'scopeId' in addTokenModification) {
+    return addTokenModification.scopeId;
+  }
+
+  const moveTokenModification = modificationsStore.flowNodeModifications.find(
+    (modification) =>
+      modification.operation === TOKEN_OPERATIONS.MOVE_TOKEN &&
+      modification.targetFlowNode.id === elementId,
+  );
+
+  if (
+    moveTokenModification !== undefined &&
+    'scopeIds' in moveTokenModification
+  ) {
+    return moveTokenModification.scopeIds[0] ?? null;
+  }
+
+  return null;
+};
+
+const useCanBeCanceled = (selectedRunningInstanceCount: number) => {
+  const cancellableFlowNodes = useCancellableFlowNodes();
+  const canBeModified = useCanBeModified();
+  const hasPendingCancelOrMoveModification =
+    useHasPendingCancelOrMoveModification();
+
+  if (
+    flowNodeSelectionStore.selectedFlowNodeId === undefined ||
+    !canBeModified
+  ) {
+    return false;
+  }
+
+  return (
+    cancellableFlowNodes.includes(flowNodeSelectionStore.selectedFlowNodeId) &&
+    !hasPendingCancelOrMoveModification &&
+    selectedRunningInstanceCount > 0
+  );
+};
+
+const useCanBeModified = () => {
+  const nonModifiableFlowNodes = useNonModifiableFlowNodes();
+
+  if (flowNodeSelectionStore.selectedFlowNodeId === undefined) {
+    return false;
+  }
+
+  return !nonModifiableFlowNodes.includes(
+    flowNodeSelectionStore.selectedFlowNodeId,
+  );
+};
+
+const useAvailableModifications = (selectedRunningInstanceCount: number) => {
+  const options: ModificationOption[] = [];
+  const {
+    state: {selection},
+  } = flowNodeSelectionStore;
+  const appendableFlowNodes = useAppendableFlowNodes();
+  const {data: businessObjects} = useBusinessObjects();
+  const canBeCanceled = useCanBeCanceled(selectedRunningInstanceCount);
+  const canBeModified = useCanBeModified();
+
+  if (
+    flowNodeSelectionStore.selectedFlowNodeId === undefined ||
+    !canBeModified
+  ) {
+    return options;
+  }
+
+  if (
+    appendableFlowNodes.includes(flowNodeSelectionStore.selectedFlowNodeId) &&
+    !(
+      isMultiInstance(
+        businessObjects?.[flowNodeSelectionStore.selectedFlowNodeId],
+      ) && !selection?.isMultiInstance
+    ) &&
+    selection?.flowNodeInstanceId === undefined
+  ) {
+    options.push('add');
+  }
+
+  if (!canBeCanceled) {
+    return options;
+  }
+
+  const isSingleOperationAllowed =
+    !isNil(flowNodeSelectionStore.selectedFlowNodeInstanceId) &&
+    selectedRunningInstanceCount === 1 &&
+    !isSubProcess(businessObjects?.[flowNodeSelectionStore.selectedFlowNodeId]);
+
+  if (isSingleOperationAllowed) {
+    options.push('cancel-instance');
+  } else {
+    options.push('cancel-all');
+  }
+
+  if (
+    isSubProcess(businessObjects?.[flowNodeSelectionStore.selectedFlowNodeId])
+  ) {
+    return options;
+  }
+
+  if (isSingleOperationAllowed) {
+    options.push('move-instance');
+  } else {
+    options.push('move-all');
+  }
+
+  return options;
+};
+
+export {
+  useAvailableModifications,
+  useCanBeModified,
+  useModificationsByFlowNode,
+  useNewScopeIdForFlowNode,
+  useWillAllFlowNodesBeCanceled,
+};

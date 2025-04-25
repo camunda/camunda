@@ -16,7 +16,7 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.qa.util.cluster.HistoryBackupClient;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
@@ -116,7 +116,7 @@ public class BackupRestoreIT {
   }
 
   private void setup(final BackupRestoreTestConfig config) throws Exception {
-    testStandaloneApplication = new TestSimpleCamundaApplication().withUnauthenticatedAccess();
+    testStandaloneApplication = new TestCamundaApplication().withUnauthenticatedAccess();
     configurator = new MultiDbConfigurator(testStandaloneApplication);
     testStandaloneApplication.withBrokerConfig(this::configureZeebeBackupStore);
     final String dbUrl;
@@ -184,7 +184,7 @@ public class BackupRestoreIT {
 
   @ParameterizedTest
   @MethodSource(value = {"sources"})
-  public void shonldBackupAndRestoreToPreviousState(final BackupRestoreTestConfig config)
+  public void shouldBackupAndRestoreToPreviousState(final BackupRestoreTestConfig config)
       throws Exception {
     // given
     setup(config);
@@ -265,6 +265,15 @@ public class BackupRestoreIT {
                 throw new AssertionError("Backup not found:", e);
               }
             });
+    // verify that getBackups API returns correctly with all flags
+    final var flags = List.of(true, false);
+    for (final var verbose : flags) {
+      assertThat(historyBackupClient.getBackups(verbose, BACKUP_ID + "*"))
+          .allSatisfy(
+              state -> {
+                assertThat(state.getState()).isEqualTo(BackupStateDto.COMPLETED);
+              });
+    }
     return snapshots;
   }
 

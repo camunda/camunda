@@ -28,8 +28,10 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -37,9 +39,34 @@ import java.util.stream.Collectors;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
-  public static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
-      "Task Listener job completion with variables payload provided is not yet supported (job key '%d', type '%s', processInstanceKey '%d'). "
-          + "Support will be enabled with the resolution of issue #23702";
+  private static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
+      """
+          Task Listener job completion with variables payload provided is not yet supported \
+          (job key '%d', type '%s', processInstanceKey '%d'). \
+          Support will be enabled with the resolution of issue #23702.
+          """;
+  private static final String TL_JOB_COMPLETION_WITH_DENY_NOT_SUPPORTED_MESSAGE =
+      """
+          Denying result is not supported for '%s' task listener jobs \
+          (job key '%d', type '%s', processInstanceKey '%d'). \
+          Only the following listener event types support denying: %s.
+          """;
+
+  private static final String TL_JOB_COMPLETION_WITH_DENY_AND_CORRECTIONS_NOT_SUPPORTED_MESSAGE =
+      """
+          Expected to complete task listener job with corrections, but the job result is denied \
+          (job key '%d', type '%s', processInstanceKey '%d'). \
+          The corrections would be reverted by the denial. Either complete the job with corrections \
+          without setting denied, or complete the job with a denied result but no corrections.
+          """;
+
+  private static final String TL_JOB_COMPLETION_WITH_UNKNOWN_CORRECTIONS_NOT_SUPPORTED_MESSAGE =
+      """
+          Expected to complete task listener job with a corrections result, but property '%s' \
+          cannot be corrected (job key '%d', type '%s', processInstanceKey '%d'). \
+          Only the following properties can be corrected: %s.
+          """;
+
   private static final Set<String> CORRECTABLE_PROPERTIES =
       Set.of(
           UserTaskRecord.ASSIGNEE,
@@ -48,6 +75,11 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           UserTaskRecord.DUE_DATE,
           UserTaskRecord.FOLLOW_UP_DATE,
           UserTaskRecord.PRIORITY);
+  private static final Set<JobListenerEventType> LISTENER_EVENT_TYPES_THAT_SUPPORT_DENY =
+      EnumSet.of(
+          JobListenerEventType.ASSIGNING,
+          JobListenerEventType.UPDATING,
+          JobListenerEventType.COMPLETING);
 
   private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
@@ -70,6 +102,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             authCheckBehavior,
             List.of(
                 this::checkTaskListenerJobForProvidingVariables,
+                this::checkTaskListenerJobForSupportingDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
@@ -170,6 +203,36 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     return !DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getVariablesBuffer());
   }
 
+  private Either<Rejection, JobRecord> checkTaskListenerJobForSupportingDenying(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+      return Either.right(job);
+    }
+
+    final boolean denied = command.getValue().getResult().isDenied();
+    final var listenerEventType = job.getJobListenerEventType();
+
+    if (denied && !LISTENER_EVENT_TYPES_THAT_SUPPORT_DENY.contains(listenerEventType)) {
+      final var supportedEventTypes =
+          LISTENER_EVENT_TYPES_THAT_SUPPORT_DENY.stream()
+              .map(JobListenerEventType::name)
+              .sorted()
+              .collect(Collectors.joining(", ", "[", "]"));
+
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              TL_JOB_COMPLETION_WITH_DENY_NOT_SUPPORTED_MESSAGE.formatted(
+                  listenerEventType,
+                  command.getKey(),
+                  job.getType(),
+                  job.getProcessInstanceKey(),
+                  supportedEventTypes)));
+    }
+
+    return Either.right(job);
+  }
+
   private Either<Rejection, JobRecord> checkTaskListenerJobForDenyingWithCorrections(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     if (job.getJobKind() != JobKind.TASK_LISTENER) {
@@ -181,11 +244,8 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
-              """
-              Expected to complete task listener job with corrections, but the job result is \
-              denied. The corrections would be reverted by the denial. Either complete the job with \
-              corrections without setting denied, or complete the job with a denied result but no \
-              corrections."""));
+              TL_JOB_COMPLETION_WITH_DENY_AND_CORRECTIONS_NOT_SUPPORTED_MESSAGE.formatted(
+                  command.getKey(), job.getType(), job.getProcessInstanceKey())));
     } else {
       return Either.right(job);
     }
@@ -211,11 +271,12 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     return Either.left(
         new Rejection(
             RejectionType.INVALID_ARGUMENT,
-            """
-            Expected to complete task listener job with a corrections result, \
-            but property '%s' cannot be corrected. \
-            Only the following properties can be corrected: %s."""
-                .formatted(optionalUnknownProperty.get(), correctableProperties)));
+            TL_JOB_COMPLETION_WITH_UNKNOWN_CORRECTIONS_NOT_SUPPORTED_MESSAGE.formatted(
+                optionalUnknownProperty.get(),
+                command.getKey(),
+                job.getType(),
+                job.getProcessInstanceKey(),
+                correctableProperties)));
   }
 
   private void acceptCommand(

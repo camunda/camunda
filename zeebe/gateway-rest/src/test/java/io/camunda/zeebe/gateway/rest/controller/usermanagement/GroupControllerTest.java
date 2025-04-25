@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -15,10 +16,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
-import io.camunda.service.GroupServices.CreateGroupRequest;
+import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.gateway.protocol.rest.GroupChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,11 +55,11 @@ public class GroupControllerTest extends RestControllerTest {
     // given
     final var groupName = "testGroup";
     final var description = "description";
-    final var createGroupRequest = new CreateGroupRequest(groupId, groupName, description);
+    final var createGroupRequest = new GroupDTO(groupId, groupName, description);
     when(groupServices.createGroup(createGroupRequest))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new GroupRecord().setEntityKey(1L).setName(groupName)));
+                new GroupRecord().setGroupId(groupId).setEntityId("entityId").setName(groupName)));
 
     // when
     webClient
@@ -182,7 +183,7 @@ public class GroupControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided id exceeds the limit of 256 characters.",
+              "detail": "The provided groupId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
                 .formatted(GROUP_BASE_URL));
@@ -216,7 +217,7 @@ public class GroupControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "status": 400,
                 "title": "INVALID_ARGUMENT",
-                "detail": "The provided id contains illegal characters. It must match the pattern '%s'.",
+                "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
                 .formatted(IdentifierPatterns.ID_PATTERN, GROUP_BASE_URL));
@@ -245,9 +246,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            new GroupUpdateRequest()
-                .changeset(new GroupChangeset().name(groupName).description(description)))
+        .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
         .exchange()
         .expectStatus()
         .isOk()
@@ -280,9 +279,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            new GroupUpdateRequest()
-                .changeset(new GroupChangeset().name(emptyGroupName).description("description")))
+        .bodyValue(new GroupUpdateRequest().name(emptyGroupName).description("description"))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -314,7 +311,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(name)))
+        .bodyValue(new GroupUpdateRequest().name(name))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -353,14 +350,44 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            new GroupUpdateRequest()
-                .changeset(new GroupChangeset().name(groupName).description(description)))
+        .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
         .exchange()
         .expectStatus()
         .isNotFound();
 
     verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "foo~", "foo!", "foo$", "foo&", "foo*", "foo(", "foo)", "foo=", "foo+", "foo:", "foo'",
+        "foo,"
+      })
+  void shouldRejectGroupUpdateWithIllegalCharactersInId(final String groupId) {
+    // when then
+    final var path = "%s/%s".formatted(GROUP_BASE_URL, groupId);
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupUpdateRequest().name("updatedName").description("description"))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(groupServices);
   }
 
   @Test
@@ -464,6 +491,143 @@ public class GroupControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldAssignMappingToGroupAndReturnAccepted() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    when(groupServices.assignMember(groupId, mappingId, EntityType.MAPPING))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(groupServices, times(1)).assignMember(anyString(), anyString(), any());
+  }
+
+  @Test
+  void shouldReturnErrorForAddingMissingMappingToGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    when(groupServices.assignMember(groupId, mappingId, EntityType.MAPPING))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        GroupIntent.ENTITY_ADDED,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Mapping rule not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(groupServices, times(1)).assignMember(anyString(), anyString(), any());
+  }
+
+  @Test
+  void shouldReturnErrorForAddingMappingToMissingGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    when(groupServices.assignMember(groupId, mappingId, EntityType.MAPPING))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        GroupIntent.ENTITY_ADDED,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Group not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(groupServices, times(1)).assignMember(anyString(), anyString(), any());
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToGroup() {
+    // given
+    final String groupId = Strings.newRandomValidIdentityId();
+    final String mappingId = "mappingId!";
+    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidGroupIdWhenAddingToGroup() {
+    // given
+    final String groupId = "groupId!";
+    final String mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
   void shouldUnassignUserToGroupAndReturnAccepted() {
     // given
     final String groupId = "111";
@@ -538,5 +702,140 @@ public class GroupControllerTest extends RestControllerTest {
 
     // then
     verify(groupServices, times(1)).removeMember(groupId, username, EntityType.USER);
+  }
+
+  @Test
+  void shouldUnassignMappingFromGroupAndReturnAccepted() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    when(groupServices.removeMember(groupId, mappingId, EntityType.MAPPING))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(groupServices, times(1)).removeMember(anyString(), anyString(), any());
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingMissingMappingFromGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    when(groupServices.removeMember(groupId, mappingId, EntityType.MAPPING))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        GroupIntent.ENTITY_ADDED,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Mapping not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(groupServices, times(1)).removeMember(anyString(), anyString(), any());
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingMappingFromMissingGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    when(groupServices.removeMember(groupId, mappingId, EntityType.MAPPING))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        GroupIntent.ENTITY_ADDED,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Group not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(groupServices, times(1)).removeMember(anyString(), anyString(), any());
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidMappingIdWhenRemovingFromGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var mappingId = "mappingId!";
+    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                  "instance": "%s"
+                }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidGroupIdWhenRemovingFromGroup() {
+    // given
+    final String groupId = "groupId!";
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
+                  "instance": "%s"
+                }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(groupServices);
   }
 }

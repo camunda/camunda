@@ -11,7 +11,8 @@ import static io.camunda.qa.util.multidb.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.exporter.CamundaExporter;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
@@ -29,7 +30,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithElasticsearch() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -78,7 +79,10 @@ public class MultiDbConfiguratorTest {
         testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
     assertThat(brokerBasedProperties).isNotNull();
 
-    final ExporterCfg camundaExporter = brokerBasedProperties.getExporters().get("CamundaExporter");
+    final ExporterCfg camundaExporter =
+        brokerBasedProperties
+            .getExporters()
+            .get(CamundaExporter.class.getSimpleName().toLowerCase());
     assertThat(camundaExporter).isNotNull();
 
     final Map<String, Object> exporterArgs = camundaExporter.getArgs();
@@ -98,7 +102,7 @@ public class MultiDbConfiguratorTest {
         .isEqualTo(
             Map.of(
                 "waitPeriodBeforeArchiving",
-                "1s",
+                "1h",
                 "retention",
                 Map.of(
                     "enabled",
@@ -112,7 +116,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureElasticsearchWithRetention() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -125,7 +129,10 @@ public class MultiDbConfiguratorTest {
         testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
     assertThat(brokerBasedProperties).isNotNull();
 
-    final ExporterCfg camundaExporter = brokerBasedProperties.getExporters().get("CamundaExporter");
+    final ExporterCfg camundaExporter =
+        brokerBasedProperties
+            .getExporters()
+            .get(CamundaExporter.class.getSimpleName().toLowerCase());
     assertThat(camundaExporter).isNotNull();
 
     final Map<String, Object> exporterArgs = camundaExporter.getArgs();
@@ -147,7 +154,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithOpenSearchWithRetention() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -161,7 +168,10 @@ public class MultiDbConfiguratorTest {
         testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
     assertThat(brokerBasedProperties).isNotNull();
 
-    final ExporterCfg camundaExporter = brokerBasedProperties.getExporters().get("CamundaExporter");
+    final ExporterCfg camundaExporter =
+        brokerBasedProperties
+            .getExporters()
+            .get(CamundaExporter.class.getSimpleName().toLowerCase());
     assertThat(camundaExporter).isNotNull();
 
     final Map<String, Object> exporterArgs = camundaExporter.getArgs();
@@ -183,7 +193,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithOldElasticsearchExporter() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -234,7 +244,9 @@ public class MultiDbConfiguratorTest {
     assertThat(brokerBasedProperties).isNotNull();
 
     final ExporterCfg esExporter =
-        brokerBasedProperties.getExporters().get("ElasticsearchExporter");
+        brokerBasedProperties
+            .getExporters()
+            .get(ElasticsearchExporter.class.getSimpleName().toLowerCase());
     assertThat(esExporter).isNotNull();
     assertThat(esExporter.getClassName()).isEqualTo(ElasticsearchExporter.class.getName());
 
@@ -249,7 +261,10 @@ public class MultiDbConfiguratorTest {
                 "bulk",
                 Map.of("size", 1)));
 
-    final ExporterCfg camundaExporter = brokerBasedProperties.getExporters().get("CamundaExporter");
+    final ExporterCfg camundaExporter =
+        brokerBasedProperties
+            .getExporters()
+            .get(CamundaExporter.class.getSimpleName().toLowerCase());
     assertThat(camundaExporter).isNotNull();
 
     final Map<String, Object> exporterArgs = camundaExporter.getArgs();
@@ -269,7 +284,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithOpensearch() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -324,7 +339,10 @@ public class MultiDbConfiguratorTest {
         testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
     assertThat(brokerBasedProperties).isNotNull();
 
-    final ExporterCfg camundaExporter = brokerBasedProperties.getExporters().get("CamundaExporter");
+    final ExporterCfg camundaExporter =
+        brokerBasedProperties
+            .getExporters()
+            .get(CamundaExporter.class.getSimpleName().toLowerCase());
     assertThat(camundaExporter).isNotNull();
 
     final Map<String, Object> exporterArgs = camundaExporter.getArgs();
@@ -348,7 +366,7 @@ public class MultiDbConfiguratorTest {
         .isEqualTo(
             Map.of(
                 "waitPeriodBeforeArchiving",
-                "1s",
+                "1h",
                 "retention",
                 Map.of(
                     "enabled",
@@ -362,7 +380,7 @@ public class MultiDbConfiguratorTest {
   @Test
   public void shouldConfigureWithOpensearchIncludingOldExporter() {
     // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
     final MultiDbConfigurator multiDbConfigurator =
         new MultiDbConfigurator(testSimpleCamundaApplication);
 
@@ -417,7 +435,10 @@ public class MultiDbConfiguratorTest {
         testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
     assertThat(brokerBasedProperties).isNotNull();
 
-    final ExporterCfg camundaExporter = brokerBasedProperties.getExporters().get("CamundaExporter");
+    final ExporterCfg camundaExporter =
+        brokerBasedProperties
+            .getExporters()
+            .get(CamundaExporter.class.getSimpleName().toLowerCase());
     assertThat(camundaExporter).isNotNull();
 
     final Map<String, Object> exporterArgs = camundaExporter.getArgs();
@@ -437,7 +458,10 @@ public class MultiDbConfiguratorTest {
                 "password",
                 EXPECTED_PW));
 
-    final ExporterCfg osExporter = brokerBasedProperties.getExporters().get("OpensearchExporter");
+    final ExporterCfg osExporter =
+        brokerBasedProperties
+            .getExporters()
+            .get(OpensearchExporter.class.getSimpleName().toLowerCase());
     assertThat(osExporter).isNotNull();
     assertThat(osExporter.getClassName()).isEqualTo(OpensearchExporter.class.getName());
 
@@ -456,7 +480,7 @@ public class MultiDbConfiguratorTest {
   }
 
   private <T> void assertProperty(
-      final TestSimpleCamundaApplication applicationContext,
+      final TestCamundaApplication applicationContext,
       final String propertyKey,
       final T expectedValue) {
     final T propertyValue =

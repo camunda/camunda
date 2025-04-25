@@ -29,13 +29,19 @@ public class CamundaExporterMetrics {
    * Count of completed process instances that have been found, and are now in progress of
    * archiving.
    */
-  private final Counter archivingBatchSize;
+  private final Counter processInstancesArchiving;
+
+  /**
+   * Count of completed batch operations that have been found, and are now in progress of archiving.
+   */
+  private final Counter batchOperationsArchiving;
 
   private final Counter batchOperationsArchived;
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
   private final Timer archiverReindexTimer;
   private Timer.Sample flushLatencyMeasurement;
+  private final Timer archivingDuration;
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -46,12 +52,56 @@ public class CamundaExporterMetrics {
                 "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
             .publishPercentileHistogram()
             .register(meterRegistry);
-    processInstancesArchived = meterRegistry.counter(meterName("archived.process.instances"));
-    archivingBatchSize = meterRegistry.counter(meterName("archived.batch.size"));
-    batchOperationsArchived = meterRegistry.counter(meterName("archived.batch.operations"));
-    archiverSearchTimer = meterRegistry.timer(meterName("archiver.query"));
-    archiverDeleteTimer = meterRegistry.timer(meterName("archiver.delete.query"));
-    archiverReindexTimer = meterRegistry.timer(meterName("archiver.reindex.query"));
+
+    processInstancesArchived =
+        Counter.builder(meterName("archiver.process.instances"))
+            .tag("state", "archived")
+            .description("Count of completed process instances, that have been archived.")
+            .register(meterRegistry);
+    processInstancesArchiving =
+        Counter.builder(meterName("archiver.process.instances"))
+            .tag("state", "archiving")
+            .description(
+                "Count of completed process instances that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
+    batchOperationsArchived =
+        Counter.builder(meterName("archiver.batch.operations"))
+            .tag("state", "archived")
+            .description("Count of completed batch operations, that have been archived.")
+            .register(meterRegistry);
+    batchOperationsArchiving =
+        Counter.builder(meterName("archiver.batch.operations"))
+            .tag("state", "archiving")
+            .description(
+                "Count of completed batch operations that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
+    archiverSearchTimer =
+        Timer.builder(meterName("archiver.request.duration"))
+            .description(
+                "Duration of how long it takes to run the search request to resolve completed entities, that need to be archived.")
+            .tags("type", "search")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    archiverDeleteTimer =
+        Timer.builder(meterName("archiver.request.duration"))
+            .description(
+                "Duration of how long it takes to run the delete request to remove completed entities, from old indices.")
+            .tags("type", "delete")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    archiverReindexTimer =
+        Timer.builder(meterName("archiver.request.duration"))
+            .description(
+                "Duration of how long it takes to run the reindex request to copy over to the dated indices, from old indices.")
+            .tags("type", "reindex")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    archivingDuration =
+        Timer.builder(meterName("archiver.duration"))
+            .description(
+                "Duration of how long it takes from resolving to archiving entities, all in all together.")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
   }
 
   public ResourceSample measureFlushDuration() {
@@ -102,12 +152,16 @@ public class CamundaExporterMetrics {
     processInstancesArchived.increment(count);
   }
 
-  public void recordArchivingBatchSize(final int count) {
-    archivingBatchSize.increment(count);
+  public void recordProcessInstancesArchiving(final int count) {
+    processInstancesArchiving.increment(count);
   }
 
-  public void batchOperationsArchived(final int count) {
+  public void recordBatchOperationsArchived(final int count) {
     batchOperationsArchived.increment(count);
+  }
+
+  public void recordBatchOperationsArchiving(final int count) {
+    batchOperationsArchiving.increment(count);
   }
 
   private String meterName(final String name) {
@@ -120,5 +174,9 @@ public class CamundaExporterMetrics {
 
   public void measureArchiverReindex(final Sample timer) {
     timer.stop(archiverReindexTimer);
+  }
+
+  public void measureArchivingDuration(final Sample timer) {
+    timer.stop(archivingDuration);
   }
 }

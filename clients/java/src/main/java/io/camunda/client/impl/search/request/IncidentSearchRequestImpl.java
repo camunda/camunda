@@ -34,7 +34,6 @@ import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.IncidentSearchQuery;
 import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -76,9 +75,7 @@ public class IncidentSearchRequestImpl
 
   @Override
   public IncidentSearchRequest filter(final IncidentFilter value) {
-    final io.camunda.client.protocol.rest.IncidentFilter filter =
-        provideSearchRequestProperty(value);
-    request.setFilter(filter);
+    request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
@@ -89,9 +86,9 @@ public class IncidentSearchRequestImpl
 
   @Override
   public IncidentSearchRequest sort(final IncidentSort value) {
-    final List<io.camunda.client.impl.search.request.SearchRequestSort> sorting =
-        provideSearchRequestProperty(value);
-    request.setSort(SearchRequestSortMapper.toIncidentSearchQuerySortRequest(sorting));
+    request.setSort(
+        SearchRequestSortMapper.toIncidentSearchQuerySortRequest(
+            provideSearchRequestProperty(value)));
     return this;
   }
 
@@ -102,8 +99,7 @@ public class IncidentSearchRequestImpl
 
   @Override
   public IncidentSearchRequest page(final SearchRequestPage value) {
-    final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
-    request.setPage(page.getSearchRequestProperty());
+    request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 

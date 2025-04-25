@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import styled from "styled-components";
 import { borderSubtle01, spacing06 } from "@carbon/elements";
 import { Stack } from "@carbon/react";

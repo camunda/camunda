@@ -160,7 +160,16 @@ final class ProcessInstancesArchiverJobTest {
             + job.archiveNextBatch().toCompletableFuture().join();
 
     // then
-    assertThat(meterRegistry.counter("zeebe.camunda.exporter.archived.process.instances").count())
+    assertThat(
+            meterRegistry
+                .counter("zeebe.camunda.exporter.archiver.process.instances", "state", "archiving")
+                .count())
+        .isEqualTo(6)
+        .isEqualTo(count);
+    assertThat(
+            meterRegistry
+                .counter("zeebe.camunda.exporter.archiver.process.instances", "state", "archived")
+                .count())
         .isEqualTo(6)
         .isEqualTo(count);
   }

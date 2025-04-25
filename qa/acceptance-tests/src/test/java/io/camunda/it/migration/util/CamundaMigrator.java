@@ -9,9 +9,9 @@ package io.camunda.it.migration.util;
 
 import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -49,7 +49,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   private final Path zeebeDataPath;
   private CamundaClient camundaClient;
   private ZeebeContainer camundaContainer;
-  private TestSimpleCamundaApplication camunda;
+  private TestCamundaApplication camunda;
   private TestRestTasklistClient tasklistClient;
   private TestRestOperateClient operateClient;
   private DocumentBasedSearchClient searchClients;
@@ -122,11 +122,18 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   public CamundaMigrator update(final Map<String, String> envOverrides) {
     /* Trigger snapshot of Zeebe's data to force flush ExporterMetadata */
     PartitionsActuator.of(camundaContainer).takeSnapshot();
+    try {
+      Thread.sleep(3000);
+    } catch (final InterruptedException ignored) {
+      // ignore
+    }
+    /* Retake snapshot to increase chance of capturing the ExporterMetadata */
+    PartitionsActuator.of(camundaContainer).takeSnapshot();
 
     camundaContainer.close();
     extractVolume();
     camunda =
-        new TestSimpleCamundaApplication()
+        new TestCamundaApplication()
             .withBasicAuth()
             .withAuthenticatedAccess()
             .withAdditionalProfile(Profile.PROCESS_MIGRATION)
@@ -161,7 +168,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     camundaClient = camunda.newClientBuilder().build();
     url = URL.formatted(camunda.host(), camunda.mappedPort(TestZeebePort.REST));
     final var uri = URI.create(url + "/");
-    tasklistClient = new TestRestTasklistClient(uri, databaseUrl);
+    tasklistClient = new TestRestTasklistClient(uri);
     operateClient = new TestRestOperateClient(uri, "demo", "demo");
     searchClients =
         databaseType.equals(DatabaseType.ES)
@@ -213,11 +220,12 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
         put("SPRING_PROFILES_ACTIVE", "tasklist,broker,auth,operate");
         put("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "1");
         put(
-            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_CLASSNAME",
             ElasticsearchExporter.class.getName());
-        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", internalUrl);
-        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULKSIZE", "1");
-        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", indexPrefix);
+        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_URL", internalUrl);
+        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_BULK_SIZE", "1");
+        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_BULK_DELAY", "1");
+        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_INDEX_PREFIX", indexPrefix);
         put("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITYMODE", "true");
         put("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", internalUrl);
         put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", internalUrl);
@@ -241,10 +249,13 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
       {
         put("SPRING_PROFILES_ACTIVE", "tasklist,broker,auth,operate");
         put("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "1");
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME", OpensearchExporter.class.getName());
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", internalUrl);
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULKSIZE", "1");
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX", indexPrefix);
+        put(
+            "ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_CLASSNAME",
+            OpensearchExporter.class.getName());
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_URL", internalUrl);
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_BULK_SIZE", "1");
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_BULK_DELAY", "1");
+        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_INDEX_PREFIX", indexPrefix);
         put("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITYMODE", "true");
         put("CAMUNDA_TASKLIST_DATABASE", "opensearch");
         put("CAMUNDA_TASKLIST_OPENSEARCH_URL", internalUrl);

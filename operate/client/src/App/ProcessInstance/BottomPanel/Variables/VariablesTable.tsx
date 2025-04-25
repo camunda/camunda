@@ -26,7 +26,7 @@ import {EditButtons} from './EditButtons';
 import {ExistingVariableValue} from './ExistingVariableValue';
 import {Name} from './NewVariableModification/Name';
 import {Value} from './NewVariableModification/Value';
-import {Operation} from './NewVariableModification/Operation';
+import {Operation as OperationV2} from './NewVariableModification/v2/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -157,7 +157,7 @@ const VariablesTable: React.FC<Props> = observer(
                             },
                             {
                               cellContent: (
-                                <Operation
+                                <OperationV2
                                   variableName={variableName}
                                   onRemove={() => {
                                     fields.remove(index);

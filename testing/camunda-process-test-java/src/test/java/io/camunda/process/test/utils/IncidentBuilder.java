@@ -27,8 +27,8 @@ public class IncidentBuilder implements Incident {
   private Long processInstanceKey;
   private IncidentErrorType errorType;
   private String errorMessage;
-  private String flowNodeId;
-  private Long flowNodeInstanceKey;
+  private String elementId;
+  private Long elementInstanceKey;
   private String creationTime;
   private IncidentState state;
   private Long jobKey;
@@ -65,13 +65,13 @@ public class IncidentBuilder implements Incident {
   }
 
   @Override
-  public String getFlowNodeId() {
-    return flowNodeId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
-  public Long getFlowNodeInstanceKey() {
-    return flowNodeInstanceKey;
+  public Long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -114,13 +114,13 @@ public class IncidentBuilder implements Incident {
     return this;
   }
 
-  public IncidentBuilder setFlowNodeInstanceKey(final Long flowNodeInstanceKey) {
-    this.flowNodeInstanceKey = flowNodeInstanceKey;
+  public IncidentBuilder setElementInstanceKey(final Long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
     return this;
   }
 
-  public IncidentBuilder setFlowNodeId(final String flowNodeId) {
-    this.flowNodeId = flowNodeId;
+  public IncidentBuilder setElementId(final String elementId) {
+    this.elementId = elementId;
     return this;
   }
 

@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
@@ -23,18 +24,22 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_BATCH_OPERATION_TYPE = "batchOperationType";
   public static final String PROP_ENTITY_FILTER = "entityFilter";
+  public static final String PROP_MIGRATION_PLAN = "migrationPlan";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
       new EnumProperty<>(PROP_BATCH_OPERATION_TYPE, BatchOperationType.class);
   private final BinaryProperty entityFilterProp =
       new BinaryProperty(PROP_ENTITY_FILTER, new UnsafeBuffer());
+  private final ObjectProperty<BatchOperationProcessInstanceMigrationPlan> migrationPlanProp =
+      new ObjectProperty<>(PROP_MIGRATION_PLAN, new BatchOperationProcessInstanceMigrationPlan());
 
   public BatchOperationCreationRecord() {
-    super(3);
+    super(4);
     declareProperty(batchOperationKeyProp)
         .declareProperty(batchOperationTypeProp)
-        .declareProperty(entityFilterProp);
+        .declareProperty(entityFilterProp)
+        .declareProperty(migrationPlanProp);
   }
 
   @Override
@@ -71,7 +76,26 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public BatchOperationProcessInstanceMigrationPlanValue getMigrationPlan() {
+    return migrationPlanProp.getValue();
+  }
+
+  public BatchOperationCreationRecord setMigrationPlan(
+      final BatchOperationProcessInstanceMigrationPlanValue migrationPlan) {
+    migrationPlanProp.getValue().wrap(migrationPlan);
+    return this;
+  }
+
   public DirectBuffer getEntityFilterBuffer() {
     return entityFilterProp.getValue();
+  }
+
+  public BatchOperationCreationRecord wrap(final BatchOperationCreationRecord record) {
+    batchOperationKeyProp.setValue(record.getBatchOperationKey());
+    batchOperationTypeProp.setValue(record.getBatchOperationType());
+    entityFilterProp.setValue(record.getEntityFilterBuffer());
+    migrationPlanProp.getValue().wrap(record.getMigrationPlan());
+    return this;
   }
 }

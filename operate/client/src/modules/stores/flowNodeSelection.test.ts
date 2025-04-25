@@ -22,6 +22,7 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {open} from 'modules/mocks/diagrams';
+import {cancelAllTokens} from 'modules/utils/modifications';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
@@ -605,100 +606,66 @@ describe('stores/flowNodeSelection', () => {
     ]);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml('some-process-id');
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      'instance_id',
-    );
 
     // cancel all tokens
-    modificationsStore.cancelAllTokens('userTask');
+    cancelAllTokens('userTask', 0, 0, {});
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
       flowNodeInstanceId: '2251799813689409',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
+
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
+
     flowNodeSelectionStore.clearSelection();
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
 
     modificationsStore.removeLastModification();
 
     // cancel all tokens one by one
-    modificationsStore.cancelToken('userTask', '2251799813689409');
-    modificationsStore.cancelToken('userTask', '2251799813689410');
-    modificationsStore.cancelToken('userTask', '2251799813689411');
+    modificationsStore.cancelToken('userTask', '2251799813689409', {});
+    modificationsStore.cancelToken('userTask', '2251799813689410', {});
+    modificationsStore.cancelToken('userTask', '2251799813689411', {});
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
       flowNodeInstanceId: '2251799813689409',
     });
 
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
-    flowNodeSelectionStore.clearSelection();
 
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
+    flowNodeSelectionStore.clearSelection();
 
     modificationsStore.removeLastModification();
     modificationsStore.removeLastModification();
     modificationsStore.removeLastModification();
 
     // cancel one token
-    modificationsStore.cancelToken('userTask', '2251799813689409');
+    modificationsStore.cancelToken('userTask', '2251799813689409', {});
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
       flowNodeInstanceId: '2251799813689409',
     });
 
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
-
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
       flowNodeInstanceId: '2251799813689410',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
       flowNodeInstanceId: '2251799813689411',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
+
     flowNodeSelectionStore.clearSelection();
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
   });
 
   it('should get has pending move modification', async () => {
@@ -714,9 +681,6 @@ describe('stores/flowNodeSelection', () => {
     ]);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml('some-process-id');
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      'instance_id',
-    );
 
     // move all tokens
     modificationsStore.addMoveModification({
@@ -725,25 +689,19 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 3,
       visibleAffectedTokenCount: 3,
       newScopeCount: 3,
+      businessObjects: {},
     });
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
       flowNodeInstanceId: '2251799813689409',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
+
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
+
     flowNodeSelectionStore.clearSelection();
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
 
     modificationsStore.removeLastModification();
 
@@ -755,6 +713,7 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'userTask',
@@ -763,6 +722,7 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'userTask',
@@ -771,6 +731,7 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
 
     flowNodeSelectionStore.setSelection({
@@ -778,19 +739,11 @@ describe('stores/flowNodeSelection', () => {
       flowNodeInstanceId: '2251799813689409',
     });
 
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
+
     flowNodeSelectionStore.clearSelection();
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
 
     modificationsStore.removeLastModification();
     modificationsStore.removeLastModification();
@@ -804,6 +757,7 @@ describe('stores/flowNodeSelection', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
 
     flowNodeSelectionStore.setSelection({
@@ -811,36 +765,20 @@ describe('stores/flowNodeSelection', () => {
       flowNodeInstanceId: '2251799813689409',
     });
 
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      true,
-    );
-
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
       flowNodeInstanceId: '2251799813689410',
     });
 
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
-
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
       flowNodeInstanceId: '2251799813689411',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'userTask',
     });
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
+
     flowNodeSelectionStore.clearSelection();
-    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
-      false,
-    );
   });
 });

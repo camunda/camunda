@@ -19,7 +19,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.GroupServices.CreateGroupRequest;
+import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
@@ -62,7 +62,7 @@ public class GroupServiceTest {
     final var description = "description";
 
     // when
-    final var createGroupRequest = new CreateGroupRequest(groupId, groupName, description);
+    final var createGroupRequest = new GroupDTO(groupId, groupName, description);
     services.createGroup(createGroupRequest);
 
     // then
@@ -108,20 +108,20 @@ public class GroupServiceTest {
     when(client.searchGroups(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findGroup(1L);
+    final var searchQueryResult = services.findGroup("groupId");
 
     // then
     assertThat(searchQueryResult).contains(entity);
   }
 
   @Test
-  public void shouldThrowExceptionIfGroupNotFoundByKey() {
+  public void shouldThrowExceptionIfGroupNotFoundById() {
     // given
-    final var key = 100L;
+    final var id = "groupId";
     when(client.searchGroups(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
 
     // when / then
-    assertThat(services.findGroup(key)).isEmpty();
+    assertThat(services.findGroup(id)).isEmpty();
   }
 
   @Test
@@ -134,7 +134,7 @@ public class GroupServiceTest {
     when(client.searchGroups(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getGroupsByUserKey(1L);
+    final var searchQueryResult = services.getGroupsByUserKey("username");
 
     // then
     assertThat(searchQueryResult).contains(group1, group2);
@@ -156,10 +156,9 @@ public class GroupServiceTest {
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.UPDATE);
-    assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasName(name);
-    assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasGroupId(groupId);
     assertThat(record).hasDescription(description);
   }
 
@@ -177,9 +176,7 @@ public class GroupServiceTest {
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.DELETE);
-    assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
-    assertThat(record).hasGroupKey(groupKey);
     assertThat(record).hasGroupId(groupId);
   }
 
@@ -202,7 +199,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
-    assertThat(record).hasEntityKey(Long.parseLong(memberId));
+    assertThat(record).hasEntityId(memberId);
     assertThat(record).hasEntityType(EntityType.USER);
   }
 
@@ -211,8 +208,7 @@ public class GroupServiceTest {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123L);
     final var groupId = String.valueOf(groupKey);
-    final var memberKey = 456L;
-    final var username = String.valueOf(memberKey);
+    final var username = "username";
     final var memberType = EntityType.USER;
 
     // when
@@ -226,7 +222,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
-    assertThat(record).hasEntityKey(memberKey);
+    assertThat(record).hasEntityId(username);
     assertThat(record).hasEntityType(EntityType.USER);
   }
 

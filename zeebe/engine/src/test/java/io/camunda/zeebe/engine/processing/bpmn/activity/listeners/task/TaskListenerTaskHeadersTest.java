@@ -11,7 +11,6 @@ import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.Protocol;
@@ -45,23 +44,30 @@ public class TaskListenerTaskHeadersTest {
   public void shouldIncludeUserTaskHeadersInJobCustomHeadersForAssigningTaskListener() {
     shouldIncludeUserTaskHeadersInJobCustomHeaders(
         ZeebeTaskListenerEventType.assigning,
-        userTask -> userTask.withAssignee("initial_assignee").claim());
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("initial_assignee").claim());
   }
 
   @Test
   public void shouldIncludeUserTaskHeadersInJobCustomHeadersForCompletingTaskListener() {
     shouldIncludeUserTaskHeadersInJobCustomHeaders(
-        ZeebeTaskListenerEventType.completing, UserTaskClient::complete);
+        ZeebeTaskListenerEventType.completing, pik -> ENGINE.userTask().ofInstance(pik).complete());
   }
 
   @Test
   public void shouldIncludeUserTaskHeadersInJobCustomHeadersForUpdatingTaskListener() {
     shouldIncludeUserTaskHeadersInJobCustomHeaders(
-        ZeebeTaskListenerEventType.updating, UserTaskClient::update);
+        ZeebeTaskListenerEventType.updating, pik -> ENGINE.userTask().ofInstance(pik).update());
+  }
+
+  @Test
+  public void shouldIncludeUserTaskHeadersInJobCustomHeadersForCancelingTaskListener() {
+    shouldIncludeUserTaskHeadersInJobCustomHeaders(
+        ZeebeTaskListenerEventType.canceling,
+        pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel());
   }
 
   private void shouldIncludeUserTaskHeadersInJobCustomHeaders(
-      final ZeebeTaskListenerEventType eventType, final Consumer<UserTaskClient> userTaskAction) {
+      final ZeebeTaskListenerEventType eventType, final Consumer<Long> transitionTrigger) {
     final BpmnModelInstance processWithZeebeUserTask =
         helper.createProcessWithZeebeUserTask(
             taskBuilder ->
@@ -72,8 +78,8 @@ public class TaskListenerTaskHeadersTest {
     // given
     final long processInstanceKey = helper.createProcessInstance(processWithZeebeUserTask);
 
-    // when
-    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
+    // when: trigger the user task transition
+    transitionTrigger.accept(processInstanceKey);
 
     // then
     final var activatedListenerJob = helper.activateJob(processInstanceKey, listenerType);
@@ -116,5 +122,44 @@ public class TaskListenerTaskHeadersTest {
                   processInstanceKey, listener, assertChangedAttributesHeader);
               helper.completeJobs(processInstanceKey, listener);
             });
+  }
+
+  @Test
+  public void shouldHaveAccessToAssigneeInCreatingListenerWhenDefinedOnModel() {
+    // given
+    final var assignee = "initial_assignee";
+    final var listenerTypes = new String[] {listenerType, listenerType + "_2"};
+
+    // when
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListenersAndAssignee(
+                ZeebeTaskListenerEventType.creating, assignee, listenerTypes));
+
+    final Consumer<JobRecordValue> assertInitialAssigneeHeader =
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs("Expect creating listeners to receive assignee header.")
+                .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee");
+
+    Stream.of(listenerTypes)
+        .forEach(
+            listener -> {
+              helper.assertActivatedJob(processInstanceKey, listener, assertInitialAssigneeHeader);
+              helper.completeJobs(processInstanceKey, listener);
+            });
+  }
+
+  @Test
+  public void shouldNotHaveAccessToAssigneeInCreatingListenerWhenNotDefinedOnModel() {
+    // when
+    final long processInstanceKey =
+        helper.createProcessInstance(helper.createProcessWithCreatingTaskListeners(listenerType));
+
+    // then
+    final var activatedJob = helper.activateJob(processInstanceKey, listenerType);
+
+    assertThat(activatedJob.getCustomHeaders())
+        .doesNotContainKey(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME);
   }
 }

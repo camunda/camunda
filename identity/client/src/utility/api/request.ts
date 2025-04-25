@@ -1,4 +1,10 @@
-import { redirectToLogin } from "src/utility/auth";
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 
 export type ErrorResponse<Type = "generic" | "detailed"> =
   Type extends "detailed"
@@ -68,6 +74,24 @@ const requestUrl = (baseUrl: string, path: string, params?: unknown) => {
   return `${clearedBaseUrl}${path}${encodedParams}`;
 };
 
+type Handler = (response: Response) => void | Promise<void>;
+const handlers: Handler[] = [];
+
+export function addHandler(fct: Handler) {
+  if (typeof fct === "function") {
+    handlers.push(fct);
+  } else {
+    throw new Error("Handler must be a function");
+  }
+}
+
+export function removeHandler(fct: Handler) {
+  const index = handlers.indexOf(fct);
+  if (index !== -1) {
+    handlers.splice(index, 1);
+  }
+}
+
 const apiRequest: <R, P>(
   options: ApiRequestParams<P>,
 ) => ApiPromise<R> = async ({ url, method, headers, params, baseUrl }) => {
@@ -99,14 +123,17 @@ const apiRequest: <R, P>(
         redirect: "manual",
       },
     );
-    if (response.status === 401) {
-      redirectToLogin();
-    }
+
     let data = null;
     try {
       data = await response.json();
     } catch {
       // body is empty
+    }
+
+    for (const handler of handlers) {
+      await handler(response);
+      return { data, error: null, status: 200, success: true };
     }
 
     if (response.ok) {

@@ -35,8 +35,8 @@ public interface GroupRecordValue extends RecordValue {
   /** The description of the group. */
   String getDescription();
 
-  /** The key of a user/mapping to assign/remove from a group. */
-  long getEntityKey();
+  /** The ID of a user/mapping to assign/remove from a group. */
+  String getEntityId();
 
   /** The type of the entity to assign/remove from a group. */
   EntityType getEntityType();

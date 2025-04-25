@@ -30,5 +30,5 @@ import io.camunda.spring.client.properties.PropertyBasedJobWorkerValueCustomizer
  */
 public interface JobWorkerValueCustomizer {
 
-  void customize(final JobWorkerValue zeebeWorker);
+  void customize(final JobWorkerValue jobWorkerValue);
 }

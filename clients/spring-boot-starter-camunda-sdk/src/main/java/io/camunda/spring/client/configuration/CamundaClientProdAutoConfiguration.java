@@ -73,12 +73,12 @@ public class CamundaClientProdAutoConfiguration {
         interceptors,
         chainHandlers,
         camundaClientExecutorService,
-        camundaClientCredentialsProvider) {};
+        camundaClientCredentialsProvider);
   }
 
   @Bean(destroyMethod = "close")
   public CamundaClient camundaClient(final CamundaClientConfiguration configuration) {
-    LOG.info("Creating camundaClient using CamundaClientConfiguration [{}]", configuration);
+    LOG.debug("Creating camundaClient using {}", configuration);
     final ScheduledExecutorService jobWorkerExecutor = configuration.jobWorkerExecutor();
     if (jobWorkerExecutor != null) {
       final ManagedChannel managedChannel = CamundaClientImpl.buildChannel(configuration);

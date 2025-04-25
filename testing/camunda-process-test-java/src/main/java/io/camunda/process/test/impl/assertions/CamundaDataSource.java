@@ -16,11 +16,11 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.Variable;
@@ -37,15 +37,14 @@ public class CamundaDataSource {
     this.client = client;
   }
 
-  public List<FlowNodeInstance> findFlowNodeInstancesByProcessInstanceKey(
+  public List<ElementInstance> findElementInstancesByProcessInstanceKey(
       final long processInstanceKey) {
-    return findFlowNodeInstances(filter -> filter.processInstanceKey(processInstanceKey));
+    return findElementInstances(filter -> filter.processInstanceKey(processInstanceKey));
   }
 
-  public List<FlowNodeInstance> findFlowNodeInstances(
-      final Consumer<FlownodeInstanceFilter> filter) {
+  public List<ElementInstance> findElementInstances(final Consumer<ElementInstanceFilter> filter) {
     return client
-        .newFlownodeInstanceSearchRequest()
+        .newElementInstanceSearchRequest()
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)

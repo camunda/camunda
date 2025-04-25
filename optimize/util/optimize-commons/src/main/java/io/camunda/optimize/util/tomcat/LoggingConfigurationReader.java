@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.Objects;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
@@ -32,13 +31,7 @@ public class LoggingConfigurationReader {
   public LoggingConfigurationReader() {}
 
   public void defineLog4jLoggingConfiguration() {
-    // Log4j2 code
-
     final InputStream configStream = getLog4j2ConfigurationFileStream();
-    if (configStream == null) {
-      throw new OptimizeRuntimeException("Configuration file not found");
-    }
-
     try {
       final ConfigurationSource configSource = new ConfigurationSource(configStream);
       final LoggerContext loggerContext = Configurator.initialize(null, configSource);
@@ -62,10 +55,16 @@ public class LoggingConfigurationReader {
   }
 
   private InputStream getLog4j2ConfigurationFileStream() {
-    return loggingConfigNames.stream()
-        .map(config -> getClass().getClassLoader().getResourceAsStream(config))
-        .filter(Objects::nonNull)
-        .findFirst()
-        .orElse(null);
+    InputStream inputStream = null;
+    for (String loggingConfigName : loggingConfigNames) {
+      inputStream = getClass().getClassLoader().getResourceAsStream(loggingConfigName);
+      if (inputStream != null) {
+        System.out.println("Found logging configuration file: " + loggingConfigName);
+        System.setProperty("log4j.configurationFile", "classpath:" + loggingConfigName);
+        return inputStream;
+      }
+    }
+
+    throw new OptimizeRuntimeException("Logging configuration file not found");
   }
 }

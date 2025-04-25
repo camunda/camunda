@@ -13,7 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -89,8 +89,8 @@ public class IncidentIT {
     assertIncidentState(client, incidents.getIncidentKey(), IncidentState.ACTIVE);
     assertProcessInstanceIncidentState(client, parentInstanceKey, true);
     assertProcessInstanceIncidentState(client, childInstanceKey, true);
-    assertFlowNodeInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, true);
-    assertFlowNodeInstanceIncidentState(client, childInstanceKey, TASK_ID, true);
+    assertElementInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, true);
+    assertElementInstanceIncidentState(client, childInstanceKey, TASK_ID, true);
   }
 
   @Test
@@ -110,8 +110,8 @@ public class IncidentIT {
     assertIncidentState(client, incident.getIncidentKey(), IncidentState.RESOLVED);
     assertProcessInstanceIncidentState(client, parentInstanceKey, false);
     assertProcessInstanceIncidentState(client, childInstanceKey, false);
-    assertFlowNodeInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, false);
-    assertFlowNodeInstanceIncidentState(client, childInstanceKey, TASK_ID, false);
+    assertElementInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, false);
+    assertElementInstanceIncidentState(client, childInstanceKey, TASK_ID, false);
   }
 
   private void assertIncidentState(
@@ -144,29 +144,29 @@ public class IncidentIT {
             });
   }
 
-  private void assertFlowNodeInstanceIncidentState(
+  private void assertElementInstanceIncidentState(
       final CamundaClient client,
       final long processInstanceKey,
-      final String flowNodeId,
+      final String elementId,
       final boolean expected) {
     Awaitility.await(
-            "until flow node %s in process instance %d incident state = %s"
-                .formatted(flowNodeId, processInstanceKey, expected))
+            "until element %s in process instance %d incident state = %s"
+                .formatted(elementId, processInstanceKey, expected))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var taskFlowNode = getFlowNodeInstance(client, processInstanceKey, flowNodeId);
-              assertThat(taskFlowNode)
+              final var taskElement = getElementInstance(client, processInstanceKey, elementId);
+              assertThat(taskElement)
                   .as("has incident = %s".formatted(expected))
-                  .returns(expected, FlowNodeInstance::getIncident);
+                  .returns(expected, ElementInstance::getIncident);
             });
   }
 
-  private FlowNodeInstance getFlowNodeInstance(
+  private ElementInstance getElementInstance(
       final CamundaClient client, final long parentInstanceKey, final String callActivityId) {
     return client
-        .newFlownodeInstanceSearchRequest()
-        .filter(f -> f.processInstanceKey(parentInstanceKey).flowNodeId(callActivityId))
+        .newElementInstanceSearchRequest()
+        .filter(f -> f.processInstanceKey(parentInstanceKey).elementId(callActivityId))
         .send()
         .join()
         .items()
@@ -185,13 +185,13 @@ public class IncidentIT {
   }
 
   private long getChildProcessInstanceKey(final CamundaClient client) {
-    return Awaitility.await("until one flow node exists in the child process instance")
+    return Awaitility.await("until one element exists in the child process instance")
         .atMost(Duration.ofSeconds(30))
         .ignoreExceptions()
         .until(
             () ->
                 client
-                    .newFlownodeInstanceSearchRequest()
+                    .newElementInstanceSearchRequest()
                     .filter(f -> f.processDefinitionId(childProcessId))
                     .send()
                     .join()

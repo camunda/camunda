@@ -12,6 +12,8 @@ jobs:
     name: Add issue to team projects if no project assigned and by corresponding component label
     runs-on: ubuntu-latest
     steps:
+      - name: Wait 15 seconds
+        run: sleep 15s
       - id: get_project_count
         uses: octokit/graphql-action@v2.3.2
         with:
@@ -98,3 +100,20 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/c8run
+      - id: add-to-feel
+        name: Add to Feel Team project
+        uses: actions/add-to-project@v1.0.2
+        if: ${{ steps.has-project.outputs.result == 'false' }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/79
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+          labeled: component/feel-js
+      - id: add-to-devops
+        name: Add to Monorepo DevOps Team project
+        uses: actions/add-to-project@v1.0.2
+        if: ${{ steps.has-project.outputs.result == 'false' }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/115
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+          # any of the following labels:
+          labeled: component/build-pipeline, component/release, area/build

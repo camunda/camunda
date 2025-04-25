@@ -67,6 +67,7 @@ public final class TestSupport {
       case BATCH_OPERATION_CREATION -> config.batchOperationCreation = value;
       case BATCH_OPERATION_CHUNK -> config.batchOperationChunk = value;
       case BATCH_OPERATION_EXECUTION -> config.batchOperationExecution = value;
+      case BATCH_OPERATION_LIFECYCLE_MANAGEMENT -> config.batchOperationLifecycleManagement = value;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
           config.adHocSubProcessActivityActivation = value;
       default ->
@@ -120,6 +121,7 @@ public final class TestSupport {
       case BATCH_OPERATION_CREATION -> config.batchOperationCreation = value;
       case BATCH_OPERATION_CHUNK -> config.batchOperationChunk = value;
       case BATCH_OPERATION_EXECUTION -> config.batchOperationExecution = value;
+      case BATCH_OPERATION_LIFECYCLE_MANAGEMENT -> config.batchOperationLifecycleManagement = value;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
           config.adHocSubProcessActivityActivation = value;
       default ->

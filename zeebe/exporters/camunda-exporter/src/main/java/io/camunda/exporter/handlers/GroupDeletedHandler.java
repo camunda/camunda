@@ -43,7 +43,7 @@ public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupReco
 
   @Override
   public List<String> generateIds(final Record<GroupRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(record.getValue().getGroupId());
   }
 
   @Override
@@ -55,7 +55,12 @@ public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupReco
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
     final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createParent();
-    entity.setKey(value.getGroupKey()).setName(value.getName()).setJoin(joinRelation);
+    entity
+        .setKey(value.getGroupKey())
+        .setGroupId(value.getGroupId())
+        .setName(value.getName())
+        .setDescription(value.getDescription())
+        .setJoin(joinRelation);
   }
 
   @Override

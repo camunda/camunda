@@ -38,7 +38,6 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
-import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
@@ -136,11 +135,11 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public FlowNodeInstanceServices flownodeInstanceServices(
+  public ElementInstanceServices elementInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient) {
-    return new FlowNodeInstanceServices(
+    return new ElementInstanceServices(
         brokerClient, securityContextProvider, flowNodeInstanceSearchClient, null);
   }
 
@@ -261,12 +260,6 @@ public class CamundaServicesConfiguration {
   public ResourceServices resourceServices(
       final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
     return new ResourceServices(brokerClient, securityContextProvider, null);
-  }
-
-  @Bean
-  public ElementInstanceServices elementServices(
-      final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
-    return new ElementInstanceServices(brokerClient, securityContextProvider, null);
   }
 
   @Bean

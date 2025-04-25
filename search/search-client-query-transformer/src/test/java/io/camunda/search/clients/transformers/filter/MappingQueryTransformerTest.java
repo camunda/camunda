@@ -18,6 +18,7 @@ import io.camunda.search.filter.MappingFilter.Claim;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.webapps.schema.descriptors.index.MappingIndex;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,6 +55,15 @@ public class MappingQueryTransformerTest extends AbstractTransformerTest {
         Arguments.of(
             (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.name("foobar"),
             SearchQuery.of(q -> q.term(t -> t.field("name").value("foobar")))),
+        Arguments.of(
+            (Function<Builder, ObjectBuilder<MappingFilter>>)
+                f -> f.mappingIds(Set.of("id1", "id2")),
+            SearchQuery.of(
+                q ->
+                    q.terms(
+                        t ->
+                            t.field("mappingId")
+                                .stringTerms(Set.of("id1", "id2").stream().sorted().toList())))),
         Arguments.of(
             (Function<Builder, ObjectBuilder<MappingFilter>>)
                 f -> f.claims(List.of(new Claim("c1", "v1"), new Claim("c2", "v2"))),

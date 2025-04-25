@@ -27,7 +27,6 @@ import {
 } from './index.setup';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   createBatchOperation,
   createOperation,
@@ -39,13 +38,13 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
 import {act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -66,13 +65,12 @@ describe('InstanceHeader', () => {
 
   it('should show skeleton before instance data is available', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });
@@ -84,11 +82,10 @@ describe('InstanceHeader', () => {
 
   it('should render instance data', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });
@@ -133,11 +130,10 @@ describe('InstanceHeader', () => {
 
   it('should render "View All" link for call activity process', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });
@@ -154,11 +150,10 @@ describe('InstanceHeader', () => {
     panelStatesStore.toggleFiltersPanel();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });
@@ -182,11 +177,10 @@ describe('InstanceHeader', () => {
 
   it('should render parent Process Instance Key', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithParentInstance);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithParentInstance.id});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -203,10 +197,9 @@ describe('InstanceHeader', () => {
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     jest.useFakeTimers();
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -226,14 +219,13 @@ describe('InstanceHeader', () => {
 
   it('should show spinner when operation is applied', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockApplyOperation().withSuccess(mockOperationCreated);
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
     jest.useFakeTimers();
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -262,14 +254,13 @@ describe('InstanceHeader', () => {
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchVariables().withSuccess([mockVariable]);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     mockApplyOperation().withSuccess(
       createBatchOperation({id: 'batch-operation-id', type: 'ADD_VARIABLE'}),
     );
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });
@@ -311,11 +302,10 @@ describe('InstanceHeader', () => {
 
   it('should remove spinner when operation fails', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockApplyOperation().withDelayedServerError();
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -332,11 +322,10 @@ describe('InstanceHeader', () => {
 
   it('should display error notification when operation fails', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockApplyOperation().withServerError();
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -356,11 +345,10 @@ describe('InstanceHeader', () => {
 
   it('should display error notification when operation fails with auth error', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockApplyOperation().withServerError(403);
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -381,7 +369,7 @@ describe('InstanceHeader', () => {
 
   it('should show operation buttons for running process instance when user has permission', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
       displayName: 'demo',
@@ -397,7 +385,6 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });
@@ -417,7 +404,7 @@ describe('InstanceHeader', () => {
 
   it('should show operation buttons for finished process instance when user has permission', async () => {
     mockFetchProcessInstance().withSuccess(mockCanceledInstance);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
       displayName: 'demo',
@@ -433,7 +420,6 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockCanceledInstance.id,
     });
@@ -453,7 +439,7 @@ describe('InstanceHeader', () => {
     };
 
     mockFetchProcessInstance().withSuccess(mockCanceledInstance);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
       displayName: 'demo',
@@ -469,7 +455,6 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockCanceledInstance.id,
     });
@@ -489,7 +474,7 @@ describe('InstanceHeader', () => {
     };
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
       displayName: 'demo',
@@ -505,7 +490,6 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });
@@ -527,13 +511,11 @@ describe('InstanceHeader', () => {
     jest.useFakeTimers();
 
     mockFetchProcessInstance().withSuccess(mockCanceledInstance);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const onPollingFailure = jest.fn();
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
-
-    processInstanceDetailsDiagramStore.init();
 
     processInstanceDetailsStore.init({
       id: mockInstanceWithoutOperations.id,

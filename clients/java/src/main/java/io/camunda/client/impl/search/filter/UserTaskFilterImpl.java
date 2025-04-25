@@ -17,11 +17,10 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.UserTaskFilter;
-import io.camunda.client.api.search.filter.UserTaskVariableFilterRequest;
+import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
@@ -32,7 +31,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class UserTaskFilterImpl
     extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.UserTaskFilter>
@@ -67,7 +65,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter assignee(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setAssignee(RequestMapper.toProtocolObject(property.build()));
+    filter.setAssignee(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -79,9 +77,9 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter priority(final Consumer<IntegerProperty> fn) {
-    final IntegerPropertyImpl property = new IntegerPropertyImpl();
+    final IntegerProperty property = new IntegerPropertyImpl();
     fn.accept(property);
-    filter.setPriority(RequestMapper.toProtocolObject(property.build()));
+    filter.setPriority(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -101,7 +99,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter candidateGroup(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setCandidateGroup(RequestMapper.toProtocolObject(property.build()));
+    filter.setCandidateGroup(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -115,7 +113,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter candidateUser(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setCandidateUser(RequestMapper.toProtocolObject(property.build()));
+    filter.setCandidateUser(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -145,41 +143,33 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter processInstanceVariables(
-      final List<UserTaskVariableFilterRequest> variableFilters) {
-    if (variableFilters != null) {
-      variableFilters.forEach(v -> variableValueNullCheck(v.getValue()));
-    }
+      final List<Consumer<VariableValueFilter>> variableFilters) {
+
     filter.setProcessInstanceVariables(
-        RequestMapper.toUserTaskVariableFilterRequestList(variableFilters));
+        VariableFilterMapper.toVariableValueFilterRequest(variableFilters));
     return this;
   }
 
   @Override
   public UserTaskFilter processInstanceVariables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
-      final List<UserTaskVariableFilterRequest> variableFilters =
-          toUserTaskVariableFilterRequestList(variableValueFilters);
       filter.setProcessInstanceVariables(
-          RequestMapper.toUserTaskVariableFilterRequestList(variableFilters));
+          VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
     }
     return this;
   }
 
   @Override
-  public UserTaskFilter localVariables(final List<UserTaskVariableFilterRequest> variableFilters) {
-    if (variableFilters != null) {
-      variableFilters.forEach(v -> variableValueNullCheck(v.getValue()));
-    }
-    filter.setLocalVariables(RequestMapper.toUserTaskVariableFilterRequestList(variableFilters));
+  public UserTaskFilter localVariables(final List<Consumer<VariableValueFilter>> variableFilters) {
+    filter.setLocalVariables(VariableFilterMapper.toVariableValueFilterRequest(variableFilters));
     return this;
   }
 
   @Override
   public UserTaskFilter localVariables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
-      final List<UserTaskVariableFilterRequest> variableFilters =
-          toUserTaskVariableFilterRequestList(variableValueFilters);
-      filter.setLocalVariables(RequestMapper.toUserTaskVariableFilterRequestList(variableFilters));
+      filter.setLocalVariables(
+          VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
     }
     return this;
   }
@@ -201,7 +191,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter creationDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setCreationDate(RequestMapper.toProtocolObject(property.build()));
+    filter.setCreationDate(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -215,7 +205,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter completionDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setCompletionDate(RequestMapper.toProtocolObject(property.build()));
+    filter.setCompletionDate(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -229,7 +219,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter followUpDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setFollowUpDate(RequestMapper.toProtocolObject(property.build()));
+    filter.setFollowUpDate(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -243,34 +233,12 @@ public class UserTaskFilterImpl
   public UserTaskFilter dueDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setDueDate(RequestMapper.toProtocolObject(property.build()));
+    filter.setDueDate(provideSearchRequestProperty(property));
     return this;
-  }
-
-  private static List<UserTaskVariableFilterRequest> toUserTaskVariableFilterRequestList(
-      final Map<String, Object> variableValueFilters) {
-    return variableValueFilters.entrySet().stream()
-        .map(
-            entry -> {
-              variableValueNullCheck(entry.getValue());
-              final UserTaskVariableFilterRequest request = new UserTaskVariableFilterRequest();
-              request.setName(entry.getKey());
-              final StringProperty property = new StringPropertyImpl();
-              property.eq(entry.getValue().toString());
-              request.setValue(property.build());
-              return request;
-            })
-        .collect(Collectors.toList());
   }
 
   @Override
   protected io.camunda.client.protocol.rest.UserTaskFilter getSearchRequestProperty() {
     return filter;
-  }
-
-  static void variableValueNullCheck(final Object value) {
-    if (value == null) {
-      throw new IllegalArgumentException("Variable value cannot be null");
-    }
   }
 }

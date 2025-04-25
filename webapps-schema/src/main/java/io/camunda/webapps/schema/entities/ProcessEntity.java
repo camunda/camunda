@@ -110,7 +110,12 @@ public class ProcessEntity implements ExporterEntity<ProcessEntity>, TenantOwned
   @Override
   public String toString() {
     return "ProcessEntity{"
-        + "name='"
+        + "id='"
+        + id
+        + '\''
+        + ", key="
+        + key
+        + ", name='"
         + name
         + '\''
         + ", version="

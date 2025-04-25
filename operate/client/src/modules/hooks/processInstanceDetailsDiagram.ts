@@ -9,29 +9,34 @@
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {useTotalRunningInstancesByFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {hasMultipleScopes} from 'modules/utils/processInstanceDetailsDiagram';
 
 const useFlowNodes = () => {
   const {data: statistics} = useFlownodeInstancesStatistics();
-  return Object.values(processInstanceDetailsDiagramStore.businessObjects).map(
-    (flowNode) => {
-      const flowNodeState = statistics?.items.find(
-        ({flowNodeId}) => flowNodeId === flowNode.id,
-      );
+  const {data: totalRunningInstancesByFlowNode} =
+    useTotalRunningInstancesByFlowNode();
+  const {data: businessObjects} = useBusinessObjects();
 
-      return {
-        id: flowNode.id,
-        isCancellable:
-          flowNodeState !== undefined &&
-          (flowNodeState.active > 0 || flowNodeState.incidents > 0),
-        isMoveModificationTarget: isMoveModificationTarget(flowNode),
-        hasMultipleScopes: processInstanceDetailsDiagramStore.hasMultipleScopes(
-          flowNode.$parent,
-        ),
-      };
-    },
-  );
+  return Object.values(businessObjects ?? {}).map((flowNode) => {
+    const flowNodeState = statistics?.items.find(
+      ({elementId}) => elementId === flowNode.id,
+    );
+
+    return {
+      id: flowNode.id,
+      isCancellable:
+        flowNodeState !== undefined &&
+        (flowNodeState.active > 0 || flowNodeState.incidents > 0),
+      isMoveModificationTarget: isMoveModificationTarget(flowNode),
+      hasMultipleScopes: hasMultipleScopes(
+        flowNode.$parent,
+        totalRunningInstancesByFlowNode,
+      ),
+    };
+  });
 };
 
 const useAppendableFlowNodes = () => {
@@ -69,9 +74,19 @@ const useModifiableFlowNodes = () => {
   }
 };
 
+const useNonModifiableFlowNodes = () => {
+  const flowNodes = useFlowNodes();
+  const modifiableFlowNodes = useModifiableFlowNodes();
+
+  return flowNodes
+    .filter((flowNode) => !modifiableFlowNodes.includes(flowNode.id))
+    .map(({id}) => id);
+};
+
 export {
   useFlowNodes,
   useAppendableFlowNodes,
   useCancellableFlowNodes,
   useModifiableFlowNodes,
+  useNonModifiableFlowNodes,
 };

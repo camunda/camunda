@@ -33,7 +33,7 @@ async function processDefinitionParser(data: string): Promise<ParsedXmlData> {
   return {xml: data, diagramModel, selectableFlowNodes};
 }
 
-function useProcessDefinitionXml<T extends ParsedXmlData = ParsedXmlData>({
+function useProcessDefinitionXml<T = ParsedXmlData>({
   processDefinitionKey,
   select,
   enabled = true,

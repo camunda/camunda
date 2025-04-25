@@ -29,20 +29,23 @@ public class GroupWriter {
         new QueueItem(
             ContextType.GROUP,
             WriteStatementType.INSERT,
-            group.groupKey(),
+            group.groupId(),
             "io.camunda.db.rdbms.sql.GroupMapper.insert",
             group));
   }
 
   public void update(final GroupDbModel group) {
-    final boolean wasMerged = mergeToQueue(group.groupKey(), b -> b.name(group.name()));
+    final boolean wasMerged =
+        mergeToQueue(
+            group.groupId(),
+            b -> b.groupId(group.groupId()).name(group.name()).description(group.description()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.GROUP,
               WriteStatementType.UPDATE,
-              group.groupKey(),
+              group.groupId(),
               "io.camunda.db.rdbms.sql.GroupMapper.update",
               group));
     }
@@ -53,7 +56,7 @@ public class GroupWriter {
         new QueueItem(
             ContextType.GROUP,
             WriteStatementType.INSERT,
-            member.groupKey(),
+            member.groupId(),
             "io.camunda.db.rdbms.sql.GroupMapper.insertMember",
             member));
   }
@@ -63,31 +66,32 @@ public class GroupWriter {
         new QueueItem(
             ContextType.GROUP,
             WriteStatementType.DELETE,
-            member.groupKey(),
+            member.groupId(),
             "io.camunda.db.rdbms.sql.GroupMapper.deleteMember",
             member));
   }
 
-  public void delete(final long groupKey) {
+  public void delete(final String groupId) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.GROUP,
             WriteStatementType.DELETE,
-            groupKey,
+            groupId,
             "io.camunda.db.rdbms.sql.GroupMapper.delete",
-            groupKey));
+            groupId));
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.GROUP,
             WriteStatementType.DELETE,
-            groupKey,
+            groupId,
             "io.camunda.db.rdbms.sql.GroupMapper.deleteAllMembers",
-            groupKey));
+            groupId));
   }
 
   private boolean mergeToQueue(
-      final long key, final Function<GroupDbModel.Builder, GroupDbModel.Builder> mergeFunction) {
+      final String groupId,
+      final Function<GroupDbModel.Builder, GroupDbModel.Builder> mergeFunction) {
     return executionQueue.tryMergeWithExistingQueueItem(
-        new UpsertMerger<>(ContextType.GROUP, key, GroupDbModel.class, mergeFunction));
+        new UpsertMerger<>(ContextType.GROUP, groupId, GroupDbModel.class, mergeFunction));
   }
 }

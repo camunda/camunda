@@ -28,6 +28,7 @@ import {
   Header,
   LicenseInfo,
 } from "src/pages/login/styled.ts";
+import { Paths } from "src/components/global/routePaths";
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -63,7 +64,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     }
 
     if (username && password) {
-      login(username, password).then(({ success, message }) => {
+      void login(username, password).then(({ success, message }) => {
         if (success) {
           onSuccess();
         } else {
@@ -162,7 +163,7 @@ export const LoginPage: React.FC = () => {
 
   const redirectUrl = getRedirectUrl(location.search);
   const onSuccess = useCallback(() => {
-    window.location.href = redirectUrl ?? "/identity/users";
+    window.location.href = redirectUrl ?? `/identity${Paths.users()}`;
   }, [redirectUrl]);
   const hasProductionLicense = license?.isCommercial;
 

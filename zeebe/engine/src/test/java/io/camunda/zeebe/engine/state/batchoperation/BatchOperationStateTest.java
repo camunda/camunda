@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +46,7 @@ public class BatchOperationStateTest {
   void shouldCreateBatchOperation() throws JsonProcessingException {
     // given
     final var batchOperationKey = 1L;
-    final var type = BatchOperationType.PROCESS_CANCELLATION;
+    final var type = BatchOperationType.CANCEL_PROCESS_INSTANCE;
     final var filter =
         new ProcessInstanceFilter.Builder()
             .processDefinitionIds("process")
@@ -71,6 +73,47 @@ public class BatchOperationStateTest {
   }
 
   @Test
+  void shouldCreateBatchOperationForMigration() throws JsonProcessingException {
+    // given
+    final var batchOperationKey = 1L;
+    final var type = BatchOperationType.MIGRATE_PROCESS_INSTANCE;
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .processDefinitionIds("process")
+            .processDefinitionVersions(1)
+            .build();
+
+    final var migrationPlan = new BatchOperationProcessInstanceMigrationPlan();
+    migrationPlan.setTargetProcessDefinitionKey(2L);
+    final var mappingInstruction =
+        new ProcessInstanceMigrationMappingInstruction()
+            .setSourceElementId("source")
+            .setTargetElementId("target");
+    migrationPlan.addMappingInstruction(mappingInstruction);
+
+    final var record =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(type)
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setMigrationPlan(migrationPlan);
+
+    // when
+    state.create(batchOperationKey, record);
+
+    // then
+    final var batchOperation = state.get(batchOperationKey).get();
+    final var recordFilter =
+        new ObjectMapper().readValue(batchOperation.getEntityFilter(), ProcessInstanceFilter.class);
+
+    assertThat(batchOperation.getKey()).isEqualTo(batchOperationKey);
+    assertThat(batchOperation.getBatchOperationType()).isEqualTo(type);
+    assertThat(recordFilter).isEqualTo(filter);
+    assertThat(batchOperation.getMigrationPlan()).isEqualTo(migrationPlan);
+    assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
+  }
+
+  @Test
   void newBatchShouldBePending() {
     // given
 
@@ -79,7 +122,7 @@ public class BatchOperationStateTest {
     final var batchRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     state.create(batchOperationKey, batchRecord);
 
     // then
@@ -96,7 +139,7 @@ public class BatchOperationStateTest {
     final var batchRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     state.create(batchOperationKey, batchRecord);
 
     // when
@@ -120,7 +163,7 @@ public class BatchOperationStateTest {
     final var roleRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     state.create(batchOperationKey, roleRecord);
 
     // when
@@ -156,7 +199,7 @@ public class BatchOperationStateTest {
     final var createRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build()));
     state.create(batchOperationKey, createRecord);
 
@@ -182,7 +225,7 @@ public class BatchOperationStateTest {
     final var createRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build()));
     state.create(batchOperationKey, createRecord);
 
@@ -208,7 +251,7 @@ public class BatchOperationStateTest {
     final var createRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build()));
     state.create(batchOperationKey, createRecord);
 
@@ -231,7 +274,7 @@ public class BatchOperationStateTest {
     final var createRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build()));
     state.create(batchOperationKey, createRecord);
 
@@ -304,7 +347,7 @@ public class BatchOperationStateTest {
         batchOperationKey,
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build())));
     state.appendItemKeys(
         batchOperationKey, LongStream.range(0, numKeys).boxed().collect(Collectors.toSet()));
@@ -319,7 +362,7 @@ public class BatchOperationStateTest {
     final var batchRecord =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     state.create(batchOperationKey, batchRecord);
 
     // when
@@ -327,6 +370,142 @@ public class BatchOperationStateTest {
 
     // then
     assertThat(state.get(batchOperationKey)).isEmpty();
+  }
+
+  @Test
+  void canceledBatchShouldBeRemoved() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+
+    // when
+    state.cancel(batchOperationKey);
+
+    // then
+    assertThat(state.get(batchOperationKey)).isEmpty();
+    assertThat(state.getNextItemKeys(batchOperationKey, 20)).isEmpty();
+  }
+
+  @Test
+  void shouldReturnTrueForCanPause() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+
+    // when
+    state.create(batchOperationKey, batchRecord);
+
+    // then
+    final var persistedBatchOperation = state.get(batchOperationKey);
+    assertThat(persistedBatchOperation).isNotEmpty();
+    assertThat(persistedBatchOperation.get().canPause()).isTrue();
+  }
+
+  @Test
+  void shouldReturnFalseForCanPause() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+
+    state.create(batchOperationKey, batchRecord);
+
+    // when
+    state.fail(batchOperationKey);
+
+    // then
+    final var persistedBatchOperation = state.get(batchOperationKey);
+    assertThat(persistedBatchOperation).isNotEmpty();
+    assertThat(persistedBatchOperation.get().canPause()).isFalse();
+  }
+
+  @Test
+  void shouldPauseBatch() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+
+    // when
+    state.pause(batchOperationKey);
+
+    // then
+    final var persistedBatchOperation = state.get(batchOperationKey);
+    assertThat(persistedBatchOperation).isNotEmpty();
+    assertThat(persistedBatchOperation.get().isPaused()).isTrue();
+  }
+
+  @Test
+  void shouldResumeBatch() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+    state.pause(batchOperationKey);
+
+    // when
+    state.resume(batchOperationKey);
+
+    // then
+    final var persistedBatchOperation = state.get(batchOperationKey);
+    assertThat(persistedBatchOperation).isNotEmpty();
+    assertThat(persistedBatchOperation.get().getStatus()).isEqualTo(BatchOperationStatus.STARTED);
+  }
+
+  @Test
+  void shouldReturnTrueForResumeBatch() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+    state.start(batchOperationKey);
+    state.pause(batchOperationKey);
+
+    // when
+    final var persistedBatchOperation = state.get(batchOperationKey).get();
+    final var canResume = persistedBatchOperation.canResume();
+
+    // then
+
+    assertThat(canResume).isTrue();
+  }
+
+  @Test
+  void shouldReturnFalseForResumeBatch() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+    state.fail(batchOperationKey);
+
+    // when
+    final var persistedBatchOperation = state.get(batchOperationKey).get();
+    final var canResume = persistedBatchOperation.canResume();
+
+    // then
+
+    assertThat(canResume).isFalse();
   }
 
   private static UnsafeBuffer convertToBuffer(final Object object) {

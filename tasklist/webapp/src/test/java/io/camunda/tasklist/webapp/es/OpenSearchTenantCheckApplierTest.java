@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.webapp.es.tenant.OpenSearchTenantCheckApplier;
-import io.camunda.tasklist.webapp.security.tenant.TenantService;
+import io.camunda.tasklist.webapp.tenant.TenantService;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;

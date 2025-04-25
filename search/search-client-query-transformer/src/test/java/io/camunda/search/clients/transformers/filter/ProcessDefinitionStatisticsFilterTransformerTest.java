@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchHasParentQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
@@ -37,7 +38,7 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
 
     // then
     final var queryVariant = searchRequest.queryOption();
-    assertIsSearchBoolQuery(queryVariant, 2);
+    assertIsSearchBoolQueryWithDefaultFilter(queryVariant, 2);
   }
 
   @Test
@@ -52,8 +53,8 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
 
     // then
     final var queryVariant = searchRequest.queryOption();
-    final var searchBoolQuery = assertIsSearchBoolQuery(queryVariant, 3);
-    assertIsSearchTermQuery(
+    final var searchBoolQuery = assertIsSearchBoolQueryWithDefaultFilter(queryVariant, 3);
+    assertIsSearchHasParentTermQuery(
         searchBoolQuery.must().get(2).queryOption(), "parentProcessInstanceKey", 567L);
   }
 
@@ -69,8 +70,8 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
 
     // then
     final var queryVariant = searchRequest.queryOption();
-    final var searchBoolQuery = assertIsSearchBoolQuery(queryVariant, 3);
-    assertIsSearchTermQuery(
+    final var searchBoolQuery = assertIsSearchBoolQueryWithDefaultFilter(queryVariant, 3);
+    assertIsSearchHasParentTermQuery(
         searchBoolQuery.must().get(2).queryOption(), "parentFlowNodeInstanceKey", 567L);
   }
 
@@ -90,9 +91,12 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
 
     // then
     final var queryVariant = searchRequest.queryOption();
-    final var searchBoolQuery = assertIsSearchBoolQuery(queryVariant, 4);
-
-    assertThat(searchBoolQuery.must().get(2).queryOption())
+    final var searchBoolQuery = assertIsSearchBoolQueryWithDefaultFilter(queryVariant, 3);
+    final var hasParentQuery =
+        assertIsSearchHasParentQuery(searchBoolQuery.must().get(2).queryOption());
+    final var parentBoolQuery = assertIsSearchBoolQuery(hasParentQuery, 2);
+    assertThat(parentBoolQuery.must()).hasSize(2);
+    assertThat(parentBoolQuery.must().get(0).queryOption())
         .isInstanceOfSatisfying(
             SearchRangeQuery.class,
             (searchRangeQuery) -> {
@@ -102,7 +106,7 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
               assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
             });
 
-    assertThat(searchBoolQuery.must().get(3).queryOption())
+    assertThat(parentBoolQuery.must().get(1).queryOption())
         .isInstanceOfSatisfying(
             SearchRangeQuery.class,
             (searchRangeQuery) -> {
@@ -125,8 +129,10 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
 
     // then
     final var queryVariant = searchRequest.queryOption();
-    final var searchBoolQuery = assertIsSearchBoolQuery(queryVariant, 3);
-    assertIsSearchTermQuery(searchBoolQuery.must().get(2).queryOption(), "state", "ACTIVE");
+    final var searchBoolQuery = assertIsSearchBoolQueryWithDefaultFilter(queryVariant, 3);
+    final var hasParentQuery =
+        assertIsSearchHasParentQuery(searchBoolQuery.must().get(2).queryOption());
+    assertIsSearchTermQuery(hasParentQuery, "state", "ACTIVE");
   }
 
   @Test
@@ -141,8 +147,16 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
 
     // then
     final var queryVariant = searchRequest.queryOption();
-    final var searchBoolQuery = assertIsSearchBoolQuery(queryVariant, 3);
-    assertIsSearchTermQuery(searchBoolQuery.must().get(2).queryOption(), "incident", true);
+    final var searchBoolQuery = assertIsSearchBoolQueryWithDefaultFilter(queryVariant, 3);
+    final var hasParentQuery =
+        assertIsSearchHasParentQuery(searchBoolQuery.must().get(2).queryOption());
+    assertThat(hasParentQuery)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            (searchTermQuery) -> {
+              assertThat(searchTermQuery.field()).isEqualTo("incident");
+              assertThat(searchTermQuery.value().booleanValue()).isEqualTo(true);
+            });
   }
 
   @Test
@@ -157,8 +171,10 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
 
     // then
     final var queryVariant = searchRequest.queryOption();
-    final var searchBoolQuery = assertIsSearchBoolQuery(queryVariant, 3);
-    assertIsSearchTermQuery(searchBoolQuery.must().get(2).queryOption(), "tenantId", "tenant");
+    final var searchBoolQuery = assertIsSearchBoolQueryWithDefaultFilter(queryVariant, 3);
+    final var hasParentQuery =
+        assertIsSearchHasParentQuery(searchBoolQuery.must().get(2).queryOption());
+    assertIsSearchTermQuery(hasParentQuery, "tenantId", "tenant");
   }
 
   @Test
@@ -191,13 +207,18 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
               assertThat(searchBoolQuery.mustNot()).isEmpty();
               assertThat(searchBoolQuery.should()).isEmpty();
             });
-    final var searchBoolQuery = (SearchBoolQuery) queryVariant;
+    return (SearchBoolQuery) queryVariant;
+  }
+
+  private SearchBoolQuery assertIsSearchBoolQueryWithDefaultFilter(
+      final SearchQueryOption queryVariant, final int size) {
+    final var searchBoolQuery = assertIsSearchBoolQuery(queryVariant, size);
     assertIsSearchTermQuery(
-        searchBoolQuery.must().get(0).queryOption(),
+        searchBoolQuery.must().get(0).queryOption(), "joinRelation", "activity");
+    assertIsSearchHasParentTermQuery(
+        searchBoolQuery.must().get(1).queryOption(),
         "processDefinitionKey",
         PROCESS_DEFINITION_KEY);
-    assertIsSearchTermQuery(
-        searchBoolQuery.must().get(1).queryOption(), "joinRelation", "processInstance");
     return searchBoolQuery;
   }
 
@@ -214,29 +235,27 @@ public final class ProcessDefinitionStatisticsFilterTransformerTest
             });
   }
 
-  private void assertIsSearchTermQuery(
+  private SearchQueryOption assertIsSearchHasParentQuery(
+      final SearchQueryOption searchQueryOption) {
+    assertThat(searchQueryOption)
+        .isInstanceOfSatisfying(
+            SearchHasParentQuery.class,
+            (searchHasParentQuery) ->
+                assertThat(searchHasParentQuery.parentType()).isEqualTo("processInstance"));
+    return ((SearchHasParentQuery) searchQueryOption).query().queryOption();
+  }
+
+  private void assertIsSearchHasParentTermQuery(
       final SearchQueryOption searchQueryOption,
       final String expectedField,
       final Long expectedValue) {
-    assertThat(searchQueryOption)
+    final var hasParentQuery = assertIsSearchHasParentQuery(searchQueryOption);
+    assertThat(hasParentQuery)
         .isInstanceOfSatisfying(
             SearchTermQuery.class,
             (searchTermQuery) -> {
               assertThat(searchTermQuery.field()).isEqualTo(expectedField);
               assertThat(searchTermQuery.value().longValue()).isEqualTo(expectedValue);
-            });
-  }
-
-  private void assertIsSearchTermQuery(
-      final SearchQueryOption searchQueryOption,
-      final String expectedField,
-      final Boolean expectedValue) {
-    assertThat(searchQueryOption)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            (searchTermQuery) -> {
-              assertThat(searchTermQuery.field()).isEqualTo(expectedField);
-              assertThat(searchTermQuery.value().booleanValue()).isEqualTo(expectedValue);
             });
   }
 }

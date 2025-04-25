@@ -23,7 +23,7 @@ import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {isFlowNode} from 'modules/utils/flowNodes';
 import {modificationsStore} from '../modifications';
 import {processInstanceDetailsStatisticsStore} from '../processInstanceDetailsStatistics';
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
@@ -53,12 +53,8 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       state: observable,
       startFetch: action,
       handleFetchSuccess: action,
-      areDiagramDefinitionsAvailable: computed,
-      hasCalledProcessInstances: computed,
-      compensationAssociations: computed,
       flowNodes: computed,
       businessObjects: computed,
-      processBusinessObject: computed,
       cancellableFlowNodes: computed,
       appendableFlowNodes: computed,
       modifiableFlowNodes: computed,
@@ -82,7 +78,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     );
   }
 
-  get businessObjects(): {[flowNodeId: string]: BusinessObject} {
+  get businessObjects(): BusinessObjects {
     if (this.state.diagramModel === null) {
       return {};
     }
@@ -97,17 +93,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       },
       {},
     );
-  }
-
-  get processBusinessObject(): BusinessObject | undefined {
-    const bpmnProcessId =
-      processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
-
-    if (bpmnProcessId === undefined) {
-      return undefined;
-    }
-
-    return this.state.diagramModel?.elementsById[bpmnProcessId];
   }
 
   fetchProcessXml = this.retryOnConnectionLost(
@@ -140,37 +125,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
   getFlowNodeName = (flowNodeId: string) => {
     return this.businessObjects[flowNodeId]?.name || flowNodeId;
-  };
-
-  getFlowNodeParents = (flowNodeId: string): string[] => {
-    const bpmnProcessId =
-      processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
-
-    if (bpmnProcessId === undefined) {
-      return [];
-    }
-
-    return this.getFlowNodesInBetween(flowNodeId, bpmnProcessId);
-  };
-
-  getFlowNodesInBetween = (
-    fromFlowNodeId: string,
-    toFlowNodeId: string,
-  ): string[] => {
-    const fromFlowNode =
-      processInstanceDetailsDiagramStore.businessObjects[fromFlowNodeId];
-
-    if (
-      fromFlowNode?.$parent === undefined ||
-      fromFlowNode.$parent.id === toFlowNodeId
-    ) {
-      return [];
-    }
-
-    return [
-      fromFlowNode.$parent.id,
-      ...this.getFlowNodesInBetween(fromFlowNode.$parent.id, toFlowNodeId),
-    ];
   };
 
   hasMultipleScopes = (parentFlowNode?: BusinessObject): boolean => {
@@ -250,30 +204,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       .map(({id}) => id);
   }
 
-  get areDiagramDefinitionsAvailable() {
-    const {status, diagramModel} = this.state;
-    return status === 'fetched' && diagramModel !== null;
-  }
-
-  get hasCalledProcessInstances() {
-    return Object.values(this.businessObjects).some(
-      ({$type}) => $type === 'bpmn:CallActivity',
-    );
-  }
-
-  get compensationAssociations() {
-    if (this.state.diagramModel === null) {
-      return [];
-    }
-
-    return Object.values(this.state.diagramModel.elementsById).filter(
-      (element) => {
-        const isAssociation = element.$type === 'bpmn:Association';
-        return isAssociation && element.targetRef?.isForCompensation;
-      },
-    );
-  }
-
   isSubProcess = (flowNodeId: string) => {
     const businessObject = this.businessObjects[flowNodeId];
     return isSubProcess(businessObject);
@@ -282,11 +212,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
   isMultiInstance = (flowNodeId: string) => {
     const businessObject = this.businessObjects[flowNodeId];
     return isMultiInstance(businessObject);
-  };
-
-  getParentFlowNode = (flowNodeId: string) => {
-    const businessObject = this.businessObjects[flowNodeId];
-    return businessObject?.$parent;
   };
 
   handleFetchFailure = (error?: unknown) => {

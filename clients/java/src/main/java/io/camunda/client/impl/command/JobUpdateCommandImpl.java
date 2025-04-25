@@ -22,7 +22,6 @@ import io.camunda.client.api.command.JobChangeset;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1.UpdateJobCommandStep2;
 import io.camunda.client.api.response.UpdateJobResponse;
-import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.protocol.rest.JobUpdateRequest;
@@ -63,7 +62,12 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
 
   @Override
   public UpdateJobCommandStep2 update(final JobChangeset jobChangeset) {
-    httpRequestObject.setChangeset(RequestMapper.toProtocolObject(jobChangeset));
+    final io.camunda.client.protocol.rest.JobChangeset changeset =
+        new io.camunda.client.protocol.rest.JobChangeset();
+    if (jobChangeset != null) {
+      changeset.retries(jobChangeset.getRetries()).timeout(jobChangeset.getTimeout());
+    }
+    httpRequestObject.setChangeset(changeset);
     return this;
   }
 

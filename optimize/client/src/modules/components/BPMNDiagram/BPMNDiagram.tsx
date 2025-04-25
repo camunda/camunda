@@ -173,7 +173,6 @@ export class BPMNDiagram extends Component<BPMNDiagramProps, BPMNDiagramState> {
       canvas: {
         deferUpdate: false,
       },
-      keyboard: {bindTo: document},
       bpmnRenderer: getDiagramColors(theme),
       additionalModules,
     });

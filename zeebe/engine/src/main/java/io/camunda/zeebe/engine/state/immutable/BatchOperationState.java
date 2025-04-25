@@ -13,6 +13,8 @@ import java.util.Optional;
 
 public interface BatchOperationState {
 
+  boolean exists(long batchKey);
+
   Optional<PersistedBatchOperation> get(final long batchKey);
 
   void foreachPendingBatchOperation(BatchOperationVisitor visitor);

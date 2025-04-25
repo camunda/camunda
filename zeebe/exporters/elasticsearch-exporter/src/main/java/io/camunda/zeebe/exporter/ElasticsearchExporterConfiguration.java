@@ -29,7 +29,7 @@ public class ElasticsearchExporterConfiguration {
   public final RetentionConfiguration retention = new RetentionConfiguration();
   public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
-  private boolean zeebeRecordsExportEnabled = false;
+  private boolean includeEnabledRecords = false;
 
   public boolean hasAuthenticationPresent() {
     return getAuthentication().isPresent();
@@ -138,12 +138,12 @@ public class ElasticsearchExporterConfiguration {
     };
   }
 
-  public boolean getIsZeebeRecordsExportEnabled() {
-    return zeebeRecordsExportEnabled;
+  public boolean getIsIncludeEnabledRecords() {
+    return includeEnabledRecords;
   }
 
-  public void setZeebeRecordsExportEnabled(final boolean zeebeRecordsExportEnabled) {
-    this.zeebeRecordsExportEnabled = zeebeRecordsExportEnabled;
+  public void setIncludeEnabledRecords(final boolean includeEnabledRecords) {
+    this.includeEnabledRecords = includeEnabledRecords;
   }
 
   public static class IndexConfiguration {
@@ -211,6 +211,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean batchOperationCreation = false;
     public boolean batchOperationChunk = false;
     public boolean batchOperationExecution = false;
+    public boolean batchOperationLifecycleManagement = false;
 
     // index settings
     private Integer numberOfShards = null;

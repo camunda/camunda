@@ -175,12 +175,12 @@ final class AuthorizationCheckBehaviorTest {
   void shouldBeAuthorizedWhenRoleHasPermissions() {
     // given
     final var user = createUser();
-    final var roleKey = createRole(user.getUserKey(), EntityType.USER);
-    final var roleId = String.valueOf(roleKey);
+    final var role = createRoleAndAssignEntity(user.getUsername(), EntityType.USER);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    addPermission(roleId, AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+    addPermission(
+        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
     final var command = mockCommand(user.getUsername());
 
     // when
@@ -196,14 +196,13 @@ final class AuthorizationCheckBehaviorTest {
   void shouldGetResourceIdentifiersWhenRoleHasPermissions() {
     // given
     final var user = createUser();
-    final var roleKey = createRole(user.getUserKey(), EntityType.USER);
-    final var roleId = String.valueOf(roleKey);
+    final var role = createRoleAndAssignEntity(user.getUsername(), EntityType.USER);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
     addPermission(
-        roleId,
+        role.getRoleId(),
         AuthorizationOwnerType.ROLE,
         resourceType,
         permissionType,
@@ -224,7 +223,7 @@ final class AuthorizationCheckBehaviorTest {
   public void shouldBeAuthorizedWhenGroupHasPermissions() {
     // given
     final var user = createUser();
-    final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
+    final var groupKey = createGroup(user.getUsername(), EntityType.USER);
     final var groupId = String.valueOf(groupKey);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
@@ -245,7 +244,7 @@ final class AuthorizationCheckBehaviorTest {
   void shouldGetResourceIdentifiersWhenGroupHasPermissions() {
     // given
     final var user = createUser();
-    final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
+    final var groupKey = createGroup(user.getUsername(), EntityType.USER);
     final var groupId = String.valueOf(groupKey);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
@@ -320,8 +319,8 @@ final class AuthorizationCheckBehaviorTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingKey = createMapping(claimName, claimValue).getMappingKey();
-    final var groupKey = createGroup(mappingKey, EntityType.MAPPING);
+    final var mappingId = createMapping(claimName, claimValue).getMappingId();
+    final var groupKey = createGroup(mappingId, EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -347,17 +346,13 @@ final class AuthorizationCheckBehaviorTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingKey = createMapping(claimName, claimValue).getMappingKey();
-    final var roleKey = createRole(mappingKey, EntityType.MAPPING);
+    final var mapping = createMapping(claimName, claimValue);
+    final var role = createRoleAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        String.valueOf(roleKey),
-        AuthorizationOwnerType.ROLE,
-        resourceType,
-        permissionType,
-        resourceId);
+        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
 
     final var command = mockCommandWithMapping(claimName, claimValue);
 
@@ -519,17 +514,12 @@ final class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    final var mappingKey = mapping.getMappingKey();
-    final var roleKey = createRole(mappingKey, EntityType.MAPPING);
+    final var role = createRoleAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        String.valueOf(roleKey),
-        AuthorizationOwnerType.ROLE,
-        resourceType,
-        permissionType,
-        resourceId);
+        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -548,8 +538,7 @@ final class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    final var mappingKey = mapping.getMappingKey();
-    final var groupKey = createGroup(mappingKey, EntityType.MAPPING);
+    final var groupKey = createGroup(mapping.getMappingId(), EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -592,22 +581,20 @@ final class AuthorizationCheckBehaviorTest {
     return user;
   }
 
-  private long createRole(final long entityKey, final EntityType entityType) {
-    final var roleKey = random.nextLong();
+  private RoleRecord createRoleAndAssignEntity(final String entityId, final EntityType entityType) {
     final var role =
         new RoleRecord()
-            .setRoleKey(roleKey)
             .setRoleId(Strings.newRandomValidIdentityId())
             .setName(UUID.randomUUID().toString())
             .setDescription(UUID.randomUUID().toString())
-            .setEntityKey(entityKey)
+            .setEntityId(entityId)
             .setEntityType(entityType);
-    roleCreatedApplier.applyState(roleKey, role);
-    roleEntityAddedApplier.applyState(roleKey, role);
-    return roleKey;
+    roleCreatedApplier.applyState(1L, role);
+    roleEntityAddedApplier.applyState(1L, role);
+    return role;
   }
 
-  private long createGroup(final long entityKey, final EntityType entityType) {
+  private long createGroup(final String entityId, final EntityType entityType) {
     final var groupKey = random.nextLong();
     final var groupId = String.valueOf(groupKey);
     final var group =
@@ -616,7 +603,7 @@ final class AuthorizationCheckBehaviorTest {
             .setGroupId(groupId)
             .setName(UUID.randomUUID().toString())
             .setDescription(UUID.randomUUID().toString())
-            .setEntityKey(entityKey)
+            .setEntityId(entityId)
             .setEntityType(entityType);
     groupCreatedApplier.applyState(groupKey, group);
     groupEntityAddedApplier.applyState(groupKey, group);
@@ -624,15 +611,13 @@ final class AuthorizationCheckBehaviorTest {
   }
 
   private MappingRecordValue createMapping(final String claimName, final String claimValue) {
-    final var mappingKey = random.nextLong();
     final var mapping =
         new MappingRecord()
-            .setMappingKey(mappingKey)
-            .setMappingId(Strings.newRandomValidIdentityId())
+            .setMappingId(UUID.randomUUID().toString())
             .setName(Strings.newRandomValidUsername())
             .setClaimName(claimName)
             .setClaimValue(claimValue);
-    mappingCreatedApplier.applyState(mappingKey, mapping);
+    mappingCreatedApplier.applyState(random.nextLong(), mapping);
     return mapping;
   }
 

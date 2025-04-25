@@ -19,15 +19,14 @@ import {
 } from './index.setup';
 import {mockProcessXML} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
   });
   afterEach(() => {
     window.clientConfig = undefined;
@@ -38,7 +37,6 @@ describe('InstanceHeader', () => {
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });
@@ -56,7 +54,6 @@ describe('InstanceHeader', () => {
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });
@@ -74,7 +71,6 @@ describe('InstanceHeader', () => {
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
     });

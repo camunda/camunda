@@ -479,7 +479,7 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-  public static ResponseEntity<Object> toCancelProcessInstanceBatchOperationWithResultResponse(
+  public static ResponseEntity<Object> toBatchOperationCreatedWithResultResponse(
       final BatchOperationCreationRecord brokerResponse) {
     final var response =
         new BatchOperationCreatedResult()

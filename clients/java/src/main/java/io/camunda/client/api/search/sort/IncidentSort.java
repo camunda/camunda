@@ -27,9 +27,9 @@ public interface IncidentSort extends SearchRequestSort<IncidentSort> {
 
   IncidentSort errorType();
 
-  IncidentSort flowNodeId();
+  IncidentSort elementId();
 
-  IncidentSort flowNodeInstanceKey();
+  IncidentSort elementInstanceKey();
 
   IncidentSort creationTime();
 

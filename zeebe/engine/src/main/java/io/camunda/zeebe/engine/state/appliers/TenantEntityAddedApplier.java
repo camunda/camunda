@@ -8,43 +8,29 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
+import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
-import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 
 public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent, TenantRecord> {
 
-  private final MutableTenantState tenantState;
-  private final MutableUserState userState;
-  private final MutableMappingState mappingState;
-  private final MutableGroupState groupState;
+  private final MutableMembershipState membershipState;
 
   public TenantEntityAddedApplier(final MutableProcessingState state) {
-    tenantState = state.getTenantState();
-    userState = state.getUserState();
-    mappingState = state.getMappingState();
-    groupState = state.getGroupState();
+    membershipState = state.getMembershipState();
   }
 
   @Override
   public void applyState(final long tenantKey, final TenantRecord tenant) {
     switch (tenant.getEntityType()) {
-      case USER -> {
-        tenantState.addEntity(tenant);
-        userState.addTenantId(tenant.getEntityId(), tenant.getTenantId());
-      }
-      case MAPPING -> {
-        tenantState.addEntity(tenant);
-        mappingState.addTenant(tenant.getEntityId(), tenant.getTenantId());
-      }
-      case GROUP -> {
-        tenantState.addEntity(tenant);
-        groupState.addTenant(tenant.getEntityId(), tenant.getTenantId());
-      }
+      case USER, GROUP, MAPPING ->
+          membershipState.insertRelation(
+              tenant.getEntityType(),
+              tenant.getEntityId(),
+              RelationType.TENANT,
+              tenant.getTenantId());
       default ->
           throw new IllegalStateException(
               String.format(

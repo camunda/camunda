@@ -19,7 +19,7 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.sort.FlownodeInstanceSort}
+ *     io.camunda.client.api.search.sort.ElementInstanceSort}
  */
 @Deprecated
 public interface FlownodeInstanceSort extends SearchRequestSort<FlownodeInstanceSort> {

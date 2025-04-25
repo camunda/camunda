@@ -17,6 +17,13 @@ outputs:
         github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true'
       }}
+  commitlint:
+    description: Output whether commit messages should be linted based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        !contains(github.event.pull_request.labels.*.name, 'ci:ignore-commitlint')
+      }}
   maven-spotless-linter:
     description: Output whether jobs depending on files relevant for Maven spotless should be run, related checks are based on GitHub events and file changes
     value: >-
@@ -138,7 +145,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
-        (steps.filter-common.outputs.protobuf-change == 'true' &&  github.event_name != 'schedule')
+        (steps.filter-common.outputs.protobuf-change == 'true' && github.event_name != 'schedule')
       }}
   openapi-changes:
     description: Output whether any C8 OpenAPI code has changed
@@ -147,6 +154,13 @@ outputs:
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
         steps.filter-common.outputs.openapi-change == 'true'
+      }}
+  stable-branch-changes:
+    description: Output whether the change is occurring on a stable/X.Y branch or not
+    value: >-
+      ${{
+        github.event_name == 'push' &&
+        steps.filter-stable-branch.outputs.stable-branch == 'true'
       }}
 
 runs:
@@ -179,6 +193,7 @@ runs:
           - 'dist/**'
           - 'parent/**'
           - '**/pom.xml'
+          - '.mvn/**'
 
         dockerfile-change:
           - 'Dockerfile'
@@ -264,3 +279,12 @@ runs:
           - optimize/client/**
           - optimize/c4/**
           - optimize/backend/src/main/resources/localization/**
+
+  - id: filter-stable-branch
+    shell: bash
+    run: |
+      if [[ '${{ github.ref_name }}' =~ ^stable\/[0-9]+\.[0-9]+$ ]]; then
+        echo "stable-branch=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "stable-branch=false" >> "$GITHUB_OUTPUT"
+      fi

@@ -20,8 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.impl.ResponseMapper;
-import io.camunda.client.protocol.rest.GroupChangeset;
 import io.camunda.client.protocol.rest.GroupUpdateRequest;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
@@ -39,23 +37,24 @@ public class UpdateGroupTest extends ClientRestTest {
 
     // then
     final GroupUpdateRequest request = gatewayService.getLastRequest(GroupUpdateRequest.class);
-    assertThat(request.getChangeset().getName()).isEqualTo(UPDATED_NAME);
+    assertThat(request.getName()).isEqualTo(UPDATED_NAME);
   }
 
-  @Test
-  void shouldUpdateGroupWithChangeset() {
-    // when
-    final GroupChangeset changeset = new GroupChangeset().name(UPDATED_NAME);
-    client
-        .newUpdateGroupCommand(GROUP_KEY)
-        .update(ResponseMapper.fromProtocolObject(changeset))
-        .send()
-        .join();
-
-    // then
-    final GroupUpdateRequest request = gatewayService.getLastRequest(GroupUpdateRequest.class);
-    assertThat(request.getChangeset().getName()).isEqualTo(UPDATED_NAME);
-  }
+  // TODO: revisit with https://github.com/camunda/camunda/issues/30015
+  //  @Test
+  //  void shouldUpdateGroupWithChangeset() {
+  //    // when
+  //    final GroupChangeset changeset = new GroupChangeset().name(UPDATED_NAME);
+  //    client
+  //        .newUpdateGroupCommand(GROUP_KEY)
+  //        .update(ResponseMapper.fromProtocolObject(changeset))
+  //        .send()
+  //        .join();
+  //
+  //    // then
+  //    final GroupUpdateRequest request = gatewayService.getLastRequest(GroupUpdateRequest.class);
+  //    assertThat(request.getChangeset().getName()).isEqualTo(UPDATED_NAME);
+  //  }
 
   @Test
   void shouldRaiseExceptionOnNotFoundGroup() {

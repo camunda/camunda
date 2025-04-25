@@ -38,6 +38,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
@@ -52,7 +53,8 @@ import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
-import io.camunda.service.GroupServices.CreateGroupRequest;
+import io.camunda.service.GroupServices.GroupDTO;
+import io.camunda.service.GroupServices.GroupMemberRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MappingServices.MappingDTO;
@@ -61,11 +63,12 @@ import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.RoleServices.AddEntityToRoleRequest;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
@@ -94,6 +97,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
@@ -145,7 +149,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -325,33 +328,38 @@ public class RequestMapper {
                 roleCreateRequest.getDescription()));
   }
 
-  public static Either<ProblemDetail, AddEntityToRoleRequest> toRoleAddEntityRequest(
-      final String roleId, final String entityId, final EntityType entityType) {
+  public static Either<ProblemDetail, RoleMemberRequest> toRoleMemberRequest(
+      final String roleId, final String memberId, final EntityType entityType) {
     return getResult(
-        RoleRequestValidator.validateAddEntityRequest(roleId, entityId, entityType),
-        () -> new AddEntityToRoleRequest(roleId, entityId, entityType));
+        RoleRequestValidator.validateMemberRequest(roleId, memberId, entityType),
+        () -> new RoleMemberRequest(roleId, memberId, entityType));
   }
 
-  public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
+  public static Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
       final GroupCreateRequest groupCreateRequest) {
     return getResult(
         GroupRequestValidator.validateCreateRequest(groupCreateRequest),
         () ->
-            new CreateGroupRequest(
+            new GroupDTO(
                 groupCreateRequest.getGroupId(),
                 groupCreateRequest.getName(),
                 groupCreateRequest.getDescription()));
   }
 
-  public static Either<ProblemDetail, UpdateGroupRequest> toGroupUpdateRequest(
+  public static Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
       final GroupUpdateRequest groupUpdateRequest, final String groupId) {
     return getResult(
-        GroupRequestValidator.validateUpdateRequest(groupUpdateRequest),
+        GroupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest),
         () ->
-            new UpdateGroupRequest(
-                groupId,
-                groupUpdateRequest.getChangeset().getName(),
-                groupUpdateRequest.getChangeset().getDescription()));
+            new GroupDTO(
+                groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
+  }
+
+  public static Either<ProblemDetail, GroupMemberRequest> toGroupMemberRequest(
+      final String groupId, final String memberId, final EntityType entityType) {
+    return getResult(
+        GroupRequestValidator.validateMemberRequest(groupId, memberId, entityType),
+        () -> new GroupMemberRequest(groupId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
@@ -601,6 +609,7 @@ public class RequestMapper {
     final Map<String, Object> claims = new HashMap<>();
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authenticatedTenantIds = new ArrayList<>();
+    final List<String> authenticatedMappingIds = new ArrayList<>();
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
     if (requestAuthentication != null) {
@@ -616,12 +625,15 @@ public class RequestMapper {
 
         authenticatedUsername = authenticationContext.username();
         claims.put(Authorization.AUTHORIZED_USERNAME, authenticationContext.username());
-      }
 
-      if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
-        jwtAuthenticationToken
-            .getTokenAttributes()
-            .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
+        if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
+          authenticatedMappingIds.addAll(principal.getOAuthContext().mappingIds());
+          authenticatedMappingIds.addAll(
+              principal.getOAuthContext().mappingKeys().stream().map(Object::toString).toList());
+          principal
+              .getClaims()
+              .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
+        }
       }
     }
 
@@ -630,6 +642,7 @@ public class RequestMapper {
         .user(authenticatedUsername)
         .roleKeys(authenticatedRoleKeys)
         .tenants(authenticatedTenantIds)
+        .mapping(authenticatedMappingIds)
         .build();
   }
 
@@ -775,6 +788,31 @@ public class RequestMapper {
                                 .setTargetElementId(instruction.getTargetElementId()))
                     .toList(),
                 request.getOperationReference()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceMigrationBatchOperationRequest>
+      toProcessInstanceMigrationBatchOperationRequest(
+          final ProcessInstanceMigrationBatchOperationInstruction request) {
+    // First validate filter and return early
+    final var filter = SearchQueryRequestMapper.toProcessInstanceFilter(request.getFilter());
+    if (filter.isLeft()) {
+      return Either.left(createProblemDetail(filter.getLeft()).get());
+    }
+
+    final var migrationPlan = request.getMigrationPlan();
+    return getResult(
+        validateMigrateProcessInstanceRequest(migrationPlan),
+        () ->
+            new ProcessInstanceMigrationBatchOperationRequest(
+                filter.get(),
+                KeyUtil.keyToLong(migrationPlan.getTargetProcessDefinitionKey()),
+                migrationPlan.getMappingInstructions().stream()
+                    .map(
+                        instruction ->
+                            new ProcessInstanceMigrationMappingInstruction()
+                                .setSourceElementId(instruction.getSourceElementId())
+                                .setTargetElementId(instruction.getTargetElementId()))
+                    .toList()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceModifyRequest> toModifyProcessInstance(
@@ -1030,6 +1068,4 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
-
-  public record UpdateGroupRequest(String groupId, String name, String description) {}
 }

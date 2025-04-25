@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_NAME;
 import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_VALUE;
+import static io.camunda.webapps.schema.descriptors.index.MappingIndex.MAPPING_ID;
 import static io.camunda.webapps.schema.descriptors.index.MappingIndex.MAPPING_KEY;
 import static io.camunda.webapps.schema.descriptors.index.MappingIndex.NAME;
 
@@ -18,6 +19,7 @@ public class MappingFieldSortingTransformer implements FieldSortingTransformer {
   public String apply(final String domainField) {
     return switch (domainField) {
       case "mappingKey" -> MAPPING_KEY;
+      case "mappingId" -> MAPPING_ID;
       case "claimName" -> CLAIM_NAME;
       case "claimValue" -> CLAIM_VALUE;
       case "name" -> NAME;

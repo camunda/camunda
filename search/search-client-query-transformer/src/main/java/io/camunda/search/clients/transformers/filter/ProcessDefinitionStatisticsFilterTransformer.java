@@ -10,12 +10,21 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchWithHasChildOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_IDS;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
@@ -24,8 +33,12 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_KEY;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VARIABLES_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_NAME;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_VALUE;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -33,6 +46,7 @@ import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ProcessDefinitionStatisticsFilterTransformer
@@ -50,8 +64,49 @@ public class ProcessDefinitionStatisticsFilterTransformer
   public SearchQuery toSearchQuery(final ProcessDefinitionStatisticsFilter filter) {
 
     final var queries = new ArrayList<SearchQuery>();
-    queries.add(term(PROCESS_KEY, filter.processDefinitionKey()));
-    ofNullable(getIsProcessInstanceQuery()).ifPresent(queries::add);
+    queries.add(term(JOIN_RELATION, ACTIVITIES_JOIN_RELATION));
+    queries.add(
+        hasParentQuery(
+            PROCESS_INSTANCE_JOIN_RELATION, term(PROCESS_KEY, filter.processDefinitionKey())));
+    queries.addAll(toSearchQueryFields(filter));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      final var orQueries = new ArrayList<SearchQuery>();
+      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
+      queries.add(or(orQueries));
+    }
+
+    return and(queries);
+  }
+
+  public ArrayList<SearchQuery> toSearchQueryFields(
+      final ProcessDefinitionStatisticsFilter filter) {
+    final var queries = new ArrayList<SearchQuery>();
+    toProcessInstanceQueries(filter)
+        .ifPresent(
+            query -> queries.add(hasParentQuery(PROCESS_INSTANCE_JOIN_RELATION, and(query))));
+    toFlowNodeInstanceQueries(filter).ifPresent(queries::addAll);
+    return queries;
+  }
+
+  private Optional<ArrayList<SearchQuery>> toFlowNodeInstanceQueries(
+      final ProcessDefinitionStatisticsFilter filter) {
+    final var queries = new ArrayList<SearchQuery>();
+
+    ofNullable(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(filter.hasFlowNodeInstanceIncident())
+        .ifPresent(value -> queries.add(term(INCIDENT, value)));
+
+    return ofNullable(queries.isEmpty() ? null : queries);
+  }
+
+  private Optional<ArrayList<SearchQuery>> toProcessInstanceQueries(
+      final ProcessDefinitionStatisticsFilter filter) {
+    final var queries = new ArrayList<SearchQuery>();
+
     ofNullable(longOperations(KEY, filter.processInstanceKeyOperations()))
         .ifPresent(queries::addAll);
     ofNullable(
@@ -66,26 +121,25 @@ public class ProcessDefinitionStatisticsFilterTransformer
         .ifPresent(queries::addAll);
     ofNullable(dateTimeOperations(END_DATE, filter.endDateOperations())).ifPresent(queries::addAll);
     ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
-    ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
+    ofNullable(filter.hasIncident()).ifPresent(value -> queries.add(term(INCIDENT, value)));
     ofNullable(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
+    ofNullable(getProcessVariablesQuery(filter.variableFilters())).ifPresent(queries::add);
+    ofNullable(
+            stringMatchWithHasChildOperations(
+                ERROR_MSG,
+                filter.errorMessageOperations(),
+                ACTIVITIES_JOIN_RELATION,
+                SearchMatchQueryOperator.AND))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(filter.hasRetriesLeft()).ifPresent(value -> queries.add(hasRetriesLeftQuery(value)));
 
-    if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
-      final var processVariableQuery = getProcessVariablesQuery(filter.variableFilters());
-      queries.add(processVariableQuery);
-    }
-
-    return and(queries);
+    return ofNullable(queries.isEmpty() ? null : queries);
   }
 
-  private SearchQuery getIsProcessInstanceQuery() {
-    return term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
-  }
-
-  private SearchQuery getIncidentQuery(final Boolean hasIncident) {
-    if (hasIncident != null) {
-      return term(INCIDENT, hasIncident);
-    }
-    return null;
+  private static SearchQuery hasRetriesLeftQuery(final Boolean value) {
+    return hasChildQuery(ACTIVITIES_JOIN_RELATION, term(JOB_FAILED_WITH_RETRIES_LEFT, value));
   }
 
   private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {
@@ -95,8 +149,8 @@ public class ProcessDefinitionStatisticsFilterTransformer
           (VariableValueFilterTransformer) transformer;
       final var queries =
           variableFilters.stream()
-              .map(v -> variableTransformer.toSearchQuery(v, "varName", "varValue"))
-              .map((q) -> hasChildQuery("variable", q))
+              .map(v -> variableTransformer.toSearchQuery(v, VAR_NAME, VAR_VALUE))
+              .map((q) -> hasChildQuery(VARIABLES_JOIN_RELATION, q))
               .collect(Collectors.toList());
       return and(queries);
     }

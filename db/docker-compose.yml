@@ -1,0 +1,102 @@
+version: '3.9'
+
+networks:
+  zeebe_network: { }
+
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    restart: always
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    # or set shared memory limit when deploy via swarm stack
+    #volumes:
+    #  - type: tmpfs
+    #    target: /dev/shm
+    #    tmpfs:
+    #      size: 134217728 # 128*2^20 bytes = 128Mb
+    environment:
+      POSTGRES_USER: camunda
+      POSTGRES_PASSWORD: demo
+    ports:
+      - "5432:5432"
+
+  mariadb:
+    image: mariadb:11.7
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: example
+      MARIADB_DATABASE: camunda
+      MARIADB_USER: camunda
+      MARIADB_PASSWORD: demo
+    ports:
+      - "3306:3306"
+
+      # Name of the Docker Compose service
+  oracle:
+    # Docker Hub image (feel free to change the tag "latest" to any other available one)
+    image: gvenzl/oracle-free:latest
+    # Forward Oracle port to localhost
+    ports:
+      - "1521:1521"
+    # Provide passwords and other environment variables to the container
+    environment:
+      ORACLE_PASSWORD: sys_user_password
+      APP_USER: camunda
+      APP_USER_PASSWORD: demo
+    # Customize healthcheck script options for startup
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      - path.repo=/usr/local/els-snapshots
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - zeebe_network
+    restart: always
+    volumes:
+      - ./els-snapshots:/usr/local/els-snapshots
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    container_name: opensearch
+    environment:
+      - cluster.name=opensearch-cluster
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
+      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
+        hard: 65536
+    ports:
+      - 9200:9200
+      - 9605:9605 # required for Performance Analyzer
+    networks:
+      - zeebe_network

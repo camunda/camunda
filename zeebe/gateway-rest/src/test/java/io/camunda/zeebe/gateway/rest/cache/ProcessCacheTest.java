@@ -20,8 +20,8 @@ import static org.mockito.Mockito.verify;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider;
-import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider.ProcessFlowNode;
+import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider;
+import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider.ProcessElement;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -39,20 +39,20 @@ class ProcessCacheTest {
 
   private ProcessCache processCache;
   private GatewayRestConfiguration configuration;
-  private ProcessFlowNodeProvider processFlowNodeProvider;
+  private ProcessElementProvider processElementProvider;
   private BrokerTopologyManager brokerTopologyManager;
   private MeterRegistry meterRegistry;
 
   @BeforeEach
   public void setUp() {
     configuration = new GatewayRestConfiguration();
-    processFlowNodeProvider = mock(ProcessFlowNodeProvider.class);
+    processElementProvider = mock(ProcessElementProvider.class);
     brokerTopologyManager = mock(BrokerTopologyManager.class);
     meterRegistry = new SimpleMeterRegistry();
     processCache =
         new ProcessCache(
-            configuration, processFlowNodeProvider, brokerTopologyManager, meterRegistry);
-    mockLoad(Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")));
+            configuration, processElementProvider, brokerTopologyManager, meterRegistry);
+    mockLoad(Tuple.of(1L, new ProcessElement("id1", "Name 1")));
   }
 
   @AfterEach
@@ -72,16 +72,16 @@ class ProcessCacheTest {
   }
 
   @SafeVarargs
-  private void mockLoad(final Tuple<Long, ProcessFlowNode>... nodes) {
+  private void mockLoad(final Tuple<Long, ProcessElement>... nodes) {
     doAnswer(mockLoadAnswer(nodes))
-        .when(processFlowNodeProvider)
-        .extractFlowNodeNames(anyLong(), any());
+        .when(processElementProvider)
+        .extractElementNames(anyLong(), any());
   }
 
   @SafeVarargs
-  private <T> Answer<T> mockLoadAnswer(final Tuple<Long, ProcessFlowNode>... nodes) {
+  private <T> Answer<T> mockLoadAnswer(final Tuple<Long, ProcessElement>... nodes) {
     return invocation -> {
-      final var consumer = invocation.<BiConsumer<Long, ProcessFlowNode>>getArgument(1);
+      final var consumer = invocation.<BiConsumer<Long, ProcessElement>>getArgument(1);
       Arrays.stream(nodes).forEach(t -> consumer.accept(t.getLeft(), t.getRight()));
       return null;
     };
@@ -90,79 +90,79 @@ class ProcessCacheTest {
   @Test
   void shouldNotLoadIfAvailable() {
     // given
-    mockLoad(Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")));
+    mockLoad(Tuple.of(1L, new ProcessElement("id1", "Name 1")));
     processCache.getCacheItem(1L);
     getCache().cleanUp();
 
     // when
     processCache.getCacheItem(1L);
 
-    // then - extractFlowNodeNames not called again
-    verify(processFlowNodeProvider).extractFlowNodeNames(eq(1L), any());
+    // then - extractElementNames not called again
+    verify(processElementProvider).extractElementNames(eq(1L), any());
   }
 
   @Test
-  void shouldLoadFlowNodesForProcessDefinition() {
+  void shouldLoadElementsForProcessDefinition() {
     // given
     mockLoad(
-        Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")),
-        Tuple.of(1L, new ProcessFlowNode("id2", "Name 2")));
+        Tuple.of(1L, new ProcessElement("id1", "Name 1")),
+        Tuple.of(1L, new ProcessElement("id2", "Name 2")));
 
     // when
     final var actual = processCache.getCacheItem(1L);
 
     // then
-    verify(processFlowNodeProvider).extractFlowNodeNames(eq(1L), any());
-    assertThat(actual.flowNodeIdNameMap()).hasSize(2);
-    assertThat(actual.flowNodeIdNameMap())
+    verify(processElementProvider).extractElementNames(eq(1L), any());
+    assertThat(actual.elementIdNameMap()).hasSize(2);
+    assertThat(actual.elementIdNameMap())
         .containsOnly(entry("id1", "Name 1"), entry("id2", "Name 2"));
     final var cacheMap = getCacheMap();
     assertThat(cacheMap).hasSize(1);
     assertThat(cacheMap).containsOnlyKeys(1L);
-    assertThat(cacheMap.get(1L).flowNodeIdNameMap())
+    assertThat(cacheMap.get(1L).elementIdNameMap())
         .containsOnly(entry("id1", "Name 1"), entry("id2", "Name 2"));
   }
 
   @Test
-  void shouldLoadFlowNodesForProcessDefinitions() {
+  void shouldLoadElementsForProcessDefinitions() {
     // given
     doAnswer(
             mockLoadAnswer(
-                Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")),
-                Tuple.of(2L, new ProcessFlowNode("id21", "Name 21")),
-                Tuple.of(2L, new ProcessFlowNode("id22", "Name 22")),
-                Tuple.of(3L, new ProcessFlowNode("id3", "Name 3"))))
-        .when(processFlowNodeProvider)
-        .extractFlowNodeNames(anySet(), any());
+                Tuple.of(1L, new ProcessElement("id1", "Name 1")),
+                Tuple.of(2L, new ProcessElement("id21", "Name 21")),
+                Tuple.of(2L, new ProcessElement("id22", "Name 22")),
+                Tuple.of(3L, new ProcessElement("id3", "Name 3"))))
+        .when(processElementProvider)
+        .extractElementNames(anySet(), any());
 
     // when
     final var actual = processCache.getCacheItems(Set.of(1L, 2L, 3L));
 
     // then
-    verify(processFlowNodeProvider).extractFlowNodeNames(eq(Set.of(1L, 2L, 3L)), any());
+    verify(processElementProvider).extractElementNames(eq(Set.of(1L, 2L, 3L)), any());
     assertThat(actual).hasSize(3);
     assertThat(actual.keySet()).containsOnly(1L, 2L, 3L);
-    assertThat(actual.get(1L).flowNodeIdNameMap()).containsOnly(entry("id1", "Name 1"));
-    assertThat(actual.get(2L).flowNodeIdNameMap())
+    assertThat(actual.get(1L).elementIdNameMap()).containsOnly(entry("id1", "Name 1"));
+    assertThat(actual.get(2L).elementIdNameMap())
         .containsOnly(entry("id21", "Name 21"), entry("id22", "Name 22"));
-    assertThat(actual.get(3L).flowNodeIdNameMap()).containsOnly(entry("id3", "Name 3"));
+    assertThat(actual.get(3L).elementIdNameMap()).containsOnly(entry("id3", "Name 3"));
     final var cacheMap = getCacheMap();
     assertThat(cacheMap).hasSize(3);
     assertThat(cacheMap).containsOnlyKeys(1L, 2L, 3L);
-    assertThat(cacheMap.get(1L).flowNodeIdNameMap()).containsOnly(entry("id1", "Name 1"));
-    assertThat(cacheMap.get(2L).flowNodeIdNameMap())
+    assertThat(cacheMap.get(1L).elementIdNameMap()).containsOnly(entry("id1", "Name 1"));
+    assertThat(cacheMap.get(2L).elementIdNameMap())
         .containsOnly(entry("id21", "Name 21"), entry("id22", "Name 22"));
-    assertThat(cacheMap.get(3L).flowNodeIdNameMap()).containsOnly(entry("id3", "Name 3"));
+    assertThat(cacheMap.get(3L).elementIdNameMap()).containsOnly(entry("id3", "Name 3"));
   }
 
   @Test
-  void shouldResolveAnyFlowNode() {
+  void shouldResolveAnyElement() {
     // given
-    mockLoad(Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")));
+    mockLoad(Tuple.of(1L, new ProcessElement("id1", "Name 1")));
     final var cacheItem = processCache.getCacheItem(1L);
 
     // when
-    final var actual = cacheItem.getFlowNodeName("non-existing");
+    final var actual = cacheItem.getElementName("non-existing");
 
     // then
     assertThat(actual).isNotNull();
@@ -175,7 +175,7 @@ class ProcessCacheTest {
     configuration.getProcessCache().setMaxSize(2);
     processCache =
         new ProcessCache(
-            configuration, processFlowNodeProvider, brokerTopologyManager, meterRegistry);
+            configuration, processElementProvider, brokerTopologyManager, meterRegistry);
     processCache.getCacheItem(1L);
     processCache.getCacheItem(2L);
     getCache().cleanUp();

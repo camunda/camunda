@@ -11,7 +11,7 @@ import {
   useProcessDefinitionXml,
 } from './useProcessDefinitionXml';
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-import {isFlowNode} from 'modules/utils/flowNodes';
+import {businessObjectsParser} from './useBusinessObjects';
 
 type ExtendedParsedXmlData = ParsedXmlData & {
   businessObjects: {[key: string]: BusinessObject};
@@ -22,16 +22,11 @@ function processInstanceXmlParser({
   diagramModel,
   selectableFlowNodes,
 }: ParsedXmlData) {
-  const businessObjects = Object.entries(diagramModel.elementsById).reduce(
-    (flowNodes, [flowNodeId, businessObject]) => {
-      if (isFlowNode(businessObject)) {
-        return {...flowNodes, [flowNodeId]: businessObject};
-      } else {
-        return flowNodes;
-      }
-    },
-    {},
-  );
+  const businessObjects = businessObjectsParser({
+    xml,
+    diagramModel,
+    selectableFlowNodes,
+  });
 
   return {
     xml,

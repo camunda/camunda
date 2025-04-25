@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.UserQuery;
-import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -26,7 +25,6 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,11 +35,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/users")
 public class UserController {
   private final UserServices userServices;
-  private final RoleServices roleServices;
 
-  public UserController(final UserServices userServices, final RoleServices roleServices) {
+  public UserController(final UserServices userServices) {
     this.userServices = userServices;
-    this.roleServices = roleServices;
   }
 
   @CamundaPostMapping
@@ -78,16 +74,6 @@ public class UserController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userServices.withAuthentication(RequestMapper.getAuthentication()).updateUser(request));
-  }
-
-  @CamundaDeleteMapping(path = "/{userKey}/roles/{roleKey}")
-  public CompletableFuture<ResponseEntity<Object>> removeRole(
-      @PathVariable final long userKey, @PathVariable final long roleKey) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            roleServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(roleKey, EntityType.USER, userKey));
   }
 
   @CamundaPostMapping(path = "/search")

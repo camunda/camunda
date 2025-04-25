@@ -249,7 +249,12 @@ public class ZeebeUserTaskImportService
 
   private void updateUserTaskAssigneeOperations(
       final ZeebeUserTaskRecordDto zeebeUserTaskRecord, final FlowNodeInstanceDto flowNodeToAdd) {
-    flowNodeToAdd.getAssigneeOperations().add(createAssigneeOperationDto(zeebeUserTaskRecord));
+    final List<AssigneeOperationDto> assigneeOperations = flowNodeToAdd.getAssigneeOperations();
+    final AssigneeOperationDto newAssigneeOperation =
+        createAssigneeOperationDto(zeebeUserTaskRecord);
+    if (!assigneeOperations.contains(newAssigneeOperation)) {
+      assigneeOperations.add(newAssigneeOperation);
+    }
   }
 
   private AssigneeOperationDto createAssigneeOperationDto(

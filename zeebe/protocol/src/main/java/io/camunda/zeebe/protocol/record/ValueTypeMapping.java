@@ -71,6 +71,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -290,6 +291,10 @@ public final class ValueTypeMapping {
         ValueType.BATCH_OPERATION_EXECUTION,
         new Mapping<>(
             BatchOperationExecutionRecordValue.class, BatchOperationExecutionIntent.class));
+    mapping.put(
+        ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+        new Mapping<>(
+            BatchOperationLifecycleManagementRecordValue.class, BatchOperationIntent.class));
     return mapping;
   }
 

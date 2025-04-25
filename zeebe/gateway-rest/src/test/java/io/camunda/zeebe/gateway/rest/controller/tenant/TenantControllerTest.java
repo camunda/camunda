@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.MappingServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
@@ -47,6 +48,8 @@ public class TenantControllerTest extends RestControllerTest {
   @MockBean private TenantServices tenantServices;
 
   @MockBean private UserServices userServices;
+
+  @MockBean private MappingServices mappingServices;
 
   @BeforeEach
   void setup() {
@@ -397,29 +400,6 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideAddMemberByKeyTestCases")
-  void testAddMemberToTenantByKey(final EntityType entityType, final String entityPath) {
-    // given
-    final var tenantId = "tenantId";
-    final var entityKey = 42L;
-
-    when(tenantServices.addMember(tenantId, entityType, entityKey))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    webClient
-        .put()
-        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityKey))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    // then
-    verify(tenantServices, times(1)).addMember(tenantId, entityType, entityKey);
-  }
-
-  @ParameterizedTest
   @MethodSource("provideAddMemberByIdTestCases")
   void testAddMemberToTenantById(final EntityType entityType, final String entityPath) {
     // given
@@ -440,29 +420,6 @@ public class TenantControllerTest extends RestControllerTest {
 
     // then
     verify(tenantServices, times(1)).addMember(tenantId, entityType, entityId);
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideRemoveMemberByKeyTestCases")
-  void testRemoveMemberByKeyFromTenant(final EntityType entityType, final String entityPath) {
-    // given
-    final var tenantId = "tenantId";
-    final var entityKey = 42L;
-
-    when(tenantServices.removeMember(tenantId, entityType, entityKey))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    webClient
-        .delete()
-        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityKey))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    // then
-    verify(tenantServices, times(1)).removeMember(tenantId, entityType, entityKey);
   }
 
   @ParameterizedTest
@@ -488,21 +445,17 @@ public class TenantControllerTest extends RestControllerTest {
     verify(tenantServices, times(1)).removeMember(tenantId, entityType, entityId);
   }
 
-  private static Stream<Arguments> provideAddMemberByKeyTestCases() {
-    return Stream.of(Arguments.of(EntityType.GROUP, "groups"));
-  }
-
   private static Stream<Arguments> provideAddMemberByIdTestCases() {
     return Stream.of(
-        Arguments.of(EntityType.USER, "users"), Arguments.of(EntityType.MAPPING, "mappings"));
-  }
-
-  private static Stream<Arguments> provideRemoveMemberByKeyTestCases() {
-    return Stream.of(Arguments.of(EntityType.GROUP, "groups"));
+        Arguments.of(EntityType.USER, "users"),
+        Arguments.of(EntityType.MAPPING, "mappings"),
+        Arguments.of(EntityType.GROUP, "groups"));
   }
 
   private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
     return Stream.of(
-        Arguments.of(EntityType.USER, "users"), Arguments.of(EntityType.MAPPING, "mappings"));
+        Arguments.of(EntityType.USER, "users"),
+        Arguments.of(EntityType.MAPPING, "mappings"),
+        Arguments.of(EntityType.GROUP, "groups"));
   }
 }

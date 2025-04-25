@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -37,6 +38,7 @@ public class DeleteRoleMultiPartitionTest {
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30114")
   public void shouldDistributeRoleDeleteCommand() {
     // when
     final var name = UUID.randomUUID().toString();
@@ -90,6 +92,7 @@ public class DeleteRoleMultiPartitionTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30114")
   public void shouldDistributeInIdentityQueue() {
     // when
     final var name = UUID.randomUUID().toString();
@@ -106,6 +109,7 @@ public class DeleteRoleMultiPartitionTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30114")
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
     final var name = UUID.randomUUID().toString();

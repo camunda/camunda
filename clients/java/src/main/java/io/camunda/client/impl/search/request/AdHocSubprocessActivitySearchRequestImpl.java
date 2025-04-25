@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.request;
 
 import static io.camunda.client.api.search.request.SearchRequestBuilders.adHocSubprocessActivityFilter;
+import static io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider.provideSearchRequestProperty;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
@@ -23,7 +24,6 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
 import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
 import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
-import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.AdHocSubprocessActivityResponseImpl;
@@ -52,7 +52,7 @@ public class AdHocSubprocessActivitySearchRequestImpl
 
   @Override
   public AdHocSubprocessActivitySearchRequest filter(final AdHocSubprocessActivityFilter filter) {
-    request.setFilter(RequestMapper.toProtocolObject(filter.getRequestFilter()));
+    request.setFilter(provideSearchRequestProperty(filter));
     return this;
   }
 

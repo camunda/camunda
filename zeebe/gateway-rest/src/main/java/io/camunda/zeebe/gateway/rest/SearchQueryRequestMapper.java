@@ -26,11 +26,11 @@ import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
-import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -73,8 +73,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StatusEnum;
-import io.camunda.zeebe.gateway.rest.util.GenericVariable;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StateEnum;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -86,11 +85,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
 import org.springframework.util.CollectionUtils;
 
 public final class SearchQueryRequestMapper {
+
+  public static final AdvancedStringFilter EMPTY_ADVANCED_STRING_FILTER =
+      new AdvancedStringFilter();
+  public static final BasicStringFilter EMPTY_BASIC_STRING_FILTER = new BasicStringFilter();
 
   private SearchQueryRequestMapper() {}
 
@@ -133,12 +137,13 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, ProcessDefinitionStatisticsFilter>
       toProcessDefinitionStatisticsQuery(
-          final long processDefinitionKey, final ProcessDefinitionFlowNodeStatisticsQuery request) {
+          final long processDefinitionKey, final ProcessDefinitionElementStatisticsQuery request) {
     if (request == null) {
       return Either.right(
           new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build());
     }
-    final var filter = toBaseProcessInstanceFilter(processDefinitionKey, request.getFilter());
+    final var filter =
+        toProcessDefinitionStatisticsFilter(processDefinitionKey, request.getFilter());
 
     if (filter.isLeft()) {
       final var problem = RequestValidator.createProblemDetail(filter.getLeft());
@@ -149,9 +154,39 @@ public final class SearchQueryRequestMapper {
     return Either.right(filter.get());
   }
 
-  private static Either<List<String>, ProcessDefinitionStatisticsFilter>
-      toBaseProcessInstanceFilter(
-          final long processDefinitionKey, final BaseProcessInstanceFilter filter) {
+  public static Either<List<String>, ProcessDefinitionStatisticsFilter>
+      toProcessDefinitionStatisticsFilter(
+          final long processDefinitionKey,
+          final io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionStatisticsFilter filter) {
+    final List<String> validationErrors = new ArrayList<>();
+
+    final Either<List<String>, ProcessDefinitionStatisticsFilter.Builder> builder =
+        toBaseProcessInstanceFilterFields(processDefinitionKey, filter);
+    if (builder.isLeft()) {
+      validationErrors.addAll(builder.getLeft());
+    }
+
+    if (filter != null) {
+      if (filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+        for (final BaseProcessInstanceFilterFields or : filter.get$Or()) {
+          final var orBuilder = toBaseProcessInstanceFilterFields(processDefinitionKey, or);
+          if (orBuilder.isLeft()) {
+            validationErrors.addAll(orBuilder.getLeft());
+          } else {
+            builder.get().addOrOperation(orBuilder.get().build());
+          }
+        }
+      }
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.get().build())
+        : Either.left(validationErrors);
+  }
+
+  private static Either<List<String>, ProcessDefinitionStatisticsFilter.Builder>
+      toBaseProcessInstanceFilterFields(
+          final long processDefinitionKey, final BaseProcessInstanceFilterFields filter) {
     final var builder = FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -161,7 +196,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getParentProcessInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentProcessInstanceKeyOperations);
-      ofNullable(filter.getParentFlowNodeInstanceKey())
+      ofNullable(filter.getParentElementInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.getStartDate())
@@ -177,9 +212,25 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getBatchOperationId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::batchOperationIdOperations);
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
+      ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
+      ofNullable(filter.getElementId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getHasElementInstanceIncident())
+          .ifPresent(builder::hasFlowNodeInstanceIncident);
+      ofNullable(filter.getElementInstanceState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeInstanceStateOperations);
+      ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            toVariableValueFiltersForProcessInstance(filter.getVariables());
+            toVariableValueFilters(filter.getVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {
@@ -187,9 +238,7 @@ public final class SearchQueryRequestMapper {
         }
       }
     }
-    return validationErrors.isEmpty()
-        ? Either.right(builder.build())
-        : Either.left(validationErrors);
+    return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
@@ -298,19 +347,19 @@ public final class SearchQueryRequestMapper {
         filter, sort, page, SearchQueryBuilders::decisionRequirementsSearchQuery);
   }
 
-  public static Either<ProblemDetail, FlowNodeInstanceQuery> toFlownodeInstanceQuery(
-      final FlowNodeInstanceSearchQuery request) {
+  public static Either<ProblemDetail, FlowNodeInstanceQuery> toElementInstanceQuery(
+      final ElementInstanceSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromFlowNodeInstanceSearchQuerySortRequest(
+            SearchQuerySortRequestMapper.fromElementInstanceSearchQuerySortRequest(
                 request.getSort()),
             SortOptionBuilders::flowNodeInstance,
-            SearchQueryRequestMapper::applyFlownodeInstanceSortField);
-    final var filter = toFlownodeInstanceFilter(request.getFilter());
+            SearchQueryRequestMapper::applyElementInstanceSortField);
+    final var filter = toElementInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::flownodeInstanceSearchQuery);
   }
 
@@ -431,7 +480,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static VariableFilter toUserTaskVariableFilter(
-      final VariableUserTaskFilterRequest filter) {
+      final UserTaskVariableFilterRequest filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();
     }
@@ -543,7 +592,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getBatchOperationKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::batchOperationKeys);
-      ofNullable(filter.getStatus()).map(StatusEnum::toString).ifPresent(builder::status);
+      ofNullable(filter.getState()).map(StateEnum::toString).ifPresent(builder::state);
       ofNullable(filter.getOperationType())
           .map(BatchOperationTypeEnum::toString)
           .ifPresent(builder::operationTypes);
@@ -561,7 +610,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case BATCH_OPERATION_KEY -> builder.batchOperationKey();
-        case STATUS -> builder.status();
+        case STATE -> builder.state();
         case OPERATION_TYPE -> builder.operationType();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
@@ -597,6 +646,33 @@ public final class SearchQueryRequestMapper {
 
   public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
       final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
+    final List<String> validationErrors = new ArrayList<>();
+
+    final Either<List<String>, Builder> builder = toProcessInstanceFilterFields(filter);
+    if (builder.isLeft()) {
+      validationErrors.addAll(builder.getLeft());
+    }
+
+    if (filter != null) {
+      if (filter.get$Or() != null && !filter.get$Or().isEmpty()) {
+        for (final ProcessInstanceFilterFields or : filter.get$Or()) {
+          final var orBuilder = toProcessInstanceFilterFields(or);
+          if (orBuilder.isLeft()) {
+            validationErrors.addAll(orBuilder.getLeft());
+          } else {
+            builder.get().addOrOperation(orBuilder.get().build());
+          }
+        }
+      }
+    }
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.get().build())
+        : Either.left(validationErrors);
+  }
+
+  public static Either<List<String>, ProcessInstanceFilter.Builder> toProcessInstanceFilterFields(
+      final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterFields filter) {
     final var builder = FilterBuilders.processInstance();
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
@@ -621,7 +697,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getParentProcessInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentProcessInstanceKeyOperations);
-      ofNullable(filter.getParentFlowNodeInstanceKey())
+      ofNullable(filter.getParentElementInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.getStartDate())
@@ -637,22 +713,25 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getBatchOperationId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::batchOperationIdOperations);
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
       ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
-      ofNullable(filter.getFlowNodeId())
+      ofNullable(filter.getElementId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeIdOperations);
-      ofNullable(filter.getHasFlowNodeInstanceIncident())
+      ofNullable(filter.getHasElementInstanceIncident())
           .ifPresent(builder::hasFlowNodeInstanceIncident);
-      ofNullable(filter.getFlowNodeInstanceState())
+      ofNullable(filter.getElementInstanceState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeInstanceStateOperations);
       ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            toVariableValueFiltersForProcessInstance(filter.getVariables());
+            toVariableValueFilters(filter.getVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {
@@ -660,9 +739,7 @@ public final class SearchQueryRequestMapper {
         }
       }
     }
-    return validationErrors.isEmpty()
-        ? Either.right(builder.build())
-        : Either.left(validationErrors);
+    return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
   private static TenantFilter toTenantFilter(final TenantFilterRequest filter) {
@@ -726,13 +803,13 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static FlowNodeInstanceFilter toFlownodeInstanceFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceFilter filter) {
+  private static FlowNodeInstanceFilter toElementInstanceFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.ElementInstanceFilter filter) {
     final var builder = FilterBuilders.flowNodeInstance();
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
-              Optional.ofNullable(f.getFlowNodeInstanceKey())
+              Optional.ofNullable(f.getElementInstanceKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::flowNodeInstanceKeys);
               Optional.ofNullable(f.getProcessInstanceKey())
@@ -749,7 +826,7 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getType())
                   .ifPresent(
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
-              Optional.ofNullable(f.getFlowNodeId()).ifPresent(builder::flowNodeIds);
+              Optional.ofNullable(f.getElementId()).ifPresent(builder::flowNodeIds);
               Optional.ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
               Optional.ofNullable(f.getIncidentKey())
                   .map(KeyUtil::keyToLong)
@@ -796,7 +873,7 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::elementInstanceKeys);
       if (!CollectionUtils.isEmpty(filter.getProcessInstanceVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            toVariableValueFiltersForUserTask(filter.getProcessInstanceVariables());
+            toVariableValueFilters(filter.getProcessInstanceVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {
@@ -805,7 +882,7 @@ public final class SearchQueryRequestMapper {
       }
       if (!CollectionUtils.isEmpty(filter.getLocalVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
-            toVariableValueFiltersForUserTask(filter.getLocalVariables());
+            toVariableValueFilters(filter.getLocalVariables());
         if (either.isLeft()) {
           validationErrors.addAll(either.getLeft());
         } else {
@@ -859,8 +936,8 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getErrorType())
           .ifPresent(t -> builder.errorTypes(IncidentEntity.ErrorType.valueOf(t.getValue())));
       ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessages);
-      ofNullable(filter.getFlowNodeId()).ifPresent(builder::flowNodeIds);
-      ofNullable(filter.getFlowNodeInstanceKey())
+      ofNullable(filter.getElementId()).ifPresent(builder::flowNodeIds);
+      ofNullable(filter.getElementInstanceKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::flowNodeInstanceKeys);
       ofNullable(filter.getCreationTime())
@@ -888,7 +965,7 @@ public final class SearchQueryRequestMapper {
         case PROCESS_DEFINITION_VERSION_TAG -> builder.processDefinitionVersionTag();
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case PARENT_PROCESS_INSTANCE_KEY -> builder.parentProcessInstanceKey();
-        case PARENT_FLOW_NODE_INSTANCE_KEY -> builder.parentFlowNodeInstanceKey();
+        case PARENT_ELEMENT_INSTANCE_KEY -> builder.parentFlowNodeInstanceKey();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
         case STATE -> builder.state();
@@ -944,6 +1021,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case GROUP_KEY -> builder.groupKey();
+        case GROUP_ID -> builder.groupId();
         case NAME -> builder.name();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
@@ -975,6 +1053,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case MAPPING_KEY -> builder.mappingKey();
+        case MAPPING_ID -> builder.mappingId();
         case CLAIM_NAME -> builder.claimName();
         case CLAIM_VALUE -> builder.claimValue();
         case NAME -> builder.name();
@@ -1024,21 +1103,21 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
-  private static List<String> applyFlownodeInstanceSortField(
-      final FlowNodeInstanceSearchQuerySortRequest.FieldEnum field,
+  private static List<String> applyElementInstanceSortField(
+      final ElementInstanceSearchQuerySortRequest.FieldEnum field,
       final FlowNodeInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case FLOW_NODE_INSTANCE_KEY -> builder.flowNodeInstanceKey();
+        case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
-        case FLOW_NODE_ID -> builder.flowNodeId();
+        case ELEMENT_ID -> builder.flowNodeId();
         case TYPE -> builder.type();
         case STATE -> builder.state();
         case INCIDENT_KEY -> builder.incidentKey();
@@ -1062,8 +1141,8 @@ public final class SearchQueryRequestMapper {
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case ERROR_TYPE -> builder.errorType();
         case ERROR_MESSAGE -> builder.errorMessage();
-        case FLOW_NODE_ID -> builder.flowNodeId();
-        case FLOW_NODE_INSTANCE_KEY -> builder.flowNodeInstanceKey();
+        case ELEMENT_ID -> builder.flowNodeId();
+        case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
         case CREATION_TIME -> builder.creationTime();
         case STATE -> builder.state();
         case JOB_KEY -> builder.jobKey();
@@ -1147,52 +1226,34 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
-  private static Either<List<String>, List<VariableValueFilter>> toVariableValueFiltersForUserTask(
-      final List<UserTaskVariableFilterRequest> filters) {
-    if (CollectionUtils.isEmpty(filters)) {
-      return Either.right(null);
-    }
-
-    final List<GenericVariable<StringFilterProperty>> genericVariables = new ArrayList<>();
-    filters.forEach(
-        filter -> genericVariables.add(new GenericVariable<>(filter.getName(), filter.getValue())));
-    return toVariableValueFilters(genericVariables);
-  }
-
-  private static Either<List<String>, List<VariableValueFilter>>
-      toVariableValueFiltersForProcessInstance(
-          final List<ProcessInstanceVariableFilterRequest> filters) {
-    if (CollectionUtils.isEmpty(filters)) {
-      return Either.right(null);
-    }
-
-    final List<GenericVariable<StringFilterProperty>> genericVariables = new ArrayList<>();
-    filters.forEach(
-        filter -> genericVariables.add(new GenericVariable<>(filter.getName(), filter.getValue())));
-    return toVariableValueFilters(genericVariables);
-  }
-
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
-      final List<GenericVariable<StringFilterProperty>> genericVariables) {
-    final List<String> validationErrors = new ArrayList<>();
-    final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
-    genericVariables.forEach(
-        filter -> {
-          if (filter.name() == null) {
-            validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_NAME);
-          }
-          if (filter.value() == null) {
-            validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_VALUE);
-          }
-          if (validationErrors.isEmpty()) {
-            variableValueFilters.addAll(toVariableValueFilters(filter.name(), filter.value()));
-          }
-        });
-    if (validationErrors.isEmpty()) {
-      return Either.right(variableValueFilters);
-    } else {
-      return Either.left(validationErrors);
+      final List<VariableValueFilterRequest> filters) {
+    if (CollectionUtils.isEmpty(filters)) {
+      return Either.right(List.of());
     }
+
+    final List<String> validationErrors = new ArrayList<>();
+    final List<VariableValueFilter> variableValueFilters =
+        filters.stream()
+            .flatMap(
+                filter -> {
+                  if (filter.getName() == null) {
+                    validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_NAME);
+                  }
+                  if (filter.getValue() == null
+                      || filter.getValue().equals(EMPTY_ADVANCED_STRING_FILTER)
+                      || filter.getValue().equals(EMPTY_BASIC_STRING_FILTER)) {
+                    validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_VALUE);
+                  }
+                  // if there is no validation error overall, process the filter
+                  return validationErrors.isEmpty()
+                      ? toVariableValueFilters(filter.getName(), filter.getValue()).stream()
+                      : Stream.empty();
+                })
+            .toList();
+    return validationErrors.isEmpty()
+        ? Either.right(variableValueFilters)
+        : Either.left(validationErrors);
   }
 
   private static List<VariableValueFilter> toVariableValueFilters(

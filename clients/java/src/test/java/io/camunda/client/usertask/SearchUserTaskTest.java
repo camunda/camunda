@@ -20,13 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.UserTaskState;
-import io.camunda.client.impl.ResponseMapper;
-import io.camunda.client.protocol.rest.*;
+import io.camunda.client.protocol.rest.IntegerFilterProperty;
+import io.camunda.client.protocol.rest.StringFilterProperty;
+import io.camunda.client.protocol.rest.UserTaskFilter;
+import io.camunda.client.protocol.rest.UserTaskSearchQuery;
+import io.camunda.client.protocol.rest.VariableValueFilterRequest;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 public final class SearchUserTaskTest extends ClientRestTest {
@@ -169,17 +171,17 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessInstanceVariable() {
     // when
-    final Map<String, Object> map = new HashMap<>();
-    map.put("test", "test");
-    final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
-        new UserTaskVariableFilterRequest()
-            .name("test")
-            .value(new StringFilterProperty().$eq("test"));
-    final ArrayList<UserTaskVariableFilterRequest> listFilter = new ArrayList<>();
+    final VariableValueFilterRequest userTaskVariableFilterRequest =
+        new VariableValueFilterRequest().name("test").value(new StringFilterProperty().$eq("test"));
+    final ArrayList<VariableValueFilterRequest> listFilter = new ArrayList<>();
 
     listFilter.add(userTaskVariableFilterRequest);
 
-    client.newUserTaskSearchRequest().filter(f -> f.processInstanceVariables(map)).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.processInstanceVariables(Collections.singletonMap("test", "test")))
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -189,18 +191,15 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByLocalVariable() {
     // when
-    final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
-        new UserTaskVariableFilterRequest()
-            .name("test")
-            .value(new StringFilterProperty().$eq("test"));
-    final ArrayList<UserTaskVariableFilterRequest> listFilter = new ArrayList<>();
+    final VariableValueFilterRequest userTaskVariableFilterRequest =
+        new VariableValueFilterRequest().name("test").value(new StringFilterProperty().$eq("test"));
+    final ArrayList<VariableValueFilterRequest> listFilter = new ArrayList<>();
 
     listFilter.add(userTaskVariableFilterRequest);
 
     client
         .newUserTaskSearchRequest()
-        .filter(
-            f -> f.localVariables(ResponseMapper.fromUserTaskVariableFilterRequestList(listFilter)))
+        .filter(f -> f.localVariables(Collections.singletonMap("test", "test")))
         .send()
         .join();
 

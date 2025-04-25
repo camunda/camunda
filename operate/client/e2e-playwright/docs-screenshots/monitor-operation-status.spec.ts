@@ -57,6 +57,17 @@ test.describe('process instance migration', () => {
             completed: 0,
           },
         ],
+        statisticsV2: {
+          items: [
+            {
+              elementId: 'checkPayment',
+              active: 3,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+          ],
+        },
         processXml: open('orderProcess_v2.bpmn'),
       }),
     );

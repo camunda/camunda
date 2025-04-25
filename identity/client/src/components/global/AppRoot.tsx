@@ -7,13 +7,16 @@
  */
 
 import styled, { createGlobalStyle } from "styled-components";
-import { FC, ReactNode } from "react";
+import { FC, ReactNode, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { g10, bodyShort01 } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { useApi } from "src/utility/api";
 import { getAuthentication } from "src/utility/api/authentication";
 import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
+import LateLoading from "src/components/layout/LateLoading";
+import { addHandler, removeHandler } from "src/utility/api/request";
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -62,7 +65,29 @@ const GridMainContent = styled.div`
 `;
 
 const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
-  const { data: camundaUser } = useApi(getAuthentication);
+  const { data: camundaUser, loading } = useApi(getAuthentication);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleResponse = (response: Response) => {
+      if (
+        response.status === 401 &&
+        !window.location.pathname.includes("/login")
+      ) {
+        void navigate(`/login?next=${window.location.pathname}`);
+      }
+    };
+
+    addHandler(handleResponse);
+    return () => {
+      removeHandler(handleResponse);
+    };
+  }, [navigate]);
+
+  if (loading) {
+    return <LateLoading />;
+  }
+
   if (
     !camundaUser?.authorizedApplications.includes("identity") &&
     !camundaUser?.authorizedApplications.includes("*")

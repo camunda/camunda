@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.dto;
 
 import io.camunda.tasklist.webapp.security.Permission;
-import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
+import io.camunda.tasklist.webapp.tenant.TasklistTenant;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.util.StringUtils;

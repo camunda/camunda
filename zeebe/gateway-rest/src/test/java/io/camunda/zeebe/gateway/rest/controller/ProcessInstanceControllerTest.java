@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -19,6 +20,7 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -135,6 +138,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
                 "processDefinitionKey": "123"
             }""";
+    final var expectedResponse =
+        """
+            {
+              "processDefinitionKey":"123",
+              "processDefinitionId":"bpmnProcessId",
+              "processDefinitionVersion":-1,
+              "processInstanceKey":"123",
+              "tenantId":"<default>"
+            }""";
 
     // when / then
     webClient
@@ -149,15 +161,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(
-            """
-{
-   "processDefinitionKey":"123",
-   "processDefinitionId":"bpmnProcessId",
-   "processDefinitionVersion":-1,
-   "processInstanceKey":"123",
-   "tenantId":"<default>"
-}""");
+        .json(expectedResponse);
 
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -1305,7 +1309,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final var record = new BatchOperationCreationRecord();
     record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+    record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
 
     when(processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
             any(ProcessInstanceFilter.class)))
@@ -1332,10 +1336,143 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-          {"batchOperationKey":"123","batchOperationType":"PROCESS_CANCELLATION"}
+          {"batchOperationKey":"123","batchOperationType":"CANCEL_PROCESS_INSTANCE"}
         """);
 
     verify(processInstanceServices)
         .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class));
+  }
+
+  @Test
+  public void shouldGetElementStatistics() {
+    // given
+    final long processInstanceKey = 1L;
+    final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
+    when(processInstanceServices.elementStatistics(processInstanceKey)).thenReturn(stats);
+    final var request =
+        """
+            {
+              "filter": {
+                "hasIncident": true
+              }
+            }""";
+    final var response =
+        """
+            {"items":[
+              {
+                "elementId": "node1",
+                "active": 1,
+                "canceled": 1,
+                "incidents": 1,
+                "completed": 1
+              }
+            ]}""";
+
+    // when / then
+    webClient
+        .get()
+        .uri(
+            "%s/%d/statistics/element-instances"
+                .formatted(PROCESS_INSTANCES_START_URL, processInstanceKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response);
+
+    verify(processInstanceServices).elementStatistics(processInstanceKey);
+  }
+
+  @Test
+  void shouldResolveIncidentsBatchOperation() throws Exception {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+
+    when(processInstanceServices.resolveIncidentsBatchOperationWithResult(
+            any(ProcessInstanceFilter.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "processDefinitionId": "test-process-definition-id"
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/batch-operations/incident-resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"RESOLVE_INCIDENT"}
+        """);
+
+    verify(processInstanceServices)
+        .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class));
+  }
+
+  @Test
+  void shouldMigrateProcessInstancesBatchOperation() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrationBatchOperationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+           {
+            "filter": {
+              "processDefinitionId": "test-process-definition-id"
+            },
+            "migrationPlan": {
+                "targetProcessDefinitionKey": "123",
+                "mappingInstructions": [
+                  {
+                    "sourceElementId": "a",
+                    "targetElementId": "b"
+                  }
+                ]
+              }
+           }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/batch-operations/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"MIGRATE_PROCESS_INSTANCE"}
+        """);
+
+    verify(processInstanceServices)
+        .migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrationBatchOperationRequest.class));
   }
 }

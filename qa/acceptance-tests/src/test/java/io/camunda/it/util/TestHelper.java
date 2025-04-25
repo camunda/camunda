@@ -16,8 +16,10 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -110,15 +112,28 @@ public final class TestHelper {
             });
   }
 
-  public static void waitForFlowNodeInstances(
-      final CamundaClient camundaClient, final int expectedFlowNodeInstances) {
-    Awaitility.await("should wait until flow node instances are available")
+  public static void waitForProcessInstanceToBeTerminated(
+      final CamundaClient camundaClient, final Long processInstanceKey) {
+    Awaitility.await("should wait until process is terminated")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+              assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
+            });
+  }
+
+  public static void waitForElementInstances(
+      final CamundaClient camundaClient, final int expectedElementInstances) {
+    Awaitility.await("should wait until element instances are available")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newFlownodeInstanceSearchRequest().send().join();
-              assertThat(result.page().totalItems()).isEqualTo(expectedFlowNodeInstances);
+              final var result = camundaClient.newElementInstanceSearchRequest().send().join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
             });
   }
 
@@ -168,8 +183,8 @@ public final class TestHelper {
             });
   }
 
-  public static void waitUntilIncidentIsResolvedOnFlowNodeInstance(
-      final CamundaClient camundaClient, final int expectedFlowNodeInstances) {
+  public static void waitUntilIncidentIsResolvedOnElementInstance(
+      final CamundaClient camundaClient, final int expectedElementInstances) {
     Awaitility.await("should wait until incidents are resolved")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -177,11 +192,11 @@ public final class TestHelper {
             () -> {
               final var result =
                   camundaClient
-                      .newFlownodeInstanceSearchRequest()
+                      .newElementInstanceSearchRequest()
                       .filter(f -> f.hasIncident(false))
                       .send()
                       .join();
-              assertThat(result.page().totalItems()).isEqualTo(expectedFlowNodeInstances);
+              assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
             });
   }
 
@@ -236,16 +251,16 @@ public final class TestHelper {
             });
   }
 
-  public static void waitUntilFlowNodeInstanceHasIncidents(
+  public static void waitUntilElementInstanceHasIncidents(
       final CamundaClient camundaClient, final int expectedIncidents) {
-    Awaitility.await("should wait until flow node instance has incidents")
+    Awaitility.await("should wait until element instance has incidents")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result =
                   camundaClient
-                      .newFlownodeInstanceSearchRequest()
+                      .newElementInstanceSearchRequest()
                       .filter(f -> f.hasIncident(true))
                       .send()
                       .join();
@@ -253,7 +268,8 @@ public final class TestHelper {
             });
   }
 
-  public static void waitUntilJobWorkerHasFailedJob(final CamundaClient camundaClient) {
+  public static void waitUntilJobWorkerHasFailedJob(
+      final CamundaClient camundaClient, final int expectedProcesses) {
     await("should wait until the process instance has been updated to reflect retries left.")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
@@ -264,7 +280,7 @@ public final class TestHelper {
                       .filter(f -> f.hasRetriesLeft(true))
                       .send()
                       .join();
-              assertThat(result.items().size()).isGreaterThan(0);
+              assertThat(result.items().size()).isEqualTo(expectedProcesses);
             });
   }
 

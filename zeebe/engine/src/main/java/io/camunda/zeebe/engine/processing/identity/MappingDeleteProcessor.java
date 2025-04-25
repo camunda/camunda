@@ -14,10 +14,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -45,6 +47,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   private final MappingState mappingState;
   private final TenantState tenantState;
   private final AuthorizationState authorizationState;
+  private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -61,6 +64,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     mappingState = processingState.getMappingState();
     tenantState = processingState.getTenantState();
     authorizationState = processingState.getAuthorizationState();
+    membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -91,13 +95,10 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
-    final var persistedMapping = persistedMappingOptional.get();
-    record.setMappingKey(persistedMapping.getMappingKey());
-    deleteMapping(persistedMapping);
-    responseWriter.writeEventOnCommand(
-        persistedMapping.getMappingKey(), MappingIntent.DELETED, record, command);
-
     final long key = keyGenerator.nextKey();
+    deleteMapping(persistedMappingOptional.get(), key);
+    responseWriter.writeEventOnCommand(key, MappingIntent.DELETED, record, command);
+
     commandDistributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
@@ -110,7 +111,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     mappingState
         .get(record.getMappingId())
         .ifPresentOrElse(
-            this::deleteMapping,
+            persistedMapping -> deleteMapping(persistedMapping, command.getKey()),
             () -> {
               final var errorMessage =
                   MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingKey());
@@ -120,10 +121,12 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void deleteMapping(final PersistedMapping mapping) {
-    final var mappingKey = mapping.getMappingKey();
-    deleteAuthorizations(mappingKey);
-    for (final var tenantId : mapping.getTenantIdsList()) {
+  private void deleteMapping(final PersistedMapping mapping, final long key) {
+    final var mappingId = mapping.getMappingId();
+    deleteAuthorizations(mappingId);
+    for (final var tenantId :
+        membershipState.getMemberships(
+            EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT)) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           tenant.getTenantKey(),
@@ -134,34 +137,38 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
               .setEntityId(mapping.getMappingId())
               .setEntityType(EntityType.MAPPING));
     }
-    for (final var roleKey : mapping.getRoleKeysList()) {
+    for (final var roleKey :
+        membershipState.getMemberships(
+            EntityType.MAPPING, mapping.getMappingId(), RelationType.ROLE)) {
       stateWriter.appendFollowUpEvent(
-          roleKey,
+          // TODO: Use the role id instead of the key.
+          Long.parseLong(roleKey),
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
-              .setRoleKey(roleKey)
-              .setEntityKey(mappingKey)
+              // TODO: Use the role id instead of the key.
+              .setRoleId(roleKey)
+              .setRoleKey(Long.parseLong(roleKey))
+              .setEntityId(mappingId)
               .setEntityType(EntityType.MAPPING));
     }
-    for (final var groupKey : mapping.getGroupKeysList()) {
+    for (final var groupKey :
+        membershipState.getMemberships(
+            EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP)) {
       stateWriter.appendFollowUpEvent(
-          groupKey,
+          Long.parseLong(groupKey),
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
-              .setGroupKey(groupKey)
-              .setEntityKey(mappingKey)
+              .setGroupKey(Long.parseLong(groupKey))
+              .setEntityId(mapping.getMappingId())
               .setEntityType(EntityType.MAPPING));
     }
     stateWriter.appendFollowUpEvent(
-        mappingKey,
-        MappingIntent.DELETED,
-        new MappingRecord().setMappingKey(mappingKey).setMappingId(mapping.getMappingId()));
+        key, MappingIntent.DELETED, new MappingRecord().setMappingId(mapping.getMappingId()));
   }
 
-  private void deleteAuthorizations(final long mappingKey) {
+  private void deleteAuthorizations(final String mappingId) {
     final var authorizationKeysForMapping =
-        authorizationState.getAuthorizationKeysForOwner(
-            AuthorizationOwnerType.MAPPING, String.valueOf(mappingKey));
+        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.MAPPING, mappingId);
 
     authorizationKeysForMapping.forEach(
         authorizationKey -> {

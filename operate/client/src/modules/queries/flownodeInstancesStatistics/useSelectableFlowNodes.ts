@@ -11,7 +11,7 @@ import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-s
 
 const selectableFlowNodesParser = (
   response: GetProcessInstanceStatisticsResponseBody,
-) => response.items.map(({flowNodeId}) => flowNodeId);
+) => response.items.map(({elementId}) => elementId);
 
 const useSelectableFlowNodes = () => {
   return useFlownodeInstancesStatistics(selectableFlowNodesParser);

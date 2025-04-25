@@ -16,10 +16,12 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.response.BatchOperation;
+import io.camunda.client.api.search.response.BatchOperationItems;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -89,17 +91,16 @@ public final class SearchResponseMapper {
     return new SearchResponseImpl<>(instances, page);
   }
 
-  public static SearchResponse<FlowNodeInstance> toFlowNodeInstanceSearchResponse(
-      final FlowNodeInstanceSearchQueryResult response) {
+  public static SearchResponse<ElementInstance> toElementInstanceSearchResponse(
+      final ElementInstanceSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
-    final List<FlowNodeInstance> instances =
-        toSearchResponseInstances(response.getItems(), FlowNodeInstanceImpl::new);
+    final List<ElementInstance> instances =
+        toSearchResponseInstances(response.getItems(), ElementInstanceImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
 
-  public static FlowNodeInstance toFlowNodeInstanceGetResponse(
-      final FlowNodeInstanceResult response) {
-    return new FlowNodeInstanceImpl(response);
+  public static ElementInstance toElementInstanceGetResponse(final ElementInstanceResult response) {
+    return new ElementInstanceImpl(response);
   }
 
   public static SearchResponse<Incident> toIncidentSearchResponse(
@@ -137,6 +138,15 @@ public final class SearchResponseMapper {
         toSearchResponseInstances(
             response.getItems(), item -> new DecisionInstanceImpl(item, jsonMapper));
     return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static BatchOperation toBatchOperationGetResponse(final BatchOperationResponse response) {
+    return new BatchOperationImpl(response);
+  }
+
+  public static BatchOperationItems toBatchOperationItemsGetResponse(
+      final BatchOperationItemSearchQueryResult response) {
+    return new BatchOperationItemsImpl(response);
   }
 
   private static <T, R> List<R> toSearchResponseInstances(

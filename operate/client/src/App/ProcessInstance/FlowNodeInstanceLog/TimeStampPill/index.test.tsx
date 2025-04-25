@@ -9,36 +9,38 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {TimeStampPill} from './index';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.mock('modules/utils/bpmn');
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   mockFetchFlowNodeInstances().withSuccess({});
-  mockFetchProcessXML().withSuccess('');
+  mockFetchProcessDefinitionXml().withSuccess('');
 
   useEffect(() => {
     flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
-    processInstanceDetailsDiagramStore.fetchProcessXml('1');
     return () => {
       flowNodeTimeStampStore.reset();
-      processInstanceDetailsDiagramStore.reset();
       flowNodeInstanceStore.reset();
     };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        {children}
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
+  );
 };
 
 describe('TimeStampPill', () => {
-  beforeEach(() => {
-    mockFetchProcessXML().withSuccess('');
-  });
-
   it('should render "Show" / "Hide" label', async () => {
     const {user} = render(<TimeStampPill />, {wrapper: Wrapper});
 

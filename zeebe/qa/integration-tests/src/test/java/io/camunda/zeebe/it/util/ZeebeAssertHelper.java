@@ -218,6 +218,17 @@ public final class ZeebeAssertHelper {
     consumer.accept(userTask);
   }
 
+  public static void assertUserTaskCanceled(
+      final long userTaskKey, final Consumer<UserTaskRecordValue> consumer) {
+    final UserTaskRecordValue userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue();
+
+    consumer.accept(userTask);
+  }
+
   public static void assertClockPinned(final Consumer<ClockRecordValue> consumer) {
     assertClockRecordValue(ClockIntent.PINNED, consumer);
   }
@@ -441,7 +452,8 @@ public final class ZeebeAssertHelper {
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.ENTITY_ADDED)
             .withGroupKey(groupKey)
-            .withEntityKey(userKey)
+            // TODO: revisit
+            .withEntityId(String.valueOf(userKey))
             .getFirst()
             .getValue();
 
@@ -455,7 +467,8 @@ public final class ZeebeAssertHelper {
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.ENTITY_REMOVED)
             .withGroupKey(groupKey)
-            .withEntityKey(userKey)
+            // TODO: revisit
+            .withEntityId(String.valueOf(userKey))
             .getFirst()
             .getValue();
 

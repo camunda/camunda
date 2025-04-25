@@ -20,14 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.filter.ProcessInstanceFilterBase;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.lang.reflect.Modifier;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 public class QueryProcessInstanceTest extends ClientRestTest {
@@ -63,12 +66,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
-    final List<ProcessInstanceVariableFilterRequest> variables =
+    final List<VariableValueFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest()
-                .name("n1")
-                .value(new StringFilterProperty().$eq("v1")),
-            new ProcessInstanceVariableFilterRequest()
+            new VariableValueFilterRequest().name("n1").value(new StringFilterProperty().$eq("v1")),
+            new VariableValueFilterRequest()
                 .name("n2")
                 .value(new StringFilterProperty().$eq("v2")));
     client
@@ -82,18 +83,19 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .processDefinitionVersionTag("v7")
                     .processDefinitionKey(15L)
                     .parentProcessInstanceKey(25L)
-                    .parentFlowNodeInstanceKey(30L)
+                    .parentElementInstanceKey(30L)
                     .startDate(startDate)
                     .endDate(endDate)
                     .state(ACTIVE)
                     .hasIncident(true)
                     .tenantId("tenant")
                     .variables(variablesMap)
+                    .batchOperationId("batchOperationId")
                     .errorMessage("Error message")
                     .hasRetriesLeft(true)
-                    .flowNodeId("flowNodeId")
-                    .flowNodeInstanceState(FlowNodeInstanceState.ACTIVE)
-                    .hasFlowNodeInstanceIncident(true)
+                    .elementId("elementId")
+                    .elementInstanceState(ElementInstanceState.ACTIVE)
+                    .hasElementInstanceIncident(true)
                     .incidentErrorHashCode(123456789))
         .send()
         .join();
@@ -109,7 +111,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionVersionTag().get$Eq()).isEqualTo("v7");
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo("15");
     assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo("25");
-    assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo("30");
+    assertThat(filter.getParentElementInstanceKey().get$Eq()).isEqualTo("30");
     assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
     assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
     assertThat(filter.getState().get$Eq())
@@ -117,12 +119,13 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
+    assertThat(filter.getBatchOperationId().get$Eq()).isEqualTo("batchOperationId");
     assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
     assertThat(filter.getHasRetriesLeft()).isEqualTo(true);
-    assertThat(filter.getFlowNodeId().get$Eq()).isEqualTo("flowNodeId");
-    assertThat(filter.getFlowNodeInstanceState().get$Eq())
-        .isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
-    assertThat(filter.getHasFlowNodeInstanceIncident()).isEqualTo(true);
+    assertThat(filter.getElementId().get$Eq()).isEqualTo("elementId");
+    assertThat(filter.getElementInstanceState().get$Eq())
+        .isEqualTo(ElementInstanceStateEnum.ACTIVE);
+    assertThat(filter.getHasElementInstanceIncident()).isEqualTo(true);
     assertThat(filter.getIncidentErrorHashCode()).isEqualTo(123456789);
   }
 
@@ -205,12 +208,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
-    final List<ProcessInstanceVariableFilterRequest> variables =
+    final List<VariableValueFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest()
-                .name("n1")
-                .value(new StringFilterProperty().$eq("v1")),
-            new ProcessInstanceVariableFilterRequest()
+            new VariableValueFilterRequest().name("n1").value(new StringFilterProperty().$eq("v1")),
+            new VariableValueFilterRequest()
                 .name("n2")
                 .value(new StringFilterProperty().$eq("v2")));
 
@@ -246,7 +247,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .desc()
                     .parentProcessInstanceKey()
                     .asc()
-                    .parentFlowNodeInstanceKey()
+                    .parentElementInstanceKey()
                     .asc()
                     .startDate()
                     .asc()
@@ -275,7 +276,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertSort(sorts.get(4), "processDefinitionVersionTag", SortOrderEnum.DESC);
     assertSort(sorts.get(5), "processDefinitionKey", SortOrderEnum.DESC);
     assertSort(sorts.get(6), "parentProcessInstanceKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(7), "parentFlowNodeInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(7), "parentElementInstanceKey", SortOrderEnum.ASC);
     assertSort(sorts.get(8), "startDate", SortOrderEnum.ASC);
     assertSort(sorts.get(9), "endDate", SortOrderEnum.ASC);
     assertSort(sorts.get(10), "state", SortOrderEnum.ASC);
@@ -308,9 +309,65 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList("a"));
   }
 
+  @Test
+  void shouldSearchProcessInstanceWithOrOperatorFilters() {
+    // when
+    final OffsetDateTime now = OffsetDateTime.now();
+
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(
+            f ->
+                f.tenantId("tenant-1")
+                    .orFilters(Arrays.asList(f1 -> f1.state(ACTIVE), f3 -> f3.hasIncident(true))))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant-1");
+    assertThat(filter.get$Or()).isNotNull();
+    assertThat(filter.get$Or()).hasSize(2);
+    assertThat(filter.get$Or().get(0).getState().get$Eq())
+        .isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(filter.get$Or().get(1).getHasIncident()).isTrue();
+  }
+
   private void assertSort(
       final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
+  }
+
+  @Test
+  void shouldHaveMatchingFilterMethodsInBaseAndFullInterfaces() {
+    final Set<String> baseMethods = publicMethodSignatures(ProcessInstanceFilterBase.class);
+    final Set<String> fullMethods =
+        publicMethodSignatures(io.camunda.client.api.search.filter.ProcessInstanceFilter.class);
+
+    // Full interface must contain all base interface methods
+    assertThat(fullMethods)
+        .withFailMessage("Full interface is missing methods from base interface")
+        .containsAll(baseMethods);
+
+    // Full interface may only include orFilters in addition to base methods
+    final Set<String> expectedExtras = new HashSet<>();
+    expectedExtras.add("orFilters[interface java.util.List]");
+    final Set<String> actualExtras = new HashSet<>(fullMethods);
+    actualExtras.removeAll(baseMethods);
+
+    assertThat(actualExtras)
+        .withFailMessage("Unexpected methods in full interface: %s", actualExtras)
+        .isEqualTo(expectedExtras);
+  }
+
+  private static Set<String> publicMethodSignatures(final Class<?> clazz) {
+    return Arrays.stream(clazz.getMethods())
+        .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
+        .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
+        .collect(Collectors.toSet());
   }
 }

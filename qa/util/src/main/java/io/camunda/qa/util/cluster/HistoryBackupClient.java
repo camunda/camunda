@@ -34,6 +34,11 @@ public interface HistoryBackupClient {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   GetBackupStateResponseDto getBackup(@Param final long id);
 
+  @RequestLine("GET ?verbose={verbose}&pattern={pattern}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  List<GetBackupStateResponseDto> getBackups(
+      @Param final boolean verbose, @Param final String pattern);
+
   /**
    * Returns a {@link HistoryBackupClient} instance using the given node as upstream.
    *

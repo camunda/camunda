@@ -17,20 +17,19 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.VariableUserTaskFilterRequest;
+import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.function.Consumer;
 
 public class UserTaskVariableFilterImpl
-    extends TypedSearchRequestPropertyProvider<VariableUserTaskFilterRequest>
+    extends TypedSearchRequestPropertyProvider<UserTaskVariableFilterRequest>
     implements UserTaskVariableFilter {
 
-  private final VariableUserTaskFilterRequest filter;
+  private final UserTaskVariableFilterRequest filter;
 
   public UserTaskVariableFilterImpl() {
-    filter = new VariableUserTaskFilterRequest();
+    filter = new UserTaskVariableFilterRequest();
   }
 
   @Override
@@ -43,12 +42,12 @@ public class UserTaskVariableFilterImpl
   public UserTaskVariableFilter name(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setName(RequestMapper.toProtocolObject(property.build()));
+    filter.setName(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
-  protected VariableUserTaskFilterRequest getSearchRequestProperty() {
+  protected UserTaskVariableFilterRequest getSearchRequestProperty() {
     return filter;
   }
 }

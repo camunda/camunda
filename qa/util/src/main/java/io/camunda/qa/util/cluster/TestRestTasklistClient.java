@@ -9,13 +9,6 @@ package io.camunda.qa.util.cluster;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.clients.DocumentBasedSearchClient;
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.core.SearchQueryResponse;
-import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
-import io.camunda.webapps.schema.entities.usertask.TaskEntity;
-import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -31,44 +24,20 @@ import java.util.Optional;
 public class TestRestTasklistClient implements CloseableSilently {
 
   public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final TaskTemplate TASK_INDEX = new TaskTemplate("", true);
 
   private final URI endpoint;
   private final HttpClient httpClient;
   private final BasicAuthentication authentication;
-  private final DocumentBasedSearchClient searchClient;
 
   public TestRestTasklistClient(final URI endpoint) {
-    this(
-        endpoint,
-        HttpClient.newHttpClient(),
-        null, // intermediate solution - search client should be removed after migration all usage
-        null);
-  }
-
-  public TestRestTasklistClient(final URI endpoint, final String elasticsearchUrl) {
-    this(
-        endpoint,
-        HttpClient.newHttpClient(),
-        SearchClientsUtil.createLowLevelSearchClient(elasticsearchUrl),
-        null);
+    this(endpoint, HttpClient.newHttpClient(), null);
   }
 
   TestRestTasklistClient(
-      final URI endpoint,
-      final HttpClient httpClient,
-      final DocumentBasedSearchClient searchClient,
-      final BasicAuthentication authentication) {
+      final URI endpoint, final HttpClient httpClient, final BasicAuthentication authentication) {
     this.endpoint = endpoint;
     this.httpClient = httpClient;
-    this.searchClient = searchClient;
     this.authentication = authentication;
-  }
-
-  public SearchQueryResponse<TaskEntity> searchJobBasedUserTasks(final SearchQuery query) {
-    final var searchRequest =
-        SearchQueryRequest.of(s -> s.query(query).index(TASK_INDEX.getAlias()));
-    return searchClient.search(searchRequest, TaskEntity.class);
   }
 
   public HttpResponse<String> searchTasks(final Long processInstanceKey) {
@@ -179,14 +148,11 @@ public class TestRestTasklistClient implements CloseableSilently {
   @Override
   public void close() {
     httpClient.close();
-    if (searchClient != null) {
-      searchClient.close();
-    }
   }
 
   public TestRestTasklistClient withAuthentication(final String username, final String password) {
     return new TestRestTasklistClient(
-        endpoint, httpClient, searchClient, new BasicAuthentication(username, password));
+        endpoint, httpClient, new BasicAuthentication(username, password));
   }
 
   public record CreateProcessInstanceVariable(String name, Object value) {}

@@ -1,9 +1,11 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda
- * Services GmbH under one or more contributor license agreements.
- * See the NOTICE file distributed with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file except in compliance with the Camunda License 1.0.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
+
 import { FC } from "react";
 import { useApiCall } from "src/utility/api";
 import { deleteMapping, DeleteMappingParams } from "src/utility/api/mappings";
@@ -18,14 +20,14 @@ const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { mappingKey, name },
+  entity: { mappingId, name },
 }) => {
   const { t, Translate } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteMapping);
 
   const handleSubmit = async () => {
-    const { success } = await apiCall({ mappingKey });
+    const { success } = await apiCall({ mappingId });
 
     if (success) {
       enqueueNotification({
@@ -52,9 +54,9 @@ const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
       <p>
         <Translate
           i18nKey="deleteMappingConfirmation"
-          values={{ mappingName: name || mappingKey }}
+          values={{ mappingName: name || mappingId }}
         >
-          Are you sure you want to delete <strong>{name || mappingKey}</strong>?
+          Are you sure you want to delete <strong>{name || mappingId}</strong>?
           This action cannot be undone.
         </Translate>
       </p>

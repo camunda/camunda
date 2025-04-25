@@ -56,7 +56,6 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       if (targetRole == Role.LEADER) {
         director =
             AsyncSnapshotDirector.ofProcessingMode(
-                context.getNodeId(),
                 context.getPartitionId(),
                 context.getStreamProcessor(),
                 context.getStateController(),
@@ -65,7 +64,6 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       } else {
         director =
             AsyncSnapshotDirector.ofReplayMode(
-                context.getNodeId(),
                 context.getPartitionId(),
                 context.getStreamProcessor(),
                 context.getStateController(),

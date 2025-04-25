@@ -9,7 +9,7 @@ package io.camunda.authentication.service;
 
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.AuthenticationContext;
-import io.camunda.authentication.entity.CamundaOidcUser;
+import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -30,10 +30,10 @@ public class OidcCamundaUserService implements CamundaUserService {
   // TODO: This needs to be set for SaaS purposes
   private static final Map<AppName, String> C8_LINKS = Map.of();
 
-  private Optional<CamundaOidcUser> getCamundaUser() {
+  private Optional<CamundaOAuthPrincipal> getCamundaUser() {
     return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
         .map(Authentication::getPrincipal)
-        .map(principal -> principal instanceof final CamundaOidcUser user ? user : null);
+        .map(principal -> principal instanceof final CamundaOAuthPrincipal user ? user : null);
   }
 
   @Override

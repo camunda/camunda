@@ -7,12 +7,13 @@
  */
 package io.camunda.search.aggregation;
 
-public record ProcessDefinitionFlowNodeStatisticsAggregation() implements AggregationBase {
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+
+public record ProcessDefinitionFlowNodeStatisticsAggregation(
+    ProcessDefinitionStatisticsFilter filter) implements AggregationBase {
 
   public static final int AGGREGATION_TERMS_SIZE = 10000;
-  public static final String AGGREGATION_TO_CHILDREN_FN = "to-flow-nodes";
   public static final String AGGREGATION_TO_PARENT_PI = "parents-process-instances";
-  public static final String AGGREGATION_FILTER_FLOW_NODES = "filter-flow-nodes";
   public static final String AGGREGATION_GROUP_FLOW_NODE_ID = "terms-flow-nodes";
   public static final String AGGREGATION_FILTER_ACTIVE = "active";
   public static final String AGGREGATION_FILTER_COMPLETED = "completed";

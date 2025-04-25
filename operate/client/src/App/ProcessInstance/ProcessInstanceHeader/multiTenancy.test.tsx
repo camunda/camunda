@@ -16,14 +16,16 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {operationsStore} from 'modules/stores/operations';
 import {mockInstanceWithoutOperations} from './index.setup';
 import {MemoryRouter} from 'react-router-dom';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {createUser, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 jest.mock('modules/stores/process', () => ({
   processStore: {state: {process: {}}, fetchProcess: jest.fn()},
@@ -36,15 +38,18 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return () => {
       operationsStore.reset();
       processInstanceDetailsStore.reset();
-      processInstanceDetailsDiagramStore.reset();
       authenticationStore.reset();
     };
   }, []);
 
   return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      {children}
-    </MemoryRouter>
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+          {children}
+        </MemoryRouter>
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
   );
 };
 
@@ -59,7 +64,7 @@ describe('InstanceHeader', () => {
     };
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
         tenants: [
@@ -71,7 +76,6 @@ describe('InstanceHeader', () => {
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithoutOperations.id,
     });
@@ -99,7 +103,7 @@ describe('InstanceHeader', () => {
 
   it('should hide multi tenancy column and exclude tenant from version link', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
         tenants: [
@@ -111,7 +115,6 @@ describe('InstanceHeader', () => {
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({
       id: mockInstanceWithoutOperations.id,
     });

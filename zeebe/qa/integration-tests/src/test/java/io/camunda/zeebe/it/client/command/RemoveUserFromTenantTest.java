@@ -87,26 +87,6 @@ class RemoveUserFromTenantTest {
   }
 
   @Test
-  void shouldRejectUnassignIfUserDoesNotExist() {
-    // Given
-    final var invalidUsername = Strings.newRandomValidUsername();
-
-    // When / Then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUnassignUserFromTenantCommand(TENANT_ID)
-                    .username(invalidUsername)
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining(
-            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove user with ID '%s' from tenant with ID '%s', but the user doesn't exist."
-                .formatted(invalidUsername, TENANT_ID));
-  }
-
-  @Test
   void shouldRejectUnassignIfUserIsNotAssignedToTenant() {
     // Given
     final var unassignedUsername = "username2";

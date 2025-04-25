@@ -20,11 +20,10 @@ import org.agrona.DirectBuffer;
 public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue {
 
   private final LongProperty groupKeyProp = new LongProperty("groupKey", -1L);
-  // TODO remove default empty string https://github.com/camunda/camunda/issues/30139
-  private final StringProperty groupId = new StringProperty("groupId", "");
+  private final StringProperty groupId = new StringProperty("groupId");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty descriptionProp = new StringProperty("description", "");
-  private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
+  private final StringProperty entityIdProp = new StringProperty("entityId", "");
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
@@ -34,7 +33,7 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
         .declareProperty(groupId)
         .declareProperty(nameProp)
         .declareProperty(descriptionProp)
-        .declareProperty(entityKeyProp)
+        .declareProperty(entityIdProp)
         .declareProperty(entityTypeProp);
   }
 
@@ -79,12 +78,12 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   }
 
   @Override
-  public long getEntityKey() {
-    return entityKeyProp.getValue();
+  public String getEntityId() {
+    return BufferUtil.bufferAsString(entityIdProp.getValue());
   }
 
-  public GroupRecord setEntityKey(final long entityKey) {
-    entityKeyProp.setValue(entityKey);
+  public GroupRecord setEntityId(final String entityId) {
+    entityIdProp.setValue(entityId);
     return this;
   }
 

@@ -36,7 +36,7 @@ public class MultiDbConfigurator {
     configureElasticsearchSupport(elasticsearchUrl, indexPrefix);
 
     testApplication.withExporter(
-        "ElasticsearchExporter",
+        ElasticsearchExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(ElasticsearchExporter.class.getName());
           cfg.setArgs(
@@ -86,7 +86,7 @@ public class MultiDbConfigurator {
     testApplication.withAdditionalProperties(elasticsearchProperties);
 
     testApplication.withExporter(
-        "CamundaExporter",
+        CamundaExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(CamundaExporter.class.getName());
           cfg.setArgs(
@@ -128,7 +128,7 @@ public class MultiDbConfigurator {
     configureOpenSearchSupport(opensearchUrl, indexPrefix, userName, userPassword);
 
     testApplication.withExporter(
-        "OpensearchExporter",
+        OpensearchExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(OpensearchExporter.class.getName());
           cfg.setArgs(
@@ -196,7 +196,7 @@ public class MultiDbConfigurator {
     testApplication.withAdditionalProperties(opensearchProperties);
 
     testApplication.withExporter(
-        "CamundaExporter",
+        CamundaExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(CamundaExporter.class.getName());
           cfg.setArgs(
@@ -234,7 +234,7 @@ public class MultiDbConfigurator {
         });
   }
 
-  public void configureRDBMSSupport() {
+  public void configureRDBMSSupport(final boolean retentionEnabled) {
     testApplication.withProperty("camunda.database.type", DatabaseType.RDBMS);
     testApplication.withProperty(
         "spring.datasource.url",
@@ -243,11 +243,14 @@ public class MultiDbConfigurator {
     testApplication.withProperty("spring.datasource.username", "sa");
     testApplication.withProperty("spring.datasource.password", "");
     testApplication.withProperty("zeebe.broker.exporters.rdbms.args.flushInterval", "PT0S");
-    testApplication.withProperty("zeebe.broker.exporters.rdbms.args.defaultHistoryTTL", "PT2S");
     testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.minHistoryCleanupInterval", "PT2S");
+        "zeebe.broker.exporters.rdbms.args.defaultHistoryTTL", retentionEnabled ? "PT1S" : "PT1H");
     testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.maxHistoryCleanupInterval", "PT5S");
+        "zeebe.broker.exporters.rdbms.args.minHistoryCleanupInterval",
+        retentionEnabled ? "PT1S" : "PT1H");
+    testApplication.withProperty(
+        "zeebe.broker.exporters.rdbms.args.maxHistoryCleanupInterval",
+        retentionEnabled ? "PT5S" : "PT2H");
     testApplication.withExporter(
         "rdbms",
         cfg -> {
@@ -274,7 +277,7 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.operate.opensearch.aws.enabled", true);
     testApplication.withAdditionalProperties(opensearchProperties);
     testApplication.withExporter(
-        "OpensearchExporter",
+        OpensearchExporter.class.getSimpleName().toLowerCase(),
         cfg -> {
           cfg.setClassName(OpensearchExporter.class.getName());
           cfg.setArgs(

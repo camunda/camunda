@@ -25,7 +25,38 @@ zeebe:
 
 2. Run bin/camunda (or bin\camunda.bat on Windows)
 
-# With H2:
+Local Development only
+==========
+
+# With Elasticsearch (Camunda Exporter)
+
+## Prerequisites:
+
+Start Elasticsearch docker container (docker compose file in db):
+
+```
+docker-compose up -d elasticsearch
+```
+
+## Start Camunda:
+
+Run camunda with `elasticsearch` profile
+
+# With Opensearch (Camunda Exporter)
+
+## Prerequisites:
+
+Start Elasticsearch docker container (docker compose file in db):
+
+```
+docker-compose up -d opensearch
+```
+
+## Start Camunda:
+
+Run camunda with `opensearch` profile
+
+# With H2 (RDBMS Exporter)
 
 ## Prerequisites:
 
@@ -35,11 +66,11 @@ No prerequisites needed
 
 Run camunda with `rdbmsH2` profile
 
-# With Postgres:
+# With Postgres (RDBMS Exporter)
 
 ## Prerequisites:
 
-Start Postgres docker container (docker compose file in db/rdbms):
+Start Postgres docker container (docker compose file in db):
 
 ```
 docker-compose up -d postgres
@@ -49,11 +80,11 @@ docker-compose up -d postgres
 
 Run camunda with `rdbmsPostgres` profile
 
-# With MariaDB:
+# With MariaDB (RDBMS Exporter)
 
 ## Prerequisites:
 
-Start Postgres docker container (docker compose file in db/rdbms):
+Start Postgres docker container (docker compose file in db):
 
 ```
 docker-compose up -d mariadb
@@ -63,11 +94,11 @@ docker-compose up -d mariadb
 
 Run camunda with `rdbmsMariaDB` profile
 
-# With Oracle:
+# With Oracle (RDBMS Exporter)
 
 ## Prerequisites:
 
-Start Oracle docker container (docker compose file in db/rdbms):
+Start Oracle docker container (docker compose file in db):
 
 ```
 docker-compose up -d oracle

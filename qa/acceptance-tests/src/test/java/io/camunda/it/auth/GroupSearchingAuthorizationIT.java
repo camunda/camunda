@@ -7,14 +7,14 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.AUTHORIZATION;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.GROUP;
+import static io.camunda.client.api.search.enums.PermissionType.*;
+import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
+import static io.camunda.client.api.search.enums.ResourceType.GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
@@ -64,10 +64,10 @@ class GroupSearchingAuthorizationIT {
           ADMIN,
           DEFAULT_PASSWORD,
           List.of(
-              new Permissions(GROUP, PermissionTypeEnum.CREATE, List.of("*")),
-              new Permissions(GROUP, PermissionTypeEnum.UPDATE, List.of("*")),
-              new Permissions(GROUP, PermissionTypeEnum.READ, List.of("*")),
-              new Permissions(AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*"))));
+              new Permissions(GROUP, CREATE, List.of("*")),
+              new Permissions(GROUP, UPDATE, List.of("*")),
+              new Permissions(GROUP, READ, List.of("*")),
+              new Permissions(AUTHORIZATION, UPDATE, List.of("*"))));
 
   @UserDefinition
   private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
@@ -77,7 +77,7 @@ class GroupSearchingAuthorizationIT {
       new User(
           RESTRICTED_WITH_READ,
           DEFAULT_PASSWORD,
-          List.of(new Permissions(GROUP, PermissionTypeEnum.READ, List.of("*"))));
+          List.of(new Permissions(GROUP, READ, List.of("*"))));
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 

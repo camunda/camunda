@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.db.fixtures;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
 import io.camunda.db.rdbms.write.domain.GroupDbModel.Builder;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.function.Function;
 
@@ -18,8 +19,14 @@ public final class GroupFixtures extends CommonFixtures {
   private GroupFixtures() {}
 
   public static GroupDbModel createRandomized(final Function<Builder, Builder> builderFunction) {
-    final var userKey = nextKey();
-    final var builder = new Builder().groupKey(userKey).name("Group " + userKey);
+    final var groupKey = nextKey();
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var builder =
+        new Builder()
+            .groupKey(groupKey)
+            .groupId(groupId)
+            .name("Group " + groupId)
+            .description("Description " + groupId);
 
     return builderFunction.apply(builder).build();
   }
@@ -52,14 +59,14 @@ public final class GroupFixtures extends CommonFixtures {
     return definition;
   }
 
-  public static void createAndSaveGroup(final RdbmsWriter rdbmsWriter, final GroupDbModel user) {
-    createAndSaveGroups(rdbmsWriter, List.of(user));
+  public static void createAndSaveGroup(final RdbmsWriter rdbmsWriter, final GroupDbModel group) {
+    createAndSaveGroups(rdbmsWriter, List.of(group));
   }
 
   public static void createAndSaveGroups(
-      final RdbmsWriter rdbmsWriter, final List<GroupDbModel> userList) {
-    for (final GroupDbModel user : userList) {
-      rdbmsWriter.getGroupWriter().create(user);
+      final RdbmsWriter rdbmsWriter, final List<GroupDbModel> groupList) {
+    for (final GroupDbModel group : groupList) {
+      rdbmsWriter.getGroupWriter().create(group);
     }
     rdbmsWriter.flush();
   }

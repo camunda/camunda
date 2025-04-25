@@ -277,7 +277,7 @@ public class CamundaMultiDBExtension
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
-      case RDBMS -> multiDbConfigurator.configureRDBMSSupport();
+      case RDBMS -> multiDbConfigurator.configureRDBMSSupport(isHistoryRelatedTest);
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
         multiDbConfigurator.configureAWSOpenSearchSupport(awsOSUrl, testPrefix);

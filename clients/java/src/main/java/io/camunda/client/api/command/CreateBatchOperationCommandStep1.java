@@ -23,16 +23,35 @@ import java.util.function.Consumer;
 public interface CreateBatchOperationCommandStep1 {
 
   /**
-   * Defines the type of the batch operation.
+   * Defines the type of the batch operation to cancel process instances.
    *
    * @return the builder for this command
    */
   CreateBatchOperationCommandStep2<ProcessInstanceFilter> processInstanceCancel();
 
+  /**
+   * Defines the type of the batch operation to resolve incidents.
+   *
+   * @return the builder for this command
+   */
+  CreateBatchOperationCommandStep2<ProcessInstanceFilter> resolveIncident();
+
   interface CreateBatchOperationCommandStep2<E extends SearchRequestFilter> {
 
+    /**
+     * Sets the filter for the batch operation.
+     *
+     * @param filter the filter to use
+     * @return the builder for fluent use
+     */
     CreateBatchOperationCommandStep3<E> filter(E filter);
 
+    /**
+     * Sets the filter for the batch operation. Uses a consumer to modify the default filter.
+     *
+     * @param filter the filter to use
+     * @return the builder for fluent use
+     */
     CreateBatchOperationCommandStep3<E> filter(Consumer<E> filter);
   }
 

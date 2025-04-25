@@ -10,29 +10,23 @@ package io.camunda.search.clients.transformers.query;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_FLOW_NODES;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_CHILDREN_FN;
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.aggregator.SearchAggregator;
-import io.camunda.search.clients.aggregator.SearchChildrenAggregator;
 import io.camunda.search.clients.aggregator.SearchFilterAggregator;
 import io.camunda.search.clients.aggregator.SearchParentAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchBoolQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.TypedSearchAggregationQuery;
@@ -83,25 +77,9 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
     assertThat(searchRequest.size()).isZero();
 
     final var aggregations = searchRequest.aggregations();
-    assertThat(aggregations).hasSize(1);
-    assertThat(aggregations.getFirst()).isInstanceOf(SearchChildrenAggregator.class);
+    assertThat(aggregations).hasSize(4);
 
-    final var childrenAgg = (SearchChildrenAggregator) aggregations.getFirst();
-    assertThat(childrenAgg.name()).isEqualTo(AGGREGATION_TO_CHILDREN_FN);
-    assertThat(childrenAgg.type()).isEqualTo(ListViewTemplate.ACTIVITIES_JOIN_RELATION);
-    assertThat(childrenAgg.aggregations()).hasSize(1);
-    assertThat(childrenAgg.aggregations().getFirst()).isInstanceOf(SearchFilterAggregator.class);
-
-    final var filterAgg = (SearchFilterAggregator) childrenAgg.aggregations().getFirst();
-    assertThat(filterAgg.name()).isEqualTo(AGGREGATION_FILTER_FLOW_NODES);
-    assertThat(filterAgg.query())
-        .isEqualTo(
-            or(
-                not(term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString())),
-                term(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString())));
-    assertThat(filterAgg.aggregations()).hasSize(4);
-
-    assertThat(filterAgg.aggregations().get(0))
+    assertThat(aggregations.get(0))
         .isInstanceOfSatisfying(
             SearchFilterAggregator.class,
             activeFilter -> {
@@ -113,21 +91,17 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
                           term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())));
               assertSubAggregations(activeFilter.aggregations());
             });
-    assertThat(filterAgg.aggregations().get(1))
+    assertThat(aggregations.get(1))
         .isInstanceOfSatisfying(
             SearchFilterAggregator.class,
             completedFilter -> {
               assertThat(completedFilter.name()).isEqualTo(AGGREGATION_FILTER_COMPLETED);
               assertThat(completedFilter.query())
                   .isEqualTo(
-                      and(
-                          term(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString()),
-                          term(
-                              ListViewTemplate.ACTIVITY_STATE,
-                              FlowNodeState.COMPLETED.toString())));
+                      term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString()));
               assertSubAggregations(completedFilter.aggregations());
             });
-    assertThat(filterAgg.aggregations().get(2))
+    assertThat(aggregations.get(2))
         .isInstanceOfSatisfying(
             SearchFilterAggregator.class,
             canceledFilter -> {
@@ -137,7 +111,7 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
                       term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.TERMINATED.toString()));
               assertSubAggregations(canceledFilter.aggregations());
             });
-    assertThat(filterAgg.aggregations().get(3))
+    assertThat(aggregations.get(3))
         .isInstanceOfSatisfying(
             SearchFilterAggregator.class,
             incidentsFilter -> {
@@ -158,8 +132,9 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
     assertThat(boolQuery.mustNot()).isEmpty();
     assertThat(boolQuery.must())
         .containsExactly(
-            SearchQueryBuilders.term(ListViewTemplate.PROCESS_KEY, processDefinitionKey),
-            SearchQueryBuilders.term(
-                ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
+            term(ListViewTemplate.JOIN_RELATION, ListViewTemplate.ACTIVITIES_JOIN_RELATION),
+            hasParentQuery(
+                ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION,
+                term(ListViewTemplate.PROCESS_KEY, processDefinitionKey)));
   }
 }

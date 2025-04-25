@@ -37,7 +37,7 @@ public final class ReschedulingTask implements Runnable {
     this.executor = executor;
     this.logger = logger;
 
-    periodicLogger = new ReschedulingTaskLogger(logger);
+    periodicLogger = new ReschedulingTaskLogger(logger, true);
     idleStrategy = new ExponentialBackoff(maxDelayBetweenRunsMs, delayBetweenRunsMs, 1.2, 0);
     errorStrategy = new ExponentialBackoff(10_000, delayBetweenRunsMs, 1.2, 0);
   }

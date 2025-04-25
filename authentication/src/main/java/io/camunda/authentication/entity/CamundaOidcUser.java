@@ -16,12 +16,9 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
-public class CamundaOidcUser implements OidcUser, CamundaPrincipal, Serializable {
+public class CamundaOidcUser implements OidcUser, CamundaOAuthPrincipal, Serializable {
   private final OidcUser user;
-  private final AuthenticationContext authentication;
-  // todo remove after fully migrating to mapping IDs #27207
-  private final Set<Long> mappingKeys;
-  private final Set<String> mappingIds;
+  private final OAuthContext oAuthContext;
 
   public CamundaOidcUser(
       final OidcUser oidcUser,
@@ -29,9 +26,12 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal, Serializable
       final Set<String> mappingIds,
       final AuthenticationContext authentication) {
     user = oidcUser;
-    this.mappingKeys = mappingKeys;
-    this.mappingIds = mappingIds;
-    this.authentication = authentication;
+    oAuthContext = new OAuthContext(mappingKeys, mappingIds, authentication);
+  }
+
+  public CamundaOidcUser(final OidcUser user, final OAuthContext oAuthContext) {
+    this.user = user;
+    this.oAuthContext = oAuthContext;
   }
 
   @Override
@@ -46,7 +46,7 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal, Serializable
 
   @Override
   public AuthenticationContext getAuthenticationContext() {
-    return authentication;
+    return oAuthContext.authenticationContext();
   }
 
   @Override
@@ -80,10 +80,15 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal, Serializable
   }
 
   public Set<Long> getMappingKeys() {
-    return mappingKeys;
+    return oAuthContext.mappingKeys();
   }
 
   public Set<String> getMappingIds() {
-    return mappingIds;
+    return oAuthContext.mappingIds();
+  }
+
+  @Override
+  public OAuthContext getOAuthContext() {
+    return oAuthContext;
   }
 }

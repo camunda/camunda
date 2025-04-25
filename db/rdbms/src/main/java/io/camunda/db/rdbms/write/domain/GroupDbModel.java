@@ -14,7 +14,9 @@ import java.util.function.Function;
 public class GroupDbModel implements DbModel<GroupDbModel> {
 
   private Long groupKey;
+  private String groupId;
   private String name;
+  private String description;
   private List<GroupMemberDbModel> members;
 
   public Long groupKey() {
@@ -25,12 +27,28 @@ public class GroupDbModel implements DbModel<GroupDbModel> {
     this.groupKey = groupKey;
   }
 
+  public String groupId() {
+    return groupId;
+  }
+
+  public void groupId(final String groupId) {
+    this.groupId = groupId;
+  }
+
   public String name() {
     return name;
   }
 
   public void name(final String name) {
     this.name = name;
+  }
+
+  public String description() {
+    return description;
+  }
+
+  public void description(final String description) {
+    this.description = description;
   }
 
   public List<GroupMemberDbModel> members() {
@@ -52,8 +70,12 @@ public class GroupDbModel implements DbModel<GroupDbModel> {
     return "GroupDbModel{"
         + "groupKey="
         + groupKey
+        + ", groupId='"
+        + groupId
         + ", name='"
         + name
+        + ", description='"
+        + description
         + '\''
         + ", members="
         + members
@@ -63,7 +85,9 @@ public class GroupDbModel implements DbModel<GroupDbModel> {
   public static class Builder implements ObjectBuilder<GroupDbModel> {
 
     private Long groupKey;
+    private String groupId;
     private String name;
+    private String description;
     private List<GroupMemberDbModel> members;
 
     public Builder() {}
@@ -73,8 +97,18 @@ public class GroupDbModel implements DbModel<GroupDbModel> {
       return this;
     }
 
+    public Builder groupId(final String groupId) {
+      this.groupId = groupId;
+      return this;
+    }
+
     public Builder name(final String name) {
       this.name = name;
+      return this;
+    }
+
+    public Builder description(final String description) {
+      this.description = description;
       return this;
     }
 
@@ -87,7 +121,9 @@ public class GroupDbModel implements DbModel<GroupDbModel> {
     public GroupDbModel build() {
       final GroupDbModel model = new GroupDbModel();
       model.groupKey(groupKey);
+      model.groupId(groupId);
       model.name(name);
+      model.description(description);
       model.members(members);
       return model;
     }

@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
@@ -75,7 +76,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "processDefinitionVersionTag": "v5",
             "processDefinitionKey": "789",
             "parentProcessInstanceKey": "333",
-            "parentFlowNodeInstanceKey": "777",
+            "parentElementInstanceKey": "777",
             "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
@@ -95,7 +96,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionVersionTag": "v5",
                   "processDefinitionKey": "789",
                   "parentProcessInstanceKey": "333",
-                  "parentFlowNodeInstanceKey": "777",
+                  "parentElementInstanceKey": "777",
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,
@@ -172,6 +173,93 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
+  }
+
+  @Test
+  void shouldInvalidateProcessInstanceSearchQueryWithEmptyVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "variables": [
+                        {
+                            "name": "creationDate",
+                            "value": {}
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+  }
+
+  @Test
+  void shouldInvalidateProcessInstanceSearchQueryWithMissingVariableFilter() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "variables": [
+                        {
+                            "name": "creationDate"
+                        }
+                    ]
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Variable value must not be null.",
+                  "instance": "%s"
+                }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
 
   @Test
@@ -283,7 +371,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentFlowNodeInstanceKey, startDate, endDate, state, hasIncident, tenantId]",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentElementInstanceKey, startDate, endDate, state, hasIncident, tenantId]",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -457,7 +545,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         ops -> new ProcessInstanceFilter.Builder().parentProcessInstanceKeyOperations(ops).build());
     keyOperationTestCases(
         streamBuilder,
-        "parentFlowNodeInstanceKey",
+        "parentElementInstanceKey",
         ops ->
             new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeyOperations(ops).build());
     integerOperationTestCases(
@@ -544,7 +632,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @EnumSource(ProcessInstanceStateEnum.class)
-  void shouldSearchProcessInstancesByState(ProcessInstanceStateEnum state) {
+  void shouldSearchProcessInstancesByState(final ProcessInstanceStateEnum state) {
     // given
     final var request =
         """
@@ -577,5 +665,56 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     // then
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  void shouldSearchProcessInstancesWithOrOperator() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "state": "ACTIVE",
+            "tenantId": "tenant",
+            "$or": [
+              { "processDefinitionId": "process_v1" },
+              { "processDefinitionId": "process_v2", "hasIncident": true }
+            ]
+          }
+        }""";
+
+    final var orFilters =
+        List.of(
+            new ProcessInstanceFilter.Builder().processDefinitionIds("process_v1").build(),
+            new ProcessInstanceFilter.Builder()
+                .processDefinitionIds("process_v2")
+                .hasIncident(true)
+                .build());
+
+    final var expectedFilter =
+        new ProcessInstanceFilter.Builder()
+            .stateOperations(Operation.eq("ACTIVE"))
+            .tenantIdOperations(Operation.eq("tenant"));
+    orFilters.forEach(expectedFilter::addOrOperation);
+
+    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(processInstanceServices)
+        .search(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build());
   }
 }

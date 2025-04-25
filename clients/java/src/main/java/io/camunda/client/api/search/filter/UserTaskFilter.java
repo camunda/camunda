@@ -155,7 +155,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilter processInstanceVariables(
-      final List<UserTaskVariableFilterRequest> variableValueFilters);
+      final List<Consumer<VariableValueFilter>> variableValueFilters);
 
   /**
    * Filters user tasks by specified Map of Process Instance Variables.
@@ -171,7 +171,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param variableValueFilters from the task
    * @return the updated filter
    */
-  UserTaskFilter localVariables(final List<UserTaskVariableFilterRequest> variableValueFilters);
+  UserTaskFilter localVariables(final List<Consumer<VariableValueFilter>> variableValueFilters);
 
   /**
    * Filters user tasks by specified Map of Local Variables.

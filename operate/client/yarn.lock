@@ -3365,10 +3365,10 @@
   resolved "https://registry.yarnpkg.com/@ungap/structured-clone/-/structured-clone-1.2.0.tgz#756641adb587851b5ccb3e095daf27ae581c8406"
   integrity sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==
 
-"@vzeta/camunda-api-zod-schemas@0.0.2-beta.28":
-  version "0.0.2-beta.28"
-  resolved "https://registry.yarnpkg.com/@vzeta/camunda-api-zod-schemas/-/camunda-api-zod-schemas-0.0.2-beta.28.tgz#b0505eb9535e444f20d41176e2f1e53396a8a4b1"
-  integrity sha512-u4BNDOpGB4ySeq20mGsfmT+YCxusTP9PYA1pMCwAnc09t2/A3ajOsoFY8GHEIUa8e9N8u+01Y3KVkfIWXzUsTQ==
+"@vzeta/camunda-api-zod-schemas@0.0.2-beta.32":
+  version "0.0.2-beta.32"
+  resolved "https://registry.yarnpkg.com/@vzeta/camunda-api-zod-schemas/-/camunda-api-zod-schemas-0.0.2-beta.32.tgz#a09d1b18359e6112b8f66c31dd14b0a4d3a9a521"
+  integrity sha512-hcD7QFTl2vdC8r1YRJcr8+nYlHUPj+xBRlrSdcBAeqh1osK8Dzg8lF2lkq/T36QXUsg0PNMQlg2bD4D/9QQLIA==
 
 "@webassemblyjs/ast@1.12.1", "@webassemblyjs/ast@^1.12.1":
   version "1.12.1"
@@ -7187,10 +7187,10 @@ http-proxy-agent@^7.0.0:
     agent-base "^7.1.0"
     debug "^4.3.4"
 
-http-proxy-middleware@3.0.3:
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/http-proxy-middleware/-/http-proxy-middleware-3.0.3.tgz#dc1313c75bd00d81e103823802551ee30130ebd1"
-  integrity sha512-usY0HG5nyDUwtqpiZdETNbmKtw3QQ1jwYFZ9wi5iHzX2BcILwQKtYDJPo7XHTsu5Z0B2Hj3W9NNnbd+AjFWjqg==
+http-proxy-middleware@3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/http-proxy-middleware/-/http-proxy-middleware-3.0.4.tgz#f755c799b8cf31a9e3e0ba12952919efae58fe5d"
+  integrity sha512-LRX3BKgdEyHjLMz608kicoz5E6zGdkSpDwLYVBsJlDpQ3wcqh/Wdsopf2KrysXnNeM7jJJk4KXCV14u8SCLZzQ==
   dependencies:
     "@types/http-proxy" "^1.17.15"
     debug "^4.3.6"

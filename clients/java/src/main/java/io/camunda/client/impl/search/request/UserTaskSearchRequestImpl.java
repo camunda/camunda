@@ -30,7 +30,6 @@ import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.impl.search.sort.UserTaskSortImpl;
 import io.camunda.client.protocol.rest.UserTaskSearchQuery;
 import io.camunda.client.protocol.rest.UserTaskSearchQueryResult;
 import java.time.Duration;
@@ -75,9 +74,7 @@ public class UserTaskSearchRequestImpl
 
   @Override
   public UserTaskSearchRequest filter(final UserTaskFilter value) {
-    final io.camunda.client.protocol.rest.UserTaskFilter filter =
-        provideSearchRequestProperty(value);
-    request.setFilter(filter);
+    request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
@@ -88,10 +85,9 @@ public class UserTaskSearchRequestImpl
 
   @Override
   public UserTaskSearchRequest sort(final UserTaskSort value) {
-    final UserTaskSortImpl sorting = (UserTaskSortImpl) value;
     request.setSort(
         SearchRequestSortMapper.toUserTaskSearchQuerySortRequest(
-            sorting.getSearchRequestProperty()));
+            provideSearchRequestProperty(value)));
     return this;
   }
 
@@ -102,8 +98,7 @@ public class UserTaskSearchRequestImpl
 
   @Override
   public UserTaskSearchRequest page(final SearchRequestPage value) {
-    final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
-    request.setPage(page.getSearchRequestProperty());
+    request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 

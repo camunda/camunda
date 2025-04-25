@@ -13,10 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +34,9 @@ public class GroupStateTest {
     // given
     final var groupId = "1";
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
+    final var description = "description";
+    final var groupRecord =
+        new GroupRecord().setGroupId(groupId).setName(groupName).setDescription(description);
 
     // when
     groupState.create(groupRecord);
@@ -47,6 +46,7 @@ public class GroupStateTest {
     assertThat(group.isPresent()).isTrue();
     final var persistedGroup = group.get();
     assertThat(persistedGroup.getName()).isEqualTo(groupName);
+    assertThat(persistedGroup.getDescription()).isEqualTo(description);
   }
 
   @Test
@@ -84,68 +84,26 @@ public class GroupStateTest {
   }
 
   @Test
-  void shouldAddEntity() {
+  void shouldUpdateGroupDescription() {
     // given
-    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupId = "1";
     final var groupName = "group";
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
 
-    // when
-    final var userKey = 2L;
-    final var userEntityType = EntityType.USER;
-    groupRecord.setEntityKey(userKey).setEntityType(userEntityType);
-    groupState.addEntity(groupRecord);
-
-    // then
-    final var entityType = groupState.getEntityType(groupId, userKey);
-    assertThat(entityType.isPresent()).isTrue();
-    assertThat(entityType.get()).isEqualTo(userEntityType);
-  }
-
-  @Test
-  void shouldReturnEntitiesByType() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
-    groupState.create(groupRecord);
-    final var userKey = 2L;
-    groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
-    groupState.addEntity(groupRecord);
-    final var mappingKey = 3L;
-    groupRecord.setEntityKey(mappingKey).setEntityType(EntityType.MAPPING);
-    groupState.addEntity(groupRecord);
+    final var updatedDescription = "updatedDescription";
+    groupRecord.setDescription(updatedDescription);
 
     // when
-    final var entities = groupState.getEntitiesByType(groupId);
+    groupState.update(groupRecord);
 
     // then
-    assertThat(entities)
-        .containsEntry(EntityType.USER, List.of(userKey))
-        .containsEntry(EntityType.MAPPING, List.of(mappingKey));
-  }
-
-  @Test
-  void shouldRemoveEntity() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
-    groupState.create(groupRecord);
-    final var userKey = 2L;
-    groupRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
-    groupState.addEntity(groupRecord);
-    final var mappingKey = 3L;
-    groupRecord.setEntityKey(mappingKey).setEntityType(EntityType.MAPPING);
-    groupState.addEntity(groupRecord);
-
-    // when
-    groupState.removeEntity(groupId, userKey);
-
-    // then
-    final var entityType = groupState.getEntitiesByType(groupId);
-    assertThat(entityType).containsOnly(Map.entry(EntityType.MAPPING, List.of(mappingKey)));
+    final var group = groupState.get(groupId);
+    assertThat(group.isPresent()).isTrue();
+    final var persistedGroup = group.get();
+    assertThat(persistedGroup.getDescription()).isEqualTo(updatedDescription);
+    assertThat(persistedGroup.getGroupId()).isEqualTo(groupId);
+    assertThat(persistedGroup.getName()).isEqualTo(groupName);
   }
 
   @Test
@@ -155,10 +113,6 @@ public class GroupStateTest {
     final var groupName = "group";
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
-    groupState.addEntity(groupRecord);
-    groupRecord.setEntityKey(3L).setEntityType(EntityType.MAPPING);
-    groupState.addEntity(groupRecord);
 
     // when
     groupState.delete(groupId);
@@ -166,54 +120,5 @@ public class GroupStateTest {
     // then
     final var group = groupState.get(groupId);
     assertThat(group).isEmpty();
-
-    final var entitiesByGroup = groupState.getEntitiesByType(groupId);
-    assertThat(entitiesByGroup).isEmpty();
-  }
-
-  @Test
-  void shouldAddTenant() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = "group";
-    final var tenantId = "tenant1";
-    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
-    groupState.create(groupRecord);
-
-    // when
-    groupState.addTenant(groupId, tenantId);
-
-    // then
-    final var group = groupState.get(groupId);
-    assertThat(group.isPresent()).isTrue();
-    assertThat(group.get().getTenantIdsList()).containsExactly(tenantId);
-  }
-
-  @Test
-  void shouldRemoveTenant() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = "group";
-    final var tenantId1 = "tenant1";
-    final var tenantId2 = "tenant2";
-
-    // Create a group and add tenants
-    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
-    groupState.create(groupRecord);
-    groupState.addTenant(groupId, tenantId1);
-    groupState.addTenant(groupId, tenantId2);
-
-    // Ensure tenants are added correctly
-    final var groupBeforeRemove = groupState.get(groupId);
-    assertThat(groupBeforeRemove.isPresent()).isTrue();
-    assertThat(groupBeforeRemove.get().getTenantIdsList()).containsExactly(tenantId1, tenantId2);
-
-    // when
-    groupState.removeTenant(groupId, tenantId1);
-
-    // then
-    final var groupAfterRemove = groupState.get(groupId);
-    assertThat(groupAfterRemove.isPresent()).isTrue();
-    assertThat(groupAfterRemove.get().getTenantIdsList()).containsExactly(tenantId2);
   }
 }

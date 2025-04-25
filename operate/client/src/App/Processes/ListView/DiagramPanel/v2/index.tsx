@@ -174,7 +174,8 @@ const DiagramPanel: React.FC = observer(() => {
                       selectedFlowNodeId !== undefined &&
                       isMoveModificationTarget(
                         getFlowNode({
-                          diagramModel: processDefinition.data?.diagramModel,
+                          businessObjects:
+                            processDefinition.data?.diagramModel.elementsById,
                           flowNodeId: selectedFlowNodeId,
                         }),
                       ),

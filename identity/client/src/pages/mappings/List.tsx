@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { FC } from "react";
 import { Edit, TrashCan, Add } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
@@ -19,7 +20,6 @@ import AddModal from "src/pages/mappings/modals/AddModal";
 import { searchMapping } from "src/utility/api/mappings";
 import DeleteModal from "src/pages/mappings/modals/DeleteModal";
 import EditModal from "src/pages/mappings/modals/EditModal";
-import { IS_UPDATE_MAPPINGS_SUPPORTED } from "src/feature-flags";
 
 const List: FC = () => {
   const { t } = useTranslate("mappingRules");
@@ -73,7 +73,7 @@ const List: FC = () => {
       <EntityList
         data={mappingSearchResults == null ? [] : mappingSearchResults.items}
         headers={[
-          { header: t("mappingId"), key: "mappingKey" },
+          { header: t("mappingId"), key: "mappingId" },
           { header: t("mappingName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
@@ -87,7 +87,6 @@ const List: FC = () => {
             label: t("edit"),
             icon: Edit,
             onClick: editMapping,
-            hidden: !IS_UPDATE_MAPPINGS_SUPPORTED,
           },
           {
             label: t("delete"),

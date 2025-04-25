@@ -16,6 +16,7 @@ import static io.camunda.it.migration.util.PrefixMigrationITUtils.createCamundaC
 import static io.camunda.it.migration.util.PrefixMigrationITUtils.requestProcessInstanceFromV1;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbDatabaseType;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -23,7 +24,7 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.S
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -40,8 +41,8 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.testcontainers.Testcontainers;
@@ -52,14 +53,25 @@ import org.testcontainers.utility.DockerImageName;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+/**
+ * How to run this test locally:
+ *
+ * <ul>
+ *   <li>Start a local ES/OS instance on port 9200
+ *   <li>Change the DEFAULT_ES_OS_URL_FOR_MULTI_DB to http://host.docker.internal:9200
+ *   <li>Change the {@link CamundaMultiDBExtension#currentMultiDbDatabaseType()} to always return
+ *       {@link DatabaseType#ES}
+ *   <li>Make sure to not commit the changes when you're done
+ * </ul>
+ */
 public class PrefixMigrationIT {
   private static final String DEFAULT_ES_OS_URL_FOR_MULTI_DB =
       "http://host.testcontainers.internal:9200";
   private static final int TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION = 34;
 
   @MultiDbTestApplication(managedLifecycle = false)
-  private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
-      new TestSimpleCamundaApplication().withBasicAuth().withAuthorizationsEnabled();
+  private static final TestCamundaApplication STANDALONE_CAMUNDA =
+      new TestCamundaApplication().withBasicAuth().withAuthorizationsEnabled();
 
   @BeforeAll
   public static void beforeAll() {
@@ -198,7 +210,7 @@ public class PrefixMigrationIT {
             Collections.nCopies(TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION, null));
 
     // validate all 8.7 operate/tasklist indices have been created
-    Awaitility.await("Await schema readiness")
+    await("Await schema readiness")
         .timeout(Duration.ofMinutes(1))
         .pollInterval(Duration.ofMillis(500))
         .until(() -> setupHelper.validateSchemaCreation(shortUUID));
@@ -228,7 +240,7 @@ public class PrefixMigrationIT {
             SearchEngineConfiguration.of(b -> b),
             new ObjectMapper());
 
-    Awaitility.await("All indices migrated")
+    await("All indices migrated")
         .untilAsserted(
             () -> {
               Assertions.assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
@@ -239,6 +251,7 @@ public class PrefixMigrationIT {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/30126")
   void shouldReindexDocumentsDuringPrefixMigration() throws IOException {
     // given
     final var camunda87 = createCamundaContainer();
@@ -249,7 +262,7 @@ public class PrefixMigrationIT {
     final var event =
         camunda87Client
             .newDeployResourceCommand()
-            .addResourceFromClasspath("process/incident_process_v1.bpmn")
+            .addResourceFromClasspath("process/service_tasks_v1.bpmn")
             .send()
             .join();
 
@@ -262,7 +275,7 @@ public class PrefixMigrationIT {
             .join();
 
     // Wait for documents to be written to indices
-    Awaitility.await("document should be written")
+    await("document should be written")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -283,16 +296,23 @@ public class PrefixMigrationIT {
     prefixMigration(OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, "prefixmigrationit");
 
     // then
-    STANDALONE_CAMUNDA.start();
-    STANDALONE_CAMUNDA.awaitCompleteTopology();
-    try (final var currentCamundaClient = STANDALONE_CAMUNDA.newClientBuilder().build()) {
-      final var processDefinitions =
-          currentCamundaClient.newProcessDefinitionSearchRequest().send().join();
-      assertThat(processDefinitions.items().size()).isEqualTo(1);
-      assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
-          .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+    try {
+      STANDALONE_CAMUNDA.start();
+      STANDALONE_CAMUNDA.awaitCompleteTopology();
+      try (final var currentCamundaClient = STANDALONE_CAMUNDA.newClientBuilder().build()) {
+        await("documents are migrated")
+            .atMost(Duration.ofSeconds(30))
+            .untilAsserted(
+                () -> {
+                  final var processDefinitions =
+                      currentCamundaClient.newProcessDefinitionSearchRequest().send().join();
+                  assertThat(processDefinitions.items().size()).isEqualTo(1);
+                  assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
+                      .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+                });
+      }
+    } finally {
+      STANDALONE_CAMUNDA.stop();
     }
-
-    STANDALONE_CAMUNDA.stop();
   }
 }

@@ -10,36 +10,33 @@ import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {useExecutedFlowNodes} from './useExecutedFlowNodes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import * as pageParamsModule from 'App/ProcessInstance/useProcessInstancePageParams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {useEffect} from 'react';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('useExecutedFlowNodes', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
-    useEffect(() => {
-      return () => {
-        processInstanceDetailsDiagramStore.reset();
-      };
-    }, []);
-
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        {children}
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
   beforeEach(async () => {
-    jest
-      .spyOn(pageParamsModule, 'useProcessInstancePageParams')
-      .mockReturnValue({processInstanceId: 'processInstanceId123'});
-
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
   });
 
   afterEach(() => {
@@ -50,21 +47,21 @@ describe('useExecutedFlowNodes', () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          flowNodeId: 'StartEvent_1',
+          elementId: 'StartEvent_1',
           active: 0,
           completed: 10,
           canceled: 0,
           incidents: 0,
         },
         {
-          flowNodeId: 'Activity_0qtp1k6',
+          elementId: 'Activity_0qtp1k6',
           active: 0,
           completed: 7,
           canceled: 0,
           incidents: 0,
         },
         {
-          flowNodeId: 'Gateway_1',
+          elementId: 'Gateway_1',
           active: 0,
           completed: 0,
           canceled: 0,
@@ -79,20 +76,18 @@ describe('useExecutedFlowNodes', () => {
       wrapper: Wrapper,
     });
 
-    expect(result.current.isLoading).toBe(true);
-
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual([
       {
-        flowNodeId: 'StartEvent_1',
+        elementId: 'StartEvent_1',
         active: 0,
         completed: 10,
         canceled: 0,
         incidents: 0,
       },
       {
-        flowNodeId: 'Activity_0qtp1k6',
+        elementId: 'Activity_0qtp1k6',
         active: 0,
         completed: 7,
         canceled: 0,
@@ -142,10 +137,12 @@ describe('useExecutedFlowNodes', () => {
   });
 
   it('should handle loading state', async () => {
+    mockFetchFlownodeInstancesStatistics().withDelay({items: []});
+
     const {result} = renderHook(() => useExecutedFlowNodes(), {
       wrapper: Wrapper,
     });
 
-    expect(result.current.isLoading).toBe(true);
+    await waitFor(() => expect(result.current.isLoading).toBe(true));
   });
 });

@@ -92,7 +92,7 @@ public class DecisionInstanceSpecificFilterIT {
             b ->
                 b.decisionInstanceId("42-1")
                     .decisionInstanceKey(42L)
-                    .flowNodeId("unique-flowNode-42")
+                    .flowNodeId("unique-element-42")
                     .processInstanceKey(123L)
                     .processDefinitionId("unique-process-124")
                     .processDefinitionKey(124L)

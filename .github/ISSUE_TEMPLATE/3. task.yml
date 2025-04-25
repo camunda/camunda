@@ -1,0 +1,60 @@
+name: Task
+description: Describe a generic activity we should carry out.
+labels: ["kind/task"]
+type: task
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: <!-- Component -->
+      description: In which component shall the task be carried out?
+      # The components should be kept in alphabetical order, with "Not sure" at the top
+      options:
+        - <!-- Not sure- -->
+        - <!-- C8-API- -->
+        - <!-- C8Run- -->
+        - <!-- Feel- -->
+        - <!-- Identity- -->
+        - <!-- Operate- -->
+        - <!-- Optimize- -->
+        - <!-- Tasklist- -->
+        - <!-- Zeebe- -->
+      default: null
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Clearly describe the activity we should carry out.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Argue why doing it is a healthy investment of our time.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: add the TODOs in here (optional).
+      value: |
+        - [ ] ...
+    validations:
+      required: false
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: Add the support ticket- or other links here if applicable.
+    validations:
+      required: false
+  - type: textarea
+    id: breakdown
+    attributes:
+      label: Breakdown
+    validations:
+      required: false

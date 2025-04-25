@@ -66,20 +66,20 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         brokerClient, securityContextProvider, groupSearchClient, authentication);
   }
 
-  public CompletableFuture<GroupRecord> createGroup(final CreateGroupRequest createGroupRequest) {
+  public CompletableFuture<GroupRecord> createGroup(final GroupDTO groupDTO) {
     return sendBrokerRequest(
         new BrokerGroupCreateRequest()
-            .setGroupId(createGroupRequest.groupId)
-            .setName(createGroupRequest.name)
-            .setDescription(createGroupRequest.description));
+            .setGroupId(groupDTO.groupId)
+            .setName(groupDTO.name)
+            .setDescription(groupDTO.description));
   }
 
-  public GroupEntity getGroup(final Long groupKey) {
-    return findGroup(groupKey)
+  public GroupEntity getGroup(final String groupId) {
+    return findGroup(groupId)
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_KEY.formatted(groupKey),
+                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_ID.formatted(groupId),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
@@ -99,20 +99,20 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
-  public List<GroupEntity> getGroupsByUserKey(final long userKey) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKey(userKey)).build())
+  public List<GroupEntity> getGroupsByUserKey(final String username) {
+    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberId(username)).build())
         .items()
         .stream()
         .toList();
   }
 
-  public List<GroupEntity> getGroupsByMemberKeys(final Set<Long> memberKeys) {
+  public List<GroupEntity> getGroupsByMemberKeys(final Set<String> memberKeys) {
     return findAll(
-        SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKeys(memberKeys)).build());
+        SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberIds(memberKeys)).build());
   }
 
-  public Optional<GroupEntity> findGroup(final Long groupKey) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupKey(groupKey)).build())
+  public Optional<GroupEntity> findGroup(final String groupId) {
+    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupId(groupId)).build())
         .items()
         .stream()
         .findFirst();
@@ -121,32 +121,30 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public CompletableFuture<GroupRecord> updateGroup(
       final String groupId, final String name, final String description) {
     return sendBrokerRequest(
-        new BrokerGroupUpdateRequest(Long.parseLong(groupId))
-            .setGroupId(groupId)
-            .setName(name)
-            .setDescription(description));
+        new BrokerGroupUpdateRequest(groupId).setName(name).setDescription(description));
   }
 
   public CompletableFuture<GroupRecord> deleteGroup(final String groupId) {
-    return sendBrokerRequest(
-        new BrokerGroupDeleteRequest(Long.parseLong(groupId)).setGroupId(groupId));
+    return sendBrokerRequest(new BrokerGroupDeleteRequest(groupId));
   }
 
   public CompletableFuture<GroupRecord> assignMember(
-      final String groupId, final String username, final EntityType memberType) {
+      final String groupId, final String entityId, final EntityType memberType) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createAddRequest(groupId)
-            .setMemberId(username)
+            .setMemberId(entityId)
             .setMemberType(memberType));
   }
 
   public CompletableFuture<GroupRecord> removeMember(
-      final String groupId, final String username, final EntityType memberType) {
+      final String groupId, final String entityId, final EntityType memberType) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createRemoveRequest(groupId)
-            .setMemberId(username)
+            .setMemberId(entityId)
             .setMemberType(memberType));
   }
 
-  public record CreateGroupRequest(String groupId, String name, String description) {}
+  public record GroupDTO(String groupId, String name, String description) {}
+
+  public record GroupMemberRequest(String groupId, String entityId, EntityType entityType) {}
 }

@@ -113,9 +113,9 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     final var record = command.getValue();
     final var isAssigned =
         switch (record.getEntityType()) {
-          case USER ->
+          case USER, MAPPING ->
               membershipState.hasRelation(
-                  EntityType.USER,
+                  record.getEntityType(),
                   // TODO: Use entity id instead of key
                   Long.toString(record.getEntityKey()),
                   RelationType.ROLE,
@@ -139,7 +139,8 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
     return switch (entityType) {
       case USER -> userState.getUser(entityKey).isPresent();
-      case MAPPING -> mappingState.get(entityKey).isPresent();
+      // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
+      case MAPPING -> mappingState.get(String.valueOf(entityKey)).isPresent();
       default -> false;
     };
   }

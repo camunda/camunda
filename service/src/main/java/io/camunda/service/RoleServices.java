@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, RoleEntity> {
 
@@ -53,12 +54,17 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   public SearchQueryResult<RoleEntity> getMemberRoles(final long memberKey, final RoleQuery query) {
+    // todo use memberId (String) in https://github.com/camunda/camunda/issues/30111
     return search(
-        query.toBuilder().filter(query.filter().toBuilder().memberKey(memberKey).build()).build());
+        query.toBuilder()
+            .filter(query.filter().toBuilder().memberId(String.valueOf(memberKey)).build())
+            .build());
   }
 
   public List<RoleEntity> getRolesByMemberKeys(final Set<Long> memberKeys) {
-    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberKeys(memberKeys))));
+    // todo use memberIds (String) in https://github.com/camunda/camunda/issues/30111
+    final var memberIds = memberKeys.stream().map(String::valueOf).collect(Collectors.toSet());
+    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberIds))));
   }
 
   public List<RoleEntity> findAll(final RoleQuery query) {
@@ -117,24 +123,23 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return sendBrokerRequest(new BrokerRoleDeleteRequest(roleId));
   }
 
-  public CompletableFuture<?> addMember(final AddEntityToRoleRequest request) {
+  public CompletableFuture<?> addMember(final RoleMemberRequest request) {
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createAddRequest()
             .setRoleId(request.roleId())
             .setEntity(request.entityType(), request.entityId()));
   }
 
-  public CompletableFuture<?> removeMember(
-      final Long roleKey, final EntityType entityType, final long entityKey) {
+  public CompletableFuture<?> removeMember(final RoleMemberRequest request) {
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createRemoveRequest()
-            .setRoleId(String.valueOf(roleKey))
-            .setEntity(entityType, String.valueOf(entityKey)));
+            .setRoleId(request.roleId())
+            .setEntity(request.entityType(), request.entityId()));
   }
 
   public record CreateRoleRequest(String roleId, String name, String description) {}
 
   public record UpdateRoleRequest(String roleId, String name, String description) {}
 
-  public record AddEntityToRoleRequest(String roleId, String entityId, EntityType entityType) {}
+  public record RoleMemberRequest(String roleId, String entityId, EntityType entityType) {}
 }

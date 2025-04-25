@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
@@ -48,12 +49,12 @@ public class DeleteUserTest {
     assertThat(deletedUser).isNotNull().hasFieldOrPropertyWithValue("userKey", userRecord.getKey());
   }
 
-  @Ignore("https://github.com/camunda/camunda/issues/30091")
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldCleanupMembership() {
     final var username = UUID.randomUUID().toString();
     final var tenantId = "tenant";
-    final var groupId = "123";
+    final var groupId = Strings.newRandomValidIdentityId();
     final var userRecord =
         ENGINE
             .user()
@@ -62,16 +63,11 @@ public class DeleteUserTest {
             .withEmail("foo@bar.com")
             .withPassword("password")
             .create();
-    final var group = ENGINE.group().newGroup("group").withGroupId(groupId).create();
+    final var group = ENGINE.group().newGroup(groupId).withName("group").create();
     final var role = ENGINE.role().newRole("role").create();
     final var tenant = ENGINE.tenant().newTenant().withTenantId(tenantId).create();
 
-    ENGINE
-        .group()
-        .addEntity(groupId)
-        .withEntityKey(userRecord.getKey())
-        .withEntityType(EntityType.USER)
-        .add();
+    ENGINE.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
     ENGINE
         .role()
         .addEntity(role.getKey())
@@ -91,8 +87,8 @@ public class DeleteUserTest {
     // then
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
-                .withGroupKey(Long.parseLong(groupId))
-                .withEntityKey(userRecord.getKey())
+                .withGroupId(groupId)
+                .withEntityId(username)
                 .exists())
         .isTrue();
     Assertions.assertThat(

@@ -18,11 +18,13 @@ public class GroupIndex extends AbstractIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "group";
   public static final String INDEX_VERSION = "8.8.0";
   public static final String KEY = "key";
-  public static final String MEMBER_KEY = "memberKey";
+  public static final String GROUP_ID = "groupId";
+  public static final String MEMBER_ID = "memberId";
   public static final String NAME = "name";
+  public static final String DESCRIPTION = "description";
   public static final String JOIN = "join";
 
-  public static final EntityJoinRelationFactory<Long> JOIN_RELATION_FACTORY =
+  public static final EntityJoinRelationFactory<String> JOIN_RELATION_FACTORY =
       new EntityJoinRelationFactory<>(
           IdentityJoinRelationshipType.GROUP, IdentityJoinRelationshipType.MEMBER);
 

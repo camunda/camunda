@@ -187,6 +187,14 @@ describe('Download CSV', () => {
     expect(node.find(DownloadButton)).toExist();
   });
 
+  it('should not show a download csv button if the result is undefined', () => {
+    const node = shallow(
+      <ReportView report={{...rawDataReport, result: undefined }} />
+    );
+
+    expect(node.find(DownloadButton)).not.toExist();
+  });
+
   it('should not show a download csv button for multi-measure reports', () => {
     const node = shallow(<ReportView report={report} />);
     expect(node.find(DownloadButton)).not.toExist();

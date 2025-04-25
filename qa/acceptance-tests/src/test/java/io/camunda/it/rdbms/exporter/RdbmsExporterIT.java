@@ -11,8 +11,8 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeActivatingRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeCompletedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementActivatingRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getIncidentRecord;
@@ -63,6 +63,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Map;
@@ -200,30 +201,30 @@ class RdbmsExporterIT {
   }
 
   @Test
-  public void shouldExportFlowNode() {
+  public void shouldExportElement() {
     // given
-    final var flowNodeRecord = getFlowNodeActivatingRecord(1L);
+    final var elementRecord = getElementActivatingRecord(1L);
 
     // when
-    exporter.export(flowNodeRecord);
+    exporter.export(elementRecord);
 
     // then
-    final var key = flowNodeRecord.getKey();
-    final var flowNode = rdbmsService.getFlowNodeInstanceReader().findOne(key);
-    assertThat(flowNode).isNotEmpty();
+    final var key = elementRecord.getKey();
+    final var element = rdbmsService.getFlowNodeInstanceReader().findOne(key);
+    assertThat(element).isNotEmpty();
 
     // given
-    final var flowNodeCompleteRecord = getFlowNodeCompletedRecord(1L, key);
+    final var elementCompleteRecord = getElementCompletedRecord(1L, key);
 
     // when
-    exporter.export(flowNodeCompleteRecord);
+    exporter.export(elementCompleteRecord);
 
     // then
-    final var completedFlowNode = rdbmsService.getFlowNodeInstanceReader().findOne(key);
-    assertThat(completedFlowNode).isNotEmpty();
-    assertThat(completedFlowNode.get().state()).isEqualTo(FlowNodeState.COMPLETED);
+    final var completedElement = rdbmsService.getFlowNodeInstanceReader().findOne(key);
+    assertThat(completedElement).isNotEmpty();
+    assertThat(completedElement.get().state()).isEqualTo(FlowNodeState.COMPLETED);
     // Default tree path
-    assertThat(completedFlowNode.get().treePath()).isEqualTo("1/2");
+    assertThat(completedElement.get().treePath()).isEqualTo("1/2");
   }
 
   @Test
@@ -406,82 +407,108 @@ class RdbmsExporterIT {
 
     // then
     final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
-    assertThat(updatedRole.assignedMemberKeys()).containsExactly(1337L);
+    assertThat(updatedRole.assignedMemberIds()).containsExactly("1337");
 
     // when
     exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_REMOVED, 1337L));
 
     // then
     final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
-    assertThat(deletedRole.assignedMemberKeys()).isEmpty();
+    assertThat(deletedRole.assignedMemberIds()).isEmpty();
   }
 
   @Test
   public void shouldExportUpdateAndDeleteGroup() {
     // given
-    final var groupRecord = getGroupRecord(42L, GroupIntent.CREATED);
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupRecord = getGroupRecord(groupId, GroupIntent.CREATED);
     final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
 
     // when
     exporter.export(groupRecord);
 
     // then
-    final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    final var group =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(group).isNotEmpty();
     assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupId()).isEqualTo(groupRecordValue.getGroupId());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
+    assertThat(group.get().description()).isEqualTo(groupRecordValue.getDescription());
 
     // given
-    final var updateGroupRecord = getGroupRecord(42L, GroupIntent.UPDATED);
+    final var updateGroupRecord = getGroupRecord(groupId, GroupIntent.UPDATED);
     final var updateGroupRecordValue = ((GroupRecordValue) updateGroupRecord.getValue());
 
     // when
     exporter.export(updateGroupRecord);
 
     // then
-    final var updatedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    final var updatedGroup =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(updatedGroup).isNotEmpty();
     assertThat(updatedGroup.get().groupKey()).isEqualTo(updateGroupRecordValue.getGroupKey());
+    assertThat(updatedGroup.get().groupId()).isEqualTo(updateGroupRecordValue.getGroupId());
     assertThat(updatedGroup.get().name()).isEqualTo(updateGroupRecordValue.getName());
+    assertThat(updatedGroup.get().description()).isEqualTo(updateGroupRecordValue.getDescription());
 
     // when
-    exporter.export(getGroupRecord(42L, GroupIntent.DELETED));
+    exporter.export(getGroupRecord(groupId, GroupIntent.DELETED));
 
     // then
-    final var deletedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    final var deletedGroup =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(deletedGroup).isEmpty();
   }
 
   @Test
   public void shouldExportGroupAndAddAndDeleteMember() {
     // given
-    final var groupRecord = getGroupRecord(43L, GroupIntent.CREATED);
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupRecord = getGroupRecord(groupId, GroupIntent.CREATED);
     final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
 
     // when
     exporter.export(groupRecord);
 
     // then
-    final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    final var group =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
     assertThat(group).isNotEmpty();
     assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupId()).isEqualTo(groupRecordValue.getGroupId());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
+    assertThat(group.get().description()).isEqualTo(groupRecordValue.getDescription());
 
     // when
-    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_ADDED, 1337L));
+    exporter.export(getGroupRecord(groupId, GroupIntent.ENTITY_ADDED, "entityId"));
 
     // then
     final var updatedGroup =
-        rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
-    assertThat(updatedGroup.assignedMemberKeys()).containsExactly(1337L);
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId())
+            .orElseThrow();
+    assertThat(updatedGroup.assignedMemberIds()).containsExactly("entityId");
 
     // when
-    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_REMOVED, 1337L));
+    exporter.export(getGroupRecord(groupId, GroupIntent.ENTITY_REMOVED, "entityId"));
 
     // then
     final var deletedGroup =
-        rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
-    assertThat(deletedGroup.assignedMemberKeys()).isEmpty();
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId())
+            .orElseThrow();
+    assertThat(deletedGroup.assignedMemberIds()).isEmpty();
   }
 
   @Test
@@ -491,22 +518,22 @@ class RdbmsExporterIT {
     final var processInstanceKey =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     exporter.export(processInstanceRecord);
-    final var flowNodeRecord = getFlowNodeActivatingRecord(1L, processInstanceKey);
-    final var flowNodeInstanceKey = flowNodeRecord.getKey();
-    exporter.export(flowNodeRecord);
+    final var elementRecord = getElementActivatingRecord(1L, processInstanceKey);
+    final var elementInstanceKey = elementRecord.getKey();
+    exporter.export(elementRecord);
 
     // when
     final var incidentKey = 42L;
     final var incidentRecord =
         getIncidentRecord(
-            IncidentIntent.CREATED, incidentKey, processInstanceKey, flowNodeInstanceKey);
+            IncidentIntent.CREATED, incidentKey, processInstanceKey, elementInstanceKey);
     exporter.export(incidentRecord);
 
     // then
-    final var flowNode = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
-    assertThat(flowNode).isNotEmpty();
-    assertThat(flowNode.get().incidentKey()).isEqualTo(incidentKey);
-    assertThat(flowNode.get().hasIncident()).isTrue();
+    final var element = rdbmsService.getFlowNodeInstanceReader().findOne(elementInstanceKey);
+    assertThat(element).isNotEmpty();
+    assertThat(element.get().incidentKey()).isEqualTo(incidentKey);
+    assertThat(element.get().hasIncident()).isTrue();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
     assertThat(processInstance).isNotEmpty();
     assertThat(processInstance.get().hasIncident()).isTrue();
@@ -518,16 +545,16 @@ class RdbmsExporterIT {
     // given
     final var incidentResolvedRecord =
         getIncidentRecord(
-            IncidentIntent.RESOLVED, incidentKey, processInstanceKey, flowNodeInstanceKey);
+            IncidentIntent.RESOLVED, incidentKey, processInstanceKey, elementInstanceKey);
 
     // when
     exporter.export(incidentResolvedRecord);
 
     // then
-    final var flowNode2 = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
-    assertThat(flowNode2).isNotEmpty();
-    assertThat(flowNode2.get().incidentKey()).isNull();
-    assertThat(flowNode2.get().hasIncident()).isFalse();
+    final var element2 = rdbmsService.getFlowNodeInstanceReader().findOne(elementInstanceKey);
+    assertThat(element2).isNotEmpty();
+    assertThat(element2.get().incidentKey()).isNull();
+    assertThat(element2.get().hasIncident()).isFalse();
     final var processInstance2 =
         rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
     assertThat(processInstance2).isNotEmpty();

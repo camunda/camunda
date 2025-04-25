@@ -37,7 +37,7 @@ public class DeprecatedPropertiesTest {
   @TestFactory
   Stream<DynamicContainer> shouldDeprecate() {
     return ReflectionSupport.findAllClassesInPackage(
-            "io.camunda.zeebe.spring.client.properties",
+            "io.camunda.spring.client.properties",
             c ->
                 c.isAnnotationPresent(Deprecated.class)
                     && c.isAnnotationPresent(ConfigurationProperties.class),

@@ -29,7 +29,9 @@ import io.camunda.zeebe.engine.state.immutable.FormState.FormIdentifier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ResourceIdentifier;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord.ReconstructionProgress;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -84,13 +86,17 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           "Deployments are already stored and don't need to be reconstructed");
       return;
     }
+    final var identifier = fromDeploymentRecord(record.getValue());
 
     final var key = keyGenerator.nextKey();
-    final var resource = findNextResource();
-    if (resource == null) {
+
+    final var resourceOpt =
+        findNextResource(identifier, record.getValue().getReconstructionProgress());
+    if (resourceOpt.isEmpty()) {
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED_ALL, record.getValue());
       return;
     }
+    final var resource = resourceOpt.get();
 
     final DeploymentRecord deploymentRecord;
     if (resource.deploymentKey() != NO_DEPLOYMENT_KEY) {
@@ -105,21 +111,48 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     stateWriter.appendFollowUpEvent(
         deploymentRecord.getDeploymentKey(), DeploymentIntent.RECONSTRUCTED, deploymentRecord);
     // trigger reconstruction of another deployment reconstruction
+    cachedDeploymentRecordCommand.reset();
+    cachedDeploymentRecordCommand
+        .setTenantId(deploymentRecord.getTenantId())
+        .setReconstructionKey(deploymentRecord.getDeploymentKey())
+        .setReconstructionProgress(Resource.progress(resource));
     commandWriter.appendNewCommand(DeploymentIntent.RECONSTRUCT, cachedDeploymentRecordCommand);
   }
 
-  private Resource findNextResource() {
-    return findProcessResource()
-        .or(this::findFormResource)
-        .or(this::findDecisionRequirementsResource)
-        .orElse(null);
+  // Recursive function to find the next resource.
+  // if the resource for the current type is not found, the next resource is tried.
+  // If all the resources have been searched then it returns null.
+  private Optional<Resource> findNextResource(
+      final ResourceIdentifier identifier, final ReconstructionProgress reconstructionProgress) {
+    if (reconstructionProgress == ReconstructionProgress.DONE) {
+      return Optional.empty();
+    }
+    final var resource = findResource(identifier, reconstructionProgress);
+    return resource.or(() -> findNextResource(null, nextProgress(reconstructionProgress)));
   }
 
-  private Optional<Resource> findProcessResource() {
+  private Optional<Resource> findResource(
+      final ResourceIdentifier identifier, final ReconstructionProgress reconstructionProgress) {
+    return switch (identifier) {
+      case null ->
+          switch (reconstructionProgress) {
+            case PROCESS -> findProcessResource(null);
+            case FORM -> findFormResource(null);
+            case DECISION_REQUIREMENTS -> findDecisionRequirementsResource(null);
+            case DONE -> Optional.empty();
+          };
+      case final ProcessIdentifier processIdentifier -> findProcessResource(processIdentifier);
+      case final FormIdentifier form -> findFormResource(form);
+      case final DecisionRequirementsIdentifier decisionRequirementsIdentifier ->
+          findDecisionRequirementsResource(decisionRequirementsIdentifier);
+    };
+  }
+
+  private Optional<Resource> findProcessResource(final ProcessIdentifier identifier) {
     final var foundProcess = new MutableReference<PersistedProcess>();
 
     processState.forEachProcess(
-        null, // TODO: Continue where we left off
+        identifier,
         process -> {
           final var deploymentKey = process.getDeploymentKey();
           if (deploymentKey != NO_DEPLOYMENT_KEY
@@ -135,11 +168,11 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     return Optional.ofNullable(foundProcess.get()).map(ProcessResource::new);
   }
 
-  private Optional<Resource> findFormResource() {
+  private Optional<Resource> findFormResource(final FormIdentifier identifier) {
     final var foundForm = new MutableReference<PersistedForm>();
 
     formState.forEachForm(
-        null, // TODO: Continue where we left off
+        identifier,
         form -> {
           final var deploymentKey = form.getDeploymentKey();
           if (deploymentKey != NO_DEPLOYMENT_KEY
@@ -155,13 +188,14 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     return Optional.ofNullable(foundForm.get()).map(FormResource::new);
   }
 
-  private Optional<Resource> findDecisionRequirementsResource() {
+  private Optional<Resource> findDecisionRequirementsResource(
+      final DecisionRequirementsIdentifier identifier) {
     final var foundDecisionRequirements = new MutableReference<PersistedDecisionRequirements>();
     final var foundDecisions = new MutableReference<Collection<PersistedDecision>>();
     final var foundDecisionDeploymentKey = new MutableLong(NO_DEPLOYMENT_KEY);
 
     decisionState.forEachDecisionRequirements(
-        null, // TODO: Continue where we left off
+        identifier,
         decisionRequirements -> {
           final var decisions =
               decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
@@ -170,9 +204,9 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
           // DRGs are not associated with a deployment key, so we need to check if any of the
           // decisions are associated with a deployment key instead.
-          final var deploymentKey =
+          final long deploymentKey =
               decisions.stream()
-                  .map(PersistedDecision::getDeploymentKey)
+                  .mapToLong(PersistedDecision::getDeploymentKey)
                   .filter(key -> key != NO_DEPLOYMENT_KEY)
                   .findAny()
                   .orElse(NO_DEPLOYMENT_KEY);
@@ -303,12 +337,42 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     }
   }
 
+  public static ReconstructionProgress nextProgress(final ReconstructionProgress progress) {
+    return switch (progress) {
+      case PROCESS -> ReconstructionProgress.FORM;
+      case FORM -> ReconstructionProgress.DECISION_REQUIREMENTS;
+      case DECISION_REQUIREMENTS, DONE -> ReconstructionProgress.DONE;
+    };
+  }
+
+  static ResourceIdentifier fromDeploymentRecord(final DeploymentRecord record) {
+    return switch (record.getReconstructionProgress()) {
+      case PROCESS -> new ProcessIdentifier(record.getTenantId(), record.getReconstructionKey());
+      case FORM -> new FormIdentifier(record.getTenantId(), record.getReconstructionKey());
+      case DECISION_REQUIREMENTS ->
+          new DecisionRequirementsIdentifier(record.getTenantId(), record.getReconstructionKey());
+      case DONE -> null;
+    };
+  }
+
   sealed interface Resource {
     long key();
 
     long deploymentKey();
 
     String tenantId();
+
+    ResourceIdentifier identifier();
+
+    static ReconstructionProgress progress(final Resource resource) {
+      return switch (resource) {
+        case null -> ReconstructionProgress.DONE;
+        case final DecisionRequirementsResource ignored ->
+            ReconstructionProgress.DECISION_REQUIREMENTS;
+        case final FormResource ignored -> ReconstructionProgress.FORM;
+        case final ProcessResource ignored -> ReconstructionProgress.PROCESS;
+      };
+    }
 
     record ProcessResource(PersistedProcess process) implements Resource {
 
@@ -325,6 +389,11 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       @Override
       public String tenantId() {
         return process.getTenantId();
+      }
+
+      @Override
+      public ResourceIdentifier identifier() {
+        return new ProcessIdentifier(tenantId(), key());
       }
     }
 
@@ -344,6 +413,11 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       public String tenantId() {
         return form.getTenantId();
       }
+
+      @Override
+      public ResourceIdentifier identifier() {
+        return new FormIdentifier(tenantId(), form.getFormKey());
+      }
     }
 
     record DecisionRequirementsResource(
@@ -360,6 +434,11 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       @Override
       public String tenantId() {
         return decisionRequirements.getTenantId();
+      }
+
+      @Override
+      public ResourceIdentifier identifier() {
+        return new DecisionRequirementsIdentifier(tenantId(), key());
       }
     }
   }

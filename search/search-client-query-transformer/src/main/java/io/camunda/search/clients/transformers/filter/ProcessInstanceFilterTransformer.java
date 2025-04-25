@@ -53,10 +53,8 @@ public final class ProcessInstanceFilterTransformer
     this.transformers = transformers;
   }
 
-  @Override
-  public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
+  public ArrayList<SearchQuery> toSearchQueryFields(final ProcessInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    ofNullable(getIsProcessInstanceQuery()).ifPresent(queries::add);
     ofNullable(longOperations(KEY, filter.processInstanceKeyOperations()))
         .ifPresent(queries::addAll);
     ofNullable(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()))
@@ -103,22 +101,36 @@ public final class ProcessInstanceFilterTransformer
     ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
         .ifPresent(queries::addAll);
 
-    ofNullable(geHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
+    ofNullable(getHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
 
     if (filter.flowNodeIdOperations() != null && !filter.flowNodeIdOperations().isEmpty()) {
-      final var flowNodeInstanceQuery = getFlowNodeInstanceQuery(filter, queries);
-      queries.add(flowNodeInstanceQuery);
+      queries.add(getFlowNodeInstanceQuery(filter));
     }
 
     if (filter.partitionId() != null) {
       queries.add(term(PARTITION_ID, filter.partitionId()));
     }
 
+    return queries;
+  }
+
+  @Override
+  public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
+
+    final var queries = new ArrayList<SearchQuery>();
+    ofNullable(getIsProcessInstanceQuery()).ifPresent(queries::add);
+    queries.addAll(toSearchQueryFields(filter));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      final var orQueries = new ArrayList<SearchQuery>();
+      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
+      queries.add(or(orQueries));
+    }
+
     return and(queries);
   }
 
-  private static SearchQuery getFlowNodeInstanceQuery(
-      final ProcessInstanceFilter filter, final ArrayList<SearchQuery> queries) {
+  private static SearchQuery getFlowNodeInstanceQuery(final ProcessInstanceFilter filter) {
     final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
 
     ofNullable(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
@@ -131,7 +143,7 @@ public final class ProcessInstanceFilterTransformer
     return hasChildQuery(ACTIVITIES_JOIN_RELATION, and(flowNodeInstanceQueries));
   }
 
-  private SearchQuery geHasRetriesLeftQuery(final Boolean hasRetriesLeft) {
+  private SearchQuery getHasRetriesLeftQuery(final Boolean hasRetriesLeft) {
     if (hasRetriesLeft != null) {
       return hasChildQuery(
           ACTIVITIES_JOIN_RELATION, term(JOB_FAILED_WITH_RETRIES_LEFT, hasRetriesLeft));

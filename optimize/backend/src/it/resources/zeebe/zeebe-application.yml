@@ -41,3 +41,6 @@ zeebe:
             processInstanceCreation: false
             processMessageSubscription: false
             processInstanceModification: false
+camunda:
+  database:
+    url: "http://host.testcontainers.internal:${DATABASE_PORT:9200}"

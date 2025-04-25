@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -28,6 +29,8 @@ public interface ProcessInstanceMapper extends HistoryCleanupMapper {
   Long count(ProcessInstanceDbQuery filter);
 
   List<ProcessInstanceEntity> search(ProcessInstanceDbQuery filter);
+
+  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(long processInstanceKey);
 
   record EndProcessInstanceDto(
       long processInstanceKey,

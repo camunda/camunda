@@ -15,11 +15,9 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.api.search.filter.BasicStringFilterProperty;
 import java.util.List;
 
-public interface BasicLongProperty
-    extends PropertyBase<Long, BasicStringFilterProperty, BasicLongProperty> {
+public interface BasicLongProperty extends PropertyBase<Long, BasicLongProperty> {
 
   BasicLongProperty notIn(final List<Long> values);
 

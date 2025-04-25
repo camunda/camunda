@@ -15,7 +15,4 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.api.search.filter.IntegerFilterProperty;
-
-public interface IntegerProperty
-    extends ComparisonProperty<Integer, IntegerFilterProperty, IntegerProperty> {}
+public interface IntegerProperty extends ComparisonProperty<Integer, IntegerProperty> {}

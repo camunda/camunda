@@ -85,7 +85,7 @@ final class UsersGroupMigrationHandlerTest {
     givenUserGroups();
 
     when(groupServices.getGroupByName(any()))
-        .thenReturn(new GroupEntity(1L, "", Collections.emptySet()));
+        .thenReturn(new GroupEntity(1L, "", "", "", Collections.emptySet()));
     when(mappingServices.createMapping(any()))
         .thenReturn(CompletableFuture.completedFuture(new MappingRecord()));
     when(groupServices.assignMember(anyString(), anyString(), any(EntityType.class)))
@@ -152,7 +152,7 @@ final class UsersGroupMigrationHandlerTest {
     // given
     givenUserGroups();
     when(groupServices.getGroupByName(anyString()))
-        .thenReturn(new GroupEntity(1L, "groupName", Collections.emptySet()));
+        .thenReturn(new GroupEntity(1L, "groupId", "name", "description", Collections.emptySet()));
     doThrow(
             new BrokerRejectionException(
                 new BrokerRejection(GroupIntent.ADD_ENTITY, -1, RejectionType.ALREADY_EXISTS, "")))

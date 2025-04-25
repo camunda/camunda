@@ -9,20 +9,22 @@
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {tracking} from 'modules/tracking';
 import {Toggle} from './styled';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 
 const TimeStampPill: React.FC = observer(() => {
   const {status: flowNodeInstanceStatus} = flowNodeInstanceStore.state;
-  const {status: diagramStatus} = processInstanceDetailsDiagramStore.state;
   const {
     state: {isTimeStampVisible},
     toggleTimeStampVisibility,
   } = flowNodeTimeStampStore;
 
-  const isDisabled =
-    flowNodeInstanceStatus !== 'fetched' && diagramStatus !== 'fetched';
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {isSuccess} = useProcessInstanceXml({processDefinitionKey});
+
+  const isDisabled = flowNodeInstanceStatus !== 'fetched' && !isSuccess;
   return (
     <Toggle
       aria-label={`${isTimeStampVisible ? 'Hide' : 'Show'} End Date`}

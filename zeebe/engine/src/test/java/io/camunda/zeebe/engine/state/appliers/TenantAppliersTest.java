@@ -9,9 +9,11 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
@@ -27,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -44,6 +45,7 @@ public class TenantAppliersTest {
   private TenantDeletedApplier tenantDeletedApplier;
   private TenantEntityAddedApplier tenantEntityAddedApplier;
   private TenantEntityRemovedApplier tenantEntityRemovedApplier;
+  private MutableMembershipState membershipState;
 
   @BeforeEach
   public void setup() {
@@ -52,6 +54,7 @@ public class TenantAppliersTest {
     userState = processingState.getUserState();
     groupState = processingState.getGroupState();
     authorizationState = processingState.getAuthorizationState();
+    membershipState = processingState.getMembershipState();
     tenantDeletedApplier = new TenantDeletedApplier(processingState.getTenantState());
     tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
     tenantEntityRemovedApplier = new TenantEntityRemovedApplier(processingState);
@@ -71,10 +74,9 @@ public class TenantAppliersTest {
     associateUserWithTenant(tenantKey, tenantId, username);
 
     // then
-    assertThat(tenantState.getEntitiesByType(tenantId).get(EntityType.USER))
-        .containsExactly(username);
-    final var persistedUser = userState.getUser(entityKey).get();
-    assertThat(persistedUser.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(membershipState.getMemberships(EntityType.USER, username, RelationType.TENANT))
+        .singleElement()
+        .isEqualTo(tenantId);
   }
 
   @Test
@@ -96,9 +98,10 @@ public class TenantAppliersTest {
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntityType(tenantId, mappingId).get()).isEqualTo(EntityType.MAPPING);
-    final var persistedMapping = mappingState.get(mappingId).get();
-    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(
+            membershipState.hasRelation(
+                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+        .isTrue();
   }
 
   @Test
@@ -117,9 +120,9 @@ public class TenantAppliersTest {
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntityType(tenantId, groupId).get()).isEqualTo(EntityType.GROUP);
-    final var persistedGroup = groupState.get(groupId).get();
-    assertThat(persistedGroup.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(
+            membershipState.hasRelation(EntityType.GROUP, groupId, RelationType.TENANT, tenantId))
+        .isTrue();
   }
 
   @Test
@@ -160,10 +163,9 @@ public class TenantAppliersTest {
     associateUserWithTenant(tenantKey, tenantId, username);
 
     // Ensure the user is associated with the tenant before removal
-    assertThat(tenantState.getEntitiesByType(tenantId).get(EntityType.USER))
-        .containsExactly(username);
-    final var persistedUser = userState.getUser(entityKey).get();
-    assertThat(persistedUser.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(membershipState.getMemberships(EntityType.USER, username, RelationType.TENANT))
+        .singleElement()
+        .isEqualTo(tenantId);
 
     // when
     final var tenantRecord =
@@ -174,14 +176,12 @@ public class TenantAppliersTest {
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntitiesByType(tenantId)).isEmpty();
-    final var updatedUser = userState.getUser(entityKey).get();
-    assertThat(updatedUser.getTenantIdsList()).isEmpty();
+    assertThat(
+            membershipState.hasRelation(EntityType.USER, username, RelationType.TENANT, tenantId))
+        .isFalse();
   }
 
   @Test
-  @Disabled(
-      "Disabled while mappings are not supported: https://github.com/camunda/camunda/issues/26981")
   void shouldRemoveEntityFromTenantWithTypeMapping() {
     // given
     final var mappingId = "mappingId";
@@ -198,17 +198,19 @@ public class TenantAppliersTest {
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // Ensure the mapping is associated with the tenant before removal
-    assertThat(tenantState.getEntityType(tenantId, mappingId).get()).isEqualTo(EntityType.MAPPING);
-    final var persistedMapping = mappingState.get(mappingId).get();
-    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(
+            membershipState.hasRelation(
+                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+        .isTrue();
 
     // when
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntityType(tenantId, mappingId)).isEmpty();
-    final var updatedMapping = mappingState.get(mappingId).get();
-    assertThat(updatedMapping.getTenantIdsList()).isEmpty();
+    assertThat(
+            membershipState.hasRelation(
+                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+        .isFalse();
   }
 
   @Test
@@ -225,10 +227,9 @@ public class TenantAppliersTest {
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // Ensure the group is associated with the tenant before removal
-    assertThat(tenantState.getEntitiesByType(tenantId).get(EntityType.GROUP))
-        .containsExactly(groupId);
-    final var persistedGroup = groupState.get(groupId).get();
-    assertThat(persistedGroup.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(
+            membershipState.hasRelation(EntityType.GROUP, groupId, RelationType.TENANT, tenantId))
+        .isTrue();
 
     // when
     final var tenantRecordToRemove =
@@ -239,9 +240,9 @@ public class TenantAppliersTest {
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecordToRemove);
 
     // then
-    assertThat(tenantState.getEntitiesByType(tenantId)).isEmpty();
-    final var updatedGroup = groupState.get(groupId).get();
-    assertThat(updatedGroup.getTenantIdsList()).isEmpty();
+    assertThat(
+            membershipState.hasRelation(EntityType.GROUP, groupId, RelationType.TENANT, tenantId))
+        .isFalse();
   }
 
   private TenantRecord createTenant(final long tenantKey, final String tenantId) {

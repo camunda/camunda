@@ -20,6 +20,12 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {createInstance} from 'modules/testUtils';
+import {
+  cancelAllTokens,
+  finishMovingToken,
+  generateParentScopeIds,
+} from 'modules/utils/modifications';
+import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
 
 type AddModificationPayload = Extract<
   FlowNodeModification['payload'],
@@ -168,7 +174,7 @@ describe('stores/modifications', () => {
     });
 
     expect(modificationsStore.state.modifications.length).toEqual(1);
-    modificationsStore.cancelAllTokens('service-task-2');
+    cancelAllTokens('service-task-2', 3, 3, {});
 
     expect(modificationsStore.state.modifications.length).toEqual(2);
 
@@ -393,7 +399,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelAllTokens('service-task-2');
+    cancelAllTokens('service-task-2', 3, 3, {});
 
     expect(modificationsStore.lastModification).toEqual({
       payload: {
@@ -456,7 +462,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelAllTokens('service-task-2');
+    cancelAllTokens('service-task-2', 3, 3, {});
 
     modificationsStore.addModification({
       type: 'token',
@@ -496,7 +502,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelAllTokens('multi-instance-subprocess');
+    cancelAllTokens('multi-instance-subprocess', 0, 0, {});
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       'service-task-1': {
@@ -597,7 +603,7 @@ describe('stores/modifications', () => {
       modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
     ).toBe(false);
 
-    modificationsStore.cancelAllTokens('service-task-1');
+    cancelAllTokens('service-task-1', 1, 1, {});
 
     expect(
       modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
@@ -648,7 +654,7 @@ describe('stores/modifications', () => {
       'StartEvent_1',
     );
 
-    modificationsStore.finishMovingToken('end-event');
+    finishMovingToken(2, 2, {}, 'end-event');
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       StartEvent_1: {
@@ -681,7 +687,7 @@ describe('stores/modifications', () => {
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
     modificationsStore.startMovingToken('multi-instance-service-task');
-    modificationsStore.finishMovingToken('service-task-7');
+    finishMovingToken(2, 2, {}, 'service-task-7');
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       'multi-instance-service-task': {
@@ -821,32 +827,6 @@ describe('stores/modifications', () => {
     ]);
   });
 
-  it('should generate parent scope ids', async () => {
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({bpmnProcessId: 'nested_sub_process'}),
-    );
-    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
-    expect(modificationsStore.generateParentScopeIds('user_task')).toEqual({
-      inner_sub_process: expect.any(String),
-      parent_sub_process: expect.any(String),
-    });
-
-    expect(
-      modificationsStore.generateParentScopeIds('inner_sub_process'),
-    ).toEqual({
-      parent_sub_process: expect.any(String),
-    });
-
-    expect(
-      modificationsStore.generateParentScopeIds('parent_sub_process'),
-    ).toEqual({});
-  });
-
   it('should not generate parent scope id twice', async () => {
     processInstanceDetailsStore.setProcessInstance(
       createInstance({bpmnProcessId: 'nested_sub_process'}),
@@ -865,7 +845,10 @@ describe('stores/modifications', () => {
         scopeId: 'random-scope-id-0',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
+        parentScopeIds: generateParentScopeIds(
+          mockNestedSubProcessBusinessObjects,
+          'user_task',
+        ),
       },
     });
     modificationsStore.addModification({
@@ -876,7 +859,10 @@ describe('stores/modifications', () => {
         scopeId: 'random-scope-id-1',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
-        parentScopeIds: modificationsStore.generateParentScopeIds('user_task'),
+        parentScopeIds: generateParentScopeIds(
+          mockNestedSubProcessBusinessObjects,
+          'user_task',
+        ),
       },
     });
 
@@ -1140,7 +1126,7 @@ describe('stores/modifications', () => {
         },
       },
     });
-    modificationsStore.cancelAllTokens('flow_node_2');
+    cancelAllTokens('flow_node_2', 0, 0, {});
 
     modificationsStore.addModification({
       type: 'token',
@@ -1291,7 +1277,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelToken('flow_node_5', 'some_instance_key');
+    modificationsStore.cancelToken('flow_node_5', 'some_instance_key', {});
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'flow_node_6',
       sourceFlowNodeInstanceKey: 'some_instance_key_2',
@@ -1299,6 +1285,7 @@ describe('stores/modifications', () => {
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
+      businessObjects: {},
     });
 
     modificationsStore.addModification({
@@ -1512,6 +1499,7 @@ describe('stores/modifications', () => {
     );
 
     modificationsStore.finishAddingToken(
+      {},
       'multi-instance-subprocess',
       'some-instance-key',
     );

@@ -29,7 +29,7 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.tasklist.webapp.security.tenant.TenantAwareAuthentication;
+import io.camunda.tasklist.webapp.tenant.TenantAwareAuthentication;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

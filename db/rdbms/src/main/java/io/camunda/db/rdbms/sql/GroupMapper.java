@@ -18,13 +18,13 @@ public interface GroupMapper {
 
   void update(GroupDbModel group);
 
-  void delete(Long groupKey);
+  void delete(String groupId);
 
   void insertMember(GroupMemberDbModel member);
 
   void deleteMember(GroupMemberDbModel member);
 
-  void deleteAllMembers(Long groupKey);
+  void deleteAllMembers(String groupId);
 
   Long count(GroupDbQuery filter);
 

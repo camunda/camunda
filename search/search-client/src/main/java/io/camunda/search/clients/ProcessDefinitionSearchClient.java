@@ -8,7 +8,7 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -20,7 +20,7 @@ public interface ProcessDefinitionSearchClient {
   SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       ProcessDefinitionQuery filter);
 
-  List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+  List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter);
 
   ProcessDefinitionSearchClient withSecurityContext(SecurityContext securityContext);

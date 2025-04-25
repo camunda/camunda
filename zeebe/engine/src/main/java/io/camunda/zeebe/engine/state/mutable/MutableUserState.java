@@ -17,12 +17,4 @@ public interface MutableUserState extends UserState {
   void update(final UserRecord user);
 
   void delete(final String username);
-
-  void addTenantId(final String username, final String tenantId);
-
-  void removeTenant(final String username, final String tenantId);
-
-  void addGroup(final String username, final long groupKey);
-
-  void removeGroup(final String username, final long groupKey);
 }

@@ -18,6 +18,7 @@ import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
 @WebEndpoint(id = "backups")
@@ -41,8 +42,11 @@ public class BackupControllerStandalone {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> getBackups() {
-    return backupController.getBackups();
+  public WebEndpointResponse<?> getBackups(
+      @RequestParam(value = "verbose", defaultValue = "true", required = false)
+          final boolean verbose,
+      @RequestParam(value = "pattern", defaultValue = "*", required = false) final String pattern) {
+    return backupController.getBackups(verbose, pattern);
   }
 
   @DeleteOperation

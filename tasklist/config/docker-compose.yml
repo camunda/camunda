@@ -275,6 +275,8 @@ services:
       - ${DATABASE}
       - zeebe_mt
       - identity_mt
+    environment:
+      - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
     env_file:
       - envs/.env.database.${DATABASE}
       - envs/.env.identity

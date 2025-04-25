@@ -32,7 +32,7 @@ public class GroupTest {
   public void shouldCreateGroup() {
     final var name = UUID.randomUUID().toString();
     final var groupId = Strings.newRandomValidIdentityId();
-    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
+    final var groupRecord = engine.group().newGroup(groupId).withName(name).create();
 
     final var createdGroup = groupRecord.getValue();
     assertThat(createdGroup).hasName(name);
@@ -44,11 +44,11 @@ public class GroupTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var groupId = Strings.newRandomValidIdentityId();
-    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
+    final var groupRecord = engine.group().newGroup(groupId).withName(name).create();
 
     // when
     final var duplicatedGroupRecord =
-        engine.group().newGroup(name).withGroupId(groupId).expectRejection().create();
+        engine.group().newGroup(groupId).withName(name).expectRejection().create();
 
     final var createdGroup = groupRecord.getValue();
     Assertions.assertThat(createdGroup).isNotNull().hasFieldOrPropertyWithValue("name", name);
@@ -66,7 +66,7 @@ public class GroupTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var groupId = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
 
     // when
     final var updatedName = name + "-updated";
@@ -96,9 +96,8 @@ public class GroupTest {
   @Test
   public void shouldAddEntityToGroup() {
     // given
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
-    final var groupId = "123";
-    final var userKey =
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -106,22 +105,23 @@ public class GroupTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create().getValue().getGroupKey();
+    engine.group().newGroup(groupId).withName(name).create().getValue().getGroupKey();
 
     // when
     final var updatedGroup =
         engine
             .group()
             .addEntity(groupId)
-            .withEntityKey(userKey)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .add()
             .getValue();
 
     // then
-    assertThat(updatedGroup).hasEntityKey(userKey).hasEntityType(EntityType.USER);
+    assertThat(updatedGroup).hasEntityId(username).hasEntityType(EntityType.USER);
   }
 
   @Test
@@ -144,7 +144,8 @@ public class GroupTest {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
+    final var groupRecord = engine.group().newGroup(groupId).withName(name).create();
+    final var notPresentEntityId = Strings.newRandomValidIdentityId();
 
     // when
     final var createdGroup = groupRecord.getValue();
@@ -152,7 +153,7 @@ public class GroupTest {
         engine
             .group()
             .addEntity(groupId)
-            .withEntityKey(1L)
+            .withEntityId(notPresentEntityId)
             .withEntityType(EntityType.USER)
             .expectRejection()
             .add();
@@ -162,18 +163,17 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add an entity with key '%s' and type '%s' to group with ID '%s', but the entity does not exist."
-                .formatted(1L, EntityType.USER, groupId));
+            "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
+                .formatted(notPresentEntityId, EntityType.USER, groupId));
   }
 
   @Test
   public void shouldRejectIfEntityIsAlreadyAssigned() {
     // given
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
-    final var groupId = "123";
+    final var groupId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
-    final var userKey =
+    engine.group().newGroup(groupId).withName(name).create();
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -181,15 +181,16 @@ public class GroupTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+            .getValue()
+            .getUsername();
+    engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // when
     final var notPresentUpdateRecord =
         engine
             .group()
             .addEntity(groupId)
-            .withEntityKey(userKey)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .expectRejection()
             .add();
@@ -198,16 +199,15 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to add entity with key '%d' to group with ID '%s', but the entity is already assigned to this group."
-                .formatted(userKey, groupId));
+            "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group."
+                .formatted(username, groupId));
   }
 
   @Test
   public void shouldRemoveEntityToGroup() {
     // given
-    // TODO: refactor this with https://github.com/camunda/camunda/issues/30091
-    final var groupId = "123";
-    final var userKey =
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -215,17 +215,18 @@ public class GroupTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().newGroup(groupId).withName(name).create();
+    engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // when
     final var groupWithRemovedEntity =
         engine
             .group()
             .removeEntity(groupId)
-            .withEntityKey(userKey)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .remove()
             .getValue();
@@ -233,7 +234,7 @@ public class GroupTest {
     // then
     assertThat(groupWithRemovedEntity)
         .hasGroupId(groupId)
-        .hasEntityKey(userKey)
+        .hasEntityId(username)
         .hasEntityType(EntityType.USER);
   }
 
@@ -256,8 +257,9 @@ public class GroupTest {
   public void shouldRejectIfEntityIsNotPresentEntityRemoval() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
+    final var notPresentEntityId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
+    final var groupRecord = engine.group().newGroup(groupId).withName(name).create();
 
     // when
     final var createdGroup = groupRecord.getValue();
@@ -265,7 +267,7 @@ public class GroupTest {
         engine
             .group()
             .removeEntity(groupId)
-            .withEntityKey(1L)
+            .withEntityId(notPresentEntityId)
             .withEntityType(EntityType.USER)
             .expectRejection()
             .remove();
@@ -275,8 +277,8 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove an entity with key '%s' and type '%s' from group with ID '%s', but the entity does not exist."
-                .formatted(1L, EntityType.USER, groupId));
+            "Expected to remove an entity with ID '%s' and type '%s' from group with ID '%s', but the entity does not exist."
+                .formatted(notPresentEntityId, EntityType.USER, groupId));
   }
 
   @Test
@@ -284,7 +286,7 @@ public class GroupTest {
     // given
     final var groupId = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
+    engine.group().newGroup(groupId).withName(name).create();
 
     // when
     final var deletedGroup = engine.group().deleteGroup(groupId).delete().getValue();
@@ -298,7 +300,7 @@ public class GroupTest {
     // given
     final var groupId = "123";
     final var groupKey = Long.parseLong(groupId);
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -306,10 +308,11 @@ public class GroupTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).withGroupId(groupId).create();
-    engine.group().addEntity(groupId).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.group().newGroup(groupId).withName(name).create();
+    engine.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // when
     final var deletedGroup =

@@ -71,11 +71,6 @@ public class DbMigratorImpl implements DbMigrator {
   private int skippedMigrations = 0;
 
   public DbMigratorImpl(
-      final ClusterContext clusterContext, final MutableProcessingState processingState) {
-    this(true, new MigrationTaskContextImpl(clusterContext, processingState), MIGRATION_TASKS);
-  }
-
-  public DbMigratorImpl(
       final boolean versionCheckRestrictionEnabled,
       final ClusterContext clusterContext,
       final MutableProcessingState processingState) {
@@ -103,7 +98,7 @@ public class DbMigratorImpl implements DbMigrator {
   @Override
   public void runMigrations() {
     if (checkVersionCompatibility() instanceof Compatible.SameVersion) {
-      LOGGER.info("No migrations to run, snapshot is the same as current version");
+      LOGGER.debug("No migrations to run, snapshot is the same as current version");
       return;
     }
     logPreview(migrationTasks);
@@ -158,7 +153,7 @@ public class DbMigratorImpl implements DbMigrator {
       case final Compatible.SameVersion sameVersion ->
           LOGGER.trace("Snapshot is from the same version as the current version: {}", sameVersion);
       case final Compatible compatible ->
-          LOGGER.info("Snapshot is compatible with current version: {}", compatible);
+          LOGGER.debug("Snapshot is compatible with current version: {}", compatible);
     }
     return checkResult;
   }

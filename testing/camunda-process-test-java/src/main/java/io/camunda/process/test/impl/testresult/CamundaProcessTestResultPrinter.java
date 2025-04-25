@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.testresult;
 
-import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import java.util.List;
@@ -69,7 +69,7 @@ public class CamundaProcessTestResultPrinter {
     return formattedProcessInstance
         + "\n\n"
         + "Active elements:\n"
-        + formatFlowNodeInstances(result.getActiveFlowNodeInstances())
+        + formatElementInstances(result.getActiveElementInstances())
         + "\n\n"
         + "Variables:\n"
         + formatVariables(result.getVariables())
@@ -109,21 +109,21 @@ public class CamundaProcessTestResultPrinter {
   private static String formatIncident(final Incident incident) {
     return String.format(
         "- '%s' [type: %s] \"%s\"",
-        incident.getFlowNodeId(), incident.getErrorType(), abbreviate(incident.getErrorMessage()));
+        incident.getElementId(), incident.getErrorType(), abbreviate(incident.getErrorMessage()));
   }
 
-  private static String formatFlowNodeInstances(final List<FlowNodeInstance> flowNodeInstances) {
-    if (flowNodeInstances.isEmpty()) {
+  private static String formatElementInstances(final List<ElementInstance> elementInstances) {
+    if (elementInstances.isEmpty()) {
       return NO_ENTRIES;
     } else {
-      return flowNodeInstances.stream()
-          .map(CamundaProcessTestResultPrinter::formatFlowNodeInstance)
+      return elementInstances.stream()
+          .map(CamundaProcessTestResultPrinter::formatElementInstance)
           .collect(Collectors.joining("\n"));
     }
   }
 
-  private static String formatFlowNodeInstance(final FlowNodeInstance flowNodeInstance) {
-    final String name = Optional.ofNullable(flowNodeInstance.getFlowNodeName()).orElse("");
-    return String.format("- '%s' [name: '%s']", flowNodeInstance.getFlowNodeId(), name);
+  private static String formatElementInstance(final ElementInstance elementInstance) {
+    final String name = Optional.ofNullable(elementInstance.getElementName()).orElse("");
+    return String.format("- '%s' [name: '%s']", elementInstance.getElementId(), name);
   }
 }

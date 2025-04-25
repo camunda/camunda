@@ -15,15 +15,15 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
-import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.impl.ResponseMapper;
+import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
+import io.camunda.client.protocol.rest.StringFilterProperty;
 import java.util.List;
 
-public class StringPropertyImpl implements StringProperty {
-  private final io.camunda.client.protocol.rest.StringFilterProperty filterProperty =
-      new io.camunda.client.protocol.rest.StringFilterProperty();
+public class StringPropertyImpl extends TypedSearchRequestPropertyProvider<StringFilterProperty>
+    implements StringProperty {
+  private final StringFilterProperty filterProperty = new StringFilterProperty();
 
   @Override
   public StringProperty eq(final String value) {
@@ -55,8 +55,8 @@ public class StringPropertyImpl implements StringProperty {
   }
 
   @Override
-  public StringFilterProperty build() {
-    return ResponseMapper.fromProtocolObject(filterProperty);
+  protected StringFilterProperty getSearchRequestProperty() {
+    return filterProperty;
   }
 
   @Override

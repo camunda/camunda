@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,8 +48,7 @@ public class MappingStateTest {
     mappingState.create(mapping);
 
     // then
-    final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getMappingKey()).isEqualTo(key);
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getMappingId()).isEqualTo(mappingId);
     assertThat(persistedMapping.getName()).isEqualTo(name);
     assertThat(persistedMapping.getClaimName()).isEqualTo(claimName);
@@ -60,7 +58,7 @@ public class MappingStateTest {
   @Test
   void shouldReturnEmptyIfMappingDoesNotExist() {
     // when
-    final var mapping = mappingState.get(1L);
+    final var mapping = mappingState.get("someMappingId");
 
     // then
     assertThat(mapping).isEmpty();
@@ -88,7 +86,6 @@ public class MappingStateTest {
 
     // then
     assertThat(retrievedMapping).isPresent();
-    assertThat(retrievedMapping.get().getMappingKey()).isEqualTo(key);
     assertThat(retrievedMapping.get().getName()).isEqualTo(name);
     assertThat(retrievedMapping.get().getMappingId()).isEqualTo(mappingId);
   }
@@ -124,98 +121,10 @@ public class MappingStateTest {
 
     // then
     assertThat(retrievedMapping).isPresent();
-    assertThat(retrievedMapping.get().getMappingKey()).isEqualTo(key);
+    assertThat(retrievedMapping.get().getMappingId()).isEqualTo(mappingId);
     assertThat(retrievedMapping.get().getName()).isEqualTo(name);
     assertThat(retrievedMapping.get().getClaimName()).isEqualTo(claimName);
     assertThat(retrievedMapping.get().getClaimValue()).isEqualTo(claimValue);
-  }
-
-  @Test
-  void shouldAddRole() {
-    // given
-    final long key = 1L;
-    final String claimName = "foo";
-    final String claimValue = "bar";
-    final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
-    mappingState.create(mapping);
-    final long roleKey = 1L;
-
-    // when
-    mappingState.addRole(key, roleKey);
-
-    // then
-    final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getRoleKeysList()).containsExactly(roleKey);
-  }
-
-  @Test
-  void shouldRemoveRole() {
-    // given
-    final long key = 1L;
-    final String claimName = "foo";
-    final String claimValue = "bar";
-    final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
-    mappingState.create(mapping);
-    final long roleKey = 1L;
-    mappingState.addRole(key, roleKey);
-
-    // when
-    mappingState.removeRole(key, roleKey);
-
-    // then
-    final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getRoleKeysList()).isEmpty();
-  }
-
-  @Test
-  void shouldAddTenant() {
-    // given
-    final long key = 1L;
-    final String claimName = "foo";
-    final String claimValue = "bar";
-    final String mappingId = Strings.newRandomValidIdentityId();
-    final var mapping =
-        new MappingRecord()
-            .setMappingId(mappingId)
-            .setMappingKey(key)
-            .setClaimName(claimName)
-            .setClaimValue(claimValue);
-    mappingState.create(mapping);
-    final var tenantId = "tenant";
-
-    // when
-    mappingState.addTenant(mappingId, tenantId);
-
-    // then
-    final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
-  }
-
-  @Test
-  void shouldRemoveTenant() {
-    // given
-    final long key = 1L;
-    final String claimName = "foo";
-    final String claimValue = "bar";
-    final String mappingId = Strings.newRandomValidIdentityId();
-    final var mapping =
-        new MappingRecord()
-            .setMappingId(mappingId)
-            .setMappingKey(key)
-            .setClaimName(claimName)
-            .setClaimValue(claimValue);
-    mappingState.create(mapping);
-    final var tenantId = "tenant";
-    mappingState.addTenant(mappingId, tenantId);
-
-    // when
-    mappingState.removeTenant(key, tenantId);
-
-    // then
-    final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getTenantIdsList()).isEmpty();
   }
 
   @Test
@@ -237,7 +146,6 @@ public class MappingStateTest {
     mappingState.delete(mappingId);
 
     // then
-    assertThat(mappingState.get(key)).isEmpty();
     assertThat(mappingState.get(mappingId)).isEmpty();
     assertThat(mappingState.get(claimName, claimValue)).isEmpty();
   }

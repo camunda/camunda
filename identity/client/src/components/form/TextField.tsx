@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { ChangeEvent, FC, useId } from "react";
 import { PasswordInput, TextArea, TextInput } from "@carbon/react";
 import useTranslate from "src/utility/localization";
@@ -12,16 +13,25 @@ import useTranslate from "src/utility/localization";
 type TextInputProps = {
   type?: "text" | "email";
   cols?: never;
+  counterMode?: never;
+  enableCounter?: never;
+  maxCount?: never;
 };
 
 type TextAreaProps = {
   type?: never;
   cols: number;
+  counterMode?: "character" | "word";
+  enableCounter?: boolean;
+  maxCount?: number;
 };
 
 type PasswordInputProps = {
   type: "password";
   cols?: never;
+  counterMode?: never;
+  enableCounter?: never;
+  maxCount?: never;
 };
 
 export type TextFieldProps = {
@@ -35,9 +45,6 @@ export type TextFieldProps = {
   onBlur?: () => void;
   readOnly?: boolean;
   onChange?: (newValue: string) => void;
-  maxCount?: number;
-  enableCounter?: boolean;
-  counterMode?: "character" | "word";
 } & (TextInputProps | TextAreaProps | PasswordInputProps);
 
 const TextField: FC<TextFieldProps> = ({
@@ -73,16 +80,20 @@ const TextField: FC<TextFieldProps> = ({
     invalidText: errors?.map((e) => t(e)).join(" "),
     onBlur: onBlur,
     readOnly: readOnly,
-    maxCount: maxCount,
-    enableCounter: enableCounter,
-    counterMode: counterMode,
     ...(autoFocus && { "data-modal-primary-focus": true }),
   };
 
   if (type === "password") {
     return <PasswordInput {...commonProps} />;
   } else if (cols && cols > 1) {
-    return <TextArea {...commonProps} />;
+    return (
+      <TextArea
+        {...commonProps}
+        enableCounter={enableCounter}
+        counterMode={counterMode}
+        maxCount={maxCount}
+      />
+    );
   } else {
     return <TextInput {...commonProps} type={type} />;
   }

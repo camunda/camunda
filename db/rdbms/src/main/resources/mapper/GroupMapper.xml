@@ -21,12 +21,14 @@
     SELECT * FROM (
     SELECT
     g.GROUP_KEY,
+    g.GROUP_ID,
     g.NAME,
-    gm.GROUP_KEY AS MEMBER_GROUP_KEY,
-    gm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
+    g.DESCRIPTION,
+    gm.GROUP_ID AS MEMBER_GROUP_ID,
+    gm.ENTITY_ID AS MEMBER_ENTITY_ID,
     gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
     FROM ${prefix}GROUPS g
-    LEFT JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_KEY = gm.GROUP_KEY
+    LEFT JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_ID = gm.GROUP_ID
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -37,17 +39,20 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <if test="filter.groupKey != null">AND g.GROUP_KEY = #{filter.groupKey}</if>
+    <if test="filter.groupId != null">AND g.GROUP_ID = #{filter.groupId}</if>
     <if test="filter.name != null">AND g.NAME = #{filter.name}</if>
   </sql>
 
   <resultMap id="groupResultMap" type="io.camunda.db.rdbms.write.domain.GroupDbModel">
-    <id column="GROUP_KEY" property="groupKey" />
+    <id column="GROUP_ID" property="groupId"/>
+    <result column="GROUP_KEY" property="groupKey" />
     <result column="NAME" property="name"/>
+    <result column="DESCRIPTION" property="description"/>
     <collection property="members" ofType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
       javaType="java.util.List">
       <constructor>
-        <idArg column="MEMBER_GROUP_KEY" javaType="java.lang.Long"/>
-        <idArg column="MEMBER_ENTITY_KEY" javaType="java.lang.Long"/>
+        <idArg column="MEMBER_GROUP_ID" javaType="java.lang.String"/>
+        <idArg column="MEMBER_ENTITY_ID" javaType="java.lang.String"/>
         <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
       </constructor>
     </collection>
@@ -57,31 +62,32 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}GROUPS (GROUP_KEY, NAME)
-    VALUES (#{groupKey}, #{name})
+    INSERT INTO ${prefix}GROUPS (GROUP_KEY, GROUP_ID, NAME, DESCRIPTION)
+    VALUES (#{groupKey}, #{groupId}, #{name}, #{description})
   </insert>
 
   <update
     id="update"
     parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel"
     flushCache="true">
-    UPDATE ${prefix}GROUPS
-    SET NAME = #{name}
-    WHERE GROUP_KEY = #{groupKey}
+    UPDATE ${prefix}GROUPS SET
+                    NAME = #{name},
+                    DESCRIPTION = #{description}
+    WHERE GROUP_ID = #{groupId}
   </update>
 
-  <delete id="delete" parameterType="java.lang.Long" flushCache="true">
+  <delete id="delete" parameterType="java.lang.String" flushCache="true">
     DELETE
     FROM ${prefix}GROUPS
-    WHERE GROUP_KEY = #{groupKey}
+    WHERE GROUP_ID = #{groupId}
   </delete>
 
   <insert
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}GROUP_MEMBER (GROUP_KEY, ENTITY_KEY, ENTITY_TYPE)
-    VALUES (#{groupKey}, #{entityKey}, #{entityType})
+    INSERT INTO ${prefix}GROUP_MEMBER (GROUP_ID, ENTITY_ID, ENTITY_TYPE)
+    VALUES (#{groupId}, #{entityId}, #{entityType})
   </insert>
 
   <delete
@@ -90,18 +96,18 @@
     flushCache="true">
     DELETE
     FROM ${prefix}GROUP_MEMBER
-    WHERE GROUP_KEY = #{groupKey}
-      AND ENTITY_KEY = #{entityKey}
+    WHERE GROUP_ID = #{groupId}
+      AND ENTITY_ID = #{entityId}
       AND ENTITY_TYPE = #{entityType}
   </delete>
 
   <delete
     id="deleteAllMembers"
-    parameterType="java.lang.Long"
+    parameterType="java.lang.String"
     flushCache="true">
     DELETE
     FROM ${prefix}GROUP_MEMBER
-    WHERE GROUP_KEY = #{groupKey}
+    WHERE GROUP_ID = #{groupId}
   </delete>
 
 </mapper>

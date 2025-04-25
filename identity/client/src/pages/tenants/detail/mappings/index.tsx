@@ -84,12 +84,12 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
       <EntityList
         data={mappings?.items}
         headers={[
-          { header: t("mappingId"), key: "id" },
+          { header: t("mappingId"), key: "mappingId" },
           { header: t("mappingName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
         ]}
-        sortProperty="id"
+        sortProperty="mappingId"
         loading={loading}
         addEntityLabel={t("assignMapping")}
         onAddEntity={openAssignModal}

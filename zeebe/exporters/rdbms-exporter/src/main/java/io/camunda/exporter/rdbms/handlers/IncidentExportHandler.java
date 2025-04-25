@@ -17,15 +17,20 @@ import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentExportHandler.class);
+
+  private static final Set<Intent> INCIDENT_INTENTS =
+      Set.of(IncidentIntent.CREATED, IncidentIntent.RESOLVED, IncidentIntent.MIGRATED);
 
   private final IncidentWriter incidentWriter;
 
@@ -35,7 +40,8 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
 
   @Override
   public boolean canExport(final Record<IncidentRecordValue> record) {
-    return record.getValueType() == ValueType.INCIDENT;
+    return record.getValueType() == ValueType.INCIDENT
+        && INCIDENT_INTENTS.contains(record.getIntent());
   }
 
   @Override

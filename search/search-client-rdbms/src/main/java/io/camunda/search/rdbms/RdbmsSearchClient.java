@@ -21,7 +21,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
@@ -69,6 +69,13 @@ public class RdbmsSearchClient implements SearchClientsProxy {
     LOG.debug("[RDBMS Search Client] Search for processInstance: {}", query);
 
     return rdbmsService.getProcessInstanceReader().search(query);
+  }
+
+  @Override
+  public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
+      final long processInstanceKey) {
+    LOG.debug("[RDBMS Search Client] Query processInstance statistics: {}", processInstanceKey);
+    return rdbmsService.getProcessInstanceReader().flowNodeStatistics(processInstanceKey);
   }
 
   @Override
@@ -272,7 +279,7 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
-  public List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+  public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     LOG.debug("[RDBMS Search Client] Query processDefinition statistics: {}", filter);
     return rdbmsService.getProcessDefinitionReader().flowNodeStatistics(filter);

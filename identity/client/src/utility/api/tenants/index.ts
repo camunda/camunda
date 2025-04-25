@@ -1,6 +1,11 @@
 /*
- * Copyright © Camunda Services GmbH
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
+
 import {
   ApiDefinition,
   apiPost,
@@ -119,7 +124,7 @@ export const getMappingsByTenantId: ApiDefinition<
   SearchResponse<Mapping>,
   GetTenantMappingsParams
 > = ({ tenantId }) =>
-  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/search`);
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mappings/search`);
 
 type AssignTenantMappingParams = GetTenantMappingsParams & {
   mappingId: string;
@@ -128,7 +133,7 @@ export const assignTenantMapping: ApiDefinition<
   undefined,
   AssignTenantMappingParams
 > = ({ tenantId, mappingId }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingId}`);
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/mappings/${mappingId}`);
 };
 
 type UnassignTenantMappingParams = AssignTenantMappingParams;
@@ -136,4 +141,4 @@ export const unassignTenantMapping: ApiDefinition<
   undefined,
   UnassignTenantMappingParams
 > = ({ tenantId, mappingId }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingId}`);
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/mappings/${mappingId}`);

@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { FC, useState } from "react";
 import { Stack } from "@carbon/react";
 import { spacing05 } from "@carbon/elements";
@@ -26,7 +27,9 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
   entity,
 }) => {
   const { t } = useTranslate("mappingRules");
-  const [callUpdateMapping, { loading }] = useApiCall(updateMapping);
+  const [callUpdateMapping, { loading, error }] = useApiCall(updateMapping, {
+    suppressErrorNotification: true,
+  });
   const [mapping, setMapping] = useState<Mapping>(entity);
 
   const handleSubmit = async () => {
@@ -43,13 +46,16 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
+      error={error}
       loadingDescription={t("updatingMapping")}
       confirmLabel={t("updateMapping")}
     >
       <TextField
         label={t("mappingId")}
-        onChange={(id) => setMapping((mapping) => ({ ...mapping, id }))}
-        value={mapping.mappingKey}
+        onChange={(mappingId) =>
+          setMapping((mapping) => ({ ...mapping, mappingId }))
+        }
+        value={mapping.mappingId}
         readOnly
       />
       <TextField

@@ -15,7 +15,7 @@ import {TabView} from 'modules/components/TabView';
 import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
-import {VariablesContent} from './VariablesContent';
+import {VariablesContent as VariablesContentV2} from './v2/VariablesContent';
 import {Listeners} from './Listeners';
 import {WarningFilled} from './styled';
 
@@ -84,7 +84,7 @@ const VariablePanel = observer(function VariablePanel() {
         {
           id: 'variables',
           label: 'Variables',
-          content: <VariablesContent />,
+          content: <VariablesContentV2 />,
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(false);

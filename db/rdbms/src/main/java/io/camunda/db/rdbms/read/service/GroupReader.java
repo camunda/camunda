@@ -31,13 +31,13 @@ public class GroupReader extends AbstractEntityReader<GroupEntity> {
     this.groupMapper = groupMapper;
   }
 
-  public Optional<GroupEntity> findOne(final long groupKey) {
-    final var result = search(GroupQuery.of(b -> b.filter(f -> f.groupKey(groupKey))));
+  public Optional<GroupEntity> findOne(final String groupId) {
+    final var result = search(GroupQuery.of(b -> b.filter(f -> f.groupId(groupId))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
   public SearchQueryResult<GroupEntity> search(final GroupQuery query) {
-    final var dbSort = convertSort(query.sort(), GroupSearchColumn.GROUP_KEY);
+    final var dbSort = convertSort(query.sort(), GroupSearchColumn.GROUP_ID);
     final var dbQuery =
         GroupDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
@@ -51,7 +51,9 @@ public class GroupReader extends AbstractEntityReader<GroupEntity> {
   private GroupEntity map(final GroupDbModel model) {
     return new GroupEntity(
         model.groupKey(),
+        model.groupId(),
         model.name(),
-        model.members().stream().map(GroupMemberDbModel::entityKey).collect(Collectors.toSet()));
+        model.description(),
+        model.members().stream().map(GroupMemberDbModel::entityId).collect(Collectors.toSet()));
   }
 }

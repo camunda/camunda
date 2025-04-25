@@ -12,7 +12,9 @@ import java.util.function.Function;
 
 public enum GroupSearchColumn implements SearchColumn<GroupEntity> {
   GROUP_KEY("groupKey", GroupEntity::groupKey),
-  NAME("name", GroupEntity::name);
+  GROUP_ID("groupId", GroupEntity::groupId),
+  NAME("name", GroupEntity::name),
+  DESCRIPTION("description", GroupEntity::description);
 
   private final String property;
   private final Function<GroupEntity, Object> propertyReader;

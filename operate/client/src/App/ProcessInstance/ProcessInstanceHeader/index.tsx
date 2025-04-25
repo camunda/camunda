@@ -13,7 +13,6 @@ import {getProcessName} from 'modules/utils/instance';
 import {Operations} from 'modules/components/Operations';
 import {observer} from 'mobx-react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {variablesStore} from 'modules/stores/variables';
 import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/Routes';
@@ -27,6 +26,9 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {authenticationStore} from 'modules/stores/authentication';
 import {processStore} from 'modules/stores/process';
 import {VersionTag} from './styled';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
 
 const headerColumns = [
   'Process Name',
@@ -92,10 +94,15 @@ const ProcessInstanceHeader: React.FC = observer(() => {
     return processStore.reset;
   }, []);
 
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
+    processDefinitionKey,
+  });
+
   if (
     processInstance === null ||
     ['fetching', 'initial'].includes(status) ||
-    !processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable
+    isPending
   ) {
     return <Skeleton headerColumns={skeletonColumns} />;
   }
@@ -226,7 +233,9 @@ const ProcessInstanceHeader: React.FC = observer(() => {
           hideOverflowingContent: false,
           content: (
             <>
-              {processInstanceDetailsDiagramStore.hasCalledProcessInstances ? (
+              {hasCalledProcessInstances(
+                Object.values(processInstanceXmlData?.businessObjects ?? {}),
+              ) ? (
                 <Link
                   to={Locations.processes({
                     parentInstanceId: id,

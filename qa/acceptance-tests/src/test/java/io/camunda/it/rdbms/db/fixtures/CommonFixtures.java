@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.fixtures;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -69,7 +70,13 @@ public class CommonFixtures {
   }
 
   public static <T extends Enum<?>> T randomEnum(final Class<T> clazz) {
-    final int x = RANDOM.nextInt(clazz.getEnumConstants().length);
-    return clazz.getEnumConstants()[x];
+    final var enums = clazz.getEnumConstants();
+    final var validEnums =
+        Arrays.stream(enums).filter(e -> !e.name().equals("UNKNOWN_ENUM_VALUE")).toList();
+    if (validEnums.isEmpty()) {
+      throw new RuntimeException(String.format("No valid enums of type %s", clazz.getName()));
+    }
+    final int x = RANDOM.nextInt(validEnums.size());
+    return validEnums.get(x);
   }
 }

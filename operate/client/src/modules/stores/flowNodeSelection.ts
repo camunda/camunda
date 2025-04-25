@@ -176,6 +176,17 @@ class FlowNodeSelection {
     );
   }
 
+  get selectedFlowNodeId() {
+    return this.state.selection?.flowNodeId;
+  }
+
+  get selectedFlowNodeInstanceId() {
+    return (
+      this.state.selection?.flowNodeInstanceId ??
+      flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId
+    );
+  }
+
   get selectedFlowNodeName() {
     if (
       processInstanceDetailsStore.state.processInstance === null ||
@@ -223,35 +234,6 @@ class FlowNodeSelection {
           modification.operation !== 'CANCEL_TOKEN' &&
           Object.keys(modification.parentScopeIds).includes(flowNodeId),
       ).length
-    );
-  }
-
-  get hasPendingCancelOrMoveModification() {
-    const currentSelection = this.state.selection;
-
-    if (currentSelection === null) {
-      return false;
-    }
-
-    const {flowNodeId, flowNodeInstanceId} = currentSelection;
-
-    if (this.isRootNodeSelected || flowNodeId === undefined) {
-      return processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled;
-    }
-
-    if (
-      modificationsStore.modificationsByFlowNode[flowNodeId]
-        ?.areAllTokensCanceled
-    ) {
-      return true;
-    }
-
-    return (
-      flowNodeInstanceId !== undefined &&
-      modificationsStore.hasPendingCancelOrMoveModification(
-        flowNodeId,
-        flowNodeInstanceId,
-      )
     );
   }
 

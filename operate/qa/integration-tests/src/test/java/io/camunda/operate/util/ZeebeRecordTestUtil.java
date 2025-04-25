@@ -217,6 +217,7 @@ public abstract class ZeebeRecordTestUtil {
         .withName(var.getName())
         .withValue(var.getFullValue())
         .withProcessInstanceKey(var.getProcessInstanceKey())
+        .withProcessDefinitionKey(var.getProcessDefinitionKey())
         .withBpmnProcessId(var.getBpmnProcessId())
         .withScopeKey(var.getScopeKey())
         .withTenantId(var.getTenantId());

@@ -36,7 +36,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
@@ -46,14 +46,14 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   private final RequestConfig.Builder httpRequestConfig;
 
   private final BatchOperationTypeEnum type;
-  private final Supplier<E> filterFactory;
+  private final Function<Consumer<E>, E> filterFactory;
   private E filter;
 
   public CreateBatchOperationCommandImpl(
       final HttpClient httpClient,
       final JsonMapper jsonMapper,
       final BatchOperationTypeEnum type,
-      final Supplier<E> filterFactory) {
+      final Function<Consumer<E>, E> filterFactory) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -71,8 +71,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   @Override
   public CreateBatchOperationCommandStep3<E> filter(final Consumer<E> fn) {
     Objects.requireNonNull(fn, "must specify a filter consumer");
-    filter = filterFactory.get();
-    fn.accept(filter);
+    filter = filterFactory.apply(fn);
     return this;
   }
 
@@ -100,8 +99,10 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
 
   private String getUrl() {
     switch (type) {
-      case PROCESS_CANCELLATION:
+      case CANCEL_PROCESS_INSTANCE:
         return "/process-instances/batch-operations/cancellation";
+      case RESOLVE_INCIDENT:
+        return "/process-instances/batch-operations/incident-resolution";
       default:
         throw new IllegalArgumentException("Unsupported batch operation type: " + type);
     }
@@ -124,7 +125,16 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
       return new CreateBatchOperationCommandImpl<>(
           httpClient,
           jsonMapper,
-          BatchOperationTypeEnum.PROCESS_CANCELLATION,
+          BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE,
+          SearchRequestBuilders::processInstanceFilter);
+    }
+
+    @Override
+    public CreateBatchOperationCommandStep2<ProcessInstanceFilter> resolveIncident() {
+      return new CreateBatchOperationCommandImpl<>(
+          httpClient,
+          jsonMapper,
+          BatchOperationTypeEnum.RESOLVE_INCIDENT,
           SearchRequestBuilders::processInstanceFilter);
     }
   }

@@ -13,11 +13,15 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface BackupRepository {
-
+  // Match all numbers, optionally ending with a *
+  Pattern BACKUPID_PATTERN = Pattern.compile("^(\\d*)\\*?$");
+  // Maximum length of a length when converted to a string
+  int LONG_MAX_LENGTH_AS_STRING = 19;
   Logger LOGGER = LoggerFactory.getLogger(BackupRepository.class);
 
   SnapshotNameProvider snapshotNameProvider();
@@ -34,7 +38,8 @@ public interface BackupRepository {
 
   Set<String> checkAllIndicesExist(List<String> indices);
 
-  List<GetBackupStateResponseDto> getBackups(String repositoryName);
+  List<GetBackupStateResponseDto> getBackups(
+      String repositoryName, final boolean verbose, final String pattern);
 
   void executeSnapshotting(SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
 
@@ -48,6 +53,17 @@ public interface BackupRepository {
       LOGGER.warn(
           "Couldn't check incomplete timeout for backup. Return incomplete check is timed out", e);
       return true;
+    }
+  }
+
+  static String validPattern(final String pattern) {
+    if (pattern == null || pattern.isEmpty()) {
+      return "*";
+    } else if (pattern.length() <= (LONG_MAX_LENGTH_AS_STRING + 1)
+        && BACKUPID_PATTERN.matcher(pattern).matches()) {
+      return pattern;
+    } else {
+      throw new IllegalArgumentException("Invalid pattern: " + pattern);
     }
   }
 }

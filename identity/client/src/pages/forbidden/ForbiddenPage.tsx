@@ -5,12 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { FC } from "react";
 import { Link, Stack } from "@carbon/react";
 import { Launch } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { Description, Title, Grid, Content } from "./components";
-import forbiddenIcon from "src/assets/images/forbidden.svg";
+import ForbiddenIcon from "src/assets/images/forbidden.svg";
 
 const ForbiddenPage: FC = () => {
   const { t, Translate } = useTranslate();
@@ -18,7 +19,7 @@ const ForbiddenPage: FC = () => {
   return (
     <Grid>
       <Content gap={6}>
-        <img src={forbiddenIcon} alt="Forbidden" />
+        <ForbiddenIcon />
         <Stack gap={3}>
           <Title>{t("forbiddenPageTitle")}</Title>
           <Description>

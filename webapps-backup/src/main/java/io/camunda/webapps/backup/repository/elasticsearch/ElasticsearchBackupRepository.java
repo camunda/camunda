@@ -183,9 +183,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     if (snapshots.isEmpty()) {
       return Optional.empty();
     } else {
-      final var first = snapshots.getFirst();
-      return Optional.of(
-          MetadataMarshaller.fromMetadata(first.metadata(), esClient._jsonpMapper()));
+      return Optional.of(extractMetadata(snapshots.getFirst()));
     }
   }
 
@@ -209,31 +207,45 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   }
 
   @Override
-  public List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
+  public List<GetBackupStateResponseDto> getBackups(
+      final String repositoryName, final boolean verbose, final String pattern) {
+    final String validPattern;
+    try {
+      validPattern = BackupRepository.validPattern(pattern);
+    } catch (final IllegalArgumentException ex) {
+      throw new InvalidRequestException(ex.getMessage());
+    }
+
     final GetSnapshotRequest snapshotsStatusRequest =
         GetSnapshotRequest.of(
-            b ->
-                b.repository(repositoryName)
-                    .snapshot(snapshotNameProvider.snapshotNamePrefix() + "*")
-                    // it looks like sorting as well as size/offset are not working, need to sort
-                    // additionally before return
-                    .sort(SnapshotSort.StartTime)
-                    .order(SortOrder.Desc));
+            b -> {
+              b.repository(repositoryName)
+                  .snapshot(snapshotNameProvider.snapshotNamePrefix() + validPattern)
+                  .verbose(verbose);
+              if (verbose) {
+                // it looks like sorting as well as size/offset are not working, need to sort
+                // additionally before return
+                b.sort(SnapshotSort.StartTime).order(SortOrder.Desc);
+              }
+              return b;
+            });
     final GetSnapshotResponse response;
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest);
-      final List<SnapshotInfo> snapshots =
-          response.snapshots().stream()
-              .sorted(Comparator.comparing(SnapshotInfo::startTimeInMillis).reversed())
-              .toList();
+      List<SnapshotInfo> snapshots = response.snapshots();
+      if (verbose) {
+        snapshots =
+            snapshots.stream()
+                .sorted(Comparator.comparing(SnapshotInfo::startTimeInMillis).reversed())
+                .toList();
+      }
 
       final LinkedHashMap<Long, List<SnapshotInfo>> groupedSnapshotInfos =
           snapshots.stream()
               .collect(
                   groupingBy(
                       si -> {
-                        final Metadata metadata =
-                            MetadataMarshaller.fromMetadata(si.metadata(), esClient._jsonpMapper());
+                        final Metadata metadata = extractMetadata(si);
                         Long backupId = metadata.backupId();
                         // backward compatibility with v. 8.1
                         if (backupId == null) {
@@ -305,6 +317,18 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             listener.onFailure(e);
           }
         });
+  }
+
+  private Metadata extractMetadata(final SnapshotInfo si) {
+    try {
+      var metadata = MetadataMarshaller.fromMetadata(si.metadata(), esClient._jsonpMapper());
+      if (metadata == null || !metadata.isInitialized()) {
+        metadata = snapshotNameProvider.extractMetadataFromSnapshotName(si.snapshot());
+      }
+      return metadata;
+    } catch (final RuntimeException e) {
+      return snapshotNameProvider.extractMetadataFromSnapshotName(si.snapshot());
+    }
   }
 
   private boolean isErrorType(final Exception e, final String errorType) {
@@ -428,8 +452,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       final Long backupId, final List<SnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final var firstSnapshot = snapshots.getFirst();
-    final Metadata metadata =
-        MetadataMarshaller.fromMetadata(firstSnapshot.metadata(), esClient._jsonpMapper());
+    final Metadata metadata = extractMetadata(firstSnapshot);
     final Integer expectedSnapshotsCount = metadata.partCount();
 
     if (snapshots.size() == expectedSnapshotsCount
@@ -447,8 +470,10 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       response.setState(BackupStateDto.IN_PROGRESS);
     } else if (snapshots.size() < expectedSnapshotsCount) {
       // Check: if missing in tasklist
-      if (isIncompleteCheckTimedOut(
-          backupProps.incompleteCheckTimeoutInSeconds(), snapshots.getLast().endTimeInMillis())) {
+      final var lastSnapshot = snapshots.getLast();
+      if (lastSnapshot.startTimeInMillis() == null
+          || isIncompleteCheckTimedOut(
+              backupProps.incompleteCheckTimeoutInSeconds(), lastSnapshot.endTimeInMillis())) {
         response.setState(BackupStateDto.INCOMPLETE);
       } else {
         response.setState(BackupStateDto.IN_PROGRESS);
@@ -460,9 +485,11 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     for (final SnapshotInfo snapshot : snapshots) {
       final GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
       detail.setSnapshotName(snapshot.snapshot());
-      detail.setStartTime(
-          OffsetDateTime.ofInstant(
-              Instant.ofEpochMilli(snapshot.startTimeInMillis()), ZoneId.systemDefault()));
+      if (snapshot.startTimeInMillis() != null && snapshot.startTimeInMillis() > 0) {
+        detail.setStartTime(
+            OffsetDateTime.ofInstant(
+                Instant.ofEpochMilli(snapshot.startTimeInMillis()), ZoneId.systemDefault()));
+      }
       if (snapshot.failures() != null && !snapshot.failures().isEmpty()) {
         detail.setFailures(
             snapshot.failures().stream().map(SnapshotShardFailure::reason).toArray(String[]::new));
@@ -539,7 +566,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                 ? "until completion."
                 : "at most " + snapshotTimeout + " seconds.");
         if (isSnapshotFinishedWithinTimeout(
-            snapshotRequest.snapshotName(), snapshotRequest.repositoryName())) {
+            snapshotRequest.repositoryName(), snapshotRequest.snapshotName())) {
           onSuccess.run();
         } else {
           onFailure.run();

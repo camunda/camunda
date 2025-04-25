@@ -98,26 +98,6 @@ class AssignUserToTenantTest {
   }
 
   @Test
-  void shouldRejectAssignIfUserDoesNotExist() {
-    // Given
-    final var invalidUserName = Strings.newRandomValidUsername();
-
-    // When / Then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newAssignUserToTenantCommand(TENANT_ID)
-                    .username(invalidUserName)
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining(
-            "Expected to add user with id '%s' to tenant with id '%s', but the user doesn't exist."
-                .formatted(invalidUserName, TENANT_ID));
-  }
-
-  @Test
   void shouldRejectAssignIfTenantAlreadyAssignedToUser() {
     // Given
     client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join();

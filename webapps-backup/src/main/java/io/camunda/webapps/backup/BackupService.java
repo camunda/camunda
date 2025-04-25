@@ -18,7 +18,11 @@ public interface BackupService {
 
   GetBackupStateResponseDto getBackupState(Long backupId);
 
-  List<GetBackupStateResponseDto> getBackups();
+  List<GetBackupStateResponseDto> getBackups(boolean verbose, final String pattern);
+
+  default List<GetBackupStateResponseDto> getBackups() {
+    return getBackups(true, null);
+  }
 
   record SnapshotRequest(
       String repositoryName,

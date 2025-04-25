@@ -15,25 +15,18 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
 public interface VariableValueFilter extends SearchRequestFilter {
 
   /** Filter by variable name */
   VariableValueFilter name(final String value);
 
-  /** Filter by variable value equal to value */
-  VariableValueFilter eq(final Object value);
+  /** Filter by variable value equal to the specified value */
+  VariableValueFilter value(final String value);
 
-  /** Filter by variable value greater than value */
-  VariableValueFilter gt(final Object value);
-
-  /** Filter by variable value greater equals than value */
-  VariableValueFilter gte(final Object value);
-
-  /** Filter by variable value lower than value */
-  VariableValueFilter lt(final Object value);
-
-  /** Filter by variable value lower equals than value */
-  VariableValueFilter lte(final Object value);
+  /** Filter by variable value with filter criteria */
+  VariableValueFilter value(final Consumer<StringProperty> stringFilter);
 }

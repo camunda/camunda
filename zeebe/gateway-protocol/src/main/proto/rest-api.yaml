@@ -35,7 +35,6 @@ tags:
   - name: Decision requirements
   - name: Document
   - name: Element instance
-  - name: Flow node instance
   - name: Group
   - name: Incident
   - name: Job
@@ -635,8 +634,35 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /tenants/{tenantId}/mappings/search:
+    post:
+      tags:
+        - Tenant
+      operationId: searchMappingsForTenant
+      summary: Search mappings for tenant
+      description: Retrieves a filtered and sorted list of mappings for a specified tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingSearchQueryRequest"
+      responses:
+        "200":
+          description: The search result of mappings for the tenant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingSearchQueryResult"
 
-  /tenants/{tenantId}/groups/{groupKey}:
+  /tenants/{tenantId}/groups/{groupId}:
     put:
       tags:
         - Tenant
@@ -650,7 +676,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
           description: The unique identifier of the group.
@@ -685,7 +711,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
           description: The unique identifier of the group.
@@ -1326,14 +1352,14 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /process-definitions/{processDefinitionKey}/statistics/flownode-instances:
+  /process-definitions/{processDefinitionKey}/statistics/element-instances:
     post:
       tags:
         - Process definition
       operationId: getProcessDefinitionStatistics
       summary: Get process definition statistics
       description: |
-        Get statistics about flow nodes in currently running process instances by process definition key and search filter.
+        Get statistics about elements in currently running process instances by process definition key and search filter.
       parameters:
         - name: processDefinitionKey
           in: path
@@ -1346,14 +1372,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsQuery"
+              $ref: "#/components/schemas/ProcessDefinitionElementStatisticsQuery"
       responses:
         "200":
           description: The process definition statistics result.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsQueryResult"
+                $ref: "#/components/schemas/ProcessDefinitionElementStatisticsQueryResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -1451,6 +1477,37 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-instances/{processInstanceKey}/statistics/element-instances:
+    get:
+      tags:
+        - Process instance
+      operationId: getProcessInstanceStatistics
+      summary: Get process instance statistics
+      description: |
+        Get statistics about elements by the process instance key.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The process instance statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceElementStatisticsQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1554,6 +1611,78 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /process-instances/batch-operations/incident-resolution:
+    post:
+      tags:
+        - Process instance
+      operationId: resolveIncidentsBatchOperation
+      summary: Create a batch operation to resolve incidents of process instances
+      description: |
+        Resolves multiple instances of process instances.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceFilter"
+      responses:
+        "202":
+          description: The batch operation request was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationCreatedResult"
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-instances/batch-operations/migration:
+    post:
+      tags:
+        - Process instance
+      operationId: migrateProcessInstancesBatchOperation
+      summary: Create a batch operation to migrate process instances
+      description: |
+        Migrate multiple instances of process instances.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceMigrationBatchOperationInstruction"
+      responses:
+        "202":
+          description: The batch operation request was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationCreatedResult"
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/migration:
     post:
       tags:
@@ -1635,28 +1764,28 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /flownode-instances/search:
+  /element-instances/search:
     post:
       tags:
-        - Flow node instance
-      operationId: searchFlowNodeInstances
-      summary: Search flow node instances
+        - Element instance
+      operationId: searchElementInstances
+      summary: Search element instances
       description: |
-        Search for flow node instances based on given criteria.
+        Search for element instances based on given criteria.
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/FlowNodeInstanceSearchQuery"
+              $ref: "#/components/schemas/ElementInstanceSearchQuery"
       responses:
         "200":
           description: >
-            The flow node instance search result.
+            The element instance search result.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResult"
+                $ref: "#/components/schemas/ElementInstanceSearchQueryResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -1666,29 +1795,29 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /flownode-instances/{flowNodeInstanceKey}:
+  /element-instances/{elementInstanceKey}:
     get:
       tags:
-        - Flow node instance
-      operationId: getFlowNodeInstance
-      summary: Get flow node instance
+        - Element instance
+      operationId: getElementInstance
+      summary: Get element instance
       description: |
-        Returns flow node instance as JSON.
+        Returns element instance as JSON.
       parameters:
-        - name: flowNodeInstanceKey
+        - name: elementInstanceKey
           in: path
           required: true
-          description: The assigned key of the flow node instance, which acts as a unique identifier for this flow node instance.
+          description: The assigned key of the element instance, which acts as a unique identifier for this element instance.
           schema:
             type: string
       responses:
         "200":
           description: >
-            The flow node instance is successfully returned.
+            The element instance is successfully returned.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FlowNodeInstanceResult"
+                $ref: "#/components/schemas/ElementInstanceResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -1697,7 +1826,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           description: >
-            The flow node instance with the given key was not found.
+            The element instance with the given key was not found.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -2356,6 +2485,44 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Role
+      operationId: removeUserFromRole
+      summary: Unassign a user from a role (Work-in-Progress)
+      description: |
+        Unassigns a user from a role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          description: The user username.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The user was unassigned successfully from the role.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role or user with the given ID or username was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /roles/search:
     post:
       tags:
@@ -2610,6 +2777,89 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           description: The group or user with the given ID was not found, or the user is not assigned to this group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /groups/{groupId}/mapping-rules/{mappingId}:
+    put:
+      tags:
+        - Group
+      operationId: addMappingToGroup
+      summary: Assign a mapping rule to a group (Work-in-Progress)
+      description: |
+        Assigns a mapping rule to a group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            type: string
+        - name: mappingId
+          in: path
+          required: true
+          description: The mapping rule ID.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The mapping rule was assigned successfully to the group.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group or mapping rule with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: The mapping rule with the given ID is already assigned to the group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Group
+      operationId: unassignMappingFromGroup
+      summary: Unassign a mapping rule from a group (Work-in-Progress)
+      description: |
+        Unassigns a mapping rule from a group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            type: string
+        - name: mappingId
+          in: path
+          required: true
+          description: The mapping rule ID.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The mapping rule was unassigned successfully from the group.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group or mapping rule with the given ID was not found, or the mapping rule is not assigned to this group.
           content:
             application/problem+json:
               schema:
@@ -2959,8 +3209,21 @@ paths:
 
         The caller must provide a file name for each document, which will be used in case of a multi-status response
         to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
-        of the file part or in the `fileName` field of the metadata part. If both are provided, the `fileName` field
-        takes precedence.
+        of the file part or in the `fileName` field of the metadata, which can be configured with
+        the `X-Document-Metadata` header for each file part. If both are provided, the `fileName` metadata field
+        takes precedence. For example, given the following headers for a file:
+        ```
+        Content-Disposition: form-data; name="files"; filename="bill.pdf"
+        X-Document-Metadata: {"fileName": "invoice.pdf", "size": 1234567}
+        ```
+
+        The filename will be `invoice.pdf`, but in the following example:
+        ```
+        Content-Disposition: form-data; name="files"; filename="bill.pdf"
+        X-Document-Metadata: {"size": 1234567}
+        ```
+
+        it would be `bill.pdf`.
 
         In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
         each of which contains the file name of the document that failed to upload and the reason for the failure.
@@ -3536,7 +3799,7 @@ paths:
       operationId: createElementInstanceVariables
       summary: Update element instance variables
       description: |
-        Updates all the variables of a particular scope (for example, process instance, flow element instance) with the given variable data.
+        Updates all the variables of a particular scope (for example, process instance, element instance) with the given variable data.
         Specify the element instance in the `elementInstanceKey` parameter.
       parameters:
         - name: elementInstanceKey
@@ -4092,7 +4355,7 @@ components:
         filter:
           description: The user task variable search filters.
           allOf:
-            - $ref: "#/components/schemas/VariableUserTaskFilterRequest"
+            - $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskSearchQueryResult:
       description: User task search query response.
       type: object
@@ -4161,12 +4424,12 @@ components:
           type: array
           description: Process instance variables associated with the user task.
           items:
-            $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+            $ref: "#/components/schemas/VariableValueFilterRequest"
         localVariables:
           type: array
           description: Local variables associated with the user task.
           items:
-            $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+            $ref: "#/components/schemas/VariableValueFilterRequest"
         userTaskKey:
           type: string
           description: The key for this user task.
@@ -4179,7 +4442,7 @@ components:
         elementInstanceKey:
           type: string
           description: The key of the element instance.
-    UserTaskVariableFilterRequest:
+    VariableValueFilterRequest:
       type: object
       properties:
         name:
@@ -4192,7 +4455,7 @@ components:
       required:
         - name
         - value
-    VariableUserTaskFilterRequest:
+    UserTaskVariableFilterRequest:
       description: The user task variable search filters.
       type: object
       properties:
@@ -4493,7 +4756,7 @@ components:
             - processDefinitionVersionTag
             - processDefinitionKey
             - parentProcessInstanceKey
-            - parentFlowNodeInstanceKey
+            - parentElementInstanceKey
             - startDate
             - endDate
             - state
@@ -4639,19 +4902,19 @@ components:
 
             Wildcard characters can be escaped with backslash, for instance: `\*`.
           type: string
-    AdvancedFlowNodeInstanceStateFilter:
+    AdvancedElementInstanceStateFilter:
       title: Advanced filter
-      description: Advanced FlowNodeInstanceStateEnum filter.
+      description: Advanced ElementInstanceStateEnum filter.
       type: object
       properties:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+            - $ref: "#/components/schemas/ElementInstanceStateEnum"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+            - $ref: "#/components/schemas/ElementInstanceStateEnum"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -4659,7 +4922,7 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+            $ref: "#/components/schemas/ElementInstanceStateEnum"
         $like:
           description: |
             Checks if the property matches the provided like value.
@@ -4735,16 +4998,16 @@ components:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceStateEnum"
         - $ref: "#/components/schemas/AdvancedProcessInstanceStateFilter"
-    FlowNodeInstanceStateFilterProperty:
-      description: FlowNodeInstanceStateEnum property with full advanced search capabilities.
+    ElementInstanceStateFilterProperty:
+      description: ElementInstanceStateEnum property with full advanced search capabilities.
       type: object
       oneOf:
         - type: string
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
-        - $ref: "#/components/schemas/AdvancedFlowNodeInstanceStateFilter"
+            - $ref: "#/components/schemas/ElementInstanceStateEnum"
+        - $ref: "#/components/schemas/AdvancedElementInstanceStateFilter"
     DateTimeFilterProperty:
       description: Date-time property with full advanced search capabilities.
       type: object
@@ -4754,7 +5017,7 @@ components:
           title: Exact match
           description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedDateTimeFilter"
-    BaseProcessInstanceFilter:
+    BaseProcessInstanceFilterFields:
       description: Base process instance search filter.
       type: object
       properties:
@@ -4781,7 +5044,7 @@ components:
           description: The process instance variables.
           type: array
           items:
-            $ref: "#/components/schemas/ProcessInstanceVariableFilterRequest"
+            $ref: "#/components/schemas/VariableValueFilterRequest"
         processInstanceKey:
           description: The key of this process instance.
           allOf:
@@ -4790,15 +5053,82 @@ components:
           description: The parent process instance key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-        parentFlowNodeInstanceKey:
-          description: The parent flow node instance key.
+        parentElementInstanceKey:
+          description: The parent element instance key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-    ProcessInstanceFilter:
+        batchOperationId:
+          description: The batch operation ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        errorMessage:
+          description: The error message related to the process.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        hasRetriesLeft:
+          description: Whether the process has failed jobs with retries left.
+          type: boolean
+        elementInstanceState:
+          description: The state of the element instances associated with the process instance.
+          allOf:
+            - $ref: "#/components/schemas/ElementInstanceStateFilterProperty"
+        elementId:
+          description: The element ID associated with the process instance.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        hasElementInstanceIncident:
+          description:  Whether the element instance has an incident or not.
+          type: boolean
+        incidentErrorHashCode:
+          description: The incident error hash code, associated with this process.
+          type: integer
+          format: int32
+    ProcessDefinitionStatisticsFilter:
+      description: Process definition statistics search filter.
+      allOf:
+        - $ref: "#/components/schemas/BaseProcessInstanceFilterFields"
+        - type: object
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+                <br>
+                <em>Example:</em>
+
+                ```json
+                {
+                  "state": "ACTIVE",
+                  "tenantId": 123,
+                  "$or": [
+                    { "processInstanceId": "process_v1" },
+                    { "processInstanceId": "process_v2", "hasIncident": true }
+                  ]
+                }
+                ```
+                This matches process instances that:
+
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: disc;">are in <em>ACTIVE</em> state</li>
+                  <li style="list-style-type: disc;">have tenant ID equal to <em>123</em></li>
+                  <li style="list-style-type: disc;">and match either:
+                    <ul style="padding-left: 20px; margin-left: 20px;">
+                      <li style="list-style-type: circle;"><code>processInstanceId</code> is <em>process_v1</em>, or</li>
+                      <li style="list-style-type: circle;"><code>processInstanceId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
+                    </ul>
+                  </li>
+                </ul>
+                <br>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              items:
+                $ref: "#/components/schemas/BaseProcessInstanceFilterFields"
+    ProcessInstanceFilterFields:
       description: Process instance search filter.
       type: object
       allOf:
-        - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+        - $ref: "#/components/schemas/BaseProcessInstanceFilterFields"
       properties:
         processDefinitionId:
           description: The process definition ID.
@@ -4820,46 +5150,47 @@ components:
           description: The process definition key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-        batchOperationId:
-          description: The batch operation ID.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        errorMessage:
-          description: The error message related to the process.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        hasRetriesLeft:
-          description: Whether the process has failed jobs with retries left.
-          type: boolean
-        flowNodeInstanceState:
-          description: The state of the flow node instances associated with the process instance.
-          allOf:
-            - $ref: "#/components/schemas/FlowNodeInstanceStateFilterProperty"
-        flowNodeId:
-          description: The flow node ID associated with the process instance.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        hasFlowNodeInstanceIncident:
-          description:  Whether the flow node instance has an incident or not.
-          type: boolean
-        incidentErrorHashCode:
-          description: The incident error hash code, associated with this process.
-          type: integer
-          format: int32
-    ProcessInstanceVariableFilterRequest:
-      description: Process instance variable filter.
-      type: object
-      properties:
-        name:
-          description: Name of the variable.
-          type: string
-        value:
-          description: The value of the variable.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-      required:
-        - name
-        - value
+    ProcessInstanceFilter:
+      description: Process instance search filter.
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceFilterFields"
+        - type: object
+          properties:
+            $or:
+              description: |
+                Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+
+                Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+                <br>
+                <em>Example:</em>
+
+                ```json
+                {
+                  "state": "ACTIVE",
+                  "tenantId": 123,
+                  "$or": [
+                    { "processDefinitionId": "process_v1" },
+                    { "processDefinitionId": "process_v2", "hasIncident": true }
+                  ]
+                }
+                ```
+                This matches process instances that:
+
+                <ul style="padding-left: 20px; margin-left: 20px;">
+                  <li style="list-style-type: disc;">are in <em>ACTIVE</em> state</li>
+                  <li style="list-style-type: disc;">have tenant ID equal to <em>123</em></li>
+                  <li style="list-style-type: disc;">and match either:
+                    <ul style="padding-left: 20px; margin-left: 20px;">
+                      <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v1</em>, or</li>
+                      <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
+                    </ul>
+                  </li>
+                </ul>
+                <br>
+                <p>Note: Using complex <code>$or</code> conditions may impact performance, use with caution in high-volume environments.
+              type: array
+              items:
+                $ref: "#/components/schemas/ProcessInstanceFilterFields"
     ProcessInstanceSearchQueryResult:
       description: Process instance search response.
       type: object
@@ -4913,59 +5244,68 @@ components:
         parentProcessInstanceKey:
           type: string
           description: The parent process instance key.
-        parentFlowNodeInstanceKey:
+        parentElementInstanceKey:
           type: string
-          description: The parent flow node instance key.
+          description: The parent element instance key.
     ProcessInstanceStateEnum:
       description: The state, one of ACTIVE, COMPLETED, TERMINATED.
       enum:
         - ACTIVE
         - COMPLETED
         - TERMINATED
-    FlowNodeInstanceStateEnum:
-      description: Flow node states, one of ACTIVE, COMPLETED, TERMINATED.
+    ElementInstanceStateEnum:
+      description: Element states, one of ACTIVE, COMPLETED, TERMINATED.
       enum:
         - ACTIVE
         - COMPLETED
         - TERMINATED
-    ProcessDefinitionFlowNodeStatisticsQuery:
-      description: Process definition flow node statistics request.
+    ProcessDefinitionElementStatisticsQuery:
+      description: Process definition element statistics request.
       type: object
       properties:
         filter:
-          description: The process instance search filters.
+          description: The process definition statistics search filters.
           allOf:
-            - $ref: "#/components/schemas/BaseProcessInstanceFilter"
-    ProcessDefinitionFlowNodeStatisticsQueryResult:
-      description: Process definition flow node statistics query response.
+            - $ref: "#/components/schemas/ProcessDefinitionStatisticsFilter"
+    ProcessDefinitionElementStatisticsQueryResult:
+      description: Process definition element statistics query response.
       type: object
       properties:
         items:
-          description: The flow node statistics.
+          description: The element statistics.
           type: array
           items:
-            $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsResult"
-    ProcessDefinitionFlowNodeStatisticsResult:
-      description: Process definition flow node statistics response.
+            $ref: "#/components/schemas/ProcessElementStatisticsResult"
+    ProcessInstanceElementStatisticsQueryResult:
+      description: Process instance element statistics query response.
       type: object
       properties:
-        flowNodeId:
-          description: The flow node ID for which the results are aggregated.
+        items:
+          description: The element statistics.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessElementStatisticsResult"
+    ProcessElementStatisticsResult:
+      description: Process element statistics response.
+      type: object
+      properties:
+        elementId:
+          description: The element ID for which the results are aggregated.
           type: string
         active:
-          description: The total number of active instances of the flow node.
+          description: The total number of active instances of the element.
           type: integer
           format: int64
         canceled:
-          description: The total number of canceled instances of the flow node.
+          description: The total number of canceled instances of the element.
           type: integer
           format: int64
         incidents:
-          description: The total number of incidents for the flow node.
+          description: The total number of incidents for the element.
           type: integer
           format: int64
         completed:
-          description: The total number of completed instances of the flow node.
+          description: The total number of completed instances of the element.
           type: integer
           format: int64
     CancelProcessInstanceRequest:
@@ -4979,20 +5319,20 @@ components:
           type: integer
           format: int64
           minimum: 1
-    FlowNodeInstanceSearchQuerySortRequest:
+    ElementInstanceSearchQuerySortRequest:
       type: object
       properties:
         field:
           description: The field to sort by.
           type: string
           enum:
-            - flowNodeInstanceKey
+            - elementInstanceKey
             - processInstanceKey
             - processDefinitionKey
             - processDefinitionId
             - startDate
             - endDate
-            - flowNodeId
+            - elementId
             - type
             - state
             - incidentKey
@@ -5001,8 +5341,8 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    FlowNodeInstanceSearchQuery:
-      description: Flow node instance search request.
+    ElementInstanceSearchQuery:
+      description: Element instance search request.
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -5011,24 +5351,24 @@ components:
           description: Sort field criteria.
           type: array
           items:
-            $ref: "#/components/schemas/FlowNodeInstanceSearchQuerySortRequest"
+            $ref: "#/components/schemas/ElementInstanceSearchQuerySortRequest"
         filter:
-          description: The flow node instance search filters.
+          description: The element instance search filters.
           allOf:
-            - $ref: "#/components/schemas/FlowNodeInstanceFilter"
-    FlowNodeInstanceFilter:
-      description: Flow node instance filter.
+            - $ref: "#/components/schemas/ElementInstanceFilter"
+    ElementInstanceFilter:
+      description: Element instance filter.
       type: object
       properties:
         processDefinitionId:
-          description: The process definition ID associated to this flow node instance.
+          description: The process definition ID associated to this element instance.
           type: string
         state:
-          description: State of flow node instance as defined set of values.
+          description: State of element instance as defined set of values.
           allOf:
-            - $ref: "#/components/schemas/FlowNodeInstanceStateFilterProperty"
+            - $ref: "#/components/schemas/ElementInstanceStateFilterProperty"
         type:
-          description: Type of flow node as defined set of values.
+          description: Type of element as defined set of values.
           type: string
           enum:
             - UNSPECIFIED
@@ -5057,62 +5397,62 @@ components:
             - SCRIPT_TASK
             - SEND_TASK
             - UNKNOWN
-        flowNodeId:
+        elementId:
           type: string
-          description: The flow node ID for this flow node instance.
-        flowNodeName:
+          description: The element ID for this element instance.
+        elementName:
           type: string
-          description: The flow node name.
+          description: The element name.
         hasIncident:
           type: boolean
-          description: Shows whether this flow node instance has an incident related to.
+          description: Shows whether this element instance has an incident related to.
         tenantId:
           description: The tenant ID.
           type: string
-        flowNodeInstanceKey:
+        elementInstanceKey:
           type: string
-          description: The assigned key, which acts as a unique identifier for this flow node instance.
+          description: The assigned key, which acts as a unique identifier for this element instance.
         processInstanceKey:
           type: string
-          description: The process instance key associated to this flow node instance.
+          description: The process instance key associated to this element instance.
         processDefinitionKey:
           type: string
-          description: The process definition key associated to this flow node instance.
+          description: The process definition key associated to this element instance.
         incidentKey:
           type: string
           description: The key of incident if field incident is true.
-    FlowNodeInstanceSearchQueryResult:
+    ElementInstanceSearchQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
-          description: The matching flow node instances.
+          description: The matching element instances.
           type: array
           items:
-            $ref: "#/components/schemas/FlowNodeInstanceResult"
-    FlowNodeInstanceResult:
+            $ref: "#/components/schemas/ElementInstanceResult"
+    ElementInstanceResult:
       type: object
       properties:
         processDefinitionId:
-          description: The process definition ID associated to this flow node instance.
+          description: The process definition ID associated to this element instance.
           type: string
         startDate:
-          description: Date when flow node instance started.
+          description: Date when element instance started.
           type: string
           format: date-time
         endDate:
-          description: Date when flow node instance finished.
+          description: Date when element instance finished.
           type: string
           format: date-time
-        flowNodeId:
-          description: The flow node ID for this flow node instance.
+        elementId:
+          description: The element ID for this element instance.
           type: string
-        flowNodeName:
-          description: The flow node name for this flow node instance.
+        elementName:
+          description: The element name for this element instance.
           type: string
         type:
-          description: Type of flow node as defined set of values.
+          description: Type of element as defined set of values.
           type: string
           enum:
             - UNSPECIFIED
@@ -5142,26 +5482,26 @@ components:
             - SEND_TASK
             - UNKNOWN
         state:
-          description: State of flow node instance as defined set of values.
+          description: State of element instance as defined set of values.
           allOf:
-            - "$ref": "#/components/schemas/FlowNodeInstanceStateEnum"
+            - "$ref": "#/components/schemas/ElementInstanceStateEnum"
         hasIncident:
-          description: Shows whether this flow node instance has an incident. If true also an incidentKey is provided.
+          description: Shows whether this element instance has an incident. If true also an incidentKey is provided.
           type: boolean
         tenantId:
           description: The tenant ID of the incident.
           type: string
-        flowNodeInstanceKey:
+        elementInstanceKey:
           type: string
-          description: The assigned key, which acts as a unique identifier for this flow node instance.
+          description: The assigned key, which acts as a unique identifier for this element instance.
         processInstanceKey:
-          description: The process instance key associated to this flow node instance.
+          description: The process instance key associated to this element instance.
           type: string
         processDefinitionKey:
-          description: The process definition key associated to this flow node instance.
+          description: The process definition key associated to this element instance.
           type: string
         incidentKey:
-          description: Incident key associated with this flow node instance.
+          description: Incident key associated with this element instance.
           type: string
     AdHocSubprocessActivitySearchQuery:
       description: Ad-hoc subprocess activities search request.
@@ -5174,7 +5514,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/AdHocSubprocessActivityFilter"
     AdHocSubprocessActivityFilter:
-      description: Flow node instance filter.
+      description: Element instance filter.
       type: object
       required:
         - processDefinitionKey
@@ -5329,8 +5669,8 @@ components:
             - processInstanceKey
             - errorType
             - errorMessage
-            - flowNodeId
-            - flowNodeInstanceKey
+            - elementId
+            - elementInstanceKey
             - creationTime
             - state
             - jobKey
@@ -5382,9 +5722,9 @@ components:
         errorMessage:
           type: string
           description: Error message which describes the error in more detail.
-        flowNodeId:
+        elementId:
           type: string
-          description: The flow node ID associated to this incident.
+          description: The element ID associated to this incident.
         creationTime:
           type: string
           description: Date of incident creation.
@@ -5409,9 +5749,9 @@ components:
         processInstanceKey:
           type: string
           description: The process instance key associated to this incident.
-        flowNodeInstanceKey:
+        elementInstanceKey:
           type: string
-          description: The flow node instance key associated to this incident.
+          description: The element instance key associated to this incident.
         jobKey:
           type: string
           description: The job key, if exists, associated with this incident.
@@ -5453,9 +5793,9 @@ components:
         errorMessage:
           type: string
           description: Error message which describes the error in more detail.
-        flowNodeId:
+        elementId:
           type: string
-          description: The flow node ID associated to this incident.
+          description: The element ID associated to this incident.
         creationTime:
           type: string
           description: Date of incident creation.
@@ -5480,9 +5820,9 @@ components:
         processInstanceKey:
           type: string
           description: The process instance key associated to this incident.
-        flowNodeInstanceKey:
+        elementInstanceKey:
           type: string
-          description: The flow node instance key associated to this incident.
+          description: The element instance key associated to this incident.
         jobKey:
           type: string
           description: The job key, if exists, associated with this incident.
@@ -5779,6 +6119,7 @@ components:
           type: string
           enum:
             - mappingKey
+            - mappingId
             - claimName
             - claimValue
             - name
@@ -6067,22 +6408,15 @@ components:
     GroupUpdateRequest:
       type: object
       properties:
-        changeset:
-          description: The set of changed group attributes.
-          allOf:
-            - $ref: "#/components/schemas/GroupChangeset"
-      required:
-        - changeset
-    GroupChangeset:
-      description: A set of changed group attributes.
-      type: object
-      properties:
         name:
           type: string
-          description: The updated display name of the group.
+          description: The new name of the group.
         description:
           type: string
-          description: The updated description of the group.
+          description: The new description of the group.
+      required:
+        - name
+        - description
     GroupUpdateResult:
       type: object
       properties:
@@ -6108,9 +6442,15 @@ components:
         groupKey:
           type: string
           description: The group key.
-        assignedMemberKeys:
+        groupId:
+          type: string
+          description: The group ID.
+        description:
+          type: string
+          description: The group description.
+        assignedMemberIds:
           type: array
-          description: The set of keys of members assigned to the group.
+          description: The IDs of members assigned to the group.
           items:
             type: string
     GroupSearchQuerySortRequest:
@@ -6122,6 +6462,7 @@ components:
           enum:
             - groupKey
             - name
+            - groupId
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
@@ -7638,8 +7979,20 @@ components:
             The unique identifier of the created process instance; to be used wherever a request
             needs a process instance key (e.g. CancelProcessInstanceRequest).
           type: string
+    ProcessInstanceMigrationBatchOperationInstruction:
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/ProcessInstanceFilter"
+        migrationPlan:
+          $ref: "#/components/schemas/ProcessInstanceMigrationInstruction"
+      required:
+        - filter
+        - migrationPlan
     ProcessInstanceMigrationInstruction:
       type: object
+      description: |
+        The migration instructions describe how to migrate a process instance from one process definition to another.
       properties:
         mappingInstructions:
           description: Element mappings from the source process instance to the target process instance.
@@ -7858,7 +8211,9 @@ components:
       description: The type of the batch operation.
       type: string
       enum:
-      - PROCESS_CANCELLATION
+        - CANCEL_PROCESS_INSTANCE
+        - RESOLVE_INCIDENT
+        - MIGRATE_PROCESS_INSTANCE
     BatchOperationCreatedResult:
       type: object
       properties:
@@ -7876,7 +8231,7 @@ components:
           enum:
             - batchOperationKey
             - operationType
-            - status
+            - state
             - startDate
             - endDate
         order:
@@ -7907,9 +8262,9 @@ components:
           type: string
         operationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"
-        status:
+        state:
           type: string
-          description: The status of the batch operation.
+          description: The state of the batch operation.
           enum:
             - CREATED
             - ACTIVE
@@ -7933,8 +8288,8 @@ components:
         batchOperationKey:
           description: Key of the batch operation.
           type: string
-        status:
-          description: The status of the batch operation.
+        state:
+          description: The state of the batch operation.
           type: string
           enum:
             - CREATED
@@ -7984,12 +8339,13 @@ components:
         itemKey:
           description: Key of the item, e.g. a process instance key.
           type: string
-        status:
-          description: Status of the item.
+        state:
+          description: State of the item.
           type: string
           enum:
             - ACTIVE
             - COMPLETED
+            - CANCELED
             - FAILED
   responses:
     InternalServerError:

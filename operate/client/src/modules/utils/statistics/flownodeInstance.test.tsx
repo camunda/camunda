@@ -11,45 +11,71 @@ import {renderHook} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {getStatisticsByFlowNode} from './flownodeInstances';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {Paths} from 'modules/Routes';
 
 describe('getStatisticsByFlowNode', () => {
+  const businessObjects: BusinessObjects = {
+    StartEvent_1: {
+      $type: 'bpmn:StartEvent',
+      id: 'StartEvent_1',
+      name: 'Start Event',
+    },
+    Activity_0qtp1k6: {
+      $type: 'bpmn:UserTask',
+      id: 'Activity_0qtp1k6',
+      name: 'User Task',
+    },
+    Event_0bonl61: {
+      id: 'Event_0bonl61',
+      name: 'End Event',
+      $type: 'bpmn:EndEvent',
+      $parent: {
+        id: 'Process_1',
+        $type: 'bpmn:Process',
+        name: 'Process 1',
+      },
+    },
+  };
+
   const Wrapper = ({children}: {children: React.ReactNode}) => {
     useEffect(() => {
       return () => {
-        processInstanceDetailsDiagramStore.reset();
         modificationsStore.reset();
       };
     }, []);
 
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        {children}
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-
-    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
   });
 
   it('should return statistics for valid flow nodes', () => {
     const data = [
       {
-        flowNodeId: 'StartEvent_1',
+        elementId: 'StartEvent_1',
         active: 5,
         incidents: 2,
         completed: 10,
         canceled: 1,
       },
       {
-        flowNodeId: 'Activity_0qtp1k6',
+        elementId: 'Activity_0qtp1k6',
         active: 3,
         incidents: 1,
         completed: 7,
@@ -57,9 +83,12 @@ describe('getStatisticsByFlowNode', () => {
       },
     ];
 
-    const {result} = renderHook(() => getStatisticsByFlowNode(data), {
-      wrapper: Wrapper,
-    });
+    const {result} = renderHook(
+      () => getStatisticsByFlowNode(data, businessObjects),
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(result.current).toEqual({
       StartEvent_1: {
@@ -84,14 +113,14 @@ describe('getStatisticsByFlowNode', () => {
   it('should handle missing business objects', () => {
     const data = [
       {
-        flowNodeId: 'StartEvent_1',
+        elementId: 'StartEvent_1',
         active: 5,
         incidents: 2,
         completed: 10,
         canceled: 1,
       },
       {
-        flowNodeId: 'missing_node',
+        elementId: 'missing_node',
         active: 3,
         incidents: 1,
         completed: 7,
@@ -99,9 +128,12 @@ describe('getStatisticsByFlowNode', () => {
       },
     ];
 
-    const {result} = renderHook(() => getStatisticsByFlowNode(data), {
-      wrapper: Wrapper,
-    });
+    const {result} = renderHook(
+      () => getStatisticsByFlowNode(data, businessObjects),
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(result.current).toEqual({
       StartEvent_1: {
@@ -120,7 +152,7 @@ describe('getStatisticsByFlowNode', () => {
 
     const data = [
       {
-        flowNodeId: 'StartEvent_1',
+        elementId: 'StartEvent_1',
         active: 5,
         incidents: 2,
         completed: 10,
@@ -128,9 +160,12 @@ describe('getStatisticsByFlowNode', () => {
       },
     ];
 
-    const {result} = renderHook(() => getStatisticsByFlowNode(data), {
-      wrapper: Wrapper,
-    });
+    const {result} = renderHook(
+      () => getStatisticsByFlowNode(data, businessObjects),
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(result.current).toEqual({
       StartEvent_1: {
@@ -147,7 +182,7 @@ describe('getStatisticsByFlowNode', () => {
   it('should handle end events correctly', () => {
     const data = [
       {
-        flowNodeId: 'Event_0bonl61',
+        elementId: 'Event_0bonl61',
         active: 0,
         incidents: 0,
         completed: 10,
@@ -155,9 +190,12 @@ describe('getStatisticsByFlowNode', () => {
       },
     ];
 
-    const {result} = renderHook(() => getStatisticsByFlowNode(data), {
-      wrapper: Wrapper,
-    });
+    const {result} = renderHook(
+      () => getStatisticsByFlowNode(data, businessObjects),
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(result.current).toEqual({
       Event_0bonl61: {
@@ -174,7 +212,7 @@ describe('getStatisticsByFlowNode', () => {
   it('should return an empty object if no valid data is provided', () => {
     const data = [
       {
-        flowNodeId: 'node1',
+        elementId: 'node1',
         active: 5,
         incidents: 2,
         completed: 10,
@@ -182,9 +220,12 @@ describe('getStatisticsByFlowNode', () => {
       },
     ];
 
-    const {result} = renderHook(() => getStatisticsByFlowNode(data), {
-      wrapper: Wrapper,
-    });
+    const {result} = renderHook(
+      () => getStatisticsByFlowNode(data, businessObjects),
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(result.current).toEqual({});
   });

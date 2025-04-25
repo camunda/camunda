@@ -5,14 +5,20 @@
       "id": {
         "type": "keyword"
       },
+      "groupId" : {
+        "type": "keyword"
+      },
       "key": {
         "type": "long"
       },
       "name": {
         "type": "keyword"
       },
-      "memberKey": {
-        "type": "long"
+      "description": {
+        "type": "keyword"
+      },
+      "memberId": {
+        "type": "keyword"
       },
       "join": {
         "type": "join",

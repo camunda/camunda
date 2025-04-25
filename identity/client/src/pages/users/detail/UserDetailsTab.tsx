@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { FC } from "react";
 import EntityDetail from "src/components/entityDetail";
 import useTranslate from "src/utility/localization";

@@ -7,9 +7,11 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -25,7 +27,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
@@ -38,6 +40,7 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -51,6 +54,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -68,6 +72,8 @@ import io.camunda.zeebe.util.CloseableSilently;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class DocumentBasedSearchClients implements SearchClientsProxy, CloseableSilently {
@@ -114,9 +120,12 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
+  public SearchQueryResult<MappingEntity> searchMappings(MappingQuery query) {
+    if (query.filter().tenantId() != null) {
+      query = expandTenantFilter(query);
+    }
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
+        .search(query, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
   }
 
   @Override
@@ -176,7 +185,29 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+  public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+      final ProcessDefinitionStatisticsFilter filter) {
+    if (!filter.incidentErrorHashCodes().isEmpty()) {
+      return mapIncidentErrorHashCodesToProcessInstanceKeys(
+          filter.incidentErrorHashCodes(),
+          filter.processInstanceKeyOperations(),
+          List::of,
+          processInstanceKeys -> {
+            // Create a new filter that narrows the results to only process instances with
+            // matching incident error hashes and existing key filters
+            final var updatedFilter =
+                filter.toBuilder()
+                    .replaceProcessInstanceKeyOperations(
+                        List.of(Operation.in(List.copyOf(processInstanceKeys))))
+                    .hasIncident(true)
+                    .build();
+            return executeProcessDefinitionFlowNodeStatistics(updatedFilter);
+          });
+    }
+    return executeProcessDefinitionFlowNodeStatistics(filter);
+  }
+
+  public List<ProcessFlowNodeStatisticsEntity> executeProcessDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     return getSearchExecutor()
         .aggregate(
@@ -189,59 +220,79 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery filter) {
     if (!filter.filter().incidentErrorHashCodes().isEmpty()) {
-      return searchProcessInstancesByIncidentErrorHash(filter);
+      return mapIncidentErrorHashCodesToProcessInstanceKeys(
+          filter.filter().incidentErrorHashCodes(),
+          filter.filter().processInstanceKeyOperations(),
+          SearchQueryResult::empty,
+          processInstanceKeys -> {
+            // Create a new filter that narrows the results to only process instances with
+            // matching incident error hashes and existing key filters
+            final var updatedFilter =
+                filter.filter().toBuilder()
+                    .replaceProcessInstanceKeyOperations(
+                        List.of(Operation.in(List.copyOf(processInstanceKeys))))
+                    .hasIncident(true)
+                    .build();
+
+            final var updatedQuery =
+                ProcessInstanceQuery.of(
+                    q ->
+                        q.filter(updatedFilter)
+                            .sort(filter.sort())
+                            .page(filter.page())
+                            .resultConfig(filter.resultConfig()));
+
+            return executeSearchProcessInstances(updatedQuery);
+          });
     }
+    return executeSearchProcessInstances(filter);
+  }
+
+  @Override
+  public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
+      final long processInstanceKey) {
+    return getSearchExecutor()
+        .aggregate(
+            new ProcessInstanceFlowNodeStatisticsQuery(
+                new ProcessInstanceStatisticsFilter(processInstanceKey)),
+            ProcessInstanceFlowNodeStatisticsAggregationResult.class)
+        .items();
+  }
+
+  public SearchQueryResult<ProcessInstanceEntity> executeSearchProcessInstances(
+      final ProcessInstanceQuery filter) {
     return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
   }
 
-  private SearchQueryResult<ProcessInstanceEntity> searchProcessInstancesByIncidentErrorHash(
-      final ProcessInstanceQuery filter) {
-
-    final var originalFilter = filter.filter();
+  private <R> R mapIncidentErrorHashCodesToProcessInstanceKeys(
+      final List<Integer> incidentErrorHashCodes,
+      final List<Operation<Long>> existingProcessInstanceKeyOperations,
+      final Supplier<R> fnEmptyResult,
+      final Function<Set<Long>, R> fnResult) {
 
     // Search for active incidents that match the given error message hash codes
     final var incidentFilter =
         FilterBuilders.incident(
-            f ->
-                f.errorMessageHashes(originalFilter.incidentErrorHashCodes())
-                    .states(IncidentState.ACTIVE));
+            f -> f.errorMessageHashes(incidentErrorHashCodes).states(IncidentState.ACTIVE));
 
     final var incidentResult = searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
 
     if (incidentResult.items().isEmpty()) {
-      return new SearchQueryResult.Builder<ProcessInstanceEntity>().build();
+      return fnEmptyResult.get();
     }
 
     // Collect all relevant process instance keys (from both incidents and existing filter)
     final Set<Long> processInstanceKeys = new HashSet<>();
     incidentResult.items().forEach(i -> processInstanceKeys.add(i.processInstanceKey()));
 
-    for (final var op : originalFilter.processInstanceKeyOperations()) {
+    for (final var op : existingProcessInstanceKeyOperations) {
       if (op.operator().equals(Operator.EQUALS)) {
         processInstanceKeys.add(op.value());
       } else if (op.operator().equals(Operator.IN)) {
         processInstanceKeys.addAll(op.values());
       }
     }
-
-    // Create a new filter that narrows the results to only process instances with
-    // matching incident error hashes and existing key filters
-    final var updatedFilter =
-        originalFilter.toBuilder()
-            .replaceProcessInstanceKeyOperations(
-                List.of(Operation.in(List.copyOf(processInstanceKeys))))
-            .hasIncident(true)
-            .build();
-
-    final var updatedQuery =
-        ProcessInstanceQuery.of(
-            q ->
-                q.filter(updatedFilter)
-                    .sort(filter.sort())
-                    .page(filter.page())
-                    .resultConfig(filter.resultConfig()));
-
-    return getSearchExecutor().search(updatedQuery, ProcessInstanceForListViewEntity.class);
+    return fnResult.apply(processInstanceKeys);
   }
 
   @Override
@@ -347,6 +398,23 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                 securityContext)
             .findAll(filter, io.camunda.webapps.schema.entities.UsageMetricsEntity.class);
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
+  }
+
+  private MappingQuery expandTenantFilter(final MappingQuery mappingQuery) {
+    final List<TenantMemberEntity> tenantMembers =
+        getSearchExecutor()
+            .findAll(
+                new TenantQuery.Builder()
+                    .filter(
+                        f -> f.joinParentId(mappingQuery.filter().tenantId()).memberType(MAPPING))
+                    .build(),
+                io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
+    final var mappingIds =
+        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+
+    return mappingQuery.toBuilder()
+        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .build();
   }
 
   private UserQuery expandTenantFilter(final UserQuery userQuery) {

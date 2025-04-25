@@ -1,3 +1,11 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 import useTranslate from "src/utility/localization";
 import { useLocation } from "react-router-dom";
 import Users from "src/pages/users";
@@ -7,23 +15,25 @@ import Tenants from "src/pages/tenants";
 import Mappings from "src/pages/mappings";
 import Authorizations from "src/pages/authorizations";
 import { isOIDC } from "src/configuration";
+import { Paths } from "src/components/global/routePaths";
 
 export const useGlobalRoutes = () => {
   const { t } = useTranslate();
   const { pathname } = useLocation();
+
   const authTypeDependentRoutes = isOIDC
     ? [
         {
-          path: "/mappings/*",
-          key: "/mappings",
+          path: `${Paths.mappings()}/*`,
+          key: Paths.mappings(),
           label: t("mappings"),
           element: <Mappings />,
         },
       ]
     : [
         {
-          path: "/users/*",
-          key: "/users",
+          path: `${Paths.users()}/*`,
+          key: Paths.users(),
           label: t("users"),
           element: <Users />,
         },
@@ -32,26 +42,26 @@ export const useGlobalRoutes = () => {
   const routes = [
     ...authTypeDependentRoutes,
     {
-      path: "/groups/*",
-      key: "/groups",
+      path: `${Paths.groups()}/*`,
+      key: Paths.groups(),
       label: t("groups"),
       element: <Groups />,
     },
     {
-      path: "/roles/*",
-      key: "/roles",
+      path: `${Paths.roles()}/*`,
+      key: Paths.roles(),
       label: t("roles"),
       element: <Roles />,
     },
     {
-      path: "/tenants/*",
-      key: "/tenants",
+      path: `${Paths.tenants()}/*`,
+      key: Paths.tenants(),
       label: t("tenants"),
       element: <Tenants />,
     },
     {
-      path: "/authorizations/*",
-      key: "/authorizations",
+      path: `${Paths.authorizations()}/*`,
+      key: Paths.authorizations(),
       label: t("authorizations"),
       element: <Authorizations />,
     },
