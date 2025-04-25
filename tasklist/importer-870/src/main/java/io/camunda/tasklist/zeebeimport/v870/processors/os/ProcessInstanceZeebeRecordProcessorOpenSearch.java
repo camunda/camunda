@@ -47,7 +47,6 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
       Arrays.asList(
           BpmnElementType.SUB_PROCESS,
           BpmnElementType.EVENT_SUB_PROCESS,
-          BpmnElementType.SERVICE_TASK,
           BpmnElementType.USER_TASK,
           BpmnElementType.MULTI_INSTANCE_BODY,
           BpmnElementType.AD_HOC_SUB_PROCESS);

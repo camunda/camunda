@@ -41,7 +41,9 @@ import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,8 +55,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.ListUtils;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -81,6 +88,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class VariableStoreElasticSearch implements VariableStore {
+  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
+  public static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
   @Autowired
@@ -102,42 +111,61 @@ public class VariableStoreElasticSearch implements VariableStore {
   private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TasklistProperties tasklistProperties;
+  private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
+
+  @PostConstruct
+  void scheduleUpdateTermsCount() {
+    Executors.newSingleThreadScheduledExecutor()
+        .scheduleAtFixedRate(this::refreshMaxTermsCount, 30, 1800, TimeUnit.SECONDS);
+  }
 
   @Override
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
       final List<String> flowNodeInstanceIds,
       final List<String> varNames,
       final Set<String> fieldNames) {
-    final TermsQueryBuilder flowNodeInstanceKeyQ = termsQuery(SCOPE_KEY, flowNodeInstanceIds);
-    TermsQueryBuilder varNamesQ = null;
-    if (isNotEmpty(varNames)) {
-      varNamesQ = termsQuery(VariableTemplate.NAME, varNames);
-    }
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)));
-    applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
 
-    final SearchRequest searchRequest =
-        new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
-    try {
-      return scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
-    }
+    final List<List<String>> flowNodeInstanceIdsChunks =
+        ListUtils.partition(flowNodeInstanceIds, maxTermsCount);
+
+    final List<VariableEntity> variableEntities = new ArrayList<>();
+    flowNodeInstanceIdsChunks.forEach(
+        chunk -> {
+          final TermsQueryBuilder flowNodeInstanceKeyQ = termsQuery(SCOPE_KEY, chunk);
+          TermsQueryBuilder varNamesQ = null;
+          if (isNotEmpty(varNames)) {
+            varNamesQ = termsQuery(VariableTemplate.NAME, varNames);
+          }
+          final SearchSourceBuilder searchSourceBuilder =
+              new SearchSourceBuilder()
+                  .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)));
+          applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
+
+          final SearchRequest searchRequest =
+              new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
+          try {
+            variableEntities.addAll(
+                scroll(searchRequest, VariableEntity.class, objectMapper, esClient));
+          } catch (final IOException e) {
+            final String message =
+                String.format(
+                    "Exception occurred, while obtaining all variables: %s", e.getMessage());
+            throw new TasklistRuntimeException(message, e);
+          }
+        });
+
+    return variableEntities;
   }
 
   @Override
   public Map<String, List<SnapshotTaskVariableEntity>> getTaskVariablesPerTaskId(
       final List<GetVariablesRequest> requests) {
 
-    if (requests == null || requests.size() == 0) {
+    if (requests == null || requests.isEmpty()) {
       return new HashMap<>();
     }
 
@@ -212,12 +240,30 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   @Override
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
+    final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+
     final TermsQueryBuilder processInstanceKeyQuery =
         termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds);
     final var flowNodeInstanceStateQuery =
         termsQuery(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE.toString());
+
+    queryBuilder.must(flowNodeInstanceStateQuery);
+    queryBuilder.must(processInstanceKeyQuery);
+
+    final TermsQueryBuilder typeQuery =
+        QueryBuilders.termsQuery(
+            FlowNodeInstanceTemplate.TYPE,
+            FlowNodeType.AD_HOC_SUB_PROCESS.toString(),
+            FlowNodeType.USER_TASK.toString(),
+            FlowNodeType.SUB_PROCESS.toString(),
+            FlowNodeType.EVENT_SUB_PROCESS.toString(),
+            FlowNodeType.MULTI_INSTANCE_BODY.toString(),
+            FlowNodeType.PROCESS.toString());
+    queryBuilder.must(typeQuery);
+
     final var query =
-        ElasticsearchUtil.joinWithAnd(processInstanceKeyQuery, flowNodeInstanceStateQuery);
+        ElasticsearchUtil.joinWithAnd(
+            typeQuery, processInstanceKeyQuery, flowNodeInstanceStateQuery);
     final SearchRequest searchRequest =
         new SearchRequest(flowNodeInstanceIndex.getFullQualifiedName())
             .source(
@@ -287,6 +333,27 @@ public class VariableStoreElasticSearch implements VariableStore {
       final String message =
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  @Override
+  public void refreshMaxTermsCount() {
+    final GetSettingsResponse response;
+    try {
+      response =
+          esClient
+              .indices()
+              .getSettings(
+                  new GetSettingsRequest()
+                      .indices(variableIndex.getFullQualifiedName())
+                      .includeDefaults(true)
+                      .names(MAX_TERMS_COUNT_SETTING),
+                  RequestOptions.DEFAULT);
+      maxTermsCount =
+          Integer.parseInt(
+              response.getSetting(variableIndex.getFullQualifiedName(), MAX_TERMS_COUNT_SETTING));
+    } catch (final IOException | NumberFormatException e) {
+      LOGGER.warn("Failed to update max_terms_count setting", e);
     }
   }
 

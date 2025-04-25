@@ -40,6 +40,8 @@ public interface VariableStore {
   public SnapshotTaskVariableEntity getTaskVariable(
       final String variableId, Set<String> fieldNames);
 
+  void refreshMaxTermsCount();
+
   public List<String> getProcessInstanceIdsWithMatchingVars(
       List<String> varNames, List<String> varValues);
 
