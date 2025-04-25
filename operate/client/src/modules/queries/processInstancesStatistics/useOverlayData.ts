@@ -21,6 +21,8 @@ import {
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {useQuery} from '@tanstack/react-query';
 import {flowNodeStatesParser} from './useFlowNodeStates';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
 const overlayPositions = {
   active: ACTIVE_BADGE,
@@ -30,32 +32,32 @@ const overlayPositions = {
   completedEndEvents: COMPLETED_END_EVENT_BADGE,
 };
 
-const overlayParser = (
-  data: GetProcessDefinitionStatisticsResponseBody,
-): OverlayData[] => {
-  const flowNodeStates = flowNodeStatesParser(data);
+const overlayParser =
+  (businessObjects?: BusinessObjects) =>
+  (data: GetProcessDefinitionStatisticsResponseBody): OverlayData[] => {
+    const flowNodeStates = flowNodeStatesParser(businessObjects)(data);
 
-  return flowNodeStates
-    .filter(
-      (flowNodeData) => flowNodeData.flowNodeState !== 'completedEndEvents',
-    )
-    .map(({flowNodeState, count, flowNodeId}) => ({
-      payload: {flowNodeState, count},
-      type: `statistics-${flowNodeState}`,
-      flowNodeId,
-      position: overlayPositions[flowNodeState],
-    }));
-};
+    return flowNodeStates
+      .filter((flowNodeData) => flowNodeData.flowNodeState !== 'completed')
+      .map(({flowNodeState, count, flowNodeId}) => ({
+        payload: {flowNodeState, count},
+        type: `statistics-${flowNodeState}`,
+        flowNodeId,
+        position: overlayPositions[flowNodeState],
+      }));
+  };
 
 function useProcessInstancesOverlayData(
   payload: GetProcessDefinitionStatisticsRequestBody,
   processDefinitionKey?: string,
   enabled?: boolean,
 ) {
+  const {data: businessObjects} = useBusinessObjects();
+
   return useQuery(
     useProcessInstancesStatisticsOptions<OverlayData[]>(
       payload,
-      overlayParser,
+      overlayParser(businessObjects),
       processDefinitionKey,
       enabled,
     ),

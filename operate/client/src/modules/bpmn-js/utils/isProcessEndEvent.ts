@@ -17,4 +17,15 @@ const isProcessEndEvent = (businessObject: BusinessObject) => {
   );
 };
 
-export {isProcessEndEvent};
+const isProcessOrSubProcessEndEvent = (businessObject: BusinessObject) => {
+  return (
+    hasType({businessObject, types: ['bpmn:EndEvent']}) &&
+    businessObject?.$parent !== undefined &&
+    hasType({
+      businessObject: businessObject?.$parent,
+      types: ['bpmn:Process', 'bpmn:SubProcess'],
+    })
+  );
+};
+
+export {isProcessEndEvent, isProcessOrSubProcessEndEvent};
