@@ -26,7 +26,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
-  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE = "Expected to update role with key '%s', but a role with this key does not exist.";
+  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to update role with ID '%s', but a role with this ID does not exist.";
   private final RoleState roleState;
   private final KeyGenerator keyGenerator;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -53,11 +54,9 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
   @Override
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
-    final var persistedRecord = roleState.getRole(record.getRoleKey());
+    final var persistedRecord = roleState.getRole(record.getRoleId());
     if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          ROLE_NOT_FOUND_ERROR_MESSAGE
-              .formatted(record.getRoleKey());
+      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -65,7 +64,7 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
-            .addResourceId(persistedRecord.get().getName());
+            .addResourceId(record.getRoleId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
