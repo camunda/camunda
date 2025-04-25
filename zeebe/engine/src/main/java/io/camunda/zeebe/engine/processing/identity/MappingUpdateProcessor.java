@@ -91,18 +91,20 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
       return;
     }
 
-    stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(command.getKey(), MappingIntent.UPDATED, record, command);
+    final var key = keyGenerator.nextKey();
+
+    stateWriter.appendFollowUpEvent(key, MappingIntent.UPDATED, record);
+    responseWriter.writeEventOnCommand(key, MappingIntent.UPDATED, record, command);
 
     commandDistributionBehavior
-        .withKey(keyGenerator.nextKey())
+        .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.UPDATED, command.getValue());
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), MappingIntent.UPDATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }

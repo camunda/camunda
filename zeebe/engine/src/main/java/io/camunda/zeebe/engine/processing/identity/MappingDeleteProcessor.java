@@ -111,7 +111,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     mappingState
         .get(record.getMappingId())
         .ifPresentOrElse(
-            persistedMapping -> deleteMapping(persistedMapping, command.getKey()),
+            persistedMapping -> deleteMapping(persistedMapping, keyGenerator.nextKey()),
             () -> {
               final var errorMessage =
                   MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingId());

@@ -88,11 +88,13 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
       return;
     }
 
-    stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.CREATED, record);
-    responseWriter.writeEventOnCommand(command.getKey(), MappingIntent.CREATED, record, command);
+    final var key = keyGenerator.nextKey();
+
+    stateWriter.appendFollowUpEvent(key, MappingIntent.CREATED, record);
+    responseWriter.writeEventOnCommand(key, MappingIntent.CREATED, record, command);
 
     commandDistributionBehavior
-        .withKey(command.getKey())
+        .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
   }
@@ -109,7 +111,7 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
                       existingMapping.getMappingId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
-            () -> stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.CREATED, record));
+            () -> stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), MappingIntent.CREATED, record));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
