@@ -663,8 +663,7 @@ public class CommandDistributionIdempotencyTest {
                                 .setName("tenant-name"))
                         .withMapping(
                             new MappingRecord()
-                                .setMappingKey(4)
-                                .setMappingId("id")
+                                .setMappingId("mapping-id")
                                 .setClaimName("claimName")
                                 .setClaimValue("claimValue"))
                         .initialize()),

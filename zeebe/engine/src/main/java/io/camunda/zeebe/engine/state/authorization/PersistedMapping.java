@@ -9,22 +9,19 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class PersistedMapping extends UnpackedObject implements DbValue {
 
-  private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty mappingIdProp = new StringProperty("mappingId", "");
 
   public PersistedMapping() {
-    super(5);
-    declareProperty(mappingKeyProp)
-        .declareProperty(claimNameProp)
+    super(4);
+    declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
         .declareProperty(mappingIdProp);
@@ -34,15 +31,6 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
     final var copy = new PersistedMapping();
     copy.copyFrom(this);
     return copy;
-  }
-
-  public long getMappingKey() {
-    return mappingKeyProp.getValue();
-  }
-
-  public PersistedMapping setMappingKey(final long mappingKey) {
-    mappingKeyProp.setValue(mappingKey);
-    return this;
   }
 
   public String getClaimName() {
