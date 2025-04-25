@@ -14,6 +14,11 @@ import java.util.UUID;
 
 public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
 
+  /**
+   * Is used by batch operation engine in zeebe to identify the resource (process, incident, ...)
+   */
+  private Long itemKey;
+
   private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
@@ -41,6 +46,15 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
   private String migrationPlan;
 
   private OffsetDateTime completedDate;
+
+  public Long getItemKey() {
+    return itemKey;
+  }
+
+  public OperationEntity setItemKey(final Long itemKey) {
+    this.itemKey = itemKey;
+    return this;
+  }
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -225,6 +239,7 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
   public int hashCode() {
     return Objects.hash(
         super.hashCode(),
+        itemKey,
         processInstanceKey,
         processDefinitionKey,
         bpmnProcessId,
@@ -257,7 +272,8 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
       return false;
     }
     final OperationEntity that = (OperationEntity) o;
-    return Objects.equals(processInstanceKey, that.processInstanceKey)
+    return Objects.equals(itemKey, that.itemKey)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey)
@@ -280,6 +296,8 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
   @Override
   public String toString() {
     return "OperationEntity{"
+        + "itemKey="
+        + itemKey
         + "processInstanceKey="
         + processInstanceKey
         + ", processDefinitionKey="
