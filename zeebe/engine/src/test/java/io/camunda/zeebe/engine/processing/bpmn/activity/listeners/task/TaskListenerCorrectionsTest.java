@@ -71,6 +71,12 @@ public class TaskListenerCorrectionsTest {
   }
 
   @Test
+  public void shouldAppendUserTaskCorrectedWhenCreatingTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.creating, u -> u, userTask -> {}, "");
+  }
+
+  @Test
   public void shouldAppendUserTaskCorrectedWhenAssigningTaskListenerCompletesWithCorrections() {
     testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
         ZeebeTaskListenerEventType.assigning,
@@ -148,7 +154,7 @@ public class TaskListenerCorrectionsTest {
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
     final var userTaskRecord =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final var userTask = userTaskRecord.getValue();
@@ -386,6 +392,22 @@ public class TaskListenerCorrectionsTest {
             UserTaskIntent.CANCELED));
   }
 
+  @Test
+  public void shouldPropagateCorrectedDataToCreatingListenerJobHeadersOnTaskCreation() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
+        ZeebeTaskListenerEventType.creating,
+        false,
+        ignore -> {},
+        List.of(
+            UserTaskIntent.CREATING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CREATED));
+  }
+
   /**
    * Verifies the propagation of user task data across listener job headers during the task
    * lifecycle.
@@ -433,11 +455,12 @@ public class TaskListenerCorrectionsTest {
                       .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_3"));
                 }));
 
-    final var createdUserTaskRecord =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    final var userTaskKey = String.valueOf(createdUserTaskRecord.getKey());
+    final var userTaskKey =
+        String.valueOf(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getKey());
 
     // when: trigger the user task transition
     transitionTrigger.accept(processInstanceKey);
@@ -544,6 +567,12 @@ public class TaskListenerCorrectionsTest {
       shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskAssignmentAfterCreation() {
     verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
         ZeebeTaskListenerEventType.assigning, true, ignored -> {}, UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskCreation() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.creating, true, ignored -> {}, UserTaskIntent.CREATED);
   }
 
   @Test
@@ -1218,6 +1247,47 @@ public class TaskListenerCorrectionsTest {
   }
 
   @Test
+  public void shouldNotTriggerAssigningListenersWhenAssigneeIsCorrectedByCreatingListener() {
+    // given: process with a creating listener, but no initial assignee
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.creating, listenerType));
+
+    // when: complete the "creating" listener job with corrected assignee
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setAssignee("corrected_assignee"))
+                .setCorrectedAttributes(List.of("assignee")))
+        .complete();
+
+    // then: ensure assignee was corrected
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        task ->
+            Assertions.assertThat(task)
+                .describedAs("Expect the corrected assignee to be present.")
+                .hasAssignee("corrected_assignee")
+                .hasOnlyChangedAttributes("assignee"));
+
+    // when: complete the user task to finalize the flow
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // then: verify a user task events sequence does NOT include ASSIGNING and ASSIGNED
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(record -> record.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .doesNotContain(UserTaskIntent.ASSIGNING, UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
   public void shouldPersistCorrectedUserTaskDataWhenAssigningOnCreationTaskListenerCompleted() {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.assigning,
@@ -1269,6 +1339,70 @@ public class TaskListenerCorrectionsTest {
         u -> u,
         pik -> ENGINE.processInstance().withInstanceKey(pik).expectTerminating().cancel(),
         UserTaskIntent.CANCELED);
+  }
+
+  @Test
+  public void
+      shouldPersistCorrectedUserTaskDataWhenCreatingTaskListenerCompletedWithInitialAssignee() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListenersAndAssignee(
+                ZeebeTaskListenerEventType.creating, "initial_assignee", listenerType));
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        // Current assumption: there can not be corrections of the assignee if there
+                        // is an initial assignee.
+                        .setCandidateUsersList(List.of("new_candidate_user"))
+                        .setCandidateGroupsList(List.of("new_candidate_group"))
+                        .setDueDate("new_due_date")
+                        .setFollowUpDate("new_follow_up_date")
+                        .setPriority(100))
+                .setCorrectedAttributes(
+                    List.of(
+                        "candidateUsersList",
+                        "candidateGroupsList",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
+
+    // then
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        userTaskRecord ->
+            Assertions.assertThat(userTaskRecord)
+                .describedAs(
+                    "Expect that the last user task event contains the corrected data, but no assignee")
+                .hasChangedAttributes(
+                    "candidateUsersList",
+                    "candidateGroupsList",
+                    "dueDate",
+                    "followUpDate",
+                    "priority")
+                .hasCandidateUsersList("new_candidate_user")
+                .hasCandidateGroupsList("new_candidate_group")
+                .hasDueDate("new_due_date")
+                .hasFollowUpDate("new_follow_up_date")
+                .hasPriority(100)
+                // there should be no assignee present in this case
+                .hasAssignee(""));
+  }
+
+  @Test
+  public void
+      shouldPersistCorrectedUserTaskDataWhenCreatingTaskListenerCompletedWithNoInitialAssignee() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.creating, u -> u, ignored -> {}, UserTaskIntent.CREATED);
   }
 
   private void testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
