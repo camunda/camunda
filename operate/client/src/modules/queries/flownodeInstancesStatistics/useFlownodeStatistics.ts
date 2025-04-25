@@ -35,10 +35,7 @@ const statisticsByFlowNodeParser =
           flowNodeState: FlowNodeState | 'completedEndEvents';
         }[]
       >((states, flowNodeState) => {
-        const count =
-          flowNodeState === 'active'
-            ? (statistic?.['filteredActive'] ?? 0)
-            : (statistic?.[flowNodeState] ?? 0);
+        const count = statistic?.[flowNodeState] ?? 0;
 
         if (count === 0) {
           return states;
