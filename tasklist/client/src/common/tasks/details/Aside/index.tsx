@@ -16,10 +16,10 @@ import {getPriorityLabel} from 'common/tasks/getPriorityLabel';
 
 type Props = {
   creationDate: string;
-  completionDate: string | null;
-  dueDate: string | null;
-  followUpDate: string | null;
-  priority: number | null;
+  completionDate: string | null | undefined;
+  dueDate: string | null | undefined;
+  followUpDate: string | null | undefined;
+  priority: number | null | undefined;
   candidateUsers: string[];
   candidateGroups: string[];
   tenantId: string;
@@ -84,7 +84,7 @@ const Aside: React.FC<Props> = ({
             </Tag>
           ))}
         </ContainedListItem>
-        {priority === null ? null : (
+        {typeof priority === 'number' ? (
           <ContainedListItem>
             <span className={styles.itemHeading}>
               {t('taskDetailsPriorityLabel')}
@@ -94,7 +94,7 @@ const Aside: React.FC<Props> = ({
               {getPriorityLabel(priority).short}
             </span>
           </ContainedListItem>
-        )}
+        ) : null}
         {completionDate ? (
           <ContainedListItem>
             <span className={styles.itemHeading}>

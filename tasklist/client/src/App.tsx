@@ -103,6 +103,11 @@ const v2Routes = createRoutesFromElements(
           lazy={() => import('./common/tasks/EmptyPage')}
           ErrorBoundary={ErrorWithinLayout}
         />
+        <Route
+          path=":id"
+          lazy={() => import('./v2/TaskDetailsLayout')}
+          ErrorBoundary={ErrorWithinLayout}
+        />
       </Route>
     </Route>
   </Route>,

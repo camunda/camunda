@@ -9,10 +9,12 @@
 import {
   endpoints as tasklistEndpoints,
   type QueryUserTasksRequestBody,
+  type UserTask,
 } from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {
   endpoints as operateEndpoints,
   type QueryProcessDefinitionsRequestBody,
+  type ProcessDefinition,
 } from '@vzeta/camunda-api-zod-schemas/operate';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
 
@@ -40,6 +42,23 @@ const api = {
         },
       },
     );
+  },
+  getProcessDefinition: (
+    body: Pick<ProcessDefinition, 'processDefinitionKey'>,
+  ) => {
+    return new Request(
+      getFullURL(operateEndpoints.getProcessDefinition.getUrl(body)),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: operateEndpoints.getProcessDefinition.method,
+      },
+    );
+  },
+  getTask: (body: Pick<UserTask, 'userTaskKey'>) => {
+    return new Request(getFullURL(tasklistEndpoints.getTask.getUrl(body)), {
+      ...BASE_REQUEST_OPTIONS,
+      method: tasklistEndpoints.getTask.method,
+    });
   },
 } as const;
 
