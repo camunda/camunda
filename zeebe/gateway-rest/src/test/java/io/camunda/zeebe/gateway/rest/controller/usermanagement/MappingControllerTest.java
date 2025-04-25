@@ -49,7 +49,6 @@ public class MappingControllerTest extends RestControllerTest {
     final var dto = validCreateMappingRequest();
     final var mappingRecord =
         new MappingRecord()
-            .setMappingKey(1L)
             .setClaimName(dto.claimName())
             .setClaimValue(dto.claimValue())
             .setMappingId(id)
@@ -322,7 +321,6 @@ public class MappingControllerTest extends RestControllerTest {
     final var dto = validUpdateMappingRequest(id);
     final var mappingRecord =
         new MappingRecord()
-            .setMappingKey(1L)
             .setClaimName(dto.claimName())
             .setClaimValue(dto.claimValue())
             .setMappingId(id)

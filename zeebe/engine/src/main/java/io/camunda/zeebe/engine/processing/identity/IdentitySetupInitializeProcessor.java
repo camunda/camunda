@@ -234,7 +234,7 @@ public final class IdentitySetupInitializeProcessor
 
   private void createMapping(
       final MappingRecord mapping, final RoleRecord role, final TenantRecord tenant) {
-    stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), MappingIntent.CREATED, mapping);
     assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING);
     assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
   }

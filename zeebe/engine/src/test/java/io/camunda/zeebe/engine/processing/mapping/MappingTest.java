@@ -46,7 +46,6 @@ public class MappingTest {
     final var createMapping = mappingRecord.getValue();
     Assertions.assertThat(createMapping)
         .isNotNull()
-        .hasFieldOrProperty("mappingKey")
         .hasFieldOrPropertyWithValue("claimName", claimName)
         .hasFieldOrPropertyWithValue("claimValue", claimValue)
         .hasFieldOrPropertyWithValue("name", name)
@@ -110,15 +109,13 @@ public class MappingTest {
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    final var mappingKey =
-        engine
-            .mapping()
-            .newMapping(claimName)
-            .withClaimValue(claimValue)
-            .withName(name)
-            .withMappingId(id)
-            .create()
-            .getKey();
+    engine
+        .mapping()
+        .newMapping(claimName)
+        .withClaimValue(claimValue)
+        .withName(name)
+        .withMappingId(id)
+        .create();
 
     // when
     final var updatedMapping =
@@ -178,14 +175,13 @@ public class MappingTest {
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    final var mappingKey =
-        engine
-            .mapping()
-            .newMapping(claimName)
-            .withClaimValue(claimValue)
-            .withName(name)
-            .withMappingId(id)
-            .create();
+    engine
+        .mapping()
+        .newMapping(claimName)
+        .withClaimValue(claimValue)
+        .withName(name)
+        .withMappingId(id)
+        .create();
 
     // when
     final var updateMappingToExisting =

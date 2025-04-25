@@ -3016,14 +3016,12 @@ final class JsonSerializableToJsonTest {
         (Supplier<MappingRecord>)
             () ->
                 new MappingRecord()
-                    .setMappingKey(1L)
                     .setClaimName("claimName")
                     .setClaimValue("claimValue")
                     .setMappingId("id1")
                     .setName("name"),
         """
       {
-        "mappingKey": 1,
         "claimName": "claimName",
         "claimValue": "claimValue",
         "mappingId": "id1",
@@ -3039,7 +3037,6 @@ final class JsonSerializableToJsonTest {
         (Supplier<MappingRecord>) MappingRecord::new,
         """
       {
-        "mappingKey": -1,
         "claimName": "",
         "claimValue": "",
         "mappingId": "",
@@ -3082,14 +3079,12 @@ final class JsonSerializableToJsonTest {
                         new TenantRecord().setTenantKey(5).setTenantId("id").setName("name"))
                     .addMapping(
                         new MappingRecord()
-                            .setMappingKey(6)
                             .setMappingId("id1")
                             .setClaimName("claim1")
                             .setClaimValue("value1")
                             .setName("Claim 1"))
                     .addMapping(
                         new MappingRecord()
-                            .setMappingKey(7)
                             .setMappingId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
@@ -3131,14 +3126,12 @@ final class JsonSerializableToJsonTest {
         },
         "mappings": [
           {
-            "mappingKey": 6,
             "mappingId": "id1",
             "claimName": "claim1",
             "claimValue": "value1",
             "name": "Claim 1"
           },
           {
-            "mappingKey": 7,
             "mappingId": "id2",
             "claimName": "claim2",
             "claimValue": "value2",

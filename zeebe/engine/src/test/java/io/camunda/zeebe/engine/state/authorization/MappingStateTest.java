@@ -31,14 +31,12 @@ public class MappingStateTest {
   @Test
   void shouldCreateMapping() {
     // given
-    final long key = 1L;
     final String claimName = "foo";
     final String claimValue = "bar";
     final String name = "name";
     final String mappingId = "mappingId";
     final var mapping =
         new MappingRecord()
-            .setMappingKey(key)
             .setMappingId(mappingId)
             .setClaimName(claimName)
             .setName(name)
@@ -67,14 +65,12 @@ public class MappingStateTest {
   @Test
   void shouldRetrieveMappingByClaims() {
     // given
-    final long key = 1L;
     final String claimName = "claimName";
     final String claimValue = "claimValue";
     final String mappingId = "mappingId";
     final String name = "name";
     final var mapping =
         new MappingRecord()
-            .setMappingKey(key)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
             .setName(name)
@@ -102,14 +98,12 @@ public class MappingStateTest {
   @Test
   void shouldRetrieveMappingById() {
     // given
-    final long key = 1L;
     final String claimName = "claimName";
     final String claimValue = "claimValue";
     final String mappingId = "mappingId";
     final String name = "name";
     final var mapping =
         new MappingRecord()
-            .setMappingKey(key)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
             .setName(name)
@@ -130,14 +124,12 @@ public class MappingStateTest {
   @Test
   void shouldDeleteMapping() {
     // given
-    final long key = 1L;
     final String claimName = "foo";
     final String claimValue = "bar";
     final String mappingId = "mappingId";
     final var mapping =
         new MappingRecord()
             .setMappingId(mappingId)
-            .setMappingKey(key)
             .setClaimName(claimName)
             .setClaimValue(claimValue);
     mappingState.create(mapping);
@@ -153,14 +145,12 @@ public class MappingStateTest {
   @Test
   void shouldUpdateMapping() {
     // given
-    final long key = 1L;
     final String name = "name";
     final String mappingId = "mappingId";
     final String claimName = "claimName";
     final String claimValue = "claimValue";
     final var mapping =
         new MappingRecord()
-            .setMappingKey(key)
             .setMappingId(mappingId)
             .setName(name)
             .setClaimName(claimName)
@@ -173,7 +163,6 @@ public class MappingStateTest {
     final String newClaimValue = "newClaimValue";
     final var updateMapping =
         new MappingRecord()
-            .setMappingKey(key)
             .setMappingId(mappingId)
             .setName(newName)
             .setClaimName(newClaimName)

@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,7 @@ public class MappingAppliersTest {
   private MutableMembershipState membershipState;
   private MappingDeletedApplier mappingDeletedApplier;
   private MappingUpdatedApplier mappingUpdatedApplier;
+  private long eventKey;
 
   @BeforeEach
   public void setup() {
@@ -58,6 +60,7 @@ public class MappingAppliersTest {
     membershipState = processingState.getMembershipState();
     mappingDeletedApplier = new MappingDeletedApplier(processingState.getMappingState());
     mappingUpdatedApplier = new MappingUpdatedApplier(processingState.getMappingState());
+    eventKey = new Random().nextLong();
   }
 
   @Test
@@ -66,7 +69,7 @@ public class MappingAppliersTest {
     final var mappingRecord = createMapping();
 
     // when
-    mappingDeletedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord);
+    mappingDeletedApplier.applyState(new Random().nextLong(), mappingRecord);
 
     // then
     assertThat(mappingState.get(mappingRecord.getMappingId())).isEmpty();
@@ -79,8 +82,7 @@ public class MappingAppliersTest {
     final var mappingRecord = new MappingRecord().setMappingId(id);
 
     // when + then
-    assertThatThrownBy(
-            () -> mappingDeletedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord))
+    assertThatThrownBy(() -> mappingDeletedApplier.applyState(eventKey, mappingRecord))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(
             "Expected to delete mapping with id 'id', but a mapping with this id does not exist.");
@@ -97,7 +99,7 @@ public class MappingAppliersTest {
     mappingRecord.setClaimValue(newClaimValue);
     mappingRecord.setName(newName);
     // when
-    mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord);
+    mappingUpdatedApplier.applyState(eventKey, mappingRecord);
 
     // then
     assertThat(mappingState.get(mappingRecord.getMappingId())).isNotEmpty();
@@ -113,8 +115,7 @@ public class MappingAppliersTest {
     final var mappingRecord = createMapping();
     mappingRecord.setMappingId(UUID.randomUUID().toString());
     // when + then
-    assertThatThrownBy(
-            () -> mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord))
+    assertThatThrownBy(() -> mappingUpdatedApplier.applyState(eventKey, mappingRecord))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(
             String.format(
@@ -123,13 +124,11 @@ public class MappingAppliersTest {
   }
 
   private MappingRecord createMapping() {
-    final long mappingKey = 1L;
-    final String mappingId = String.valueOf(mappingKey);
+    final var mappingId = "mappingId";
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mappingRecord =
         new MappingRecord()
-            .setMappingKey(mappingKey)
             .setMappingId(mappingId)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
@@ -140,7 +139,7 @@ public class MappingAppliersTest {
     final var role =
         new RoleRecord()
             .setRoleKey(roleKey)
-            .setEntityKey(mappingKey)
+            .setEntityId(mappingId)
             .setEntityType(EntityType.MAPPING);
     roleState.create(role);
     // TODO: Use role id instead of key
@@ -165,8 +164,7 @@ public class MappingAppliersTest {
         new GroupRecord()
             .setGroupKey(groupKey)
             .setGroupId(groupId)
-            // TODO: revisit
-            .setEntityId(String.valueOf(mappingKey))
+            .setEntityId(mappingId)
             .setEntityType(EntityType.MAPPING);
     groupState.create(group);
     // create authorization

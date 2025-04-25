@@ -88,14 +88,11 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
       return;
     }
 
-    final long key = keyGenerator.nextKey();
-    record.setMappingKey(key);
-
-    stateWriter.appendFollowUpEvent(key, MappingIntent.CREATED, record);
-    responseWriter.writeEventOnCommand(key, MappingIntent.CREATED, record, command);
+    stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.CREATED, record);
+    responseWriter.writeEventOnCommand(command.getKey(), MappingIntent.CREATED, record, command);
 
     commandDistributionBehavior
-        .withKey(key)
+        .withKey(command.getKey())
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
   }

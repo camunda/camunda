@@ -59,7 +59,6 @@ public class MappingCreatedUpdatedHandler
   public void updateEntity(final Record<MappingRecordValue> record, final MappingEntity entity) {
     final MappingRecordValue value = record.getValue();
     entity
-        .setKey(value.getMappingKey())
         .setMappingId(value.getMappingId())
         .setClaimName(value.getClaimName())
         .setClaimValue(value.getClaimValue())

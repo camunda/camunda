@@ -91,9 +91,8 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
       return;
     }
 
-    stateWriter.appendFollowUpEvent(record.getMappingKey(), MappingIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(
-        record.getMappingKey(), MappingIntent.UPDATED, record, command);
+    stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.UPDATED, record);
+    responseWriter.writeEventOnCommand(command.getKey(), MappingIntent.UPDATED, record, command);
 
     commandDistributionBehavior
         .withKey(keyGenerator.nextKey())
