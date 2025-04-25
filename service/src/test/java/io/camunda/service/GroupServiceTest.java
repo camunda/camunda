@@ -115,7 +115,7 @@ public class GroupServiceTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfGroupNotFoundByKey() {
+  public void shouldThrowExceptionIfGroupNotFoundById() {
     // given
     final var id = "groupId";
     when(client.searchGroups(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
