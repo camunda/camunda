@@ -10,6 +10,5 @@ package io.camunda.authentication.entity;
 import java.io.Serializable;
 import java.util.Set;
 
-public record OAuthContext(
-    Set<Long> mappingKeys, Set<String> mappingIds, AuthenticationContext authenticationContext)
+public record OAuthContext(Set<String> mappingIds, AuthenticationContext authenticationContext)
     implements Serializable {}

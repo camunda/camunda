@@ -61,9 +61,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             .build());
   }
 
-  public List<RoleEntity> getRolesByMemberKeys(final Set<Long> memberKeys) {
-    // todo use memberIds (String) in https://github.com/camunda/camunda/issues/30111
-    final var memberIds = memberKeys.stream().map(String::valueOf).collect(Collectors.toSet());
+  public List<RoleEntity> getRolesByMemberIds(final Set<String> memberIds) {
     return findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberIds))));
   }
 

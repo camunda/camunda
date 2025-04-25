@@ -130,7 +130,6 @@ class RequestMapperTest {
                     Instant.now().plusSeconds(3600),
                     Map.of("sub", username))),
             Collections.emptySet(),
-            Collections.emptySet(),
             authenticationContext);
 
     final var auth = new OAuth2AuthenticationToken(principal, List.of(), "oidc");
@@ -248,7 +247,6 @@ class RequestMapperTest {
                         tokenIssuedAt,
                         tokenExpiresAt,
                         Map.of("aud", aud, usernameClaim, usernameValue))),
-                Collections.emptySet(),
                 Collections.emptySet(),
                 new AuthenticationContext(
                     usernameValue, List.of(), List.of(), List.of(), List.of())),

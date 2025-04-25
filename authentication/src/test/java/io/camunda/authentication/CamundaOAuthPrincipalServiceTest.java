@@ -80,11 +80,11 @@ public class CamundaOAuthPrincipalServiceTest {
     when(mappingServices.getMatchingMappings(claims))
         .thenReturn(
             List.of(
-                new MappingEntity("test-id", 5L, "role", "R1", "role-r1"),
-                new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
+                new MappingEntity("test-id",  "role", "R1", "role-r1"),
+                new MappingEntity("test-id-2", "group", "G1", "group-g1")));
 
     final var roleR1 = new RoleEntity(8L, "Role R1");
-    when(roleServices.getRolesByMemberKeys(Set.of(5L, 7L))).thenReturn(List.of(roleR1));
+    when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2"))).thenReturn(List.of(roleR1));
     when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "8")))
         .thenReturn(List.of("*"));
 
@@ -93,7 +93,6 @@ public class CamundaOAuthPrincipalServiceTest {
 
     // then
     assertThat(oAuthContext).isNotNull();
-    assertThat(oAuthContext.mappingKeys()).isEqualTo(Set.of(5L, 7L));
     assertThat(oAuthContext.mappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
     final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
@@ -107,8 +106,8 @@ public class CamundaOAuthPrincipalServiceTest {
     // given
     final Map<String, Object> claims = Map.of("sub", "user@example.com");
 
-    final var mapping1 = new MappingEntity("map-1", 1L, "role", "R1", "role-r1");
-    final var mapping2 = new MappingEntity("map-2", 2L, "group", "G1", "group-g1");
+    final var mapping1 = new MappingEntity("map-1",  "role", "R1", "role-r1");
+    final var mapping2 = new MappingEntity("map-2",  "group", "G1", "group-g1");
 
     when(mappingServices.getMatchingMappings(claims)).thenReturn(List.of(mapping1, mapping2));
 
@@ -119,7 +118,7 @@ public class CamundaOAuthPrincipalServiceTest {
         .thenReturn(List.of(tenantEntity1, tenantEntity2));
 
     final var roleR1 = new RoleEntity(10L, "Role R1");
-    when(roleServices.getRolesByMemberKeys(Set.of(1L, 2L))).thenReturn(List.of(roleR1));
+    when(roleServices.getRolesByMemberIds(Set.of("map-1", "map-2"))).thenReturn(List.of(roleR1));
 
     when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "10")))
         .thenReturn(List.of("app-1", "app-2"));
@@ -129,7 +128,6 @@ public class CamundaOAuthPrincipalServiceTest {
 
     // then
     assertThat(oAuthContext).isNotNull();
-    assertThat(oAuthContext.mappingKeys()).isEqualTo(Set.of(1L, 2L));
     assertThat(oAuthContext.mappingIds()).isEqualTo(Set.of("map-1", "map-2"));
 
     final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();

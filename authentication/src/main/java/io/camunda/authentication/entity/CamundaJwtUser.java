@@ -20,7 +20,7 @@ public class CamundaJwtUser implements CamundaOAuthPrincipal, Serializable {
   public CamundaJwtUser(
       final Jwt jwt, final Set<String> mappingIds, final AuthenticationContext authentication) {
     this.jwt = jwt;
-    oauthContext = new OAuthContext(new HashSet<>(), mappingIds, authentication);
+    oauthContext = new OAuthContext(mappingIds, authentication);
   }
 
   public CamundaJwtUser(final Jwt jwt, final OAuthContext oauthContext) {
