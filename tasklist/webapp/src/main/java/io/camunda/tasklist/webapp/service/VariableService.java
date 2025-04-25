@@ -364,10 +364,7 @@ public class VariableService {
 
   private FlowNodeTree getFlowNodeTree(
       final Map<String, FlowNodeTree> flowNodeTrees, final String processInstanceId) {
-    if (flowNodeTrees.get(processInstanceId) == null) {
-      flowNodeTrees.put(processInstanceId, new FlowNodeTree());
-    }
-    return flowNodeTrees.get(processInstanceId);
+    return flowNodeTrees.computeIfAbsent(processInstanceId, pi -> new FlowNodeTree());
   }
 
   public List<VariableSearchResponse> getVariableSearchResponses(
