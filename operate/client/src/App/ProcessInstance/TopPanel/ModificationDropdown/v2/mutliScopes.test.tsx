@@ -17,6 +17,7 @@ import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {act} from 'react';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {cancelAllTokens} from 'modules/utils/modifications';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   const stats = {
@@ -198,7 +199,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
       );
 
       act(() => {
-        modificationsStore.cancelAllTokens('TaskB', {});
+        cancelAllTokens('TaskB', 0, 0, {});
         flowNodeSelectionStore.selectFlowNode({
           flowNodeId: 'TaskB',
         });
@@ -228,7 +229,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
       );
 
       act(() => {
-        modificationsStore.cancelAllTokens('TaskB', {});
+        cancelAllTokens('TaskB', 0, 0, {});
         flowNodeSelectionStore.selectFlowNode({
           flowNodeId: 'TaskB',
         });

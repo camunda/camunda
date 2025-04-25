@@ -47,11 +47,6 @@ import {init} from 'modules/utils/flowNodeMetadata';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
-}));
-
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),

@@ -168,55 +168,6 @@ class Modifications {
     );
   };
 
-  finishMovingToken = (
-    businessObjects: BusinessObjects,
-    targetFlowNodeId?: string,
-  ) => {
-    tracking.track({
-      eventName: 'move-token',
-    });
-
-    let affectedTokenCount = 1;
-    let visibleAffectedTokenCount = 1;
-    let newScopeCount = 1;
-    if (
-      targetFlowNodeId !== undefined &&
-      this.state.sourceFlowNodeIdForMoveOperation !== null
-    ) {
-      if (this.state.sourceFlowNodeInstanceKeyForMoveOperation === null) {
-        affectedTokenCount =
-          processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-            this.state.sourceFlowNodeIdForMoveOperation,
-          );
-
-        visibleAffectedTokenCount =
-          processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-            this.state.sourceFlowNodeIdForMoveOperation,
-          );
-        newScopeCount = isMultiInstance(
-          businessObjects[this.state.sourceFlowNodeIdForMoveOperation],
-        )
-          ? 1
-          : affectedTokenCount;
-      }
-
-      this.addMoveModification({
-        sourceFlowNodeId: this.state.sourceFlowNodeIdForMoveOperation,
-        sourceFlowNodeInstanceKey:
-          this.state.sourceFlowNodeInstanceKeyForMoveOperation ?? undefined,
-        targetFlowNodeId,
-        affectedTokenCount,
-        visibleAffectedTokenCount,
-        newScopeCount,
-        businessObjects,
-      });
-    }
-
-    this.state.status = 'enabled';
-    this.state.sourceFlowNodeIdForMoveOperation = null;
-    this.state.sourceFlowNodeInstanceKeyForMoveOperation = null;
-  };
-
   finishAddingToken = (
     businessObjects: BusinessObjects,
     ancestorElementId?: string,
@@ -764,21 +715,6 @@ class Modifications {
       flowNodeInstanceKey,
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
-      businessObjects,
-    });
-  };
-
-  cancelAllTokens = (flowNodeId: string, businessObjects: BusinessObjects) => {
-    this.addCancelModification({
-      flowNodeId,
-      affectedTokenCount:
-        processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-          flowNodeId,
-        ),
-      visibleAffectedTokenCount:
-        processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-          flowNodeId,
-        ),
       businessObjects,
     });
   };

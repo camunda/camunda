@@ -12,7 +12,6 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {multiInstanceProcess} from 'modules/testUtils';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {FlowNodeInstancesTree} from '..';
@@ -34,7 +33,10 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
-import {generateParentScopeIds} from 'modules/utils/modifications';
+import {
+  cancelAllTokens,
+  generateParentScopeIds,
+} from 'modules/utils/modifications';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
@@ -140,9 +142,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     ]);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId,
-    );
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
@@ -170,7 +169,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     act(() => {
       modificationsStore.enableModificationMode();
-      modificationsStore.cancelAllTokens('peterJoin', {});
+      cancelAllTokens('peterJoin', 0, 0, {});
     });
 
     expect(
@@ -239,10 +238,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
       expect(processInstanceDetailsStore.state.status).toBe('fetched');
     });
-
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId,
-    );
 
     const {user} = render(
       <FlowNodeInstancesTree
@@ -448,9 +443,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
       expect(processInstanceDetailsStore.state.status).toBe('fetched');
     });
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId,
-    );
 
     const {user} = render(
       <FlowNodeInstancesTree

@@ -29,6 +29,7 @@ import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {act} from 'react';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {init} from 'modules/utils/flowNodeMetadata';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -132,7 +133,7 @@ describe('Footer', () => {
     );
     mockFetchVariables().withSuccess([]);
 
-    flowNodeMetaDataStore.init();
+    init([]);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     variablesStore.fetchVariables({
       fetchType: 'initial',

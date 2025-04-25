@@ -38,7 +38,6 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {mockProcess} from '../ProcessInstanceHeader/index.setup';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -149,9 +148,6 @@ const waitForPollingsToBeComplete = async () => {
     expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
     expect(incidentsStore.isPollRequestRunning).toBe(false);
     expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
-    expect(processInstanceDetailsStatisticsStore.isPollRequestRunning).toBe(
-      false,
-    );
   });
 };
 

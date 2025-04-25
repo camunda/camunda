@@ -18,10 +18,6 @@ import {
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
-  ModificationOption,
-  modificationRulesStore,
-} from 'modules/stores/modificationRules';
-import {
   EMPTY_MODIFICATION,
   modificationsStore,
 } from 'modules/stores/modifications';
@@ -33,6 +29,13 @@ import {
 } from './processInstanceDetailsDiagram';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {useHasPendingCancelOrMoveModification} from './flowNodeSelection';
+
+type ModificationOption =
+  | 'add'
+  | 'cancel-all'
+  | 'cancel-instance'
+  | 'move-all'
+  | 'move-instance';
 
 const useWillAllFlowNodesBeCanceled = () => {
   const {data: statistics} = useFlownodeInstancesStatistics();
@@ -235,14 +238,14 @@ const useCanBeCanceled = (selectedRunningInstanceCount: number) => {
     useHasPendingCancelOrMoveModification();
 
   if (
-    modificationRulesStore.selectedFlowNodeId === undefined ||
+    flowNodeSelectionStore.selectedFlowNodeId === undefined ||
     !canBeModified
   ) {
     return false;
   }
 
   return (
-    cancellableFlowNodes.includes(modificationRulesStore.selectedFlowNodeId) &&
+    cancellableFlowNodes.includes(flowNodeSelectionStore.selectedFlowNodeId) &&
     !hasPendingCancelOrMoveModification &&
     selectedRunningInstanceCount > 0
   );
@@ -251,12 +254,12 @@ const useCanBeCanceled = (selectedRunningInstanceCount: number) => {
 const useCanBeModified = () => {
   const nonModifiableFlowNodes = useNonModifiableFlowNodes();
 
-  if (modificationRulesStore.selectedFlowNodeId === undefined) {
+  if (flowNodeSelectionStore.selectedFlowNodeId === undefined) {
     return false;
   }
 
   return !nonModifiableFlowNodes.includes(
-    modificationRulesStore.selectedFlowNodeId,
+    flowNodeSelectionStore.selectedFlowNodeId,
   );
 };
 
@@ -271,17 +274,17 @@ const useAvailableModifications = (selectedRunningInstanceCount: number) => {
   const canBeModified = useCanBeModified();
 
   if (
-    modificationRulesStore.selectedFlowNodeId === undefined ||
+    flowNodeSelectionStore.selectedFlowNodeId === undefined ||
     !canBeModified
   ) {
     return options;
   }
 
   if (
-    appendableFlowNodes.includes(modificationRulesStore.selectedFlowNodeId) &&
+    appendableFlowNodes.includes(flowNodeSelectionStore.selectedFlowNodeId) &&
     !(
       isMultiInstance(
-        businessObjects?.[modificationRulesStore.selectedFlowNodeId],
+        businessObjects?.[flowNodeSelectionStore.selectedFlowNodeId],
       ) && !selection?.isMultiInstance
     ) &&
     selection?.flowNodeInstanceId === undefined
@@ -294,9 +297,9 @@ const useAvailableModifications = (selectedRunningInstanceCount: number) => {
   }
 
   const isSingleOperationAllowed =
-    !isNil(modificationRulesStore.selectedFlowNodeInstanceId) &&
+    !isNil(flowNodeSelectionStore.selectedFlowNodeInstanceId) &&
     selectedRunningInstanceCount === 1 &&
-    !isSubProcess(businessObjects?.[modificationRulesStore.selectedFlowNodeId]);
+    !isSubProcess(businessObjects?.[flowNodeSelectionStore.selectedFlowNodeId]);
 
   if (isSingleOperationAllowed) {
     options.push('cancel-instance');
@@ -305,7 +308,7 @@ const useAvailableModifications = (selectedRunningInstanceCount: number) => {
   }
 
   if (
-    isSubProcess(businessObjects?.[modificationRulesStore.selectedFlowNodeId])
+    isSubProcess(businessObjects?.[flowNodeSelectionStore.selectedFlowNodeId])
   ) {
     return options;
   }

@@ -12,7 +12,6 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {createInstance} from 'modules/testUtils';
 import {FlowNodeInstancesTree} from '..';
 import {
@@ -78,10 +77,6 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
       expect(processInstanceDetailsStore.state.status).toBe('fetched');
     });
-
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId,
-    );
 
     modificationsStore.enableModificationMode();
   });

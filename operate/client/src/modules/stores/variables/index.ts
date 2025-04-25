@@ -102,11 +102,9 @@ class Variables extends NetworkReconnectionHandler {
       hasNoVariables: computed,
       hasActiveOperation: computed,
       scopeId: computed,
-      displayStatus: computed,
       setLatestFetchDetails: action,
       setAreVariablesLoadedOnce: action,
       areVariablesLoadedOnce: observable,
-      hasNoContent: computed,
       setFullVariableValue: action,
       deleteFullVariableValue: action,
       clearFullVariableValues: action,
@@ -605,14 +603,6 @@ class Variables extends NetworkReconnectionHandler {
     return status === 'fetched' && items.length === 0;
   }
 
-  get hasNoContent() {
-    return (
-      !flowNodeSelectionStore.isRootNodeSelected &&
-      !flowNodeSelectionStore.hasRunningOrFinishedTokens &&
-      flowNodeSelectionStore.newTokenCountForSelectedNode === 0
-    );
-  }
-
   removeVariablesWithActiveOperations = () => {
     this.state.items = this.state.items.filter(
       ({hasActiveOperation}) => !hasActiveOperation,
@@ -677,52 +667,6 @@ class Variables extends NetworkReconnectionHandler {
       this.operationIntervalId = null;
     }
   };
-
-  get displayStatus() {
-    const {status, items} = this.state;
-
-    if (status === 'error') {
-      return 'error';
-    }
-
-    if (this.hasNoContent) {
-      return 'no-content';
-    }
-
-    if (flowNodeMetaDataStore.hasMultipleInstances) {
-      return 'multi-instances';
-    }
-
-    if (
-      flowNodeSelectionStore.state.selection?.isPlaceholder ||
-      flowNodeSelectionStore.newTokenCountForSelectedNode === 1
-    ) {
-      return 'no-variables';
-    }
-
-    if (['initial', 'first-fetch'].includes(status)) {
-      return this.areVariablesLoadedOnce ? 'spinner' : 'skeleton';
-    }
-
-    if (modificationsStore.isModificationModeEnabled && this.scopeId === null) {
-      return 'no-variables';
-    }
-    if (status === 'fetching' || this.scopeId === null) {
-      return 'spinner';
-    }
-    if (this.hasNoVariables) {
-      return 'no-variables';
-    }
-    if (
-      ['fetched', 'fetching-next', 'fetching-prev'].includes(status) &&
-      items.length > 0
-    ) {
-      return 'variables';
-    }
-
-    logger.error('Failed to show Variables');
-    return 'error';
-  }
 
   setFullVariableValue = (
     id: VariableEntity['id'],
