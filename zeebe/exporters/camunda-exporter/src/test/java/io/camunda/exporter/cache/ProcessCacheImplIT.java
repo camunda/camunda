@@ -45,15 +45,19 @@ class ProcessCacheImplIT {
 
   @BeforeEach
   void setup() {
-    new ElasticsearchEngineClient(SEARCH_DB.esClient(), SEARCH_DB.objectMapper())
-        .createIndex(PROCESS_INDEX, new IndexConfiguration());
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
+      new ElasticsearchEngineClient(SEARCH_DB.esClient(), SEARCH_DB.objectMapper())
+          .createIndex(PROCESS_INDEX, new IndexConfiguration());
+    }
     new OpensearchEngineClient(SEARCH_DB.osClient(), SEARCH_DB.objectMapper())
         .createIndex(PROCESS_INDEX, new IndexConfiguration());
   }
 
   @AfterEach
   void cleanup() throws IOException {
-    SEARCH_DB.esClient().indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
+      SEARCH_DB.esClient().indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
+    }
     SEARCH_DB.osClient().indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
   }
 
@@ -110,7 +114,7 @@ class ProcessCacheImplIT {
   }
 
   static Stream<Arguments> provideProcessCache() {
-    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL) == null) {
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
       return Stream.of(
           Arguments.of(
               Named.of(
@@ -130,7 +134,7 @@ class ProcessCacheImplIT {
   }
 
   static Stream<Arguments> provideFailingProcessCache() {
-    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL) == null) {
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
       return Stream.of(
           Arguments.of(Named.of("ElasticSearch", getESProcessCache("invalid-index-name"))),
           Arguments.of(Named.of("OpenSearch", getOSProcessCache("invalid-index-name"))));
