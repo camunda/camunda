@@ -20,7 +20,11 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {createInstance} from 'modules/testUtils';
-import {generateParentScopeIds} from 'modules/utils/modifications';
+import {
+  cancelAllTokens,
+  finishMovingToken,
+  generateParentScopeIds,
+} from 'modules/utils/modifications';
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
 
 type AddModificationPayload = Extract<
@@ -170,7 +174,7 @@ describe('stores/modifications', () => {
     });
 
     expect(modificationsStore.state.modifications.length).toEqual(1);
-    modificationsStore.cancelAllTokens('service-task-2', {});
+    cancelAllTokens('service-task-2', 3, 3, {});
 
     expect(modificationsStore.state.modifications.length).toEqual(2);
 
@@ -395,7 +399,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelAllTokens('service-task-2', {});
+    cancelAllTokens('service-task-2', 3, 3, {});
 
     expect(modificationsStore.lastModification).toEqual({
       payload: {
@@ -458,7 +462,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelAllTokens('service-task-2', {});
+    cancelAllTokens('service-task-2', 3, 3, {});
 
     modificationsStore.addModification({
       type: 'token',
@@ -498,7 +502,7 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.cancelAllTokens('multi-instance-subprocess', {});
+    cancelAllTokens('multi-instance-subprocess', 0, 0, {});
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       'service-task-1': {
@@ -599,7 +603,7 @@ describe('stores/modifications', () => {
       modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
     ).toBe(false);
 
-    modificationsStore.cancelAllTokens('service-task-1', {});
+    cancelAllTokens('service-task-1', 1, 1, {});
 
     expect(
       modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
@@ -650,7 +654,7 @@ describe('stores/modifications', () => {
       'StartEvent_1',
     );
 
-    modificationsStore.finishMovingToken({}, 'end-event');
+    finishMovingToken(2, 2, {}, 'end-event');
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       StartEvent_1: {
@@ -683,7 +687,7 @@ describe('stores/modifications', () => {
     );
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
     modificationsStore.startMovingToken('multi-instance-service-task');
-    modificationsStore.finishMovingToken({}, 'service-task-7');
+    finishMovingToken(2, 2, {}, 'service-task-7');
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       'multi-instance-service-task': {
@@ -1122,7 +1126,7 @@ describe('stores/modifications', () => {
         },
       },
     });
-    modificationsStore.cancelAllTokens('flow_node_2', {});
+    cancelAllTokens('flow_node_2', 0, 0, {});
 
     modificationsStore.addModification({
       type: 'token',

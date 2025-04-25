@@ -8,7 +8,6 @@
 
 import {screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {createInstance} from 'modules/testUtils';
 import {mockIncidents} from 'modules/mocks/incidents';
@@ -31,6 +30,7 @@ import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstan
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {labels, renderPopover} from './mocks';
+import {init} from 'modules/utils/flowNodeMetadata';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -41,7 +41,7 @@ jest.mock('date-fns', () => ({
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
-    flowNodeMetaDataStore.init();
+    init([]);
     flowNodeSelectionStore.init();
     mockFetchProcessDefinitionXml().withSuccess('');
   });

@@ -18,11 +18,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
-}));
-
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {

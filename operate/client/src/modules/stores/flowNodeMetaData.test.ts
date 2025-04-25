@@ -11,12 +11,12 @@ import {flowNodeSelectionStore} from './flowNodeSelection';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
 import {waitFor} from 'modules/testing-library';
 import {modificationsStore} from './modifications';
-import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
 import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
+import {init} from 'modules/utils/flowNodeMetadata';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
@@ -52,20 +52,18 @@ describe('stores/flowNodeMetaData', () => {
 
   afterEach(() => {
     flowNodeSelectionStore.reset();
-    flowNodeMetaDataStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
     modificationsStore.reset();
   });
 
   it('should initially set meta data to null', () => {
-    flowNodeMetaDataStore.init();
+    init([]);
     expect(flowNodeMetaDataStore.state.metaData).toBe(null);
   });
 
   it('should fetch and set meta data', async () => {
     mockFetchFlowNodeMetadata().withSuccess(metaData);
 
-    flowNodeMetaDataStore.init();
+    init([]);
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'ServiceTask_1',
       flowNodeInstanceId: '2251799813689409',
@@ -91,7 +89,7 @@ describe('stores/flowNodeMetaData', () => {
       eventListeners[event] = cb;
     });
 
-    flowNodeMetaDataStore.init();
+    init([]);
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'ServiceTask_1',
       flowNodeInstanceId: '2251799813689409',
@@ -129,11 +127,8 @@ describe('stores/flowNodeMetaData', () => {
     ]);
 
     modificationsStore.enableModificationMode();
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      PROCESS_INSTANCE_ID,
-    );
 
-    flowNodeMetaDataStore.init();
+    init([]);
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'ServiceTask_2',
       flowNodeInstanceId: '2251799813689409',

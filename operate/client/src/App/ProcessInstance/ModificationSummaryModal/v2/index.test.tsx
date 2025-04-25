@@ -23,6 +23,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {cancelAllTokens} from 'modules/utils/modifications';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -789,7 +790,7 @@ describe('Modification Summary Modal', () => {
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
 
     act(() => {
-      modificationsStore.cancelAllTokens('taskA', {});
+      cancelAllTokens('taskA', 0, 0, {});
     });
 
     expect(

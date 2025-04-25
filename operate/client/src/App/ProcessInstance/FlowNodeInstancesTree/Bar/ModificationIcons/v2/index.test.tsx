@@ -15,6 +15,7 @@ import {open} from 'modules/mocks/diagrams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {cancelAllTokens} from 'modules/utils/modifications';
 
 type Props = {
   children?: React.ReactNode;
@@ -110,7 +111,7 @@ describe('<ModificationIcons />', () => {
       screen.queryByTitle('This flow node instance is planned to be canceled'),
     ).not.toBeInTheDocument();
 
-    act(() => modificationsStore.cancelAllTokens('user_task', {}));
+    act(() => cancelAllTokens('user_task', 0, 0, {}));
 
     expect(
       screen.getByTitle('This flow node instance is planned to be canceled'),

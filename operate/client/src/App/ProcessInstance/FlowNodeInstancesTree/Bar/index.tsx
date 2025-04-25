@@ -11,11 +11,9 @@ import React from 'react';
 import {TimeStampLabel} from './TimeStampLabel';
 import {NodeName, Container, StateIcon} from './styled';
 import {Layer, Stack, Tag} from '@carbon/react';
-import {ModificationIcons} from './ModificationIcons';
 import {ModificationIcons as ModificationIconsV2} from './ModificationIcons/v2';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {formatDate} from 'modules/utils/date';
-import {IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   flowNodeInstance: FlowNodeInstance;
@@ -52,11 +50,7 @@ const Bar = React.forwardRef<HTMLDivElement, Props>(
             </Layer>
           )}
         </Stack>
-        {IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED ? (
-          <ModificationIconsV2 flowNodeInstance={flowNodeInstance} />
-        ) : (
-          <ModificationIcons flowNodeInstance={flowNodeInstance} />
-        )}
+        <ModificationIconsV2 flowNodeInstance={flowNodeInstance} />
       </Container>
     );
   },

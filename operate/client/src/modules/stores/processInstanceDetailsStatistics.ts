@@ -6,16 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  makeObservable,
-  when,
-  IReactionDisposer,
-  override,
-  action,
-  observable,
-  computed,
-} from 'mobx';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {IReactionDisposer} from 'mobx';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {
   fetchProcessInstanceDetailStatistics,
@@ -47,39 +38,6 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   processInstanceDetailsStatisticsDisposer: null | IReactionDisposer = null;
   completedFlowNodesDisposer: null | IReactionDisposer = null;
 
-  constructor() {
-    super();
-    makeObservable(this, {
-      state: observable,
-      handleFetchSuccess: action,
-      handleFetchFailure: action,
-      flowNodeStatistics: computed,
-      statisticsByFlowNode: computed,
-      willAllFlowNodesBeCanceled: computed,
-      selectableFlowNodes: computed,
-      executedFlowNodes: computed,
-      reset: override,
-    });
-  }
-
-  init = (processInstanceId: string) => {
-    this.processInstanceDetailsStatisticsDisposer = when(
-      () => processInstanceDetailsStore.state.processInstance !== null,
-      () => {
-        this.fetchFlowNodeStatistics(processInstanceId);
-        this.startPolling(processInstanceId);
-      },
-    );
-    this.completedFlowNodesDisposer = when(
-      () =>
-        processInstanceDetailsStore.state.processInstance !== null &&
-        !processInstanceDetailsStore.isRunning,
-      () => {
-        this.stopPolling();
-      },
-    );
-  };
-
   fetchFlowNodeStatistics = this.retryOnConnectionLost(
     async (processInstanceId: string) => {
       const response =
@@ -93,24 +51,6 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
     },
   );
 
-  handlePolling = async (processInstanceId: string) => {
-    this.isPollRequestRunning = true;
-    const response = await fetchProcessInstanceDetailStatistics(
-      processInstanceId,
-      {isPolling: true},
-    );
-
-    if (this.intervalId !== null) {
-      if (response.isSuccess) {
-        this.handleFetchSuccess(response.data);
-      } else {
-        this.handleFetchFailure();
-      }
-    }
-
-    this.isPollRequestRunning = false;
-  };
-
   handleFetchSuccess = (statistics: ProcessInstanceDetailStatisticsDto[]) => {
     if (!isEqual(this.state.statistics, statistics)) {
       this.state.statistics = statistics;
@@ -121,76 +61,6 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   handleFetchFailure = () => {
     this.state.status = 'error';
   };
-
-  startPolling = (
-    processInstanceId: string,
-    options: {runImmediately?: boolean} = {runImmediately: false},
-  ) => {
-    if (
-      document.visibilityState === 'hidden' ||
-      !processInstanceDetailsStore.isRunning
-    ) {
-      return;
-    }
-
-    if (options.runImmediately) {
-      this.handlePolling(processInstanceId);
-    }
-
-    this.intervalId = setInterval(() => {
-      if (!this.isPollRequestRunning) {
-        this.handlePolling(processInstanceId);
-      }
-    }, 5000);
-  };
-
-  stopPolling = () => {
-    const {intervalId} = this;
-
-    if (intervalId !== null) {
-      clearInterval(intervalId);
-      this.intervalId = null;
-    }
-  };
-
-  get flowNodeStatistics() {
-    return Object.keys(this.statisticsByFlowNode).flatMap((flowNodeId) => {
-      const types = [
-        'active',
-        'incidents',
-        'canceled',
-        'completed',
-        'completedEndEvents',
-      ] as const;
-
-      const statistic = this.statisticsByFlowNode[flowNodeId]!;
-
-      return types.reduce<
-        {
-          flowNodeId: string;
-          count: number;
-          flowNodeState: FlowNodeState | 'completedEndEvents';
-        }[]
-      >((states, flowNodeState) => {
-        const count =
-          flowNodeState === 'active'
-            ? statistic['filteredActive']
-            : statistic[flowNodeState];
-
-        if (count === 0) {
-          return states;
-        }
-        return [
-          ...states,
-          {
-            flowNodeId,
-            count,
-            flowNodeState,
-          },
-        ];
-      }, []);
-    });
-  }
 
   get statisticsByFlowNode() {
     return this.state.statistics.reduce<{
@@ -224,12 +94,6 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
     }, {});
   }
 
-  get executedFlowNodes() {
-    return this.state.statistics.filter(({completed}) => {
-      return completed > 0;
-    });
-  }
-
   getTotalRunningInstancesForFlowNode = (flowNodeId: string) => {
     return (
       (this.statisticsByFlowNode[flowNodeId]?.active ?? 0) +
@@ -244,30 +108,8 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
     );
   };
 
-  get selectableFlowNodes() {
-    return this.state.statistics.map(({activityId}) => activityId);
-  }
-
-  get willAllFlowNodesBeCanceled() {
-    if (
-      modificationsStore.flowNodeModifications.filter(({operation}) =>
-        ['ADD_TOKEN', 'MOVE_TOKEN'].includes(operation),
-      ).length > 0
-    ) {
-      return false;
-    }
-
-    return this.state.statistics.every(
-      ({activityId, active, incidents}) =>
-        (active === 0 && incidents === 0) ||
-        modificationsStore.modificationsByFlowNode[activityId]
-          ?.areAllTokensCanceled,
-    );
-  }
-
   reset() {
     super.reset();
-    this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.processInstanceDetailsStatisticsDisposer?.();
     this.completedFlowNodesDisposer?.();

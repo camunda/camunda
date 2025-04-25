@@ -17,10 +17,10 @@ import {
 } from 'modules/mocks/modifications';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {open} from 'modules/mocks/diagrams';
 import {act} from 'react';
+import {cancelAllTokens} from 'modules/utils/modifications';
 
 type Props = {
   children?: React.ReactNode;
@@ -84,8 +84,6 @@ describe('LastModification', () => {
       'processInstanceId',
     );
 
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
-
     const {user} = render(<LastModification />, {wrapper: Wrapper});
 
     act(() => {
@@ -108,7 +106,7 @@ describe('LastModification', () => {
     expect(screen.getByText(/Add "service-task-1"/)).toBeInTheDocument();
 
     act(() => {
-      modificationsStore.cancelAllTokens('service-task-2', {});
+      cancelAllTokens('service-task-2', 0, 0, {});
     });
 
     expect(
