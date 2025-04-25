@@ -24,6 +24,7 @@ import io.camunda.process.test.api.spec.CamundaProcessSpecResource;
 import io.camunda.process.test.api.spec.CamundaProcessSpecRunner;
 import io.camunda.process.test.api.spec.CamundaProcessSpecTestCase;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.spec.dsl.SpecAction;
 import io.camunda.process.test.impl.spec.dsl.SpecInstruction;
 import io.camunda.process.test.impl.spec.dsl.SpecTestCase;
@@ -32,7 +33,6 @@ import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -45,9 +45,13 @@ public class ProcessSpecRunner implements CamundaProcessSpecRunner {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final CamundaProcessTestContext processTestContext;
+  private final CamundaManagementClient camundaManagementClient;
 
-  public ProcessSpecRunner(final CamundaProcessTestContext processTestContext) {
+  public ProcessSpecRunner(
+      final CamundaProcessTestContext processTestContext,
+      final CamundaManagementClient camundaManagementClient) {
     this.processTestContext = processTestContext;
+    this.camundaManagementClient = camundaManagementClient;
   }
 
   @Override
@@ -56,9 +60,8 @@ public class ProcessSpecRunner implements CamundaProcessSpecRunner {
       throws AssertionError {
     if (testCase instanceof SpecTestCase) {
 
-      final CamundaDataSource camundaDataSource =
-          new CamundaDataSource(processTestContext.getCamundaRestAddress().toString());
       final CamundaClient camundaClient = processTestContext.createClient();
+      final CamundaDataSource camundaDataSource = new CamundaDataSource(camundaClient);
       final SpecTestContext testContext = new SpecTestContext(camundaDataSource, camundaClient);
 
       final SpecTestCaseResult result = run(testContext, (SpecTestCase) testCase, resources);
@@ -151,33 +154,14 @@ public class ProcessSpecRunner implements CamundaProcessSpecRunner {
 
   public ProcessSpecResult runSpec(final CamundaProcessSpec processSpec) {
     // 1: bootstrap
-    final CamundaDataSource camundaDataSource =
-        new CamundaDataSource(processTestContext.getCamundaRestAddress().toString());
     final CamundaClient camundaClient = processTestContext.createClient();
+    final CamundaDataSource camundaDataSource = new CamundaDataSource(camundaClient);
     final SpecTestContext testContext = new SpecTestContext(camundaDataSource, camundaClient);
 
     final CamundaProcessTestResultCollector processTestResultCollector =
         new CamundaProcessTestResultCollector(camundaDataSource);
 
-    // 2: deploy resources
-    try {
-      deployResources(camundaClient, processSpec.getTestResources());
-    } catch (final Exception e) {
-      LOGGER.error("Failed to deploy test resources: {}.", processSpec.getTestResources(), e);
-
-      final SpecTestCaseResult deploymentFailure = new SpecTestCaseResult();
-      deploymentFailure.setName("Deploy test resources");
-      deploymentFailure.setSuccess(false);
-      deploymentFailure.setFailureMessage("Failed to deploy test resources: " + e.getMessage());
-
-      return new ProcessSpecResult(
-          0,
-          processSpec.getTestCases().size(),
-          Duration.ZERO,
-          Collections.singletonList(deploymentFailure));
-    }
-
-    // 3: run test cases
+    // 2: run test cases
     final Instant startTime = Instant.now();
 
     final List<SpecTestCaseResult> testResults =
@@ -199,13 +183,16 @@ public class ProcessSpecRunner implements CamundaProcessSpecRunner {
         .map(
             testCase -> {
               final SpecTestCaseResult testCaseResult =
-                  run(testContext, (SpecTestCase) testCase, Collections.emptyList());
+                  run(testContext, (SpecTestCase) testCase, testSpecification.getTestResources());
 
               if (!testCaseResult.isSuccess()) {
                 final ProcessTestResult processTestResult = processTestResultCollector.collect();
                 testCaseResult.setTestOutput(processTestResult.getProcessInstanceTestResults());
               }
-              // TODO: clean state (i.e. purge)
+
+              // clean state
+              camundaManagementClient.purgeCluster();
+
               return testCaseResult;
             })
         .collect(Collectors.toList());

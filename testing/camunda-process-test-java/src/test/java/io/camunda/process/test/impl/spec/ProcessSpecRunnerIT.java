@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.spec.dsl.ProcessSpec;
@@ -39,6 +40,7 @@ public class ProcessSpecRunnerIT {
 
   private CamundaContainerRuntime camundaContainerRuntime;
   private CamundaProcessTestContext camundaProcessTestContext;
+  private CamundaManagementClient camundaManagementClient;
   private final List<AutoCloseable> clients = new ArrayList<>();
 
   @BeforeEach
@@ -46,11 +48,17 @@ public class ProcessSpecRunnerIT {
     camundaContainerRuntime = CamundaContainerRuntime.newDefaultRuntime();
     camundaContainerRuntime.start();
 
+    camundaManagementClient =
+        new CamundaManagementClient(
+            camundaContainerRuntime.getCamundaContainer().getMonitoringApiAddress(),
+            camundaContainerRuntime.getCamundaContainer().getRestApiAddress());
+
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             camundaContainerRuntime.getCamundaContainer(),
             camundaContainerRuntime.getConnectorsContainer(),
-            clients::add);
+            clients::add,
+            camundaManagementClient);
   }
 
   @AfterEach
@@ -72,7 +80,8 @@ public class ProcessSpecRunnerIT {
     final ProcessSpec processSpec = parse(serializedProcessSpec);
 
     // when
-    final ProcessSpecRunner processSpecRunner = new ProcessSpecRunner(camundaProcessTestContext);
+    final ProcessSpecRunner processSpecRunner =
+        new ProcessSpecRunner(camundaProcessTestContext, camundaManagementClient);
     final ProcessSpecResult result = processSpecRunner.runSpec(processSpec);
 
     // then

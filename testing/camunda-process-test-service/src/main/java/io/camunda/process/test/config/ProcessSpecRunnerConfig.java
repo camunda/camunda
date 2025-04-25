@@ -17,7 +17,9 @@ package io.camunda.process.test.config;
 
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
@@ -36,20 +38,31 @@ public class ProcessSpecRunnerConfig {
 
   @Bean
   public ProcessSpecRunner processSpecRunner(
-      final CamundaProcessTestContext camundaProcessTestContext) {
+      final CamundaProcessTestContext camundaProcessTestContext,
+      final CamundaManagementClient camundaManagementClient) {
 
     CamundaAssert.setAssertionTimeout(Duration.ofSeconds(5));
 
-    return new ProcessSpecRunner(camundaProcessTestContext);
+    return new ProcessSpecRunner(camundaProcessTestContext, camundaManagementClient);
   }
 
   @Bean
   public CamundaProcessTestContext camundaProcessTestContext(
-      final CamundaContainerRuntime camundaContainerRuntime) {
+      final CamundaContainerRuntime camundaContainerRuntime,
+      final CamundaManagementClient camundaManagementClient) {
     return new CamundaProcessTestContextImpl(
         camundaContainerRuntime.getCamundaContainer(),
         camundaContainerRuntime.getConnectorsContainer(),
-        clients::add);
+        clients::add,
+        camundaManagementClient);
+  }
+
+  @Bean
+  public CamundaManagementClient camundaManagementClient(
+      final CamundaContainerRuntime camundaContainerRuntime) {
+    final CamundaContainer camundaContainer = camundaContainerRuntime.getCamundaContainer();
+    return new CamundaManagementClient(
+        camundaContainer.getMonitoringApiAddress(), camundaContainer.getRestApiAddress());
   }
 
   @Bean

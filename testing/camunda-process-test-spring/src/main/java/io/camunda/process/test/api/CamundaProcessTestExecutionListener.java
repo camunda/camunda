@@ -131,7 +131,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessSpecRunnerProxy.class)
-        .setClient(new ProcessSpecRunner(camundaProcessTestContext));
+        .setClient(new ProcessSpecRunner(camundaProcessTestContext, camundaManagementClient));
 
     // publish Zeebe client
     testContext.getApplicationContext().publishEvent(new CamundaClientCreatedEvent(this, client));

@@ -160,7 +160,7 @@ public class CamundaProcessTestExtension
       injectField(
           context,
           CamundaProcessSpecRunner.class,
-          () -> new ProcessSpecRunner(camundaProcessTestContext));
+          () -> new ProcessSpecRunner(camundaProcessTestContext, camundaManagementClient));
     } catch (final Exception e) {
       closeCreatedClients();
       containerRuntime.close();
