@@ -24,6 +24,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -44,6 +45,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
@@ -101,6 +103,12 @@ public class RdbmsSearchClient implements SearchClientsProxy {
                         .sort(query.sort())
                         .page(p -> p.size(Integer.MAX_VALUE))))
         .items();
+  }
+
+  @Override
+  public List<SequenceFlowEntity> findAllSequenceFlows(final SequenceFlowQuery query) {
+    throw new UnsupportedOperationException(
+        "SequenceFlowSearchClient findAllSequenceFlows not implemented yet.");
   }
 
   @Override

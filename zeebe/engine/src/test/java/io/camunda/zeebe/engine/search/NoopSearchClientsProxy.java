@@ -25,6 +25,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -45,6 +46,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
@@ -194,6 +196,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public List<SequenceFlowEntity> findAllSequenceFlows(final SequenceFlowQuery filter) {
+    return List.of();
   }
 
   @Override
