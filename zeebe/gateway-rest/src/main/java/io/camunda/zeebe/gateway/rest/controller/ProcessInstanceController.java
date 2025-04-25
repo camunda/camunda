@@ -140,6 +140,21 @@ public class ProcessInstanceController {
     }
   }
 
+  @CamundaGetMapping(path = "/{processInstanceKey}/sequence-flows")
+  public ResponseEntity<Object> sequenceFlows(
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toSequenceFlowsResult(
+                  processInstanceServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .sequenceFlows(processInstanceKey)));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   @CamundaPostMapping(path = "/batch-operations/cancellation")
   public CompletableFuture<ResponseEntity<Object>> cancelProcessInstanceBatchOperation(
       @RequestBody(required = false) final ProcessInstanceFilter filter) {

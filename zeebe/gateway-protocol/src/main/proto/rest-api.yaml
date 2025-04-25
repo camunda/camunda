@@ -1673,6 +1673,37 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /process-instances/{processInstanceKey}/sequence-flows:
+    get:
+      tags:
+        - Process instance
+      operationId: getProcessInstanceSequenceFlows
+      summary: Get process instance sequence flows
+      description: |
+        Get sequence flows taken by the process instance key.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The process instance sequence flows result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceSequenceFlowsQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/statistics/element-instances:
     get:
       tags:
@@ -6043,6 +6074,37 @@ components:
         processDefinitionName:
           type: string
           description: The name of the process definition (fall backs to the process definition ID if not available).
+    ProcessInstanceSequenceFlowsQueryResult:
+      description: Process instance sequence flows query response.
+      type: object
+      properties:
+        items:
+          description: The sequence flows.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceSequenceFlowResult"
+    ProcessInstanceSequenceFlowResult:
+      description: Process instance sequence flows result.
+      type: object
+      properties:
+        sequenceFlowId:
+          type: string
+          description: The sequence flow ID.
+        processInstanceKey:
+          type: string
+          description: The key of this process instance.
+        processDefinitionKey:
+          type: string
+          description: The process definition key.
+        processDefinitionId:
+          type: string
+          description: The process definition ID.
+        elementId:
+          type: string
+          description: The element ID for this element instance.
+        tenantId:
+          description: The tenant ID for this sequence flow.
+          type: string
     ProcessDefinitionElementStatisticsQuery:
       description: Process definition element statistics request.
       type: object
