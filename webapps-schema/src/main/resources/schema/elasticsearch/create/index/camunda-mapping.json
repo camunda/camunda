@@ -8,6 +8,9 @@
       "mappingId": {
         "type": "keyword"
       },
+      "key": {
+        "type": "long"
+      },
       "claimName": {
         "type": "keyword"
       },
