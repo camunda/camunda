@@ -53,7 +53,7 @@ import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
-import io.camunda.service.GroupServices.CreateGroupRequest;
+import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
@@ -335,26 +335,24 @@ public class RequestMapper {
         () -> new RoleMemberRequest(roleId, memberId, entityType));
   }
 
-  public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
+  public static Either<ProblemDetail, GroupDTO> toGroupCreateRequest(
       final GroupCreateRequest groupCreateRequest) {
     return getResult(
         GroupRequestValidator.validateCreateRequest(groupCreateRequest),
         () ->
-            new CreateGroupRequest(
+            new GroupDTO(
                 groupCreateRequest.getGroupId(),
                 groupCreateRequest.getName(),
                 groupCreateRequest.getDescription()));
   }
 
-  public static Either<ProblemDetail, UpdateGroupRequest> toGroupUpdateRequest(
+  public static Either<ProblemDetail, GroupDTO> toGroupUpdateRequest(
       final GroupUpdateRequest groupUpdateRequest, final String groupId) {
     return getResult(
-        GroupRequestValidator.validateUpdateRequest(groupUpdateRequest),
+        GroupRequestValidator.validateUpdateRequest(groupId, groupUpdateRequest),
         () ->
-            new UpdateGroupRequest(
-                groupId,
-                groupUpdateRequest.getChangeset().getName(),
-                groupUpdateRequest.getChangeset().getDescription()));
+            new GroupDTO(
+                groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
   }
 
   public static Either<ProblemDetail, GroupMemberRequest> toGroupMemberRequest(
@@ -1070,6 +1068,4 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
-
-  public record UpdateGroupRequest(String groupId, String name, String description) {}
 }

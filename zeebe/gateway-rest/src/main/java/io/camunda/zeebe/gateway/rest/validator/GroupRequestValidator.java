@@ -64,11 +64,13 @@ public final class GroupRequestValidator {
     }
   }
 
-  public static Optional<ProblemDetail> validateUpdateRequest(final GroupUpdateRequest request) {
+  public static Optional<ProblemDetail> validateUpdateRequest(
+      final String groupId, final GroupUpdateRequest request) {
     return validate(
         violations -> {
-          validateGroupName(request.getChangeset().getName(), violations);
-          if (request.getChangeset().getDescription() == null) {
+          validateGroupId(groupId, violations);
+          validateGroupName(request.getName(), violations);
+          if (request.getDescription() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
           }
         });

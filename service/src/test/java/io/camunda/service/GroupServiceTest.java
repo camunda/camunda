@@ -19,7 +19,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.GroupServices.CreateGroupRequest;
+import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
@@ -62,7 +62,7 @@ public class GroupServiceTest {
     final var description = "description";
 
     // when
-    final var createGroupRequest = new CreateGroupRequest(groupId, groupName, description);
+    final var createGroupRequest = new GroupDTO(groupId, groupName, description);
     services.createGroup(createGroupRequest);
 
     // then
@@ -156,10 +156,9 @@ public class GroupServiceTest {
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.UPDATE);
-    assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasName(name);
-    assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasGroupId(groupId);
     assertThat(record).hasDescription(description);
   }
 
@@ -177,9 +176,7 @@ public class GroupServiceTest {
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.DELETE);
-    assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
-    assertThat(record).hasGroupKey(groupKey);
     assertThat(record).hasGroupId(groupId);
   }
 
