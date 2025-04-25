@@ -455,11 +455,12 @@ public class TaskListenerCorrectionsTest {
                       .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_3"));
                 }));
 
-    final var createdUserTaskRecord =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    final var userTaskKey = String.valueOf(createdUserTaskRecord.getKey());
+    final var userTaskKey =
+        String.valueOf(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getKey());
 
     // when: trigger the user task transition
     transitionTrigger.accept(processInstanceKey);
