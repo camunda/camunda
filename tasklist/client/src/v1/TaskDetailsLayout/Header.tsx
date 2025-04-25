@@ -25,7 +25,7 @@ import {tracking} from 'common/tracking';
 import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import styles from './Header.module.scss';
-import {ERRORS_THAT_SHOULD_FETCH_MORE} from '../constants';
+import {ERRORS_THAT_SHOULD_FETCH_MORE} from 'v1/TaskDetails/constants';
 
 const getAssignmentToggleLabels = () =>
   ({
