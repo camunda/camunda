@@ -11,7 +11,7 @@ mvn com.google.cloud.tools:jib-maven-plugin:3.4.4:dockerBuild -pl testing/camund
 ## Run Docker image locally
 
 ```
-docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock -p 8080:8080 gcr.io/zeebe-io/cpt-service
+docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock -p 8080:8080 ghcr.io/camunda/camunda-process-test-service
 ```
 
 Refer to [Testcontainers configuration](https://java.testcontainers.org/supported_docker_environment/continuous_integration/dind_patterns/).

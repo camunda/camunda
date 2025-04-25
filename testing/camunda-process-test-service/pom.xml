@@ -150,7 +150,7 @@
         <version>3.4.4</version>
         <configuration>
           <to>
-            <image>gcr.io/zeebe-io/cpt-service</image>
+            <image>ghcr.io/camunda/camunda-process-test-service</image>
             <tags>${project.version}</tags>
           </to>
           <container>
