@@ -12,11 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
@@ -24,6 +27,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
@@ -47,6 +51,7 @@ public final class ProcessInstanceServiceTest {
 
   private ProcessInstanceServices services;
   private ProcessInstanceSearchClient client;
+  private SequenceFlowSearchClient sequenceFlowSearchClient;
   private SecurityContextProvider securityContextProvider;
   private Authentication authentication;
   private BrokerClient brokerClient;
@@ -54,12 +59,19 @@ public final class ProcessInstanceServiceTest {
   @BeforeEach
   public void before() {
     client = mock(ProcessInstanceSearchClient.class);
+    sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
     authentication = mock(Authentication.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
     securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
     services =
-        new ProcessInstanceServices(brokerClient, securityContextProvider, client, authentication);
+        new ProcessInstanceServices(
+            brokerClient,
+            securityContextProvider,
+            client,
+            sequenceFlowSearchClient,
+            authentication);
   }
 
   @Test
@@ -76,6 +88,24 @@ public final class ProcessInstanceServiceTest {
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
+  }
+
+  @Test
+  public void shouldReturnProcessInstanceSequenceFlows() {
+    // given
+    final var result =
+        List.of(
+            new SequenceFlowEntity("pi1_sequenceFlow1", "node1", 1L, 1L, "pd1", "<default>"),
+            new SequenceFlowEntity("pi1_sequenceFlow2", "node1", 1L, 1L, "pd1", "<default>"));
+    when(sequenceFlowSearchClient.findAllSequenceFlows(any())).thenReturn(result);
+
+    // when
+    final var actual = services.sequenceFlows(123L);
+
+    // then
+    verify(sequenceFlowSearchClient)
+        .findAllSequenceFlows(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(123L))));
+    assertThat(actual).isEqualTo(result);
   }
 
   @Test

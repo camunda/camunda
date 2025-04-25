@@ -10,13 +10,16 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.exception.ForbiddenException;
@@ -57,20 +60,27 @@ public final class ProcessInstanceServices
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
+  private final SequenceFlowSearchClient sequenceFlowSearchClient;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.processInstanceSearchClient = processInstanceSearchClient;
+    this.sequenceFlowSearchClient = sequenceFlowSearchClient;
   }
 
   @Override
   public ProcessInstanceServices withAuthentication(final Authentication authentication) {
     return new ProcessInstanceServices(
-        brokerClient, securityContextProvider, processInstanceSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        authentication);
   }
 
   @Override
@@ -122,6 +132,15 @@ public final class ProcessInstanceServices
                 Collectors.toMap(ProcessInstanceEntity::processInstanceKey, Function.identity()));
 
     return orderedKeys.stream().map(resultsByKey::get).filter(Objects::nonNull).toList();
+  }
+
+  public List<SequenceFlowEntity> sequenceFlows(final long processInstanceKey) {
+    return sequenceFlowSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .findAllSequenceFlows(
+            SequenceFlowQuery.of(b -> b.filter(f -> f.processInstanceKey(processInstanceKey))));
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
