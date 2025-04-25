@@ -7,8 +7,6 @@
  */
 
 import {
-  GetProcessDefinitionStatisticsRequestBody,
-  GetProcessDefinitionStatisticsResponseBody,
   GetProcessSequenceFlowsResponseBody,
   ProcessInstance,
 } from '@vzeta/camunda-api-zod-schemas/operate';
@@ -16,56 +14,6 @@ import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcess
 import {RequestHandler, RestRequest, rest} from 'msw';
 
 const mockEndpoints = [
-  rest.post(
-    '/v2/process-definitions/:processDefinitionKey/statistics/element-instances',
-    async (
-      req: RestRequest<GetProcessDefinitionStatisticsRequestBody>,
-      res,
-      ctx,
-    ) => {
-      const mockResponse: GetProcessDefinitionStatisticsResponseBody = {
-        items: [
-          {
-            elementId: 'Gateway_15jzrqe',
-            active: 0,
-            canceled: 0,
-            incidents: 20,
-            completed: 0,
-          },
-          {
-            elementId: 'exclusiveGateway',
-            active: 0,
-            canceled: 0,
-            incidents: 20,
-            completed: 0,
-          },
-          {
-            elementId: 'alwaysFailingTask',
-            active: 20,
-            canceled: 0,
-            incidents: 0,
-            completed: 0,
-          },
-          {
-            elementId: 'messageCatchEvent',
-            active: 0,
-            canceled: 0,
-            incidents: 20,
-            completed: 0,
-          },
-          {
-            elementId: 'upperTask',
-            active: 20,
-            canceled: 0,
-            incidents: 0,
-            completed: 0,
-          },
-        ],
-      };
-
-      return res(ctx.json(mockResponse));
-    },
-  ),
   rest.get(
     '/v2/process-instances/:processInstanceKey/sequence-flows',
     async (req: RestRequest<GetProcessSequenceFlowsResponseBody>, res, ctx) => {
