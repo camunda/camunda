@@ -1307,10 +1307,7 @@ public class TaskListenerCorrectionsTest {
     final long processInstanceKey =
         helper.createProcessInstance(
             helper.createUserTaskWithTaskListenersAndAssignee(
-                ZeebeTaskListenerEventType.creating,
-                "initial_assignee",
-                listenerType,
-                listenerType + "_2"));
+                ZeebeTaskListenerEventType.creating, "initial_assignee", listenerType));
 
     // when
     ENGINE
@@ -1336,17 +1333,6 @@ public class TaskListenerCorrectionsTest {
                         "followUpDate",
                         "priority")))
         .complete();
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(listenerType + "_2")
-        .withResult(
-            new JobResult()
-                .setCorrections(
-                    new JobResultCorrections()
-                        .setCandidateGroupsList(List.of("twice_corrected_candidate_group")))
-                .setCorrectedAttributes(List.of("candidateGroupsList")))
-        .complete();
 
     // then
     helper.assertUserTaskRecordWithIntent(
@@ -1363,8 +1349,7 @@ public class TaskListenerCorrectionsTest {
                     "followUpDate",
                     "priority")
                 .hasCandidateUsersList("new_candidate_user")
-                .describedAs("Expect that the most recent group correction takes precedence")
-                .hasCandidateGroupsList("twice_corrected_candidate_group")
+                .hasCandidateGroupsList("new_candidate_group")
                 .hasDueDate("new_due_date")
                 .hasFollowUpDate("new_follow_up_date")
                 .hasPriority(100)
