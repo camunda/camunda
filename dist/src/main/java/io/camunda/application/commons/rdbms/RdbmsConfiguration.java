@@ -22,6 +22,7 @@ import io.camunda.db.rdbms.read.service.MappingReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.RoleReader;
+import io.camunda.db.rdbms.read.service.SequenceFlowReader;
 import io.camunda.db.rdbms.read.service.TenantReader;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
@@ -158,6 +159,11 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public SequenceFlowReader sequenceFlowReader(final SequenceFlowMapper sequenceFlowMapper) {
+    return new SequenceFlowReader(sequenceFlowMapper);
+  }
+
+  @Bean
   public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
     return new RdbmsWriterMetrics(meterRegistry);
   }
@@ -214,7 +220,8 @@ public class RdbmsConfiguration {
       final UserTaskReader userTaskReader,
       final FormReader formReader,
       final MappingReader mappingReader,
-      final BatchOperationReader batchOperationReader) {
+      final BatchOperationReader batchOperationReader,
+      final SequenceFlowReader sequenceFlowReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         authorizationReader,
@@ -233,6 +240,7 @@ public class RdbmsConfiguration {
         userTaskReader,
         formReader,
         mappingReader,
-        batchOperationReader);
+        batchOperationReader,
+        sequenceFlowReader);
   }
 }

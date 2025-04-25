@@ -12,6 +12,29 @@
 
 <mapper namespace="io.camunda.db.rdbms.sql.SequenceFlowMapper">
 
+  <resultMap id="SequenceFlowResultMap"
+    type="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
+    <result column="FLOW_NODE_ID" property="flowNodeId" />
+    <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" />
+    <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" />
+    <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" />
+    <result column="TENANT_ID" property="tenantId" />
+  </resultMap>
+
+  <select id="search"
+    parameterType="io.camunda.search.query.SequenceFlowQuery"
+    resultMap="SequenceFlowResultMap"
+    statementType="PREPARED">
+    SELECT distinct
+      sf.FLOW_NODE_ID,
+      sf.PROCESS_INSTANCE_KEY,
+      sf.PROCESS_DEFINITION_KEY,
+      sf.PROCESS_DEFINITION_ID,
+      sf.TENANT_ID
+    FROM ${prefix}SEQUENCE_FLOW sf
+    WHERE sf.PROCESS_INSTANCE_KEY = #{filter.processInstanceKey}
+  </select>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
     INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
                                         PROCESS_INSTANCE_KEY,
