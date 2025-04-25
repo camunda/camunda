@@ -1052,7 +1052,6 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case MAPPING_KEY -> builder.mappingKey();
         case MAPPING_ID -> builder.mappingId();
         case CLAIM_NAME -> builder.claimName();
         case CLAIM_VALUE -> builder.claimValue();

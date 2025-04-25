@@ -1068,6 +1068,8 @@ public class CompactRecordLogger {
     builder
         .append("Key=")
         .append(shortenKey(value.getMappingKey()))
+        .append(", mappingId=")
+        .append(formatId(value.getMappingId()))
         .append(", claimName=")
         .append(value.getClaimName())
         .append(", claimValue=")

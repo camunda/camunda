@@ -64,7 +64,6 @@ public class CamundaOidcUserServiceTest {
     when(camundaOAuthPrincipalService.loadOAuthContext(claims))
         .thenReturn(
             new OAuthContext(
-                Set.of(5L, 7L),
                 Set.of("test-id", "test-id-2"),
                 new AuthenticationContext(
                     null,
@@ -81,7 +80,6 @@ public class CamundaOidcUserServiceTest {
     assertThat(oidcUser).isInstanceOf(CamundaOidcUser.class);
     final var camundaUser = (CamundaOidcUser) oidcUser;
     assertThat(camundaUser.getEmail()).isEqualTo("foo@camunda.test");
-    assertThat(camundaUser.getMappingKeys()).isEqualTo(Set.of(5L, 7L));
     assertThat(camundaUser.getMappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));

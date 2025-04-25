@@ -3034,7 +3034,7 @@ paths:
         - name: mappingId
           in: path
           required: true
-          description: The id of the mapping rule to update.
+          description: The ID of the mapping rule to update.
           schema:
             type: string
       requestBody:
@@ -3073,7 +3073,7 @@ paths:
       operationId: deleteMappingRule
       summary: Delete a mapping rule (Work-in-Progress)
       description: |
-        Deletes the mapping rule with the given key.
+        Deletes the mapping rule with the given ID.
 
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
@@ -3081,7 +3081,7 @@ paths:
         - name: mappingId
           in: path
           required: true
-          description: The key of the mapping rule to delete.
+          description: The ID of the mapping rule to delete.
           schema:
             type: string
       responses:
@@ -3090,7 +3090,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The mapping rule with the mappingKey was not found.
+          description: The mapping rule with the mappingId was not found.
           content:
             application/problem+json:
               schema:
@@ -6199,7 +6199,6 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - mappingKey
             - mappingId
             - claimName
             - claimValue
@@ -6604,7 +6603,7 @@ components:
       properties:
         mappingId:
           type: string
-          description: The unique external id of the mapping.
+          description: The unique ID of the mapping.
       required:
         - mappingId
     MappingRuleUpdateRequest:
@@ -6625,10 +6624,7 @@ components:
           description: The name of the mapping.
         mappingId:
           type: string
-          description: The unique external id of the mapping.
-        mappingKey:
-          description: The key of the created mapping rule.
-          type: string
+          description: The unique ID of the mapping.
     MappingRuleCreateResult:
       type: object
       allOf:
@@ -6662,9 +6658,6 @@ components:
         mappingId:
           type: string
           description: The ID of the mapping.
-        mappingKey:
-          description: The key of the created mapping rule.
-          type: string
 
     TopologyResponse:
       description: The response of a topology request.

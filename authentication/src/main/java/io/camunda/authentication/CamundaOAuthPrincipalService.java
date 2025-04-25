@@ -61,18 +61,15 @@ public class CamundaOAuthPrincipalService {
   public OAuthContext loadOAuthContext(final Map<String, Object> claims)
       throws OAuth2AuthenticationException {
     final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
-    final Set<Long> mappingKeys =
-        mappings.stream().map(MappingEntity::mappingKey).collect(Collectors.toSet());
     final Set<String> mappingIds =
         mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
-    if (mappingKeys.isEmpty() && mappingIds.isEmpty()) {
+    if (mappingIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
     final var assignedRoles = roleServices.getRolesByMemberIds(mappingIds);
 
     return new OAuthContext(
-        mappingKeys,
         mappingIds,
         new AuthenticationContext(
             getUsernameFromClaims(claims),

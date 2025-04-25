@@ -417,7 +417,6 @@ public final class SearchQueryResponseMapper {
 
   public static MappingResult toMapping(final MappingEntity mappingEntity) {
     return new MappingResult()
-        .mappingKey(KeyUtil.keyToString(mappingEntity.mappingKey()))
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
         .mappingId(mappingEntity.mappingId())

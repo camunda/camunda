@@ -59,14 +59,14 @@ public class UsersGroupMigrationHandler extends MigrationHandler<UserGroups> {
               userGroups.username() + "_mapping",
               userGroups.username() + "_mapping");
 
-      final long mappingKey =
+      final var mappingId =
           mappingServices
               .findMapping(mapping)
-              .map(MappingEntity::mappingKey)
-              .orElseGet(() -> mappingServices.createMapping(mapping).join().getMappingKey());
+              .map(MappingEntity::mappingId)
+              .orElseGet(() -> mappingServices.createMapping(mapping).join().getMappingId());
       for (final Group userGroup : userGroups.groups()) {
         final var groupKey = groupServices.getGroupByName(userGroup.name()).groupKey();
-        assignMemberToGroup(groupKey, mappingKey);
+        assignMemberToGroup(groupKey, mappingId);
       }
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(userGroups, null);
     } catch (final Exception e) {
@@ -74,7 +74,7 @@ public class UsersGroupMigrationHandler extends MigrationHandler<UserGroups> {
     }
   }
 
-  private void assignMemberToGroup(final long groupKey, final long mappingKey) {
+  private void assignMemberToGroup(final long groupKey, final String mappingId) {
     try {
       // TODO: revisit this while implementing the migration
       // https://github.com/camunda/camunda/issues/26973
