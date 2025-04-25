@@ -7,38 +7,21 @@
  */
 
 import {useOutletContext} from 'react-router-dom';
-import {Layer, Tag} from '@carbon/react';
-import {BPMNDiagram} from 'common/bpmn-js/BPMNDiagram';
-import {SomethingWentWrong} from 'common/error-handling/SomethingWentWrong';
+import {ProcessDiagramView} from 'common/tasks/details/ProcessDiagramView';
 import type {OutletContext} from 'v1/TaskDetailsLayout';
-import styles from './index.module.scss';
-import {useTranslation} from 'react-i18next';
 
 const TaskDetailsProcessView: React.FC = () => {
   const {task, process} = useOutletContext<OutletContext>();
-  const {t} = useTranslation();
-
-  if (process === undefined) {
-    return <SomethingWentWrong className={styles.somethingWentWrong} />;
-  }
-
-  const {name, version, bpmnXml} = process;
   const {taskDefinitionId} = task;
 
   return (
-    <Layer className={styles.container}>
-      <div className={styles.header}>
-        <span className={styles.processName}>{name}</span>
-        <Tag className={styles.version}>
-          {t('processViewProcessVersion', {version})}
-        </Tag>
-      </div>
-      {bpmnXml !== null ? (
-        <Layer className={styles.diagramFrame}>
-          <BPMNDiagram xml={bpmnXml} highlightActivity={[taskDefinitionId]} />
-        </Layer>
-      ) : null}
-    </Layer>
+    <ProcessDiagramView
+      status={process === undefined ? 'error' : 'diagram'}
+      xml={process?.bpmnXml ?? ''}
+      elementId={taskDefinitionId}
+      processName={process?.name ?? ''}
+      processVersion={process?.version ?? 0}
+    />
   );
 };
 
