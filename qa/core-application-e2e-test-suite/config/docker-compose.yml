@@ -119,7 +119,7 @@ services:
     ports:
       - 8080:8080
     environment:
-      - SPRING_PROFILES_ACTIVE=dev,consolidated-auth
+      - SPRING_PROFILES_ACTIVE=dev,consolidated-auth,e2e-test
       - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
     depends_on:
       - ${DATABASE}
