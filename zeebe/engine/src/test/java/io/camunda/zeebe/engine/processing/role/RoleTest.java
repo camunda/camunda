@@ -59,42 +59,70 @@ public class RoleTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30113")
   public void shouldUpdateRole() {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var createdRecord = engine.role().newRole(name).create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var createdRecord =
+        engine
+            .role()
+            .newRole(roleId)
+            .withName(UUID.randomUUID().toString())
+            .withDescription(UUID.randomUUID().toString())
+            .create();
 
     // when
-    final var newName = UUID.randomUUID().toString();
-    final var updatedRoleRecord =
-        engine.role().updateRole(createdRecord.getValue().getRoleKey()).withName(newName).update();
+    final var updatedName = UUID.randomUUID().toString();
+    final var updatedDescription = UUID.randomUUID().toString();
+    final var updatedRole =
+        engine
+            .role()
+            .updateRole(roleId)
+            .withName(updatedName)
+            .withDescription(updatedDescription)
+            .update()
+            .getValue();
 
-    final var updatedRole = updatedRoleRecord.getValue();
-    Assertions.assertThat(updatedRole).isNotNull().hasFieldOrPropertyWithValue("name", newName);
+    assertThat(updatedRole)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasName(updatedName)
+        .hasDescription(updatedDescription);
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30113")
-  public void shouldRejectIfRoleIsNotPresent() {
+  public void shouldNotUpdateRoleKey() {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var roleRecord = engine.role().newRole(name).create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var createdRecord = engine.role().newRole(roleId).create();
 
     // when
-    final var notPresentRoleKey = 1L;
+    final var updatedKey = 111L;
+    final var updatedRole =
+        engine.role().updateRole(roleId).withRoleKey(updatedKey).update().getValue();
+
+    assertThat(updatedRole).isNotNull().hasRoleId(roleId).hasRoleKey(createdRecord.getKey());
+  }
+
+  @Test
+  public void shouldRejectIfRoleIsNotPresent() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = engine.role().newRole(roleId).create();
+
+    // when
+    final var notPresentRoleId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
-        engine.role().updateRole(notPresentRoleKey).expectRejection().update();
+        engine.role().updateRole(notPresentRoleId).expectRejection().update();
 
     final var createdRole = roleRecord.getValue();
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    assertThat(createdRole).isNotNull().hasRoleId(roleId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update role with key '"
-                + notPresentRoleKey
-                + "', but a role with this key does not exist.");
+            "Expected to update role with ID '"
+                + notPresentRoleId
+                + "', but a role with this ID does not exist.");
   }
 
   @Test

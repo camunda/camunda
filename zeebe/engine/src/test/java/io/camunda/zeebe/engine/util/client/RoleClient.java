@@ -27,8 +27,13 @@ public class RoleClient {
     return new RoleCreateClient(writer, id);
   }
 
+  // TODO remove this method and use the one with role Id
   public RoleUpdateClient updateRole(final long roleKey) {
-    return new RoleUpdateClient(writer, roleKey);
+    return updateRole(String.valueOf(roleKey));
+  }
+
+  public RoleUpdateClient updateRole(final String roleId) {
+    return new RoleUpdateClient(writer, roleId);
   }
 
   // TODO remove this method and use the one with role Id
@@ -125,14 +130,24 @@ public class RoleClient {
     private final RoleRecord roleRecord;
     private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public RoleUpdateClient(final CommandWriter writer, final long roleKey) {
+    public RoleUpdateClient(final CommandWriter writer, final String roleId) {
       this.writer = writer;
       roleRecord = new RoleRecord();
+      roleRecord.setRoleId(roleId);
+    }
+
+    public RoleUpdateClient withRoleKey(final long roleKey) {
       roleRecord.setRoleKey(roleKey);
+      return this;
     }
 
     public RoleUpdateClient withName(final String name) {
       roleRecord.setName(name);
+      return this;
+    }
+
+    public RoleUpdateClient withDescription(final String description) {
+      roleRecord.setDescription(description);
       return this;
     }
 
