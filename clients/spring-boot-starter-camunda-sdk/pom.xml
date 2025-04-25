@@ -22,6 +22,8 @@
   <properties>
     <version.java>17</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+    <version.roaster>2.30.1.Final</version.roaster>
+    <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
   </properties>
 
   <dependencies>
@@ -133,6 +135,13 @@
     </dependency>
 
     <dependency>
+      <groupId>org.jboss.forge.roaster</groupId>
+      <artifactId>roaster-api</artifactId>
+      <version>${version.roaster}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
       <scope>test</scope>
@@ -207,6 +216,84 @@
           </compilerArgs>
         </configuration>
       </plugin>
+
+      <!-- START -->
+      <!-- The following plugin setups are about generating test util classes -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <!-- Test Util generator classes need to be compiled as main classes -->
+          <execution>
+            <id>add-test-generator-source</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources>
+                <source>src/test/test-source-generator</source>
+              </sources>
+            </configuration>
+          </execution>
+          <!-- The generated classes are added to the test sources -->
+          <execution>
+            <id>add-generated-test-sources</id>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <phase>process-test-sources</phase>
+            <configuration>
+              <sources>
+                <source>${generated.test.sources.path}</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <dependencies>
+          <!-- Needed for the roaster generator used -->
+          <dependency>
+            <groupId>org.jboss.forge.roaster</groupId>
+            <artifactId>roaster-jdt</artifactId>
+            <version>${version.roaster}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <!-- This executed the test generator classes -->
+          <execution>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <mainClass>io.camunda.spring.client.test.util.JobWorkerPermutationsGenerator</mainClass>
+              <arguments>
+                <argument>${generated.test.sources.path}</argument>
+              </arguments>
+              <classpathScope>provided</classpathScope>
+              <includePluginDependencies>true</includePluginDependencies>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <!-- As the test generator classes end up among main classes, they have to be excluded again -->
+          <excludes>
+            <exclude>**/test/**</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <!-- END -->
+
     </plugins>
   </build>
 </project>

@@ -15,7 +15,6 @@
  */
 package io.camunda.spring.client.jobhandling;
 
-import static io.camunda.spring.client.TestJobWorkers.jobWorkerValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -36,10 +35,6 @@ import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.spring.client.TestJobWorkers.AutoComplete;
-import io.camunda.spring.client.TestJobWorkers.JobResponse;
-import io.camunda.spring.client.TestJobWorkers.Response;
-import io.camunda.spring.client.TestJobWorkers.TestDimension;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
@@ -47,6 +42,9 @@ import io.camunda.spring.client.jobhandling.result.DefaultResultProcessorStrateg
 import io.camunda.spring.client.jobhandling.result.ResultProcessor;
 import io.camunda.spring.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.spring.client.metrics.MetricsRecorder;
+import io.camunda.spring.client.test.util.JobWorkerPermutations;
+import io.camunda.spring.client.test.util.JobWorkerPermutationsGenerator.*;
+import io.camunda.spring.client.testsupport.JobWorkerPermutationsUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -58,54 +56,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class JobHandlerInvokingSpringBeansTest {
-
-  static Stream<Arguments> shouldThrowBpmnErrorSource() {
-    final List<Arguments> arguments = new ArrayList<>();
-    for (final AutoComplete autoComplete : AutoComplete.values()) {
-      for (final Response response : Response.values()) {
-        if (response.name().contains("BPMN_ERROR")) {
-          arguments.add(Arguments.of(autoComplete, response));
-        }
-      }
-    }
-    return arguments.stream();
-  }
-
-  static Stream<Arguments> shouldFailJobSource() {
-    final List<Arguments> arguments = new ArrayList<>();
-    for (final AutoComplete autoComplete : AutoComplete.values()) {
-      for (final Response response : Response.values()) {
-        if (response.name().contains("JOB_ERROR")) {
-          arguments.add(Arguments.of(autoComplete, response));
-        }
-      }
-    }
-    return arguments.stream();
-  }
-
-  private static CommandExceptionHandlingStrategy commandExceptionHandlingStrategy() {
-    return new DefaultCommandExceptionHandlingStrategy(
-        BackoffSupplier.newBackoffBuilder().build(),
-        CamundaClientExecutorService.createDefault().get());
-  }
-
-  private static MetricsRecorder metricsRecorder() {
-    return new DefaultNoopMetricsRecorder();
-  }
-
-  private static List<ParameterResolver> parameterResolvers(final JobWorkerValue jobWorkerValue) {
-    return JobHandlingUtil.createParameterResolvers(
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper()), jobWorkerValue);
-  }
-
-  private static ResultProcessor resultProcessor(final JobWorkerValue jobWorkerValue) {
-    return JobHandlingUtil.createResultProcessor(
-        new DefaultResultProcessorStrategy(), jobWorkerValue);
-  }
-
-  private static JobExceptionHandlingStrategy jobExceptionHandlingStrategy() {
-    return new DefaultJobExceptionHandlingStrategy();
-  }
 
   @ParameterizedTest
   @EnumSource(
@@ -226,5 +176,57 @@ public class JobHandlerInvokingSpringBeansTest {
     verify(jobClient, times(0)).newFailCommand(anyLong());
     verify(jobClient, times(1)).newThrowErrorCommand(anyLong());
     verify(throwErrorCommandStep2, times(1)).send();
+  }
+
+  private static JobWorkerValue jobWorkerValue(final TestDimension testDimension) {
+    return JobWorkerPermutationsUtil.jobWorkerValue(JobWorkerPermutations.class, testDimension);
+  }
+
+  private static Stream<Arguments> shouldThrowBpmnErrorSource() {
+    final List<Arguments> arguments = new ArrayList<>();
+    for (final AutoComplete autoComplete : AutoComplete.values()) {
+      for (final Response response : Response.values()) {
+        if (response.name().contains("BPMN_ERROR")) {
+          arguments.add(Arguments.of(autoComplete, response));
+        }
+      }
+    }
+    return arguments.stream();
+  }
+
+  private static Stream<Arguments> shouldFailJobSource() {
+    final List<Arguments> arguments = new ArrayList<>();
+    for (final AutoComplete autoComplete : AutoComplete.values()) {
+      for (final Response response : Response.values()) {
+        if (response.name().contains("JOB_ERROR")) {
+          arguments.add(Arguments.of(autoComplete, response));
+        }
+      }
+    }
+    return arguments.stream();
+  }
+
+  private static CommandExceptionHandlingStrategy commandExceptionHandlingStrategy() {
+    return new DefaultCommandExceptionHandlingStrategy(
+        BackoffSupplier.newBackoffBuilder().build(),
+        CamundaClientExecutorService.createDefault().get());
+  }
+
+  private static MetricsRecorder metricsRecorder() {
+    return new DefaultNoopMetricsRecorder();
+  }
+
+  private static List<ParameterResolver> parameterResolvers(final JobWorkerValue jobWorkerValue) {
+    return JobHandlingUtil.createParameterResolvers(
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper()), jobWorkerValue);
+  }
+
+  private static ResultProcessor resultProcessor(final JobWorkerValue jobWorkerValue) {
+    return JobHandlingUtil.createResultProcessor(
+        new DefaultResultProcessorStrategy(), jobWorkerValue);
+  }
+
+  private static JobExceptionHandlingStrategy jobExceptionHandlingStrategy() {
+    return new DefaultJobExceptionHandlingStrategy();
   }
 }
