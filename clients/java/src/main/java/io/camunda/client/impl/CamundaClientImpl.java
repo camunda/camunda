@@ -108,6 +108,7 @@ import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
@@ -196,6 +197,7 @@ import io.camunda.client.impl.search.request.GroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
+import io.camunda.client.impl.search.request.ProcessInstanceSequenceFlowsRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByGroupSearchRequestImpl;
@@ -690,6 +692,12 @@ public final class CamundaClientImpl implements CamundaClient {
   public ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
       final long processInstanceKey) {
     return new ProcessInstanceElementStatisticsRequestImpl(httpClient, processInstanceKey);
+  }
+
+  @Override
+  public ProcessInstanceSequenceFlowsRequest newProcessInstanceSequenceFlowsRequest(
+      final long processInstanceKey) {
+    return new ProcessInstanceSequenceFlowsRequestImpl(httpClient, processInstanceKey);
   }
 
   @Override
