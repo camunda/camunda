@@ -107,8 +107,8 @@ public class RdbmsSearchClient implements SearchClientsProxy {
 
   @Override
   public List<SequenceFlowEntity> findAllSequenceFlows(final SequenceFlowQuery query) {
-    throw new UnsupportedOperationException(
-        "SequenceFlowSearchClient findAllSequenceFlows not implemented yet.");
+    LOG.debug("[RDBMS Search Client] Search for sequence flow: {}", query);
+    return rdbmsService.getSequenceFlowReader().search(query);
   }
 
   @Override
