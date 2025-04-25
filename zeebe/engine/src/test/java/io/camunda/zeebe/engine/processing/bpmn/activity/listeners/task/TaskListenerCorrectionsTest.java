@@ -1247,6 +1247,47 @@ public class TaskListenerCorrectionsTest {
   }
 
   @Test
+  public void shouldNotTriggerAssigningListenersWhenAssigneeIsCorrectedByCreatingListener() {
+    // given: process with a creating listener, but no initial assignee
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.creating, listenerType));
+
+    // when: complete the "creating" listener job with corrected assignee
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setAssignee("corrected_assignee"))
+                .setCorrectedAttributes(List.of("assignee")))
+        .complete();
+
+    // then: ensure assignee was corrected
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        task ->
+            Assertions.assertThat(task)
+                .describedAs("Expect the corrected assignee to be present.")
+                .hasAssignee("corrected_assignee")
+                .hasOnlyChangedAttributes("assignee"));
+
+    // when: complete the user task to finalize the flow
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // then: verify a user task events sequence does NOT include ASSIGNING and ASSIGNED
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(record -> record.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .doesNotContain(UserTaskIntent.ASSIGNING, UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
   public void shouldPersistCorrectedUserTaskDataWhenAssigningOnCreationTaskListenerCompleted() {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.assigning,
