@@ -64,6 +64,9 @@
       "completedDate": {
         "format": "date_time || epoch_millis",
         "type": "date"
+      },
+      "itemKey": {
+        "type": "long"
       }
     }
 	}
