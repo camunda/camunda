@@ -26,6 +26,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
+  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE = "Expected to update role with key '%s', but a role with this key does not exist.";
   private final RoleState roleState;
   private final KeyGenerator keyGenerator;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -55,7 +56,7 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
     final var persistedRecord = roleState.getRole(record.getRoleKey());
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
-          "Expected to update role with key '%s', but a role with this key does not exist."
+          ROLE_NOT_FOUND_ERROR_MESSAGE
               .formatted(record.getRoleKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
