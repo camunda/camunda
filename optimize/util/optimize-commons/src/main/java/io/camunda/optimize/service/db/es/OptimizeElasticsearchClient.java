@@ -918,9 +918,11 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       try {
         final BulkResponse bulkResponse = bulk(bulkRequest);
         if (bulkResponse.errors()) {
+          final Set<String> failedOperationIds = getFailedOperationIds(bulkResponse);
           throw new OptimizeRuntimeException(
               String.format(
-                  "There were failures while performing bulk on %s.%n%s Message: %s",
+                  "There were %s failures while performing bulk on %s.%n%s Message: %s",
+                  failedOperationIds.size(),
                   itemName,
                   getHintForErrorMsg(bulkResponse),
                   bulkResponse.items().stream()
@@ -975,27 +977,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           return;
         }
         if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-          final Map<String, List<String>> failedNestedDocLimitItemIdsByIndexName =
-              bulkResponse.items().stream()
-                  .filter(b -> b.error() != null && b.error().reason() != null && b.id() != null)
-                  .filter(
-                      responseItem ->
-                          responseItem.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
-                  .collect(
-                      Collectors.groupingBy(
-                          BulkResponseItem::index,
-                          Collectors.mapping(BulkResponseItem::id, Collectors.toList())));
-
-          final Set<String> failedOperationIds =
-              failedNestedDocLimitItemIdsByIndexName.values().stream()
-                  .flatMap(Collection::stream)
-                  .collect(Collectors.toSet());
+          final Set<String> failedOperationIds = getFailedOperationIds(bulkResponse);
           log.warn(
               "There were failures while performing bulk on {} due to the nested document limit being reached."
                   + " Removing {} failed items and retrying",
               itemName,
               failedOperationIds.size());
-          log.debug("Failed operation IDs by Index: {}", failedNestedDocLimitItemIdsByIndexName);
           final List<BulkOperation> bulkOperations = new ArrayList<>(bulkRequest.operations());
           bulkOperations.removeIf(
               request -> {
@@ -1022,8 +1009,27 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         throw new OptimizeRuntimeException(reason, e);
       }
     } else {
-      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
+      log.debug("Bulk request on {} not executed because it contains no actions.", itemName);
     }
+  }
+
+  private static Set<String> getFailedOperationIds(final BulkResponse bulkResponse) {
+    final Map<String, List<String>> failedNestedDocLimitItemIdsByIndexName =
+        bulkResponse.items().stream()
+            .filter(b -> b.error() != null && b.error().reason() != null && b.id() != null)
+            .filter(
+                responseItem -> responseItem.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
+            .collect(
+                Collectors.groupingBy(
+                    BulkResponseItem::index,
+                    Collectors.mapping(BulkResponseItem::id, Collectors.toList())));
+
+    final Set<String> failedOperationIds =
+        failedNestedDocLimitItemIdsByIndexName.values().stream()
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
+    log.debug("Failed operation IDs by Index: {}", failedNestedDocLimitItemIdsByIndexName);
+    return failedOperationIds;
   }
 
   public DeleteByQueryResponse submitDeleteTask(final DeleteByQueryRequest request)
