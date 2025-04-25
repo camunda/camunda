@@ -54,14 +54,6 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
   @Override
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
-    final var persistedRecord = roleState.getRole(record.getRoleId());
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
             .addResourceId(record.getRoleId());
@@ -70,6 +62,14 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    final var persistedRecord = roleState.getRole(record.getRoleId());
+    if (persistedRecord.isEmpty()) {
+      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
