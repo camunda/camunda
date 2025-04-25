@@ -126,30 +126,19 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const subProcessesWithIncidents = flowNodesWithSubProcesses
-    .map(({state, flowNodeId}) => {
-      if (!state || !flowNodeId || (state !== 'ACTIVE' && state !== 'INCIDENT'))
-        return null;
+  const subProcessesWithIncidents =
+    flowNodeInstanceStore.state.flowNodesWithSubProcesses
+      .map(({state, flowNodeId}) => {
+        if (!state || !flowNodeId || state !== 'INCIDENT') return null;
 
-      function convertStateToFlowNodeState(state: string) {
-        switch (state) {
-          case 'ACTIVE':
-            return 'active';
-          case 'INCIDENT':
-            return 'incidents';
-        }
-      }
-
-      const stateFormatted = convertStateToFlowNodeState(state);
-
-      return {
-        payload: {flowNodeState: stateFormatted},
-        type: OVERLAY_TYPE_STATE,
-        flowNodeId: flowNodeId,
-        position: {bottom: 12, left: -12},
-      };
-    })
-    .filter((item) => item !== null);
+        return {
+          payload: {flowNodeState: 'incidents'},
+          type: OVERLAY_TYPE_STATE,
+          flowNodeId: flowNodeId,
+          position: {bottom: -5, right: 38},
+        };
+      })
+      .filter((item) => item !== null);
 
   const allFlowNodeStateOverlays = [
     ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
