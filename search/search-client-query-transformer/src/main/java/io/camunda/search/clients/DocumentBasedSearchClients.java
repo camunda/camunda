@@ -121,8 +121,8 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public List<SequenceFlowEntity> findAllSequenceFlows(final SequenceFlowQuery filter) {
-    throw new UnsupportedOperationException(
-        "SequenceFlowSearchClient findAllSequenceFlows not implemented yet.");
+    return getSearchExecutor()
+        .findAll(filter, io.camunda.webapps.schema.entities.SequenceFlowEntity.class);
   }
 
   @Override

@@ -38,6 +38,7 @@ import io.camunda.search.clients.transformers.entity.ProcessDefinitionEntityTran
 import io.camunda.search.clients.transformers.entity.ProcessInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.RoleEntityTransformer;
 import io.camunda.search.clients.transformers.entity.RoleMemberEntityTransformer;
+import io.camunda.search.clients.transformers.entity.SequenceFlowEntityTransformer;
 import io.camunda.search.clients.transformers.entity.TenantEntityTransformer;
 import io.camunda.search.clients.transformers.entity.TenantMemberEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UsageMetricsEntityTransformer;
@@ -61,6 +62,7 @@ import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatistics
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.RoleFilterTransformer;
+import io.camunda.search.clients.transformers.filter.SequenceFlowFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UsageMetricsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
@@ -107,6 +109,7 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.SequenceFlowFilter;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UserFilter;
@@ -128,6 +131,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UsageMetricsQuery;
@@ -174,9 +178,11 @@ import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.webapps.schema.entities.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
@@ -280,7 +286,8 @@ public final class ServiceTransformers {
             UserTaskQuery.class,
             UserQuery.class,
             VariableQuery.class,
-            UsageMetricsQuery.class)
+            UsageMetricsQuery.class,
+            SequenceFlowQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
     // document entity -> domain entity
@@ -305,6 +312,7 @@ public final class ServiceTransformers {
     mappers.put(MappingEntity.class, new MappingEntityTransformer());
     mappers.put(UsageMetricsEntity.class, new UsageMetricsEntityTransformer());
     mappers.put(BatchOperationEntity.class, new BatchOperationEntityTransformer());
+    mappers.put(SequenceFlowEntity.class, new SequenceFlowEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(DecisionDefinitionSort.class, new DecisionDefinitionFieldSortingTransformer());
@@ -391,6 +399,9 @@ public final class ServiceTransformers {
     mappers.put(
         BatchOperationFilter.class,
         new BatchOperationFilterTransformer(indexDescriptors.get(BatchOperationTemplate.class)));
+    mappers.put(
+        SequenceFlowFilter.class,
+        new SequenceFlowFilterTransformer(indexDescriptors.get(SequenceFlowTemplate.class)));
 
     // result config -> source config
     mappers.put(
