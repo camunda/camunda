@@ -92,6 +92,7 @@ import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
+import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
@@ -179,6 +180,7 @@ import io.camunda.client.impl.fetch.IncidentGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetFormRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
+import io.camunda.client.impl.fetch.ProcessInstanceGetCallHierarchyRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetRequestImpl;
 import io.camunda.client.impl.fetch.UserTaskGetFormRequestImpl;
 import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
@@ -1010,6 +1012,12 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UsersByGroupSearchRequest newUsersByGroupSearchRequest(final String groupId) {
     return new UsersByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
+  }
+
+  @Override
+  public ProcessInstanceGetCallHierarchyRequest newProcessInstanceGetCallHierarchyRequest(
+      final Long processInstanceKey) {
+    return new ProcessInstanceGetCallHierarchyRequestImpl(httpClient, processInstanceKey);
   }
 
   private JobClient newJobClient() {

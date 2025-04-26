@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.api.fetch;
 
-public interface ProcessInstanceReference {
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
+import java.util.List;
 
-  String getInstanceId();
-
-  String getProcessDefinitionId();
-
-  String processDefinitionName();
-}
+public interface ProcessInstanceGetCallHierarchyRequest
+    extends FinalCommandStep<List<ProcessInstanceCallHierarchyEntryResponse>> {}
