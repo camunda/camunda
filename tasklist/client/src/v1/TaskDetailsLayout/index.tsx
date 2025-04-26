@@ -18,11 +18,12 @@ import {DetailsSkeleton} from 'common/tasks/details/DetailsSkeleton';
 import {TabListNav} from 'common/tasks/details/TabListNav';
 import {TurnOnNotificationPermission} from 'common/tasks/details/TurnOnNotificationPermission';
 import {Aside} from 'common/tasks/details/Aside';
-import {Header} from './Header';
+import {TaskDetailsHeader} from 'common/tasks/details/TaskDetailsHeader';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from 'common/notifications/notifications.store';
+import {AssignButton} from './AssignButton';
 
 type OutletContext = {
   task: Task;
@@ -97,10 +98,19 @@ const TaskDetailsLayout: React.FC = () => {
     >
       <Section className={taskDetailsLayoutCommon.content} level={4}>
         <TurnOnNotificationPermission />
-        <Header
-          task={task}
+        <TaskDetailsHeader
+          taskName={task.name}
+          processName={task.processName}
+          assignee={task.assignee}
+          taskState={task.taskState}
           user={currentUser}
-          onAssignmentError={onAssignmentError}
+          assignButton={
+            <AssignButton
+              id={task.id}
+              assignee={task.assignee}
+              onAssignmentError={onAssignmentError}
+            />
+          }
         />
         <TabListNav label={t('taskDetailsNavLabel')} items={tabs} />
         <Outlet

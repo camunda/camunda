@@ -6,15 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
 import {t as _t} from 'i18next';
+import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Stack} from '@carbon/react';
-import {CheckmarkFilled} from '@carbon/react/icons';
-import {AssigneeTag} from 'common/components/AssigneeTag';
-import {AsyncActionButton} from 'common/components/AsyncActionButton';
-import type {Task} from 'v1/api/types';
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
 import {useAssignTask, assignmentErrorMap} from 'v1/api/useAssignTask.mutation';
 import {
   useUnassignTask,
@@ -22,11 +16,10 @@ import {
 } from 'v1/api/useUnassignTask.mutation';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {tracking} from 'common/tracking';
-import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
-import styles from './Header.module.scss';
-import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
+import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 import {ERRORS_THAT_SHOULD_FETCH_MORE} from 'v1/TaskDetails/constants';
+import {AsyncActionButton} from 'common/components/AsyncActionButton';
 
 const getAssignmentToggleLabels = () =>
   ({
@@ -44,81 +37,12 @@ type AssignmentStatus =
   | 'unassignmentSuccessful';
 
 type Props = {
-  task: Task;
-  user: CurrentUser;
-  onAssignmentError: () => void;
-};
-
-const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
-  const {id, name, processName, assignee, taskState} = task;
-  const {t} = useTranslation();
-
-  return (
-    <header
-      className={taskDetailsLayoutCommon.header}
-      title={t('taskDetailsHeader')}
-    >
-      <div className={taskDetailsLayoutCommon.headerLeftContainer}>
-        <span className={styles.taskName}>{name}</span>
-        <span className={styles.processName}>{processName}</span>
-      </div>
-      <div className={taskDetailsLayoutCommon.headerRightContainer}>
-        {taskState === 'COMPLETED' ? (
-          <span
-            className={styles.taskStatus}
-            data-testid="completion-label"
-            title="Completed by"
-          >
-            <Stack
-              className={styles.alignItemsCenter}
-              orientation="horizontal"
-              gap={2}
-            >
-              <CheckmarkFilled size={16} color="green" />
-              {assignee ? (
-                <>
-                  {t('taskDetailsTaskCompletedBy') + ' '}
-                  <span className={styles.taskAssignee} data-testid="assignee">
-                    <AssigneeTag
-                      currentUser={user}
-                      assignee={assignee}
-                      isShortFormat={true}
-                    />
-                  </span>
-                </>
-              ) : (
-                t('taskAssignmentStatusCompleted')
-              )}
-            </Stack>
-          </span>
-        ) : (
-          <span className={styles.taskAssignee} data-testid="assignee">
-            <AssigneeTag
-              currentUser={user}
-              assignee={assignee}
-              isShortFormat={false}
-            />
-          </span>
-        )}
-        {taskState === 'CREATED' && (
-          <span className={styles.assignButtonContainer}>
-            <AssignButton
-              id={id}
-              assignee={assignee}
-              onAssignmentError={onAssignmentError}
-            />
-          </span>
-        )}
-      </div>
-    </header>
-  );
-};
-
-const AssignButton: React.FC<{
   id: string;
   assignee: string | null;
   onAssignmentError: () => void;
-}> = ({id, assignee, onAssignmentError}) => {
+};
+
+const AssignButton: React.FC<Props> = ({id, assignee, onAssignmentError}) => {
   const isAssigned = assignee !== null;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
@@ -294,4 +218,4 @@ const AssignButton: React.FC<{
   );
 };
 
-export {Header};
+export {AssignButton};

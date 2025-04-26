@@ -22,6 +22,7 @@ import {useProcessDefinitionXml} from 'v2/api/useProcessDefinitionXml.query';
 import {useTask} from 'v2/api/useTask.query';
 import {useEffect} from 'react';
 import {notificationsStore} from 'common/notifications/notifications.store';
+import {TaskDetailsHeader} from 'common/tasks/details/TaskDetailsHeader';
 
 type OutletContext = {
   task: UserTask;
@@ -96,6 +97,14 @@ const TaskDetailsLayout: React.FC = () => {
     >
       <Section className={taskDetailsLayoutCommon.content} level={4}>
         <TurnOnNotificationPermission />
+        <TaskDetailsHeader
+          taskName={task.name ?? task.elementId}
+          processName={task.processName ?? task.processDefinitionId}
+          assignee={task.assignee ?? null}
+          taskState={task.state}
+          user={currentUser}
+          assignButton={null}
+        />
         <TabListNav label={t('taskDetailsNavLabel')} items={tabs} />
         <Outlet
           context={
