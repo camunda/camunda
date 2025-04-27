@@ -35,6 +35,8 @@ public final class AdHocSubProcessValidator implements ModelElementValidator<AdH
   public void validate(
       final AdHocSubProcess adHocSubProcess,
       final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(adHocSubProcess, validationResultCollector);
+
     final Collection<FlowElement> flowElements = adHocSubProcess.getFlowElements();
 
     if (flowElements.isEmpty()) {

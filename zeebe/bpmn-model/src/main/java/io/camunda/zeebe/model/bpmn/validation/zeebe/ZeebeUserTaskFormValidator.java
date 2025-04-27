@@ -29,6 +29,7 @@ public class ZeebeUserTaskFormValidator implements ModelElementValidator<ZeebeUs
   @Override
   public void validate(
       final ZeebeUserTaskForm element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     final String textContent = element.getTextContent();
 
     if (textContent == null || textContent.isEmpty()) {

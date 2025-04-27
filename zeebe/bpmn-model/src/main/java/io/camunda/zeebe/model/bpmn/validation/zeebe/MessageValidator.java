@@ -49,6 +49,7 @@ public class MessageValidator implements ModelElementValidator<Message> {
   @Override
   public void validate(
       final Message element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     if (isReferredByCatchEvent(element)
         || isReferredByReceiveTask(element)
         || isReferredByEventSubProcessStartEvent(element)) {

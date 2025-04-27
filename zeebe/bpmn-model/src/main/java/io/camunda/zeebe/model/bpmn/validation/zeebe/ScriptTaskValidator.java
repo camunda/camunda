@@ -34,6 +34,7 @@ public final class ScriptTaskValidator implements ModelElementValidator<ScriptTa
   @Override
   public void validate(
       final ScriptTask element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     if (!hasExactlyOneExtension(element)) {
       validationResultCollector.addError(

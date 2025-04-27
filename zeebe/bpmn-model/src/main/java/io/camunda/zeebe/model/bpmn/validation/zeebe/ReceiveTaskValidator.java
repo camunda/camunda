@@ -35,6 +35,7 @@ public class ReceiveTaskValidator implements ModelElementValidator<ReceiveTask> 
   @Override
   public void validate(
       final ReceiveTask element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     final Message message = element.getMessage();
     if (message == null) {
       validationResultCollector.addError(0, "Must reference a message");
