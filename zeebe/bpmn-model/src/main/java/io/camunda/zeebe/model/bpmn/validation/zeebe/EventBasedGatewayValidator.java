@@ -49,6 +49,7 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
   @Override
   public void validate(
       final EventBasedGateway element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     final Collection<SequenceFlow> outgoingSequenceFlows = element.getOutgoing();
 

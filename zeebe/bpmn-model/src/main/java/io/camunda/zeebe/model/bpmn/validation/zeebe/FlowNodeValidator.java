@@ -31,6 +31,7 @@ public class FlowNodeValidator implements ModelElementValidator<FlowNode> {
   @Override
   public void validate(
       final FlowNode element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     if (element instanceof ExclusiveGateway || element instanceof InclusiveGateway) {
       return;
     }
