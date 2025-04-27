@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
+import io.camunda.tasklist.entities.FlowNodeState;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
@@ -45,8 +46,21 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessInstanceZeebeRecordProcessorOpenSearch.class);
 
-  private static final Set<String> FLOW_NODE_STATES = new HashSet<>();
-  private static final Set<String> PROCESS_INSTANCE_STATES = new HashSet<>();
+  private static final Set<String> FLOW_NODE_STATES =
+      new HashSet<>() {
+        {
+          add(ELEMENT_ACTIVATING.name());
+          add(ELEMENT_COMPLETED.name());
+          add(ELEMENT_TERMINATED.name());
+        }
+      };
+  private static final Set<String> PROCESS_INSTANCE_STATES =
+      new HashSet<>() {
+        {
+          add(ELEMENT_COMPLETED.name());
+          add(ELEMENT_TERMINATED.name());
+        }
+      };
 
   private static final List<BpmnElementType> VARIABLE_SCOPE_TYPES =
       Arrays.asList(
@@ -55,12 +69,6 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
           BpmnElementType.EVENT_SUB_PROCESS,
           BpmnElementType.USER_TASK,
           BpmnElementType.MULTI_INSTANCE_BODY);
-
-  static {
-    FLOW_NODE_STATES.add(ELEMENT_ACTIVATING.name());
-    PROCESS_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());
-    PROCESS_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
-  }
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -104,6 +112,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
   private FlowNodeInstanceEntity createFlowNodeInstance(final Record record) {
     final ProcessInstanceRecordValueImpl recordValue =
         (ProcessInstanceRecordValueImpl) record.getValue();
+    final String intentStr = record.getIntent().name();
     final FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setKey(record.getKey());
@@ -116,6 +125,13 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
                 ? null
                 : recordValue.getBpmnElementType().name()));
     entity.setPosition(record.getPosition());
+    if (ELEMENT_ACTIVATING.name().equals(intentStr)) {
+      entity.setState(FlowNodeState.ACTIVE);
+    } else if (ELEMENT_COMPLETED.name().equals(intentStr)) {
+      entity.setState(FlowNodeState.COMPLETED);
+    } else if (ELEMENT_TERMINATED.name().equals(intentStr)) {
+      entity.setState(FlowNodeState.TERMINATED);
+    }
     return entity;
   }
 
