@@ -24,11 +24,13 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
+import io.camunda.tasklist.entities.FlowNodeState;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
@@ -73,6 +75,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -232,7 +235,11 @@ public class VariableStoreElasticSearch implements VariableStore {
 
     final TermsQueryBuilder processInstanceKeyQuery =
         termsQuery(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
+    final TermQueryBuilder flowNodeStateQuery =
+        termQuery(FlowNodeInstanceIndex.STATE, FlowNodeState.ACTIVE.name());
+
     queryBuilder.must(processInstanceKeyQuery);
+    queryBuilder.must(flowNodeStateQuery);
 
     final TermsQueryBuilder typeQuery =
         QueryBuilders.termsQuery(
