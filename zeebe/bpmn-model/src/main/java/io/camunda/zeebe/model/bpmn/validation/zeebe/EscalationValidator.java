@@ -39,6 +39,7 @@ public class EscalationValidator implements ModelElementValidator<Escalation> {
   @Override
   public void validate(
       final Escalation element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     if (isReferredByThrowEvent(element)) {
       validateEscalationCode(element, validationResultCollector);
     }

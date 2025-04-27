@@ -15,24 +15,15 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
-import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
-import org.camunda.bpm.model.xml.validation.ModelElementValidator;
+import io.camunda.zeebe.model.bpmn.instance.IdentifiableBpmnElement;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class LinkEventDefinitionValidator implements ModelElementValidator<LinkEventDefinition> {
+public class IdentifiableBpmnElementValidator {
 
-  @Override
-  public Class<LinkEventDefinition> getElementType() {
-    return LinkEventDefinition.class;
-  }
-
-  @Override
-  public void validate(
-      final LinkEventDefinition element,
-      final ValidationResultCollector validationResultCollector) {
-    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
-    if (element.getName() == null || element.getName().isEmpty()) {
-      validationResultCollector.addError(0, "Link name must be present and not empty.");
+  public static <T extends IdentifiableBpmnElement> void validate(
+      final T element, final ValidationResultCollector validationResultCollector) {
+    if (element.getId() == null || element.getId().isEmpty()) {
+      validationResultCollector.addError(0, "Element id must be present and not empty.");
     }
   }
 }

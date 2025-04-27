@@ -16,23 +16,24 @@
 
 package io.camunda.zeebe.model.bpmn.instance;
 
-import io.camunda.zeebe.model.bpmn.instance.di.DiagramElement;
-import java.util.Collection;
-
 /**
- * The BPMN baseElement element
+ * Represents a BPMN model element that has a unique identifier.
  *
- * @author Daniel Meyer
+ * @author Giampaolo Orru
  */
-public interface BaseElement extends IdentifiableBpmnElement {
+public interface IdentifiableBpmnElement extends BpmnModelElementInstance {
 
-  Collection<Documentation> getDocumentations();
+  /**
+   * Gets the id of this BPMN element.
+   *
+   * @return the element's unique identifier
+   */
+  String getId();
 
-  ExtensionElements getExtensionElements();
-
-  void setExtensionElements(ExtensionElements extensionElements);
-
-  <T extends BpmnModelElementInstance> T getSingleExtensionElement(Class<T> type);
-
-  DiagramElement getDiagramElement();
+  /**
+   * Sets the id for this BPMN element.
+   *
+   * @param id the unique identifier to set
+   */
+  void setId(String id);
 }

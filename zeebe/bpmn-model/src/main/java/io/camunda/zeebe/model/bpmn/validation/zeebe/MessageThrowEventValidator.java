@@ -38,6 +38,7 @@ public class MessageThrowEventValidator implements ModelElementValidator<ThrowEv
   @Override
   public void validate(
       final ThrowEvent element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     if (isMessageThrowEvent(element)) {
       final MessageEventDefinition messageEventDefinition = getEventDefinition(element);
@@ -75,7 +76,7 @@ public class MessageThrowEventValidator implements ModelElementValidator<ThrowEv
   }
 
   public <T extends BpmnModelElementInstance> Collection<T> getExtensionElementsByType(
-      final ExtensionElements extensionElements, Class<T> type) {
+      final ExtensionElements extensionElements, final Class<T> type) {
     if (extensionElements == null) {
       return Collections.emptyList();
     }

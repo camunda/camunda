@@ -36,6 +36,7 @@ public class IntermediateThrowEventValidator
   public void validate(
       final IntermediateThrowEvent element,
       final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     final Optional<CompensateEventDefinition> compensateEventDefinitionOpt =
         getEventDefinition(element);

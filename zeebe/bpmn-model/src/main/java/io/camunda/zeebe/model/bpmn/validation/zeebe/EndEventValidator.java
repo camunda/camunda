@@ -53,6 +53,7 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
   @Override
   public void validate(
       final EndEvent element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     if (!element.getOutgoing().isEmpty()) {
       validationResultCollector.addError(

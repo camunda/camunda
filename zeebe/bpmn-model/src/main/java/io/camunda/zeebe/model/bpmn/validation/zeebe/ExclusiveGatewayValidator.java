@@ -30,6 +30,7 @@ public class ExclusiveGatewayValidator implements ModelElementValidator<Exclusiv
   @Override
   public void validate(
       final ExclusiveGateway element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     final SequenceFlow defaultFlow = element.getDefault();
 

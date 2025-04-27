@@ -33,6 +33,7 @@ public class MessageEventDefinitionValidator
   public void validate(
       final MessageEventDefinition element,
       final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     if (!isMessageThrowEvent(element) && element.getMessage() == null) {
       validationResultCollector.addError(0, "Must reference a message");

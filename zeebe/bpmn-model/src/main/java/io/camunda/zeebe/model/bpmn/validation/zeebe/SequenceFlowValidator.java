@@ -32,6 +32,7 @@ public class SequenceFlowValidator implements ModelElementValidator<SequenceFlow
   @Override
   public void validate(
       final SequenceFlow element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     if (element.getSource() instanceof ExclusiveGateway) {
       final ExclusiveGateway gateway = (ExclusiveGateway) element.getSource();

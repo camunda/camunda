@@ -34,6 +34,7 @@ public final class BusinessRuleTaskValidator implements ModelElementValidator<Bu
   @Override
   public void validate(
       final BusinessRuleTask element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     if (!hasExactlyOneExtension(element)) {
       validationResultCollector.addError(
