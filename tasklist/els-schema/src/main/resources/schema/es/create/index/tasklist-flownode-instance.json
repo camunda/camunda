@@ -25,7 +25,10 @@
 			},
 			"tenantId": {
 				"type": "keyword"
-			}
+			},
+      "state": {
+        "type": "keyword"
+      }
 		}
 	}
 }
