@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.toList;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
+import io.camunda.tasklist.entities.FlowNodeState;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
@@ -259,6 +260,11 @@ public class VariableStoreOpenSearch implements VariableStore {
                                 .map(FieldValue::of)
                                 .collect(Collectors.toList()))));
 
+    final Query.Builder stateQuery = new Query.Builder();
+    stateQuery.term(
+        t ->
+            t.field(FlowNodeInstanceIndex.STATE).value(FieldValue.of(FlowNodeState.ACTIVE.name())));
+
     final Query.Builder typeQuery = new Query.Builder();
     typeQuery.terms(
         terms ->
@@ -277,7 +283,8 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     final Query.Builder combinedQuery = new Query.Builder();
     combinedQuery.constantScore(
-        cs -> cs.filter(OpenSearchUtil.joinWithAnd(processInstanceKeyQuery, typeQuery)));
+        cs ->
+            cs.filter(OpenSearchUtil.joinWithAnd(processInstanceKeyQuery, typeQuery, stateQuery)));
 
     final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
     searchRequestBuilder
