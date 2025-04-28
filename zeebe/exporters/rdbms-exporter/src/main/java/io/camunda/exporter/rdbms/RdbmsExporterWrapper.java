@@ -44,6 +44,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import java.time.Duration;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
@@ -52,10 +53,11 @@ public class RdbmsExporterWrapper implements Exporter {
   /** The partition on which all process deployments are published */
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
+  public static final String NAMESPACE = "zeebe.rdbms.exporter.cache";
   private static final int DEFAULT_FLUSH_INTERVAL = 500;
   private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
   private static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
-
+  private static final long DEFAULT_MAX_CACHE_SIZE = 10_000;
   private final RdbmsService rdbmsService;
 
   private RdbmsExporter exporter;
@@ -90,7 +92,9 @@ public class RdbmsExporterWrapper implements Exporter {
 
     processCache =
         new ExporterEntityCache<>(
-            new RdbmsProcessCacheLoader(rdbmsService.getProcessDefinitionReader()));
+            readMaxCacheSize(context),
+            new RdbmsProcessCacheLoader(rdbmsService.getProcessDefinitionReader()),
+            new CaffeineCacheStatsCounter(NAMESPACE, "process", context.getMeterRegistry()));
 
     createHandlers(partitionId, rdbmsWriter, builder);
     createBatchOperationHandlers(rdbmsWriter, builder);
@@ -165,6 +169,19 @@ public class RdbmsExporterWrapper implements Exporter {
     } else {
       return defaultValue;
     }
+  }
+
+  private long readLong(final Context context, final String property, final long defaultValue) {
+    final var arguments = context.getConfiguration().getArguments();
+    if (arguments != null && arguments.containsKey(property)) {
+      return (Long) arguments.get(property);
+    } else {
+      return defaultValue;
+    }
+  }
+
+  private long readMaxCacheSize(final Context context) {
+    return readLong(context, "maxCacheSize", DEFAULT_MAX_CACHE_SIZE);
   }
 
   private void createHandlers(

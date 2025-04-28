@@ -10,17 +10,21 @@ package io.camunda.exporter.rdbms.cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import java.util.Optional;
 
 public class ExporterEntityCache<K, T> {
 
-  private static final int DEFAULT_MAX_CACHE_SIZE = 10000;
   private final LoadingCache<K, T> cache;
 
-  public ExporterEntityCache(final CacheLoader<K, T> loader) {
+  public ExporterEntityCache(
+      final long maxCacheSize,
+      final CacheLoader<K, T> loader,
+      final CaffeineCacheStatsCounter statsCounter) {
     cache =
         Caffeine.newBuilder()
-            .maximumSize(DEFAULT_MAX_CACHE_SIZE)
+            .maximumSize(maxCacheSize)
+            .recordStats(() -> statsCounter)
             .build(
                 k -> {
                   try {
