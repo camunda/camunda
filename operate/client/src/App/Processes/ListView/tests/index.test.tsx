@@ -47,6 +47,11 @@ jest.mock('modules/stores/notifications', () => ({
   },
 }));
 
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED: false,
+}));
+
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {

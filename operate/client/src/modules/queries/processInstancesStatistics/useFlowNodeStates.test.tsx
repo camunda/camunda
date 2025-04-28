@@ -55,8 +55,8 @@ describe('useProcessInstancesFlowNodeStates', () => {
       {flowNodeId: 'task1', count: 5, flowNodeState: 'active'},
       {flowNodeId: 'task1', count: 1, flowNodeState: 'incidents'},
       {flowNodeId: 'task1', count: 2, flowNodeState: 'canceled'},
-      {flowNodeId: 'task1', count: 3, flowNodeState: 'completedEndEvents'},
-      {flowNodeId: 'task2', count: 4, flowNodeState: 'completedEndEvents'},
+      {flowNodeId: 'task1', count: 3, flowNodeState: 'completed'},
+      {flowNodeId: 'task2', count: 4, flowNodeState: 'completed'},
     ];
 
     mockFetchProcessInstancesStatistics().withSuccess(mockData);
