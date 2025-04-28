@@ -12,12 +12,20 @@ import {GetProcessSequenceFlowsResponseBody} from '@vzeta/camunda-api-zod-schema
 import {RequestError} from 'modules/request';
 
 function getQueryKey(processInstanceKey?: string) {
-  return ['ProcessSequenceFlows', processInstanceKey];
+  return ['processSequenceFlows', processInstanceKey];
 }
+
+const processedSequenceFlowsParser = (
+  sequenceFlowsResponse: GetProcessSequenceFlowsResponseBody,
+) => {
+  return sequenceFlowsResponse.items
+    .map((sequenceFlow) => sequenceFlow.sequenceFlowKey)
+    .filter((value, index, self) => self.indexOf(value) === index);
+};
 
 function useProcessSequenceFlows(
   processInstanceKey?: string,
-): UseQueryResult<GetProcessSequenceFlowsResponseBody, RequestError> {
+): UseQueryResult<string[], RequestError> {
   return useQuery({
     queryKey: getQueryKey(processInstanceKey),
     queryFn: !!processInstanceKey
@@ -32,6 +40,7 @@ function useProcessSequenceFlows(
           throw error;
         }
       : skipToken,
+    select: processedSequenceFlowsParser,
   });
 }
 

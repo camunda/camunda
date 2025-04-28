@@ -13,7 +13,7 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {mockSequenceFlows, mockIncidents} from '../index.setup';
+import {mockSequenceFlowsV2, mockIncidents} from '../index.setup';
 import {TopPanel} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -25,7 +25,6 @@ import {
 } from 'modules/mocks/metadata';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenceFlows';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
@@ -38,6 +37,7 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -99,7 +99,7 @@ describe('TopPanel', () => {
       createInstance({id: 'instance_id', state: 'INCIDENT'}),
     );
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
-    mockFetchSequenceFlows().withSuccess(mockSequenceFlows);
+    mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
