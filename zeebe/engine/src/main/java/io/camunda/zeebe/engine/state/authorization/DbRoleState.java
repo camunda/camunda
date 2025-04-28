@@ -48,7 +48,7 @@ public class DbRoleState implements MutableRoleState {
 
   @Override
   public void delete(final RoleRecord roleRecord) {
-    roleId.wrapString(String.valueOf(roleRecord.getRoleKey()));
+    roleId.wrapString(roleRecord.getRoleId());
     roleColumnFamily.deleteExisting(roleId);
   }
 
