@@ -652,13 +652,11 @@ public final class ProcessingStateMachine {
         retryFuture,
         (bool, throwable) -> {
           if (throwable != null) {
-            LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
-            onError(
-                throwable,
-                () -> {
-                  errorHandlingInTransaction(throwable);
-                  updateState();
-                });
+            // Log entries were written already, but committing state changes failed with an
+            // unexpected error not handled by `updateStateRetryStrategy`. At this point,
+            // log and state have diverged, and we need to bail out.
+            // This will bubble up to `StreamProcessor#onFailure` and result in a dead partition.
+            throw new UncommittedStateException(throwable);
           } else {
             scheduledCommandCache.remove(metadata.getIntent(), currentRecord.getKey());
             executeSideEffects();
