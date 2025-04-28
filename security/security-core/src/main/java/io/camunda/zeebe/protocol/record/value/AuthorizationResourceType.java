@@ -18,7 +18,6 @@ public enum AuthorizationResourceType {
   MAPPING_RULE(
       PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   MESSAGE(PermissionType.CREATE, PermissionType.READ),
-  BATCH(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE),
   APPLICATION(PermissionType.ACCESS),
   SYSTEM(PermissionType.READ, PermissionType.UPDATE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
@@ -47,6 +46,18 @@ public enum AuthorizationResourceType {
   GROUP(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   ROLE(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
+  BATCH_OPERATION(
+      PermissionType.CREATE,
+      PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE,
+      PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE,
+      PermissionType.CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE,
+      PermissionType.CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE,
+      PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT,
+      PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
+      PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
+      PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
+      PermissionType.UPDATE,
+      PermissionType.READ),
   UNSPECIFIED();
 
   private final Set<PermissionType> supportedPermissionTypes;
