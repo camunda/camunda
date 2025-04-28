@@ -137,14 +137,6 @@ class FlowNodeSelection {
     );
   }
 
-  get isPlaceholderSelected() {
-    return (
-      this.state.selection?.isPlaceholder ||
-      (!this.hasRunningOrFinishedTokens &&
-        this.newTokenCountForSelectedNode === 1)
-    );
-  }
-
   /*
    * DEPRECATED: The `flowNodeSelectionStore.selectedRunningInstanceCount` is being deprecated and replaced with
    * utility functions and hooks in `flowNodeSelection.ts` as part of the Operate v2 migration.
@@ -194,24 +186,6 @@ class FlowNodeSelection {
       processInstanceDetailsStatisticsStore.state.statistics.some(
         ({activityId}) => activityId === currentFlowNodeSelection.flowNodeId,
       )
-    );
-  }
-
-  get newTokenCountForSelectedNode() {
-    const currentFlowNodeSelection = this.state.selection;
-
-    const flowNodeId = currentFlowNodeSelection?.flowNodeId;
-    if (flowNodeId === undefined) {
-      return 0;
-    }
-
-    return (
-      (modificationsStore.modificationsByFlowNode[flowNodeId]?.newTokens ?? 0) +
-      modificationsStore.flowNodeModifications.filter(
-        (modification) =>
-          modification.operation !== 'CANCEL_TOKEN' &&
-          Object.keys(modification.parentScopeIds).includes(flowNodeId),
-      ).length
     );
   }
 
