@@ -37,8 +37,6 @@ import org.slf4j.LoggerFactory;
 public class ListViewProcessInstanceFromProcessInstanceHandler
     implements ExportHandler<ProcessInstanceForListViewEntity, ProcessInstanceRecordValue> {
 
-  protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
-
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewProcessInstanceFromProcessInstanceHandler.class);
 
@@ -99,6 +97,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     piEntity
         .setId(String.valueOf(recordValue.getProcessInstanceKey()))
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
+        .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey())
         .setKey(recordValue.getProcessInstanceKey())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPartitionId(record.getPartitionId())
@@ -112,8 +112,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
 
     final OffsetDateTime timestamp =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
-    final boolean isRootProcessInstance =
-        recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
     if (intent.equals(ELEMENT_COMPLETED) || intent.equals(ELEMENT_TERMINATED)) {
       incrementFinishedCount();
       piEntity.setEndDate(timestamp);
@@ -134,12 +132,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       piEntity.setTreePath(treePath.toString()).setState(ProcessInstanceState.ACTIVE);
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
-    }
-    // call activity related fields
-    if (!isRootProcessInstance) {
-      piEntity
-          .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
-          .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
     }
   }
 
