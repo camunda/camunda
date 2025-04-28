@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Button,
@@ -16,7 +16,7 @@ import {
   TextInput,
 } from "@carbon/react";
 import useTranslate from "src/utility/localization";
-import { login } from "src/utility/auth";
+import { disableSession, isLoggedIn, login } from "src/utility/auth";
 import { getCopyrightNoticeText } from "src/utility/copyright.ts";
 import CamundaLogo from "src/assets/images/camunda.svg";
 import { useLicense } from "src/utility/license.ts";
@@ -160,6 +160,12 @@ export const LoginPage: React.FC = () => {
   const { t, Translate } = useTranslate();
   const location = useLocation();
   const license = useLicense();
+
+  useEffect(() => {
+    if (isLoggedIn()) {
+      disableSession();
+    }
+  });
 
   const redirectUrl = getRedirectUrl(location.search);
   const onSuccess = useCallback(() => {
