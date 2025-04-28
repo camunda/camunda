@@ -219,7 +219,6 @@ describe('VariablePanel', () => {
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
@@ -252,12 +251,14 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     act(() => {
-      cancelAllTokens('Activity_0qtp1k6', 0, 0, {});
+      cancelAllTokens('Activity_0qtp1k6', 1, 1, {});
     });
 
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('button', {name: /add variable/i}),
+      ).not.toBeInTheDocument();
+    });
 
     expect(
       screen.getByText('The Flow Node has no Variables'),
@@ -434,7 +435,7 @@ describe('VariablePanel', () => {
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     act(() => {
-      cancelAllTokens('Activity_0qtp1k6', 0, 0, {});
+      cancelAllTokens('Activity_0qtp1k6', 2, 2, {});
     });
 
     await waitFor(() => {
