@@ -7,7 +7,9 @@ services:
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
+      # Disable SVE (Scalable Vector Extension) for Java on M4+ machines with "-XX:UseSVE=0"
+      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m -XX:UseSVE=0"
+      - "CLI_JAVA_OPTS=-XX:UseSVE=0"
       - path.repo=/usr/local/els-snapshots
       - action.destructive_requires_name=false
     ulimits:

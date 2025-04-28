@@ -123,6 +123,7 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
           buildTermQuery(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
       queryBuilders.add(buildTermQuery(ProcessDefinition.TENANT_ID, filter.getTenantId()));
       queryBuilders.add(buildTermQuery(ProcessDefinition.VERSION, filter.getVersion()));
+      queryBuilders.add(buildTermQuery(ProcessDefinition.VERSION_TAG, filter.getVersionTag()));
       queryBuilders.add(buildTermQuery(ProcessDefinition.KEY, filter.getKey()));
       searchSourceBuilder.query(
           ElasticsearchUtil.joinWithAnd(queryBuilders.toArray(new QueryBuilder[] {})));
