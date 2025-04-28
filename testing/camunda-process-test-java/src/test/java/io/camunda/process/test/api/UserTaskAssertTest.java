@@ -28,6 +28,7 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -345,6 +346,72 @@ public class UserTaskAssertTest {
   }
 
   @Nested
+  public class Name {
+    private static final String NAME = "name";
+
+    @Test
+    public void hasName() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .name(NAME))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName(NAME)).hasName(NAME);
+    }
+
+    @Test
+    public void hasNameWithMultiple() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Arrays.asList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("b")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("c")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .name("other")),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .name(NAME))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName(NAME)).hasName(NAME);
+    }
+
+    @Test
+    public void hasNameFailureMessage() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name(NAME)
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED))));
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> assertThat(UserTaskSelectors.byTaskName(NAME)).hasName("other_name"))
+          .hasMessage("Expected [name] to have name other_name, but was name");
+    }
+  }
+
+  @Nested
   public class Assignee {
     private static final String ASSIGNEE = "tester";
 
@@ -410,6 +477,414 @@ public class UserTaskAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE))
           .hasMessage("Expected [a] to have assignee tester, but was other");
+    }
+  }
+
+  @Nested
+  public class DueDate {
+    private static final String DUE_DATE = "2025-05-01T10:00:00.000Z";
+
+    @Test
+    public void hasDueDate() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .dueDate(DUE_DATE))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE);
+    }
+
+    @Test
+    public void hasDueDateWithMultiple() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Arrays.asList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("b")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("c")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .dueDate("2025-04-30T10:00:00.000Z")),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .dueDate(DUE_DATE))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE);
+    }
+
+    @Test
+    public void hasDueDateFailureMessage() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .dueDate("2025-04-30T10:00:00.000Z"))));
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE))
+          .hasMessage(
+              "Expected [a] to have due date 2025-05-01T10:00:00.000Z, but was 2025-04-30T10:00:00.000Z");
+    }
+  }
+
+  @Nested
+  public class CompletionDate {
+    private static final String COMPLETION_DATE = "2025-05-01T10:00:00.000Z";
+
+    @Test
+    public void hasCompletionDate() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .completionDate(COMPLETION_DATE))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE);
+    }
+
+    @Test
+    public void hasCompletionDateWithMultiple() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Arrays.asList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("b")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("c")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .completionDate("2025-04-30T10:00:00.000Z")),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .completionDate(COMPLETION_DATE))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE);
+    }
+
+    @Test
+    public void hasCompletionDateFailureMessage() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .completionDate("2025-04-30T10:00:00.000Z"))));
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  assertThat(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE))
+          .hasMessage(
+              "Expected [a] to have completion date 2025-05-01T10:00:00.000Z, but was 2025-04-30T10:00:00.000Z");
+    }
+  }
+
+  @Nested
+  public class FollowUpDate {
+    private static final String FOLLOW_UP_DATE = "2025-05-01T10:00:00.000Z";
+
+    @Test
+    public void hasFollowUpDate() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .followUpDate(FOLLOW_UP_DATE))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE);
+    }
+
+    @Test
+    public void hasFollowUpDateWithMultiple() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Arrays.asList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("b")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("c")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .followUpDate("2025-04-30T10:00:00.000Z")),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .followUpDate(FOLLOW_UP_DATE))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE);
+    }
+
+    @Test
+    public void hasFollowUpDateFailureMessage() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .followUpDate("2025-04-30T10:00:00.000Z"))));
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE))
+          .hasMessage(
+              "Expected [a] to have follow-up date 2025-05-01T10:00:00.000Z, but was 2025-04-30T10:00:00.000Z");
+    }
+  }
+
+  @Nested
+  public class CreationDate {
+    private static final String CREATION_DATE = "2025-05-01T10:00:00.000Z";
+
+    @Test
+    public void hasCreationDate() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .creationDate(CREATION_DATE))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE);
+    }
+
+    @Test
+    public void hasCreationDateWithMultiple() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Arrays.asList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("b")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("c")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .creationDate("2025-04-30T10:00:00.000Z")),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .creationDate(CREATION_DATE))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE);
+    }
+
+    @Test
+    public void hasCreationDateFailureMessage() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .creationDate("2025-04-30T10:00:00.000Z"))));
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE))
+          .hasMessage(
+              "Expected [a] to have creation date 2025-05-01T10:00:00.000Z, but was 2025-04-30T10:00:00.000Z");
+    }
+  }
+
+  @Nested
+  public class CandidateGroups {
+    private static final String CANDIDATE_GROUP = "engineering";
+    private final List<String> candidateGroups = Arrays.asList("engineering", "management");
+
+    @Test
+    public void hasCandidateGroup() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .candidateGroups(candidateGroups))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroup(CANDIDATE_GROUP);
+    }
+
+    @Test
+    public void hasCandidateGroups() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .candidateGroups(candidateGroups))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroups(candidateGroups);
+    }
+
+    @Test
+    public void hasCandidateGroupsAllowsSubset() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .candidateGroups(
+                              Arrays.asList("hr", "engineering", "management", "legal")))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroups(candidateGroups);
+    }
+
+    @Test
+    public void hasCandidateGroupWithMultiple() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Arrays.asList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("b")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("c")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .candidateGroups(Collections.singletonList("marketing"))),
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .candidateGroups(candidateGroups))));
+
+      // then
+      assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroup(CANDIDATE_GROUP);
+    }
+
+    @Test
+    public void hasCandidateGroupFailureMessage() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .candidateGroups(candidateGroups))));
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroup("foo"))
+          .hasMessage(
+              "Expected [a] to have candidate group 'foo', but was [engineering, management]");
+    }
+
+    @Test
+    public void hasCandidateGroupsFailureMessage() {
+      // when
+      when(camundaDataSource.findUserTasks(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  new UserTaskImpl(
+                      new UserTaskResult()
+                          .name("a")
+                          .elementInstanceKey("1")
+                          .state(StateEnum.CREATED)
+                          .candidateGroups(Collections.singletonList("marketing")))));
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  assertThat(UserTaskSelectors.byTaskName("a")).hasCandidateGroups(candidateGroups))
+          .hasMessage(
+              "Expected [a] to have candidate groups [engineering, management], but was [marketing]");
     }
   }
 }

@@ -23,6 +23,7 @@ import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.AbstractAssert;
@@ -103,6 +104,19 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
   }
 
   @Override
+  public UserTaskAssert hasName(final String name) {
+    final UserTask userTask = awaitUserTask();
+
+    assertThat(userTask.getName().trim())
+        .withFailMessage(
+            "Expected [%s] to have name %s, but was %s",
+            actual.describe(), name, userTask.getName())
+        .isEqualTo(name);
+
+    return this;
+  }
+
+  @Override
   public UserTaskAssert hasProcessInstanceKey(final long processInstanceKey) {
     final UserTask userTask = awaitUserTask();
 
@@ -111,6 +125,84 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
             "Expected [%s] to have processInstanceKey %d, but was %d",
             actual.describe(), processInstanceKey, userTask.getProcessInstanceKey())
         .isEqualTo(processInstanceKey);
+
+    return this;
+  }
+
+  @Override
+  public UserTaskAssert hasDueDate(final String dueDate) {
+    final UserTask userTask = awaitUserTask();
+
+    assertThat(userTask.getDueDate())
+        .withFailMessage(
+            "Expected [%s] to have due date %s, but was %s",
+            actual.describe(), dueDate, userTask.getDueDate())
+        .isEqualTo(dueDate);
+
+    return this;
+  }
+
+  @Override
+  public UserTaskAssert hasCompletionDate(final String completionDate) {
+    final UserTask userTask = awaitUserTask();
+
+    assertThat(userTask.getCompletionDate())
+        .withFailMessage(
+            "Expected [%s] to have completion date %s, but was %s",
+            actual.describe(), completionDate, userTask.getCompletionDate())
+        .isEqualTo(completionDate);
+
+    return this;
+  }
+
+  @Override
+  public UserTaskAssert hasFollowUpDate(final String followUpDate) {
+    final UserTask userTask = awaitUserTask();
+
+    assertThat(userTask.getFollowUpDate())
+        .withFailMessage(
+            "Expected [%s] to have follow-up date %s, but was %s",
+            actual.describe(), followUpDate, userTask.getFollowUpDate())
+        .isEqualTo(followUpDate);
+
+    return this;
+  }
+
+  @Override
+  public UserTaskAssert hasCreationDate(final String creationDate) {
+    final UserTask userTask = awaitUserTask();
+
+    assertThat(userTask.getCreationDate())
+        .withFailMessage(
+            "Expected [%s] to have creation date %s, but was %s",
+            actual.describe(), creationDate, userTask.getCreationDate())
+        .isEqualTo(creationDate);
+
+    return this;
+  }
+
+  @Override
+  public UserTaskAssert hasCandidateGroup(final String candidateGroup) {
+    final UserTask userTask = awaitUserTask();
+
+    assertThat(userTask.getCandidateGroups())
+        .withFailMessage(
+            "Expected [%s] to have candidate group '%s', but was %s",
+            actual.describe(), candidateGroup, userTask.getCandidateGroups())
+        .contains(candidateGroup);
+
+    return this;
+  }
+
+  @Override
+  public UserTaskAssert hasCandidateGroups(final List<String> candidateGroups) {
+    final UserTask userTask = awaitUserTask();
+
+    assertThat(userTask.getCandidateGroups())
+        .withFailMessage(
+            "Expected [%s] to have candidate groups %s, but was %s",
+            actual.describe(), candidateGroups, userTask.getCandidateGroups())
+        .containsAll(candidateGroups);
 
     return this;
   }

@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import java.util.List;
+
 /** The assertion object to verify a user task. */
 public interface UserTaskAssert {
   /**
@@ -82,10 +84,66 @@ public interface UserTaskAssert {
   UserTaskAssert hasElementId(final String elementId);
 
   /**
+   * Verifies that the user task has the expected name
+   *
+   * @param name the name of the user task
+   * @return the assertion object
+   */
+  UserTaskAssert hasName(final String name);
+
+  /**
    * Verifies that the user task has the expected process instance key.
    *
    * @param processInstanceKey the process instance key
    * @return the assertion object
    */
   UserTaskAssert hasProcessInstanceKey(final long processInstanceKey);
+
+  /**
+   * Verifies that the user task has the expected due date.
+   *
+   * @param dueDate the due date of the user task in ISO-8601 format
+   * @return the assertion object
+   */
+  UserTaskAssert hasDueDate(final String dueDate);
+
+  /**
+   * Verifies that the user task has the expected completion date.
+   *
+   * @param completionDate the completion date of the user task in ISO-8601 format
+   * @return the assertion object
+   */
+  UserTaskAssert hasCompletionDate(final String completionDate);
+
+  /**
+   * Verifies that the user task has the expected follow-up date.
+   *
+   * @param followUpDate the follow-up date of the user task in ISO-8601 format
+   * @return the assertion object
+   */
+  UserTaskAssert hasFollowUpDate(final String followUpDate);
+
+  /**
+   * Verifies that the user task has the expected creation date.
+   *
+   * @param creationDate the creation date of the user task in ISO-8601 format
+   * @return the assertion object
+   */
+  UserTaskAssert hasCreationDate(final String creationDate);
+
+  /**
+   * Verifies that the user task contains the expected candidate group.
+   *
+   * @param candidateGroup the candidate group to check for
+   * @return the assertion object
+   */
+  UserTaskAssert hasCandidateGroup(final String candidateGroup);
+
+  /**
+   * Verifies that the user task contains all the expected candidate groups.
+   *
+   * @param candidateGroups the list of candidate groups to check for
+   * @return the assertion object
+   */
+  UserTaskAssert hasCandidateGroups(final List<String> candidateGroups);
 }
