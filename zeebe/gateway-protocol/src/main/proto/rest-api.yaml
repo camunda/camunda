@@ -2704,10 +2704,10 @@ paths:
     post:
       tags:
         - Group
-      operationId: getGroupUsers
-      summary: Get group users (Work-in-Progress)
+      operationId: searchUsersForGroup
+      summary: Search group users (Work-in-Progress)
       description: |
-        Get users assigned to a group.
+        Search users assigned to a group.
 
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.

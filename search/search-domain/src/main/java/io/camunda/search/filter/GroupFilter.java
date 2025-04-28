@@ -21,12 +21,12 @@ public record GroupFilter(
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
-    EntityType memberType;
     private Long groupKey;
     private String groupId;
     private String name;
     private String description;
     private Set<String> memberIds;
+    private EntityType memberType;
 
     public Builder groupKey(final Long value) {
       groupKey = value;
