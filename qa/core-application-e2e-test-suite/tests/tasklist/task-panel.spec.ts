@@ -13,8 +13,8 @@ import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 
-test.beforeAll(async ({resetData}) => {
-  await resetData();
+test.beforeAll(async () => {
+  // await resetData();
   await deploy([
     './resources/usertask_to_be_assigned.bpmn',
     './resources/usertask_for_scrolling_1.bpmn',
@@ -34,9 +34,10 @@ test.beforeAll(async ({resetData}) => {
   await sleep(500);
 });
 
-// test.afterAll(async ({resetData}) => {
-//   await resetData();
-// });
+test.afterAll(async ({resetData}) => {
+  await resetData();
+  await sleep(2000);
+});
 
 test.describe('task panel page', () => {
   test.beforeEach(async ({page, taskListLoginPage}) => {

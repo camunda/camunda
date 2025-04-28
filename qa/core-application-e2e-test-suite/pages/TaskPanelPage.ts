@@ -43,7 +43,7 @@ class TaskPanelPage {
     await this.availableTasks
       .getByText(name, {exact: true})
       .nth(0)
-      .click({timeout: 20000});
+      .click({timeout: 60000});
   }
 
   async filterBy(

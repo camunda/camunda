@@ -28,18 +28,31 @@ export async function captureScreenshot(page: Page, testInfo: TestInfo) {
 
 export async function captureFailureVideo(page: Page, testInfo: TestInfo) {
   if (testInfo.status === 'failed') {
-    const videoFileName = `video-${randomUUID()}.webm`;
-    const videoPath = path.resolve(testInfo.outputDir, videoFileName);
     const video = page.video();
     if (video) {
-      await video.saveAs(videoPath);
+      // Playwright will automatically save the video; no need to call saveAs
       testInfo.annotations.push({
         type: 'testrail_attachment',
-        description: videoPath,
+        description: 'Video recorded for failed test',
       });
     }
   }
 }
+
+// export async function captureFailureVideo(page: Page, testInfo: TestInfo) {
+//   if (testInfo.status === 'failed') {
+//     const videoFileName = `video-${randomUUID()}.webm`;
+//     const videoPath = path.resolve(testInfo.outputDir, videoFileName);
+//     const video = page.video();
+//     if (video) {
+//       await video.saveAs(videoPath);
+//       testInfo.annotations.push({
+//         type: 'testrail_attachment',
+//         description: videoPath,
+//       });
+//     }
+//   }
+// }
 
 export function generateRandomStringAsync(length: number): Promise<string> {
   // Simulate an asynchronous operation (e.g., using setTimeout)

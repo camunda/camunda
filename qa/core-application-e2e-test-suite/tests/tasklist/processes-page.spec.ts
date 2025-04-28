@@ -13,8 +13,8 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
-test.beforeAll(async ({resetData}) => {
-  await resetData();
+test.beforeAll(async () => {
+  // await resetData();
   await deploy([
     './resources/user_process.bpmn',
     './resources/processWithStartNodeFormDeployed.bpmn',
@@ -22,10 +22,6 @@ test.beforeAll(async ({resetData}) => {
   ]);
   await sleep(2000);
 });
-
-// test.afterAll(async ({resetData}) => {
-//   await resetData();
-// });
 
 test.describe('process page', () => {
   test.beforeEach(async ({page, taskListLoginPage, taskPanelPage}) => {

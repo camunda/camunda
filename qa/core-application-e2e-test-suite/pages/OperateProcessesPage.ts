@@ -7,7 +7,7 @@
  */
 
 import {Page, Locator} from '@playwright/test';
-import {sleep} from 'utils/sleep';
+import {ensurePageLoaded} from 'utils/ensurePageLoaded';
 
 class OperateProcessesPage {
   private page: Page;
@@ -19,6 +19,8 @@ class OperateProcessesPage {
   readonly processPageHeading: Locator;
   readonly noMatchingInstancesMessage: Locator;
   readonly processFinishedInstancesCheckbox: Locator;
+  readonly processNameFilter: Locator;
+  readonly processInstanceLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -44,6 +46,12 @@ class OperateProcessesPage {
     this.processFinishedInstancesCheckbox = page
       .getByTestId('filter-finished-instances')
       .getByRole('checkbox');
+    this.processNameFilter = page.getByRole('combobox', {name: 'name'});
+    this.processInstanceLink = page
+      .getByRole('link', {
+        name: 'view instance',
+      })
+      .first();
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
@@ -66,27 +74,40 @@ class OperateProcessesPage {
     await this.processFinishedInstancesCheckbox.click({timeout: 90000});
   }
 
-  async clickProcessInstanceLink(processName: string): Promise<void> {
-    let retryCount = 0;
-    const maxRetries = 3;
-    while (retryCount < maxRetries) {
-      try {
-        await this.page
-          .locator('td:right-of(:text("' + processName + '"))')
-          .first()
-          .click({timeout: 90000});
-        return; // Exit the function if the click is successful
-      } catch {
-        // If process isn't found, reload the page and try again
-        retryCount++;
-        console.log(`Attempt ${retryCount} failed. Retrying...`);
-        await this.page.reload();
-        await sleep(10000);
-      }
-    }
-    throw new Error(
-      `Failed to click on process instance link after ${maxRetries} attempts.`,
-    );
+  // async clickProcessInstanceLink(processName: string): Promise<void> {
+  //   let retryCount = 0;
+  //   const maxRetries = 3;
+  //   while (retryCount < maxRetries) {
+  //     try {
+  //       await this.page
+  //         .locator('td:right-of(:text("' + processName + '"))')
+  //         .first()
+  //         .click({timeout: 90000});
+  //       return; // Exit the function if the click is successful
+  //     } catch {
+  //       // If process isn't found, reload the page and try again
+  //       retryCount++;
+  //       console.log(`Attempt ${retryCount} failed. Retrying...`);
+  //       await this.page.reload();
+  //       await sleep(10000);
+  //     }
+  //   }
+  //   throw new Error(
+  //     `Failed to click on process instance link after ${maxRetries} attempts.`,
+  //   );
+  // }
+
+  async filterByProcessName(name: string): Promise<void> {
+    await this.processNameFilter.click();
+    await this.processNameFilter.fill(name);
+    await this.page.keyboard.press('Enter');
+    // Wait for the page to stabilize or for a specific element to appear
+    await this.page.getByRole('heading', {name}).waitFor({state: 'visible'}); // Wait for a specific element to appear
+  }
+
+  async clickProcessInstanceLink(): Promise<void> {
+    await this.processInstanceLink.click();
+    await ensurePageLoaded(this.page);
   }
 }
 

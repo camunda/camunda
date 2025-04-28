@@ -14,6 +14,7 @@ import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
 test.beforeAll(async () => {
+  // await resetData();
   await deploy([
     './resources/Job_Worker_Process.bpmn',
     './resources/Variable_Process.bpmn',
@@ -23,6 +24,7 @@ test.beforeAll(async () => {
     './resources/Start_Form_Process.bpmn',
     './resources/Zeebe_Priority_User_Task_Process.bpmn',
   ]);
+  // await sleep(1000);
   await createInstances('Job_Worker_Process', 1, 1);
   await createInstances('Zeebe_User_Task_Process', 1, 1);
   await createInstances('Variable_Process', 1, 1, {
@@ -31,6 +33,8 @@ test.beforeAll(async () => {
   await createInstances('Form_User_Task', 1, 1);
   await createInstances('Start_Form_Process', 1, 1);
   await createInstances('Zeebe_Priority_User_Task_Process', 1, 1);
+
+  // await sleep(1000);
 });
 
 test.describe('HTO User Flow Tests', () => {
@@ -68,7 +72,8 @@ test.describe('HTO User Flow Tests', () => {
       await expect(operateHomePage.operateBanner).toBeVisible();
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessInstanceLink('Job_Worker_Process');
+      await operateProcessesPage.filterByProcessName('Job_Worker_Process');
+      await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.activeIconAssertion();
 
       await navigateToApp(page, 'tasklist');
@@ -85,9 +90,10 @@ test.describe('HTO User Flow Tests', () => {
 
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 120000});
       await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName('Job_Worker_Process');
       await operateProcessesPage.clickProcessCompletedCheckbox();
       await sleep(10000);
-      await operateProcessesPage.clickProcessInstanceLink('Job_Worker_Process');
+      await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.completedIconAssertion();
     });
   });
@@ -107,7 +113,8 @@ test.describe('HTO User Flow Tests', () => {
       await operateLoginPage.login('demo', 'demo');
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessInstanceLink('Variable_Process');
+      await operateProcessesPage.filterByProcessName('Variable_Process');
+      await operateProcessesPage.clickProcessInstanceLink();
 
       await operateProcessInstancePage.activeIconAssertion();
       await expect(page.getByText('"testValue"')).toBeVisible({
@@ -168,7 +175,8 @@ test.describe('HTO User Flow Tests', () => {
       await operateLoginPage.login('demo', 'demo');
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessInstanceLink('Form_User_Task');
+      await operateProcessesPage.filterByProcessName('Form_User_Task');
+      await operateProcessesPage.clickProcessInstanceLink();
 
       await operateProcessInstancePage.activeIconAssertion();
 
@@ -186,8 +194,10 @@ test.describe('HTO User Flow Tests', () => {
       await operateLoginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateProcessesPage.clickProcessActiveCheckbox();
       await sleep(1000);
-      await operateProcessesPage.clickProcessInstanceLink('Form_User_Task');
+      await operateProcessesPage.filterByProcessName('Form_User_Task');
+      await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.completedIconAssertion();
     });
   });
@@ -206,7 +216,8 @@ test.describe('HTO User Flow Tests', () => {
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.clickProcessCompletedCheckbox();
       await sleep(1000);
-      await operateProcessesPage.clickProcessInstanceLink('Start_Form_Process');
+      await operateProcessesPage.filterByProcessName('Start_Form_Process');
+      await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.completedIconAssertion();
     });
   });
@@ -266,9 +277,10 @@ test.describe('HTO User Flow Tests', () => {
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.clickProcessCompletedCheckbox();
       await sleep(1000);
-      await operateProcessesPage.clickProcessInstanceLink(
+      await operateProcessesPage.filterByProcessName(
         'Zeebe_Priority_User_Task_Process',
       );
+      await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.completedIconAssertion();
     });
   });
@@ -287,9 +299,8 @@ test.describe('HTO User Flow Tests', () => {
       await navigateToApp(page, 'operate');
       await operateLoginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessInstanceLink(
-        'Zeebe_User_Task_Process',
-      );
+      await operateProcessesPage.filterByProcessName('Zeebe_User_Task_Process');
+      await operateProcessesPage.clickProcessInstanceLink();
 
       await operateProcessInstancePage.activeIconAssertion();
 
@@ -309,9 +320,8 @@ test.describe('HTO User Flow Tests', () => {
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.clickProcessCompletedCheckbox();
       await sleep(1000);
-      await operateProcessesPage.clickProcessInstanceLink(
-        'Zeebe_User_Task_Process',
-      );
+      await operateProcessesPage.filterByProcessName('Zeebe_User_Task_Process');
+      await operateProcessesPage.clickProcessInstanceLink();
       await operateProcessInstancePage.completedIconAssertion();
     });
   });

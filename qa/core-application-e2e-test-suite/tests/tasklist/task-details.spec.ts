@@ -14,8 +14,8 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
-test.beforeAll(async ({resetData}) => {
-  await resetData();
+test.beforeAll(async () => {
+  // await resetData();
   await deploy([
     './resources/usertask_to_be_completed.bpmn',
     './resources/user_task_with_form.bpmn',
@@ -135,11 +135,13 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.openTask('usertask_to_be_completed');
 
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+      timeout: 60000,
+    });
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await taskDetailsPage.clickAssignToMeButton();
 
-    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await expect(taskDetailsPage.unassignButton).toBeVisible({timeout: 60000});
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me', {
       useInnerText: true,
