@@ -20,10 +20,10 @@ class TreePathParserTest {
     final String treePath = "PI_1/FN_1/FNI_1/PI_2/FN_3/FNI_3";
 
     // when
-    final List<String> result = TreePathParser.extractProcessInstanceKeys(treePath);
+    final List<Long> result = TreePathParser.extractProcessInstanceKeys(treePath);
 
     // then
-    assertThat(result).containsExactly("1", "2"); // Extracts all process instance keys in order
+    assertThat(result).containsExactly(1L, 2L); // Extracts all process instance keys in order
   }
 
   @Test
@@ -32,7 +32,7 @@ class TreePathParserTest {
     final String treePath = "FN_1/FNI_1/FN_3/FNI_3";
 
     // when
-    final List<String> result = TreePathParser.extractProcessInstanceKeys(treePath);
+    final List<Long> result = TreePathParser.extractProcessInstanceKeys(treePath);
 
     // then
     assertThat(result).isEmpty(); // No PI_x patterns present
@@ -44,10 +44,10 @@ class TreePathParserTest {
     final String treePath = "PI_123";
 
     // when
-    final List<String> result = TreePathParser.extractProcessInstanceKeys(treePath);
+    final List<Long> result = TreePathParser.extractProcessInstanceKeys(treePath);
 
     // then
-    assertThat(result).containsExactly("123"); // Only one process instance key
+    assertThat(result).containsExactly(123L); // Only one process instance key
   }
 
   @Test
@@ -56,7 +56,7 @@ class TreePathParserTest {
     final String treePath = "";
 
     // when
-    final List<String> result = TreePathParser.extractProcessInstanceKeys(treePath);
+    final List<Long> result = TreePathParser.extractProcessInstanceKeys(treePath);
 
     // then
     assertThat(result).isEmpty(); // No valid content in a tree path
