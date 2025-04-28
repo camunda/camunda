@@ -15,6 +15,7 @@
  */
 package io.camunda.spring.client.jobhandling;
 
+import io.camunda.client.api.command.CommandWithVariables;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
@@ -23,7 +24,6 @@ import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 public final class JobHandlingUtil {
 
@@ -41,23 +41,18 @@ public final class JobHandlingUtil {
     return resultProcessorStrategy.createProcessor(workerValue.getMethodInfo());
   }
 
-  public static <T> T applyVariables(
-      final Object variables,
-      final Function<Map<String, Object>, T> mapApplier,
-      final Function<String, T> stringApplier,
-      final Function<InputStream, T> inputStreamApplier,
-      final Function<Object, T> objectApplier,
-      final T onNull) {
+  public static <T extends CommandWithVariables<T>> T applyVariables(
+      final Object variables, final T command) {
     if (variables == null) {
-      return onNull;
+      return command;
     } else if (variables.getClass().isAssignableFrom(Map.class)) {
-      return mapApplier.apply((Map<String, Object>) variables);
+      return command.variables((Map<String, Object>) variables);
     } else if (variables.getClass().isAssignableFrom(String.class)) {
-      return stringApplier.apply((String) variables);
+      return command.variables((String) variables);
     } else if (variables.getClass().isAssignableFrom(InputStream.class)) {
-      return inputStreamApplier.apply((InputStream) variables);
+      return command.variables((InputStream) variables);
     } else {
-      return objectApplier.apply(variables);
+      return command.variables(variables);
     }
   }
 }

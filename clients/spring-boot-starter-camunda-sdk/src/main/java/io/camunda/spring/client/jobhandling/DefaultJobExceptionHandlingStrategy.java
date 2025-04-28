@@ -64,13 +64,7 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
             .newThrowErrorCommand(job.getKey())
             .errorCode(bpmnError.getErrorCode())
             .errorMessage(bpmnError.getErrorMessage());
-    return JobHandlingUtil.applyVariables(
-        bpmnError.getVariables(),
-        command::variables,
-        command::variables,
-        command::variables,
-        command::variables,
-        command);
+    return JobHandlingUtil.applyVariables(bpmnError.getVariables(), command);
   }
 
   private FinalCommandStep<FailJobResponse> createFailJobCommand(
@@ -88,12 +82,6 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
             .retries(retries)
             .errorMessage(message)
             .retryBackoff(backoff);
-    return JobHandlingUtil.applyVariables(
-        jobError.getVariables(),
-        command::variables,
-        command::variables,
-        command::variables,
-        command::variables,
-        command);
+    return JobHandlingUtil.applyVariables(jobError.getVariables(), command);
   }
 }

@@ -85,7 +85,7 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
     } catch (final Throwable t) {
       metricsRecorder.increase(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
-      if (t instanceof Exception e) {
+      if (t instanceof final Exception e) {
         jobExceptionHandlingStrategy.handleException(
             jobClient, job, e, cmd -> createCommandWrapper(cmd, job));
       } else {
@@ -111,12 +111,6 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
   private FinalCommandStep<CompleteJobResponse> createCompleteCommand(
       final JobClient jobClient, final ActivatedJob job, final Object result) {
     final CompleteJobCommandStep1 completeCommand = jobClient.newCompleteCommand(job.getKey());
-    return JobHandlingUtil.applyVariables(
-        result,
-        completeCommand::variables,
-        completeCommand::variables,
-        completeCommand::variables,
-        completeCommand::variables,
-        completeCommand);
+    return JobHandlingUtil.applyVariables(result, completeCommand);
   }
 }
