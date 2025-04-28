@@ -293,6 +293,40 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
+  void shouldUpdateEntityFromRootProcessEntity() {
+    // given
+    final long timestamp = new Date().getTime();
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withParentProcessInstanceKey(-1L)
+            .withParentElementInstanceKey(-1L)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withKey(111)
+                    .withIntent(ELEMENT_ACTIVATING)
+                    .withTimestamp(timestamp)
+                    .withPartitionId(3)
+                    .withPosition(55L)
+                    .withValue(processInstanceRecordValue));
+
+    // when
+    final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
+        new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
+
+    // then
+    assertThat(processInstanceForListViewEntity.getParentProcessInstanceKey())
+        .isEqualTo(processInstanceRecordValue.getParentProcessInstanceKey());
+    assertThat(processInstanceForListViewEntity.getParentFlowNodeInstanceKey())
+        .isEqualTo(processInstanceRecordValue.getParentElementInstanceKey());
+  }
+
+  @Test
   public void shouldUpdateTreePathFromRecordWithCallActivity() {
     // given
     final long processDefinitionKey1 = 999L;

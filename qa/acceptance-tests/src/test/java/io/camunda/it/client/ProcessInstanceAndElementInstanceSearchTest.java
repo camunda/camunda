@@ -220,6 +220,30 @@ public class ProcessInstanceAndElementInstanceSearchTest {
   }
 
   @Test
+  void shouldQueryAllProcessInstances() {
+    // when
+    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+
+    // then we have exactly PROCESS_INSTANCES.size + 1, since the one subprocess should also be
+    // there
+    assertThat(result.items().size()).isEqualTo(PROCESS_INSTANCES.size() + 1);
+  }
+
+  @Test
+  void shouldQueryRootProcessInstances() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.parentProcessInstanceKey(-1L))
+            .send()
+            .join();
+
+    // then we have exactly PROCESS_INSTANCES.size, since the one subprocess should not be there
+    assertThat(result.items().size()).isEqualTo(PROCESS_INSTANCES.size());
+  }
+
+  @Test
   void shouldQueryProcessInstancesByKeyFilterIn() {
     // given
     final List<Long> processInstanceKeys =
