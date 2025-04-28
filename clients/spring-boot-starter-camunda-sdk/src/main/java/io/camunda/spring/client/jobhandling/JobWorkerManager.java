@@ -21,7 +21,9 @@ import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.ResultProcessor;
 import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.spring.client.metrics.CamundaClientMetricsBridge;
 import io.camunda.spring.client.metrics.MetricsRecorder;
@@ -41,6 +43,7 @@ public class JobWorkerManager {
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
   private final BackoffSupplier backoffSupplier;
+  private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
 
   private List<JobWorker> openedWorkers = new ArrayList<>();
   private final List<JobWorkerValue> workerValues = new ArrayList<>();
@@ -50,15 +53,21 @@ public class JobWorkerManager {
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy,
-      final BackoffSupplier backoffSupplier) {
+      final BackoffSupplier backoffSupplier,
+      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
     this.backoffSupplier = backoffSupplier;
+    this.jobExceptionHandlingStrategy = jobExceptionHandlingStrategy;
   }
 
   public JobWorker openWorker(final CamundaClient client, final JobWorkerValue jobWorkerValue) {
+    final List<ParameterResolver> parameterResolvers =
+        JobHandlingUtil.createParameterResolvers(parameterResolverStrategy, jobWorkerValue);
+    final ResultProcessor resultProcessor =
+        JobHandlingUtil.createResultProcessor(resultProcessorStrategy, jobWorkerValue);
     return openWorker(
         client,
         jobWorkerValue,
@@ -66,8 +75,9 @@ public class JobWorkerManager {
             jobWorkerValue,
             commandExceptionHandlingStrategy,
             metricsRecorder,
-            parameterResolverStrategy,
-            resultProcessorStrategy));
+            parameterResolvers,
+            resultProcessor,
+            jobExceptionHandlingStrategy));
   }
 
   public JobWorker openWorker(

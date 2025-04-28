@@ -20,9 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.spring.common.exception.ZeebeBpmnError;
 import org.junit.jupiter.api.Test;
 
-public class CamundaBpmnErrorTest {
+public class BpmnErrorTest {
   @Test
   void shouldBeBackwardCompatible() {
-    assertThat(ZeebeBpmnError.class).isAssignableTo(CamundaBpmnError.class);
+    assertThat(ZeebeBpmnError.class).isAssignableTo(BpmnError.class);
+  }
+
+  @Test
+  void shouldUseRequiredArgsCtor() {
+    final BpmnError bpmnError = new BpmnError("code", "message");
+    assertThat(bpmnError.getErrorMessage()).isEqualTo("message");
+    assertThat(bpmnError.getErrorCode()).isEqualTo("code");
   }
 }

@@ -24,6 +24,8 @@ import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.spring.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
+import io.camunda.spring.client.jobhandling.DefaultJobExceptionHandlingStrategy;
+import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
@@ -89,18 +91,29 @@ public class CamundaClientAllAutoConfiguration {
   }
 
   @Bean
+  @ConditionalOnMissingBean
+  public JobExceptionHandlingStrategy jobExceptionHandlingStrategy(
+      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final MetricsRecorder metricsRecorder) {
+    return new DefaultJobExceptionHandlingStrategy(
+        commandExceptionHandlingStrategy, metricsRecorder);
+  }
+
+  @Bean
   public JobWorkerManager jobWorkerManager(
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy,
-      final BackoffSupplier backoffSupplier) {
+      final BackoffSupplier backoffSupplier,
+      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
     return new JobWorkerManager(
         commandExceptionHandlingStrategy,
         metricsRecorder,
         parameterResolverStrategy,
         resultProcessorStrategy,
-        backoffSupplier);
+        backoffSupplier,
+        jobExceptionHandlingStrategy);
   }
 
   @Bean

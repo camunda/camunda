@@ -67,16 +67,8 @@ public interface CreateProcessInstanceCommandStep1
 
   interface CreateProcessInstanceCommandStep3
       extends CommandWithTenantStep<CreateProcessInstanceCommandStep3>,
-          FinalCommandStep<ProcessInstanceEvent> {
-    /**
-     * Set the initial variables of the process instance.
-     *
-     * @param variables the variables JSON document as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    CreateProcessInstanceCommandStep3 variables(InputStream variables);
-
+          FinalCommandStep<ProcessInstanceEvent>,
+          CommandWithVariables<CreateProcessInstanceCommandStep3> {
     /**
      * Set the initial variables of the process instance.
      *
@@ -84,16 +76,8 @@ public interface CreateProcessInstanceCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     CreateProcessInstanceCommandStep3 variables(String variables);
-
-    /**
-     * Set the initial variables of the process instance.
-     *
-     * @param variables the variables document as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    CreateProcessInstanceCommandStep3 variables(Map<String, Object> variables);
 
     /**
      * Set the initial variables of the process instance.
@@ -102,7 +86,28 @@ public interface CreateProcessInstanceCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     CreateProcessInstanceCommandStep3 variables(Object variables);
+
+    /**
+     * Set the initial variables of the process instance.
+     *
+     * @param variables the variables JSON document as stream
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    CreateProcessInstanceCommandStep3 variables(InputStream variables);
+
+    /**
+     * Set the initial variables of the process instance.
+     *
+     * @param variables the variables document as map
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    CreateProcessInstanceCommandStep3 variables(Map<String, Object> variables);
 
     /**
      * Set a single initial variable of the process instance.
@@ -112,6 +117,7 @@ public interface CreateProcessInstanceCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     CreateProcessInstanceCommandStep3 variable(String key, Object value);
 
     /**

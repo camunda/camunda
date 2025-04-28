@@ -15,71 +15,43 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.response.CompleteUserTaskResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface CompleteUserTaskCommandStep1
-    extends FinalCommandStep<CompleteUserTaskResponse>,
-        CommandWithVariables<CompleteUserTaskCommandStep1> {
-
+public interface CommandWithVariables<T> {
   /**
-   * Set the custom action to complete the user task with.
-   *
-   * @param action the action value
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  CompleteUserTaskCommandStep1 action(String action);
-
-  /**
-   * Set the variables to complete the user task with.
-   *
    * @param variables the variables (JSON) as String
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  @Override
-  CompleteUserTaskCommandStep1 variables(String variables);
+  T variables(String variables);
 
   /**
-   * Set the variables to complete the user task with.
-   *
    * @param variables the variables as object
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  @Override
-  CompleteUserTaskCommandStep1 variables(Object variables);
+  T variables(Object variables);
 
   /**
-   * Set the variables to complete the user task with.
-   *
    * @param variables the variables (JSON) as stream
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  @Override
-  CompleteUserTaskCommandStep1 variables(InputStream variables);
+  T variables(InputStream variables);
 
   /**
-   * Set the variables to complete the user task with.
-   *
    * @param variables the variables as map
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  @Override
-  CompleteUserTaskCommandStep1 variables(Map<String, Object> variables);
+  T variables(Map<String, Object> variables);
 
   /**
-   * Set a single variable to complete the user task with.
-   *
    * @param key the key of the variable as string
    * @param value the value of the variable as object
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  @Override
-  CompleteUserTaskCommandStep1 variable(String key, Object value);
+  T variable(String key, Object value);
 }

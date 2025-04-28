@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.common.exception;
+package io.camunda.spring.client.jobhandling;
 
-import io.camunda.spring.client.exception.BpmnError;
-import java.util.Map;
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.worker.JobClient;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
 
-/**
- * Indicates an error in sense of BPMN occured, that should be handled by the BPMN process, see <a
- * href="https://docs.camunda.io/docs/reference/bpmn-processes/error-events/error-events/">...</a>
- */
-@Deprecated(since = "8.8", forRemoval = true)
-public class ZeebeBpmnError extends BpmnError {
+public interface JobExceptionHandlingStrategy {
+  void handleException(Exception exception, ExceptionHandlingContext context) throws Exception;
 
-  public ZeebeBpmnError(
-      final String errorCode, final String errorMessage, final Map<String, Object> variables) {
-    super(errorCode, errorMessage, variables, null);
+  record ExceptionHandlingContext(
+      JobClient jobClient, ActivatedJob job, JobWorkerValue jobWorkerValue) {}
+
+  interface CommandWrapperCreator {
+    CommandWrapper create(FinalCommandStep<?> command);
   }
 }

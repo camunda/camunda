@@ -34,7 +34,9 @@ import org.apache.hc.client5.http.config.RequestConfig;
  * Map} though. In the future, we might extend this to also allow all options from {@link
  * CommandWithVariables} here.
  */
-public final class CompleteUserTaskCommandImpl implements CompleteUserTaskCommandStep1 {
+public final class CompleteUserTaskCommandImpl
+    extends CommandWithVariables<CompleteUserTaskCommandStep1>
+    implements CompleteUserTaskCommandStep1 {
 
   private final long userTaskKey;
   private final UserTaskCompletionRequest request;
@@ -44,6 +46,7 @@ public final class CompleteUserTaskCommandImpl implements CompleteUserTaskComman
 
   public CompleteUserTaskCommandImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final long userTaskKey) {
+    super(jsonMapper);
     this.jsonMapper = jsonMapper;
     this.userTaskKey = userTaskKey;
     this.httpClient = httpClient;
@@ -75,9 +78,8 @@ public final class CompleteUserTaskCommandImpl implements CompleteUserTaskComman
   }
 
   @Override
-  public CompleteUserTaskCommandStep1 variables(final Map<String, Object> variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    request.setVariables(variables);
+  protected CompleteUserTaskCommandStep1 setVariablesInternal(final String variables) {
+    request.setVariables(objectMapper.fromJsonAsMap(variables));
     return this;
   }
 }

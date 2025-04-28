@@ -34,7 +34,8 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
    */
   FailJobCommandStep2 retries(int remainingRetries);
 
-  interface FailJobCommandStep2 extends FinalCommandStep<FailJobResponse> {
+  interface FailJobCommandStep2
+      extends FinalCommandStep<FailJobResponse>, CommandWithVariables<FailJobCommandStep2> {
     // the place for new optional parameters
 
     /**
@@ -62,29 +63,12 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
     /**
      * Set the variables of this job.
      *
-     * @param variables the variables (JSON) as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    FailJobCommandStep2 variables(InputStream variables);
-
-    /**
-     * Set the variables of this job.
-     *
      * @param variables the variables (JSON) as String
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     FailJobCommandStep2 variables(String variables);
-
-    /**
-     * Set the variables of this job.
-     *
-     * @param variables the variables as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    FailJobCommandStep2 variables(Map<String, Object> variables);
 
     /**
      * Set the variables of this job.
@@ -93,7 +77,28 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     FailJobCommandStep2 variables(Object variables);
+
+    /**
+     * Set the variables of this job.
+     *
+     * @param variables the variables (JSON) as stream
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    FailJobCommandStep2 variables(InputStream variables);
+
+    /**
+     * Set the variables of this job.
+     *
+     * @param variables the variables as map
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    FailJobCommandStep2 variables(Map<String, Object> variables);
 
     /**
      * Set a single variable of this job.
@@ -103,6 +108,7 @@ public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<Fai
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     FailJobCommandStep2 variable(String key, Object value);
   }
 }
