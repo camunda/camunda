@@ -53,11 +53,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,10 +63,6 @@ public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   public static final String GROUP_NAME = "raft-partition";
-  // TODO make it configurable
-  private static final Duration SCALE_UP_TIMEOUT = Duration.ofMinutes(2);
-  private static final Duration SCALE_UP_INTERVAL = Duration.ofMillis(500);
-
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
   private final ConcurrencyControl concurrencyControl;
 
@@ -559,7 +553,6 @@ public final class PartitionManagerImpl
       final Set<Integer> redistributedPartitions,
       final Duration timeout) {
     final var result = concurrencyControl.<Void>createFuture();
-    final var startTime = System.currentTimeMillis();
 
     brokerClient.sendRequestWithRetry(
         new GetScaleUpProgress(desiredPartitionCount),
@@ -569,26 +562,12 @@ public final class PartitionManagerImpl
           if (currentlyRedistributedPartitions.equals(redistributedPartitions)) {
             result.complete(null);
           } else {
-            // TODO implement something in BrokerImpl for polling until a condition
-            final var elapsed = System.currentTimeMillis() - startTime;
-            final var newTimeout =
-                Duration.ofMillis(
-                    Optional.ofNullable(timeout).orElse(SCALE_UP_TIMEOUT).toMillis() - elapsed);
-            if (newTimeout.isNegative()) {
-              result.completeExceptionally(
-                  new TimeoutException(
-                      "Timeout reached while waiting for redistribution completion"));
-            } else {
-              if (!result.isCancelled()) {
-                final var sleep = concurrencyControl.createFuture();
-                concurrencyControl.schedule(SCALE_UP_INTERVAL, () -> sleep.complete(null));
-                sleep.andThen(
-                    () ->
-                        awaitRedistributionCompletion(
-                            desiredPartitionCount, redistributedPartitions, newTimeout),
-                    concurrencyControl);
-              }
-            }
+            final var missingPartitions = new TreeSet<>(redistributedPartitions);
+            missingPartitions.removeAll(redistributedPartitions);
+            result.completeExceptionally(
+                new RuntimeException(
+                    "Redistribution not completed yet: waiting for these partitions: %s"
+                        .formatted(missingPartitions)));
           }
         },
         error -> {
