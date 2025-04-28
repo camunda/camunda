@@ -19,11 +19,11 @@ import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {useLocation} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Button} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {useHasPermissions} from 'modules/queries/permissions/useHasPermissions';
 
 const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -31,6 +31,9 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [modalTitle, setModalTitle] = useState<string>('');
 
   const {processInstanceId = ''} = useProcessInstancePageParams();
+  const {data: hasPermissionForRetryOperation} = useHasPermissions([
+    'UPDATE_PROCESS_INSTANCE',
+  ]);
   const location = useLocation();
   const {sortBy, sortOrder} = getSortParams(location.search) || {
     sortBy: 'creationTime',
@@ -61,8 +64,6 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   );
 
   const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
-  const hasPermissionForRetryOperation =
-    processInstanceDetailsStore.hasPermission(['UPDATE_PROCESS_INSTANCE']);
 
   const hasIncidentInCalledInstance = sortedIncidents.some(
     ({rootCauseInstance}) =>

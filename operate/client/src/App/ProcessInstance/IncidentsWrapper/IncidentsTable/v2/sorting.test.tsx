@@ -7,13 +7,20 @@
  */
 
 import {IncidentsTable} from '.';
-import {createIncident} from 'modules/testUtils';
+import {createIncident, createInstance} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
 import {Wrapper, incidentsMock, shortError} from './mocks';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 describe('Sorting', () => {
-  it('should enable sorting for all', () => {
+  beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(
+      createInstance({permissions: ['UPDATE_PROCESS_INSTANCE']}),
+    );
+  });
+
+  it('should enable sorting for all', async () => {
     incidentsStore.setIncidents(incidentsMock);
     render(<IncidentsTable />, {wrapper: Wrapper});
 
@@ -23,7 +30,7 @@ describe('Sorting', () => {
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Creation Date')).toBeEnabled();
     expect(screen.getByText('Error Message')).toBeEnabled();
-    expect(screen.getByText('Operations')).toBeEnabled();
+    expect(await screen.findByText('Operations'));
   });
 
   it('should disable sorting for jobId', () => {

@@ -20,15 +20,20 @@ import {
   processId,
   processInstanceId,
   Wrapper,
+  mockMultiInstanceProcessInstance,
 } from './mocks';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
-    mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchProcessXML().withSuccess(multiInstanceProcess);
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
 
@@ -180,7 +185,9 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     ).not.toBeInTheDocument();
 
     // poll request
-    mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
     mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1Poll);
 
     jest.runOnlyPendingTimers();

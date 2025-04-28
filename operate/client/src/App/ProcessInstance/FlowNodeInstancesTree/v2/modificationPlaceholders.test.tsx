@@ -26,9 +26,11 @@ import {
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithOneRunningScopeMock,
   Wrapper,
+  mockMultiInstanceProcessInstance,
 } from './mocks';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
@@ -41,169 +43,16 @@ import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubPr
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
-    mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchProcessXML().withSuccess(multiInstanceProcess);
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
   });
 
-  it('should show and remove two add modification flow nodes', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
-
-    processInstanceDetailsStore.init({id: processInstanceId});
-
-    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1!);
-    flowNodeInstanceStore.init();
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-    });
-
-    render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={{...mockFlowNodeInstance, state: 'ACTIVE'}}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    expect(screen.queryByText('Peter Join')).not.toBeInTheDocument();
-
-    // modification icons
-    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
-    expect(
-      screen.queryByText('warning-message-icon.svg'),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
-
-    act(() => {
-      modificationsStore.enableModificationMode();
-      modificationsStore.addModification({
-        type: 'token',
-        payload: {
-          operation: 'ADD_TOKEN',
-          scopeId: generateUniqueID(),
-          flowNode: {id: 'peterJoin', name: 'Peter Join'},
-          affectedTokenCount: 1,
-          visibleAffectedTokenCount: 1,
-          parentScopeIds: generateParentScopeIds(
-            mockNestedSubProcessBusinessObjects,
-            'peterJoin',
-          ),
-        },
-      });
-      modificationsStore.addModification({
-        type: 'token',
-        payload: {
-          operation: 'ADD_TOKEN',
-          scopeId: generateUniqueID(),
-          flowNode: {id: 'peterJoin', name: 'Peter Join'},
-          affectedTokenCount: 1,
-          visibleAffectedTokenCount: 1,
-          parentScopeIds: generateParentScopeIds(
-            mockNestedSubProcessBusinessObjects,
-            'peterJoin',
-          ),
-        },
-      });
-    });
-
-    await waitFor(() =>
-      expect(screen.getAllByText('Peter Join')).toHaveLength(2),
-    );
-
-    expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
-    expect(screen.getByText('Peter Fork')).toBeInTheDocument();
-
-    // modification icons
-    expect(screen.getAllByTestId('add-icon')).toHaveLength(2);
-    expect(screen.getAllByTestId('warning-icon')).toHaveLength(2);
-    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
-
-    expect(
-      screen.getByText('Filter-Map Sub Process (Multi Instance)'),
-    ).toBeInTheDocument();
-
-    act(() => {
-      modificationsStore.reset();
-    });
-
-    expect(screen.queryByText('Peter Join')).not.toBeInTheDocument();
-    // modification icons
-    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
-  });
-
-  it('should show and remove one cancel modification flow nodes', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'peterJoin',
-        active: 2,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-    ]);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId,
-    );
-    processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
-
-    mockFetchFlowNodeInstances().withSuccess(multipleFlowNodeInstances);
-
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-    });
-
-    render(
-      <FlowNodeInstancesTree
-        flowNodeInstance={{...mockFlowNodeInstance, state: 'ACTIVE'}}
-        scrollableContainerRef={createRef<HTMLElement>()}
-        isRoot
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    // modification icons
-    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
-
-    act(() => {
-      modificationsStore.enableModificationMode();
-      cancelAllTokens('peterJoin', 0, 0, {});
-    });
-
-    expect(
-      await screen.findByText('Multi-Instance Process'),
-    ).toBeInTheDocument();
-    expect(screen.getAllByText('Peter Join')).toHaveLength(2);
-
-    // modification icons
-    expect(await screen.findByTestId('cancel-icon')).toBeInTheDocument();
-    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
-
-    act(() => {
-      modificationsStore.reset();
-    });
-
-    // modification icons
-    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
-  });
-
   it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
-    mockFetchProcessInstance().withSuccess({
+    mockFetchProcessInstanceDeprecated().withSuccess({
       ...multiInstanceProcessInstance,
       bpmnProcessId: 'nested_sub_process',
     });
@@ -411,8 +260,158 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByText('user_task')).not.toBeInTheDocument();
   });
 
-  it.skip('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
-    mockFetchProcessInstance().withSuccess({
+  it('should show and remove two add modification flow nodes', async () => {
+    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
+
+    processInstanceDetailsStore.init({id: processInstanceId});
+
+    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1!);
+    flowNodeInstanceStore.init();
+
+    await waitFor(() => {
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    });
+
+    render(
+      <FlowNodeInstancesTree
+        flowNodeInstance={{...mockFlowNodeInstance, state: 'ACTIVE'}}
+        scrollableContainerRef={createRef<HTMLElement>()}
+        isRoot
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(screen.queryByText('Peter Join')).not.toBeInTheDocument();
+
+    // modification icons
+    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('warning-message-icon.svg'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.enableModificationMode();
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          flowNode: {id: 'peterJoin', name: 'Peter Join'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: generateParentScopeIds({}, 'peterJoin'),
+        },
+      });
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          flowNode: {id: 'peterJoin', name: 'Peter Join'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: generateParentScopeIds({}, 'peterJoin'),
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(screen.getAllByText('Peter Join')).toHaveLength(2),
+    );
+
+    expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
+    expect(screen.getByText('Peter Fork')).toBeInTheDocument();
+
+    // modification icons
+    expect(screen.getAllByTestId('add-icon')).toHaveLength(2);
+    expect(screen.getAllByTestId('warning-icon')).toHaveLength(2);
+    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
+
+    expect(
+      screen.getByText('Filter-Map Sub Process (Multi Instance)'),
+    ).toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.reset();
+    });
+
+    expect(screen.queryByText('Peter Join')).not.toBeInTheDocument();
+    // modification icons
+    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
+  });
+
+  it.skip('should show and remove one cancel modification flow nodes', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'peterJoin',
+        active: 2,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
+      processInstanceId,
+    );
+    processInstanceDetailsStore.init({id: processInstanceId});
+    flowNodeInstanceStore.init();
+
+    mockFetchFlowNodeInstances().withSuccess(multipleFlowNodeInstances);
+
+    await waitFor(() => {
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    });
+
+    render(
+      <FlowNodeInstancesTree
+        flowNodeInstance={{...mockFlowNodeInstance, state: 'ACTIVE'}}
+        scrollableContainerRef={createRef<HTMLElement>()}
+        isRoot
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    // modification icons
+    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.enableModificationMode();
+      cancelAllTokens('peterJoin', 2, 2, {});
+    });
+
+    expect(
+      await screen.findByText('Multi-Instance Process'),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('Peter Join')).toHaveLength(2);
+
+    // modification icons
+    expect(await screen.findByTestId('cancel-icon')).toBeInTheDocument();
+    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.reset();
+    });
+
+    // modification icons
+    expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('add-icon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
+  });
+
+  it('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
+    mockFetchProcessInstanceDeprecated().withSuccess({
       ...multiInstanceProcessInstance,
       bpmnProcessId: 'nested_sub_process',
     });

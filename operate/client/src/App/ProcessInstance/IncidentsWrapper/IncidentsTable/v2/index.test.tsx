@@ -12,77 +12,21 @@ import {render, screen, within} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {incidentsStore} from 'modules/stores/incidents';
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {createInstance} from 'modules/testUtils';
 
 describe('IncidentsTable', () => {
+  beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(
+      createInstance({permissions: ['UPDATE_PROCESS_INSTANCE']}),
+    );
+  });
+
   afterEach(() => {
     window.clientConfig = undefined;
   });
 
-  it('should render the right column headers', () => {
-    incidentsStore.setIncidents(incidentsMock);
-
-    render(<IncidentsTable />, {wrapper: Wrapper});
-
-    expect(screen.getByText('Incident Type')).toBeInTheDocument();
-    expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
-    expect(screen.getByText('Job Id')).toBeInTheDocument();
-    expect(screen.getByText('Creation Date')).toBeInTheDocument();
-    expect(screen.getByText('Error Message')).toBeInTheDocument();
-    expect(screen.getByText('Operations')).toBeInTheDocument();
-    expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
-  });
-
-  it('should render the right column headers for restricted user', () => {
-    incidentsStore.setIncidents(incidentsMock);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
-    render(<IncidentsTable />, {wrapper: Wrapper});
-
-    expect(screen.getByText('Incident Type')).toBeInTheDocument();
-    expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
-    expect(screen.getByText('Job Id')).toBeInTheDocument();
-    expect(screen.getByText('Creation Date')).toBeInTheDocument();
-    expect(screen.getByText('Error Message')).toBeInTheDocument();
-    expect(screen.getByText('Operations')).toBeInTheDocument();
-    expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
-  });
-
-  it('should render the right column headers for restricted user (with resource-based permissions)', () => {
-    window.clientConfig = {
-      resourcePermissionsEnabled: true,
-    };
-
-    incidentsStore.setIncidents(incidentsMock);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
-    render(<IncidentsTable />, {wrapper: Wrapper});
-
-    expect(screen.getByText('Incident Type')).toBeInTheDocument();
-    expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
-    expect(screen.getByText('Job Id')).toBeInTheDocument();
-    expect(screen.getByText('Creation Date')).toBeInTheDocument();
-    expect(screen.getByText('Error Message')).toBeInTheDocument();
-    expect(screen.queryByText('Operations')).not.toBeInTheDocument();
-    expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
-  });
-
-  it('should render incident details', () => {
+  it('should render incident details', async () => {
     incidentsStore.setIncidents(incidentsMock);
 
     render(<IncidentsTable />, {wrapper: Wrapper});
@@ -125,9 +69,71 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.getByText(secondIncident.errorMessage),
     ).toBeInTheDocument();
-    expect(
-      withinRow.getByRole('button', {name: 'Retry Incident'}),
-    ).toBeInTheDocument();
+    expect(await withinRow.findByRole('button', {name: 'Retry Incident'}));
+  });
+
+  it('should render the right column headers', async () => {
+    incidentsStore.setIncidents(incidentsMock);
+
+    render(<IncidentsTable />, {wrapper: Wrapper});
+
+    expect(screen.getByText('Incident Type')).toBeInTheDocument();
+    expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
+    expect(screen.getByText('Job Id')).toBeInTheDocument();
+    expect(screen.getByText('Creation Date')).toBeInTheDocument();
+    expect(screen.getByText('Error Message')).toBeInTheDocument();
+    expect(await screen.findByText('Operations'));
+    expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
+  });
+
+  it('should render the right column headers for restricted user', async () => {
+    incidentsStore.setIncidents(incidentsMock);
+    authenticationStore.setUser({
+      displayName: 'demo',
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+      c8Links: {},
+      tenants: [],
+    });
+
+    render(<IncidentsTable />, {wrapper: Wrapper});
+
+    expect(screen.getByText('Incident Type')).toBeInTheDocument();
+    expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
+    expect(screen.getByText('Job Id')).toBeInTheDocument();
+    expect(screen.getByText('Creation Date')).toBeInTheDocument();
+    expect(screen.getByText('Error Message')).toBeInTheDocument();
+    expect(await screen.findByText('Operations'));
+    expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
+  });
+
+  it('should render the right column headers for restricted user (with resource-based permissions)', () => {
+    window.clientConfig = {
+      resourcePermissionsEnabled: true,
+    };
+
+    incidentsStore.setIncidents(incidentsMock);
+    authenticationStore.setUser({
+      displayName: 'demo',
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+      c8Links: {},
+      tenants: [],
+    });
+
+    render(<IncidentsTable />, {wrapper: Wrapper});
+
+    expect(screen.getByText('Incident Type')).toBeInTheDocument();
+    expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
+    expect(screen.getByText('Job Id')).toBeInTheDocument();
+    expect(screen.getByText('Creation Date')).toBeInTheDocument();
+    expect(screen.getByText('Error Message')).toBeInTheDocument();
+    expect(screen.queryByText('Operations')).not.toBeInTheDocument();
+    expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 
   it('should render incident details (with resource-based permissions enabled)', () => {

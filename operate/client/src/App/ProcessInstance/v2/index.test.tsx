@@ -41,7 +41,7 @@ const triggerVisibilityChange = (visibility: 'hidden' | 'visible') => {
   document.dispatchEvent(new Event('visibilitychange'));
 };
 
-describe.skip('ProcessInstance', () => {
+describe('ProcessInstance', () => {
   beforeEach(() => {
     mockRequests();
   });
