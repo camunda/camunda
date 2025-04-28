@@ -332,28 +332,28 @@ public class RoleTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30114")
   public void shouldDeleteRole() {
     // given
+    final var roleId = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    // when
-    final var deletedRole = engine.role().deleteRole(roleKey).delete().getValue();
+    engine.role().newRole(roleId).withName(name).create();
 
-    Assertions.assertThat(deletedRole).isNotNull().hasFieldOrPropertyWithValue("roleKey", roleKey);
+    // when
+    final var deletedRole = engine.role().deleteRole(roleId).delete().getValue();
+    assertThat(deletedRole).hasRoleId(roleId).hasName(name);
   }
 
   @Test
   public void shouldRejectIfRoleIsNotPresentOnDeletion() {
     // when
-    final var notPresentRoleKey = 1L;
+    final var notPresentRoleId = UUID.randomUUID().toString();
     final var notPresentUpdateRecord =
-        engine.role().deleteRole(notPresentRoleKey).expectRejection().delete();
+        engine.role().deleteRole(notPresentRoleId).expectRejection().delete();
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete role with key '%s', but a role with this key doesn't exist."
-                .formatted(notPresentRoleKey));
+            "Expected to delete role with ID '%s', but a role with this ID doesn't exist."
+                .formatted(notPresentRoleId));
   }
 }
