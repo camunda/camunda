@@ -104,9 +104,7 @@ public final class ProcessInstanceServices
     }
 
     final List<Long> orderedKeys =
-        TreePathParser.extractProcessInstanceKeys(rootInstance.treePath()).stream()
-            .map(Long::valueOf)
-            .toList();
+        TreePathParser.extractProcessInstanceKeys(rootInstance.treePath()).stream().toList();
 
     if (orderedKeys.size() == 1
         && orderedKeys.getFirst().equals(rootInstance.processInstanceKey())) {

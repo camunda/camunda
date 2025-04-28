@@ -26,15 +26,17 @@ import java.util.regex.Pattern;
  */
 public final class TreePathParser {
 
+  private static final String PROCESS_INSTANCE_PATTERN = "PI_(\\d*)$";
+
   private TreePathParser() {}
 
-  public static List<String> extractProcessInstanceKeys(final String treePath) {
-    final List<String> processInstanceIds = new ArrayList<>();
-    final Pattern piPattern = Pattern.compile("PI_(\\d*)$");
+  public static List<Long> extractProcessInstanceKeys(final String treePath) {
+    final List<Long> processInstanceIds = new ArrayList<>();
+    final Pattern piPattern = Pattern.compile(PROCESS_INSTANCE_PATTERN);
     Arrays.stream(treePath.split("/"))
         .map(piPattern::matcher)
         .filter(Matcher::matches)
-        .forEach(matcher -> processInstanceIds.add(matcher.group(1)));
+        .forEach(matcher -> processInstanceIds.add(Long.valueOf(matcher.group(1))));
 
     return processInstanceIds;
   }
