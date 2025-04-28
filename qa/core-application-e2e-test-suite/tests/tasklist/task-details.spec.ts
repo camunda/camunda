@@ -14,7 +14,8 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
-test.beforeAll(async () => {
+test.beforeAll(async ({resetData}) => {
+  await resetData();
   await deploy([
     './resources/usertask_to_be_completed.bpmn',
     './resources/user_task_with_form.bpmn',
@@ -78,6 +79,10 @@ test.beforeAll(async () => {
 
   await sleep(1000);
 });
+
+// test.afterAll(async ({resetData}) => {
+//   await resetData();
+// });
 
 test.describe('task details page', () => {
   test.beforeEach(async ({page, taskListLoginPage}) => {

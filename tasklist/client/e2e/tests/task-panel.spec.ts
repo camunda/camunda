@@ -82,6 +82,7 @@ test.describe('task panel page', () => {
     page,
     tasksPage,
   }) => {
+    //apply UNASSIGN filter, assign the task to me, reload the page and check if the task is not visible anymore
     await tasksPage.filterBy('Unassigned');
     await expect(page).toHaveURL(/\?filter=unassigned/);
     await tasksPage.openTask('usertask_to_be_assigned');
@@ -95,6 +96,7 @@ test.describe('task panel page', () => {
       tasksPage.availableTasks.getByText('usertask_to_be_assigned'),
     ).toHaveCount(0);
 
+    //apply ASSIGNED TO ME filter, complete the task, reload the page and check if the task is not visible anymore
     await tasksPage.filterBy('Assigned to me');
     await expect(page).toHaveURL(/\?filter=assigned-to-me/);
     await tasksPage.openTask('usertask_to_be_assigned');
@@ -107,6 +109,7 @@ test.describe('task panel page', () => {
       tasksPage.availableTasks.getByText('Some user activity'),
     ).toHaveCount(0);
 
+    //apply COMPLETED filter and check if the task is not visible anymore
     await tasksPage.filterBy('Completed');
 
     await expect(page).toHaveURL(/\?filter=completed/);
