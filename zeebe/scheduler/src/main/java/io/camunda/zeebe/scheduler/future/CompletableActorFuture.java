@@ -223,9 +223,10 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       // We don't reject this because, this is useful for tests. But the warning is a reminder not
       // to use this in production code.
       Loggers.ACTOR_LOGGER.warn(
-          "No executor provided for ActorFuture#onComplete callback."
-              + " This could block the actor that completes the future."
-              + " Use onComplete(consumer, executor) instead.");
+          """
+              [PotentiallyBlocking] No executor provided for ActorFuture#onComplete callback.\
+               This could block the actor that completes the future.\
+               Use onComplete(consumer, executor) instead.""");
       onComplete(consumer, Runnable::run);
     }
   }
@@ -329,6 +330,23 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
         },
         executor);
     return nextFuture;
+  }
+
+  @Override
+  public <U> ActorFuture<U> thenApply(final Function<V, U> next) {
+    if (ActorThread.isCalledFromActorThread()) {
+      final ActorControl actorControl = ActorControl.current();
+      return thenApply(next, actorControl);
+    } else {
+      // We don't reject this because, this is useful for tests. But the warning is a reminder not
+      // to use this in production code.
+      Loggers.ACTOR_LOGGER.warn(
+          """
+              [PotentiallyBlocking] No executor provided for ActorFuture#thenApply method.\
+               This could block the actor that completes the future.\
+               Use thenApply(consumer, executor) instead.""");
+      return thenApply(next, Runnable::run);
+    }
   }
 
   private void notifyAllBlocked() {
