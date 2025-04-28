@@ -19,14 +19,39 @@ import java.io.InputStream;
 import java.util.Map;
 
 public interface CommandWithVariables<T> {
-
+  /**
+   * @param variables the variables (JSON) as String
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
   T variables(String variables);
 
+  /**
+   * @param variables the variables as object
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
   T variables(Object variables);
 
+  /**
+   * @param variables the variables (JSON) as stream
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
   T variables(InputStream variables);
 
+  /**
+   * @param variables the variables as map
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
   T variables(Map<String, Object> variables);
 
+  /**
+   * @param key the key of the variable as string
+   * @param value the value of the variable as object
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
   T variable(String key, Object value);
 }
