@@ -16,6 +16,7 @@
 package io.camunda.zeebe.spring.client.configuration;
 
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
@@ -29,18 +30,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Deprecated(since = "8.6", forRemoval = true)
 @Configuration
-@ConditionalOnProperty(
-    prefix = "camunda.client",
-    name = "enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnCamundaClientEnabled
 @ConditionalOnMissingBean(CamundaSpringProcessTestContext.class)
 @ConditionalOnBean(CamundaClientConfiguration.class)
 public class ZeebeClientProdAutoConfiguration {
