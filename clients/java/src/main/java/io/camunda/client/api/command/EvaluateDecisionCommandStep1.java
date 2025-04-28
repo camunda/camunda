@@ -42,16 +42,8 @@ public interface EvaluateDecisionCommandStep1
 
   interface EvaluateDecisionCommandStep2
       extends CommandWithTenantStep<EvaluateDecisionCommandStep2>,
-          FinalCommandStep<EvaluateDecisionResponse> {
-
-    /**
-     * Set the variables for the decision evaluation.
-     *
-     * @param variables the variables JSON document as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    EvaluateDecisionCommandStep2 variables(InputStream variables);
+          FinalCommandStep<EvaluateDecisionResponse>,
+          CommandWithVariables<EvaluateDecisionCommandStep2> {
 
     /**
      * Set the variables for the decision evaluation.
@@ -60,16 +52,8 @@ public interface EvaluateDecisionCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     EvaluateDecisionCommandStep2 variables(String variables);
-
-    /**
-     * Set the variables for the decision evaluation.
-     *
-     * @param variables the variables document as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    EvaluateDecisionCommandStep2 variables(Map<String, Object> variables);
 
     /**
      * Set the variables for the decision evaluation.
@@ -78,7 +62,28 @@ public interface EvaluateDecisionCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     EvaluateDecisionCommandStep2 variables(Object variables);
+
+    /**
+     * Set the variables for the decision evaluation.
+     *
+     * @param variables the variables JSON document as stream
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    EvaluateDecisionCommandStep2 variables(InputStream variables);
+
+    /**
+     * Set the variables for the decision evaluation.
+     *
+     * @param variables the variables document as map
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    EvaluateDecisionCommandStep2 variables(Map<String, Object> variables);
 
     /**
      * Set a single variable for the decision evaluation.
@@ -88,6 +93,7 @@ public interface EvaluateDecisionCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     EvaluateDecisionCommandStep2 variable(String key, Object value);
   }
 }

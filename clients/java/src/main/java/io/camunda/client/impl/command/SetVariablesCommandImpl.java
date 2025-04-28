@@ -32,14 +32,12 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest.Builder;
 import io.grpc.stub.StreamObserver;
-import java.io.InputStream;
 import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class SetVariablesCommandImpl
+public final class SetVariablesCommandImpl extends CommandWithVariables<SetVariablesCommandStep2>
     implements SetVariablesCommandStep1, SetVariablesCommandStep2 {
 
   private final GatewayStub asyncStub;
@@ -61,6 +59,7 @@ public final class SetVariablesCommandImpl
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
       final boolean preferRestOverGrpc) {
+    super(jsonMapper);
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
     this.requestTimeout = requestTimeout;
@@ -130,30 +129,8 @@ public final class SetVariablesCommandImpl
   }
 
   @Override
-  public SetVariablesCommandStep2 variables(final InputStream variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(jsonMapper.validateJson("variables", variables));
-  }
-
-  @Override
-  public SetVariablesCommandStep2 variables(final String variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(jsonMapper.validateJson("variables", variables));
-  }
-
-  @Override
-  public SetVariablesCommandStep2 variables(final Map<String, Object> variables) {
-    return variables((Object) variables);
-  }
-
-  @Override
-  public SetVariablesCommandStep2 variables(final Object variables) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    return setVariables(jsonMapper.toJson(variables));
-  }
-
-  private SetVariablesCommandStep2 setVariables(final String jsonDocument) {
-    grpcRequestObjectBuilder.setVariables(jsonDocument);
+  public SetVariablesCommandStep2 setVariablesInternal(final String variables) {
+    grpcRequestObjectBuilder.setVariables(variables);
     // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
     // gRPC and REST handle setting variables differently:
     // - For gRPC commands, we only check if the JSON is valid and forward it to the engine.
@@ -162,7 +139,7 @@ public final class SetVariablesCommandImpl
     // - For REST commands, users have to provide a valid JSON Object String.
     //    Otherwise, the client throws an exception already.
     if (useRest) {
-      httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(jsonDocument));
+      httpRequestObject.setVariables(objectMapper.fromJsonAsMap(variables));
     }
     return this;
   }
