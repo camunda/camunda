@@ -51,7 +51,6 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           (job key '%d', type '%s', processInstanceKey '%d'). \
           Only the following listener event types support denying: %s.
           """;
-
   private static final String TL_JOB_COMPLETION_WITH_DENY_AND_CORRECTIONS_NOT_SUPPORTED_MESSAGE =
       """
           Expected to complete task listener job with corrections, but the job result is denied \
@@ -59,12 +58,18 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           The corrections would be reverted by the denial. Either complete the job with corrections \
           without setting denied, or complete the job with a denied result but no corrections.
           """;
-
   private static final String TL_JOB_COMPLETION_WITH_UNKNOWN_CORRECTIONS_NOT_SUPPORTED_MESSAGE =
       """
           Expected to complete task listener job with a corrections result, but property '%s' \
           cannot be corrected (job key '%d', type '%s', processInstanceKey '%d'). \
           Only the following properties can be corrected: %s.
+          """;
+  private static final String
+      TL_JOB_COMPLETION_WITH_ASSIGNEE_CORRECTION_ON_CREATING_NOT_SUPPORTED_MESSAGE =
+          """
+          Expected to complete task listener job, but correcting the assignee on 'CREATING' event is \
+          not supported when the user task has an assignee defined in the model \
+          (job key '%d', type '%s', processInstanceKey '%d').
           """;
 
   private static final Set<String> CORRECTABLE_PROPERTIES =
@@ -104,6 +109,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
                 this::checkTaskListenerJobForProvidingVariables,
                 this::checkTaskListenerJobForSupportingDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
+                this::checkCreatingListenerJobForAssigneeCorrection,
                 this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
@@ -249,6 +255,37 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     } else {
       return Either.right(job);
     }
+  }
+
+  private Either<Rejection, JobRecord> checkCreatingListenerJobForAssigneeCorrection(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+
+    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+      return Either.right(job);
+    }
+
+    if (job.getJobListenerEventType() != JobListenerEventType.CREATING) {
+      return Either.right(job);
+    }
+
+    final var correctedAttributes = command.getValue().getResult().getCorrectedAttributes();
+
+    if (correctedAttributes.contains(UserTaskRecord.ASSIGNEE)) {
+      final var uerTaskKey =
+          elementInstanceState.getInstance(job.getElementInstanceKey()).getUserTaskKey();
+
+      final var initialAssignee = userTaskState.findInitialAssignee(uerTaskKey);
+
+      if (initialAssignee.isPresent()) {
+        return Either.left(
+            new Rejection(
+                RejectionType.INVALID_ARGUMENT,
+                TL_JOB_COMPLETION_WITH_ASSIGNEE_CORRECTION_ON_CREATING_NOT_SUPPORTED_MESSAGE
+                    .formatted(command.getKey(), job.getType(), job.getProcessInstanceKey())));
+      }
+    }
+
+    return Either.right(job);
   }
 
   private Either<Rejection, JobRecord> checkTaskListenerJobForUnknownPropertyCorrections(
