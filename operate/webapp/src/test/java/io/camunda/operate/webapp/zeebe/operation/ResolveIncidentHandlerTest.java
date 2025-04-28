@@ -22,6 +22,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.OperationExecutorProperties;
 import io.camunda.operate.webapp.elasticsearch.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.reader.IncidentReader;
+import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -41,6 +42,7 @@ public class ResolveIncidentHandlerTest {
 
   @Mock IncidentReader incidentReader;
   @Spy CamundaClient camundaClient;
+  @Spy OperateServicesAdapter operateServicesAdapter;
   @Mock JobUpdateRetriesCommandImpl updateRetriesCommand;
   @Mock ResolveIncidentCommandImpl resolveIncidentCommand;
 
@@ -76,19 +78,8 @@ public class ResolveIncidentHandlerTest {
 
     final CamundaClientFutureImpl future1 = new CamundaClientFutureImpl<>();
     final CamundaClientFutureImpl future2 = new CamundaClientFutureImpl<>();
-    when(updateRetriesCommand.send()).thenReturn(future1);
-    when(resolveIncidentCommand.send()).thenReturn(future2);
     future1.complete(null);
     future2.complete(null);
-
-    when(updateRetriesCommand.operationReference(Long.parseLong(operationId)))
-        .thenReturn(updateRetriesCommand);
-    when(resolveIncidentCommand.operationReference(Long.parseLong(operationId)))
-        .thenReturn(resolveIncidentCommand);
-    when(updateRetriesCommand.retries(1)).thenReturn(updateRetriesCommand);
-
-    when(camundaClient.newUpdateRetriesCommand(jobKey)).thenReturn(updateRetriesCommand);
-    when(camundaClient.newResolveIncidentCommand(incidentKey)).thenReturn(resolveIncidentCommand);
 
     doNothing().when(batchOperationWriter).updateOperation(any());
     doNothing().when(metrics).recordCounts(any(String.class), any(long.class), any(String[].class));
@@ -96,15 +87,15 @@ public class ResolveIncidentHandlerTest {
     properties.setWorkerId(workerId);
     when(operateProperties.getOperationExecutor()).thenReturn(properties);
 
-    final InOrder inOrder = Mockito.inOrder(camundaClient);
+    final InOrder inOrder = Mockito.inOrder(operateServicesAdapter);
 
     // when
     resolveIncidentHandler.handleWithException(operationEntity);
 
     // then
-    verify(camundaClient, times(1)).newUpdateRetriesCommand(jobKey);
-    verify(camundaClient, times(1)).newResolveIncidentCommand(incidentKey);
-    inOrder.verify(camundaClient).newUpdateRetriesCommand(jobKey);
-    inOrder.verify(camundaClient).newResolveIncidentCommand(incidentKey);
+    verify(operateServicesAdapter, times(1)).updateJobRetries(jobKey, 1, operationId);
+    verify(operateServicesAdapter, times(1)).resolveIncident(incidentKey, operationId);
+    inOrder.verify(operateServicesAdapter).updateJobRetries(jobKey, 1, operationId);
+    inOrder.verify(operateServicesAdapter).resolveIncident(incidentKey, operationId);
   }
 }
