@@ -21,7 +21,7 @@ test.beforeAll(async () => {
     './resources/New Form.form',
     './resources/User_Task_Process_With_Form.bpmn',
     './resources/Start_Form_Process.bpmn',
-    './resources/Zeebe_User_Task_Process_With_Priority.bpmn',
+    './resources/Zeebe_Priority_User_Task_Process.bpmn',
   ]);
   await createInstances('Job_Worker_Process', 1, 1);
   await createInstances('Zeebe_User_Task_Process', 1, 1);
@@ -30,7 +30,7 @@ test.beforeAll(async () => {
   });
   await createInstances('Form_User_Task', 1, 1);
   await createInstances('Start_Form_Process', 1, 1);
-  await createInstances('Zeebe_User_Task_Process_With_Priority', 1, 1);
+  await createInstances('Zeebe_Priority_User_Task_Process', 1, 1);
 });
 
 test.describe('HTO User Flow Tests', () => {
@@ -176,8 +176,7 @@ test.describe('HTO User Flow Tests', () => {
       await taskListLoginPage.login('demo', 'demo');
       await taskPanelPage.openTask('Form_User_Task');
       await taskDetailsPage.clickAssignToMeButton();
-      await taskDetailsPage.clickTextInput();
-      await taskDetailsPage.fillTextInput('Test User');
+      await taskDetailsPage.fillTextInput('Name*', 'Test User');
       await taskDetailsPage.clickCompleteTaskButton();
       await expect(page.getByText('Task completed')).toBeVisible({
         timeout: 200000,
@@ -226,7 +225,7 @@ test.describe('HTO User Flow Tests', () => {
       await navigateToApp(page, 'tasklist');
       await taskListLoginPage.login('demo', 'demo');
       await expect(
-        page.getByText('Zeebe_User_Task_Process_With_Priority').first(),
+        page.getByText('Zeebe_Priority_User_Task_Process').first(),
       ).toBeVisible({timeout: 60000});
       await taskPanelPage.openTask('priorityTest4');
       await taskDetailsPage.clickAssignToMeButton();
@@ -255,17 +254,12 @@ test.describe('HTO User Flow Tests', () => {
       await taskDetailsPage.clickCompleteTaskButton();
 
       await taskPanelPage.filterBy('Completed');
-      await expect(page.getByRole('heading', {name: 'completed'})).toBeVisible({
-        timeout: 45000,
-      });
-      await page.reload();
+      await taskPanelPage.assertCompletedHeadingVisible();
       await taskPanelPage.openTask('priorityTest4');
       await expect(
-        page.getByText('Zeebe_User_Task_Process_With_Priority').first(),
+        page.getByText('Zeebe_Priority_User_Task_Process').first(),
       ).toBeVisible({timeout: 60000});
-      await taskDetailsPage.taskAssertion(
-        'Zeebe_User_Task_Process_With_Priority',
-      );
+      await taskDetailsPage.taskAssertion('Zeebe_Priority_User_Task_Process');
       await taskDetailsPage.priorityAssertion('critical');
       await navigateToApp(page, 'operate');
       await operateLoginPage.login('demo', 'demo');
@@ -273,7 +267,7 @@ test.describe('HTO User Flow Tests', () => {
       await operateProcessesPage.clickProcessCompletedCheckbox();
       await sleep(1000);
       await operateProcessesPage.clickProcessInstanceLink(
-        'Zeebe_User_Task_Process_With_Priority',
+        'Zeebe_Priority_User_Task_Process',
       );
       await operateProcessInstancePage.completedIconAssertion();
     });
