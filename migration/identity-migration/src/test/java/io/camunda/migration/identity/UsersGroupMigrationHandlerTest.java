@@ -32,7 +32,6 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -63,7 +62,7 @@ final class UsersGroupMigrationHandlerTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 new GroupRecord().setGroupKey(UUID.randomUUID().getMostSignificantBits())));
-    when(groupServices.assignMember(anyString(), anyString(), any()))
+    when(groupServices.assignMember(any()))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
     when(mappingServices.createMapping(any()))
         .thenReturn(CompletableFuture.completedFuture(new MappingRecord()));
@@ -87,7 +86,7 @@ final class UsersGroupMigrationHandlerTest {
     when(groupServices.getGroupByName(any())).thenReturn(new GroupEntity(1L, "", "", ""));
     when(mappingServices.createMapping(any()))
         .thenReturn(CompletableFuture.completedFuture(new MappingRecord()));
-    when(groupServices.assignMember(anyString(), anyString(), any(EntityType.class)))
+    when(groupServices.assignMember(any()))
         .thenReturn(CompletableFuture.completedFuture(new GroupRecord()));
 
     // when
@@ -96,7 +95,7 @@ final class UsersGroupMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchUserGroups(anyInt());
     verify(groupServices, times(4)).getGroupByName(any());
-    verify(groupServices, times(4)).assignMember(anyString(), anyString(), any(EntityType.class));
+    verify(groupServices, times(4)).assignMember(any());
     verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
   }
 
@@ -156,7 +155,7 @@ final class UsersGroupMigrationHandlerTest {
             new BrokerRejectionException(
                 new BrokerRejection(GroupIntent.ADD_ENTITY, -1, RejectionType.ALREADY_EXISTS, "")))
         .when(groupServices)
-        .assignMember(anyString(), anyString(), any(EntityType.class));
+        .assignMember(any());
 
     // when
     migrationHandler.migrate();
@@ -164,7 +163,7 @@ final class UsersGroupMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchUserGroups(anyInt());
     verify(groupServices, times(4)).getGroupByName(any());
-    verify(groupServices, times(4)).assignMember(anyString(), anyString(), any(EntityType.class));
+    verify(groupServices, times(4)).assignMember(any());
     verify(mappingServices, times(2)).createMapping(any());
     verify(managementIdentityClient, times(2))
         .updateMigrationStatus(

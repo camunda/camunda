@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -17,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
+import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -61,7 +61,7 @@ public class GroupControllerTest extends RestControllerTest {
     when(groupServices.createGroup(createGroupRequest))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new GroupRecord().setGroupId(groupId).setEntityId("entityId").setName(groupName)));
+                new GroupRecord().setGroupId(groupId).setEntityId("memberId").setName(groupName)));
 
     // when
     webClient
@@ -420,9 +420,8 @@ public class GroupControllerTest extends RestControllerTest {
     // given
     final String groupId = "111";
     final String username = "222";
-
-    when(groupServices.assignMember(groupId, username, EntityType.USER))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
+    when(groupServices.assignMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
@@ -434,7 +433,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isAccepted();
 
     // then
-    verify(groupServices, times(1)).assignMember(groupId, username, EntityType.USER);
+    verify(groupServices, times(1)).assignMember(request);
   }
 
   @Test
@@ -443,7 +442,8 @@ public class GroupControllerTest extends RestControllerTest {
     final String groupId = "111";
     final String username = "222";
     final var path = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
-    when(groupServices.assignMember(groupId, username, EntityType.USER))
+    final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
+    when(groupServices.assignMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -460,7 +460,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isNotFound();
 
     // then
-    verify(groupServices, times(1)).assignMember(groupId, username, EntityType.USER);
+    verify(groupServices, times(1)).assignMember(request);
   }
 
   @Test
@@ -469,7 +469,8 @@ public class GroupControllerTest extends RestControllerTest {
     final String groupId = "111";
     final String username = "222";
     final var path = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
-    when(groupServices.assignMember(groupId, username, EntityType.USER))
+    final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
+    when(groupServices.assignMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -489,16 +490,16 @@ public class GroupControllerTest extends RestControllerTest {
         .isNotFound();
 
     // then
-    verify(groupServices, times(1)).assignMember(groupId, username, EntityType.USER);
+    verify(groupServices, times(1)).assignMember(request);
   }
 
   @Test
-  void shouldAssignMappingToGroupAndReturnAccepted() {
+  void shouldAssignMemberToGroupAndReturnAccepted() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    when(groupServices.assignMember(groupId, mappingId, EntityType.MAPPING))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    when(groupServices.assignMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
@@ -510,7 +511,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isAccepted();
 
     // then
-    verify(groupServices, times(1)).assignMember(anyString(), anyString(), any());
+    verify(groupServices, times(1)).assignMember(request);
   }
 
   @Test
@@ -518,7 +519,8 @@ public class GroupControllerTest extends RestControllerTest {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    when(groupServices.assignMember(groupId, mappingId, EntityType.MAPPING))
+    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    when(groupServices.assignMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -538,7 +540,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isNotFound();
 
     // then
-    verify(groupServices, times(1)).assignMember(anyString(), anyString(), any());
+    verify(groupServices, times(1)).assignMember(request);
   }
 
   @Test
@@ -546,7 +548,8 @@ public class GroupControllerTest extends RestControllerTest {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    when(groupServices.assignMember(groupId, mappingId, EntityType.MAPPING))
+    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    when(groupServices.assignMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -566,7 +569,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isNotFound();
 
     // then
-    verify(groupServices, times(1)).assignMember(anyString(), anyString(), any());
+    verify(groupServices, times(1)).assignMember(request);
   }
 
   @Test
@@ -634,9 +637,8 @@ public class GroupControllerTest extends RestControllerTest {
     // given
     final String groupId = "111";
     final String username = "222";
-
-    when(groupServices.removeMember(groupId, username, EntityType.USER))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
+    when(groupServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
@@ -648,7 +650,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isAccepted();
 
     // then
-    verify(groupServices, times(1)).removeMember(groupId, username, EntityType.USER);
+    verify(groupServices, times(1)).removeMember(request);
   }
 
   @Test
@@ -657,7 +659,8 @@ public class GroupControllerTest extends RestControllerTest {
     final String groupId = "111";
     final String username = "222";
     final var path = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
-    when(groupServices.removeMember(groupId, username, EntityType.USER))
+    final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
+    when(groupServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -674,7 +677,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isNotFound();
 
     // then
-    verify(groupServices, times(1)).removeMember(groupId, username, EntityType.USER);
+    verify(groupServices, times(1)).removeMember(request);
   }
 
   @Test
@@ -683,7 +686,8 @@ public class GroupControllerTest extends RestControllerTest {
     final String groupId = "111";
     final String username = "222";
     final var path = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
-    when(groupServices.removeMember(groupId, username, EntityType.USER))
+    final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
+    when(groupServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -703,16 +707,16 @@ public class GroupControllerTest extends RestControllerTest {
         .isNotFound();
 
     // then
-    verify(groupServices, times(1)).removeMember(groupId, username, EntityType.USER);
+    verify(groupServices, times(1)).removeMember(request);
   }
 
   @Test
-  void shouldUnassignMappingFromGroupAndReturnAccepted() {
+  void shouldUnassignMemberFromGroupAndReturnAccepted() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    when(groupServices.removeMember(groupId, mappingId, EntityType.MAPPING))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    when(groupServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
@@ -724,7 +728,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isAccepted();
 
     // then
-    verify(groupServices, times(1)).removeMember(anyString(), anyString(), any());
+    verify(groupServices, times(1)).removeMember(request);
   }
 
   @Test
@@ -732,7 +736,8 @@ public class GroupControllerTest extends RestControllerTest {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    when(groupServices.removeMember(groupId, mappingId, EntityType.MAPPING))
+    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    when(groupServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -752,7 +757,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isNotFound();
 
     // then
-    verify(groupServices, times(1)).removeMember(anyString(), anyString(), any());
+    verify(groupServices, times(1)).removeMember(request);
   }
 
   @Test
@@ -760,7 +765,8 @@ public class GroupControllerTest extends RestControllerTest {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    when(groupServices.removeMember(groupId, mappingId, EntityType.MAPPING))
+    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    when(groupServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -780,7 +786,7 @@ public class GroupControllerTest extends RestControllerTest {
         .isNotFound();
 
     // then
-    verify(groupServices, times(1)).removeMember(anyString(), anyString(), any());
+    verify(groupServices, times(1)).removeMember(request);
   }
 
   @Test

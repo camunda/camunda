@@ -468,6 +468,50 @@ class RdbmsExporterIT {
   }
 
   @Test
+  public void shouldExportGroupAndAddAndDeleteMember() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupRecord = getGroupRecord(groupId, GroupIntent.CREATED);
+    final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
+
+    // when
+    exporter.export(groupRecord);
+
+    // then
+    final var group =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId());
+    assertThat(group).isNotEmpty();
+    assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupId()).isEqualTo(groupRecordValue.getGroupId());
+    assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
+    assertThat(group.get().description()).isEqualTo(groupRecordValue.getDescription());
+
+    // when
+    exporter.export(getGroupRecord(groupId, GroupIntent.ENTITY_ADDED, "memberId"));
+
+    // then
+    final var updatedGroup =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId())
+            .orElseThrow();
+    assertThat(updatedGroup.assignedMemberIds()).containsExactly("memberId");
+
+    // when
+    exporter.export(getGroupRecord(groupId, GroupIntent.ENTITY_REMOVED, "memberId"));
+
+    // then
+    final var deletedGroup =
+        rdbmsService
+            .getGroupReader()
+            .findOne(((GroupRecordValue) groupRecord.getValue()).getGroupId())
+            .orElseThrow();
+    assertThat(deletedGroup.assignedMemberIds()).isEmpty();
+  }
+
+  @Test
   public void shouldExportIncident() {
     // given
     final var processInstanceRecord = getProcessInstanceStartedRecord(1L);

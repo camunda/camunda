@@ -196,7 +196,7 @@ public class TenantServiceTest {
   public void shouldAddEntityToTenant(final EntityType entityType) {
     // given
     final var tenantId = "tenantId";
-    final var entityId = "entityId";
+    final var entityId = "memberId";
 
     // when
     services.addMember(tenantId, entityType, entityId);
@@ -218,7 +218,7 @@ public class TenantServiceTest {
   public void shouldRemoveEntityFromTenant(final EntityType entityType) {
     // given
     final var tenantId = "tenantId";
-    final var entityId = "entityId";
+    final var entityId = "memberId";
 
     // when
     services.removeMember(tenantId, entityType, entityId);

@@ -59,7 +59,7 @@ public final class RoleRequestValidator {
         validateId(entityId, "mappingId", violations);
         break;
       default:
-        validateId(entityId, "entityId", violations);
+        validateId(entityId, "memberId", violations);
     }
   }
 

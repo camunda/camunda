@@ -150,7 +150,7 @@ public class RoleServicesTest {
   public void shouldAddUserToRole() {
     // given
     final var roleId = "roleId";
-    final var entityId = "entityId";
+    final var entityId = "memberId";
 
     // when
     services.addMember(new RoleMemberRequest(roleId, entityId, EntityType.USER));

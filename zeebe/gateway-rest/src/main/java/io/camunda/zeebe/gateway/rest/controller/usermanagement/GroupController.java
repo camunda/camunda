@@ -13,7 +13,7 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
-import io.camunda.service.GroupServices.GroupMemberRequest;
+import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
@@ -79,11 +79,8 @@ public class GroupController {
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> assignUserToGroup(
       @PathVariable final String groupId, @PathVariable final String username) {
-    return RequestMapper.executeServiceMethodWithAcceptedResult(
-        () ->
-            groupServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .assignMember(groupId, username, EntityType.USER));
+    return RequestMapper.toGroupMemberRequest(groupId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
   @CamundaPutMapping(
@@ -92,17 +89,14 @@ public class GroupController {
   public CompletableFuture<ResponseEntity<Object>> assignMappingToGroup(
       @PathVariable final String groupId, @PathVariable final String mappingId) {
     return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMapping);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
   @CamundaDeleteMapping(path = "/{groupId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromGroup(
       @PathVariable final String groupId, @PathVariable final String username) {
-    return RequestMapper.executeServiceMethodWithAcceptedResult(
-        () ->
-            groupServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(groupId, username, EntityType.USER));
+    return RequestMapper.toGroupMemberRequest(groupId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
   @CamundaDeleteMapping(
@@ -111,7 +105,7 @@ public class GroupController {
   public CompletableFuture<ResponseEntity<Object>> unassignMappingToGroup(
       @PathVariable final String groupId, @PathVariable final String mappingId) {
     return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMapping);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
   @CamundaPostMapping(path = "/{groupId}/users/search")
@@ -176,12 +170,12 @@ public class GroupController {
         ResponseMapper::toGroupUpdateResponse);
   }
 
-  public CompletableFuture<ResponseEntity<Object>> assignMapping(final GroupMemberRequest request) {
+  public CompletableFuture<ResponseEntity<Object>> assignMember(final GroupMemberDTO request) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .assignMember(request.groupId(), request.entityId(), request.entityType()));
+                .assignMember(request));
   }
 
   private ResponseEntity<UserSearchResult> searchUsersInGroup(
@@ -204,12 +198,11 @@ public class GroupController {
         .build();
   }
 
-  public CompletableFuture<ResponseEntity<Object>> unassignMapping(
-      final GroupMemberRequest request) {
+  public CompletableFuture<ResponseEntity<Object>> unassignMember(final GroupMemberDTO request) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(request.groupId(), request.entityId(), request.entityType()));
+                .removeMember(request));
   }
 }

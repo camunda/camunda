@@ -20,6 +20,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices.GroupDTO;
+import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
@@ -170,10 +171,10 @@ public class GroupServiceTest {
     final var groupKey = Protocol.encodePartitionId(1, 123);
     final var groupId = String.valueOf(groupKey);
     final var memberId = "456";
-    final var memberType = EntityType.USER;
+    final var dto = new GroupMemberDTO(groupId, memberId, EntityType.USER);
 
     // when
-    services.assignMember(groupId, memberId, memberType);
+    services.assignMember(dto);
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -194,9 +195,10 @@ public class GroupServiceTest {
     final var groupId = String.valueOf(groupKey);
     final var username = "username";
     final var memberType = EntityType.USER;
+    final var dto = new GroupMemberDTO(groupId, username, EntityType.USER);
 
     // when
-    services.removeMember(groupId, username, memberType);
+    services.removeMember(dto);
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();
