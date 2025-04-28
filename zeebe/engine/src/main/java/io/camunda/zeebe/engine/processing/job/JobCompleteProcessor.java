@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -33,9 +34,11 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.math.NumberUtils;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
@@ -70,6 +73,11 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           Expected to complete task listener job, but correcting the assignee on 'CREATING' event is \
           not supported when the user task has an assignee defined in the model \
           (job key '%d', type '%s', processInstanceKey '%d').
+          """;
+  private static final String MISSING_USER_TASK_KEY_IN_JOB_HEADERS_MESSAGE =
+      """
+          Expected user task key in job custom headers, but it was not found \
+          or was invalid (job key: '%d', type: '%s', processInstanceKey: '%d').
           """;
 
   private static final Set<String> CORRECTABLE_PROPERTIES =
@@ -271,9 +279,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     final var correctedAttributes = command.getValue().getResult().getCorrectedAttributes();
 
     if (correctedAttributes.contains(UserTaskRecord.ASSIGNEE)) {
-      final var uerTaskKey =
-          elementInstanceState.getInstance(job.getElementInstanceKey()).getUserTaskKey();
-
+      final var uerTaskKey = getUserTaskKey(command.getKey(), job);
       final var initialAssignee = userTaskState.findInitialAssignee(uerTaskKey);
 
       if (initialAssignee.isPresent()) {
@@ -286,6 +292,19 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     }
 
     return Either.right(job);
+  }
+
+  private long getUserTaskKey(final long jobKey, final JobRecord job) {
+    return Optional.of(job)
+        .map(JobRecord::getCustomHeaders)
+        .map(headers -> headers.get(Protocol.USER_TASK_KEY_HEADER_NAME))
+        .filter(NumberUtils::isDigits)
+        .map(Long::parseLong)
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    MISSING_USER_TASK_KEY_IN_JOB_HEADERS_MESSAGE.formatted(
+                        jobKey, job.getType(), job.getProcessInstanceKey())));
   }
 
   private Either<Rejection, JobRecord> checkTaskListenerJobForUnknownPropertyCorrections(
