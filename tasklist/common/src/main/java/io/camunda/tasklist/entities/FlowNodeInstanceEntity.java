@@ -15,6 +15,7 @@ public class FlowNodeInstanceEntity extends TasklistZeebeEntity<FlowNodeInstance
   private String processInstanceId;
   private Long position;
   private FlowNodeType type;
+  private FlowNodeState state;
 
   public String getProcessInstanceId() {
     return processInstanceId;
@@ -52,6 +53,20 @@ public class FlowNodeInstanceEntity extends TasklistZeebeEntity<FlowNodeInstance
     return this;
   }
 
+  public FlowNodeState getState() {
+    return state;
+  }
+
+  public void setState(final FlowNodeState state) {
+    this.state = state;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(), parentFlowNodeId, processInstanceId, position, type, state);
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -64,14 +79,10 @@ public class FlowNodeInstanceEntity extends TasklistZeebeEntity<FlowNodeInstance
       return false;
     }
     final FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
-    return Objects.equals(parentFlowNodeId, that.parentFlowNodeId)
+    return type == that.type
+        && state == that.state
+        && Objects.equals(parentFlowNodeId, that.parentFlowNodeId)
         && Objects.equals(processInstanceId, that.processInstanceId)
-        && Objects.equals(position, that.position)
-        && type == that.type;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), parentFlowNodeId, processInstanceId, position, type);
+        && Objects.equals(position, that.position);
   }
 }
