@@ -16,7 +16,9 @@
 package io.camunda.spring.client.annotation;
 
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.spring.client.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.spring.client.exception.BpmnError;
+import io.camunda.spring.client.exception.JobError;
 import java.lang.annotation.*;
 
 @Target(ElementType.METHOD)
@@ -25,33 +27,34 @@ import java.lang.annotation.*;
 public @interface JobWorker {
 
   /**
-   * Set to empty string which leads to method name being used (if not
-   * ${zeebe.client.worker.default-type} is configured) Implemented in
-   * ZeebeWorkerAnnotationProcessor
+   * Set to empty string which leads to the method name being used (if not
+   * ${camunda.client.worker.defaults.type} is configured) Implemented in {@link
+   * JobWorkerAnnotationProcessor}
    */
   String type() default "";
 
   /**
-   * set to empty string which leads to default from CamundaClientBuilderImpl being used in
-   * ZeebeWorkerAnnotationProcessor
+   * set to empty string which leads to default from CamundaClientBuilderImpl being used in {@link
+   * JobWorkerAnnotationProcessor}
    */
   String name() default "";
 
   /**
-   * Set the time (in milliseconds) for how long a job is exclusively assigned for this worker. In
-   * this time, the job can not be assigned by other workers to ensure that only one worker work on
-   * the job. When the time is over then the job can be assigned again by this or other worker if
-   * it's not completed yet. If no timeout is set, then the default is used from the configuration.
+   * Set the time (in milliseconds) for how long a job is exclusively assigned for this worker.
+   * During this time, the job cannot be assigned by other workers to ensure that only one worker
+   * works on the job. When the time is over, then the job can be assigned again by this or other
+   * worker if it's not completed yet. If no timeout is set, then the default is used from the
+   * {@link CamundaClientConfiguration}
    */
   long timeout() default -1L;
 
   /**
    * Set the maximum number of jobs which will be exclusively activated for this worker at the same
-   * time. This is used to control the backpressure of the worker. When the maximum is reached then
-   * the worker will stop activating new jobs in order to not overwhelm the client and give other
-   * workers the chance to work on the jobs. The worker will try to activate new jobs again when
-   * jobs are completed (or marked as failed). If no maximum is set then the default, from the
-   * CamundaClientConfigurationImpl, is used. <br>
+   * time. This is used to control the backpressure of the worker. When the maximum is reached, then
+   * the worker will stop activating new jobs to not overwhelm the client and give other workers the
+   * chance to work on the jobs. The worker will try to activate new jobs again when jobs are
+   * completed (or marked as failed). If no maximum is set, then the default from the {@link
+   * CamundaClientConfiguration}, is used. <br>
    * <br>
    * Considerations: A greater value can avoid situations in which the client waits idle for the
    * broker to provide more jobs. This can improve the worker's throughput. The memory used by the
@@ -64,22 +67,21 @@ public @interface JobWorker {
   int maxJobsActive() default -1;
 
   /**
-   * Set the request timeout (in seconds) for activate job request used to poll for new job. If no
-   * request timeout is set then the default is used from the {@link CamundaClientConfiguration
-   * CamundaClientConfigurationImpl}
+   * Set the request timeout (in seconds) for activate job request used to poll for new jobs. If no
+   * request timeout is set then the default is used from the {@link CamundaClientConfiguration}
    */
   long requestTimeout() default -1L;
 
   /**
    * Set the maximal interval (in milliseconds) between polling for new jobs. A job worker will
    * automatically try to always activate new jobs after completing jobs. If no jobs can be
-   * activated after completing the worker will periodically poll for new jobs. If no poll interval
+   * activated after completing, the worker will periodically poll for new jobs. If no poll interval
    * is set then the default is used from the {@link CamundaClientConfiguration}
    */
   long pollInterval() default -1L;
 
   /**
-   * Set a list of variable names which should be fetch on job activation. The jobs which are
+   * Set a list of variable names which should be fetched on job activation. The jobs which are
    * activated by this worker will only contain variables from this list. This can be used to limit
    * the number of variables of the activated jobs.
    */
@@ -92,15 +94,22 @@ public @interface JobWorker {
    * If set to true, the job is automatically completed after the worker code has finished. In this
    * case, your worker code is not allowed to complete the job itself.
    *
-   * <p>You can still throw exceptions if you want to raise a problem instead of job completion. You
-   * could also raise a BPMN problem throwing a {@link BpmnError}
+   * <p>You can still throw exceptions if you want to raise a problem instead of job completion. To
+   * control the retry behavior or submit variables, you can use the {@link JobError}. You could
+   * also raise a BPMN error throwing a {@link BpmnError}
    */
   boolean autoComplete() default true;
 
+  /** If set to true, the worker will actually be subscribing. */
   boolean enabled() default true;
 
+  /** A list of tenants for this job will be worked on. */
   String[] tenantIds() default {};
 
+  /**
+   * Whether job streaming should be enabled for this job type. Useful in high-performance setups
+   * but can only be used with a gRPC connection.
+   */
   boolean streamEnabled() default false;
 
   /** Stream timeout in ms */
