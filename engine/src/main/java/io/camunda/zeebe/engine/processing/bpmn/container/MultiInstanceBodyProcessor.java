@@ -64,11 +64,7 @@ public final class MultiInstanceBodyProcessor
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
-<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/container/MultiInstanceBodyProcessor.java
-=======
-  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
->>>>>>> b58060f0 (feat: mappings applied before updating multi instance output collection):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/container/MultiInstanceBodyProcessor.java
 
   public MultiInstanceBodyProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -79,11 +75,7 @@ public final class MultiInstanceBodyProcessor
     expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
-<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/container/MultiInstanceBodyProcessor.java
-=======
-    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
->>>>>>> b58060f0 (feat: mappings applied before updating multi instance output collection):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/container/MultiInstanceBodyProcessor.java
   }
 
   @Override
@@ -420,11 +412,11 @@ public final class MultiInstanceBodyProcessor
 
       case "numberOfActiveInstances" -> getNumberOfActiveInstancesVariable(elementInstanceKey);
 
-      case "numberOfCompletedInstances" -> getNumberOfCompletedInstancesVariable(
-          elementInstanceKey);
+      case "numberOfCompletedInstances" ->
+          getNumberOfCompletedInstancesVariable(elementInstanceKey);
 
-      case "numberOfTerminatedInstances" -> getNumberOfTerminatedInstancesVariable(
-          elementInstanceKey);
+      case "numberOfTerminatedInstances" ->
+          getNumberOfTerminatedInstancesVariable(elementInstanceKey);
 
       default -> null;
     };
