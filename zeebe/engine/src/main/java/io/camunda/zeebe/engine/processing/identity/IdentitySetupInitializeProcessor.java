@@ -158,29 +158,28 @@ public final class IdentitySetupInitializeProcessor
         .forEach(
             mapping -> {
               final var existingById = mappingState.get(mapping.getMappingId());
-              final var existingByClaim =
-                  mappingState.get(mapping.getClaimName(), mapping.getClaimValue());
 
-              if (existingById.isPresent() || existingByClaim.isPresent()) {
-                if (existingByClaim.isPresent()) {
-                  // Mapping with claim exists -> reuse it
-                  final var persistedMapping = existingByClaim.get();
-                  mapping.setMappingId(persistedMapping.getMappingId());
-                } else {
-                  // Mapping with ID exists, but claims differ -> update claim in state
-                  stateWriter.appendFollowUpEvent(
-                      mapping.getMappingKey(), MappingIntent.UPDATED, mapping);
-                }
-                if (assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING)) {
-                  createdNewEntities.set(true);
-                }
-                if (assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING)) {
-                  createdNewEntities.set(true);
-                }
-              } else {
-                createdNewEntities.set(true);
-                createMapping(mapping, role, tenant);
-              }
+              existingById.ifPresentOrElse(
+                  persistedMapping -> {
+                    mapping.setMappingKey(persistedMapping.getMappingKey());
+                    // If claim name or value differs, update the mapping
+                    if (!persistedMapping.getClaimName().equals(mapping.getClaimName())
+                        || !persistedMapping.getClaimValue().equals(mapping.getClaimValue())) {
+                      stateWriter.appendFollowUpEvent(
+                          mapping.getMappingKey(), MappingIntent.UPDATED, mapping);
+                    }
+                    if (assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING)) {
+                      createdNewEntities.set(true);
+                    }
+                    if (assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING)) {
+                      createdNewEntities.set(true);
+                    }
+                  },
+                  () -> {
+                    mapping.setMappingKey(keyGenerator.nextKey());
+                    createdNewEntities.set(true);
+                    createMapping(mapping, role, tenant);
+                  });
             });
     return createdNewEntities.get();
   }
