@@ -235,11 +235,16 @@ public class VariableStoreElasticSearch implements VariableStore {
 
     final TermsQueryBuilder processInstanceKeyQuery =
         termsQuery(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
-    final TermQueryBuilder flowNodeStateQuery =
-        termQuery(FlowNodeInstanceIndex.STATE, FlowNodeState.ACTIVE.name());
 
-    queryBuilder.must(processInstanceKeyQuery);
-    queryBuilder.must(flowNodeStateQuery);
+    final TermQueryBuilder stateActiveQuery =
+        termQuery(FlowNodeInstanceIndex.STATE, FlowNodeState.ACTIVE.name());
+    final BoolQueryBuilder stateMissingQuery =
+        QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(FlowNodeInstanceIndex.STATE));
+    final BoolQueryBuilder stateQuery =
+        QueryBuilders.boolQuery()
+            .should(stateActiveQuery)
+            .should(stateMissingQuery)
+            .minimumShouldMatch(1);
 
     final TermsQueryBuilder typeQuery =
         QueryBuilders.termsQuery(
@@ -250,6 +255,9 @@ public class VariableStoreElasticSearch implements VariableStore {
             FlowNodeType.EVENT_SUB_PROCESS.toString(),
             FlowNodeType.MULTI_INSTANCE_BODY.toString(),
             FlowNodeType.PROCESS.toString());
+
+    queryBuilder.must(processInstanceKeyQuery);
+    queryBuilder.must(stateQuery);
     queryBuilder.must(typeQuery);
 
     final SearchRequest searchRequest =
