@@ -36,6 +36,10 @@ public class JobError extends CamundaError {
     this.retryBackoff = retryBackoff;
   }
 
+  public JobError(final String errorMessage) {
+    this(errorMessage, null, null, null, null);
+  }
+
   public Object getVariables() {
     return variables;
   }

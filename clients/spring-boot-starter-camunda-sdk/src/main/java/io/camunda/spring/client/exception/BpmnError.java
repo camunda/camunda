@@ -35,6 +35,10 @@ public class BpmnError extends CamundaError {
     this.variables = variables;
   }
 
+  public BpmnError(final String errorCode, final String errorMessage) {
+    this(errorCode, errorMessage, null, null);
+  }
+
   public String getErrorMessage() {
     return errorMessage;
   }

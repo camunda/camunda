@@ -25,8 +25,6 @@ import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.exception.BpmnError;
 import io.camunda.spring.client.exception.JobError;
 import io.camunda.spring.client.metrics.MetricsRecorder;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,17 +96,14 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
       final JobClient jobClient, final ActivatedJob job, final JobError jobError) {
     final int retries =
         jobError.getRetries() == null ? (job.getRetries() - 1) : jobError.getRetries();
-    final StringWriter stringWriter = new StringWriter();
-    final PrintWriter printWriter = new PrintWriter(stringWriter);
-    jobError.printStackTrace(printWriter);
-    final String message = stringWriter.toString();
+    final String errorMessage = JobHandlingUtil.createErrorMessage(jobError);
     final Duration backoff =
         jobError.getRetryBackoff() == null ? Duration.ZERO : jobError.getRetryBackoff();
     final FailJobCommandStep2 command =
         jobClient
             .newFailCommand(job.getKey())
             .retries(retries)
-            .errorMessage(message)
+            .errorMessage(errorMessage)
             .retryBackoff(backoff);
     return JobHandlingUtil.applyVariables(jobError.getVariables(), command);
   }

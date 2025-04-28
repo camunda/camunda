@@ -17,6 +17,7 @@ package io.camunda.spring.client.jobhandling;
 
 import io.camunda.client.api.command.CommandWithVariables;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.exception.JobError;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.result.ResultProcessor;
@@ -24,6 +25,7 @@ import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public final class JobHandlingUtil {
 
@@ -54,5 +56,9 @@ public final class JobHandlingUtil {
     } else {
       return command.variables(variables);
     }
+  }
+
+  public static String createErrorMessage(final JobError jobError) {
+    return ExceptionUtils.getStackTrace(jobError);
   }
 }

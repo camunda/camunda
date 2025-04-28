@@ -17,19 +17,13 @@ package io.camunda.spring.client.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.spring.common.exception.ZeebeBpmnError;
+import io.camunda.spring.client.jobhandling.JobHandlingUtil;
 import org.junit.jupiter.api.Test;
 
-public class BpmnErrorTest {
-  @Test
-  void shouldBeBackwardCompatible() {
-    assertThat(ZeebeBpmnError.class).isAssignableTo(BpmnError.class);
-  }
-
+public class JobErrorTest {
   @Test
   void shouldUseRequiredArgsCtor() {
-    final BpmnError bpmnError = new BpmnError("code", "message");
-    assertThat(bpmnError.getErrorMessage()).isEqualTo("message");
-    assertThat(bpmnError.getErrorCode()).isEqualTo("code");
+    final JobError jobError = new JobError("message1337");
+    assertThat(JobHandlingUtil.createErrorMessage(jobError)).contains("message1337");
   }
 }
