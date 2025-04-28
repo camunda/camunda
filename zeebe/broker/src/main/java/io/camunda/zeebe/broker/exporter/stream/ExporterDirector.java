@@ -529,7 +529,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                       container.openExporter();
                       return true;
                     } catch (final Exception e) {
-                      LOG.error("Failed to open exporter '{}'. Retrying...", container.getId(), e);
+                      LOG.warn("Failed to open exporter '{}'. Retrying...", container.getId());
+                      LOG.debug("Stacktrace:", e);
                       return false;
                     }
                   },
