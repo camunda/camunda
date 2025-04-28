@@ -6,13 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
-import {
-  useLocation,
-  useNavigate,
-  useOutletContext,
-  useSearchParams,
-} from 'react-router-dom';
+import {useLocation, useNavigate, useOutletContext} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
 import {
   useCompleteTask,
@@ -25,7 +19,6 @@ import {tracking} from 'common/tracking';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
 import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
-import {decodeTaskOpenedRef} from 'common/tracking/reftags';
 import {useTasks} from 'v1/api/useTasks.query';
 import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTask';
 import {autoSelectNextTaskStore} from 'common/tasks/next-task/autoSelectFirstTask';
@@ -58,33 +51,14 @@ const TaskDetails: React.FC = observer(() => {
   const {t} = useTranslation();
   const tasks = data?.pages.flat() ?? [];
   const hasRemainingTasks = tasks.length > 0;
-
   const {id} = useTaskDetailsParams();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const [searchParams, setSearchParams] = useSearchParams();
   const {mutateAsync: completeTask} = useCompleteTask();
   const {mutateAsync: uploadDocuments} = useUploadDocuments();
   const {formKey, processDefinitionKey, formId, id: taskId} = task;
-
   const {enabled: autoSelectNextTaskEnabled} = autoSelectNextTaskStore;
   const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
-
-  useEffect(() => {
-    const search = new URLSearchParams(searchParams);
-    const ref = search.get('ref');
-    if (search.has('ref')) {
-      search.delete('ref');
-      setSearchParams(search, {replace: true});
-    }
-
-    const taskOpenedRef = decodeTaskOpenedRef(ref);
-    tracking.track({
-      eventName: 'task-opened',
-      ...(taskOpenedRef ?? {}),
-    });
-  }, [searchParams, setSearchParams, taskId]);
 
   async function handleSubmission(
     variables: Pick<Variable, 'name' | 'value'>[],

@@ -16,13 +16,15 @@ import {Aside} from 'common/tasks/details/Aside';
 import {pages, useTaskDetailsParams} from 'common/routing';
 import {useTranslation} from 'react-i18next';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
-import {Outlet, useMatch, useNavigate} from 'react-router-dom';
+import {Outlet, useMatch, useNavigate, useSearchParams} from 'react-router-dom';
 import {DetailsSkeleton} from 'common/tasks/details/DetailsSkeleton';
 import {useProcessDefinitionXml} from 'v2/api/useProcessDefinitionXml.query';
 import {useTask} from 'v2/api/useTask.query';
 import {useEffect} from 'react';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {TaskDetailsHeader} from 'common/tasks/details/TaskDetailsHeader';
+import {tracking} from 'common/tracking';
+import {decodeTaskOpenedRef} from 'common/tracking/reftags';
 
 type OutletContext = {
   task: UserTask;
@@ -43,8 +45,9 @@ const TaskDetailsLayout: React.FC = () => {
       enabled: task !== undefined && !isTaskCompleted,
     },
   );
-
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     if (task?.state === 'CANCELED') {
       notificationsStore.displayNotification({
@@ -63,6 +66,21 @@ const TaskDetailsLayout: React.FC = () => {
     task?.processDefinitionId,
     t,
   ]);
+
+  useEffect(() => {
+    const search = new URLSearchParams(searchParams);
+    const ref = search.get('ref');
+    if (search.has('ref')) {
+      search.delete('ref');
+      setSearchParams(search, {replace: true});
+    }
+
+    const taskOpenedRef = decodeTaskOpenedRef(ref);
+    tracking.track({
+      eventName: 'task-opened',
+      ...(taskOpenedRef ?? {}),
+    });
+  }, [searchParams, setSearchParams, id]);
 
   const tabs = [
     {
