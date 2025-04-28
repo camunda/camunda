@@ -162,8 +162,15 @@ public final class IdentitySetupInitializeProcessor
                   mappingState.get(mapping.getClaimName(), mapping.getClaimValue());
 
               if (existingById.isPresent() || existingByClaim.isPresent()) {
-                final var persistedMapping = existingByClaim.orElseGet(existingById::get);
-                mapping.setMappingId(persistedMapping.getMappingId());
+                if (existingByClaim.isPresent()) {
+                  // Mapping with claim exists -> reuse it
+                  final var persistedMapping = existingByClaim.get();
+                  mapping.setMappingId(persistedMapping.getMappingId());
+                } else {
+                  // Mapping with ID exists, but claims differ -> update claim in state
+                  stateWriter.appendFollowUpEvent(
+                      mapping.getMappingKey(), MappingIntent.UPDATED, mapping);
+                }
                 if (assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING)) {
                   createdNewEntities.set(true);
                 }
