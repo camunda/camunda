@@ -27,6 +27,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -174,6 +176,53 @@ public final class ProcessInstanceServiceTest {
         .containsExactly(Operation.eq(NO_PARENT_EXISTS_KEY));
     assertThat(enhancedFilter.stateOperations())
         .containsExactly(Operation.eq(ProcessInstanceState.ACTIVE.name()));
+  }
+
+  @Test
+  void shouldModifyProcessInstanceBatchOperationWithResult() {
+    // given
+    final var filter =
+        FilterBuilders.processInstance(b -> b.processDefinitionIds("test-process-definition-id"));
+
+    final long batchOperationKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(authentication.claims()).thenReturn(emptyMap());
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    final var request =
+        new ProcessInstanceModifyBatchOperationRequest(
+            filter,
+            List.of(
+                new BatchOperationProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("source1")
+                    .setTargetElementId("target1")));
+
+    // when
+    final var result = services.modifyProcessInstancesBatchOperation(request).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    // and our filter got enriched
+    final var filterBuffer = captor.getValue().getRequestWriter().getEntityFilterBuffer();
+    final var enhancedFilter =
+        MsgPackConverter.convertToObject(filterBuffer, ProcessInstanceFilter.class);
+    assertThat(enhancedFilter.stateOperations())
+        .containsExactly(Operation.eq(ProcessInstanceState.ACTIVE.name()));
+
+    final var modificationPlan = captor.getValue().getRequestWriter().getModificationPlan();
+    assertThat(modificationPlan.getMoveInstructions()).hasSize(1);
+    assertThat(modificationPlan.getMoveInstructions().getFirst().getSourceElementId())
+        .isEqualTo("source1");
+    assertThat(modificationPlan.getMoveInstructions().getFirst().getTargetElementId())
+        .isEqualTo("target1");
   }
 
   private void authorizeProcessReadInstance(final boolean authorize, final String processId) {

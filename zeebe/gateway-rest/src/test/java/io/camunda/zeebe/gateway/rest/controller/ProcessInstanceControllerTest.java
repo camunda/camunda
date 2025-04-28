@@ -21,6 +21,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -1341,6 +1342,55 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class));
+  }
+
+  @Test
+  void shouldModifyProcessInstanceBatchOperation() throws Exception {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    when(processInstanceServices.modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter": {
+                "processDefinitionId": "test-process-definition-id"
+              },
+              "moveInstructions": [
+                {
+                  "sourceElementId": "source1",
+                  "targetElementId": "target1"
+                }
+              ]
+            }
+            """;
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/batch-operations/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"MODIFY_PROCESS_INSTANCE"}
+        """);
+
+    verify(processInstanceServices)
+        .modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class));
   }
 
   @Test

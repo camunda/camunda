@@ -1683,6 +1683,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /process-instances/batch-operations/modification:
+    post:
+      tags:
+        - Process instance
+      operationId: modifyProcessInstancesBatchOperation
+      summary: Create a batch operation to modify process instances
+      description: |
+        Modify multiple process instances.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceModificationBatchOperationInstruction"
+      responses:
+        "202":
+          description: The batch operation request was accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationCreatedResult"
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/migration:
     post:
       tags:
@@ -8256,9 +8292,10 @@ components:
       description: The type of the batch operation.
       type: string
       enum:
-        - CANCEL_PROCESS_INSTANCE
-        - RESOLVE_INCIDENT
-        - MIGRATE_PROCESS_INSTANCE
+      - CANCEL_PROCESS_INSTANCE
+      - RESOLVE_INCIDENT
+      - MIGRATE_PROCESS_INSTANCE
+      - MODIFY_PROCESS_INSTANCE
     BatchOperationCreatedResult:
       type: object
       properties:
@@ -8392,6 +8429,38 @@ components:
             - COMPLETED
             - CANCELED
             - FAILED
+    ProcessInstanceModificationBatchOperationInstruction:
+      type: object
+      description: |
+        The process instance filter to define on which process instances tokens should be moved,
+        as well as mapping instructions which active element instances should be terminated and which
+        new element instances should be activated
+      properties:
+        filter:
+          $ref: "#/components/schemas/ProcessInstanceFilter"
+        moveInstructions:
+          description: Instructions describing which elements should be activated in which scopes and which variables should be created.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceModificationMoveBatchOperationInstruction"
+      required:
+        - filter
+        - moveInstructions
+    ProcessInstanceModificationMoveBatchOperationInstruction:
+      description: |-
+        Instructions describing a move operation. This instruction will terminate all active elementInstance
+        at sourceElementId and activate a new element instance for each terminated one at targetElementId.
+      type: object
+      properties:
+        sourceElementId:
+          description: The ID of the element that should be terminated.
+          type: string
+        targetElementId:
+          description: The ID of the element that should be activated.
+          type: string
+      required:
+        - sourceElementId
+        - targetElementId
   responses:
     InternalServerError:
       description: >

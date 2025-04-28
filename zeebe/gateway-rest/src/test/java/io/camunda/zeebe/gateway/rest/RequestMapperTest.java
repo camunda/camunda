@@ -20,12 +20,15 @@ import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -202,6 +205,56 @@ class RequestMapperTest {
     final var problemDetail = result.getLeft();
     assertThat(problemDetail.getStatus()).isEqualTo(400); // Bad Request
     assertThat(problemDetail.getDetail()).contains("are required");
+  }
+
+  @Test
+  void shouldMapProcessInstanceModifyBatchOperationRequest() {
+    // given
+    final var moveInstruction =
+        new ProcessInstanceModificationMoveBatchOperationInstruction()
+            .sourceElementId("source1")
+            .targetElementId("target1");
+
+    final var modificationInstruction =
+        new ProcessInstanceModificationBatchOperationInstruction()
+            .addMoveInstructionsItem(moveInstruction);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationInstruction);
+
+    // then
+    assertTrue(result.isRight());
+    final var request = result.get();
+    assertThat(request.moveInstructions())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            instruction -> {
+              assertThat(instruction.getSourceElementId()).isEqualTo("source1");
+              assertThat(instruction.getTargetElementId()).isEqualTo("target1");
+            });
+  }
+
+  @Test
+  void shouldNotMapProcessInstanceModifyBatchOperationRequestWhenInvalid() {
+    // given
+    final var moveInstruction =
+        new ProcessInstanceModificationMoveBatchOperationInstruction().sourceElementId("source1");
+
+    final var modificationInstruction =
+        new ProcessInstanceModificationBatchOperationInstruction()
+            .addMoveInstructionsItem(moveInstruction);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationInstruction);
+
+    // then
+    assertTrue(result.isLeft());
+    final var problemDetail = result.getLeft();
+    assertThat(problemDetail.getStatus()).isEqualTo(400);
+    assertThat(problemDetail.getDetail()).isEqualTo("No targetElementId provided.");
   }
 
   private void setJwtAuthenticationInContext(final String sub, final String aud) {

@@ -40,6 +40,12 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
    */
   BatchOperationProcessInstanceMigrationPlanValue getMigrationPlan();
 
+  /**
+   * @return the modification plan, this is only used for {@link
+   *     BatchOperationType#MODIFY_PROCESS_INSTANCE}
+   */
+  BatchOperationProcessInstanceModificationPlanValue getModificationPlan();
+
   @Value.Immutable
   @ImmutableProtocol(
       builder = ImmutableBatchOperationProcessInstanceMigrationPlanValue.Builder.class)
@@ -54,5 +60,57 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
      * @return the mapping instructions, or an empty list if no instructions are available
      */
     List<ProcessInstanceMigrationMappingInstructionValue> getMappingInstructions();
+  }
+
+  @Value.Immutable
+  @ImmutableProtocol(
+      builder = ImmutableBatchOperationProcessInstanceModificationPlanValue.Builder.class)
+  interface BatchOperationProcessInstanceModificationPlanValue {
+
+    /**
+     * A list of move instructions. These instructions will be applied to all matching
+     * sourceElements and activate matching new targetElements.
+     *
+     * <p><b>Example: </b><br>
+     * Given a process instance with the following structure:
+     *
+     * <pre>
+     *   (start) -----> [ taskA ] -----> [ taskB ] ----> (end)
+     * </pre>
+     *
+     * A running processInstance has an active element <code>taskA</code>.<br>
+     * <br>
+     * When the following move instructions are applied:
+     *
+     * <ul>
+     *   <li>sourceElementId: <code>taskA</code>, targetElementId: <code>taskB</code>
+     * </ul>
+     *
+     * Then <code>taskA</code> will be terminated and <code>taskB</code> will be activated.
+     *
+     * <ul>
+     *   <li>move instructions, matching no active source element will have no effect on the
+     *       processInstance
+     *   <li>elements not matching any move instruction, will stay untouched
+     *   <li>when the processInstance has more than one active instance of a sourceElement, all
+     *       sourceElements will be terminated and for each terminated element a new targetElement
+     *       will be activated
+     * </ul>
+     *
+     * @return Returns a list of move instructions
+     */
+    List<ProcessInstanceModificationMoveInstructionValue> getMoveInstructions();
+  }
+
+  @Value.Immutable
+  @ImmutableProtocol(
+      builder = ImmutableProcessInstanceModificationMoveInstructionValue.Builder.class)
+  interface ProcessInstanceModificationMoveInstructionValue {
+
+    /** Returns the id of the element to terminate element instances at. */
+    String getSourceElementId();
+
+    /** Returns the id of the element to create a new element instance at. */
+    String getTargetElementId();
   }
 }
