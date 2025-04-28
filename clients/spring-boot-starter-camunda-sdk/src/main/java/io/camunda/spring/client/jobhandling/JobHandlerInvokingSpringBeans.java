@@ -70,12 +70,7 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
       if (workerValue.getAutoComplete()) {
         LOG.trace("Auto completing {}", job);
         final CommandWrapper command =
-            new CommandWrapper(
-                createCompleteCommand(jobClient, job, result),
-                job,
-                commandExceptionHandlingStrategy,
-                metricsRecorder,
-                workerValue.getMaxRetries());
+            createCommandWrapper(createCompleteCommand(jobClient, job, result), job);
         command.executeAsyncWithMetrics(
             MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
       } else {
@@ -83,13 +78,9 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
           LOG.warn("Result provided but auto complete disabled for job {}", job);
         }
       }
-    } catch (final Throwable t) {
-      if (t instanceof final Exception e) {
-        jobExceptionHandlingStrategy.handleException(
-            e, new ExceptionHandlingContext(jobClient, job, workerValue));
-      } else {
-        throw t;
-      }
+    } catch (final Exception e) {
+      jobExceptionHandlingStrategy.handleException(
+          e, new ExceptionHandlingContext(jobClient, job, workerValue));
     }
   }
 
