@@ -23,6 +23,7 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy.ExceptionHandlingContext;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.result.ResultProcessor;
 import io.camunda.spring.client.jobhandling.result.ResultProcessorContext;
@@ -83,11 +84,9 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
         }
       }
     } catch (final Throwable t) {
-      metricsRecorder.increase(
-          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
       if (t instanceof final Exception e) {
         jobExceptionHandlingStrategy.handleException(
-            jobClient, job, e, cmd -> createCommandWrapper(cmd, job));
+            e, new ExceptionHandlingContext(jobClient, job, workerValue));
       } else {
         throw t;
       }

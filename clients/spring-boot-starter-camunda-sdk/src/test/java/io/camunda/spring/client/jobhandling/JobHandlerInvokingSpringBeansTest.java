@@ -134,6 +134,7 @@ public class JobHandlerInvokingSpringBeansTest {
     when(failJobCommandStep2.retryBackoff(any())).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.variables(any(JobResponse.class))).thenReturn(failJobCommandStep2);
     when(failJobCommandStep2.send()).thenReturn(future);
+    when(future.thenApply(any())).thenReturn(mock(CompletionStage.class));
     final ActivatedJob job = mock(ActivatedJob.class);
     when(job.getRetries()).thenReturn(3);
     jobHandler.handle(jobClient, job);
@@ -227,6 +228,7 @@ public class JobHandlerInvokingSpringBeansTest {
   }
 
   private static JobExceptionHandlingStrategy jobExceptionHandlingStrategy() {
-    return new DefaultJobExceptionHandlingStrategy();
+    return new DefaultJobExceptionHandlingStrategy(
+        commandExceptionHandlingStrategy(), metricsRecorder());
   }
 }

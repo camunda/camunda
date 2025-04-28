@@ -88,8 +88,11 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public JobExceptionHandlingStrategy jobExceptionHandlingStrategy() {
-    return new DefaultJobExceptionHandlingStrategy();
+  public JobExceptionHandlingStrategy jobExceptionHandlingStrategy(
+      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final MetricsRecorder metricsRecorder) {
+    return new DefaultJobExceptionHandlingStrategy(
+        commandExceptionHandlingStrategy, metricsRecorder);
   }
 
   @Bean
