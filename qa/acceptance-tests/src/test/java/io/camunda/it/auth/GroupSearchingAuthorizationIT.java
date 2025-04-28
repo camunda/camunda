@@ -22,6 +22,7 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -131,7 +132,12 @@ class GroupSearchingAuthorizationIT {
   }
 
   private static void createGroup(final CamundaClient adminClient, final String groupName) {
-    adminClient.newCreateGroupCommand().name(groupName).send().join();
+    adminClient
+        .newCreateGroupCommand()
+        .groupId(Strings.newRandomValidIdentityId())
+        .name(groupName)
+        .send()
+        .join();
   }
 
   private static void waitForGroupsToBeCreated(

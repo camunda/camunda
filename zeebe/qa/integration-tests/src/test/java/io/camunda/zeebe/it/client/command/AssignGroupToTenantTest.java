@@ -51,7 +51,8 @@ class AssignGroupToTenantTest {
             .join()
             .getTenantKey();
 
-    groupKey = client.newCreateGroupCommand().name("group").send().join().getGroupKey();
+    groupKey =
+        client.newCreateGroupCommand().groupId("groupId").name("group").send().join().getGroupKey();
   }
 
   @Test

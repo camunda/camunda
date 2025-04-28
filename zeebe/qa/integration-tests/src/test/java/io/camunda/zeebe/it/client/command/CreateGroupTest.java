@@ -20,14 +20,14 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("Enable with https://github.com/camunda/camunda/issues/29925")
 @ZeebeIntegration
 class CreateGroupTest {
 
+  private static final String GROUP_ID = "groupId";
   private static final String GROUP_NAME = "groupName";
+  private static final String GROUP_DESCRIPTION = "groupDescription";
 
   @AutoClose CamundaClient client;
 
@@ -43,33 +43,68 @@ class CreateGroupTest {
   @Test
   void shouldCreateGroup() {
     // when
-    final var response = client.newCreateGroupCommand().name(GROUP_NAME).send().join();
+    final var response =
+        client
+            .newCreateGroupCommand()
+            .groupId(GROUP_ID)
+            .name(GROUP_NAME)
+            .description(GROUP_DESCRIPTION)
+            .send()
+            .join();
 
     // then
     assertThat(response.getGroupKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertGroupCreated(
         GROUP_NAME,
         (group) -> {
+          assertThat(group).hasGroupId(GROUP_ID);
           assertThat(group).hasName(GROUP_NAME);
+          assertThat(group).hasDescription(GROUP_DESCRIPTION);
         });
   }
 
   @Test
-  void shouldRejectIfGroupNameAlreadyExists() {
+  void shouldCreateGroupWithNoDescription() {
+    // when
+    final var response =
+        client.newCreateGroupCommand().groupId(GROUP_ID).name(GROUP_NAME).send().join();
+
+    // then
+    assertThat(response.getGroupKey()).isGreaterThan(0);
+    ZeebeAssertHelper.assertGroupCreated(
+        GROUP_NAME,
+        (group) -> {
+          assertThat(group).hasGroupId(GROUP_ID);
+          assertThat(group).hasName(GROUP_NAME);
+          assertThat(group).hasDescription("");
+        });
+  }
+
+  @Test
+  void shouldRejectIfGroupIdAlreadyExists() {
     // given
-    client.newCreateGroupCommand().name(GROUP_NAME).send().join();
+    client.newCreateGroupCommand().groupId(GROUP_ID).name(GROUP_NAME).send().join();
 
     // when / then
-    assertThatThrownBy(() -> client.newCreateGroupCommand().name(GROUP_NAME).send().join())
+    assertThatThrownBy(
+            () -> client.newCreateGroupCommand().groupId(GROUP_ID).name(GROUP_NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
-        .hasMessageContaining("a group with this name already exists");
+        .hasMessageContaining("a group with this ID already exists");
+  }
+
+  @Test
+  void shouldRejectIfMissingGroupId() {
+    // when / then
+    assertThatThrownBy(() -> client.newCreateGroupCommand().groupId(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
   }
 
   @Test
   void shouldRejectIfMissingGroupName() {
     // when / then
-    assertThatThrownBy(() -> client.newCreateGroupCommand().send().join())
+    assertThatThrownBy(() -> client.newCreateGroupCommand().groupId(GROUP_ID).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be null");
   }

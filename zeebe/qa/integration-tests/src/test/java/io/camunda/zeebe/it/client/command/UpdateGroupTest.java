@@ -41,7 +41,13 @@ class UpdateGroupTest {
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     groupKey =
-        client.newCreateGroupCommand().name("Initial Group Name").send().join().getGroupKey();
+        client
+            .newCreateGroupCommand()
+            .groupId("groupId")
+            .name("Initial Group Name")
+            .send()
+            .join()
+            .getGroupKey();
   }
 
   @Test
