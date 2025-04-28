@@ -14,9 +14,11 @@ import {
 } from './modifications';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {TOKEN_OPERATIONS} from 'modules/constants';
+import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
 
 const useHasPendingCancelOrMoveModification = () => {
   const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
+  const modificationsByFlowNode = useModificationsByFlowNode();
   const currentSelection = flowNodeSelectionStore.state.selection;
 
   if (currentSelection === null) {
@@ -29,17 +31,16 @@ const useHasPendingCancelOrMoveModification = () => {
     return willAllFlowNodesBeCanceled;
   }
 
-  if (
-    modificationsStore.modificationsByFlowNode[flowNodeId]?.areAllTokensCanceled
-  ) {
+  if (modificationsByFlowNode[flowNodeId]?.areAllTokensCanceled) {
     return true;
   }
 
   return (
     flowNodeInstanceId !== undefined &&
-    modificationsStore.hasPendingCancelOrMoveModification(
+    hasPendingCancelOrMoveModification(
       flowNodeId,
       flowNodeInstanceId,
+      modificationsByFlowNode,
     )
   );
 };

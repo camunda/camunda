@@ -10,7 +10,6 @@ import {render} from 'modules/testing-library';
 import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {createInstance} from 'modules/testUtils';
 import {createRef, useEffect} from 'react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
@@ -68,7 +67,6 @@ const renderPopover = (
 
 const initializeStores = () => {
   flowNodeSelectionStore.init();
-  processInstanceDetailsDiagramStore.init();
   processInstanceDetailsStore.setProcessInstance(
     createInstance({
       id: PROCESS_INSTANCE_ID,
@@ -82,7 +80,6 @@ const resetStores = () => {
   flowNodeSelectionStore.reset();
   processInstanceDetailsStore.reset();
   modificationsStore.reset();
-  processInstanceDetailsDiagramStore.reset();
   flowNodeMetaDataStore.reset();
 };
 

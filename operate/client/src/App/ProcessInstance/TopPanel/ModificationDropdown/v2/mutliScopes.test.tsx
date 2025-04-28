@@ -6,13 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {screen, waitFor} from '@testing-library/react';
+import {screen} from '@testing-library/react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {act} from 'react';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
@@ -47,7 +45,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
   };
 
   beforeEach(() => {
-    mockFetchProcessXML().withSuccess(open('multipleInstanceSubProcess.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       open('multipleInstanceSubProcess.bpmn'),
     );
@@ -89,12 +86,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
     renderPopover();
 
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
-
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
         flowNodeId: 'TaskB',
@@ -114,12 +105,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
     async () => {
       renderPopover();
 
-      await waitFor(() =>
-        expect(
-          processInstanceDetailsDiagramStore.state.diagramModel,
-        ).not.toBeNull(),
-      );
-
       act(() => {
         flowNodeSelectionStore.selectFlowNode({
           flowNodeId: 'TaskB',
@@ -129,7 +114,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
       expect(
         await screen.findByText(/Flow Node Modifications/),
       ).toBeInTheDocument();
-      expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+      expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
       expect(screen.getByText(/Move/)).toBeInTheDocument();
       expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     },
@@ -166,12 +151,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
       renderPopover();
 
-      await waitFor(() =>
-        expect(
-          processInstanceDetailsDiagramStore.state.diagramModel,
-        ).not.toBeNull(),
-      );
-
       act(() => {
         flowNodeSelectionStore.selectFlowNode({
           flowNodeId: 'TaskB',
@@ -181,7 +160,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
       expect(
         await screen.findByText(/Flow Node Modifications/),
       ).toBeInTheDocument();
-      expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+      expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
       expect(screen.getByText(/Move/)).toBeInTheDocument();
       expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     },
@@ -192,18 +171,13 @@ describe('Modification Dropdown - Multi Scopes', () => {
     async () => {
       renderPopover();
 
-      await waitFor(() =>
-        expect(
-          processInstanceDetailsDiagramStore.state.diagramModel,
-        ).not.toBeNull(),
-      );
+      act(() => cancelAllTokens('TaskB', 0, 0, {}));
 
-      act(() => {
-        cancelAllTokens('TaskB', 0, 0, {});
+      act(() =>
         flowNodeSelectionStore.selectFlowNode({
           flowNodeId: 'TaskB',
-        });
-      });
+        }),
+      );
 
       expect(
         await screen.findByText(/Flow Node Modifications/),
@@ -222,18 +196,13 @@ describe('Modification Dropdown - Multi Scopes', () => {
     async () => {
       renderPopover();
 
-      await waitFor(() =>
-        expect(
-          processInstanceDetailsDiagramStore.state.diagramModel,
-        ).not.toBeNull(),
-      );
+      act(() => cancelAllTokens('TaskB', 0, 0, {}));
 
-      act(() => {
-        cancelAllTokens('TaskB', 0, 0, {});
+      act(() =>
         flowNodeSelectionStore.selectFlowNode({
           flowNodeId: 'TaskB',
-        });
-      });
+        }),
+      );
 
       expect(
         await screen.findByText(/Flow Node Modifications/),
