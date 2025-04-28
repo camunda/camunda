@@ -68,7 +68,7 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
       elementInstances.addAll(elementInstanceState.getChildren(elementInstance.getKey()));
     }
 
-    LOGGER.info("Modifying process instance with key '{}'", processInstanceKey);
+    LOGGER.trace("Modifying process instance with key '{}'", processInstanceKey);
     commandWriter.appendFollowUpCommand(
         processInstanceKey,
         ProcessInstanceModificationIntent.MODIFY,

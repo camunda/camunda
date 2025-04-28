@@ -35,6 +35,7 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycle
 import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancellationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -232,6 +233,10 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         new ProcessInstanceMigrationBatchOperationExportHandler(
+            rdbmsWriter.getBatchOperationWriter()));
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE_MODIFICATION,
+        new ProcessInstanceModificationBatchOperationExportHandler(
             rdbmsWriter.getBatchOperationWriter()));
   }
 }

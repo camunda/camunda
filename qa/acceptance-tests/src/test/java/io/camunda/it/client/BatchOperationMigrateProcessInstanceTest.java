@@ -66,7 +66,7 @@ public class BatchOperationMigrateProcessInstanceTest {
     final var targetProcessDefinitionKey =
         deployProcessFromClasspath(client, "process/migration-process_v2.bpmn");
 
-    IntStream.range(0, 10)
+    IntStream.range(0, 20)
         .forEach(
             i -> {
               final var processInstanceKey =
