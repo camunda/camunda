@@ -76,8 +76,19 @@ const useNewTokenCountForSelectedNode = () => {
   );
 };
 
+const useIsPlaceholderSelected = () => {
+  const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
+  const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
+
+  return (
+    flowNodeSelectionStore.state.selection?.isPlaceholder ||
+    (!hasRunningOrFinishedTokens && newTokenCountForSelectedNode === 1)
+  );
+};
+
 export {
   useHasPendingCancelOrMoveModification,
   useHasRunningOrFinishedTokens,
   useNewTokenCountForSelectedNode,
+  useIsPlaceholderSelected,
 };
