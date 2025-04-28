@@ -8,7 +8,10 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -23,6 +26,8 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.slf4j.Logger;
@@ -46,6 +51,7 @@ public final class BatchOperationResumeProcessor
   private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
 
   private final BatchOperationState batchOperationState;
@@ -54,6 +60,7 @@ public final class BatchOperationResumeProcessor
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final ProcessingState processingState,
+      final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -62,11 +69,23 @@ public final class BatchOperationResumeProcessor
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
     batchOperationState = processingState.getBatchOperationState();
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
   public void processNewCommand(
       final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
+    final var request =
+        new AuthorizationRequest(
+            command, AuthorizationResourceType.BATCH_OPERATION, PermissionType.UPDATE);
+    final var authorizationResult = authCheckBehavior.isAuthorized(request);
+    if (authorizationResult.isLeft()) {
+      final Rejection rejection = authorizationResult.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var recordValue = command.getValue();
     final var batchOperationKey = command.getValue().getBatchOperationKey();
     final var resumeKey = keyGenerator.nextKey();

@@ -104,7 +104,10 @@ public final class BatchOperationCreateProcessor
       final TypedRecord<BatchOperationCreationRecord> command) {
 
     // first check for general CREATE_BATCH_OPERATION permission
-    final var isAuthorized = isAuthorized(command, PermissionType.CREATE);
+    final var isAuthorized =
+        authCheckBehavior.isAuthorized(
+            new AuthorizationRequest(
+                command, AuthorizationResourceType.BATCH_OPERATION, PermissionType.CREATE));
     if (isAuthorized.isLeft()) {
       // if that's not present, check for the BO type dependent permission
       final var permission =
@@ -117,20 +120,11 @@ public final class BatchOperationCreateProcessor
                 PermissionType.CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE;
             case RESOLVE_INCIDENT -> PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT;
           };
-      return isAuthorized(command, permission);
+      return authCheckBehavior.isAuthorized(
+          new AuthorizationRequest(command, AuthorizationResourceType.BATCH_OPERATION, permission));
     }
 
     return isAuthorized;
-  }
-
-  private Either<Rejection, Void> isAuthorized(
-      final TypedRecord<BatchOperationCreationRecord> command,
-      final PermissionType permissionType) {
-    final var request =
-        new AuthorizationRequest(
-            command, AuthorizationResourceType.BATCH_OPERATION, permissionType);
-
-    return authCheckBehavior.isAuthorized(request);
   }
 
   private static boolean isEmptyOrNullFilter(

@@ -82,17 +82,29 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.CANCEL,
             new BatchOperationCancelProcessor(
-                writers, commandDistributionBehavior, processingState, keyGenerator))
+                writers,
+                commandDistributionBehavior,
+                processingState,
+                authorizationCheckBehavior,
+                keyGenerator))
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.PAUSE,
             new BatchOperationPauseProcessor(
-                writers, commandDistributionBehavior, processingState, keyGenerator))
+                writers,
+                commandDistributionBehavior,
+                processingState,
+                authorizationCheckBehavior,
+                keyGenerator))
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.RESUME,
             new BatchOperationResumeProcessor(
-                writers, commandDistributionBehavior, processingState, keyGenerator))
+                writers,
+                commandDistributionBehavior,
+                processingState,
+                authorizationCheckBehavior,
+                keyGenerator))
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
