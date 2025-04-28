@@ -54,6 +54,7 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -99,6 +100,8 @@ const TopPanel: React.FC = observer(() => {
     totalMoveOperationRunningInstancesVisible || 1;
   const processDefinitionKey = useProcessDefinitionKeyContext();
 
+  const {flowNodesWithSubProcesses} = flowNodeInstanceStore.state;
+
   const {
     data: processDefinitionData,
     isFetching: isXmlFetching,
@@ -122,14 +125,28 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const allFlowNodeStateOverlays = statistics?.map(
-    ({flowNodeState, count, id: flowNodeId}) => ({
+  const subProcessesWithIncidents = flowNodesWithSubProcesses
+    .map(({state, flowNodeId}) => {
+      if (!state || !flowNodeId || state !== 'INCIDENT') return null;
+
+      return {
+        payload: {flowNodeState: 'incidents'},
+        type: OVERLAY_TYPE_STATE,
+        flowNodeId: flowNodeId,
+        position: {bottom: -5, right: 38},
+      };
+    })
+    .filter((item) => item !== null);
+
+  const allFlowNodeStateOverlays = [
+    ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
       payload: {flowNodeState, count},
       type: OVERLAY_TYPE_STATE,
       flowNodeId,
       position: overlayPositions[flowNodeState],
-    }),
-  );
+    })) || []),
+    ...subProcessesWithIncidents,
+  ];
 
   const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays?.filter(
     (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
