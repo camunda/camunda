@@ -244,6 +244,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     final TermsQueryBuilder typeQuery =
         QueryBuilders.termsQuery(
             FlowNodeInstanceIndex.TYPE,
+            FlowNodeType.AD_HOC_SUB_PROCESS.toString(),
             FlowNodeType.USER_TASK.toString(),
             FlowNodeType.SUB_PROCESS.toString(),
             FlowNodeType.EVENT_SUB_PROCESS.toString(),
