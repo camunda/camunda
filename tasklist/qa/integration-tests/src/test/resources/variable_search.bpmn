@@ -117,7 +117,6 @@
     </bpmn:userTask>
     <bpmn:userTask id="Activity_JW">
       <bpmn:extensionElements>
-        <zeebe:userTask />
         <zeebe:ioMapping>
           <zeebe:input source="=var1" target="jwvar1" />
           <zeebe:input source="=inputvar + &#34;jw&#34;" target="taskvar" />

@@ -63,7 +63,8 @@ public class FlowNodeInstanceEntity extends TasklistZeebeEntity<FlowNodeInstance
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), parentFlowNodeId, processInstanceId, position, type);
+    return Objects.hash(
+        super.hashCode(), parentFlowNodeId, processInstanceId, position, type, state);
   }
 
   @Override
@@ -78,9 +79,10 @@ public class FlowNodeInstanceEntity extends TasklistZeebeEntity<FlowNodeInstance
       return false;
     }
     final FlowNodeInstanceEntity that = (FlowNodeInstanceEntity) o;
-    return Objects.equals(parentFlowNodeId, that.parentFlowNodeId)
+    return type == that.type
+        && state == that.state
+        && Objects.equals(parentFlowNodeId, that.parentFlowNodeId)
         && Objects.equals(processInstanceId, that.processInstanceId)
-        && Objects.equals(position, that.position)
-        && type == that.type;
+        && Objects.equals(position, that.position);
   }
 }
