@@ -319,6 +319,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         commandDistributionBehavior,
+        authCheckBehavior,
         scheduledTaskStateFactory,
         searchClientsProxy,
         processingState,

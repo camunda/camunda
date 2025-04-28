@@ -126,6 +126,10 @@ public final class BatchOperationClient {
           AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
     }
 
+    public Record<BatchOperationCreationRecordValue> create(final String username) {
+      return create(AuthorizationUtil.getAuthInfo(username));
+    }
+
     public Record<BatchOperationCreationRecordValue> create(final AuthInfo authorizations) {
       final long position =
           writer.writeCommandOnPartition(

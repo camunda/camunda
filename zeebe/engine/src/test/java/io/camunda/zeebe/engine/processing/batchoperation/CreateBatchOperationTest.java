@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -116,5 +117,93 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
             RecordingExporter.batchOperationChunkRecords().withBatchOperationKey(batchOperationKey))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationChunkIntent.CREATE, BatchOperationChunkIntent.CREATED);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToCreateBatchOperationWithAdminPermission() {
+    // given
+    final var user = createUser();
+    addPermissionsToUser(user, PermissionType.CREATE);
+
+    // when
+    final var batchOperationRecord =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(
+                new UnsafeBuffer(
+                    MsgPackConverter.convertToMsgPack(new ProcessInstanceFilter.Builder().build())))
+            .create(user.getUsername());
+
+    // then
+    assertThat(batchOperationRecord.getRejectionType()).isEqualTo(RejectionType.NULL_VAL);
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToCreateBatchOperationWithNoPermissions() {
+    // given
+    final var user = createUser();
+
+    // when
+    final var batchOperationRecord =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .expectRejection()
+            .withFilter(
+                new UnsafeBuffer(
+                    MsgPackConverter.convertToMsgPack(new ProcessInstanceFilter.Builder().build())))
+            .create(user.getUsername());
+
+    // then
+    assertThat(batchOperationRecord.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToCreateWithSpecificPermissionCancelProcessInstance() {
+    checkAuthorized(
+        BatchOperationType.CANCEL_PROCESS_INSTANCE,
+        PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToCreateWithSpecificPermissionMigrateProcessInstance() {
+    checkAuthorized(
+        BatchOperationType.MIGRATE_PROCESS_INSTANCE,
+        PermissionType.CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToCreateWithSpecificPermissionModifyProcessInstance() {
+    checkAuthorized(
+        BatchOperationType.MODIFY_PROCESS_INSTANCE,
+        PermissionType.CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToCreateWithSpecificPermissionResolveIncident() {
+    checkAuthorized(
+        BatchOperationType.RESOLVE_INCIDENT,
+        PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT);
+  }
+
+  public void checkAuthorized(
+      final BatchOperationType batchOperationType, final PermissionType permissionType) {
+    // given
+    final var user = createUser();
+    addPermissionsToUser(user, permissionType);
+
+    // when
+    final var batchOperationRecord =
+        engine
+            .batchOperation()
+            .newCreation(batchOperationType)
+            .withFilter(
+                new UnsafeBuffer(
+                    MsgPackConverter.convertToMsgPack(new ProcessInstanceFilter.Builder().build())))
+            .create(user.getUsername());
+
+    // then
+    assertThat(batchOperationRecord.getRejectionType()).isEqualTo(RejectionType.NULL_VAL);
   }
 }
