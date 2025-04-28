@@ -35,7 +35,7 @@ public class SchemaManagerConfiguration {
 
     public static final Duration DEFAULT_MIN_RETRY_DELAY = Duration.ofMillis(500);
     public static final Duration DEFAULT_MAX_RETRY_DELAY = Duration.ofSeconds(10);
-    public static final int DEFAULT_MAX_RETRIES = 10;
+    public static final int DEFAULT_MAX_RETRIES = 12;
 
     @Override
     public int defaultMaxRetries() {

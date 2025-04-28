@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.util.retry;
 
+import static java.util.Optional.ofNullable;
+
 import io.github.resilience4j.core.IntervalBiFunction;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.core.functions.CheckedRunnable;
@@ -58,23 +60,23 @@ public class RetryDecorator {
   }
 
   public <T> T decorate(
-      final String message, final Callable<T> callable, final Predicate<T> retryPredicate)
+      final String operationName, final Callable<T> callable, final Predicate<T> retryPredicate)
       throws Exception {
-    final Retry retry = buildRetry(message, retryPredicate);
+    final Retry retry = buildRetry(operationName, retryPredicate);
     return Retry.decorateCallable(retry, callable).call();
   }
 
-  public void decorate(final String message, final Runnable runnable) {
-    final Retry retry = buildRetry(message, null);
+  public void decorate(final String operationName, final Runnable runnable) {
+    final Retry retry = buildRetry(operationName, null);
     Retry.decorateRunnable(retry, runnable).run();
   }
 
-  public void decorateCheckedRunnable(final String message, final CheckedRunnable runnable) {
-    final Retry retry = buildRetry(message, null);
+  public void decorateCheckedRunnable(final String operationName, final CheckedRunnable runnable) {
+    final Retry retry = buildRetry(operationName, null);
     Retry.decorateCheckedRunnable(retry, runnable).unchecked().run();
   }
 
-  private <T> Retry buildRetry(final String message, final Predicate<T> retryPredicate) {
+  private <T> Retry buildRetry(final String operationName, final Predicate<T> retryPredicate) {
     final var retryConfigBuilder =
         RetryConfig.<T>custom()
             .maxAttempts(retryConfiguration.getMaxRetries())
@@ -93,13 +95,30 @@ public class RetryDecorator {
 
     retry
         .getEventPublisher()
-        .onError(event -> LOG.error("Retry failed for `{}`: {}", message, event.getLastThrowable()))
-        .onRetry(
+        .onError(
             event ->
-                LOG.warn(
-                    "Retrying operation for '{}': attempt {}",
-                    message,
-                    event.getNumberOfRetryAttempts()));
+                ofNullable(event.getLastThrowable())
+                    .ifPresentOrElse(
+                        t -> LOG.error("Retry failed for '{}': {}", operationName, t.getMessage()),
+                        () -> LOG.error("Retry failed for '{}'", operationName)))
+        .onRetry(
+            event -> {
+              ofNullable(event.getLastThrowable())
+                  .ifPresentOrElse(
+                      t -> {
+                        LOG.warn(
+                            "Retrying operation for '{}': attempt {}. Message: {}.",
+                            operationName,
+                            event.getNumberOfRetryAttempts(),
+                            t.getMessage());
+                        LOG.debug("Stacktrace:", t);
+                      },
+                      () ->
+                          LOG.warn(
+                              "Retrying operation for '{}': attempt {}.",
+                              operationName,
+                              event.getNumberOfRetryAttempts()));
+            });
     return retry;
   }
 }
