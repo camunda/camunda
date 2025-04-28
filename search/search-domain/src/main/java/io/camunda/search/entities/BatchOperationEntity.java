@@ -30,7 +30,8 @@ public record BatchOperationEntity(
     PAUSED,
     COMPLETED,
     COMPLETED_WITH_ERRORS,
-    CANCELED
+    CANCELED,
+    INCOMPLETED // This is just used for running legacy batch operations
   }
 
   public enum BatchOperationItemState {

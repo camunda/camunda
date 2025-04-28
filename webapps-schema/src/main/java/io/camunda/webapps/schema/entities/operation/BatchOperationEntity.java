@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.operation;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationEntity> {
@@ -24,7 +25,22 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   private Integer operationsTotalCount = 0;
   private Integer operationsFinishedCount = 0;
 
+  // new fields for batch operation in zeebe engine
+  private Long batchOperationKey;
+  private BatchOperationState state;
+  private Integer operationsFailedCount = 0; // Just failed / rejected operations
+  private Integer operationsCompletedCount = 0; // Just successfully completed operations
+
   @JsonIgnore private Object[] sortValues;
+
+  public Long getBatchOperationKey() {
+    return batchOperationKey;
+  }
+
+  public BatchOperationEntity setBatchOperationKey(final Long batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
+    return this;
+  }
 
   public String getName() {
     return name;
@@ -50,6 +66,15 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
 
   public BatchOperationEntity setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
+    return this;
+  }
+
+  public BatchOperationState getState() {
+    return state;
+  }
+
+  public BatchOperationEntity setState(final BatchOperationState state) {
+    this.state = state;
     return this;
   }
 
@@ -98,6 +123,24 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     return this;
   }
 
+  public Integer getOperationsFailedCount() {
+    return operationsFailedCount;
+  }
+
+  public BatchOperationEntity setOperationsFailedCount(final Integer operationsFailedCount) {
+    this.operationsFailedCount = operationsFailedCount;
+    return this;
+  }
+
+  public Integer getOperationsCompletedCount() {
+    return operationsCompletedCount;
+  }
+
+  public BatchOperationEntity setOperationsCompletedCount(final Integer operationsCompletedCount) {
+    this.operationsCompletedCount = operationsCompletedCount;
+    return this;
+  }
+
   public Object[] getSortValues() {
     return sortValues;
   }
@@ -122,8 +165,12 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     result = 31 * result + (username != null ? username.hashCode() : 0);
     result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
     result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
+    result = 31 * result + (state != null ? state.hashCode() : 0);
     result =
         31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);
+    result =
+        31 * result + (operationsCompletedCount != null ? operationsCompletedCount.hashCode() : 0);
+    result = 31 * result + (operationsFailedCount != null ? operationsFailedCount.hashCode() : 0);
     return result;
   }
 
@@ -166,8 +213,60 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
         : that.operationsTotalCount != null) {
       return false;
     }
+    if (!Objects.equals(state, that.state)) {
+      return false;
+    }
+    if (!Objects.equals(operationsCompletedCount, that.operationsCompletedCount)) {
+      return false;
+    }
+    if (!Objects.equals(operationsFailedCount, that.operationsFailedCount)) {
+      return false;
+    }
+
     return operationsFinishedCount != null
         ? operationsFinishedCount.equals(that.operationsFinishedCount)
         : that.operationsFinishedCount == null;
+  }
+
+  @Override
+  public String toString() {
+    return "BatchOperationEntity{"
+        + "batchOperationKey="
+        + batchOperationKey
+        + "name='"
+        + name
+        + '\''
+        + ", type="
+        + type
+        + ", startDate="
+        + startDate
+        + ", endDate="
+        + endDate
+        + ", username='"
+        + username
+        + '\''
+        + ", instancesCount="
+        + instancesCount
+        + ", operationsTotalCount="
+        + operationsTotalCount
+        + ", operationsFinishedCount="
+        + operationsFinishedCount
+        + ", state="
+        + state
+        + ", operationsFailedCount="
+        + operationsFailedCount
+        + ", operationsCompletedCount="
+        + operationsCompletedCount
+        + '}';
+  }
+
+  public enum BatchOperationState {
+    CREATED,
+    ACTIVE,
+    PAUSED,
+    COMPLETED,
+    COMPLETED_WITH_ERRORS,
+    CANCELED,
+    INCOMPLETED
   }
 }

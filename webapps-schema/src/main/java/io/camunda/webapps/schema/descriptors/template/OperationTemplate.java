@@ -40,6 +40,7 @@ public class OperationTemplate extends AbstractTemplateDescriptor
   public static final String METADATA_AGGREGATION = "metadataAggregation";
   public static final String BATCH_OPERATION_ID_AGGREGATION = "batchOperationIdAggregation";
   public static final String COMPLETED_DATE = "completedDate";
+  public static final String ITEM_KEY = "itemKey";
 
   public OperationTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

@@ -8354,6 +8354,7 @@ components:
             - COMPLETED
             - COMPLETED_WITH_ERRORS
             - CANCELED
+            - INCOMPLETED
     BatchOperationSearchQueryResult:
       type: object
       allOf:
@@ -8380,6 +8381,7 @@ components:
             - COMPLETED
             - COMPLETED_WITH_ERRORS
             - CANCELED
+            - INCOMPLETED
         batchOperationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"
         startDate:
