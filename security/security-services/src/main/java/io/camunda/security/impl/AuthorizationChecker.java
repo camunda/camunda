@@ -133,11 +133,7 @@ public class AuthorizationChecker {
         authentication.authenticatedGroupKeys().stream()
             .map(Object::toString)
             .collect(Collectors.toSet()));
-    ownerIds.addAll(
-        // TODO remove this mapping when refactoring Roles to IDs
-        authentication.authenticatedRoleKeys().stream()
-            .map(Object::toString)
-            .collect(Collectors.toSet()));
+    ownerIds.addAll(authentication.authenticatedRoleIds());
     return ownerIds;
   }
 }
