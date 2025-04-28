@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.user;
 
+import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
 import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveRandomUsers;
 import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
@@ -16,7 +17,9 @@ import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
+import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -87,6 +90,38 @@ public class UserSpecificFilterIT {
     assertThat(users.total()).isEqualTo(1);
   }
 
+  @Test
+  public void shouldFilterUsersForGroup() {
+    final var group = GroupFixtures.createRandomized(b -> b);
+    final var anotherGroup = GroupFixtures.createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriter, anotherGroup);
+
+    Arrays.asList("user-abc", "user-123", "user-1337")
+        .forEach(
+            username ->
+                createAndSaveUser(
+                    rdbmsWriter,
+                    UserFixtures.createRandomized(
+                        b ->
+                            b.name("User 1337")
+                                .username(username)
+                                .email(username + "@camunda-test.com"))));
+
+    addUserToGroup(group.groupId(), "user-1337");
+    addUserToGroup(anotherGroup.groupId(), "user-abc");
+    addUserToGroup(anotherGroup.groupId(), "user-123");
+
+    final var users =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder().groupId(group.groupId()).build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(users.total()).isEqualTo(1);
+  }
+
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final UserFilter filter) {
@@ -119,6 +154,11 @@ public class UserSpecificFilterIT {
 
   private void addUserToTenant(final String tenantId, final String entityId) {
     rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "USER"));
+    rdbmsWriter.flush();
+  }
+
+  private void addUserToGroup(final String groupId, final String entityId) {
+    rdbmsWriter.getGroupWriter().addMember(new GroupMemberDbModel(groupId, entityId, "USER"));
     rdbmsWriter.flush();
   }
 }

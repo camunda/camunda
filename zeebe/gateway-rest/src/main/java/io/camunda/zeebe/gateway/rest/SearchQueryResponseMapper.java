@@ -396,8 +396,7 @@ public final class SearchQueryResponseMapper {
         .groupKey(KeyUtil.keyToString(groupEntity.groupKey()))
         .groupId(groupEntity.groupId())
         .name(groupEntity.name())
-        .description(groupEntity.description())
-        .assignedMemberIds(groupEntity.assignedMemberIds().stream().toList());
+        .description(groupEntity.description());
   }
 
   private static List<TenantResult> toTenants(final List<TenantEntity> tenants) {

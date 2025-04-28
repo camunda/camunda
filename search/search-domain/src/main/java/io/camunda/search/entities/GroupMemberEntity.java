@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record GroupEntity(Long groupKey, String groupId, String name, String description) {}
+public record GroupMemberEntity(String id, EntityType entityType) {}

@@ -8,16 +8,15 @@
 package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
-import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 
-public class GroupEntityTransformer
+public class GroupMemberEntityTransformer
     implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.usermanagement.GroupEntity, GroupEntity> {
+        io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity, GroupMemberEntity> {
 
   @Override
-  public GroupEntity apply(
-      final io.camunda.webapps.schema.entities.usermanagement.GroupEntity value) {
-    return new GroupEntity(
-        value.getKey(), value.getGroupId(), value.getName(), value.getDescription());
+  public GroupMemberEntity apply(
+      final io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity source) {
+    return new GroupMemberEntity(source.getMemberId(), source.getMemberType());
   }
 }

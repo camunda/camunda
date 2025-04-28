@@ -11,12 +11,10 @@ import io.camunda.db.rdbms.read.domain.GroupDbQuery;
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.columns.GroupSearchColumn;
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
-import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +47,6 @@ public class GroupReader extends AbstractEntityReader<GroupEntity> {
   }
 
   private GroupEntity map(final GroupDbModel model) {
-    return new GroupEntity(
-        model.groupKey(),
-        model.groupId(),
-        model.name(),
-        model.description(),
-        model.members().stream().map(GroupMemberDbModel::entityId).collect(Collectors.toSet()));
+    return new GroupEntity(model.groupKey(), model.groupId(), model.name(), model.description());
   }
 }

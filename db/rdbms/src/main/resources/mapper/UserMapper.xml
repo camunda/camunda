@@ -16,6 +16,9 @@
     <if test="filter.tenantId != null">
       JOIN ${prefix}TENANT_MEMBER tm ON t.USERNAME = tm.ENTITY_ID
     </if>
+    <if test="filter.groupId != null">
+      JOIN ${prefix}GROUP_MEMBER gm ON t.USERNAME = gm.ENTITY_ID
+    </if>
     <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
   </select>
 
@@ -32,6 +35,9 @@
     <if test="filter.tenantId != null">
     JOIN ${prefix}TENANT_MEMBER tm ON t.USERNAME = tm.ENTITY_ID
     </if>
+    <if test="filter.groupId != null">
+      JOIN ${prefix}GROUP_MEMBER gm ON t.USERNAME = gm.ENTITY_ID
+    </if>
     <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -47,6 +53,7 @@
     <if test="filter.name != null">AND t.NAME = #{filter.name}</if>
     <if test="filter.email != null">AND t.EMAIL = #{filter.email}</if>
     <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
+    <if test="filter.groupId != null">AND gm.GROUP_ID = #{filter.groupId}</if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.UserEntity">

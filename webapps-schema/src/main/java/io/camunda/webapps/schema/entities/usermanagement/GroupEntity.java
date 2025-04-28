@@ -15,7 +15,6 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
   private String groupId;
   private String name;
   private String description;
-  private String memberId;
 
   private EntityJoinRelation<String> join;
 
@@ -52,15 +51,6 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
   public GroupEntity setDescription(final String description) {
     this.description = description;
-    return this;
-  }
-
-  public String getMemberId() {
-    return memberId;
-  }
-
-  public GroupEntity setMemberId(final String memberId) {
-    this.memberId = memberId;
     return this;
   }
 
