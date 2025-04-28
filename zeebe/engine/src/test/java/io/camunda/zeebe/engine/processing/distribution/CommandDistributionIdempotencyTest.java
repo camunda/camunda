@@ -155,8 +155,6 @@ public class CommandDistributionIdempotencyTest {
 
   @AfterClass
   public static void assertAllProcessorsTested() {
-    // TODO remove with https://github.com/camunda/camunda/issues/30114
-    DISTRIBUTING_PROCESSORS.remove(RoleDeleteProcessor.class);
     if (!DISTRIBUTING_PROCESSORS.isEmpty()) {
       fail("No test scenario found for processors: '%s'".formatted(DISTRIBUTING_PROCESSORS));
     }
@@ -437,21 +435,25 @@ public class CommandDistributionIdempotencyTest {
           {
             "Role.CREATE is idempotent",
             new Scenario(
-                ValueType.ROLE, RoleIntent.CREATE, CommandDistributionIdempotencyTest::createRole),
+                ValueType.ROLE,
+                RoleIntent.CREATE,
+                () ->
+                    CommandDistributionIdempotencyTest.createRole(
+                        Strings.newRandomValidIdentityId())),
             RoleCreateProcessor.class
           },
-          // TODO fix test in https://github.com/camunda/camunda/issues/30114
-          //          {
-          //            "Role.DELETE is idempotent",
-          //            new Scenario(
-          //                ValueType.ROLE,
-          //                RoleIntent.DELETE,
-          //                () -> {
-          //                  final var group = createRole();
-          //                  return ENGINE.role().deleteRole(group.getKey()).delete();
-          //                }),
-          //            RoleDeleteProcessor.class
-          //          },
+          {
+            "Role.DELETE is idempotent",
+            new Scenario(
+                ValueType.ROLE,
+                RoleIntent.DELETE,
+                () -> {
+                  final var roleId = Strings.newRandomValidIdentityId();
+                  createRole(roleId);
+                  return ENGINE.role().deleteRole(roleId).delete();
+                }),
+            RoleDeleteProcessor.class
+          },
           {
             "Role.UPDATE is idempotent",
             new Scenario(
@@ -473,7 +475,8 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.ROLE,
                 RoleIntent.ADD_ENTITY,
                 () -> {
-                  final var role = createRole();
+                  final var roleId = Strings.newRandomValidIdentityId();
+                  final var role = createRole(roleId);
                   final var user = createUser();
                   return ENGINE
                       .role()
@@ -750,8 +753,8 @@ public class CommandDistributionIdempotencyTest {
     return ENGINE.group().newGroup(groupId).withName(UUID.randomUUID().toString()).create();
   }
 
-  private static Record<RoleRecordValue> createRole() {
-    return ENGINE.role().newRole(UUID.randomUUID().toString()).create();
+  private static Record<RoleRecordValue> createRole(final String roleId) {
+    return ENGINE.role().newRole(roleId).withName(UUID.randomUUID().toString()).create();
   }
 
   private static Record<TenantRecordValue> createTenant() {
