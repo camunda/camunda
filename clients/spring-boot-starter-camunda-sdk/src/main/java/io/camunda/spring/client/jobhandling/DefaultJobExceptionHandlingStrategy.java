@@ -38,22 +38,22 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
   public void handleException(
       final JobClient jobClient,
       final ActivatedJob job,
-      final Throwable throwable,
+      final Exception exception,
       final CommandWrapperCreator commandWrapperCreator)
-      throws Throwable {
-    if (throwable instanceof final JobError jobError) {
+      throws Exception {
+    if (exception instanceof final JobError jobError) {
       LOG.trace("Caught job error on {}", job);
       final CommandWrapper command =
           commandWrapperCreator.create(createFailJobCommand(jobClient, job, jobError));
       command.executeAsync();
-    } else if (throwable instanceof final BpmnError bpmnError) {
+    } else if (exception instanceof final BpmnError bpmnError) {
       LOG.trace("Caught BPMN error on {}", job);
       final CommandWrapper command =
           commandWrapperCreator.create(createThrowErrorCommand(jobClient, job, bpmnError));
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_BPMN_ERROR, job.getType());
     } else {
-      throw throwable;
+      throw exception;
     }
   }
 

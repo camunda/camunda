@@ -23,9 +23,9 @@ public interface JobExceptionHandlingStrategy {
   void handleException(
       JobClient jobClient,
       ActivatedJob job,
-      Throwable throwable,
+      Exception exception,
       CommandWrapperCreator commandWrapperCreator)
-      throws Throwable;
+      throws Exception;
 
   interface CommandWrapperCreator {
     CommandWrapper create(FinalCommandStep<?> command);

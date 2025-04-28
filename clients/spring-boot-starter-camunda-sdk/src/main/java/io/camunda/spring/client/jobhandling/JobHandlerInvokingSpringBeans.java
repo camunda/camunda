@@ -85,10 +85,10 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
     } catch (final Throwable t) {
       metricsRecorder.increase(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
-      try {
+      if (t instanceof Exception e) {
         jobExceptionHandlingStrategy.handleException(
-            jobClient, job, t, cmd -> createCommandWrapper(cmd, job));
-      } catch (final Throwable e) {
+            jobClient, job, e, cmd -> createCommandWrapper(cmd, job));
+      } else {
         throw t;
       }
     }
