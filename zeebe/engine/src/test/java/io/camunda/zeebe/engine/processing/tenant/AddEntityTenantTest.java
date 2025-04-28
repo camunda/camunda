@@ -110,6 +110,44 @@ public class AddEntityTenantTest {
   }
 
   @Test
+  public void shouldAddNonExistingUserToTenant() {
+    // given
+    final var entityType = USER;
+    final var username = UUID.randomUUID().toString();
+    final var tenantId = UUID.randomUUID().toString();
+    final var tenantKey =
+        engine
+            .tenant()
+            .newTenant()
+            .withTenantId(tenantId)
+            .withName("Tenant 1")
+            .create()
+            .getValue()
+            .getTenantKey();
+
+    // when add user entity to tenant
+    final var updatedTenant =
+        engine
+            .tenant()
+            .addEntity(tenantId)
+            .withEntityId(username)
+            .withEntityType(entityType)
+            .add()
+            .getValue();
+
+    // then assert that the entity was added correctly
+    Assertions.assertThat(updatedTenant)
+        .describedAs(
+            "Entity of type %s with ID %s should be correctly added to tenant with key %s",
+            entityType, username, tenantKey)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("entityId", username)
+        .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
+        .hasFieldOrPropertyWithValue("tenantId", tenantId)
+        .hasFieldOrPropertyWithValue("entityType", entityType);
+  }
+
+  @Test
   public void shouldAddGroupToTenant() {
     // given
     final var entityType = GROUP;

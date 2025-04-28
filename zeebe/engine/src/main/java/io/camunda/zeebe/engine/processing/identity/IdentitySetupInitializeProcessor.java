@@ -253,7 +253,7 @@ public final class IdentitySetupInitializeProcessor
         switch (entityType) {
           case USER, MAPPING ->
               membershipState.hasRelation(entityType, entityId, RelationType.ROLE, roleId);
-          default -> roleState.getEntityType(roleId, entityId).isPresent();
+          default -> throw new IllegalArgumentException("Unsupported entity type: " + entityType);
         };
     if (isAlreadyAssigned) {
       return false;

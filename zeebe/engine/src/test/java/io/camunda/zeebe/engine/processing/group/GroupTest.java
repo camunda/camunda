@@ -140,7 +140,29 @@ public class GroupTest {
   }
 
   @Test
-  public void shouldRejectIfEntityIsNotPresent() {
+  public void shouldNotRejectIfUserIsNotPresent() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var name = UUID.randomUUID().toString();
+    engine.group().newGroup(groupId).withName(name).create();
+
+    // when
+    final var notPresentEntityId = Strings.newRandomValidIdentityId();
+    final var updatedGroup =
+        engine
+            .group()
+            .addEntity(groupId)
+            .withEntityId(notPresentEntityId)
+            .withEntityType(EntityType.USER)
+            .add()
+            .getValue();
+
+    // then
+    assertThat(updatedGroup).hasEntityId(notPresentEntityId);
+  }
+
+  @Test
+  public void shouldRejectIfMappingIsNotPresent() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
@@ -154,7 +176,7 @@ public class GroupTest {
             .group()
             .addEntity(groupId)
             .withEntityId(notPresentEntityId)
-            .withEntityType(EntityType.USER)
+            .withEntityType(EntityType.MAPPING)
             .expectRejection()
             .add();
 
@@ -164,7 +186,7 @@ public class GroupTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
-                .formatted(notPresentEntityId, EntityType.USER, groupId));
+                .formatted(notPresentEntityId, EntityType.MAPPING, groupId));
   }
 
   @Test
@@ -254,7 +276,33 @@ public class GroupTest {
   }
 
   @Test
-  public void shouldRejectIfEntityIsNotPresentEntityRemoval() {
+  public void shouldRejectIfUserIsNotAssignedEntityRemoval() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var notPresentEntityId = Strings.newRandomValidIdentityId();
+    final var name = UUID.randomUUID().toString();
+    engine.group().newGroup(groupId).withName(name).create();
+
+    // when
+    final var notAssignedUpdate =
+        engine
+            .group()
+            .removeEntity(groupId)
+            .withEntityId(notPresentEntityId)
+            .withEntityType(EntityType.USER)
+            .expectRejection()
+            .remove();
+
+    // then
+    assertThat(notAssignedUpdate)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove entity with ID '%s' from group with ID '%s', but the entity is not assigned to this group."
+                .formatted(notPresentEntityId, groupId));
+  }
+
+  @Test
+  public void shouldRejectIfMappingIsNotPresentEntityRemoval() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var notPresentEntityId = Strings.newRandomValidIdentityId();
@@ -268,7 +316,7 @@ public class GroupTest {
             .group()
             .removeEntity(groupId)
             .withEntityId(notPresentEntityId)
-            .withEntityType(EntityType.USER)
+            .withEntityType(EntityType.MAPPING)
             .expectRejection()
             .remove();
 
@@ -278,7 +326,7 @@ public class GroupTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to remove an entity with ID '%s' and type '%s' from group with ID '%s', but the entity does not exist."
-                .formatted(notPresentEntityId, EntityType.USER, groupId));
+                .formatted(notPresentEntityId, EntityType.MAPPING, groupId));
   }
 
   @Test

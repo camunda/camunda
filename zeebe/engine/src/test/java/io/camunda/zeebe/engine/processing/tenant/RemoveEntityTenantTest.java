@@ -66,6 +66,40 @@ public class RemoveEntityTenantTest {
   }
 
   @Test
+  public void shouldRemoveNonExistingUserFromTenant() {
+    final var tenantId = UUID.randomUUID().toString();
+    engine
+        .tenant()
+        .newTenant()
+        .withTenantId(tenantId)
+        .withName("name")
+        .create()
+        .getValue()
+        .getTenantKey();
+    final var username = "foo";
+    engine
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+    final var removedEntity =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(username)
+            .withEntityType(EntityType.USER)
+            .remove()
+            .getValue();
+
+    Assertions.assertThat(removedEntity)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("tenantId", tenantId)
+        .hasFieldOrPropertyWithValue("entityId", username)
+        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+  }
+
+  @Test
   public void shouldRejectIfTenantIsNotPresentEntityRemoval() {
     final var notPresentTenantId = UUID.randomUUID().toString();
     final var notPresentUpdateRecord =

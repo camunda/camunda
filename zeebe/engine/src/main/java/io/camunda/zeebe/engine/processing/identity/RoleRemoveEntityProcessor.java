@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -34,7 +33,6 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
       "Expected to remove entity with key '%s' from role with key '%s', but the entity is not assigned to this role.";
   private final RoleState roleState;
-  private final UserState userState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -51,7 +49,6 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
-    userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
@@ -97,6 +94,14 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       return;
     }
 
+    if (!isEntityAssigned(record)) {
+      final var errorMessage =
+          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), record.getRoleKey());
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record);
     responseWriter.writeEventOnCommand(
         record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record, command);
@@ -111,21 +116,8 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
-    final var isAssigned =
-        switch (record.getEntityType()) {
-          case USER, MAPPING ->
-              membershipState.hasRelation(
-                  record.getEntityType(),
-                  // TODO: Use entity id instead of key
-                  Long.toString(record.getEntityKey()),
-                  RelationType.ROLE,
-                  // TODO: Use role id instead of key
-                  Long.toString(record.getRoleKey()));
-          default ->
-              roleState.getEntityType(record.getRoleKey(), record.getEntityKey()).isPresent();
-        };
 
-    if (isAssigned) {
+    if (isEntityAssigned(record)) {
       stateWriter.appendFollowUpEvent(
           command.getKey(), RoleIntent.ENTITY_REMOVED, command.getValue());
     } else {
@@ -136,9 +128,24 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
+  private boolean isEntityAssigned(final RoleRecord record) {
+    return switch (record.getEntityType()) {
+      case USER, MAPPING ->
+          membershipState.hasRelation(
+              record.getEntityType(),
+              // TODO: Use entity id instead of key
+              Long.toString(record.getEntityKey()),
+              RelationType.ROLE,
+              // TODO: Use role id instead of key
+              Long.toString(record.getRoleKey()));
+      default ->
+          throw new IllegalArgumentException("Unsupported entity type: " + record.getEntityType());
+    };
+  }
+
   private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
     return switch (entityType) {
-      case USER -> userState.getUser(entityKey).isPresent();
+      case USER -> true; // With simple mappings, any username can be assigned
       // todo use entityId; refactor with https://github.com/camunda/camunda/issues/30094
       case MAPPING -> mappingState.get(String.valueOf(entityKey)).isPresent();
       default -> false;

@@ -142,7 +142,6 @@ public class RoleAppliersTest {
     roleEntityRemovedApplier.applyState(roleKey, roleRecord);
 
     // then
-    assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
     assertThat(
             membershipState.getMemberships(
                 EntityType.USER, Long.toString(userKey), RelationType.ROLE))

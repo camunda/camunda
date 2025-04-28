@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -32,9 +31,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
-      "Expected to remove entity with ID '%s' from group with key '%s', but the entity is not assigned to this group.";
+      "Expected to remove entity with ID '%s' from group with ID '%s', but the entity is not assigned to this group.";
   private final GroupState groupState;
-  private final UserState userState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -51,7 +49,6 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     groupState = processingState.getGroupState();
-    userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
@@ -99,6 +96,14 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       return;
     }
 
+    if (!isEntityAssigned(record)) {
+      final var errorMessage =
+          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getGroupId());
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
     final var groupKey = persistedRecord.get().getGroupKey();
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_REMOVED, record);
     responseWriter.writeEventOnCommand(groupKey, GroupIntent.ENTITY_REMOVED, record, command);
@@ -113,17 +118,8 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var groupId = record.getGroupId();
 
-    final var isAssigned =
-        switch (record.getEntityType()) {
-          case USER, MAPPING ->
-              membershipState.hasRelation(
-                  record.getEntityType(), record.getEntityId(), RelationType.GROUP, groupId);
-          default -> false;
-        };
-
-    if (isAssigned) {
+    if (isEntityAssigned(record)) {
       stateWriter.appendFollowUpEvent(
           command.getKey(), GroupIntent.ENTITY_REMOVED, command.getValue());
     } else {
@@ -135,9 +131,21 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
+  private boolean isEntityAssigned(final GroupRecord record) {
+    return switch (record.getEntityType()) {
+      case USER, MAPPING ->
+          membershipState.hasRelation(
+              record.getEntityType(),
+              record.getEntityId(),
+              RelationType.GROUP,
+              record.getGroupId());
+      default -> false;
+    };
+  }
+
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
-      case USER -> userState.getUser(entityId).isPresent();
+      case USER -> true; // With simple mappings, any username can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
       default -> false;
     };

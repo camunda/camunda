@@ -131,21 +131,6 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
                   .setEntityType(entityType)
                   .setEntityKey(Long.parseLong(entityId)));
         });
-    roleState
-        .getEntitiesByType(roleKey)
-        .forEach(
-            (entityType, entityKeys) -> {
-              entityKeys.forEach(
-                  entityKey -> {
-                    final var entityRecord =
-                        new RoleRecord()
-                            .setRoleKey(roleKey)
-                            .setEntityKey(entityKey)
-                            .setEntityType(entityType);
-                    stateWriter.appendFollowUpEvent(
-                        roleKey, RoleIntent.ENTITY_REMOVED, entityRecord);
-                  });
-            });
   }
 
   private void deleteAuthorizations(final RoleRecord record) {
