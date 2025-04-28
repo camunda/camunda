@@ -162,9 +162,9 @@ public final class IdentitySetupInitializeProcessor
                   mappingState.get(mapping.getClaimName(), mapping.getClaimValue());
 
               if (existingById.isPresent() || existingByClaim.isPresent()) {
-                final var persistedMapping = existingById.orElseGet(existingByClaim::get);
+                final var persistedMapping = existingByClaim.orElseGet(existingById::get);
                 mapping.setMappingId(persistedMapping.getMappingId());
-                if (assignEntityToRole(role, persistedMapping.getMappingId(), EntityType.MAPPING)) {
+                if (assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING)) {
                   createdNewEntities.set(true);
                 }
                 if (assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING)) {
