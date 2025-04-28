@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.toList;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
+import io.camunda.tasklist.entities.FlowNodeState;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
@@ -55,8 +56,11 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
+import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
@@ -247,36 +251,51 @@ public class VariableStoreOpenSearch implements VariableStore {
   @Override
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
 
-    final Query.Builder processInstanceKeyQuery = new Query.Builder();
-    processInstanceKeyQuery.terms(
-        terms ->
-            terms
-                .field(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID)
-                .terms(
-                    t ->
-                        t.value(
-                            processInstanceIds.stream()
-                                .map(FieldValue::of)
-                                .collect(Collectors.toList()))));
+    final TermsQuery processInstanceKeyQuery =
+        TermsQuery.of(
+            t ->
+                t.field(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID)
+                    .terms(
+                        terms ->
+                            terms.value(processInstanceIds.stream().map(FieldValue::of).toList())));
 
-    final Query.Builder typeQuery = new Query.Builder();
-    typeQuery.terms(
-        terms ->
-            terms
-                .field(FlowNodeInstanceIndex.TYPE)
-                .terms(
-                    t ->
-                        t.value(
-                            Arrays.asList(
-                                FieldValue.of(FlowNodeType.USER_TASK.toString()),
-                                FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
-                                FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
-                                FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString()),
-                                FieldValue.of(FlowNodeType.PROCESS.toString())))));
+    final TermQuery stateActiveQuery =
+        TermQuery.of(
+            t ->
+                t.field(FlowNodeInstanceIndex.STATE)
+                    .value(FieldValue.of(FlowNodeState.ACTIVE.name())));
+    final BoolQuery stateMissingQuery =
+        BoolQuery.of(b -> b.mustNot(q -> q.exists(e -> e.field(FlowNodeInstanceIndex.STATE))));
+    final BoolQuery stateQuery =
+        BoolQuery.of(
+            b ->
+                b.should(q -> q.term(stateActiveQuery))
+                    .should(q -> q.bool(stateMissingQuery))
+                    .minimumShouldMatch("1"));
+
+    final TermsQuery typeQuery =
+        TermsQuery.of(
+            t ->
+                t.field(FlowNodeInstanceIndex.TYPE)
+                    .terms(
+                        terms ->
+                            terms.value(
+                                Arrays.asList(
+                                    FieldValue.of(FlowNodeType.USER_TASK.toString()),
+                                    FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
+                                    FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
+                                    FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString()),
+                                    FieldValue.of(FlowNodeType.PROCESS.toString())))));
+
+    final BoolQuery finalQuery =
+        BoolQuery.of(
+            b ->
+                b.must(q -> q.terms(processInstanceKeyQuery))
+                    .must(q -> q.terms(typeQuery))
+                    .must(q -> q.bool(stateQuery)));
 
     final Query.Builder combinedQuery = new Query.Builder();
-    combinedQuery.constantScore(
-        cs -> cs.filter(OpenSearchUtil.joinWithAnd(processInstanceKeyQuery, typeQuery)));
+    combinedQuery.constantScore(cs -> cs.filter(q -> q.bool(finalQuery)));
 
     final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
     searchRequestBuilder
