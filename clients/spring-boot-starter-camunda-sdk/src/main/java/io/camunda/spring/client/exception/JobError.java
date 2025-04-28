@@ -18,20 +18,22 @@ package io.camunda.spring.client.exception;
 import java.time.Duration;
 
 public class JobError extends CamundaError {
+  private final String errorMessage;
   private final Object variables;
   private final Integer retries;
-  private final Duration timeout;
+  private final Duration retryBackoff;
 
   public JobError(
-      final String message,
+      final String errorMessage,
       final Object variables,
       final Integer retries,
-      final Duration timeout,
+      final Duration retryBackoff,
       final Throwable cause) {
-    super(message, cause);
+    super(errorMessage, cause);
+    this.errorMessage = errorMessage;
     this.variables = variables;
     this.retries = retries;
-    this.timeout = timeout;
+    this.retryBackoff = retryBackoff;
   }
 
   public Object getVariables() {
@@ -42,7 +44,11 @@ public class JobError extends CamundaError {
     return retries;
   }
 
-  public Duration getTimeout() {
-    return timeout;
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public Duration getRetryBackoff() {
+    return retryBackoff;
   }
 }

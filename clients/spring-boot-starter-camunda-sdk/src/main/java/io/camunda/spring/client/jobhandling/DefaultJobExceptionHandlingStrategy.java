@@ -75,7 +75,8 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
     final PrintWriter printWriter = new PrintWriter(stringWriter);
     jobError.printStackTrace(printWriter);
     final String message = stringWriter.toString();
-    final Duration backoff = jobError.getTimeout() == null ? Duration.ZERO : jobError.getTimeout();
+    final Duration backoff =
+        jobError.getRetryBackoff() == null ? Duration.ZERO : jobError.getRetryBackoff();
     final FailJobCommandStep2 command =
         jobClient
             .newFailCommand(job.getKey())
