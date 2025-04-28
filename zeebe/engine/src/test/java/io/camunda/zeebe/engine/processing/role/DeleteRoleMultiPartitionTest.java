@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -38,12 +37,12 @@ public class DeleteRoleMultiPartitionTest {
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30114")
   public void shouldDistributeRoleDeleteCommand() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().deleteRole(roleKey).delete();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).withName(name).create();
+    engine.role().deleteRole(roleId).delete();
 
     assertThat(
             RecordingExporter.records()
@@ -92,12 +91,12 @@ public class DeleteRoleMultiPartitionTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30114")
   public void shouldDistributeInIdentityQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().deleteRole(roleKey).delete();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).withName(name).create();
+    engine.role().deleteRole(roleId).delete();
 
     // then
     assertThat(
@@ -109,15 +108,15 @@ public class DeleteRoleMultiPartitionTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30114")
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
     final var name = UUID.randomUUID().toString();
+    final var roleId = UUID.randomUUID().toString();
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptRoleCreateForPartition(partitionId);
     }
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().deleteRole(roleKey).delete();
+    engine.role().newRole(roleId).withName(name).create();
+    engine.role().deleteRole(roleId).delete();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));
