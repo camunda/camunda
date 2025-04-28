@@ -48,6 +48,7 @@ body:
         - <!-- Medium- -->
         - <!-- High- -->
         - <!-- Critical- -->
+        - <!-- Unknown- -->
       default: null
     validations:
       required: true

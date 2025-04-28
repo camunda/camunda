@@ -62,11 +62,28 @@ Severity:
 - *Mid:* Having a noticeable impact on production usage, which does not lead to data loss, or for which there is a known configuration workaround.
 - *High:* Having a noticeable impact on production usage, which does not lead to data loss, but for which there is no known workaround, or the workaround is very complex. Examples include issues which lead to regular crashes and break the availability SLA.
 - *Critical:* Stop-the-world issue with a high impact that can lead to data loss (e.g. corruption, deletion, inconsistency, etc.), unauthorized privileged actions (e.g. remote code execution, data exposure, etc.), and for which there is no existing configuration workaround.
+- *Unknown:* If it's not possible to determine the severity of a bug without in-depth investigation, you can select unknown. This should be treated as high until we have enough information to triage it properly.
 
 Likelihood:
 - *Low:* rarely observed issue/ rather unlikely edge-case
 - *Mid:* occasionally observed
 - *High:* recurring issue
+
+### Determining the severity of an issue
+
+Whenever possible, please try to determine the severity of an issue to the best of your knowledge.
+Only select `Unknown` if it's really difficult to tell without spending a non-negligible amount of time (e.g. >1h) to
+figure it out.
+
+#### Zeebe heuristic
+
+The following is a set of questions which can help determine the severity of a bug in Zeebe:
+
+- Was there any data loss or corruption? Then this is **critical**.
+- Is there a configuration workaround?
+- Did the cluster recover? By itself, or did it require manual intervention?
+- Was processing unavailable?
+- Was exporting unavailable?
 
 ### Starting on an issue
 
