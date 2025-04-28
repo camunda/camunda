@@ -39,30 +39,33 @@ public abstract class CamundaError extends RuntimeException {
     return bpmnError(errorCode, errorMessage, null, null);
   }
 
-  public static JobError jobError(final String message) {
-    return jobError(message, null, null, null, null);
+  public static JobError jobError(final String errorMessage) {
+    return jobError(errorMessage, null, null, null, null);
   }
 
-  public static JobError jobError(final String message, final Object variables) {
-    return jobError(message, variables, null, null, null);
-  }
-
-  public static JobError jobError(
-      final String message, final Object variables, final Integer retries) {
-    return jobError(message, variables, retries, null, null);
+  public static JobError jobError(final String errorMessage, final Object variables) {
+    return jobError(errorMessage, variables, null, null, null);
   }
 
   public static JobError jobError(
-      final String message, final Object variables, final Integer retries, final Duration timeout) {
-    return jobError(message, variables, retries, timeout, null);
+      final String errorMessage, final Object variables, final Integer retries) {
+    return jobError(errorMessage, variables, retries, null, null);
   }
 
   public static JobError jobError(
-      final String message,
+      final String errorMessage,
       final Object variables,
       final Integer retries,
-      final Duration timeout,
+      final Duration retryBackoff) {
+    return jobError(errorMessage, variables, retries, retryBackoff, null);
+  }
+
+  public static JobError jobError(
+      final String errorMessage,
+      final Object variables,
+      final Integer retries,
+      final Duration retryBackoff,
       final Throwable cause) {
-    return new JobError(message, variables, retries, timeout, cause);
+    return new JobError(errorMessage, variables, retries, retryBackoff, cause);
   }
 }
