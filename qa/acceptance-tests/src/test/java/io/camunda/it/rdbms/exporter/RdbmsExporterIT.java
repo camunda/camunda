@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.exporter;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.NO_PARENT_EXISTS_KEY;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
@@ -130,6 +131,36 @@ class RdbmsExporterIT {
     final var completedProcessInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(completedProcessInstance).isNotEmpty();
     assertThat(completedProcessInstance.get().state()).isEqualTo(ProcessInstanceState.COMPLETED);
+  }
+
+  @Test
+  public void shouldExportRootProcessInstance() {
+    // given
+    final var rootProcessInstanceRecord = getProcessInstanceStartedRecord(1L, NO_PARENT_EXISTS_KEY);
+
+    // when
+    exporter.export(rootProcessInstanceRecord);
+
+    // then
+    final var key =
+        ((ProcessInstanceRecordValue) rootProcessInstanceRecord.getValue()).getProcessInstanceKey();
+    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
+    assertThat(processInstance).isNotNull();
+
+    // given
+    final var rootProcessInstanceCompletedRecord =
+        getProcessInstanceCompletedRecord(1L, key, NO_PARENT_EXISTS_KEY);
+
+    // when
+    exporter.export(rootProcessInstanceCompletedRecord);
+
+    // then
+    final var rootCompletedProcessInstance = rdbmsService.getProcessInstanceReader().findOne(key);
+    assertThat(rootCompletedProcessInstance).isNotEmpty();
+    assertThat(rootCompletedProcessInstance.get().state())
+        .isEqualTo(ProcessInstanceState.COMPLETED);
+    assertThat(rootCompletedProcessInstance.get().parentProcessInstanceKey()).isNull();
+    assertThat(rootCompletedProcessInstance.get().parentFlowNodeInstanceKey()).isNull();
   }
 
   @Test

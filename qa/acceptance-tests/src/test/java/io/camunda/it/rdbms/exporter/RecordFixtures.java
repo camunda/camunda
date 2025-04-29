@@ -70,10 +70,17 @@ import java.util.Set;
 
 public class RecordFixtures {
 
+  protected static final long NO_PARENT_EXISTS_KEY = -1L;
+
   protected static final ProtocolFactory FACTORY = new ProtocolFactory(System.nanoTime());
 
   protected static ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(
-      final Long position) {
+      final long position) {
+    return getProcessInstanceStartedRecord(position, 42L);
+  }
+
+  protected static ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(
+      final long position, final long parentProcessInstanceKey) {
     final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
     return ImmutableRecord.builder()
@@ -85,13 +92,20 @@ public class RecordFixtures {
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
                 .withBpmnElementType(BpmnElementType.PROCESS)
+                .withParentProcessInstanceKey(parentProcessInstanceKey)
+                .withParentElementInstanceKey(parentProcessInstanceKey)
                 .withVersion(1)
                 .build())
         .build();
   }
 
   protected static ImmutableRecord<RecordValue> getProcessInstanceCompletedRecord(
-      final Long position, final long processInstanceKey) {
+      final long position, final long processInstanceKey) {
+    return getProcessInstanceCompletedRecord(position, processInstanceKey, 42L);
+  }
+
+  protected static ImmutableRecord<RecordValue> getProcessInstanceCompletedRecord(
+      final Long position, final long processInstanceKey, final long parentProcessInstanceKey) {
     final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS_INSTANCE);
     return ImmutableRecord.builder()
@@ -105,6 +119,8 @@ public class RecordFixtures {
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
                 .withProcessInstanceKey(processInstanceKey)
                 .withBpmnElementType(BpmnElementType.PROCESS)
+                .withParentProcessInstanceKey(parentProcessInstanceKey)
+                .withParentElementInstanceKey(parentProcessInstanceKey)
                 .withVersion(1)
                 .build())
         .build();
