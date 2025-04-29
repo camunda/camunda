@@ -308,11 +308,9 @@ public final class AuthorizationCheckBehavior {
         getAuthorizedResourceIdentifiersForOwners(
             AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
     // Get resource identifiers for the user's groups
-    final var groupIds =
-        membershipState.getMemberships(
-            EntityType.USER, user.getUser().getUsername(), RelationType.GROUP);
     final var groupsAuthorizedResourceIdentifiers =
-        getGroupsAuthorizedResourceIdentifiers(groupIds, resourceType, permissionType);
+        getGroupsAuthorizedResourceIdentifiers(
+            EntityType.USER, user.getUsername(), resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
         Stream.concat(roleAuthorizedResourceIdentifiers, groupsAuthorizedResourceIdentifiers));
@@ -325,9 +323,11 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Stream<String> getGroupsAuthorizedResourceIdentifiers(
-      final List<String> groupIds,
+      final EntityType entityType,
+      final String entityId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
+    final var groupIds = membershipState.getMemberships(entityType, entityId, RelationType.GROUP);
     final var groupAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
             AuthorizationOwnerType.GROUP, groupIds, resourceType, permissionType);
@@ -355,11 +355,11 @@ public final class AuthorizationCheckBehavior {
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
-              final var groupIds =
-                  membershipState.getMemberships(
-                      EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP);
               getGroupsAuthorizedResourceIdentifiers(
-                      groupIds, request.getResourceType(), request.getPermissionType())
+                      EntityType.MAPPING,
+                      mapping.getMappingId(),
+                      request.getResourceType(),
+                      request.getPermissionType())
                   .forEach(stream);
               getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.ROLE,
