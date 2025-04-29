@@ -613,6 +613,8 @@ jobs:
             docker-file: camunda.Dockerfile
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+      OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
+      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
       CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
       DOCKER_IMAGE_TAG: current-test
     services:
@@ -637,6 +639,22 @@ jobs:
           repository: ${{ matrix.docker-repository }}
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: ${{ matrix.docker-file }}
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - uses: ./.github/actions/build-platform-docker
+        if: ${{ matrix.group == 'root' }}
+        with:
+          repository: localhost:5000/camunda/operate
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          dockerfile: operate.Dockerfile
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - uses: ./.github/actions/build-platform-docker
+        if: ${{ matrix.group == 'root' }}
+        with:
+          repository: localhost:5000/camunda/tasklist
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          dockerfile: tasklist.Dockerfile
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
