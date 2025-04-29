@@ -322,6 +322,7 @@ public final class EngineProcessors {
         scheduledTaskStateFactory,
         searchClientsProxy,
         processingState,
+        config,
         partitionId);
 
     return typedRecordProcessors;

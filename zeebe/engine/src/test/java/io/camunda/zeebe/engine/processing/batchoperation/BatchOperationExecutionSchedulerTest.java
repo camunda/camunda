@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -81,9 +82,13 @@ public class BatchOperationExecutionSchedulerTest {
         .foreachPendingBatchOperation(any(BatchOperationVisitor.class));
     lenient().when(batchOperationState.exists(anyLong())).thenReturn(true);
 
+    final var engineConfiguration = mock(EngineConfiguration.class);
+    when(engineConfiguration.getBatchOperationSchedulerInterval())
+        .thenReturn(Duration.ofSeconds(1));
+
     scheduler =
         new BatchOperationExecutionScheduler(
-            scheduledTaskStateFactory, entityKeyProvider, Duration.ofSeconds(1));
+            scheduledTaskStateFactory, entityKeyProvider, engineConfiguration);
   }
 
   @Test
