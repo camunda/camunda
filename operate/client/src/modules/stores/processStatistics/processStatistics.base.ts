@@ -20,6 +20,7 @@ import {
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
   INCIDENTS_BADGE,
+  SUBPROCESS_WITH_INCIDENTS,
 } from 'modules/bpmn-js/badgePositions';
 import {
   RequestFilters,
@@ -42,6 +43,7 @@ const overlayPositions = {
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
   completedEndEvents: COMPLETED_END_EVENT_BADGE,
+  subprocessWithIncidents: SUBPROCESS_WITH_INCIDENTS,
 } as const;
 
 class ProcessStatistics extends NetworkReconnectionHandler {

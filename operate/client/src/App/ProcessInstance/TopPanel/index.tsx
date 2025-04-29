@@ -24,6 +24,7 @@ import {
   INCIDENTS_BADGE,
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
+  SUBPROCESS_WITH_INCIDENTS,
 } from 'modules/bpmn-js/badgePositions';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {DiagramShell} from 'modules/components/DiagramShell';
@@ -65,6 +66,7 @@ const overlayPositions = {
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
   completedEndEvents: COMPLETED_END_EVENT_BADGE,
+  subprocessWithIncidents: SUBPROCESS_WITH_INCIDENTS,
 } as const;
 
 type ModificationBadgePayload = {
@@ -133,7 +135,7 @@ const TopPanel: React.FC = observer(() => {
         payload: {flowNodeState: 'incidents'},
         type: OVERLAY_TYPE_STATE,
         flowNodeId: flowNodeId,
-        position: {bottom: -5, right: 38},
+        position: overlayPositions.subprocessWithIncidents,
       };
     })
     .filter((item) => item !== null);
