@@ -27,45 +27,42 @@ import org.junit.jupiter.api.Test;
 
 public class UpdateGroupTest extends ClientRestTest {
 
-  private static final long GROUP_KEY = 123L;
+  private static final String GROUP_ID = "groupId";
   private static final String UPDATED_NAME = "Updated Group Name";
+  private static final String UPDATED_DESCRIPTION = "Updated Group Description";
 
   @Test
   void shouldUpdateGroup() {
     // when
-    client.newUpdateGroupCommand(GROUP_KEY).updateName(UPDATED_NAME).send().join();
+    client
+        .newUpdateGroupCommand(GROUP_ID)
+        .name(UPDATED_NAME)
+        .description(UPDATED_DESCRIPTION)
+        .send()
+        .join();
 
     // then
     final GroupUpdateRequest request = gatewayService.getLastRequest(GroupUpdateRequest.class);
     assertThat(request.getName()).isEqualTo(UPDATED_NAME);
+    assertThat(request.getDescription()).isEqualTo(UPDATED_DESCRIPTION);
   }
-
-  // TODO: revisit with https://github.com/camunda/camunda/issues/30015
-  //  @Test
-  //  void shouldUpdateGroupWithChangeset() {
-  //    // when
-  //    final GroupChangeset changeset = new GroupChangeset().name(UPDATED_NAME);
-  //    client
-  //        .newUpdateGroupCommand(GROUP_KEY)
-  //        .update(ResponseMapper.fromProtocolObject(changeset))
-  //        .send()
-  //        .join();
-  //
-  //    // then
-  //    final GroupUpdateRequest request = gatewayService.getLastRequest(GroupUpdateRequest.class);
-  //    assertThat(request.getChangeset().getName()).isEqualTo(UPDATED_NAME);
-  //  }
 
   @Test
   void shouldRaiseExceptionOnNotFoundGroup() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/groups/" + GROUP_ID,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newUpdateGroupCommand(GROUP_KEY).updateName(UPDATED_NAME).send().join())
+            () ->
+                client
+                    .newUpdateGroupCommand(GROUP_ID)
+                    .name(UPDATED_NAME)
+                    .description(UPDATED_DESCRIPTION)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }

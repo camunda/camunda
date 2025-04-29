@@ -781,8 +781,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UpdateGroupCommandStep1 newUpdateGroupCommand(final long groupKey) {
-    return new UpdateGroupCommandImpl(groupKey, httpClient, jsonMapper);
+  public UpdateGroupCommandStep1 newUpdateGroupCommand(final String groupId) {
+    return new UpdateGroupCommandImpl(groupId, httpClient, jsonMapper);
   }
 
   @Override
