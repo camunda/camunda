@@ -7,12 +7,16 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TestPlugin;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -22,7 +26,6 @@ import java.nio.file.Path;
 import net.bytebuddy.ByteBuddy;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -47,7 +50,7 @@ public class ElasticsearchConnectorIT {
   static ElasticsearchContainer elasticsearch =
       new ElasticsearchContainer(
               DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                  .withTag(RestClient.class.getPackage().getImplementationVersion()))
+                  .withTag(SUPPORTED_ELASTICSEARCH_VERSION))
           .withEnv("xpack.security.enabled", "false")
           .withEnv("xpack.security.http.ssl.enabled", "false");
 
@@ -62,6 +65,7 @@ public class ElasticsearchConnectorIT {
 
   @BeforeAll
   static void beforeAll() {
+    assumeTrue(TestUtil.isElasticSearch());
     WIRE_MOCK_SERVER.start();
   }
 
