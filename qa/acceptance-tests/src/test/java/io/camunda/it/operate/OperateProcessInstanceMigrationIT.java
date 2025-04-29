@@ -7,78 +7,79 @@
  */
 package io.camunda.it.operate;
 
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.UPDATE;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.BATCH;
+import static io.camunda.client.api.search.enums.PermissionType.CREATE;
+import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.UPDATE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.ResourceType.BATCH;
+import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
+import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.ElementInstanceState;
+import io.camunda.client.api.search.enums.ElementInstanceType;
+import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.client.api.command.MigrationPlan;
-import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.CompleteJobResponse;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@ZeebeIntegration
+@MultiDbTest
 public class OperateProcessInstanceMigrationIT {
+  @MultiDbTestApplication
+  static final TestCamundaApplication CAMUNDA_APPLICATION =
+      new TestCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
 
-  private static final String SUPER_USER = "super";
-  private static final String RESTRICTED_USER = "restricted";
-  private static final String PROCESS_DEFINITION_ID_1 = "service_tasks_v1";
-  private static final String PROCESS_DEFINITION_ID_2 = "incident_process_v1";
+  private static final String SUPER_USER_USERNAME = "super";
 
-  @TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testStandaloneCamunda;
+  @UserDefinition
+  private static final User SUPER_USER =
+      new User(
+          SUPER_USER_USERNAME,
+          "password",
+          List.of(
+              new Permissions(BATCH, CREATE, List.of("*")),
+              new Permissions(RESOURCE, CREATE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, UPDATE_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
 
-  private static ZeebeClient zeebeClient;
-  private static TestRestOperateClient superOperateClient;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
-  }
+  private static TestRestOperateClient operateClient;
 
   @BeforeAll
-  public static void before() {
-    final var authorizationsUtil =
-        new AuthorizationsUtil(
-            testStandaloneCamunda, testStandaloneCamunda.getElasticSearchHostAddress());
-    final var defaultClient = authorizationsUtil.getDefaultClient();
-    // create super user that can read all process definitions
-    final var superZeebeClient =
-        authorizationsUtil.createUserAndClient(
-            SUPER_USER, "password", new Permissions(BATCH, UPDATE, List.of("*")));
-    superOperateClient = testStandaloneCamunda.newOperateClient(SUPER_USER, "password");
+  public static void beforeAll(
+      @Authenticated(SUPER_USER_USERNAME) final CamundaClient superUserClient) {
+    operateClient =
+        CAMUNDA_APPLICATION.newOperateClient(SUPER_USER.username(), SUPER_USER.password());
   }
 
   @Test
-  void shouldMigrateSubprocessToSubprocess() throws Exception {
+  void shouldMigrateSubprocessToSubprocess(
+      @Authenticated(SUPER_USER_USERNAME) final CamundaClient client) {
     // given
     // process instances that are running
-    deployProcess("process/migration-subprocess.bpmn");
-    final long processInstanceKey = createProcessInstance("prWithSubprocess");
-    completeJob("taskA");
-    final var processDefinitionTo = deployProcess("process/migration-subprocess2.bpmn");
+    deployProcess(client, "process/migration-subprocess.bpmn");
+    final long processInstanceKey = createProcessInstance(client, "prWithSubprocess");
+    completeJob(client, "taskA");
+    final var processDefinitionTo = deployProcess(client, "process/migration-subprocess2.bpmn");
 
     // we have the given migration plan
-    final MigrationPlan migrationPlan =
+    final var migrationPlan =
         MigrationPlan.newBuilder()
             .withTargetProcessDefinitionKey(processDefinitionTo)
             .addMappingInstruction("taskA", "taskA")
@@ -89,8 +90,8 @@ public class OperateProcessInstanceMigrationIT {
 
     // when
     // execute MIGRATE_PROCESS_INSTANCE
-    final Either<Exception, BatchOperationEntity> response =
-        superOperateClient.migrateProcessInstanceWith(processInstanceKey, migrationPlan);
+    final var batchOperationEntity =
+        operateClient.migrateProcessInstanceWith(processInstanceKey, migrationPlan);
 
     // then
     // This should:
@@ -99,35 +100,37 @@ public class OperateProcessInstanceMigrationIT {
     //   * Create an operation for the migration
     //   * Trigger the migration via Command on Zeebe
     //   * Zeebe should process and export the respective events
-    //   * Process should be migrated
+    //   * The process should be migrated
     //   * Operation should be marked completed by exporter at the end
-    if (response.isLeft()) {
-      fail(response.getLeft());
-    }
-    waitForFNIState(processInstanceKey, "subProcess2");
+    assertThat(batchOperationEntity.isRight())
+        .withFailMessage("Expected batch operation to be created.")
+        .isTrue();
+    waitForFNIState(client, processInstanceKey, "subProcess2");
 
-    final var flowNodeInstanceSearchQueryResponse =
-        zeebeClient
-            .newFlownodeInstanceQuery()
+    final var elementInstanceSearchQueryResponse =
+        client
+            .newElementInstanceSearchRequest()
             .filter(
                 flownodeInstanceFilter ->
                     flownodeInstanceFilter.processInstanceKey(processInstanceKey))
-            .filter(flownodeInstanceFilter -> flownodeInstanceFilter.type("SUB_PROCESS"))
+            .filter(
+                flownodeInstanceFilter ->
+                    flownodeInstanceFilter.type(ElementInstanceType.SUB_PROCESS))
             .send()
             .join();
 
-    final List<FlowNodeInstance> items = flowNodeInstanceSearchQueryResponse.items();
+    final var items = elementInstanceSearchQueryResponse.items();
     assertThat(items).hasSize(2);
     assertMigratedFieldsByFlowNodeId(items, "subprocess2", processInstanceKey, processDefinitionTo);
     assertMigratedFieldsByFlowNodeId(
         items, "innerSubprocess2", processInstanceKey, processDefinitionTo);
   }
 
-  private static long deployProcess(final String path) {
+  private static long deployProcess(final CamundaClient client, final String path) {
     final DeploymentEvent deploymentEvent =
-        zeebeClient.newDeployResourceCommand().addResourceFromClasspath(path).send().join();
+        client.newDeployResourceCommand().addResourceFromClasspath(path).send().join();
     final long processDefinitionKey =
-        deploymentEvent.getProcesses().get(0).getProcessDefinitionKey();
+        deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey();
 
     assertThat(processDefinitionKey).isNotZero();
 
@@ -137,8 +140,8 @@ public class OperateProcessInstanceMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  zeebeClient
-                      .newProcessDefinitionQuery()
+                  client
+                      .newProcessDefinitionSearchRequest()
                       .filter(instance -> instance.processDefinitionKey(processDefinitionKey))
                       .send()
                       .join();
@@ -147,20 +150,20 @@ public class OperateProcessInstanceMigrationIT {
     return processDefinitionKey;
   }
 
-  private static long waitForFNIState(final long processInstanceKey, final String elementId) {
+  private static long waitForFNIState(
+      final CamundaClient client, final long processInstanceKey, final String elementId) {
     Awaitility.await("should wait until flow node instance is in given state")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result =
-                  zeebeClient
-                      .newFlownodeInstanceQuery()
+                  client
+                      .newElementInstanceSearchRequest()
                       .filter(
                           flownodeInstanceFilter ->
                               flownodeInstanceFilter.processInstanceKey(processInstanceKey))
-                      .filter(
-                          flownodeInstanceFilter -> flownodeInstanceFilter.flowNodeId(elementId))
+                      .filter(flownodeInstanceFilter -> flownodeInstanceFilter.elementId(elementId))
                       .send()
                       .join();
 
@@ -170,10 +173,11 @@ public class OperateProcessInstanceMigrationIT {
     return processInstanceKey;
   }
 
-  private static long createProcessInstance(final String bpmnProcessId) {
+  private static long createProcessInstance(
+      final CamundaClient client, final String bpmnProcessId) {
 
     final ProcessInstanceEvent processInstanceEvent =
-        zeebeClient
+        client
             .newCreateInstanceCommand()
             .bpmnProcessId(bpmnProcessId)
             .latestVersion()
@@ -186,8 +190,8 @@ public class OperateProcessInstanceMigrationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newFlownodeInstanceQuery().send().join();
-              final Optional<FlowNodeInstance> any =
+              final var result = client.newElementInstanceSearchRequest().send().join();
+              final var any =
                   result.items().stream()
                       .filter(event -> event.getProcessInstanceKey() == processInstanceKey)
                       .findAny();
@@ -197,9 +201,9 @@ public class OperateProcessInstanceMigrationIT {
     return processInstanceKey;
   }
 
-  private static long completeJob(final String jobType) {
-    final ActivateJobsResponse jobsResponse =
-        zeebeClient
+  private static long completeJob(final CamundaClient client, final String jobType) {
+    final var jobsResponse =
+        client
             .newActivateJobsCommand()
             .jobType(jobType)
             .maxJobsToActivate(1)
@@ -208,21 +212,21 @@ public class OperateProcessInstanceMigrationIT {
             .join();
     assertThat(jobsResponse.getJobs()).isNotEmpty();
 
-    final ActivatedJob job = jobsResponse.getJobs().get(0);
-    final CompleteJobResponse join = zeebeClient.newCompleteCommand(job).send().join();
+    final var job = jobsResponse.getJobs().getFirst();
+    client.newCompleteCommand(job).send().join();
 
     Awaitility.await("should wait until flow node instances are available")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newFlownodeInstanceQuery().send().join();
-              final Optional<FlowNodeInstance> any =
+              final var result = client.newElementInstanceSearchRequest().send().join();
+              final var any =
                   result.items().stream()
                       .filter(
                           event ->
-                              event.getFlowNodeInstanceKey() == job.getElementInstanceKey()
-                                  && "COMPLETED".equals(event.getState()))
+                              event.getElementInstanceKey() == job.getElementInstanceKey()
+                                  && event.getState().equals(ElementInstanceState.COMPLETED))
                       .findAny();
               assertThat(any).isPresent();
             });
@@ -231,12 +235,12 @@ public class OperateProcessInstanceMigrationIT {
   }
 
   private void assertMigratedFieldsByFlowNodeId(
-      final List<FlowNodeInstance> fnis,
+      final List<ElementInstance> fnis,
       final String flowNodeId,
       final Long instanceKey,
       final Long processDefinitionTo) {
     final var flowNode =
-        fnis.stream().filter(fn -> fn.getFlowNodeId().equals(flowNodeId)).findFirst().orElseThrow();
+        fnis.stream().filter(fn -> fn.getElementId().equals(flowNodeId)).findFirst().orElseThrow();
     assertThat(flowNode.getProcessInstanceKey()).isEqualTo(instanceKey);
     assertThat(flowNode.getProcessDefinitionKey()).isEqualTo(processDefinitionTo);
   }
