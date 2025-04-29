@@ -9,6 +9,7 @@ package io.camunda.authentication;
 
 import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aCamundaUser;
 
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.service.AuthorizationServices;
@@ -58,9 +59,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
     final var authorizedApplications =
         authorizationServices.getAuthorizedApplications(
-            Stream.concat(
-                    roles.stream().map(r -> r.roleKey().toString()),
-                    Stream.of(storedUser.username()))
+            Stream.concat(roles.stream().map(RoleEntity::roleId), Stream.of(storedUser.username()))
                 .collect(Collectors.toSet()));
 
     final var tenants =
