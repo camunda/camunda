@@ -311,18 +311,37 @@ public final class AuthorizationCheckBehavior {
     final var groupIds =
         membershipState.getMemberships(
             EntityType.USER, user.getUser().getUsername(), RelationType.GROUP);
-    final var groupAuthorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiersForOwners(
-            AuthorizationOwnerType.GROUP, groupIds, resourceType, permissionType);
+    final var groupsAuthorizedResourceIdentifiers =
+        getGroupsAuthorizedResourceIdentifiers(groupIds, resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
-        Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
+        Stream.concat(roleAuthorizedResourceIdentifiers, groupsAuthorizedResourceIdentifiers));
   }
 
   private Stream<String> getMappingsAuthorizedResourceIdentifiers(
       final AuthorizationRequest request) {
     return getMappingsAuthorizedResourceIdentifiers(
         request, getPersistedMappings(request.getCommand()));
+  }
+
+  private Stream<String> getGroupsAuthorizedResourceIdentifiers(
+      final List<String> groupIds,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    final var groupAuthorizedResourceIdentifiers =
+        getAuthorizedResourceIdentifiersForOwners(
+            AuthorizationOwnerType.GROUP, groupIds, resourceType, permissionType);
+    // Get resource identifiers for the groups' roles
+    final var roleAuthorizedResourceIdentifiers =
+        groupIds.stream()
+            .flatMap(
+                groupId -> {
+                  final var roleIds =
+                      membershipState.getMemberships(EntityType.GROUP, groupId, RelationType.ROLE);
+                  return getAuthorizedResourceIdentifiersForOwners(
+                      AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
+                });
+    return Stream.concat(groupAuthorizedResourceIdentifiers, roleAuthorizedResourceIdentifiers);
   }
 
   // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
