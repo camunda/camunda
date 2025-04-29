@@ -754,7 +754,7 @@ public class CommandDistributionIdempotencyTest {
   }
 
   private static Record<RoleRecordValue> createRole(final String roleId) {
-    return ENGINE.role().newRole(roleId).withName(UUID.randomUUID().toString()).create();
+    return ENGINE.role().newRole(roleId).create();
   }
 
   private static Record<TenantRecordValue> createTenant() {
