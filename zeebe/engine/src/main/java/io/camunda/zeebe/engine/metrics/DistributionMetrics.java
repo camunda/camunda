@@ -32,6 +32,10 @@ public final class DistributionMetrics {
             .register(meterRegistry);
   }
 
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
   public void addDistribution(final long distributionKey) {
     commandDistributionsGauge.increment();
   }
