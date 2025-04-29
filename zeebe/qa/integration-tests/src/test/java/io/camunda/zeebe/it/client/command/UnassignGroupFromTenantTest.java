@@ -48,7 +48,8 @@ class UnassignGroupFromTenantTest {
         .join()
         .getTenantKey();
 
-    groupKey = client.newCreateGroupCommand().name("group").send().join().getGroupKey();
+    groupKey =
+        client.newCreateGroupCommand().groupId("groupId").name("group").send().join().getGroupKey();
 
     // Assign group to tenant to set up test scenario
     client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join();

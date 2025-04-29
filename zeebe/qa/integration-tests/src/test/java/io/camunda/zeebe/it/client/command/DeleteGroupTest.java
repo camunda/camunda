@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class DeleteGroupTest {
 
+  private static final String GROUP_ID = "groupId";
   private static final String GROUP_NAME = "groupName";
 
   @TestZeebe
@@ -40,7 +41,14 @@ class DeleteGroupTest {
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    groupKey = client.newCreateGroupCommand().name(GROUP_NAME).send().join().getGroupKey();
+    groupKey =
+        client
+            .newCreateGroupCommand()
+            .groupId(GROUP_ID)
+            .name(GROUP_NAME)
+            .send()
+            .join()
+            .getGroupKey();
   }
 
   @Test

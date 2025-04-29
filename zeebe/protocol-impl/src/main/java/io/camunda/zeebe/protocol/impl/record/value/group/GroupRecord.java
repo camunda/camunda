@@ -73,6 +73,11 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   }
 
   public GroupRecord setDescription(final String description) {
+    if (description == null) {
+      descriptionProp.reset();
+      return this;
+    }
+
     descriptionProp.setValue(description);
     return this;
   }

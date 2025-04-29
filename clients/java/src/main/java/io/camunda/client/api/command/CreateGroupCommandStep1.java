@@ -17,13 +17,31 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateGroupResponse;
 
-public interface CreateGroupCommandStep1 extends FinalCommandStep<CreateGroupResponse> {
+public interface CreateGroupCommandStep1 {
 
   /**
-   * Set the name for the group to be created.
+   * Set the ID for the group to be created..
    *
-   * @param name the group name
+   * @param groupId the group ID
    * @return the builder for this command
    */
-  CreateGroupCommandStep1 name(String name);
+  CreateGroupCommandStep2 groupId(String groupId);
+
+  interface CreateGroupCommandStep2 extends FinalCommandStep<CreateGroupResponse> {
+    /**
+     * Set the name for the group to be created.
+     *
+     * @param name the group name
+     * @return the builder for this command
+     */
+    CreateGroupCommandStep2 name(String name);
+
+    /**
+     * Set the description for the group to be created..
+     *
+     * @param description the group description
+     * @return the builder for this command
+     */
+    CreateGroupCommandStep2 description(String description);
+  }
 }

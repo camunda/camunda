@@ -50,7 +50,14 @@ public class UnassignUserFromGroupTest {
             .join()
             .getUserKey();
 
-    groupKey = client.newCreateGroupCommand().name("groupName").send().join().getGroupKey();
+    groupKey =
+        client
+            .newCreateGroupCommand()
+            .groupId("groupId")
+            .name("groupName")
+            .send()
+            .join()
+            .getGroupKey();
     client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
   }
 

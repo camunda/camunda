@@ -27,16 +27,38 @@ import org.junit.jupiter.api.Test;
 
 public class CreateGroupTest extends ClientRestTest {
 
+  public static final String GROUP_ID = "groupId";
   public static final String NAME = "groupName";
+  public static final String DESCRIPTION = "groupDescription";
 
   @Test
   void shouldCreateGroup() {
     // when
-    client.newCreateGroupCommand().name(NAME).send().join();
+    client
+        .newCreateGroupCommand()
+        .groupId(GROUP_ID)
+        .name(NAME)
+        .description(DESCRIPTION)
+        .send()
+        .join();
 
     // then
     final GroupCreateRequest request = gatewayService.getLastRequest(GroupCreateRequest.class);
+    assertThat(request.getGroupId()).isEqualTo(GROUP_ID);
     assertThat(request.getName()).isEqualTo(NAME);
+    assertThat(request.getDescription()).isEqualTo(DESCRIPTION);
+  }
+
+  @Test
+  void shouldCreateGroupWithoutDescription() {
+    // when
+    client.newCreateGroupCommand().groupId(GROUP_ID).name(NAME).send().join();
+
+    // then
+    final GroupCreateRequest request = gatewayService.getLastRequest(GroupCreateRequest.class);
+    assertThat(request.getGroupId()).isEqualTo(GROUP_ID);
+    assertThat(request.getName()).isEqualTo(NAME);
+    assertThat(request.getDescription()).isNull();
   }
 
   @Test
@@ -46,7 +68,8 @@ public class CreateGroupTest extends ClientRestTest {
         REST_API_PATH + "/groups", () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newCreateGroupCommand().name(NAME).send().join())
+    assertThatThrownBy(
+            () -> client.newCreateGroupCommand().groupId(GROUP_ID).name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -54,13 +77,14 @@ public class CreateGroupTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionIfGroupAlreadyExists() {
     // given
-    client.newCreateGroupCommand().name(NAME).send().join();
+    client.newCreateGroupCommand().groupId(GROUP_ID).name(NAME).send().join();
 
     gatewayService.errorOnRequest(
         REST_API_PATH + "/groups", () -> new ProblemDetail().title("Conflict").status(409));
 
     // when / then
-    assertThatThrownBy(() -> client.newCreateGroupCommand().name(NAME).send().join())
+    assertThatThrownBy(
+            () -> client.newCreateGroupCommand().groupId(GROUP_ID).name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
@@ -72,7 +96,8 @@ public class CreateGroupTest extends ClientRestTest {
         REST_API_PATH + "/groups", () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
-    assertThatThrownBy(() -> client.newCreateGroupCommand().name(NAME).send().join())
+    assertThatThrownBy(
+            () -> client.newCreateGroupCommand().groupId(GROUP_ID).name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }

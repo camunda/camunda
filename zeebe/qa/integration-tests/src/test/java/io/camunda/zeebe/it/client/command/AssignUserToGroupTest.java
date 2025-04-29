@@ -51,7 +51,14 @@ class AssignUserToGroupTest {
             .join()
             .getUserKey();
 
-    groupKey = client.newCreateGroupCommand().name("groupName").send().join().getGroupKey();
+    groupKey =
+        client
+            .newCreateGroupCommand()
+            .groupId("groupId")
+            .name("groupName")
+            .send()
+            .join()
+            .getGroupKey();
   }
 
   @Test
