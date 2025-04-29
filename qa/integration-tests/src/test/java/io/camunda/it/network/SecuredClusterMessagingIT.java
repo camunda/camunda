@@ -25,6 +25,7 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.security.cert.CertificateException;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AutoClose;
@@ -41,10 +42,16 @@ import org.testcontainers.utility.MountableFile;
 @Testcontainers
 final class SecuredClusteredMessagingIT {
   private static final SelfSignedCertificate CERTIFICATE = newCertificate();
-  private static final DockerImageName OPERATE =
-      DockerImageName.parse("camunda/operate").withTag("current-test");
-  private static final DockerImageName TASKLIST =
-      DockerImageName.parse("camunda/tasklist").withTag("current-test");
+
+  private static final String OPERATE_IMAGE_NAME =
+      Optional.ofNullable(System.getenv("OPERATE_TEST_DOCKER_IMAGE"))
+          .orElse("camunda/operate:current-test");
+  private static final String TASKLIST_IMAGE_NAME =
+      Optional.ofNullable(System.getenv("TASKLIST_TEST_DOCKER_IMAGE"))
+          .orElse("camunda/tasklist:current-test");
+
+  private static final DockerImageName OPERATE = DockerImageName.parse(OPERATE_IMAGE_NAME);
+  private static final DockerImageName TASKLIST = DockerImageName.parse(TASKLIST_IMAGE_NAME);
 
   @AutoClose private static final Network NETWORK = Network.newNetwork();
 
@@ -53,7 +60,8 @@ final class SecuredClusteredMessagingIT {
   private static final ElasticsearchContainer ELASTIC =
       TestSearchContainers.createDefeaultElasticsearchContainer()
           .withNetwork(NETWORK)
-          .withNetworkAliases("elastic");
+          .withNetworkAliases("elastic")
+          .withStartupTimeout(Duration.ofMinutes(5));
 
   private final String testPrefix = UUID.randomUUID().toString();
 
