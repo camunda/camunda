@@ -9,26 +9,20 @@ package io.camunda.zeebe.engine.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.metrics.JobProcessingMetricsTest.JobMetricsTestScenario;
+import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestWatcher;
-import org.junit.runners.Parameterized.Parameter;
 
 public class CommandDistributionMetricsTest {
-
-  private static final String PROCESS_ID = "process";
-  private static final String TASK_ID = "task";
-  private static final String JOB_TYPE = "job";
-
-  @Parameter public JobMetricsTestScenario scenario;
 
   private final TestWatcher watcher = new RecordingExporterTestWatcher();
   private final EngineRule engine = EngineRule.multiplePartition(2);
@@ -41,36 +35,65 @@ public class CommandDistributionMetricsTest {
     engine.pauseProcessing(2);
 
     // when
-    final var startMetrics = snapshotMetrics();
     final var key = triggerUnqueuedDistribution();
 
     // then
-    final var distributingMetrics = startMetrics.diff(snapshotMetrics());
-    assertThat(distributingMetrics)
+    assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
-                .withActive(+1.0)
-                .withPending(+1.0)
-                .withInflight(+1.0)
+                .withActive(1.0)
+                .withPending(1.0)
+                .withInflight(1.0)
                 .withRetries(0.0)
                 .withAcknowledged(0.0));
 
     // when
     engine.resumeProcessing(2);
-    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-        .withRecordKey(key)
-        .await();
 
     // then
-    final var finishedMetrics = distributingMetrics.diff(snapshotMetrics());
-    assertThat(finishedMetrics)
+    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, key);
+    assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
-                .withActive(-1.0)
-                .withPending(-1.0)
-                .withInflight(-1.0)
+                .withActive(0.0)
+                .withPending(0.0)
+                .withInflight(0.0)
                 .withRetries(0.0)
-                .withAcknowledged(+1.0));
+                .withAcknowledged(1.0));
+  }
+
+  @Test
+  public void shouldTrackRetriedDistribution() throws InterruptedException {
+    // given
+    engine.pauseProcessing(2);
+
+    // when
+    final var key = triggerUnqueuedDistribution();
+
+    // then
+    waitUntilDistributionIsRetried(key);
+    assertThat(snapshotMetrics())
+        .isEqualTo(
+            MetricSnapshot.empty()
+                .withActive(1.0)
+                .withPending(1.0)
+                .withInflight(1.0)
+                .withRetries(1.0)
+                .withAcknowledged(0.0));
+
+    // when
+    engine.resumeProcessing(2);
+
+    // then
+    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, key);
+    assertThat(snapshotMetrics())
+        .isEqualTo(
+            MetricSnapshot.empty()
+                .withActive(0.0)
+                .withPending(0.0)
+                .withInflight(0.0)
+                .withRetries(1.0)
+                .withAcknowledged(2.0));
   }
 
   @Test
@@ -79,43 +102,32 @@ public class CommandDistributionMetricsTest {
     engine.pauseProcessing(2);
 
     // when
-    final var startMetrics = snapshotMetrics();
-    final var firstDistribution = triggerQueuedDistribution("First");
-    final var secondDistribution = triggerQueuedDistribution("Second");
+    final var firstDistribution = triggerQueuedDistribution();
+    final var secondDistribution = triggerQueuedDistribution();
 
     // then
-    final var distributingMetrics = startMetrics.diff(snapshotMetrics());
-    assertThat(distributingMetrics)
+    assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
-                .withActive(+2.0)
-                .withPending(+2.0)
-                .withInflight(+1.0)
+                .withActive(2.0)
+                .withPending(2.0)
+                .withInflight(1.0)
                 .withRetries(0.0)
                 .withAcknowledged(0.0));
 
     // when
     engine.resumeProcessing(2);
-    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-        .withRecordKey(secondDistribution)
-        .await();
 
     // then
-    final var finishedMetrics = distributingMetrics.diff(snapshotMetrics());
-    assertThat(finishedMetrics)
+    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, secondDistribution);
+    assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
-                .withActive(-2.0)
-                .withPending(-2.0)
-                .withInflight(-1.0)
+                .withActive(0.0)
+                .withPending(0.0)
+                .withInflight(0.0)
                 .withRetries(0.0)
-                .withAcknowledged(+2.0));
-  }
-
-  @Test
-  public void shouldTrackRetriedDistribution() {
-    // we need to trigger a distribution and pause the second partition long enough or accelerate
-    // time to trigger a redistribution on the origin partition
+                .withAcknowledged(2.0));
   }
 
   @Test
@@ -129,13 +141,11 @@ public class CommandDistributionMetricsTest {
 
   private long triggerUnqueuedDistribution() {
     final var reset = engine.clock().reset();
-    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.DISTRIBUTING)
-        .withRecordKey(reset.getKey())
-        .await();
+    waitUntilCommandDistributionIs(CommandDistributionIntent.DISTRIBUTING, reset.getKey());
     return reset.getKey();
   }
 
-  private long triggerQueuedDistribution(final String name) {
+  private long triggerQueuedDistribution() {
     final var deploy =
         engine
             .deployment()
@@ -144,11 +154,30 @@ public class CommandDistributionMetricsTest {
             .expectCreated()
             .deploy();
 
-    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ENQUEUED)
-        .withRecordKey(deploy.getKey())
-        .await();
+    waitUntilCommandDistributionIs(CommandDistributionIntent.ENQUEUED, deploy.getKey());
 
     return deploy.getKey();
+  }
+
+  private static void waitUntilCommandDistributionIs(
+      final CommandDistributionIntent state, final long key) {
+    RecordingExporter.commandDistributionRecords(state).withRecordKey(key).await();
+  }
+
+  private void waitUntilDistributionIsRetried(final long key) {
+    RecordingExporter.setMaximumWaitTime(100);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // wait for retry mechanism to trigger second distribution
+              // (while we intercepted the first acknowledgement)
+              engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+
+              // Make sure we have two records on the target partition
+              assertThat(RecordingExporter.records().withPartitionId(2).withRecordKey(key).limit(2))
+                  .hasSize(2);
+            });
+    RecordingExporter.setMaximumWaitTime(5000);
   }
 
   private MetricSnapshot snapshotMetrics() {
@@ -178,15 +207,6 @@ public class CommandDistributionMetricsTest {
 
   record MetricSnapshot(
       double active, double pending, double inflight, double retries, double acknowledged) {
-
-    public MetricSnapshot diff(final MetricSnapshot other) {
-      return new MetricSnapshot(
-          other.active - active,
-          other.pending - pending,
-          other.inflight - inflight,
-          other.retries - retries,
-          other.acknowledged - acknowledged);
-    }
 
     public static MetricSnapshot empty() {
       return new MetricSnapshot(0, 0, 0, 0.0, 0.0);
