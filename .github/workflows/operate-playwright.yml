@@ -1,5 +1,4 @@
 # description: Workflow for Front-End end visual regression tests
-# trigger: Pull Request with changes to operate FE code. On push to main, stable, and release
 # test location: operate/client/e2e-playwright/visual
 # owner:
 ---

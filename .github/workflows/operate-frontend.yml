@@ -1,5 +1,4 @@
 # description: Workflow for Front-End end unit tests. The workflow also performs an ESLint check
-# trigger: Pull Request with changes to operate FE code. On push to main, stable, and release
 # test location: operate/client/src/App
 # owner:
 ---

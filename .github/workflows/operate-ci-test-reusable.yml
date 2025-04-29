@@ -14,8 +14,8 @@
 # Triggers on a workflow_call event and accepts inputs for branch name and fork count
 # Performs integration tests for the tasklist service with parallel execution.
 # description: Automates the CI test porcess for operate
-# trigger: reusable
-# test location:
+# called by: operate-ci-data-layer.yml, operate-ci-core-features.yml
+# test location: operate
 # owner:
 ---
 name: Operate CI IT test reusable

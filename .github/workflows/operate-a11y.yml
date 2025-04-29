@@ -1,5 +1,4 @@
 # description: This workflow runs a11y accessibility tests on Operate
-# trigger: Pull Request. On push to main, stable, and release
 # test location: operate/client/e2e-playwright/a11y
 # owner:
 ---

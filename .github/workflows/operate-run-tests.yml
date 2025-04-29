@@ -1,6 +1,6 @@
 # description: Reuseable workflow that executes the passed maven command
-# trigger: reusable
-# test location:
+# called by: operate-test-importer.yml, operate-test-backup-restore.yml
+# test location: operate
 # owner:
 ---
 name: Operate Run Tests
