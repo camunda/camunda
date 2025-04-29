@@ -344,8 +344,6 @@ public final class AuthorizationCheckBehavior {
     return Stream.concat(groupAuthorizedResourceIdentifiers, roleAuthorizedResourceIdentifiers);
   }
 
-  // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
-  // https://github.com/camunda/camunda/issues/26981
   private Stream<String> getMappingsAuthorizedResourceIdentifiers(
       final AuthorizationRequest request, final List<PersistedMapping> persistedMappings) {
     return persistedMappings.stream()
