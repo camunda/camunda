@@ -22,6 +22,7 @@ import java.util.function.Function;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public final class Authentication {
   private final String authenticatedUsername;
+  private final String authenticationApplicationId;
   private final List<Long> authenticatedGroupKeys;
   private final List<String> authenticatedRoleIds;
   private final List<String> authenticatedTenantIds;
@@ -31,12 +32,14 @@ public final class Authentication {
   @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
   public Authentication(
       final @JsonProperty("authenticated_username") String authenticatedUsername,
+      final @JsonProperty("authenticated_application_id") String authenticationApplicationId,
       final @JsonProperty("authenticated_group_keys") List<Long> authenticatedGroupKeys,
       final @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
       final @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
       final @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
       final @JsonProperty("claims") Map<String, Object> claims) {
     this.authenticatedUsername = authenticatedUsername;
+    this.authenticationApplicationId = authenticationApplicationId;
     this.authenticatedGroupKeys = authenticatedGroupKeys;
     this.authenticatedRoleIds = authenticatedRoleIds;
     this.authenticatedTenantIds = authenticatedTenantIds;
@@ -54,6 +57,10 @@ public final class Authentication {
 
   public String authenticatedUsername() {
     return authenticatedUsername;
+  }
+
+  public String authenticationApplicationId() {
+    return authenticationApplicationId;
   }
 
   public List<Long> authenticatedGroupKeys() {
@@ -97,6 +104,7 @@ public final class Authentication {
     }
     final Authentication that = (Authentication) obj;
     return Objects.equals(authenticatedUsername, that.authenticatedUsername)
+        && Objects.equals(authenticationApplicationId, that.authenticationApplicationId)
         && Objects.equals(authenticatedGroupKeys, that.authenticatedGroupKeys)
         && Objects.equals(authenticatedRoleIds, that.authenticatedRoleIds)
         && Objects.equals(authenticatedTenantIds, that.authenticatedTenantIds)
@@ -109,6 +117,9 @@ public final class Authentication {
     return "Authentication["
         + "authenticatedUsername="
         + authenticatedUsername
+        + ", "
+        + "authenticatedApplicationId="
+        + authenticationApplicationId
         + ", "
         + "authenticatedGroupKeys="
         + authenticatedGroupKeys
@@ -130,6 +141,7 @@ public final class Authentication {
   public static final class Builder {
 
     private String username;
+    private String applicationId;
     private final List<Long> groupKeys = new ArrayList<>();
     private final List<String> roleIds = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
@@ -138,6 +150,11 @@ public final class Authentication {
 
     public Builder user(final String value) {
       username = value;
+      return this;
+    }
+
+    public Builder applicationId(final String value) {
+      applicationId = value;
       return this;
     }
 
@@ -193,6 +210,7 @@ public final class Authentication {
     public Authentication build() {
       return new Authentication(
           username,
+          applicationId,
           unmodifiableList(groupKeys),
           unmodifiableList(roleIds),
           unmodifiableList(tenants),
