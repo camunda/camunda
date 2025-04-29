@@ -25,6 +25,7 @@ import {notificationsStore} from 'common/notifications/notifications.store';
 import {TaskDetailsHeader} from 'common/tasks/details/TaskDetailsHeader';
 import {tracking} from 'common/tracking';
 import {decodeTaskOpenedRef} from 'common/tracking/reftags';
+import {AssignButton} from './AssignButton';
 
 type OutletContext = {
   task: UserTask;
@@ -121,7 +122,13 @@ const TaskDetailsLayout: React.FC = () => {
           assignee={task.assignee ?? null}
           taskState={task.state}
           user={currentUser}
-          assignButton={null}
+          assignButton={
+            <AssignButton
+              id={task.userTaskKey}
+              assignee={task.assignee}
+              currentUser={currentUser.userId}
+            />
+          }
         />
         <TabListNav label={t('taskDetailsNavLabel')} items={tabs} />
         <Outlet

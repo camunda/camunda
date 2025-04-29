@@ -19,12 +19,13 @@ import {
 
 const POLLING_INTERVAL = 5000;
 const MAX_TASKS_PER_REQUEST = 50;
+const USE_TASKS_QUERY_KEY = 'task';
 
 function getQueryKey(payload: QueryUserTasksRequestBody) {
   const {filter = {}, page = {}, sort = []} = payload;
 
   return [
-    'tasks',
+    USE_TASKS_QUERY_KEY,
     ...Object.entries(filter).map(([key, value]) => `${key}:${value}`),
     ...Object.entries(page).map(([key, value]) => `${key}:${value}`),
     ...sort.flatMap((item) =>
@@ -97,4 +98,4 @@ function useTasks(
   return result;
 }
 
-export {useTasks};
+export {useTasks, USE_TASKS_QUERY_KEY};
