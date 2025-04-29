@@ -91,6 +91,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -122,7 +123,9 @@ public class CommandDistributionIdempotencyTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.multiplePartition(2).withSearchClientsProxy(new NoopSearchClientsProxy());
+      EngineRule.multiplePartition(2)
+          .withEngineConfig(c -> c.setBatchOperationSchedulerInterval(Duration.ofDays(1)))
+          .withSearchClientsProxy(new NoopSearchClientsProxy());
 
   private static final Set<Class<?>> DISTRIBUTING_PROCESSORS =
       new HashSet<>(
