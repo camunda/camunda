@@ -27,21 +27,20 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public class AssignUserToGroupCommandImpl implements AssignUserToGroupCommandStep1 {
 
-  private final long groupKey;
+  private final String groupId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private long userKey;
+  private String username;
 
-  public AssignUserToGroupCommandImpl(final long groupKey, final HttpClient httpClient) {
-    this.groupKey = groupKey;
+  public AssignUserToGroupCommandImpl(final String groupId, final HttpClient httpClient) {
+    this.groupId = groupId;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignUserToGroupCommandStep1 userKey(final long userKey) {
-    ArgumentUtil.ensureNotNull("userKey", userKey);
-    this.userKey = userKey;
+  public AssignUserToGroupCommandStep1 username(final String username) {
+    this.username = username;
     return this;
   }
 
@@ -53,10 +52,10 @@ public class AssignUserToGroupCommandImpl implements AssignUserToGroupCommandSte
 
   @Override
   public CamundaFuture<AssignUserToGroupResponse> send() {
-    ArgumentUtil.ensureNotNull("userKey", userKey);
+    ArgumentUtil.ensureNotNull("username", username);
     final HttpCamundaFuture<AssignUserToGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
-        "/groups/" + groupKey + "/users/" + userKey, null, httpRequestConfig.build(), result);
+        "/groups/" + groupId + "/users/" + username, null, httpRequestConfig.build(), result);
     return result;
   }
 }
