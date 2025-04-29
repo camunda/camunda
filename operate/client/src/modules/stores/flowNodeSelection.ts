@@ -19,6 +19,7 @@ type Selection = {
   flowNodeType?: string;
   isMultiInstance?: boolean;
   isPlaceholder?: boolean;
+  processInstanceId?: string;
 };
 
 type State = {

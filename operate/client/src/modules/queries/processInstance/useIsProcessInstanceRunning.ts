@@ -6,16 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {useProcessInstance} from './useProcessInstance';
-
-const isRunningParser = (processInstance: ProcessInstance): boolean => {
-  return (
-    ['ACTIVE'].includes(processInstance.state) || processInstance.hasIncident
-  );
-};
+import {isInstanceRunning} from 'modules/utils/instance';
 
 const useIsProcessInstanceRunning = () =>
-  useProcessInstance<boolean>(isRunningParser);
+  useProcessInstance<boolean>(isInstanceRunning);
 
 export {useIsProcessInstanceRunning};
