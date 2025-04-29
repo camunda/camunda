@@ -8,10 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.UserServices;
-import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
@@ -35,15 +32,6 @@ public class UserController {
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    //    return RequestMapper.toCreateUserRequest(userRequest, passwordEncoder)
-    //        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
     throw new NotImplementedException("User creation is not yet implemented");
-  }
-
-  private CompletableFuture<ResponseEntity<Object>> createUser(final CreateUserRequest request) {
-    return RequestMapper.executeServiceMethod(
-        () ->
-            userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request),
-        ResponseMapper::toUserCreateResponse);
   }
 }
