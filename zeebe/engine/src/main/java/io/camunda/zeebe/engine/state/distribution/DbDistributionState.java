@@ -286,6 +286,7 @@ public class DbDistributionState implements MutableDistributionState {
 
     return new CommandDistributionRecord()
         .setPartitionId(partition)
+        .setQueueId(persistedDistribution.getQueueId().orElse(""))
         .setValueType(persistedDistribution.getValueType())
         .setIntent(persistedDistribution.getIntent())
         .setCommandValue(persistedDistribution.getCommandValue());

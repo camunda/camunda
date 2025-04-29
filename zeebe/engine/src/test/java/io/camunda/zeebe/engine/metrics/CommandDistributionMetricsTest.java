@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.metrics.JobProcessingMetricsTest.JobMetricsTestScenario;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -41,7 +42,7 @@ public class CommandDistributionMetricsTest {
 
     // when
     final var startMetrics = snapshotMetrics();
-    final var key = triggerDistribution();
+    final var key = triggerUnqueuedDistribution();
 
     // then
     final var distributingMetrics = startMetrics.diff(snapshotMetrics());
@@ -73,12 +74,48 @@ public class CommandDistributionMetricsTest {
   }
 
   @Test
-  public void shouldTrackQueuedDistribution() {}
+  public void shouldTrackQueuedDistribution() {
+    // given
+    engine.pauseProcessing(2);
+
+    // when
+    final var startMetrics = snapshotMetrics();
+    final var firstDistribution = triggerQueuedDistribution("First");
+    final var secondDistribution = triggerQueuedDistribution("Second");
+
+    // then
+    final var distributingMetrics = startMetrics.diff(snapshotMetrics());
+    assertThat(distributingMetrics)
+        .isEqualTo(
+            MetricSnapshot.empty()
+                .withActive(+2.0)
+                .withPending(+2.0)
+                .withInflight(+1.0)
+                .withRetries(0.0)
+                .withAcknowledged(0.0));
+
+    // when
+    engine.resumeProcessing(2);
+    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+        .withRecordKey(secondDistribution)
+        .await();
+
+    // then
+    final var finishedMetrics = distributingMetrics.diff(snapshotMetrics());
+    assertThat(finishedMetrics)
+        .isEqualTo(
+            MetricSnapshot.empty()
+                .withActive(-2.0)
+                .withPending(-2.0)
+                .withInflight(-1.0)
+                .withRetries(0.0)
+                .withAcknowledged(+2.0));
+  }
 
   @Test
   public void shouldTrackRetriedDistribution() {
-    engine.clock().reset();
-    // should trigger distribution
+    // we need to trigger a distribution and pause the second partition long enough or accelerate
+    // time to trigger a redistribution on the origin partition
   }
 
   @Test
@@ -90,12 +127,28 @@ public class CommandDistributionMetricsTest {
     // engine.start();
   }
 
-  private long triggerDistribution() {
+  private long triggerUnqueuedDistribution() {
     final var reset = engine.clock().reset();
     RecordingExporter.commandDistributionRecords(CommandDistributionIntent.DISTRIBUTING)
         .withRecordKey(reset.getKey())
         .await();
     return reset.getKey();
+  }
+
+  private long triggerQueuedDistribution(final String name) {
+    final var deploy =
+        engine
+            .deployment()
+            .withXmlResource(
+                "process.bpmn", Bpmn.createExecutableProcess().startEvent().endEvent().done())
+            .expectCreated()
+            .deploy();
+
+    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ENQUEUED)
+        .withRecordKey(deploy.getKey())
+        .await();
+
+    return deploy.getKey();
   }
 
   private MetricSnapshot snapshotMetrics() {
