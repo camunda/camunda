@@ -85,7 +85,12 @@ public class UserTaskSelectors {
 
     @Override
     public String describe() {
-      return elementId;
+      if (processInstanceKey != null) {
+        return String.format(
+            "%s (processInstanceKey: %d)", elementId, processInstanceKey);
+      } else {
+        return elementId;
+      }
     }
 
     @Override
@@ -118,7 +123,12 @@ public class UserTaskSelectors {
 
     @Override
     public String describe() {
-      return taskName;
+      if (processInstanceKey != null) {
+        return String.format(
+            "%s (processInstanceKey: %d)", taskName, processInstanceKey);
+      } else {
+        return taskName;
+      }
     }
 
     @Override
