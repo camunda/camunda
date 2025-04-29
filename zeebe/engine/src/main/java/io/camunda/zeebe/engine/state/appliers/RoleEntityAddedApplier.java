@@ -25,7 +25,7 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
   @Override
   public void applyState(final long key, final RoleRecord value) {
     switch (value.getEntityType()) {
-      case USER, MAPPING ->
+      case USER, MAPPING, GROUP ->
           membershipState.insertRelation(
               value.getEntityType(), value.getEntityId(), RelationType.ROLE, value.getRoleId());
       default ->
