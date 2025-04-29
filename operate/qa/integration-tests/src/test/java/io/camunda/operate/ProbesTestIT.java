@@ -30,7 +30,7 @@ class ProbesTestIT {
   @SpringBootTest(
       classes = TestApplication.class,
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-  class SchemaExistsTest {
+  class SchemaExistsIT {
     @Autowired private IndicesCheck indicesCheck;
 
     @Autowired private TestSchemaManager testSchemaManager;
@@ -57,7 +57,7 @@ class ProbesTestIT {
   @SpringBootTest(
       classes = TestApplication.class,
       webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-  class SchemaNotExistsTest {
+  class SchemaNotExistsIT {
     @Autowired private IndicesCheck indicesCheck;
 
     @DynamicPropertySource

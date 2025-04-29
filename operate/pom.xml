@@ -39,6 +39,8 @@
     <testForkCount>${env.LIMITS_CPU}</testForkCount>
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
+    <includeUnitTestNames>*.java</includeUnitTestNames>
+    <excludeUnitTestNames>*IT.java</excludeUnitTestNames>
     <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
@@ -77,6 +79,12 @@
             <systemPropertyVariables>
               <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             </systemPropertyVariables>
+            <includes>
+              <include>${includeUnitTestNames}</include>
+            </includes>
+            <excludes>
+              <exclude>${excludeUnitTestNames}</exclude>
+            </excludes>
           </configuration>
         </plugin>
 
@@ -166,6 +174,28 @@
         <includeITNames>**/api/v1/**/*IT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operateCoreFeaturesUnitTests</id>
+      <properties>
+        <includeUnitTestNames>*.java</includeUnitTestNames>
+        <excludeUnitTestNames>*IT.java,**/identity/**/*.java,**/elasticsearch/**/*.java,**/opensearch/**/*.java,**/zeebeimport/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java</excludeUnitTestNames>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operateDataLayerUnitTests</id>
+      <properties>
+        <includeUnitTestNames>**/elasticsearch/**/*.java,,**/opensearch/**/*.java,**/zeebeimport/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java</includeUnitTestNames>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operateIdentityUnitTests</id>
+      <properties>
+        <includeUnitTestNames>**/identity/**/*.java</includeUnitTestNames>
       </properties>
     </profile>
 
