@@ -1,6 +1,7 @@
 name: Epic breakdown
 description: Template for breaking down PDP epics for engineering
 labels: ["kind/epic"]
+type: epic
 body:
   - type: dropdown
     id: Component
