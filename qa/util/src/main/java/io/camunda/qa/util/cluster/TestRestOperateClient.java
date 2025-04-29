@@ -290,9 +290,7 @@ public class TestRestOperateClient implements AutoCloseable {
     try {
       final String jsonBody = new ObjectMapper().writeValueAsString(createBatchOperationRequestDto);
       request =
-          HttpRequest.newBuilder()
-              .uri(new URI(String.format("%sapi/process-instances/batch-operation", endpoint)))
-              .header("content-type", "application/json")
+          createBuilder(String.format("%sapi/process-instances/batch-operation", endpoint))
               .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
     } catch (final URISyntaxException | JsonProcessingException e) {
