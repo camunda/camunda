@@ -36,6 +36,7 @@ function useTask(
       const {response, error} = await request(api.getTask({userTaskKey}));
 
       if (response !== null) {
+        return response.json() as Promise<UserTask>;
       }
 
       throw error;
