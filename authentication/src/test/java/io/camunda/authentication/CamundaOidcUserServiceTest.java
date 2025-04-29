@@ -69,7 +69,6 @@ public class CamundaOidcUserServiceTest {
                     .withRoles(List.of(roleR1))
                     .withAuthorizedApplications(List.of("*"))
                     .withTenants(List.of(new TenantDTO(1L, "tenant-1", "Tenant One", "desc")))
-                    .withGroups(List.of())
                     .build()));
 
     // when
@@ -88,6 +87,28 @@ public class CamundaOidcUserServiceTest {
     assertThat(authenticationContext.tenants().get(0).tenantId()).isEqualTo("tenant-1");
 
     assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
+  }
+
+  @Test
+  public void givenApplicationIdClaimConfigured_whenLoadingUser_thenApplicationIdIsSet() {
+    // given
+    final Map<String, Object> claims = Map.of("sub", "test|foo@camunda.test", "client_id", "blah");
+
+    when(camundaOAuthPrincipalService.loadOAuthContext(claims))
+        .thenReturn(
+            new OAuthContext(
+                Set.of(5L, 7L),
+                Set.of("test-id", "test-id-2"),
+                new AuthenticationContext.AuthenticationContextBuilder()
+                    .withApplicationId("blah")
+                    .build()));
+
+    final var oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
+    final var camundaUser = (CamundaOidcUser) oidcUser;
+    final var authenticationContext = camundaUser.getAuthenticationContext();
+
+    assertThat(authenticationContext.applicationId()).isEqualTo("blah");
+    assertThat(authenticationContext.username()).isNull();
   }
 
   private static OidcUserRequest createOidcUserRequest(final Map<String, Object> claims) {
