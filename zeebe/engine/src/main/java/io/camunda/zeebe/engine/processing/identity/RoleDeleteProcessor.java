@@ -89,7 +89,6 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     final var persistedRole = persistedRecord.get();
     final var roleKey = persistedRole.getRoleKey();
     record.setRoleKey(roleKey);
-    record.setName(persistedRole.getName());
 
     removeMembers(record);
     deleteAuthorizations(record);
@@ -142,10 +141,10 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
   private void deleteAuthorizations(final RoleRecord record) {
     final var roleId = record.getRoleId();
-    final var authorizationKeysForGroup =
+    final var authorizationKeysForRole =
         authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.ROLE, roleId);
 
-    authorizationKeysForGroup.forEach(
+    authorizationKeysForRole.forEach(
         authorizationKey -> {
           final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
           stateWriter.appendFollowUpEvent(
