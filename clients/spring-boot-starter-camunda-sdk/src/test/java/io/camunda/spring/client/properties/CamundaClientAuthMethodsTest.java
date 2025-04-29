@@ -42,6 +42,74 @@ public class CamundaClientAuthMethodsTest {
   @Nested
   @SpringBootTest(
       classes = CamundaClientPropertiesTestConfig.class,
+      properties = "camunda.client.auth.username=demo1")
+  public class ImplicitBasicByUsername {
+    @Autowired CamundaClientProperties properties;
+
+    @Test
+    void shouldLoadDefaultsBasic() {
+      assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.basic);
+      assertThat(properties.getAuth().getUsername()).isEqualTo("demo1");
+      assertThat(properties.getAuth().getPassword()).isEqualTo("demo");
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientPropertiesTestConfig.class,
+      properties = "camunda.client.auth.password=demo1")
+  public class ImplicitBasicByPassword {
+    @Autowired CamundaClientProperties properties;
+
+    @Test
+    void shouldLoadDefaultsBasic() {
+      assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.basic);
+      assertThat(properties.getAuth().getUsername()).isEqualTo("demo");
+      assertThat(properties.getAuth().getPassword()).isEqualTo("demo1");
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientPropertiesTestConfig.class,
+      properties = {"camunda.client.auth.client-id=some-client"})
+  public class ImplicitOidcByClientId {
+    @Autowired CamundaClientProperties properties;
+
+    @Test
+    void shouldLoadDefaultsBasic() {
+      assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
+      assertThat(properties.getAuth().getTokenUrl())
+          .isEqualTo(
+              URI.create(
+                  "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token"));
+      assertThat(properties.getAuth().getAudience()).isEqualTo("zeebe-api");
+      assertThat(properties.getAuth().getClientId()).isEqualTo("some-client");
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientPropertiesTestConfig.class,
+      properties = {"camunda.client.auth.client-secret=some-secret"})
+  public class ImplicitOidcByClientSecret {
+    @Autowired CamundaClientProperties properties;
+
+    @Test
+    void shouldLoadDefaultsBasic() {
+      assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
+      assertThat(properties.getAuth().getTokenUrl())
+          .isEqualTo(
+              URI.create(
+                  "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token"));
+      assertThat(properties.getAuth().getAudience()).isEqualTo("zeebe-api");
+      assertThat(properties.getAuth().getClientSecret()).isEqualTo("some-secret");
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientPropertiesTestConfig.class,
       properties = {"camunda.client.auth.method=basic"})
   public class Basic {
     @Autowired CamundaClientProperties properties;
