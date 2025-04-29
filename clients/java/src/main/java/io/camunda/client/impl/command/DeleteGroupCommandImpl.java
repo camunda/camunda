@@ -27,12 +27,12 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DeleteGroupCommandImpl implements DeleteGroupCommandStep1 {
 
-  private final long groupKey;
+  private final String groupId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public DeleteGroupCommandImpl(final long groupKey, final HttpClient httpClient) {
-    this.groupKey = groupKey;
+  public DeleteGroupCommandImpl(final String groupId, final HttpClient httpClient) {
+    this.groupId = groupId;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
@@ -46,7 +46,7 @@ public class DeleteGroupCommandImpl implements DeleteGroupCommandStep1 {
   @Override
   public CamundaFuture<DeleteGroupResponse> send() {
     final HttpCamundaFuture<DeleteGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete("/groups/" + groupKey, httpRequestConfig.build(), result);
+    httpClient.delete("/groups/" + groupId, httpRequestConfig.build(), result);
     return result;
   }
 }

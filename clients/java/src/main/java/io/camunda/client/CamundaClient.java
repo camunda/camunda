@@ -1169,7 +1169,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newDeleteGroupCommand(123L)
+   *  .newDeleteGroupCommand("123")
    *  .send();
    * </pre>
    *
@@ -1177,7 +1177,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  DeleteGroupCommandStep1 newDeleteGroupCommand(long groupKey);
+  DeleteGroupCommandStep1 newDeleteGroupCommand(String groupId);
 
   /**
    * Command to assign a user to a group.

@@ -434,11 +434,11 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertGroupDeleted(
-      final long groupKey, final Consumer<GroupRecordValue> consumer) {
+      final String groupId, final Consumer<GroupRecordValue> consumer) {
     final GroupRecordValue groupRecordValue =
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.DELETED)
-            .withGroupKey(groupKey)
+            .withGroupId(groupId)
             .getFirst()
             .getValue();
 

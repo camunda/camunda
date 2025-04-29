@@ -786,8 +786,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public DeleteGroupCommandStep1 newDeleteGroupCommand(final long groupKey) {
-    return new DeleteGroupCommandImpl(groupKey, httpClient);
+  public DeleteGroupCommandStep1 newDeleteGroupCommand(final String groupId) {
+    return new DeleteGroupCommandImpl(groupId, httpClient);
   }
 
   @Override
