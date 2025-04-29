@@ -157,8 +157,6 @@ public class CommandDistributionIdempotencyTest {
   public static void assertAllProcessorsTested() {
     // TODO remove with https://github.com/camunda/camunda/issues/30114
     DISTRIBUTING_PROCESSORS.remove(RoleDeleteProcessor.class);
-    // TODO remove with https://github.com/camunda/camunda/issues/30117
-    DISTRIBUTING_PROCESSORS.remove(RoleRemoveEntityProcessor.class);
     // TODO remove with https://github.com/camunda/camunda/issues/30113
     DISTRIBUTING_PROCESSORS.remove(RoleUpdateProcessor.class);
     if (!DISTRIBUTING_PROCESSORS.isEmpty()) {
@@ -489,30 +487,29 @@ public class CommandDistributionIdempotencyTest {
                 }),
             RoleAddEntityProcessor.class
           },
-          // TODO fix test in https://github.com/camunda/camunda/issues/30117
-          //          {
-          //            "Role.REMOVE_ENTITY is idempotent",
-          //            new Scenario(
-          //                ValueType.ROLE,
-          //                RoleIntent.REMOVE_ENTITY,
-          //                () -> {
-          //                  final var role = createRole();
-          //                  final var user = createUser();
-          //                  ENGINE
-          //                      .role()
-          //                      .addEntity(role.getKey())
-          //                      .withEntityKey(user.getKey())
-          //                      .withEntityType(EntityType.USER)
-          //                      .add();
-          //                  return ENGINE
-          //                      .role()
-          //                      .removeEntity(role.getKey())
-          //                      .withEntityKey(user.getKey())
-          //                      .withEntityType(EntityType.USER)
-          //                      .remove();
-          //                }),
-          //            RoleRemoveEntityProcessor.class
-          //          },
+          {
+            "Role.REMOVE_ENTITY is idempotent",
+            new Scenario(
+                ValueType.ROLE,
+                RoleIntent.REMOVE_ENTITY,
+                () -> {
+                  final var role = createRole().getValue();
+                  final var user = createUser().getValue();
+                  ENGINE
+                      .role()
+                      .addEntity(role.getRoleId())
+                      .withEntityId(user.getUsername())
+                      .withEntityType(EntityType.USER)
+                      .add();
+                  return ENGINE
+                      .role()
+                      .removeEntity(role.getRoleId())
+                      .withEntityId(user.getUsername())
+                      .withEntityType(EntityType.USER)
+                      .remove();
+                }),
+            RoleRemoveEntityProcessor.class
+          },
           {
             "Signal.BROADCAST is idempotent",
             new Scenario(

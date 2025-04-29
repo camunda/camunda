@@ -149,11 +149,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     }
 
     for (final var roleId :
-        membershipState.getMemberships(
-            EntityType.USER,
-            // TODO: use the username instead of the userKey
-            Long.toString(userKey),
-            RelationType.ROLE)) {
+        membershipState.getMemberships(EntityType.USER, username, RelationType.ROLE)) {
       final var role = roleState.getRole(roleId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           role.getRoleKey(),
@@ -161,7 +157,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
           new RoleRecord()
               .setRoleKey(role.getRoleKey())
               .setRoleId(roleId)
-              .setEntityKey(userKey)
+              .setEntityId(username)
               .setEntityType(EntityType.USER));
     }
 

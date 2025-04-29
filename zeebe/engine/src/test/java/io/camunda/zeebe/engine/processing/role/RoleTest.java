@@ -227,85 +227,80 @@ public class RoleTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldRemoveEntityFromRole() {
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    final var username = Strings.newRandomValidUsername();
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create();
+    engine.role().addEntity(roleId).withEntityId(username).withEntityType(EntityType.USER).add();
     final var removedEntity =
         engine
             .role()
-            .removeEntity(roleKey)
-            .withEntityKey(userKey)
+            .removeEntity(roleId)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .remove()
             .getValue();
 
-    Assertions.assertThat(removedEntity)
+    assertThat(removedEntity)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("roleKey", roleKey)
-        .hasFieldOrPropertyWithValue("entityKey", userKey)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+        .hasRoleId(roleId)
+        .hasEntityId(username)
+        .hasEntityType(EntityType.USER);
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldRejectIfRoleIsNotPresentEntityRemoval() {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var roleRecord = engine.role().newRole(name).create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = engine.role().newRole(roleId).create();
 
     // when
-    final var notPresentRoleKey = 1L;
+    final var notPresentRoleId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
-        engine.role().addEntity(notPresentRoleKey).expectRejection().add();
+        engine.role().addEntity(notPresentRoleId).expectRejection().add();
 
     final var createdRole = roleRecord.getValue();
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    assertThat(createdRole).isNotNull().hasRoleId(roleId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update role with key '"
-                + notPresentRoleKey
-                + "', but a role with this key does not exist.");
+            "Expected to update role with ID '"
+                + notPresentRoleId
+                + "', but a role with this ID does not exist.");
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldRejectIfEntityIsNotPresentEntityRemoval() {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var roleRecord = engine.role().newRole(name).create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = engine.role().newRole(roleId).create().getValue();
 
     // when
-    final var createdRole = roleRecord.getValue();
-    final var roleKey = createdRole.getRoleKey();
+    final var entityId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
         engine
             .role()
-            .removeEntity(roleKey)
-            .withEntityKey(1L)
-            .withEntityType(EntityType.USER)
+            .removeEntity(roleId)
+            .withEntityId(entityId)
+            .withEntityType(EntityType.MAPPING)
             .expectRejection()
             .remove();
 
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    assertThat(roleRecord).isNotNull().hasRoleId(roleId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove an entity with key '%s' and type '%s' from role with key '%s', but the entity doesn't exist."
-                .formatted(1L, EntityType.USER, roleKey));
+            "Expected to remove an entity with ID '%s' and type '%s' from role with ID '%s', but the entity doesn't exist."
+                .formatted(entityId, EntityType.MAPPING, roleId));
   }
 
   @Test
