@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 public enum AuthorizationOwnerType {
   USER,
+  APPLICATION,
   ROLE,
   GROUP,
   MAPPING,
