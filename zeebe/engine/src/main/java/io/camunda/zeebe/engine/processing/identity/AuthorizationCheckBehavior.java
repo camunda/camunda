@@ -357,12 +357,11 @@ public final class AuthorizationCheckBehavior {
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
-              getAuthorizedResourceIdentifiersForOwners(
-                      AuthorizationOwnerType.GROUP,
-                      membershipState.getMemberships(
-                          EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP),
-                      request.getResourceType(),
-                      request.getPermissionType())
+              final var groupIds =
+                  membershipState.getMemberships(
+                      EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP);
+              getGroupsAuthorizedResourceIdentifiers(
+                      groupIds, request.getResourceType(), request.getPermissionType())
                   .forEach(stream);
               getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.ROLE,
