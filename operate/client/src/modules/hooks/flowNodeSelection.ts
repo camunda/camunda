@@ -15,7 +15,6 @@ import {
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
 const useHasPendingCancelOrMoveModification = () => {
   const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
@@ -58,15 +57,6 @@ const useHasRunningOrFinishedTokens = () => {
   );
 };
 
-const useIsRootNodeSelected = () => {
-  const {data: processInstance} = useProcessInstance();
-
-  return (
-    flowNodeSelectionStore.state.selection?.flowNodeInstanceId ===
-    processInstance?.processInstanceKey
-  );
-};
-
 const useNewTokenCountForSelectedNode = () => {
   const modificationsByFlowNode = useModificationsByFlowNode();
   const currentFlowNodeSelection = flowNodeSelectionStore.state.selection;
@@ -99,7 +89,6 @@ const useIsPlaceholderSelected = () => {
 export {
   useHasPendingCancelOrMoveModification,
   useHasRunningOrFinishedTokens,
-  useIsRootNodeSelected,
   useNewTokenCountForSelectedNode,
   useIsPlaceholderSelected,
 };
