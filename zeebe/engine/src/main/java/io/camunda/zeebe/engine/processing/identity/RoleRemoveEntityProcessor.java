@@ -134,10 +134,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     return switch (record.getEntityType()) {
       case USER, MAPPING ->
           membershipState.hasRelation(
-              record.getEntityType(),
-              record.getEntityId(),
-              RelationType.ROLE,
-              record.getRoleId());
+              record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
       default ->
           throw new IllegalArgumentException("Unsupported entity type: " + record.getEntityType());
     };
