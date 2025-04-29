@@ -17,6 +17,7 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -35,8 +36,9 @@ public class SearchEngineDatabaseConfiguration {
 
   @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
-      final SearchEngineConfiguration searchEngineConfiguration) {
-    return new SearchEngineSchemaInitializer(searchEngineConfiguration);
+      final SearchEngineConfiguration searchEngineConfiguration,
+      final MeterRegistry meterRegistry) {
+    return new SearchEngineSchemaInitializer(searchEngineConfiguration, meterRegistry);
   }
 
   @Bean

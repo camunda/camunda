@@ -12,6 +12,7 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
+import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.retry.RetryDecorator;
@@ -40,13 +41,15 @@ public class SchemaManager {
   private final ObjectMapper objectMapper;
   private final ExecutorService virtualThreadExecutor;
   private final RetryDecorator retryDecorator;
+  private final SchemaManagerMetrics schemaManagerMetrics;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
       final Collection<IndexDescriptor> indexDescriptors,
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
       final SearchEngineConfiguration config,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SchemaManagerMetrics schemaManagerMetrics) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
     this.indexDescriptors = indexDescriptors;
@@ -54,6 +57,22 @@ public class SchemaManager {
     this.config = config;
     this.objectMapper = objectMapper;
     retryDecorator = new RetryDecorator(config.schemaManager().getRetry());
+    this.schemaManagerMetrics = schemaManagerMetrics;
+  }
+
+  public SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final ObjectMapper objectMapper) {
+    this(
+        searchEngineClient,
+        indexDescriptors,
+        indexTemplateDescriptors,
+        config,
+        objectMapper,
+        SchemaManagerMetrics.DEFAULT);
   }
 
   public void startup() {
@@ -62,7 +81,9 @@ public class SchemaManager {
           "Will not make any changes to indices and index templates as [createSchema] is false");
       return;
     }
+    final var timer = schemaManagerMetrics.startSchemaInitTimer();
     retryDecorator.decorate("init schema", this::initializeSchema);
+    timer.close(); // record the time taken to initialize schema only if it was successful
   }
 
   private void initializeSchema() {
