@@ -13,22 +13,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("Enable with https://github.com/camunda/camunda/issues/29925")
 @ZeebeIntegration
 class DeleteGroupTest {
-
-  private static final String GROUP_ID = "groupId";
-  private static final String GROUP_NAME = "groupName";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =
@@ -36,41 +31,41 @@ class DeleteGroupTest {
 
   @AutoClose private CamundaClient client;
 
-  private long groupKey;
+  private String groupId;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    groupKey =
+    groupId =
         client
             .newCreateGroupCommand()
-            .groupId(GROUP_ID)
-            .name(GROUP_NAME)
+            .groupId(Strings.newRandomValidIdentityId())
+            .name("groupName")
             .send()
             .join()
-            .getGroupKey();
+            .getGroupId();
   }
 
   @Test
   void shouldDeleteGroup() {
     // when
-    client.newDeleteGroupCommand(groupKey).send().join();
+    client.newDeleteGroupCommand(groupId).send().join();
 
     // then
-    ZeebeAssertHelper.assertGroupDeleted(groupKey, group -> assertThat(group).hasName(GROUP_NAME));
+    ZeebeAssertHelper.assertGroupDeleted(groupId, group -> assertThat(group).hasGroupId(groupId));
   }
 
   @Test
   void shouldRejectIfGroupDoesNotExist() {
     // given
-    final long nonExistentGroupKey = Protocol.encodePartitionId(1, 111L);
+    final String nonExistentGroupId = Strings.newRandomValidIdentityId();
 
     // when / then
-    assertThatThrownBy(() -> client.newDeleteGroupCommand(nonExistentGroupKey).send().join())
+    assertThatThrownBy(() -> client.newDeleteGroupCommand(nonExistentGroupId).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to delete group with key '%d', but a group with this key does not exist."
-                .formatted(nonExistentGroupKey));
+            "Expected to delete group with ID '%s', but a group with this ID does not exist."
+                .formatted(nonExistentGroupId));
   }
 }
