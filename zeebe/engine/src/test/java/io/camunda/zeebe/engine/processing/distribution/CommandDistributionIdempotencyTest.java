@@ -435,11 +435,7 @@ public class CommandDistributionIdempotencyTest {
           {
             "Role.CREATE is idempotent",
             new Scenario(
-                ValueType.ROLE,
-                RoleIntent.CREATE,
-                () ->
-                    CommandDistributionIdempotencyTest.createRole(
-                        Strings.newRandomValidIdentityId())),
+                ValueType.ROLE, RoleIntent.CREATE, CommandDistributionIdempotencyTest::createRole),
             RoleCreateProcessor.class
           },
           {
@@ -448,9 +444,8 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.ROLE,
                 RoleIntent.DELETE,
                 () -> {
-                  final var roleId = Strings.newRandomValidIdentityId();
-                  createRole(roleId);
-                  return ENGINE.role().deleteRole(roleId).delete();
+                  final Record<RoleRecordValue> role = createRole();
+                  return ENGINE.role().deleteRole(role.getValue().getRoleId()).delete();
                 }),
             RoleDeleteProcessor.class
           },
@@ -475,8 +470,7 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.ROLE,
                 RoleIntent.ADD_ENTITY,
                 () -> {
-                  final var roleId = Strings.newRandomValidIdentityId();
-                  final var role = createRole(roleId);
+                  final var role = createRole();
                   final var user = createUser();
                   return ENGINE
                       .role()
@@ -753,8 +747,8 @@ public class CommandDistributionIdempotencyTest {
     return ENGINE.group().newGroup(groupId).withName(UUID.randomUUID().toString()).create();
   }
 
-  private static Record<RoleRecordValue> createRole(final String roleId) {
-    return ENGINE.role().newRole(roleId).create();
+  private static Record<RoleRecordValue> createRole() {
+    return ENGINE.role().newRole(UUID.randomUUID().toString()).create();
   }
 
   private static Record<TenantRecordValue> createTenant() {
