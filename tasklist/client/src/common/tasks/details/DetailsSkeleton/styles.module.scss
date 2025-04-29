@@ -6,11 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-function shouldFetchMore(errorCode: string) {
-  const ERROR_CODE_PATTERN =
-    /task is already assigned|task is not assigned|task is not active/gi;
-
-  return ERROR_CODE_PATTERN.test(errorCode);
+.margin0 {
+  margin: 0;
 }
-
-export {shouldFetchMore};

@@ -8,19 +8,19 @@
 
 import {useOutletContext} from 'react-router-dom';
 import {ProcessDiagramView} from 'common/tasks/details/ProcessDiagramView';
-import type {OutletContext} from 'v1/TaskDetailsLayout';
+import type {OutletContext} from 'v2/TaskDetailsLayout';
 
 const TaskDetailsProcessView: React.FC = () => {
-  const {task, process} = useOutletContext<OutletContext>();
-  const {taskDefinitionId} = task;
+  const {task, processXml} = useOutletContext<OutletContext>();
+  const processName = task.processName ?? task.processDefinitionId;
 
   return (
     <ProcessDiagramView
-      status={process === undefined ? 'error' : 'diagram'}
-      xml={process?.bpmnXml ?? ''}
-      elementId={taskDefinitionId}
-      processName={process?.name ?? ''}
-      processVersion={process?.version ?? 0}
+      status={processXml === undefined ? 'error' : 'diagram'}
+      xml={processXml ?? ''}
+      elementId={task.elementId}
+      processName={processName}
+      processVersion={task.processDefinitionVersion}
     />
   );
 };

@@ -7,7 +7,7 @@
  */
 
 import {render, screen, within} from 'common/testing/testing-library';
-import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
+import {TurnOnNotificationPermission} from './index';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
 
 describe('<TurnOnNotificationPermission/>', () => {

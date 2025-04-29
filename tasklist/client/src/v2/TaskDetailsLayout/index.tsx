@@ -6,63 +6,63 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Section} from '@carbon/react';
-import {Outlet, useMatch, useNavigate} from 'react-router-dom';
-import type {Process, Task} from 'v1/api/types';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
-import {useCurrentUser} from 'common/api/useCurrentUser.query';
-import {useTask} from 'v1/api/useTask.query';
-import {useProcessDefinition} from 'v1/api/useProcessDefinition.query';
-import {useTaskDetailsParams, pages} from 'common/routing';
-import {DetailsSkeleton} from 'common/tasks/details/DetailsSkeleton';
-import {TabListNav} from 'common/tasks/details/TabListNav';
-import {TurnOnNotificationPermission} from 'common/tasks/details/TurnOnNotificationPermission';
-import {Aside} from 'common/tasks/details/Aside';
-import {TaskDetailsHeader} from 'common/tasks/details/TaskDetailsHeader';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
-import {useEffect} from 'react';
+import {Section} from '@carbon/react';
+import {TurnOnNotificationPermission} from 'common/tasks/details/TurnOnNotificationPermission';
+import {TabListNav} from 'common/tasks/details/TabListNav';
+import {Aside} from 'common/tasks/details/Aside';
+import {pages, useTaskDetailsParams} from 'common/routing';
 import {useTranslation} from 'react-i18next';
+import {useCurrentUser} from 'common/api/useCurrentUser.query';
+import {Outlet, useMatch, useNavigate} from 'react-router-dom';
+import {DetailsSkeleton} from 'common/tasks/details/DetailsSkeleton';
+import {useProcessDefinitionXml} from 'v2/api/useProcessDefinitionXml.query';
+import {useTask} from 'v2/api/useTask.query';
+import {useEffect} from 'react';
 import {notificationsStore} from 'common/notifications/notifications.store';
-import {AssignButton} from './AssignButton';
+import {TaskDetailsHeader} from 'common/tasks/details/TaskDetailsHeader';
 
 type OutletContext = {
-  task: Task;
+  task: UserTask;
   currentUser: CurrentUser;
   refetch: () => void;
-  process: Process | undefined;
+  processXml: string | undefined;
 };
 
 const TaskDetailsLayout: React.FC = () => {
   const {id} = useTaskDetailsParams();
   const {t} = useTranslation();
   const {data: currentUser} = useCurrentUser();
-  const {data: task, refetch} = useTask(id, {
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchInterval: 5000,
-  });
-  const taskState = task?.taskState;
-  const isTaskCompleted = taskState === 'COMPLETED';
-  const {data: process, isLoading: processLoading} = useProcessDefinition(
+  const {data: task, refetch} = useTask(id);
+  const isTaskCompleted = task?.state === 'COMPLETED';
+  const {data: processXml, isLoading: processLoading} = useProcessDefinitionXml(
     task?.processDefinitionKey ?? '',
     {
       enabled: task !== undefined && !isTaskCompleted,
     },
   );
-  const onAssignmentError = () => refetch();
 
   const navigate = useNavigate();
   useEffect(() => {
-    if (taskState === 'CANCELED') {
+    if (task?.state === 'CANCELED') {
       notificationsStore.displayNotification({
         kind: 'info',
         title: t('processInstanceCancelledNotification'),
-        subtitle: `${task?.processName} (${task?.processInstanceKey})`,
+        subtitle: `${task?.processName ?? task?.processDefinitionId} (${task?.processInstanceKey})`,
         isDismissable: true,
       });
       navigate(pages.initial);
     }
-  }, [navigate, task?.processInstanceKey, task?.processName, taskState, t]);
+  }, [
+    navigate,
+    task?.processInstanceKey,
+    task?.processName,
+    task?.state,
+    task?.processDefinitionId,
+    t,
+  ]);
 
   const tabs = [
     {
@@ -82,8 +82,7 @@ const TaskDetailsLayout: React.FC = () => {
       to: {
         pathname: pages.taskDetailsProcess(id),
       },
-      visible:
-        !isTaskCompleted && process !== undefined && process.bpmnXml !== null,
+      visible: !isTaskCompleted && processXml !== undefined,
     },
   ];
 
@@ -99,23 +98,17 @@ const TaskDetailsLayout: React.FC = () => {
       <Section className={taskDetailsLayoutCommon.content} level={4}>
         <TurnOnNotificationPermission />
         <TaskDetailsHeader
-          taskName={task.name}
-          processName={task.processName}
-          assignee={task.assignee}
-          taskState={task.taskState}
+          taskName={task.name ?? task.elementId}
+          processName={task.processName ?? task.processDefinitionId}
+          assignee={task.assignee ?? null}
+          taskState={task.state}
           user={currentUser}
-          assignButton={
-            <AssignButton
-              id={task.id}
-              assignee={task.assignee}
-              onAssignmentError={onAssignmentError}
-            />
-          }
+          assignButton={null}
         />
         <TabListNav label={t('taskDetailsNavLabel')} items={tabs} />
         <Outlet
           context={
-            {task, currentUser, refetch, process} satisfies OutletContext
+            {task, currentUser, refetch, processXml} satisfies OutletContext
           }
         />
       </Section>

@@ -8,6 +8,7 @@
 
 import {useLocation, useNavigate, type Path} from 'react-router-dom';
 import styles from './styles.module.scss';
+import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import cn from 'classnames';
 
 type Props = {
@@ -28,7 +29,7 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
   const navigate = useNavigate();
 
   return (
-    <nav className={cn(className, styles.tabs, 'cds--tabs')}>
+    <nav className={cn(className, taskDetailsLayoutCommon.tabs, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
         {items.map(({key, title, label, selected, to, visible}) => {
           const isHidden = visible === false;
