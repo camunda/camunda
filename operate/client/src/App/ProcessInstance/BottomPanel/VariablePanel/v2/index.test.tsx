@@ -39,11 +39,14 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init} from 'modules/utils/flowNodeMetadata';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
@@ -85,24 +88,55 @@ const getWrapper = (
 };
 
 describe('VariablePanel', () => {
-  beforeEach(() => {
-    const statistics = [
-      {
-        elementId: 'TEST_FLOW_NODE',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        elementId: 'Activity_0qtp1k6',
-        active: 0,
-        canceled: 0,
-        incidents: 1,
-        completed: 0,
-      },
-    ];
+  const mockProcessInstance: ProcessInstance = {
+    processInstanceKey: 'instance_id',
+    state: 'ACTIVE',
+    startDate: '2018-06-21',
+    processDefinitionKey: '2',
+    processDefinitionVersion: 1,
+    processDefinitionId: 'someKey',
+    tenantId: '<default>',
+    processDefinitionName: 'someProcessName',
+    hasIncident: false,
+  };
 
+  const mockProcessInstanceDeprecated = createInstance();
+
+  const statistics = [
+    {
+      elementId: 'TEST_FLOW_NODE',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      elementId: 'Activity_0qtp1k6',
+      active: 0,
+      canceled: 0,
+      incidents: 1,
+      completed: 0,
+    },
+  ];
+
+  beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statistics,
+    });
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
@@ -530,6 +564,25 @@ describe('VariablePanel', () => {
   });
 
   it('should select correct tab when navigating between flow nodes', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statistics,
+    });
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statistics,
+    });
+
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(screen.getByText('testVariableName')).toBeInTheDocument();

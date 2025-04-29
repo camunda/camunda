@@ -6,13 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {useEffect, useState} from 'react';
 import {variablesStore} from 'modules/stores/variables';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {VariablesContent, EmptyMessageWrapper} from '../styled';
 import {observer} from 'mobx-react';
-import {computed, reaction} from 'mobx';
+import {reaction} from 'mobx';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useForm, useFormState} from 'react-final-form';
 import {Restricted} from 'modules/components/Restricted';
@@ -25,10 +23,19 @@ import {Footer} from '../Footer';
 import {Skeleton} from '../Skeleton';
 import {useDisplayStatus} from 'modules/hooks/variables';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
+import {usePermissions} from 'modules/queries/permissions/usePermissions';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
 };
+
+type FooterVariant =
+  | 'initial'
+  | 'disabled'
+  | 'add-variable'
+  | 'pending-variable';
 
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
@@ -36,9 +43,13 @@ const Variables: React.FC<Props> = observer(
     const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
       flowNodeSelectionStore.state.selection?.flowNodeId,
     );
+    const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+    const {data: permissions} = usePermissions();
     const {
       state: {pendingItem, loadingItemId, status},
     } = variablesStore;
+    const [footerVariant, setFooterVariant] =
+      useState<FooterVariant>('initial');
 
     const scopeId = variablesStore.scopeId ?? newScopeIdForFlowNode;
 
@@ -69,31 +80,45 @@ const Variables: React.FC<Props> = observer(
       : initialValues === undefined ||
         Object.values(initialValues).length === 0;
 
-    const footerVariant = computed(() => {
-      if (!processInstanceDetailsStore.isRunning) {
-        return 'disabled';
+    useEffect(() => {
+      const isRootNodeSelected = flowNodeSelectionStore.isRootNodeSelected;
+      const isSelectedInstanceRunning =
+        flowNodeMetaDataStore.isSelectedInstanceRunning;
+
+      if (!isProcessInstanceRunning) {
+        setFooterVariant('disabled');
+        return;
       }
 
       if (pendingItem !== null) {
-        return 'pending-variable';
+        setFooterVariant('pending-variable');
+        return;
       }
 
       if (initialValues?.name === '' && initialValues?.value === '') {
-        return 'add-variable';
+        setFooterVariant('add-variable');
+        return;
       }
 
       if (
         status === 'first-fetch' ||
         !isViewMode ||
-        (!flowNodeSelectionStore.isRootNodeSelected &&
-          !flowNodeMetaDataStore.isSelectedInstanceRunning) ||
+        (!isRootNodeSelected && !isSelectedInstanceRunning) ||
         loadingItemId !== null
       ) {
-        return 'disabled';
+        setFooterVariant('disabled');
+        return;
       }
 
-      return 'initial';
-    });
+      setFooterVariant('initial');
+    }, [
+      isProcessInstanceRunning,
+      pendingItem,
+      initialValues,
+      status,
+      isViewMode,
+      loadingItemId,
+    ]);
 
     if (displayStatus === 'no-content') {
       return null;
@@ -118,10 +143,10 @@ const Variables: React.FC<Props> = observer(
           <Restricted
             resourceBasedRestrictions={{
               scopes: ['UPDATE_PROCESS_INSTANCE'],
-              permissions: processInstanceDetailsStore.getPermissions(),
+              permissions: permissions,
             }}
           >
-            <Footer variant={footerVariant.get()} />
+            <Footer variant={footerVariant} />
           </Restricted>
         )}
       </VariablesContent>

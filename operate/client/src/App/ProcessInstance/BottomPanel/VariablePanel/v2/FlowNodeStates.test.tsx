@@ -33,6 +33,14 @@ import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init} from 'modules/utils/flowNodeMetadata';
 import {cancelAllTokens} from 'modules/utils/modifications';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
+}));
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -73,6 +81,41 @@ const getWrapper = (
 
 describe('VariablePanel', () => {
   beforeEach(() => {
+    const mockProcessInstance: ProcessInstance = {
+      processInstanceKey: 'instance_id',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionKey: '2',
+      processDefinitionVersion: 1,
+      processDefinitionId: 'someKey',
+      tenantId: '<default>',
+      processDefinitionName: 'someProcessName',
+      hasIncident: false,
+    };
+
+    const mockProcessInstanceDeprecated = createInstance();
+
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+
     const statistics = [
       {
         elementId: 'TEST_FLOW_NODE',
@@ -93,12 +136,19 @@ describe('VariablePanel', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statistics,
+    });
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statistics,
+    });
 
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
