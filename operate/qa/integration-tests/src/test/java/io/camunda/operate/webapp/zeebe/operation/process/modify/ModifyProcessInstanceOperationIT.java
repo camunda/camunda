@@ -25,7 +25,6 @@ import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
-import io.camunda.operate.webapp.zeebe.operation.ModifyProcessZeebeWrapper;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -47,8 +46,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
   private static final Long MOCK_PROCESS_DEFINITION_KEY = 2251799813685249L;
   private static final Long MOCK_PROCESS_INSTANCE_KEY = 2251799813685251L;
 
-  @MockBean private ModifyProcessZeebeWrapper mockZeebeHelper;
-  @Autowired private SingleStepModifyProcessInstanceHandler modifyProcessInstanceHandler;
+  @Autowired private ModifyProcessInstanceHandler modifyProcessInstanceHandler;
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private OperateProperties operateProperties;
@@ -285,9 +283,6 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
     when(((ModifyProcessInstanceCommandStep3) mockZeebeCommand)
             .withVariables(anyMap(), anyString()))
         .thenReturn((ModifyProcessInstanceCommandStep3) mockZeebeCommand);
-
-    when(mockZeebeHelper.newModifyProcessInstanceCommand(MOCK_PROCESS_INSTANCE_KEY))
-        .thenReturn(mockZeebeCommand);
   }
 
   private void createBatchCommandDocument(final String batchOperationId) throws IOException {
