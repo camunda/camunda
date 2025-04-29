@@ -34,13 +34,13 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 @SpringBootTest(
     classes = {CamundaClientAllAutoConfiguration.class, CamundaClientProdAutoConfiguration.class},
     properties = {
-      "camunda.client.mode=self-managed",
+      "camunda.client.mode=oidc",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret",
       "logging.level.io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration=debug"
     })
 @ExtendWith(OutputCaptureExtension.class)
-public class CamundaClientConfigurationImplSelfManagedTest {
+public class CamundaClientConfigurationImplOidcTest {
   @Autowired CamundaClientConfiguration camundaClientConfiguration;
   @Autowired JsonMapper jsonMapper;
   @Autowired CamundaClientExecutorService zeebeClientExecutorService;

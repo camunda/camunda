@@ -44,24 +44,55 @@ import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 @SpringBootTest(
     classes = {CredentialsProviderConfiguration.class},
     properties = {
-      "camunda.client.mode=self-managed",
-      "camunda.client.auth.client-id=CredentialsProviderSelfManagedTest-client-id",
-      "camunda.client.auth.client-secret=my-client-secret"
+      "camunda.client.mode=oidc",
+      "camunda.client.auth.client-id=my-client-id",
+      "camunda.client.auth.client-secret=my-client-secret",
+      "camunda.client.auth.keystore-password=password",
+      "camunda.client.auth.keystore-key-password=password",
+      "camunda.client.auth.truststore-password=password",
     })
 @EnableConfigurationProperties({CamundaClientProperties.class})
-public class CredentialsProviderSelfManagedTest {
+public class CredentialsProviderOidcWithSSLTest {
+
+  private static final String VALID_TRUSTSTORE_PATH =
+      CredentialsProviderOidcWithSSLTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/truststore.jks")
+          .getPath();
+
+  private static final String VALID_IDENTITY_PATH =
+      CredentialsProviderOidcWithSSLTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/identity.p12")
+          .getPath();
 
   @RegisterExtension
   static WireMockExtension wm =
-      WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
+      WireMockExtension.newInstance()
+          .options(
+              new WireMockConfiguration()
+                  .keystorePath(VALID_IDENTITY_PATH)
+                  .keystorePassword("password")
+                  .trustStorePath(VALID_TRUSTSTORE_PATH)
+                  .trustStorePassword("password")
+                  .dynamicHttpsPort())
+          .build();
+
+  private static final String VALID_CLIENT_PATH =
+      CredentialsProviderOidcWithSSLTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/localhost.p12")
+          .getPath();
 
   @MockBean CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CredentialsProvider credentialsProvider;
 
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {
-    final String issuer = "http://localhost:" + wm.getPort() + "/auth-server";
+    final String issuer = "https://localhost:" + wm.getHttpsPort() + "/auth-server";
     registry.add("camunda.client.auth.token-url", () -> issuer);
+    registry.add("camunda.client.auth.keystore-path", () -> VALID_CLIENT_PATH);
+    registry.add("camunda.client.auth.truststore-path", () -> VALID_TRUSTSTORE_PATH);
   }
 
   @BeforeEach
@@ -80,7 +111,6 @@ public class CredentialsProviderSelfManagedTest {
 
   @Test
   void shouldHaveZeebeAuth() throws IOException {
-    // given
     final Map<String, String> headers = new HashMap<>();
     final String accessToken = "access-token";
     wm.stubFor(
@@ -93,10 +123,7 @@ public class CredentialsProviderSelfManagedTest {
                             .put("token_type", "bearer")
                             .put("expires_in", 300))));
 
-    // when
     credentialsProvider.applyCredentials(headers::put);
-
-    // then
     assertThat(credentialsProvider).isExactlyInstanceOf(OAuthCredentialsProvider.class);
     assertThat(headers).containsEntry("Authorization", "Bearer " + accessToken);
     assertThat(headers).hasSize(1);

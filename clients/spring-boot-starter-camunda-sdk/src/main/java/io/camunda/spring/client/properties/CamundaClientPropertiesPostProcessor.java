@@ -46,6 +46,7 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
       final ConfigurableEnvironment environment, final SpringApplication application) {
     mapLegacyProperties(environment);
     mapLegacyOverrides(environment);
+    mapLegacyMode(environment);
     processClientMode(environment);
   }
 
@@ -117,6 +118,19 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
     return List.of();
   }
 
+  private void mapLegacyMode(final ConfigurableEnvironment environment) {
+    final ClientMode clientMode = environment.getProperty("camunda.client.mode", ClientMode.class);
+    if (clientMode == ClientMode.selfManaged) {
+      log.warn(
+          "Value 'self-managed' for property 'camunda.client.mode' is deprecated, please use 'oidc' instead");
+      final PropertySource<?> propertySource =
+          new MapPropertySource(
+              "camunda-client-legacy-mode.properties",
+              Map.of("camunda.client.mode", ClientMode.oidc.name()));
+      environment.getPropertySources().addFirst(propertySource);
+    }
+  }
+
   private void processClientMode(final ConfigurableEnvironment environment) {
     try {
       ClientMode clientMode = environment.getProperty("camunda.client.mode", ClientMode.class);
@@ -149,8 +163,8 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
 
   private String determinePropertiesFile(final ClientMode clientMode) {
     switch (clientMode) {
-      case selfManaged -> {
-        return "modes/self-managed.yaml";
+      case oidc -> {
+        return "modes/oidc.yaml";
       }
       case saas -> {
         return "modes/saas.yaml";

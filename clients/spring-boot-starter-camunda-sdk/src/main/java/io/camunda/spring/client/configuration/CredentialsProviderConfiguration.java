@@ -46,7 +46,7 @@ public class CredentialsProviderConfiguration {
         ? new NoopCredentialsProvider()
         : switch (clientMode) {
           case basic -> buildBasicAuthCredentialsProvider(camundaClientProperties);
-          case saas, selfManaged -> buildOAuthCredentialsProvider(camundaClientProperties);
+          case saas, selfManaged, oidc -> buildOAuthCredentialsProvider(camundaClientProperties);
         };
   }
 
