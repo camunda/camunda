@@ -121,23 +121,21 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     return sendBrokerRequest(new BrokerGroupDeleteRequest(groupId));
   }
 
-  public CompletableFuture<GroupRecord> assignMember(
-      final String groupId, final String entityId, final EntityType memberType) {
+  public CompletableFuture<GroupRecord> assignMember(final GroupMemberDTO groupMemberDTO) {
     return sendBrokerRequest(
-        BrokerGroupMemberRequest.createAddRequest(groupId)
-            .setMemberId(entityId)
-            .setMemberType(memberType));
+        BrokerGroupMemberRequest.createAddRequest(groupMemberDTO.groupId)
+            .setMemberId(groupMemberDTO.memberId)
+            .setMemberType(groupMemberDTO.memberType));
   }
 
-  public CompletableFuture<GroupRecord> removeMember(
-      final String groupId, final String entityId, final EntityType memberType) {
+  public CompletableFuture<GroupRecord> removeMember(final GroupMemberDTO groupMemberDTO) {
     return sendBrokerRequest(
-        BrokerGroupMemberRequest.createRemoveRequest(groupId)
-            .setMemberId(entityId)
-            .setMemberType(memberType));
+        BrokerGroupMemberRequest.createRemoveRequest(groupMemberDTO.groupId)
+            .setMemberId(groupMemberDTO.memberId)
+            .setMemberType(groupMemberDTO.memberType));
   }
 
   public record GroupDTO(String groupId, String name, String description) {}
 
-  public record GroupMemberRequest(String groupId, String entityId, EntityType entityType) {}
+  public record GroupMemberDTO(String groupId, String memberId, EntityType memberType) {}
 }

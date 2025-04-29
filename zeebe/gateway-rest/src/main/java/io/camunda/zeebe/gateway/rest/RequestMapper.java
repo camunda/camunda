@@ -55,7 +55,7 @@ import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.GroupServices.GroupDTO;
-import io.camunda.service.GroupServices.GroupMemberRequest;
+import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MappingServices.MappingDTO;
@@ -359,11 +359,11 @@ public class RequestMapper {
                 groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
   }
 
-  public static Either<ProblemDetail, GroupMemberRequest> toGroupMemberRequest(
+  public static Either<ProblemDetail, GroupMemberDTO> toGroupMemberRequest(
       final String groupId, final String memberId, final EntityType entityType) {
     return getResult(
         GroupRequestValidator.validateMemberRequest(groupId, memberId, entityType),
-        () -> new GroupMemberRequest(groupId, memberId, entityType));
+        () -> new GroupMemberDTO(groupId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
