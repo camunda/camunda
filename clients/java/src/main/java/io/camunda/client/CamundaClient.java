@@ -1186,8 +1186,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newAssignUserToGroupCommand("123")
-   *  .userKey(456L)
+   *  .newAssignUserToGroupCommand("groupId")
+   *  .username("username")
    *  .send();
    * </pre>
    *
