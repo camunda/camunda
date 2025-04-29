@@ -96,8 +96,11 @@ public class CredentialsProviderConfiguration {
       return credBuilder.build();
     } catch (final Exception e) {
       LOG.warn(
-          "Failed to configure oidc credential provider, using noop credentials provider now, cause: {}",
+          "Failed to configure oidc credential provider, falling back to use no authentication, cause: {}",
           e.getMessage());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(e.getMessage(), e);
+      }
       return new NoopCredentialsProvider();
     }
   }
