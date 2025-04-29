@@ -1510,7 +1510,9 @@ public class TaskListenerCorrectionsTest {
             """
                 Expected to complete task listener job, but correcting the assignee on 'CREATING' event is \
                 not supported when the user task has an assignee defined in the model \
-                (job key '%d', type '%s', processInstanceKey '%d').
+                (job key '%d', type '%s', processInstanceKey '%d'). \
+                Use the 'CREATING' event to set an assignee only if it was not defined. \
+                Use the 'ASSIGNING' event to correct an assignee that is already defined.
                 """
                 .formatted(rejection.getKey(), listenerType, processInstanceKey));
   }
