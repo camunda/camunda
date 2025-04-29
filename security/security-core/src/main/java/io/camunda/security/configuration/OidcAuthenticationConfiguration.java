@@ -22,6 +22,7 @@ public class OidcAuthenticationConfiguration {
   private String authorizationUri;
   private Set<String> audiences;
   private String usernameClaim = "sub";
+  private String applicationIdClaim;
 
   public String getIssuerUri() {
     return issuerUri;
@@ -101,5 +102,13 @@ public class OidcAuthenticationConfiguration {
 
   public void setUsernameClaim(final String usernameClaim) {
     this.usernameClaim = usernameClaim;
+  }
+
+  public String getApplicationIdClaim() {
+    return applicationIdClaim;
+  }
+
+  public void setApplicationIdClaim(final String applicationIdClaim) {
+    this.applicationIdClaim = applicationIdClaim;
   }
 }
