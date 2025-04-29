@@ -132,7 +132,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
           stateWriter.appendFollowUpEvent(
               record.getRoleKey(),
               RoleIntent.ENTITY_REMOVED,
-              new RoleRecord().setRoleId(roleId).setEntityType(entityType));
+              new RoleRecord().setRoleId(roleId).setEntityId(entityId).setEntityType(entityType));
         });
   }
 
