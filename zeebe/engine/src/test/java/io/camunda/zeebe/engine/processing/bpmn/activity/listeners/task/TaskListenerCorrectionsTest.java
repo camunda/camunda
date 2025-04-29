@@ -572,7 +572,7 @@ public class TaskListenerCorrectionsTest {
   @Test
   public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskCreation() {
     verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
-        ZeebeTaskListenerEventType.creating, true, ignored -> {}, UserTaskIntent.CREATED);
+        ZeebeTaskListenerEventType.creating, false, ignored -> {}, UserTaskIntent.CREATED);
   }
 
   @Test
@@ -1478,6 +1478,43 @@ public class TaskListenerCorrectionsTest {
                 .hasPriority(100)
                 .describedAs("Expect that the most recent correction takes precedence")
                 .hasAssignee("twice_corrected_assignee"));
+  }
+
+  @Test
+  public void shouldRejectAssigneeCorrectionOnCreatingListenerWhenAssigneeDefinedInModel() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListenersAndAssignee(
+                ZeebeTaskListenerEventType.creating, "initial_assignee", listenerType));
+
+    // when
+    final var rejection =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(listenerType)
+            .withResult(
+                new JobResult()
+                    .setCorrections(new JobResultCorrections().setAssignee("new_assignee"))
+                    .setCorrectedAttributes(List.of(UserTaskRecord.ASSIGNEE)))
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs(
+            "Expect that completing a CREATING task listener job with assignee correction is rejected when assignee is defined in the model")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+                Expected to complete task listener job, but correcting the assignee on 'CREATING' event is \
+                not supported when the user task has an assignee defined in the model \
+                (job key '%d', type '%s', processInstanceKey '%d'). \
+                Use the 'CREATING' event to set an assignee only if it was not defined. \
+                Use the 'ASSIGNING' event to correct an assignee that is already defined.
+                """
+                .formatted(rejection.getKey(), listenerType, processInstanceKey));
   }
 
   @Test
