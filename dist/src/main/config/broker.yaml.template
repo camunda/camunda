@@ -377,6 +377,20 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_CREATECONTAINER
           # createContainer: true
 
+          # This setting defines the user delegation or service SAS token to use.
+          # Note that user delegation and service SAS tokens do not support the
+          # creation of containers, therefore createContainer configuration
+          # will be overridden to false if sasToken is configured.
+          # See more in: https://learn.microsoft.com/en-us/rest/api/storageservices/create-user-delegation-sas
+          # and https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_SASTOKEN
+          # sasToken:
+
+          # Defines the account SAS token to use. Unlike the user delegation and service SAS tokens,
+          # the account SAS token does support the creation of containers.
+          # See more in: https://learn.microsoft.com/en-us/rest/api/storageservices/create-account-sas
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ACCOUNTSASTOKEN
+          #accountSasToken:
 
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
