@@ -60,7 +60,7 @@ public final class GroupRequestValidator {
         validateId(entityId, "mappingId", violations);
         break;
       default:
-        validateId(entityId, "memberId", violations);
+        validateId(entityId, "entityId", violations);
     }
   }
 
