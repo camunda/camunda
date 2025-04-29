@@ -1204,8 +1204,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUnassignUserFromGroupCommand(123L)
-   *  .userKey(456L)
+   *  .newUnassignUserFromGroupCommand("groupId")
+   *  .username("username")
    *  .send();
    * </pre>
    *
@@ -1213,7 +1213,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(long groupKey);
+  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(String groupId);
 
   /**
    * Command to create a user.
