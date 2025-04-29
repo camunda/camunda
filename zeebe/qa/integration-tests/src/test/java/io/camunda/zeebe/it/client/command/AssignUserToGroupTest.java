@@ -127,4 +127,40 @@ class AssignUserToGroupTest {
             "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group."
                 .formatted(username, groupId));
   }
+
+  @Test
+  void shouldRejectIfMissingGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignUserToGroupCommand(null).username("username").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignUserToGroupCommand("").username("username").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
+  }
+
+  @Test
+  void shouldRejectIfMissingUsername() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignUserToGroupCommand("groupId").username(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyUsername() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignUserToGroupCommand("groupId").username("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be empty");
+  }
 }
