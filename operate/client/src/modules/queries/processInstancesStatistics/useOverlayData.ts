@@ -17,6 +17,7 @@ import {
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
   INCIDENTS_BADGE,
+  SUBPROCESS_WITH_INCIDENTS,
 } from 'modules/bpmn-js/badgePositions';
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {useQuery} from '@tanstack/react-query';
@@ -30,6 +31,7 @@ const overlayPositions = {
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
   completedEndEvents: COMPLETED_END_EVENT_BADGE,
+  subprocessWithIncidents: SUBPROCESS_WITH_INCIDENTS,
 };
 
 const overlayParser =
