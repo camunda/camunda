@@ -100,7 +100,7 @@ describe('<Aside />', () => {
   });
 
   it('should render unassigned task details', async () => {
-    render(<Aside {...completedTaskMock} user={userMocks.currentUser} />, {
+    render(<Aside {...unassignedTaskMock} user={userMocks.currentUser} />, {
       wrapper: getWrapper(),
     });
 
