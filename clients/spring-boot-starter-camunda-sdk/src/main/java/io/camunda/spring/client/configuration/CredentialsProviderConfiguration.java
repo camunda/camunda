@@ -65,8 +65,11 @@ public class CredentialsProviderConfiguration {
       return builder.build();
     } catch (final Exception e) {
       LOG.warn(
-          "Failed to configure basic credential provider, using noop credentials provider now, cause: {}",
+          "Failed to configure basic credential provider, falling back to use no authentication, cause: {}",
           e.getMessage());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(e.getMessage(), e);
+      }
       return new NoopCredentialsProvider();
     }
   }
