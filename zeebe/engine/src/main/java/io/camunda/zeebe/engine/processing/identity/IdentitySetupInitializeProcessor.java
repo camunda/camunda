@@ -214,7 +214,7 @@ public final class IdentitySetupInitializeProcessor
         .forEach(
             mapping ->
                 mappingState
-                    .get(mapping.getClaimName(), mapping.getClaimValue())
+                    .get(mapping.getMappingId())
                     .ifPresentOrElse(
                         persistedMapping -> {
                           assignEntityToRole(
