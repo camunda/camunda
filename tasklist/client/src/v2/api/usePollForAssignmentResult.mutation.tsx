@@ -11,6 +11,7 @@ import {api} from 'v2/api';
 import {request} from 'common/api/request';
 import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {USE_TASKS_QUERY_KEY} from './useTasks.query';
+import {getUseTaskQueryKey} from './useTask.query';
 
 function usePollForAssignmentResult() {
   const client = useQueryClient();
@@ -39,7 +40,7 @@ function usePollForAssignmentResult() {
       return task;
     },
     onSuccess: (task) => {
-      client.setQueryData(['task', task.userTaskKey], task);
+      client.setQueryData(getUseTaskQueryKey(task.userTaskKey), task);
       client.invalidateQueries({queryKey: [USE_TASKS_QUERY_KEY]});
     },
     gcTime: 0,
