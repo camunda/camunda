@@ -170,8 +170,6 @@ public class DbDistributionState implements MutableDistributionState {
     partitionKey.wrapInt(partition);
     pendingDistributionColumnFamily.upsert(distributionPartitionKey, DbNil.INSTANCE);
 
-    // TODO: the upsert above makes counting metrics difficult as this is currently called twice
-    // (ENQUEUED/DISTRIBUTING) and therefore would also be counted twice.
     getMetrics().addPendingDistribution(partition, distributionKey);
   }
 

@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import org.agrona.Strings;
 
 public final class CommandDistributionDistributingApplier
     implements TypedEventApplier<CommandDistributionIntent, CommandDistributionRecord> {
@@ -23,7 +24,11 @@ public final class CommandDistributionDistributingApplier
 
   @Override
   public void applyState(final long key, final CommandDistributionRecord value) {
-    distributionState.addPendingDistribution(key, value.getPartitionId());
+    if (Strings.isEmpty(value.getQueueId())) {
+      // enqueued items are already added to the pending distributions
+      distributionState.addPendingDistribution(key, value.getPartitionId());
+    }
+
     distributionState.addRetriableDistribution(key, value.getPartitionId());
   }
 }
