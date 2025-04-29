@@ -16,12 +16,10 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
-import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
-import io.zeebe.containers.util.RemoteDebugger;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -33,7 +31,6 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -42,7 +39,7 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @Testcontainers
-final class SecureClusteredMessagingIT {
+final class SecuredClusteredMessagingIT {
   private static final SelfSignedCertificate CERTIFICATE = newCertificate();
   private static final DockerImageName OPERATE =
       DockerImageName.parse("camunda/operate").withTag("current-test");
