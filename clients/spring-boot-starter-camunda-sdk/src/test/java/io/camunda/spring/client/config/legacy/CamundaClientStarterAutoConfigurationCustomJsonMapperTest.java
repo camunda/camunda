@@ -32,12 +32,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -65,7 +65,8 @@ import org.springframework.test.util.ReflectionTestUtils;
       CamundaAutoConfiguration.class
     })
 public class CamundaClientStarterAutoConfigurationCustomJsonMapperTest {
-
+  @MockitoBean CamundaClient camundaClient;
+  @MockitoBean ZeebeClient zeebeClient;
   @Autowired private io.camunda.client.api.JsonMapper jsonMapper;
   @Autowired private CamundaClientProdAutoConfiguration autoConfiguration;
   @Autowired private ApplicationContext applicationContext;
@@ -121,9 +122,6 @@ public class CamundaClientStarterAutoConfigurationCustomJsonMapperTest {
 
   @EnableConfigurationProperties(CamundaClientProperties.class)
   public static class TestConfig {
-
-    @MockBean CamundaClient camundaClient;
-    @MockBean ZeebeClient zeebeClient;
 
     @Primary
     @Bean(name = "overridingJsonMapper")

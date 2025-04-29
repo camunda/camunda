@@ -39,9 +39,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
@@ -61,7 +61,7 @@ public class CredentialsProviderSaasTest {
       WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
   private static final String ACCESS_TOKEN = "access-token";
-  @MockBean CamundaClientExecutorService zeebeClientExecutorService;
+  @MockitoBean CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CredentialsProvider credentialsProvider;
 
   @DynamicPropertySource
