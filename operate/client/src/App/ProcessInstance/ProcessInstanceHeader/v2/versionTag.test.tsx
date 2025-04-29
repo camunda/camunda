@@ -15,6 +15,7 @@ import {ProcessInstanceHeader} from './index';
 import {
   mockInstanceWithActiveOperation,
   mockProcess,
+  mockProcessInstance,
   Wrapper,
 } from './index.setup';
 import {mockProcessXML} from 'modules/testUtils';
@@ -35,7 +36,9 @@ describe('InstanceHeader', () => {
   it('should render version tag', async () => {
     mockFetchProcess().withSuccess(mockProcess);
 
-    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+    render(<ProcessInstanceHeader processInstance={mockProcessInstance} />, {
+      wrapper: Wrapper,
+    });
 
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
@@ -52,7 +55,17 @@ describe('InstanceHeader', () => {
   it('should not render version tag', async () => {
     mockFetchProcess().withSuccess({...mockProcess, versionTag: null});
 
-    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+    render(
+      <ProcessInstanceHeader
+        processInstance={{
+          ...mockProcessInstance,
+          processDefinitionVersionTag: undefined,
+        }}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,
@@ -69,7 +82,17 @@ describe('InstanceHeader', () => {
   it('should not render version tag on error', async () => {
     mockFetchProcess().withServerError();
 
-    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+    render(
+      <ProcessInstanceHeader
+        processInstance={{
+          ...mockProcessInstance,
+          processDefinitionVersionTag: undefined,
+        }}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     processInstanceDetailsStore.init({
       id: mockInstanceWithActiveOperation.id,

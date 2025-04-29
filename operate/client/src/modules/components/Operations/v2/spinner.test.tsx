@@ -12,12 +12,16 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {groupedProcessesMock} from 'modules/testUtils';
+import {
+  createInstance,
+  createOperation,
+  groupedProcessesMock,
+} from 'modules/testUtils';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {Operations} from '.';
-import {INSTANCE, ACTIVE_INSTANCE, Wrapper} from '../tests/mocks';
+import {INSTANCE, ACTIVE_INSTANCE, getWrapper} from './mocks';
+import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 describe('Operations - Spinner', () => {
   it('should not display spinner', () => {
@@ -25,10 +29,10 @@ describe('Operations - Spinner', () => {
       <Operations
         instance={{
           ...INSTANCE,
-          state: 'INCIDENT',
+          hasIncident: true,
         }}
       />,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -39,11 +43,11 @@ describe('Operations - Spinner', () => {
       <Operations
         instance={{
           ...INSTANCE,
-          state: 'INCIDENT',
+          hasIncident: true,
         }}
         forceSpinner={true}
       />,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
@@ -53,7 +57,13 @@ describe('Operations - Spinner', () => {
     jest.useFakeTimers();
 
     mockFetchProcessInstances().withSuccess({
-      processInstances: [ACTIVE_INSTANCE],
+      processInstances: [
+        createInstance({
+          id: 'instance_1',
+          operations: [createOperation({state: 'SENT'})],
+          hasActiveOperation: true,
+        }),
+      ],
       totalCount: 1,
     });
 
@@ -66,10 +76,10 @@ describe('Operations - Spinner', () => {
       <Operations
         instance={{
           ...ACTIVE_INSTANCE,
-          state: 'INCIDENT',
+          hasIncident: true,
         }}
       />,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -79,22 +89,27 @@ describe('Operations - Spinner', () => {
     );
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
 
-    mockFetchProcessInstances().withSuccess({
-      processInstances: [INSTANCE],
-      totalCount: 1,
-    });
-
     jest.runOnlyPendingTimers();
 
     // mock for refresh all instances
     mockFetchProcessInstances().withSuccess({
-      processInstances: [INSTANCE],
+      processInstances: [
+        createInstance({
+          id: 'instance_1',
+          hasActiveOperation: false,
+        }),
+      ],
       totalCount: 1,
     });
 
     // mock for refresh running process instances count
     mockFetchProcessInstances().withSuccess({
-      processInstances: [INSTANCE],
+      processInstances: [
+        createInstance({
+          id: 'instance_1',
+          hasActiveOperation: false,
+        }),
+      ],
       totalCount: 1,
     });
 

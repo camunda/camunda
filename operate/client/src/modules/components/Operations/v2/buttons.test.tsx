@@ -9,17 +9,27 @@
 import {render, screen} from 'modules/testing-library';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {Operations} from '.';
-import {INSTANCE, Wrapper} from '../tests/mocks';
+import {FAILED_OPERATION, INSTANCE, getWrapper} from './mocks';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {createInstance} from 'modules/testUtils';
 
 describe('Operations - Buttons', () => {
+  beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(
+      createInstance({
+        operations: [FAILED_OPERATION],
+      }),
+    );
+  });
+
   it('should render retry, cancel and modify buttons if instance is running and has an incident', () => {
     render(
       <Operations
-        instance={{...INSTANCE, state: 'INCIDENT'}}
+        instance={{...INSTANCE, hasIncident: true}}
         isInstanceModificationVisible
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -38,7 +48,7 @@ describe('Operations - Buttons', () => {
         isInstanceModificationVisible
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -61,7 +71,7 @@ describe('Operations - Buttons', () => {
         }}
         isInstanceModificationVisible
       />,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(
@@ -82,11 +92,11 @@ describe('Operations - Buttons', () => {
       <Operations
         instance={{
           ...INSTANCE,
-          state: 'CANCELED',
+          state: 'TERMINATED',
         }}
         isInstanceModificationVisible
       />,
-      {wrapper: Wrapper},
+      {wrapper: getWrapper()},
     );
 
     expect(
@@ -104,11 +114,11 @@ describe('Operations - Buttons', () => {
   it('should hide operation buttons in process instance modification mode', async () => {
     const {user} = render(
       <Operations
-        instance={{...INSTANCE, state: 'INCIDENT'}}
+        instance={{...INSTANCE, hasIncident: true}}
         isInstanceModificationVisible
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
@@ -141,8 +151,8 @@ describe('Operations - Buttons', () => {
   });
 
   it('should not display modify button by default', () => {
-    render(<Operations instance={{...INSTANCE, state: 'INCIDENT'}} />, {
-      wrapper: Wrapper,
+    render(<Operations instance={{...INSTANCE, hasIncident: true}} />, {
+      wrapper: getWrapper(),
     });
 
     expect(screen.getByTitle('Retry Instance instance_1')).toBeInTheDocument();

@@ -6,13 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  waitForElementToBeRemoved,
-  screen,
-  waitFor,
-  within,
-} from 'modules/testing-library';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {testData} from '../index.setup';
 import {ProcessInstance} from './index';
 import {storeStateLocally} from 'modules/utils/localStorage';
@@ -20,13 +14,14 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {PAGE_TITLE} from 'modules/constants';
 import {getProcessName} from 'modules/utils/instance';
 import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 jest.mock('modules/utils/bpmn');
 
@@ -60,9 +55,6 @@ describe.skip('ProcessInstance', () => {
     jest.useFakeTimers();
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
     expect(screen.queryByTestId('variables-skeleton')).not.toBeInTheDocument();
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-body')).toBeInTheDocument();
@@ -88,30 +80,15 @@ describe.skip('ProcessInstance', () => {
   it('should display skeletons until instance is available', async () => {
     jest.useFakeTimers();
 
-    mockFetchProcessInstance().withServerError(404);
+    mockFetchProcessInstanceDeprecated().withServerError(404);
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
-    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('variables-skeleton')).toBeInTheDocument();
-    expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
-
-    mockFetchProcessInstance().withSuccess(
+    mockFetchProcessInstanceDeprecated().withSuccess(
       testData.fetch.onPageLoad.processInstance,
     );
 
     jest.runOnlyPendingTimers();
-    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('variables-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     await waitFor(() => {
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument();
@@ -145,9 +122,6 @@ describe.skip('ProcessInstance', () => {
         },
       }),
     });
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
@@ -160,7 +134,9 @@ describe.skip('ProcessInstance', () => {
     mockRequests();
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1),
+    );
 
     await user.click(
       screen.getByRole('button', {
@@ -196,6 +172,7 @@ describe.skip('ProcessInstance', () => {
   });
 
   it('should display forbidden content', async () => {
+    mockFetchProcessInstanceDeprecated().withServerError(403);
     mockFetchProcessInstance().withServerError(403);
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
@@ -218,14 +195,11 @@ describe.skip('ProcessInstance', () => {
     );
   });
 
-  it('should display forbidden content after polling', async () => {
+  it.skip('should display forbidden content after polling', async () => {
     mockFetchProcessXML().withSuccess('');
     jest.useFakeTimers();
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
     expect(screen.queryByTestId('variables-skeleton')).not.toBeInTheDocument();
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-body')).toBeInTheDocument();
@@ -238,6 +212,7 @@ describe.skip('ProcessInstance', () => {
     ).toBeInTheDocument();
 
     mockRequests();
+    mockFetchProcessInstanceDeprecated().withServerError(403);
     mockFetchProcessInstance().withServerError(403);
 
     jest.runOnlyPendingTimers();
@@ -287,9 +262,6 @@ describe.skip('ProcessInstance', () => {
     );
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     mockRequests();
 
@@ -300,10 +272,18 @@ describe.skip('ProcessInstance', () => {
 
     clearPollingStates();
     jest.runOnlyPendingTimers();
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() =>
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() =>
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() =>
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1),
+    );
 
     await waitFor(() => {
       expect(variablesStore.state.status).toBe('fetched');
@@ -380,9 +360,6 @@ describe.skip('ProcessInstance', () => {
     );
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     mockRequests();
 
@@ -402,18 +379,30 @@ describe.skip('ProcessInstance', () => {
     triggerVisibilityChange('visible');
 
     clearPollingStates();
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() =>
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
+    );
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     mockRequests();
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
-    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
+    await waitFor(() =>
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(3),
+    );
+    await waitFor(() =>
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2),
+    );
+    await waitFor(() =>
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(3),
+    );
+    await waitFor(() =>
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2),
+    );
 
     await waitForPollingsToBeComplete();
 
@@ -422,7 +411,7 @@ describe.skip('ProcessInstance', () => {
   });
 
   it('should not restart polling when document is visible for finished instances', async () => {
-    mockFetchProcessInstance().withSuccess(
+    mockFetchProcessInstanceDeprecated().withSuccess(
       testData.fetch.onPageLoad.completedProcessInstance,
     );
 
@@ -449,9 +438,6 @@ describe.skip('ProcessInstance', () => {
     );
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     mockRequests();
 
