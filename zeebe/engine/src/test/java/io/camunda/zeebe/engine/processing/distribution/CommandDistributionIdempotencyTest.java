@@ -157,8 +157,6 @@ public class CommandDistributionIdempotencyTest {
   public static void assertAllProcessorsTested() {
     // TODO remove with https://github.com/camunda/camunda/issues/30114
     DISTRIBUTING_PROCESSORS.remove(RoleDeleteProcessor.class);
-    // TODO remove with https://github.com/camunda/camunda/issues/30113
-    DISTRIBUTING_PROCESSORS.remove(RoleUpdateProcessor.class);
     if (!DISTRIBUTING_PROCESSORS.isEmpty()) {
       fail("No test scenario found for processors: '%s'".formatted(DISTRIBUTING_PROCESSORS));
     }
@@ -454,22 +452,21 @@ public class CommandDistributionIdempotencyTest {
           //                }),
           //            RoleDeleteProcessor.class
           //          },
-          // TODO fix test in https://github.com/camunda/camunda/issues/30113
-          //          {
-          //            "Role.UPDATE is idempotent",
-          //            new Scenario(
-          //                ValueType.ROLE,
-          //                RoleIntent.UPDATE,
-          //                () -> {
-          //                  final var role = createRole();
-          //                  return ENGINE
-          //                      .role()
-          //                      .updateRole(role.getKey())
-          //                      .withName(UUID.randomUUID().toString())
-          //                      .update();
-          //                }),
-          //            RoleUpdateProcessor.class
-          //          },
+          {
+            "Role.UPDATE is idempotent",
+            new Scenario(
+                ValueType.ROLE,
+                RoleIntent.UPDATE,
+                () -> {
+                  final var role = createRole();
+                  return ENGINE
+                      .role()
+                      .updateRole(role.getValue().getRoleId())
+                      .withName(UUID.randomUUID().toString())
+                      .update();
+                }),
+            RoleUpdateProcessor.class
+          },
           {
             "Role.ADD_ENTITY is idempotent",
             new Scenario(

@@ -55,6 +55,11 @@ public class PersistedRole extends UnpackedObject implements DbValue {
     return BufferUtil.bufferAsString(descriptionProp.getValue());
   }
 
+  public PersistedRole setDescription(final String description) {
+    descriptionProp.setValue(description);
+    return this;
+  }
+
   public PersistedRole copy() {
     final var copy = new PersistedRole();
     copy.copyFrom(this);

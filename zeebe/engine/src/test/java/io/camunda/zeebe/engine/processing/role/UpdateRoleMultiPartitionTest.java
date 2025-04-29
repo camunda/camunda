@@ -18,13 +18,13 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -38,12 +38,11 @@ public class UpdateRoleMultiPartitionTest {
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30113")
   public void shouldDistributeRoleUpdateCommand() {
     // when
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().updateRole(roleKey).withName(name + "-updated").update();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).withName("created").create();
+    engine.role().updateRole(roleId).withName("updated").update();
 
     assertThat(
             RecordingExporter.records()
@@ -92,12 +91,11 @@ public class UpdateRoleMultiPartitionTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30113")
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().updateRole(roleKey).withName(name + "-updated").update();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).withName("created").create();
+    engine.role().updateRole(roleId).withName("updated").update();
 
     // then
     assertThat(
@@ -109,15 +107,14 @@ public class UpdateRoleMultiPartitionTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30113")
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptRoleCreateForPartition(partitionId);
     }
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().updateRole(roleKey).withName(name + "-updated").update();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).withName("created").create();
+    engine.role().updateRole(roleId).withName("updated").update();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

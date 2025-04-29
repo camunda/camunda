@@ -40,10 +40,9 @@ public class DbRoleState implements MutableRoleState {
   @Override
   public void update(final RoleRecord roleRecord) {
     // retrieve record from the state
-    roleId.wrapString(String.valueOf(roleRecord.getRoleKey()));
+    roleId.wrapString(roleRecord.getRoleId());
     final var persistedRole = roleColumnFamily.get(roleId);
-
-    persistedRole.setRoleKey(roleRecord.getRoleKey()).setName(roleRecord.getName());
+    persistedRole.from(roleRecord);
     roleColumnFamily.update(roleId, persistedRole);
   }
 
