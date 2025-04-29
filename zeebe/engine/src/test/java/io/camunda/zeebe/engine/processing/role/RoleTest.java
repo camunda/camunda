@@ -334,7 +334,7 @@ public class RoleTest {
   @Test
   public void shouldDeleteRole() {
     // given
-    final var roleId = UUID.randomUUID().toString();
+    final var roleId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
     engine.role().newRole(roleId).withName(name).create();
 
@@ -346,7 +346,7 @@ public class RoleTest {
   @Test
   public void shouldRejectIfRoleIsNotPresentOnDeletion() {
     // when
-    final var notPresentRoleId = UUID.randomUUID().toString();
+    final var notPresentRoleId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
         engine.role().deleteRole(notPresentRoleId).expectRejection().delete();
 

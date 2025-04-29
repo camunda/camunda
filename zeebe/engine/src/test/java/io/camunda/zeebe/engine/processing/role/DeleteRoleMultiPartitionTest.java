@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -40,7 +41,7 @@ public class DeleteRoleMultiPartitionTest {
   public void shouldDistributeRoleDeleteCommand() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var roleId = UUID.randomUUID().toString();
+    final var roleId = Strings.newRandomValidIdentityId();
     engine.role().newRole(roleId).withName(name).create();
     engine.role().deleteRole(roleId).delete();
 
@@ -94,7 +95,7 @@ public class DeleteRoleMultiPartitionTest {
   public void shouldDistributeInIdentityQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var roleId = UUID.randomUUID().toString();
+    final var roleId = Strings.newRandomValidIdentityId();
     engine.role().newRole(roleId).withName(name).create();
     engine.role().deleteRole(roleId).delete();
 
@@ -111,7 +112,7 @@ public class DeleteRoleMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var roleId = UUID.randomUUID().toString();
+    final var roleId = Strings.newRandomValidIdentityId();
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptRoleCreateForPartition(partitionId);
     }

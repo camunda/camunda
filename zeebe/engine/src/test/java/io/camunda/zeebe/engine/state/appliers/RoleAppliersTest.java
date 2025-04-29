@@ -26,7 +26,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -88,7 +87,7 @@ public class RoleAppliersTest {
   @Test
   void shouldDeleteRole() {
     // given
-    final String roleId = UUID.randomUUID().toString();
+    final String roleId = Strings.newRandomValidIdentityId();
     final String roleName = "foo";
     final var roleRecord = new RoleRecord().setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
