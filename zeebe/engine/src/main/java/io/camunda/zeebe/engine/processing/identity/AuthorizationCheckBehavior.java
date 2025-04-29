@@ -371,18 +371,6 @@ public final class AuthorizationCheckBehavior {
             });
   }
 
-  // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
-  // https://github.com/camunda/camunda/issues/26981
-  private Stream<String> getAuthorizedResourceIdentifiersForOwnerKeys(
-      final AuthorizationOwnerType ownerType,
-      final List<Long> ownerKeys,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    final var ownerIds = ownerKeys.stream().map(String::valueOf).toList();
-    return getAuthorizedResourceIdentifiersForOwners(
-        ownerType, ownerIds, resourceType, permissionType);
-  }
-
   private Stream<String> getAuthorizedResourceIdentifiersForOwners(
       final AuthorizationOwnerType ownerType,
       final List<String> ownerIds,
