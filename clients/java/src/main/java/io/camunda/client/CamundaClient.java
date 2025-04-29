@@ -1151,7 +1151,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUpdateGroupCommand(123L)
+   *  .newUpdateGroupCommand("123")
    *  .name(name)
    *  .send();
    * </pre>
@@ -1160,7 +1160,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UpdateGroupCommandStep1 newUpdateGroupCommand(long groupKey);
+  UpdateGroupCommandStep1 newUpdateGroupCommand(String groupId);
 
   /**
    * Command to delete a group.

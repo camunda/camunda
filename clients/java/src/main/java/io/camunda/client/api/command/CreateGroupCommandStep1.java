@@ -20,7 +20,7 @@ import io.camunda.client.api.response.CreateGroupResponse;
 public interface CreateGroupCommandStep1 {
 
   /**
-   * Set the ID for the group to be created..
+   * Set the ID for the group to be created.
    *
    * @param groupId the group ID
    * @return the builder for this command

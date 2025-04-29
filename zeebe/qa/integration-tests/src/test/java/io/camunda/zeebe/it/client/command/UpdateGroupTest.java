@@ -13,21 +13,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("Enable with https://github.com/camunda/camunda/issues/29925")
 @ZeebeIntegration
 class UpdateGroupTest {
 
   private static final String UPDATED_GROUP_NAME = "Updated Group Name";
+  private static final String UPDATED_GROUP_DESCRIPTION = "Updated Group Description";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =
@@ -35,55 +34,88 @@ class UpdateGroupTest {
 
   @AutoClose private CamundaClient client;
 
-  private long groupKey;
+  private String groupId;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    groupKey =
+    groupId =
         client
             .newCreateGroupCommand()
-            .groupId("groupId")
+            .groupId(Strings.newRandomValidIdentityId())
             .name("Initial Group Name")
+            .description("Initial Group Description")
             .send()
             .join()
-            .getGroupKey();
+            .getGroupId();
   }
 
   @Test
-  void shouldUpdateGroupName() {
+  void shouldUpdateGroup() {
     // when
-    client.newUpdateGroupCommand(groupKey).updateName(UPDATED_GROUP_NAME).send().join();
+    client
+        .newUpdateGroupCommand(groupId)
+        .name(UPDATED_GROUP_NAME)
+        .description(UPDATED_GROUP_DESCRIPTION)
+        .send()
+        .join();
 
     // then
     ZeebeAssertHelper.assertGroupUpdated(
         UPDATED_GROUP_NAME,
-        group -> assertThat(group).hasGroupKey(groupKey).hasName(UPDATED_GROUP_NAME));
+        group ->
+            assertThat(group)
+                .hasGroupId(groupId)
+                .hasName(UPDATED_GROUP_NAME)
+                .hasDescription(UPDATED_GROUP_DESCRIPTION));
   }
 
   @Test
   void shouldRejectUpdateIfNameIsNull() {
     // when / then
-    assertThatThrownBy(() -> client.newUpdateGroupCommand(groupKey).updateName(null).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("No name provided");
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUpdateGroupCommand(groupId)
+                    .name(null)
+                    .description(UPDATED_GROUP_DESCRIPTION)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name must not be null");
+  }
+
+  @Test
+  void shouldRejectUpdateIfDescriptionIsNull() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUpdateGroupCommand(groupId)
+                    .name(UPDATED_GROUP_NAME)
+                    .description(null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("description must not be null");
   }
 
   @Test
   void shouldRejectUpdateIfGroupDoesNotExist() {
     // when / then
-    final long notExistingGroupKey = Protocol.encodePartitionId(1, 111L);
+    final String notExistingGroupId = "notExistingGroupId";
     assertThatThrownBy(
             () ->
                 client
-                    .newUpdateGroupCommand(notExistingGroupKey)
-                    .updateName("Non-Existent Group Name")
+                    .newUpdateGroupCommand(notExistingGroupId)
+                    .name("Non-Existent Group Name")
+                    .description("Non-Existent Group Description")
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to update group with key '%d', but a group with this key does not exist."
-                .formatted(notExistingGroupKey));
+            "Expected to update group with ID '%s', but a group with this ID does not exist."
+                .formatted(notExistingGroupId));
   }
 }
