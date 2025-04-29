@@ -7,39 +7,40 @@
  */
 
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {instanceHistoryModificationStore} from './instanceHistoryModification';
-import {FlowNodeModification, modificationsStore} from './modifications';
+import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {
+  FlowNodeModification,
+  modificationsStore,
+} from 'modules/stores//modifications';
+import {getVisibleChildPlaceholders} from 'modules/utils/instanceHistoryModification';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
-const businessObjects: {
-  [flowNodeId: string]: {id: string; $parent: {id: string}; $type: string};
-} = {
+const businessObjects: BusinessObjects = {
   startEvent_1: {
     id: 'startEvent_1',
-    $parent: {id: 'process_1'},
-    $type: 'START_EVENT',
+    name: '',
+    $parent: {id: 'process_1', name: '', $type: 'bpmn:Process'},
+    $type: 'bpmn:StartEvent',
   },
   endEvent_1: {
     id: 'endEvent_1',
-    $parent: {id: 'subprocess_1'},
-    $type: 'END_EVENT',
+    name: '',
+    $parent: {id: 'subprocess_1', name: '', $type: 'bpmn:SubProcess'},
+    $type: 'bpmn:EndEvent',
   },
   endEvent_2: {
     id: 'endEvent_2',
-    $parent: {id: 'subprocess_1'},
-    $type: 'END_EVENT',
+    name: '',
+    $parent: {id: 'subprocess_1', name: '', $type: 'bpmn:SubProcess'},
+    $type: 'bpmn:EndEvent',
   },
   subprocess_1: {
     id: 'subprocess_1',
-    $parent: {id: 'process_1'},
-    $type: 'SUB_PROCESS',
+    name: '',
+    $parent: {id: 'process_1', name: '', $type: 'bpmn:Process'},
+    $type: 'bpmn:SubProcess',
   },
 };
-
-jest.mock('modules/stores/processInstanceDetailsDiagram', () => ({
-  processInstanceDetailsDiagramStore: {
-    businessObjects,
-  },
-}));
 
 const startEventModification: FlowNodeModification = {
   type: 'token',
@@ -105,14 +106,11 @@ describe('stores/instanceHistoryModification', () => {
     modificationsStore.addModification(endEvent2Modification);
 
     expect(
-      instanceHistoryModificationStore.getVisibleChildPlaceholders(
-        'id',
-        'process_1',
-      ),
+      getVisibleChildPlaceholders('id', 'process_1', businessObjects),
     ).toEqual([
       {
         flowNodeId: 'startEvent_1',
-        type: 'START_EVENT',
+        type: 'bpmn:StartEvent',
         id: expect.any(String),
         endDate: null,
         sortValues: [],
@@ -123,14 +121,11 @@ describe('stores/instanceHistoryModification', () => {
     ]);
 
     expect(
-      instanceHistoryModificationStore.getVisibleChildPlaceholders(
-        'id',
-        'subprocess_1',
-      ),
+      getVisibleChildPlaceholders('id', 'subprocess_1', businessObjects),
     ).toEqual([
       {
         flowNodeId: 'endEvent_1',
-        type: 'END_EVENT',
+        type: 'bpmn:EndEvent',
         id: expect.any(String),
         endDate: null,
         sortValues: [],
@@ -140,7 +135,7 @@ describe('stores/instanceHistoryModification', () => {
       },
       {
         flowNodeId: 'endEvent_1',
-        type: 'END_EVENT',
+        type: 'bpmn:EndEvent',
         id: expect.any(String),
         endDate: null,
         sortValues: [],
@@ -159,21 +154,15 @@ describe('stores/instanceHistoryModification', () => {
     );
 
     expect(
-      instanceHistoryModificationStore.getVisibleChildPlaceholders(
-        'id',
-        'process_1',
-      ),
+      getVisibleChildPlaceholders('id', 'process_1', businessObjects),
     ).toEqual([]);
 
     expect(
-      instanceHistoryModificationStore.getVisibleChildPlaceholders(
-        'id',
-        'subprocess_1',
-      ),
+      getVisibleChildPlaceholders('id', 'subprocess_1', businessObjects),
     ).toEqual([
       {
         flowNodeId: 'endEvent_1',
-        type: 'END_EVENT',
+        type: 'bpmn:EndEvent',
         id: expect.any(String),
         endDate: null,
         sortValues: [],
@@ -183,7 +172,7 @@ describe('stores/instanceHistoryModification', () => {
       },
       {
         flowNodeId: 'endEvent_1',
-        type: 'END_EVENT',
+        type: 'bpmn:EndEvent',
         id: expect.any(String),
         endDate: null,
         sortValues: [],
@@ -198,14 +187,11 @@ describe('stores/instanceHistoryModification', () => {
     modificationsStore.addModification(startEventModification);
 
     expect(
-      instanceHistoryModificationStore.getVisibleChildPlaceholders(
-        'id',
-        'process_1',
-      ),
+      getVisibleChildPlaceholders('id', 'process_1', businessObjects),
     ).toEqual([
       {
         flowNodeId: 'startEvent_1',
-        type: 'START_EVENT',
+        type: 'bpmn:StartEvent',
         id: expect.any(String),
         endDate: null,
         sortValues: [],
@@ -218,10 +204,7 @@ describe('stores/instanceHistoryModification', () => {
     modificationsStore.reset();
 
     expect(
-      instanceHistoryModificationStore.getVisibleChildPlaceholders(
-        'id',
-        'process_1',
-      ),
+      getVisibleChildPlaceholders('id', 'process_1', businessObjects),
     ).toEqual([]);
   });
 
@@ -229,14 +212,11 @@ describe('stores/instanceHistoryModification', () => {
     modificationsStore.addModification(subprocessModification);
 
     expect(
-      instanceHistoryModificationStore.getVisibleChildPlaceholders(
-        'id',
-        'subprocess_1',
-      ),
+      getVisibleChildPlaceholders('id', 'subprocess_1', businessObjects),
     ).toEqual([
       {
         flowNodeId: 'endEvent_1',
-        type: 'END_EVENT',
+        type: 'bpmn:EndEvent',
         id: expect.any(String),
         endDate: null,
         sortValues: [],
