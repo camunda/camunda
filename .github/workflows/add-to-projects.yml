@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait 15 seconds
-        run: sleep 15s
+        run: sleep 30s
       - id: get_project_count
         uses: octokit/graphql-action@v2.3.2
         with:
