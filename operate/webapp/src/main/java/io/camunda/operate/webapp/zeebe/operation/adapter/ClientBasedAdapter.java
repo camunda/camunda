@@ -10,9 +10,14 @@ package io.camunda.operate.webapp.zeebe.operation.adapter;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CommandWithOperationReferenceStep;
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
-import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.AddTokenHandler;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.CancelTokenHandler;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.MoveTokenHandler;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,17 +29,20 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientBasedAdapter.class);
 
-  private final CamundaClient camundaClient;
-  private final PermissionsService permissionsService;
-  private final TenantService tenantService;
+  private CamundaClient camundaClient;
+  private final AddTokenHandler addTokenHandler;
+  private final CancelTokenHandler cancelTokenHandler;
+  private final MoveTokenHandler moveTokenHandler;
 
   public ClientBasedAdapter(
       final CamundaClient camundaClient,
-      final PermissionsService permissionsService,
-      final TenantService tenantService) {
+      final AddTokenHandler addTokenHandler,
+      final CancelTokenHandler cancelTokenHandler,
+      final MoveTokenHandler moveTokenHandler) {
     this.camundaClient = camundaClient;
-    this.permissionsService = permissionsService;
-    this.tenantService = tenantService;
+    this.addTokenHandler = addTokenHandler;
+    this.cancelTokenHandler = cancelTokenHandler;
+    this.moveTokenHandler = moveTokenHandler;
   }
 
   @Override
@@ -54,6 +62,21 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
                 .migrationPlan(migrationPlan),
             operationId);
     migrateProcessInstanceCommand.send().join();
+  }
+
+  @Override
+  public void modifyProcessInstance(
+      final long processInstanceKey,
+      final List<Modification> modifications,
+      final String operationId)
+      throws Exception {
+    // Process token (non-variable) modifications
+    final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 lastStep =
+        processTokenModifications(processInstanceKey, modifications);
+
+    if (lastStep != null) {
+      withOperationReference(lastStep, operationId).send().join();
+    }
   }
 
   @Override
@@ -94,6 +117,10 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
     return response.getKey();
   }
 
+  public void setCamundaClient(final CamundaClient camundaClient) {
+    this.camundaClient = camundaClient;
+  }
+
   protected static <T extends CommandWithOperationReferenceStep<T>> T withOperationReference(
       final T command, final String id) {
     try {
@@ -105,5 +132,46 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
           id);
     }
     return command;
+  }
+
+  private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2
+      processTokenModifications(
+          final Long processInstanceKey, final List<Modification> tokenModifications)
+          throws PersistenceException {
+    ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 lastStep = null;
+
+    ModifyProcessInstanceCommandStep1 currentStep =
+        camundaClient.newModifyProcessInstanceCommand(processInstanceKey);
+
+    for (final var iter = tokenModifications.iterator(); iter.hasNext(); ) {
+      final Modification modification = iter.next();
+      ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 nextStep = null;
+      switch (modification.getModification()) {
+        case ADD_TOKEN:
+          nextStep = addTokenHandler.addToken(currentStep, modification);
+          break;
+        case CANCEL_TOKEN:
+          nextStep = cancelTokenHandler.cancelToken(currentStep, processInstanceKey, modification);
+          break;
+        case MOVE_TOKEN:
+          nextStep = moveTokenHandler.moveToken(currentStep, processInstanceKey, modification);
+          break;
+        default:
+          LOGGER.warn(
+              "SingleStepModifyProcessInstanceHandler encountered a modification type that should have been filtered out: {}",
+              modification.getModification());
+          break;
+      }
+
+      // Append 'and' if there is at least one more operation to process
+      if (nextStep != null) {
+        lastStep = nextStep;
+        if (iter.hasNext()) {
+          currentStep = nextStep.and();
+        }
+      }
+    }
+
+    return lastStep;
   }
 }
