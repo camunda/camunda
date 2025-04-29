@@ -223,7 +223,7 @@ final class AuthorizationCheckBehaviorTest {
   public void shouldBeAuthorizedWhenGroupHasPermissions() {
     // given
     final var user = createUser();
-    final var groupKey = createGroup(user.getUsername(), EntityType.USER);
+    final var groupKey = createGroupAndAssignEntity(user.getUsername(), EntityType.USER);
     final var groupId = String.valueOf(groupKey);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
@@ -244,7 +244,7 @@ final class AuthorizationCheckBehaviorTest {
   void shouldGetResourceIdentifiersWhenGroupHasPermissions() {
     // given
     final var user = createUser();
-    final var groupKey = createGroup(user.getUsername(), EntityType.USER);
+    final var groupKey = createGroupAndAssignEntity(user.getUsername(), EntityType.USER);
     final var groupId = String.valueOf(groupKey);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
@@ -320,7 +320,7 @@ final class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mappingId = createMapping(claimName, claimValue).getMappingId();
-    final var groupKey = createGroup(mappingId, EntityType.MAPPING);
+    final var groupKey = createGroupAndAssignEntity(mappingId, EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -538,7 +538,7 @@ final class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    final var groupKey = createGroup(mapping.getMappingId(), EntityType.MAPPING);
+    final var groupKey = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -594,7 +594,7 @@ final class AuthorizationCheckBehaviorTest {
     return role;
   }
 
-  private long createGroup(final String entityId, final EntityType entityType) {
+  private long createGroupAndAssignEntity(final String entityId, final EntityType entityType) {
     final var groupKey = random.nextLong();
     final var groupId = String.valueOf(groupKey);
     final var group =
