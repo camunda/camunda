@@ -156,31 +156,31 @@ public final class IdentitySetupInitializeProcessor
     record.getMappings().stream()
         .map(MappingRecord.class::cast)
         .forEach(
-            mapping ->
-                mappingState
-                    .get(mapping.getClaimName(), mapping.getClaimValue())
-                    .ifPresentOrElse(
-                        persistedMapping -> {
-                          mapping.setMappingId(persistedMapping.getMappingId());
-                          if (assignEntityToRole(
-                              role, persistedMapping.getMappingId(), EntityType.MAPPING)) {
-                            createdNewEntities.set(true);
-                          }
-                          if (assignEntityToTenant(
-                              tenant, mapping.getMappingId(), EntityType.MAPPING)) {
-                            createdNewEntities.set(true);
-                          }
-                        },
-                        () -> {
-                          createdNewEntities.set(true);
-                          final long mappingKey = keyGenerator.nextKey();
-                          mapping.setMappingKey(mappingKey);
-                          // TODO: Remove null checks after migrating fully to mapping ID #27820
-                          if (mapping.getMappingId() == null || mapping.getMappingId().isBlank()) {
-                            mapping.setMappingId(String.valueOf(mappingKey));
-                          }
-                          createMapping(mapping, role, tenant);
-                        }));
+            mapping -> {
+              final var existingById = mappingState.get(mapping.getMappingId());
+
+              existingById.ifPresentOrElse(
+                  persistedMapping -> {
+                    mapping.setMappingKey(persistedMapping.getMappingKey());
+                    // If claim name or value differs, update the mapping
+                    if (!persistedMapping.getClaimName().equals(mapping.getClaimName())
+                        || !persistedMapping.getClaimValue().equals(mapping.getClaimValue())) {
+                      stateWriter.appendFollowUpEvent(
+                          mapping.getMappingKey(), MappingIntent.UPDATED, mapping);
+                    }
+                    if (assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING)) {
+                      createdNewEntities.set(true);
+                    }
+                    if (assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING)) {
+                      createdNewEntities.set(true);
+                    }
+                  },
+                  () -> {
+                    mapping.setMappingKey(keyGenerator.nextKey());
+                    createdNewEntities.set(true);
+                    createMapping(mapping, role, tenant);
+                  });
+            });
     return createdNewEntities.get();
   }
 
@@ -214,7 +214,7 @@ public final class IdentitySetupInitializeProcessor
         .forEach(
             mapping ->
                 mappingState
-                    .get(mapping.getClaimName(), mapping.getClaimValue())
+                    .get(mapping.getMappingId())
                     .ifPresentOrElse(
                         persistedMapping -> {
                           assignEntityToRole(

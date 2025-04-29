@@ -84,7 +84,9 @@ public class OidcAuthOverRestIT {
 
                 c.getInitialization()
                     .setMappings(
-                        List.of(new ConfiguredMapping(USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
+                        List.of(
+                            new ConfiguredMapping(
+                                DEFAULT_USER_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
               });
 
   @BeforeAll
