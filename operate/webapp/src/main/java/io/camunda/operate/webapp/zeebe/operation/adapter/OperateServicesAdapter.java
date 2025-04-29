@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import java.util.List;
 import java.util.Map;
 
 public interface OperateServicesAdapter {
@@ -16,6 +18,12 @@ public interface OperateServicesAdapter {
 
   void migrateProcessInstance(
       final long processInstanceKey, final MigrationPlan migrationPlan, final String operationId);
+
+  void modifyProcessInstance(
+      final long processInstanceKey,
+      final List<Modification> modifications,
+      final String operationId)
+      throws Exception;
 
   void cancelProcessInstance(final long processInstanceKey, final String operationId);
 
