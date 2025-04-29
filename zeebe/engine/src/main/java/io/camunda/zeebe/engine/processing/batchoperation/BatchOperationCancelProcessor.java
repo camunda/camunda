@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
@@ -71,7 +72,10 @@ public final class BatchOperationCancelProcessor
       cancelBatchOperationEvent(cancelKey, recordValue);
       responseWriter.writeEventOnCommand(
           cancelKey, BatchOperationIntent.CANCELED, command.getValue(), command);
-      commandDistributionBehavior.withKey(cancelKey).unordered().distribute(command);
+      commandDistributionBehavior
+          .withKey(cancelKey)
+          .inQueue(DistributionQueue.BATCH_OPERATION)
+          .distribute(command);
     } else {
       rejectionWriter.appendRejection(
           command,
