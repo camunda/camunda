@@ -17,7 +17,6 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,12 +64,13 @@ public class CamundaOidcUserServiceTest {
         .thenReturn(
             new OAuthContext(
                 Set.of("test-id", "test-id-2"),
-                new AuthenticationContext(
-                    null,
-                    List.of(roleR1),
-                    List.of("*"),
-                    List.of(new TenantDTO(1L, "tenant-1", "Tenant One", "desc")),
-                    new ArrayList<>())));
+                new AuthenticationContext.AuthenticationContextBuilder()
+                    .withUsername("test")
+                    .withRoles(List.of(roleR1))
+                    .withAuthorizedApplications(List.of("*"))
+                    .withTenants(List.of(new TenantDTO(1L, "tenant-1", "Tenant One", "desc")))
+                    .withGroups(List.of())
+                    .build()));
 
     // when
     final OidcUser oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
