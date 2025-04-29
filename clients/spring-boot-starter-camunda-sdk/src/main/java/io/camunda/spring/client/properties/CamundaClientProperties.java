@@ -324,10 +324,7 @@ public class CamundaClientProperties {
   }
 
   public enum ClientMode {
-    @Deprecated
     selfManaged,
-    saas,
-    basic,
-    oidc
+    saas
   }
 }

@@ -17,14 +17,14 @@ package io.camunda.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
+import io.camunda.spring.client.properties.CamundaClientAuthProperties.AuthMethod;
 import java.net.URI;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-public class CamundaClientModesTest {
+public class CamundaClientAuthMethodsTest {
   @Nested
   @SpringBootTest(classes = CamundaClientPropertiesTestConfig.class)
   public class NoMode {
@@ -32,50 +32,56 @@ public class CamundaClientModesTest {
 
     @Test
     void shouldWork() {}
+
+    @Test
+    void shouldDefaultToNone() {
+      assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.none);
+    }
   }
 
   @Nested
   @SpringBootTest(
       classes = CamundaClientPropertiesTestConfig.class,
-      properties = {
-        "camunda.client.cloud.clusterId=my-cluster-id",
-        "camunda.client.cloud.region=bru-2",
-        "camunda.client.mode=saas",
-      })
-  public class Saas {
+      properties = {"camunda.client.auth.method=basic"})
+  public class Basic {
     @Autowired CamundaClientProperties properties;
 
     @Test
-    void shouldPopulateBaseUrlsForSaas() {
-      assertThat(properties.getGrpcAddress().toString())
-          .isEqualTo("https://my-cluster-id.bru-2.zeebe.camunda.io:443");
-      assertThat(properties.getRestAddress().toString())
-          .isEqualTo("https://bru-2.zeebe.camunda.io:443/my-cluster-id");
+    void shouldLoadDefaultsBasic() {
+      assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.basic);
+      assertThat(properties.getAuth().getUsername()).isEqualTo("demo");
+      assertThat(properties.getAuth().getPassword()).isEqualTo("demo");
     }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientPropertiesTestConfig.class,
+      properties = {"camunda.client.auth.method=oidc"})
+  public class Oidc {
+    @Autowired CamundaClientProperties properties;
 
     @Test
-    void shouldLoadDefaultsSaas() {
-      assertThat(properties.getMode()).isEqualTo(ClientMode.saas);
+    void shouldLoadDefaultsBasic() {
+      assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
       assertThat(properties.getAuth().getTokenUrl())
-          .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
-      assertThat(properties.getAuth().getAudience()).isEqualTo("zeebe.camunda.io");
+          .isEqualTo(
+              URI.create(
+                  "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token"));
+      assertThat(properties.getAuth().getAudience()).isEqualTo("zeebe-api");
     }
   }
 
   @Nested
   @SpringBootTest(
       classes = CamundaClientPropertiesTestConfig.class,
-      properties = {
-        "camunda.client.mode=self-managed",
-      })
-  public class SelfManaged {
+      properties = {"camunda.client.auth.method=none"})
+  public class None {
     @Autowired CamundaClientProperties properties;
 
     @Test
-    void shouldLoadDefaultsOidc() {
-      assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
-      assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
-      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
+    void shouldLoadDefaultsBasic() {
+      assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.none);
     }
   }
 }

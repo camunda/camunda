@@ -44,7 +44,8 @@ import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 @SpringBootTest(
     classes = {CredentialsProviderConfiguration.class},
     properties = {
-      "camunda.client.mode=oidc",
+      "camunda.client.mode=self-managed",
+      "camunda.client.auth.method=oidc",
       "camunda.client.auth.client-id=CredentialsProviderSelfManagedTest-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })

@@ -15,11 +15,16 @@
  */
 package io.camunda.spring.client.properties;
 
+import io.camunda.spring.client.properties.CamundaClientAuthProperties.AuthMethod;
 import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.boot.env.YamlPropertySourceLoader;
@@ -35,6 +40,17 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
   private static final String OVERRIDE_PREFIX = "camunda.client.worker.override.";
   private static final List<String> LEGACY_OVERRIDE_PREFIX =
       List.of("camunda.client.zeebe.override.", "zeebe.client.worker.override.");
+  private static final Map<AuthMethod, Set<String>> IMPLICIT_AUTH_METHOD_INDICATORS;
+
+  static {
+    IMPLICIT_AUTH_METHOD_INDICATORS = new HashMap<>();
+    IMPLICIT_AUTH_METHOD_INDICATORS.put(
+        AuthMethod.basic, Set.of("camunda.client.auth.username", "camunda.client.auth.password"));
+    IMPLICIT_AUTH_METHOD_INDICATORS.put(
+        AuthMethod.oidc,
+        Set.of("camunda.client.auth.client-id", "camunda.client.auth.client-secret"));
+  }
+
   private final DeferredLog log;
 
   public CamundaClientPropertiesPostProcessor(final DeferredLogFactory deferredLogFactory) {
@@ -46,8 +62,8 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
       final ConfigurableEnvironment environment, final SpringApplication application) {
     mapLegacyProperties(environment);
     mapLegacyOverrides(environment);
-    mapLegacyMode(environment);
     processClientMode(environment);
+    processAuthMethod(environment);
   }
 
   private void mapLegacyOverrides(final ConfigurableEnvironment environment) {
@@ -118,19 +134,6 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
     return List.of();
   }
 
-  private void mapLegacyMode(final ConfigurableEnvironment environment) {
-    final ClientMode clientMode = environment.getProperty("camunda.client.mode", ClientMode.class);
-    if (clientMode == ClientMode.selfManaged) {
-      log.warn(
-          "Value 'self-managed' for property 'camunda.client.mode' is deprecated, please use 'oidc' instead");
-      final PropertySource<?> propertySource =
-          new MapPropertySource(
-              "camunda-client-legacy-mode.properties",
-              Map.of("camunda.client.mode", ClientMode.oidc.name()));
-      environment.getPropertySources().addFirst(propertySource);
-    }
-  }
-
   private void processClientMode(final ConfigurableEnvironment environment) {
     try {
       ClientMode clientMode = environment.getProperty("camunda.client.mode", ClientMode.class);
@@ -141,16 +144,81 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
           return;
         }
       }
-      final YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
+
       final String propertiesFile = determinePropertiesFile(clientMode);
-      final ClassPathResource resource = new ClassPathResource(propertiesFile);
-      final List<PropertySource<?>> props = loader.load(propertiesFile, resource);
-      for (final PropertySource<?> prop : props) {
-        environment.getPropertySources().addLast(prop); // lowest priority
-      }
+      addYamlPropertySource(propertiesFile, environment);
     } catch (final Exception e) {
       throw new IllegalStateException("Error while post processing camunda properties", e);
     }
+  }
+
+  private void processAuthMethod(final ConfigurableEnvironment environment) {
+    try {
+
+      final ClientMode clientMode =
+          environment.getProperty("camunda.client.mode", ClientMode.class);
+      if (clientMode == ClientMode.saas) {
+        return;
+      }
+      AuthMethod authMethod =
+          environment.getProperty("camunda.client.auth.method", AuthMethod.class);
+      if (authMethod == null || authMethod == AuthMethod.none) {
+        final Map<AuthMethod, Set<String>> implicitAuthMethods =
+            detectImplicitAuthMethods(environment);
+        if (authMethod == null && implicitAuthMethods.size() > 1) {
+          throw new IllegalStateException(
+              String.format(
+                  "Multiple implicit auth method indicators detected (%s)",
+                  implicitAuthMethods.entrySet().stream()
+                      .map(
+                          e ->
+                              "'"
+                                  + e.getKey().name()
+                                  + "' -> '"
+                                  + String.join("', '", e.getValue())
+                                  + "'")
+                      .collect(Collectors.joining(","))));
+        }
+        if (implicitAuthMethods.size() == 1) {
+          authMethod = implicitAuthMethods.keySet().stream().findFirst().get();
+          log.debug(
+              String.format(
+                  "Implicit 'camunda.client.auth.method' '%s' detected, will be used", authMethod));
+        }
+      }
+      if (authMethod == null) {
+        log.warn("No 'camunda.client.auth.method' detected, will be set to 'none'");
+        authMethod = AuthMethod.none;
+      }
+      final String propertiesFile = determinePropertiesFile(authMethod);
+      addYamlPropertySource(propertiesFile, environment);
+    } catch (final Exception e) {
+      throw new IllegalStateException("Error while post processing camunda properties", e);
+    }
+  }
+
+  private void addYamlPropertySource(
+      final String propertiesFile, final ConfigurableEnvironment environment) throws IOException {
+    final YamlPropertySourceLoader loader = new YamlPropertySourceLoader();
+    final ClassPathResource resource = new ClassPathResource(propertiesFile);
+    final List<PropertySource<?>> props = loader.load(propertiesFile, resource);
+    for (final PropertySource<?> prop : props) {
+      environment.getPropertySources().addLast(prop); // lowest priority
+    }
+  }
+
+  private Map<AuthMethod, Set<String>> detectImplicitAuthMethods(
+      final ConfigurableEnvironment environment) {
+    return IMPLICIT_AUTH_METHOD_INDICATORS.entrySet().stream()
+        .map(
+            e ->
+                Map.entry(
+                    e.getKey(),
+                    e.getValue().stream()
+                        .filter(environment::containsProperty)
+                        .collect(Collectors.toSet())))
+        .filter(e -> !e.getValue().isEmpty())
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
   private boolean isImplicitSaas(final ConfigurableEnvironment environment) {
@@ -161,18 +229,18 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
     return false;
   }
 
+  private String determinePropertiesFile(final AuthMethod authMethod) {
+    return switch (authMethod) {
+      case basic -> "auth-methods/basic.yaml";
+      case oidc -> "auth-methods/oidc.yaml";
+      case none -> "auth-methods/none.yaml";
+    };
+  }
+
   private String determinePropertiesFile(final ClientMode clientMode) {
-    switch (clientMode) {
-      case oidc -> {
-        return "modes/oidc.yaml";
-      }
-      case saas -> {
-        return "modes/saas.yaml";
-      }
-      case basic -> {
-        return "modes/basic.yaml";
-      }
-      default -> throw new IllegalStateException("Unknown client mode " + clientMode);
-    }
+    return switch (clientMode) {
+      case selfManaged -> "modes/self-managed.yaml";
+      case saas -> "modes/saas.yaml";
+    };
   }
 }

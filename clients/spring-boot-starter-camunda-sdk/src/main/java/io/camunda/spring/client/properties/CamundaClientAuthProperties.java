@@ -20,7 +20,7 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 public class CamundaClientAuthProperties {
-
+  private AuthMethod method;
   // basic auth
   private String username;
   private String password;
@@ -43,6 +43,14 @@ public class CamundaClientAuthProperties {
   private String credentialsCachePath;
   private Duration connectTimeout;
   private Duration readTimeout;
+
+  public AuthMethod getMethod() {
+    return method;
+  }
+
+  public void setMethod(final AuthMethod method) {
+    this.method = method;
+  }
 
   public URI getTokenUrl() {
     return tokenUrl;
@@ -223,5 +231,11 @@ public class CamundaClientAuthProperties {
         + ", readTimeout="
         + readTimeout
         + '}';
+  }
+
+  public enum AuthMethod {
+    none,
+    oidc,
+    basic
   }
 }
