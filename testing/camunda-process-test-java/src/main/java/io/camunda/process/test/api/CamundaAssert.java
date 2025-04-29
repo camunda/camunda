@@ -17,6 +17,8 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
+import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
@@ -24,6 +26,7 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import io.camunda.process.test.impl.assertions.UserTaskAssertj;
 import java.time.Duration;
@@ -177,6 +180,17 @@ public class CamundaAssert {
    */
   public static UserTaskAssert assertThat(final UserTaskSelector userTaskSelector) {
     return new UserTaskAssertj(getDataSource(), userTaskSelector);
+  }
+
+  /**
+   * To verify a decision instance (via business rule task).
+   *
+   * @param decisionSelector the selector of the decision instance to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.DecisionSelectors
+   */
+  public static DecisionInstanceAssert assertThat(final DecisionSelector decisionSelector) {
+    return new DecisionInstanceAssertj(getDataSource(), decisionSelector);
   }
 
   // ======== Internal ========

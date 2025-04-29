@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="jedi_or_sith_dmn" name="Jedi or Sith" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Web Modeler" exporterVersion="b46fab0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <decision id="jedi_or_sith" name="Jedi or Sith">
+    <decisionTable id="DecisionTable_07h1nu7" hitPolicy="COLLECT">
+      <input id="Input_1" label="lightsaber_color">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>lightsaber_color</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="jedi_or_sith" name="jedi_or_sith" typeRef="string" />
+      <output id="OutputClause_1bzbl68" label="force_user" name="force_user" typeRef="string" />
+      <rule id="DecisionRule_0n6gbjm">
+        <inputEntry id="UnaryTests_1q1soz5">
+          <text>"blue"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0641l7f">
+          <text>"jedi"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_1ukiqrw">
+          <text>"Mace"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_15ce11f">
+        <inputEntry id="UnaryTests_0te6osg">
+          <text>"green"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0seitk7">
+          <text>"jedi"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_1ygjqzh">
+          <text>"Anakin"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_01sgj8o">
+        <inputEntry id="UnaryTests_1n1corz">
+          <text>"green"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0kqonhr">
+          <text>"sith"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_145c3na">
+          <text>"Mace"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1utrev9">
+        <inputEntry id="UnaryTests_0r0bxn4">
+          <text>"red"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1ugrkdt">
+          <text>"sith"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0lqhtsb">
+          <text>"Darth Maul"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="jedi_or_sith">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
