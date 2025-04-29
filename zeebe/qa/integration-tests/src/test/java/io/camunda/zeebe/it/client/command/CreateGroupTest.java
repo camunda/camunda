@@ -54,6 +54,9 @@ class CreateGroupTest {
 
     // then
     assertThat(response.getGroupKey()).isGreaterThan(0);
+    assertThat(response.getGroupId()).isEqualTo(GROUP_ID);
+    assertThat(response.getName()).isEqualTo(GROUP_NAME);
+    assertThat(response.getDescription()).isEqualTo(GROUP_DESCRIPTION);
     ZeebeAssertHelper.assertGroupCreated(
         GROUP_NAME,
         (group) -> {
@@ -71,6 +74,9 @@ class CreateGroupTest {
 
     // then
     assertThat(response.getGroupKey()).isGreaterThan(0);
+    assertThat(response.getGroupId()).isEqualTo(GROUP_ID);
+    assertThat(response.getName()).isEqualTo(GROUP_NAME);
+    assertThat(response.getDescription()).isEqualTo("");
     ZeebeAssertHelper.assertGroupCreated(
         GROUP_NAME,
         (group) -> {
