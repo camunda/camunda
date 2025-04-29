@@ -64,7 +64,9 @@ public class CredentialsProviderConfiguration {
     try {
       return builder.build();
     } catch (final Exception e) {
-      LOG.warn("Failed to configure credential provider", e);
+      LOG.warn(
+          "Failed to configure basic credential provider, using noop credentials provider now, cause: {}",
+          e.getMessage());
       return new NoopCredentialsProvider();
     }
   }
@@ -90,7 +92,9 @@ public class CredentialsProviderConfiguration {
     try {
       return credBuilder.build();
     } catch (final Exception e) {
-      LOG.warn("Failed to configure credential provider", e);
+      LOG.warn(
+          "Failed to configure oidc credential provider, using noop credentials provider now, cause: {}",
+          e.getMessage());
       return new NoopCredentialsProvider();
     }
   }
