@@ -23,7 +23,6 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
@@ -120,12 +119,23 @@ public class DbDistributionState implements MutableDistributionState {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    final var counter = new AtomicInteger(0);
 
-    // TODO: do it by partition and for each column families
-    // what about performance here? is it okay to take longer during recovery phase?
-    pendingDistributionColumnFamily.forEach(ignore -> counter.getAndIncrement());
-    getMetrics().reset(counter.get());
+    commandDistributionRecordColumnFamily.forEach(
+        (distributionKey, record) -> getMetrics().addDistribution(distributionKey.getValue()));
+
+    pendingDistributionColumnFamily.forEach(
+        (distributionPartitionKey, record) ->
+            getMetrics()
+                .addPendingDistribution(
+                    distributionPartitionKey.second().getValue(),
+                    distributionPartitionKey.first().inner().getValue()));
+
+    retriableDistributionColumnFamily.forEach(
+        (distributionPartitionKey, record) ->
+            getMetrics()
+                .addInflightDistribution(
+                    distributionPartitionKey.second().getValue(),
+                    distributionPartitionKey.first().inner().getValue()));
   }
 
   @Override
