@@ -29,8 +29,9 @@ final class FileSetManager {
   private final BlobContainerClient containerClient;
   private boolean containerCreated = false;
 
-  FileSetManager(final BlobContainerClient containerClient) {
+  FileSetManager(final BlobContainerClient containerClient, final boolean createContainer) {
     this.containerClient = containerClient;
+    containerCreated = !createContainer;
   }
 
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
