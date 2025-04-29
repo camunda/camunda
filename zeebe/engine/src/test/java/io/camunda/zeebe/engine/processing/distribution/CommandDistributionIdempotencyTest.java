@@ -155,8 +155,6 @@ public class CommandDistributionIdempotencyTest {
 
   @AfterClass
   public static void assertAllProcessorsTested() {
-    // TODO remove with https://github.com/camunda/camunda/issues/30114
-    DISTRIBUTING_PROCESSORS.remove(RoleDeleteProcessor.class);
     if (!DISTRIBUTING_PROCESSORS.isEmpty()) {
       fail("No test scenario found for processors: '%s'".formatted(DISTRIBUTING_PROCESSORS));
     }
@@ -440,18 +438,17 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.ROLE, RoleIntent.CREATE, CommandDistributionIdempotencyTest::createRole),
             RoleCreateProcessor.class
           },
-          // TODO fix test in https://github.com/camunda/camunda/issues/30114
-          //          {
-          //            "Role.DELETE is idempotent",
-          //            new Scenario(
-          //                ValueType.ROLE,
-          //                RoleIntent.DELETE,
-          //                () -> {
-          //                  final var group = createRole();
-          //                  return ENGINE.role().deleteRole(group.getKey()).delete();
-          //                }),
-          //            RoleDeleteProcessor.class
-          //          },
+          {
+            "Role.DELETE is idempotent",
+            new Scenario(
+                ValueType.ROLE,
+                RoleIntent.DELETE,
+                () -> {
+                  final Record<RoleRecordValue> role = createRole();
+                  return ENGINE.role().deleteRole(role.getValue().getRoleId()).delete();
+                }),
+            RoleDeleteProcessor.class
+          },
           {
             "Role.UPDATE is idempotent",
             new Scenario(

@@ -54,8 +54,8 @@ public class RoleClient {
     return new RoleRemoveEntityClient(writer, roleId);
   }
 
-  public RoleDeleteClient deleteRole(final long key) {
-    return new RoleDeleteClient(writer, key);
+  public RoleDeleteClient deleteRole(final String roleId) {
+    return new RoleDeleteClient(writer, roleId);
   }
 
   public static class RoleCreateClient {
@@ -291,10 +291,10 @@ public class RoleClient {
     private final RoleRecord roleRecord;
     private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public RoleDeleteClient(final CommandWriter writer, final long key) {
+    public RoleDeleteClient(final CommandWriter writer, final String roleId) {
       this.writer = writer;
       roleRecord = new RoleRecord();
-      roleRecord.setRoleKey(key);
+      roleRecord.setRoleId(roleId);
     }
 
     public Record<RoleRecordValue> delete() {

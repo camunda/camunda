@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,18 +87,16 @@ public class RoleStateTest {
   @Test
   void shouldDeleteRole() {
     // given
-    // TODO use a proper role id https://github.com/camunda/camunda/issues/30114
-    final var roleKey = 123L;
-    final var roleId = "123";
+    final var roleId = Strings.newRandomValidIdentityId();
     final var roleName = "foo";
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName(roleName);
+    final var roleRecord = new RoleRecord().setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
 
     // when
     roleState.delete(roleRecord);
 
     // then
-    final var deletedRole = roleState.getRole(roleKey);
+    final var deletedRole = roleState.getRole(roleId);
     assertThat(deletedRole).isEmpty();
   }
 }

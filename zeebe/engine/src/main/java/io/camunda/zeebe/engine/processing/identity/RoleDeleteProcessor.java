@@ -34,7 +34,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
   private static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to delete role with key '%s', but a role with this key doesn't exist.";
+      "Expected to delete role with ID '%s', but a role with this ID doesn't exist.";
   private final RoleState roleState;
   private final AuthorizationState authorizationState;
   private final MembershipState membershipState;
@@ -65,18 +65,11 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   @Override
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
-    final var roleKey = record.getRoleKey();
-    final var persistedRecord = roleState.getRole(roleKey);
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(roleKey);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
+    final String roleId = record.getRoleId();
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.DELETE)
-            .addResourceId(persistedRecord.get().getName());
+            .addResourceId(roleId);
+
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
@@ -84,9 +77,22 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
-    record.setName(persistedRecord.get().getName());
+
+    final var persistedRecord = roleState.getRole(roleId);
+    if (persistedRecord.isEmpty()) {
+      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(roleId);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
+    final var persistedRole = persistedRecord.get();
+    final var roleKey = persistedRole.getRoleKey();
+    record.setRoleKey(roleKey);
+
     removeMembers(record);
     deleteAuthorizations(record);
+
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.DELETED, record);
     responseWriter.writeEventOnCommand(roleKey, RoleIntent.DELETED, record, command);
 
@@ -101,7 +107,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
     roleState
-        .getRole(record.getRoleKey())
+        .getRole(record.getRoleId())
         .ifPresentOrElse(
             role -> {
               removeMembers(command.getValue());
@@ -110,7 +116,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
                   command.getKey(), RoleIntent.DELETED, command.getValue());
             },
             () -> {
-              final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleKey());
+              final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
               rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
             });
 
@@ -118,28 +124,24 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   }
 
   private void removeMembers(final RoleRecord record) {
-    final var roleKey = record.getRoleKey();
+    final var roleId = record.getRoleId();
     membershipState.forEachMember(
         RelationType.ROLE,
-        String.valueOf(roleKey),
+        roleId,
         (entityType, entityId) -> {
           stateWriter.appendFollowUpEvent(
-              roleKey,
+              record.getRoleKey(),
               RoleIntent.ENTITY_REMOVED,
-              new RoleRecord()
-                  .setRoleKey(roleKey)
-                  .setEntityType(entityType)
-                  .setEntityKey(Long.parseLong(entityId)));
+              new RoleRecord().setRoleId(roleId).setEntityId(entityId).setEntityType(entityType));
         });
   }
 
   private void deleteAuthorizations(final RoleRecord record) {
-    final var roleKey = record.getRoleKey();
-    final var authorizationKeysForGroup =
-        authorizationState.getAuthorizationKeysForOwner(
-            AuthorizationOwnerType.ROLE, String.valueOf(roleKey));
+    final var roleId = record.getRoleId();
+    final var authorizationKeysForRole =
+        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.ROLE, roleId);
 
-    authorizationKeysForGroup.forEach(
+    authorizationKeysForRole.forEach(
         authorizationKey -> {
           final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
           stateWriter.appendFollowUpEvent(
