@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -40,6 +41,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   private final RoleState roleState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
+  private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -56,6 +58,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     roleState = processingState.getRoleState();
     mappingState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
+    groupState = processingState.getGroupState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -134,13 +137,14 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     return switch (entityType) {
       case USER -> true; // With simple mappings, any username can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
+      case GROUP -> groupState.get(entityId).isPresent();
       default -> false;
     };
   }
 
   private boolean isEntityAssigned(final RoleRecord record) {
     return switch (record.getEntityType()) {
-      case USER, MAPPING ->
+      case USER, MAPPING, GROUP ->
           membershipState.hasRelation(
               record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
       default ->
