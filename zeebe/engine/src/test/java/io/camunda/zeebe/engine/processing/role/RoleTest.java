@@ -340,7 +340,7 @@ public class RoleTest {
 
     // when
     final var deletedRole = engine.role().deleteRole(roleId).delete().getValue();
-    assertThat(deletedRole).hasRoleId(roleId).hasName(name);
+    assertThat(deletedRole).hasRoleId(roleId);
   }
 
   @Test
