@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -85,13 +86,11 @@ public class RoleAppliersTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/30114")
   void shouldDeleteRole() {
     // given
-    final long roleKey = 11L;
-    final String roleId = String.valueOf(roleKey);
+    final String roleId = UUID.randomUUID().toString();
     final String roleName = "foo";
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    final var roleRecord = new RoleRecord().setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
     authorizationState.create(
         1L,
@@ -113,10 +112,10 @@ public class RoleAppliersTest {
             .setOwnerId(roleId));
 
     // when
-    roleDeletedApplier.applyState(roleKey, roleRecord);
+    roleDeletedApplier.applyState(1L, roleRecord);
 
     // then
-    assertThat(roleState.getRole(roleKey)).isEmpty();
+    assertThat(roleState.getRole(roleId)).isEmpty();
   }
 
   @Test
