@@ -21,8 +21,11 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
+import io.camunda.process.test.api.assertions.UserTaskAssert;
+import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
+import io.camunda.process.test.impl.assertions.UserTaskAssertj;
 import java.time.Duration;
 import java.util.function.Function;
 import org.awaitility.Awaitility;
@@ -97,6 +100,8 @@ public class CamundaAssert {
     Awaitility.setDefaultPollInterval(assertionInterval);
   }
 
+  // ======== Assertions ========
+
   /**
    * Configures the element selector used for BPMN element assertions with a string identifier.
    *
@@ -106,8 +111,6 @@ public class CamundaAssert {
   public static void setElementSelector(final Function<String, ElementSelector> elementSelector) {
     CamundaAssert.elementSelector = elementSelector;
   }
-
-  // ======== Assertions ========
 
   /**
    * To verify a process instance.
@@ -163,6 +166,17 @@ public class CamundaAssert {
   public static ProcessInstanceAssert assertThat(
       final ProcessInstanceSelector processInstanceSelector) {
     return new ProcessInstanceAssertj(getDataSource(), processInstanceSelector, elementSelector);
+  }
+
+  /**
+   * To verify a user task.
+   *
+   * @param userTaskSelector the selector of the user task to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.UserTaskSelectors
+   */
+  public static UserTaskAssert assertThat(final UserTaskSelector userTaskSelector) {
+    return new UserTaskAssertj(getDataSource(), userTaskSelector);
   }
 
   // ======== Internal ========
