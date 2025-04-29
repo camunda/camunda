@@ -13,6 +13,7 @@ import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -51,8 +52,6 @@ import java.util.function.Function;
 public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
-
-  public static final long NO_PARENT_EXISTS_KEY = -1L;
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
 
@@ -163,7 +162,7 @@ public final class ProcessInstanceServices
         filter.toBuilder()
             // It is only possible to cancel root processes in zeebe,
             // whereby zeebe then automatically cancels the sub-processes.
-            .parentProcessInstanceKeys(NO_PARENT_EXISTS_KEY)
+            .parentProcessInstanceKeyOperations(Operation.exists(false))
             .states(ProcessInstanceState.ACTIVE.name())
             .build();
 
