@@ -552,6 +552,108 @@ final class AuthorizationCheckBehaviorTest {
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
   }
 
+  @Test
+  void shouldBeAuthorizedForUserWithAssignedGroupWithAssignedRole() {
+    // given
+    final var user = createUser();
+    final var group = createGroupAndAssignEntity(user.getUsername(), EntityType.USER);
+    final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
+
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldGetAuthorizationsForUserWithAssignedGroupWithAssignedRole() {
+    // given
+    final var user = createUser();
+    final var group = createGroupAndAssignEntity(user.getUsername(), EntityType.USER);
+    final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
+
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var allAuthorizedResourceIdentifiers =
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+    final var directAuthorizedResourceIdentifiers =
+        authorizationCheckBehavior.getDirectAuthorizedResourceIdentifiers(
+            AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
+
+    // then
+    assertThat(allAuthorizedResourceIdentifiers).containsExactly(resourceId);
+    assertThat(directAuthorizedResourceIdentifiers).isEmpty();
+  }
+
+  @Test
+  void shouldBeAuthorizedForMappingWithAssignedGroupWithAssignedRole() {
+    // given
+    final var mapping = createMapping(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+    final var group = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
+
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+    final var command = mockCommandWithMapping(mapping.getClaimName(), mapping.getClaimValue());
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldGetAuthorizationsForMappingWithAssignedGroupWithAssignedRole() {
+    // given
+    final var mapping = createMapping(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+    final var group = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
+
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+    final var command = mockCommandWithMapping(mapping.getClaimName(), mapping.getClaimValue());
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var allAuthorizedResourceIdentifiers =
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+    final var directAuthorizedResourceIdentifiers =
+        authorizationCheckBehavior.getDirectAuthorizedResourceIdentifiers(
+            AuthorizationOwnerType.MAPPING, mapping.getMappingId(), resourceType, permissionType);
+
+    // then
+    assertThat(allAuthorizedResourceIdentifiers).containsExactly(resourceId);
+    assertThat(directAuthorizedResourceIdentifiers).isEmpty();
+  }
+
   private TypedRecord<?> mockCommandWithMapping(final String claimName, final String claimValue) {
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations())
