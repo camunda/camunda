@@ -393,4 +393,115 @@ public class GroupTest {
             "Expected to delete group with ID '%s', but a group with this ID does not exist."
                 .formatted(notPresentGroupId));
   }
+
+  @Test
+  public void shouldAddApplicationEntityToGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var applicationId = "application-" + UUID.randomUUID();
+    final var name = UUID.randomUUID().toString();
+    engine.group().newGroup(groupId).withName(name).create();
+
+    // when
+    final var updatedGroup =
+        engine
+            .group()
+            .addEntity(groupId)
+            .withEntityId(applicationId)
+            .withEntityType(EntityType.APPLICATION)
+            .add()
+            .getValue();
+
+    // then
+    assertThat(updatedGroup).hasEntityId(applicationId).hasEntityType(EntityType.APPLICATION);
+  }
+
+  @Test
+  public void shouldRemoveApplicationEntityFromGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var applicationId = "application-" + UUID.randomUUID();
+    final var name = UUID.randomUUID().toString();
+    engine.group().newGroup(groupId).withName(name).create();
+    engine
+        .group()
+        .addEntity(groupId)
+        .withEntityId(applicationId)
+        .withEntityType(EntityType.APPLICATION)
+        .add();
+
+    // when
+    final var groupWithRemovedEntity =
+        engine
+            .group()
+            .removeEntity(groupId)
+            .withEntityId(applicationId)
+            .withEntityType(EntityType.APPLICATION)
+            .remove()
+            .getValue();
+
+    // then
+    assertThat(groupWithRemovedEntity)
+        .hasGroupId(groupId)
+        .hasEntityId(applicationId)
+        .hasEntityType(EntityType.APPLICATION);
+  }
+
+  @Test
+  public void shouldRejectIfApplicationEntityIsAlreadyAssigned() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var name = UUID.randomUUID().toString();
+    engine.group().newGroup(groupId).withName(name).create();
+    final var applicationId = "application-" + UUID.randomUUID();
+    engine
+        .group()
+        .addEntity(groupId)
+        .withEntityId(applicationId)
+        .withEntityType(EntityType.APPLICATION)
+        .add();
+
+    // when
+    final var notPresentUpdateRecord =
+        engine
+            .group()
+            .addEntity(groupId)
+            .withEntityId(applicationId)
+            .withEntityType(EntityType.APPLICATION)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group."
+                .formatted(applicationId, groupId));
+  }
+
+  @Test
+  public void shouldRejectIfApplicationEntityIsNotAssignedEntityRemoval() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var notPresentEntityId = "application-" + UUID.randomUUID();
+    final var name = UUID.randomUUID().toString();
+    engine.group().newGroup(groupId).withName(name).create();
+
+    // when
+    final var notAssignedUpdate =
+        engine
+            .group()
+            .removeEntity(groupId)
+            .withEntityId(notPresentEntityId)
+            .withEntityType(EntityType.APPLICATION)
+            .expectRejection()
+            .remove();
+
+    // then
+    assertThat(notAssignedUpdate)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove entity with ID '%s' from group with ID '%s', but the entity is not assigned to this group."
+                .formatted(notPresentEntityId, groupId));
+  }
 }
