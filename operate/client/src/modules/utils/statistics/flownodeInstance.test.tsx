@@ -93,7 +93,6 @@ describe('getStatisticsByFlowNode', () => {
     expect(result.current).toEqual({
       StartEvent_1: {
         active: 5,
-        filteredActive: 5,
         incidents: 2,
         completed: 10,
         completedEndEvents: 0,
@@ -101,7 +100,6 @@ describe('getStatisticsByFlowNode', () => {
       },
       Activity_0qtp1k6: {
         active: 3,
-        filteredActive: 3,
         incidents: 1,
         completed: 7,
         completedEndEvents: 0,
@@ -138,7 +136,6 @@ describe('getStatisticsByFlowNode', () => {
     expect(result.current).toEqual({
       StartEvent_1: {
         active: 5,
-        filteredActive: 5,
         incidents: 2,
         completed: 10,
         completedEndEvents: 0,
@@ -170,7 +167,6 @@ describe('getStatisticsByFlowNode', () => {
     expect(result.current).toEqual({
       StartEvent_1: {
         active: 5,
-        filteredActive: 5,
         incidents: 2,
         completed: 0,
         completedEndEvents: 0,
@@ -200,7 +196,6 @@ describe('getStatisticsByFlowNode', () => {
     expect(result.current).toEqual({
       Event_0bonl61: {
         active: 0,
-        filteredActive: 0,
         incidents: 0,
         completed: 0,
         completedEndEvents: 10,

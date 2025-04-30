@@ -18,7 +18,6 @@ import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import isEqual from 'lodash/isEqual';
 
 type Statistic = ProcessInstanceDetailStatisticsDto & {
-  filteredActive: number;
   completedEndEvents: number;
 };
 
@@ -75,8 +74,6 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
       statistics[activityId] = {
         active,
-        filteredActive:
-          businessObject?.$type !== 'bpmn:SubProcess' ? active : 0,
         incidents,
         completed: !isProcessEndEvent(businessObject) ? completed : 0,
         completedEndEvents: isProcessEndEvent(businessObject) ? completed : 0,
@@ -103,7 +100,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
   getTotalRunningInstancesVisibleForFlowNode = (flowNodeId: string) => {
     return (
-      (this.statisticsByFlowNode[flowNodeId]?.filteredActive ?? 0) +
+      (this.statisticsByFlowNode[flowNodeId]?.active ?? 0) +
       (this.statisticsByFlowNode[flowNodeId]?.incidents ?? 0)
     );
   };
