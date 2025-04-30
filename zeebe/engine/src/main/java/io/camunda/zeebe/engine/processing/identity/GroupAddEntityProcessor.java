@@ -143,14 +143,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   }
 
   private boolean isEntityAssigned(final GroupRecord record) {
-    return switch (record.getEntityType()) {
-      case USER, MAPPING ->
-          membershipState.hasRelation(
-              record.getEntityType(),
-              record.getEntityId(),
-              RelationType.GROUP,
-              record.getGroupId());
-      default -> false;
-    };
+    return membershipState.hasRelation(
+        record.getEntityType(), record.getEntityId(), RelationType.GROUP, record.getGroupId());
   }
 }

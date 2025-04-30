@@ -26,15 +26,6 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
     final var entityId = value.getEntityId();
     final var entityType = value.getEntityType();
     final var groupId = value.getGroupId();
-
-    switch (entityType) {
-      case USER, MAPPING ->
-          membershipState.insertRelation(entityType, entityId, RelationType.GROUP, groupId);
-      default ->
-          throw new IllegalStateException(
-              String.format(
-                  "Expected to add entity '%s' to group '%s', but entities of type '%s' cannot be added to groups.",
-                  entityId, groupId, entityType));
-    }
+    membershipState.insertRelation(entityType, entityId, RelationType.GROUP, groupId);
   }
 }

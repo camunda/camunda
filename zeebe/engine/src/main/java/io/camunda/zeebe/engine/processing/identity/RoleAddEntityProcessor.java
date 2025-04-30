@@ -143,12 +143,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   }
 
   private boolean isEntityAssigned(final RoleRecord record) {
-    return switch (record.getEntityType()) {
-      case USER, MAPPING, GROUP ->
-          membershipState.hasRelation(
-              record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
-      default ->
-          throw new IllegalArgumentException("Unsupported entity type: " + record.getEntityType());
-    };
+    return membershipState.hasRelation(
+        record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
   }
 }
