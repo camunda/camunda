@@ -7,10 +7,7 @@
  */
 package io.camunda.authentication;
 
-import static io.camunda.authentication.CamundaOAuthPrincipalService.APPLICATION_ID_CLAIM_NOT_FOUND;
-import static io.camunda.authentication.CamundaOAuthPrincipalService.APPLICATION_ID_CLAIM_NOT_STRING;
-import static io.camunda.authentication.CamundaOAuthPrincipalService.USERNAME_CLAIM_NOT_FOUND;
-import static io.camunda.authentication.CamundaOAuthPrincipalService.USERNAME_CLAIM_NOT_STRING;
+import static io.camunda.authentication.CamundaOAuthPrincipalService.CLAIM_NOT_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -63,6 +60,7 @@ public class CamundaOAuthPrincipalServiceTest {
 
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+      when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.getApplicationIdClaim())
           .thenReturn(APPLICATION_ID_CLAIM);
 
@@ -78,8 +76,6 @@ public class CamundaOAuthPrincipalServiceTest {
 
     @Test
     public void shouldThrowExceptionWhenNoApplicationIdClaimFound() {
-      when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(null);
-      when(oidcAuthenticationConfiguration.getApplicationIdClaim()).thenReturn("not-found");
       // given
       final Map<String, Object> claims = Map.of("sub", "user@example.com");
 
@@ -90,12 +86,14 @@ public class CamundaOAuthPrincipalServiceTest {
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())
-          .isEqualTo(APPLICATION_ID_CLAIM_NOT_FOUND.formatted(APPLICATION_ID_CLAIM));
+          .isEqualTo(
+              "Neither username claim (%s) nor applicationId claim (%s) could be found in the claims. Please check your OIDC configuration."
+                  .formatted("not-tested", APPLICATION_ID_CLAIM));
     }
 
     @Test
     public void shouldThrowExceptionWhenApplicationIdClaimIsNotAString() {
-      when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(null);
+      when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.getApplicationIdClaim())
           .thenReturn(APPLICATION_ID_CLAIM);
       // given
@@ -108,7 +106,7 @@ public class CamundaOAuthPrincipalServiceTest {
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())
-          .isEqualTo(APPLICATION_ID_CLAIM_NOT_STRING.formatted(APPLICATION_ID_CLAIM));
+          .isEqualTo(CLAIM_NOT_STRING.formatted("application", APPLICATION_ID_CLAIM));
     }
 
     @Test
@@ -146,6 +144,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
+      when(oidcAuthenticationConfiguration.getApplicationIdClaim()).thenReturn("not-tested");
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalService(
@@ -159,8 +158,6 @@ public class CamundaOAuthPrincipalServiceTest {
 
     @Test
     public void shouldThrowExceptionWhenNoUsernameClaimFound() {
-      when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-found");
-      when(oidcAuthenticationConfiguration.getApplicationIdClaim()).thenReturn(null);
       // given
       final Map<String, Object> claims = Map.of("sub", "user@example.com");
 
@@ -171,13 +168,13 @@ public class CamundaOAuthPrincipalServiceTest {
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())
-          .isEqualTo(USERNAME_CLAIM_NOT_FOUND.formatted(USERNAME_CLAIM));
+          .isEqualTo(
+              "Neither username claim (%s) nor applicationId claim (%s) could be found in the claims. Please check your OIDC configuration."
+                  .formatted(USERNAME_CLAIM, "not-tested"));
     }
 
     @Test
     public void shouldThrowExceptionWhenUsernameClaimIsNotAString() {
-      when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(null);
-      when(oidcAuthenticationConfiguration.getApplicationIdClaim()).thenReturn(USERNAME_CLAIM);
       // given
       final Map<String, Object> claims = Map.of(USERNAME_CLAIM, List.of("app-1", "app-2"));
 
@@ -188,7 +185,7 @@ public class CamundaOAuthPrincipalServiceTest {
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())
-          .isEqualTo(USERNAME_CLAIM_NOT_STRING.formatted(USERNAME_CLAIM));
+          .isEqualTo(CLAIM_NOT_STRING.formatted("username", USERNAME_CLAIM));
     }
 
     @Test
