@@ -18,6 +18,7 @@ package io.camunda.client;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
@@ -1808,4 +1809,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request
    */
   BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(Long batchOperationKey);
+
+  /**
+   * Command to assign a user to a group.
+   *
+   * <pre>
+   *
+   *
+   * camundaClient
+   *  .newAssignMappingToGroupCommand(groupId)
+   *  .mappingId(mappingId)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  AssignMappingToGroupStep1 newAssignMappingToGroupCommand(String groupId);
 }
