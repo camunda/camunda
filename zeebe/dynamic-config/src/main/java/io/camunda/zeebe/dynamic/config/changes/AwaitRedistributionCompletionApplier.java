@@ -49,7 +49,7 @@ public class AwaitRedistributionCompletionApplier implements ClusterOperationApp
         instanceof AllPartitions) {
       return Either.left(
           new IllegalStateException(
-              "Cannot include partitions in request handling when all partitions are active."));
+              "All partitions are active, cannot include partitions in request handling."));
     }
     return Either.right(UnaryOperator.identity());
   }

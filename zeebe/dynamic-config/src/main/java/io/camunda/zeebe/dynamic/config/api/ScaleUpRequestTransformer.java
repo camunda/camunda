@@ -21,12 +21,12 @@ import java.util.stream.Stream;
 public class ScaleUpRequestTransformer implements ConfigurationChangeRequest {
 
   private final int desiredPartitionCount;
-  private final SortedSet<Integer> bootstrappedPartitions;
+  private final SortedSet<Integer> partitionsToBootstrap;
 
   public ScaleUpRequestTransformer(
-      final int desiredPartitionCount, final SortedSet<Integer> bootstrappedPartitions) {
+      final int desiredPartitionCount, final SortedSet<Integer> partitionsToBootstrap) {
     this.desiredPartitionCount = desiredPartitionCount;
-    this.bootstrappedPartitions = bootstrappedPartitions;
+    this.partitionsToBootstrap = partitionsToBootstrap;
   }
 
   @Override
@@ -36,17 +36,17 @@ public class ScaleUpRequestTransformer implements ConfigurationChangeRequest {
       return Either.left(
           new InvalidRequest(
               String.format(
-                  "Cannot scale up when desiredPartitionCount %d is less than the current partition count %d",
+                  "Invalid scale up request: desiredPartitionCount %d is less than the current partition count %d",
                   desiredPartitionCount, clusterConfiguration.partitionCount())));
     }
-    if (clusterConfiguration.partitionCount() + bootstrappedPartitions.size()
+    if (clusterConfiguration.partitionCount() + partitionsToBootstrap.size()
         != desiredPartitionCount) {
       return Either.left(
           new InvalidRequest(
               String.format(
-                  "Cannot start scale up: clusterConfiguration.partitionCount(%d) + bootstrappedPartitions(%d) != desiredPartitionCount(%d)",
+                  "Invalid scale up request: partitionCount(%d) + partitionsToBoostrap(%d) must equal the desiredPartitionCount(%d)",
                   clusterConfiguration.partitionCount(),
-                  bootstrappedPartitions.size(),
+                  partitionsToBootstrap.size(),
                   desiredPartitionCount)));
     }
     final var operations =
@@ -60,9 +60,9 @@ public class ScaleUpRequestTransformer implements ConfigurationChangeRequest {
                     Stream.of(
                         new StartPartitionScaleUp(id, desiredPartitionCount),
                         new AwaitRedistributionCompletion(
-                            id, desiredPartitionCount, bootstrappedPartitions),
+                            id, desiredPartitionCount, partitionsToBootstrap),
                         new AwaitRelocationCompletion(
-                            id, desiredPartitionCount, bootstrappedPartitions)))
+                            id, desiredPartitionCount, partitionsToBootstrap)))
             .map(ClusterConfigurationChangeOperation.class::cast)
             .toList();
     if (operations.isEmpty()) {

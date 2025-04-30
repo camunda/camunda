@@ -65,6 +65,14 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
     brokerClient.sendRequestWithRetry(
         new GetScaleUpProgress(desiredPartitionCount),
         (key, response) -> {
+          if (response.getDesiredPartitionCount() != desiredPartitionCount) {
+            LOGGER.warn("Invalid GetScaleUpProgress response: got {}", response);
+            result.completeExceptionally(
+                new RuntimeException(
+                    "Invalid GetScaleUpProgress response: expected to await redistribution completion for partition count %d, but got %d"
+                        .formatted(desiredPartitionCount, response.getDesiredPartitionCount())));
+            return;
+          }
           final Set<Integer> currentlyRedistributedPartitions =
               new TreeSet<>(response.getRedistributedPartitions());
           if (currentlyRedistributedPartitions.equals(redistributedPartitions)) {
