@@ -158,7 +158,7 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
           break;
         default:
           LOGGER.warn(
-              "SingleStepModifyProcessInstanceHandler encountered a modification type that should have been filtered out: {}",
+              "ModifyProcessInstanceHandler encountered a modification type that should have been filtered out: {}",
               modification.getModification());
           break;
       }

@@ -264,8 +264,10 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
                         newTokensCount);
                   }
                 }
-                case ADD_VARIABLE, EDIT_VARIABLE ->
-                    addVariableInstruction(processInstanceKey, modification, operationId);
+                default ->
+                    LOGGER.warn(
+                        "ModifyProcessInstanceHandler encountered a modification type that should have been filtered out: {}",
+                        modification.getModification());
               }
             });
 
