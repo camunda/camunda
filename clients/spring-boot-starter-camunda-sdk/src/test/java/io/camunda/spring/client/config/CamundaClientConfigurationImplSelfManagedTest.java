@@ -41,7 +41,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
       "logging.level.io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration=debug"
     })
 @ExtendWith(OutputCaptureExtension.class)
-public class CamundaClientConfigurationImplOidcTest {
+public class CamundaClientConfigurationImplSelfManagedTest {
   @Autowired CamundaClientConfiguration camundaClientConfiguration;
   @Autowired JsonMapper jsonMapper;
   @Autowired CamundaClientExecutorService zeebeClientExecutorService;
