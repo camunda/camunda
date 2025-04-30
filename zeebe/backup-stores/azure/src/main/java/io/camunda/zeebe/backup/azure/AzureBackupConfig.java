@@ -14,8 +14,7 @@ public record AzureBackupConfig(
     String connectionString,
     String containerName,
     boolean createContainer,
-    String sasToken,
-    String accountSasToken) {
+    SasTokenConfig sasTokenConfig) {
 
   public static class Builder {
 
@@ -24,9 +23,7 @@ public record AzureBackupConfig(
     private String accountKey;
     private String conectionString;
     private boolean createContainer = true;
-    private String sasToken;
-    private String accountSasToken;
-
+    private SasTokenConfig sasToken;
     // maps to the basePath env variable
     private String containerName;
 
@@ -60,13 +57,8 @@ public record AzureBackupConfig(
       return this;
     }
 
-    public Builder withSasToken(final String sasToken) {
+    public Builder withSasToken(final SasTokenConfig sasToken) {
       this.sasToken = sasToken;
-      return this;
-    }
-
-    public Builder withAccountSasToken(final String accountSasToken) {
-      this.accountSasToken = accountSasToken;
       return this;
     }
 
@@ -79,8 +71,7 @@ public record AzureBackupConfig(
           conectionString,
           containerName,
           createContainer,
-          sasToken,
-          accountSasToken);
+          sasToken);
     }
   }
 }

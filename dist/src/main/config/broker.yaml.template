@@ -376,21 +376,21 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_CREATECONTAINER
           # createContainer: true
 
-          # This setting defines the user delegation or service SAS token to use.
+          # This setting defines the SAS token to use. These can be of user delegation, service or account type.
           # Note that user delegation and service SAS tokens do not support the
           # creation of containers, therefore createContainer configuration
           # will be overridden to false if sasToken is configured. The user must make sure that
           # the container already exists, or it will lead to a runtime error.
-          # See more in: https://learn.microsoft.com/en-us/rest/api/storageservices/create-user-delegation-sas
-          # and https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas
-          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_SASTOKEN
+          # See more in: https://learn.microsoft.com/en-us/rest/api/storageservices/delegate-access-with-shared-access-signature
           # sasToken:
 
-          # Defines the account SAS token to use. Unlike the user delegation and service SAS tokens,
-          # the account SAS token does support the creation of containers.
-          # See more in: https://learn.microsoft.com/en-us/rest/api/storageservices/create-account-sas
-          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ACCOUNTSASTOKEN
-          # accountSasToken:
+            # The SAS token must be of the following types: "delegation", "service" or "account".
+            # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_SASTOKEN_TYPE
+            # type:
+
+            # Specifies the key value of the SAS token.
+            # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_SASTOKEN_VALUE
+            # value:
 
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
