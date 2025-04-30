@@ -84,7 +84,7 @@ public class AzureBackupStoreContainerCredentialsIT {
         new AzureBackupConfig.Builder()
             .withEndpoint(containerClient.getAccountUrl())
             .withContainerName(containerName)
-            .withAccountSasToken(accountSasToken)
+            .withSasToken(new SasTokenConfig(accountSasToken, SasTokenType.ACCOUNT))
             .build();
 
     final AzureBackupStore store = new AzureBackupStore(azureConfigWithAccountSasToken);
@@ -106,7 +106,7 @@ public class AzureBackupStoreContainerCredentialsIT {
     final BlobContainerClient containerClient =
         blobServiceClient.getBlobContainerClient(AZURITE_CONTAINER.getContainerName());
     final String serviceSasToken =
-        createServiceSASContainer(blobServiceClient.getBlobContainerClient(containerName));
+        createServiceSAS(blobServiceClient.getBlobContainerClient(containerName));
 
     blobServiceClient.createBlobContainer(containerName);
 
@@ -114,7 +114,7 @@ public class AzureBackupStoreContainerCredentialsIT {
         new AzureBackupConfig.Builder()
             .withEndpoint(containerClient.getAccountUrl())
             .withContainerName(containerName)
-            .withSasToken(serviceSasToken)
+            .withSasToken(new SasTokenConfig(serviceSasToken, SasTokenType.SERVICE))
             .withCreateContainer(false)
             .build();
 
@@ -142,7 +142,7 @@ public class AzureBackupStoreContainerCredentialsIT {
     return blobServiceClient.generateAccountSas(accountSasValues);
   }
 
-  public String createServiceSASContainer(final BlobContainerClient containerClient) {
+  public String createServiceSAS(final BlobContainerClient containerClient) {
     final OffsetDateTime expiryTime = OffsetDateTime.now().plusMinutes(5);
 
     final BlobContainerSasPermission sasPermission =
