@@ -41,6 +41,7 @@ public class CommandDistributionMetricsTest {
     assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
+                .withCount(1.0)
                 .withActive(1.0)
                 .withPending(1.0)
                 .withInflight(1.0)
@@ -55,6 +56,7 @@ public class CommandDistributionMetricsTest {
     assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
+                .withCount(1.0)
                 .withActive(0.0)
                 .withPending(0.0)
                 .withInflight(0.0)
@@ -75,6 +77,7 @@ public class CommandDistributionMetricsTest {
     assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
+                .withCount(1.0)
                 .withActive(1.0)
                 .withPending(1.0)
                 .withInflight(1.0)
@@ -89,6 +92,7 @@ public class CommandDistributionMetricsTest {
     assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
+                .withCount(1.0)
                 .withActive(0.0)
                 .withPending(0.0)
                 .withInflight(0.0)
@@ -109,6 +113,7 @@ public class CommandDistributionMetricsTest {
     assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
+                .withCount(2.0)
                 .withActive(2.0)
                 .withPending(2.0)
                 .withInflight(1.0)
@@ -123,6 +128,7 @@ public class CommandDistributionMetricsTest {
     assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
+                .withCount(2.0)
                 .withActive(0.0)
                 .withPending(0.0)
                 .withInflight(0.0)
@@ -142,6 +148,7 @@ public class CommandDistributionMetricsTest {
     assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
+                .withCount(1.0)
                 .withActive(1.0)
                 .withPending(1.0)
                 .withInflight(1.0)
@@ -157,6 +164,7 @@ public class CommandDistributionMetricsTest {
     assertThat(snapshotMetrics())
         .isEqualTo(
             MetricSnapshot.empty()
+                .withCount(1.0)
                 .withActive(0.0)
                 .withPending(0.0)
                 .withInflight(0.0)
@@ -206,6 +214,7 @@ public class CommandDistributionMetricsTest {
   }
 
   private MetricSnapshot snapshotMetrics() {
+    final var count = getMeterRegistry(1).find("zeebe.command.distributions").counter();
     final var active = getMeterRegistry(1).find("zeebe.command.distributions.active").gauge();
     final var pending = getMeterRegistry(1).find("zeebe.command.distributions.pending").gauge();
     final var inflight = getMeterRegistry(1).find("zeebe.command.distributions.inflight").gauge();
@@ -215,6 +224,7 @@ public class CommandDistributionMetricsTest {
         getMeterRegistry(2).find("zeebe.command.distributions.acknowledged").counter();
 
     return new MetricSnapshot(
+        count != null ? count.count() : 0.0,
         active != null ? active.value() : 0.0,
         pending != null ? pending.value() : 0.0,
         inflight != null ? inflight.value() : 0.0,
@@ -231,30 +241,39 @@ public class CommandDistributionMetricsTest {
   }
 
   record MetricSnapshot(
-      double active, double pending, double inflight, double retries, double acknowledged) {
+      double count,
+      double active,
+      double pending,
+      double inflight,
+      double retries,
+      double acknowledged) {
 
     public static MetricSnapshot empty() {
-      return new MetricSnapshot(0, 0, 0, 0.0, 0.0);
+      return new MetricSnapshot(0, 0, 0, 0, 0, 0);
+    }
+
+    public MetricSnapshot withCount(final double count) {
+      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
     }
 
     public MetricSnapshot withActive(final double active) {
-      return new MetricSnapshot(active, pending, inflight, retries, acknowledged);
+      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
     }
 
     public MetricSnapshot withPending(final double pending) {
-      return new MetricSnapshot(active, pending, inflight, retries, acknowledged);
+      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
     }
 
     public MetricSnapshot withInflight(final double inflight) {
-      return new MetricSnapshot(active, pending, inflight, retries, acknowledged);
+      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
     }
 
     public MetricSnapshot withRetries(final double retries) {
-      return new MetricSnapshot(active, pending, inflight, retries, acknowledged);
+      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
     }
 
     public MetricSnapshot withAcknowledged(final double acknowledged) {
-      return new MetricSnapshot(active, pending, inflight, retries, acknowledged);
+      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
     }
   }
 }

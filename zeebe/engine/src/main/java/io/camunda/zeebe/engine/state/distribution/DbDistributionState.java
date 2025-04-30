@@ -119,7 +119,7 @@ public class DbDistributionState implements MutableDistributionState {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    getMetrics().reset();
+    getMetrics().startReset();
 
     commandDistributionRecordColumnFamily.forEach(
         (distributionKey, record) -> getMetrics().addDistribution(distributionKey.getValue()));
@@ -137,6 +137,8 @@ public class DbDistributionState implements MutableDistributionState {
                 .addInflightDistribution(
                     distributionPartitionKey.second().getValue(),
                     distributionPartitionKey.first().inner().getValue()));
+
+    getMetrics().finalizeReset();
   }
 
   @Override

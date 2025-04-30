@@ -13,6 +13,23 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
 public enum DistributionMetricsDoc implements ExtendedMeterDocumentation {
+  COMMAND_DISTRIBUTIONS {
+    @Override
+    public String getDescription() {
+      return "Counts the number of command distributions.";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.command.distributions";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+  },
+
   ACTIVE_COMMAND_DISTRIBUTIONS {
     @Override
     public String getDescription() {

@@ -22,6 +22,8 @@ public final class DistributionMetrics {
 
   // Metrics
   private final StatefulGauge activeDistributionsGauge;
+  private final Counter distributionsCounter;
+  private boolean isResetting;
 
   public DistributionMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -30,18 +32,31 @@ public final class DistributionMetrics {
         StatefulGauge.builder(DistributionMetricsDoc.ACTIVE_COMMAND_DISTRIBUTIONS.getName())
             .description(DistributionMetricsDoc.ACTIVE_COMMAND_DISTRIBUTIONS.getDescription())
             .register(meterRegistry);
+
+    distributionsCounter =
+        Counter.builder(DistributionMetricsDoc.COMMAND_DISTRIBUTIONS.getName())
+            .description(DistributionMetricsDoc.COMMAND_DISTRIBUTIONS.getDescription())
+            .register(meterRegistry);
   }
 
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
   }
 
-  public void reset() {
+  public void startReset() {
+    isResetting = true;
     activeDistributionsGauge.set(0);
-    partitionMetrics.values().forEach(PartitionDistributionMetrics::reset);
+    partitionMetrics.values().forEach(PartitionDistributionMetrics::resetGauges);
+  }
+
+  public void finalizeReset() {
+    isResetting = false;
   }
 
   public void addDistribution(final long distributionKey) {
+    if (!isResetting) {
+      distributionsCounter.increment();
+    }
     activeDistributionsGauge.increment();
   }
 
@@ -142,7 +157,7 @@ public final class DistributionMetrics {
               .register(meterRegistry);
     }
 
-    public void reset() {
+    public void resetGauges() {
       pendingDistributionsGauge.set(0);
       inflightDistributionsGauge.set(0);
     }
