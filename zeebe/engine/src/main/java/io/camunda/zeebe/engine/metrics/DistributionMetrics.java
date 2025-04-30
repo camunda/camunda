@@ -23,7 +23,7 @@ public final class DistributionMetrics {
   // Metrics
   private final StatefulGauge activeDistributionsGauge;
   private final Counter distributionsCounter;
-  private boolean isResetting;
+  private boolean isResetting = false;
 
   public DistributionMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -88,8 +88,21 @@ public final class DistributionMetrics {
    *     was started)
    * @param distributionKey the key of the distribution
    */
-  public void acknowledgeDistribution(final int originPartitionId, final long distributionKey) {
-    getPartitionMetrics(originPartitionId).acknowledgeDistribution(distributionKey);
+  public void sentAcknowledgeDistribution(final int originPartitionId, final long distributionKey) {
+    getPartitionMetrics(originPartitionId).sentAcknowledgeDistribution(distributionKey);
+  }
+
+  /**
+   * This method is called on the origin partition when a distribution command has been successfully
+   * acknowledged by the target partition.
+   *
+   * @param targetPartitionId the source partition id of the distribution (where the distribution
+   *     was started)
+   * @param distributionKey the key of the distribution
+   */
+  public void receivedAcknowledgeDistribution(
+      final int targetPartitionId, final long distributionKey) {
+    getPartitionMetrics(targetPartitionId).receivedAcknowledgeDistribution(distributionKey);
   }
 
   /**
@@ -104,7 +117,7 @@ public final class DistributionMetrics {
     getPartitionMetrics(targetPartitionId).retryInflightDistribution(distributionKey);
   }
 
-  public PartitionDistributionMetrics getPartitionMetrics(final int targetPartitionId) {
+  private PartitionDistributionMetrics getPartitionMetrics(final int targetPartitionId) {
     return partitionMetrics.computeIfAbsent(
         targetPartitionId, id -> new PartitionDistributionMetrics(id, meterRegistry));
   }
@@ -123,7 +136,8 @@ public final class DistributionMetrics {
     private final StatefulGauge pendingDistributionsGauge;
     private final StatefulGauge inflightDistributionsGauge;
     private final Counter retryInflightDistributionsCounter;
-    private final Counter acknowledgeDistributionsCounter;
+    private final Counter receivedAcknowledgeDistributionsCounter;
+    private final Counter sentAcknowledgeDistributionsCounter;
 
     public PartitionDistributionMetrics(
         final int targetPartitionId, final MeterRegistry meterRegistry) {
@@ -149,10 +163,19 @@ public final class DistributionMetrics {
               .tags(MicrometerUtil.PartitionKeyNames.targetPartitionTags(targetPartitionId))
               .register(meterRegistry);
 
-      acknowledgeDistributionsCounter =
-          Counter.builder(DistributionMetricsDoc.ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName())
+      sentAcknowledgeDistributionsCounter =
+          Counter.builder(DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName())
               .description(
-                  DistributionMetricsDoc.ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getDescription())
+                  DistributionMetricsDoc.SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getDescription())
+              .tags(MicrometerUtil.PartitionKeyNames.targetPartitionTags(targetPartitionId))
+              .register(meterRegistry);
+
+      receivedAcknowledgeDistributionsCounter =
+          Counter.builder(
+                  DistributionMetricsDoc.RECEIVED_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getName())
+              .description(
+                  DistributionMetricsDoc.RECEIVED_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS
+                      .getDescription())
               .tags(MicrometerUtil.PartitionKeyNames.targetPartitionTags(targetPartitionId))
               .register(meterRegistry);
     }
@@ -182,8 +205,12 @@ public final class DistributionMetrics {
       retryInflightDistributionsCounter.increment();
     }
 
-    public void acknowledgeDistribution(final long distributionKey) {
-      acknowledgeDistributionsCounter.increment();
+    public void sentAcknowledgeDistribution(final long distributionKey) {
+      sentAcknowledgeDistributionsCounter.increment();
+    }
+
+    public void receivedAcknowledgeDistribution(final long distributionKey) {
+      receivedAcknowledgeDistributionsCounter.increment();
     }
   }
 }

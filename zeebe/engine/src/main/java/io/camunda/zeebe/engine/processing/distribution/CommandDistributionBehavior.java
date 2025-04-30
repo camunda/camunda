@@ -267,7 +267,9 @@ public final class CommandDistributionBehavior {
           return true;
         });
 
-    distributionState.getMetrics().acknowledgeDistribution(receiverPartitionId, distributionKey);
+    distributionState
+        .getMetrics()
+        .sentAcknowledgeDistribution(receiverPartitionId, distributionKey);
   }
 
   private <T extends UnifiedRecordValue> void requestContinuation(

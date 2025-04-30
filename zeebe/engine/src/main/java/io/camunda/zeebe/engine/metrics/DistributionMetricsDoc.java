@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
+import org.jetbrains.annotations.NotNull;
 
 public enum DistributionMetricsDoc implements ExtendedMeterDocumentation {
   COMMAND_DISTRIBUTIONS {
@@ -20,7 +21,7 @@ public enum DistributionMetricsDoc implements ExtendedMeterDocumentation {
     }
 
     @Override
-    public String getName() {
+    public @NotNull String getName() {
       return "zeebe.command.distributions";
     }
 
@@ -119,17 +120,17 @@ public enum DistributionMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  ACKNOWLEDGE_COMMAND_DISTRIBUTIONS {
+  RECEIVED_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS {
     public static final KeyName[] PARTITION_KEY_NAMES = {PartitionKeyNames.TARGET_PARTITION};
 
     @Override
     public String getDescription() {
-      return "Counts the number of acknowledgements issued to the source partition.";
+      return "Counts the number of received acknowledgements from the target partition.";
     }
 
     @Override
     public String getName() {
-      return "zeebe.command.distributions.acknowledged";
+      return "zeebe.command.distributions.acknowledged.received";
     }
 
     @Override
@@ -141,5 +142,29 @@ public enum DistributionMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PARTITION_KEY_NAMES;
     }
-  };
+  },
+
+  SENT_ACKNOWLEDGE_COMMAND_DISTRIBUTIONS {
+    public static final KeyName[] PARTITION_KEY_NAMES = {PartitionKeyNames.TARGET_PARTITION};
+
+    @Override
+    public String getDescription() {
+      return "Counts the number of sent acknowledgements to the target partition.";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.command.distributions.acknowledged.sent";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PARTITION_KEY_NAMES;
+    }
+  }
 }

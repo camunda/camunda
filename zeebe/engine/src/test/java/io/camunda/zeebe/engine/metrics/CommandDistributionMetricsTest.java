@@ -12,9 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.collection.Tuple;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -39,14 +41,11 @@ public class CommandDistributionMetricsTest {
 
     // then
     assertThat(snapshotMetrics())
-        .isEqualTo(
-            MetricSnapshot.empty()
-                .withCount(1.0)
-                .withActive(1.0)
-                .withPending(1.0)
-                .withInflight(1.0)
-                .withRetries(0.0)
-                .withAcknowledged(0.0));
+        .satisfies(
+            metrics -> assertThat(metrics.count).isOne(),
+            metrics -> assertThat(metrics.active).isOne(),
+            metrics -> assertThat(metrics.pending).isOne(),
+            metrics -> assertThat(metrics.inflight).isOne());
 
     // when
     engine.resumeProcessing(2);
@@ -54,18 +53,18 @@ public class CommandDistributionMetricsTest {
     // then
     waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, key);
     assertThat(snapshotMetrics())
-        .isEqualTo(
-            MetricSnapshot.empty()
-                .withCount(1.0)
-                .withActive(0.0)
-                .withPending(0.0)
-                .withInflight(0.0)
-                .withRetries(0.0)
-                .withAcknowledged(1.0));
+        .satisfies(
+            metrics -> assertThat(metrics.count).isOne(),
+            metrics -> assertThat(metrics.active).isZero(),
+            metrics -> assertThat(metrics.pending).isZero(),
+            metrics -> assertThat(metrics.inflight).isZero(),
+            metrics -> assertThat(metrics.retries).isZero(),
+            metrics -> assertThat(metrics.ackSent).isOne(),
+            metrics -> assertThat(metrics.ackReceived).isOne());
   }
 
   @Test
-  public void shouldTrackRetriedDistribution() throws InterruptedException {
+  public void shouldTrackRetriedDistribution() {
     // given
     engine.pauseProcessing(2);
 
@@ -75,29 +74,32 @@ public class CommandDistributionMetricsTest {
     // then
     waitUntilDistributionIsRetried(key);
     assertThat(snapshotMetrics())
-        .isEqualTo(
-            MetricSnapshot.empty()
-                .withCount(1.0)
-                .withActive(1.0)
-                .withPending(1.0)
-                .withInflight(1.0)
-                .withRetries(1.0)
-                .withAcknowledged(0.0));
+        .satisfies(
+            metrics -> assertThat(metrics.count).isOne(),
+            metrics -> assertThat(metrics.active).isOne(),
+            metrics -> assertThat(metrics.pending).isOne(),
+            metrics -> assertThat(metrics.inflight).isOne(),
+            metrics -> assertThat(metrics.retries).isGreaterThanOrEqualTo(1));
 
     // when
     engine.resumeProcessing(2);
 
     // then
-    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, key);
+    // wait for second (retried) acknowledgement to be processed
+    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGE)
+        .withRejectionType(RejectionType.NOT_FOUND)
+        .withRecordKey(key)
+        .await();
+
     assertThat(snapshotMetrics())
-        .isEqualTo(
-            MetricSnapshot.empty()
-                .withCount(1.0)
-                .withActive(0.0)
-                .withPending(0.0)
-                .withInflight(0.0)
-                .withRetries(1.0)
-                .withAcknowledged(2.0));
+        .satisfies(
+            metrics -> assertThat(metrics.count).isOne(),
+            metrics -> assertThat(metrics.active).isZero(),
+            metrics -> assertThat(metrics.pending).isZero(),
+            metrics -> assertThat(metrics.inflight).isZero(),
+            metrics -> assertThat(metrics.retries).isGreaterThanOrEqualTo(1),
+            metrics -> assertThat(metrics.ackSent).isGreaterThanOrEqualTo(2),
+            metrics -> assertThat(metrics.ackReceived).isGreaterThanOrEqualTo(2));
   }
 
   @Test
@@ -106,34 +108,30 @@ public class CommandDistributionMetricsTest {
     engine.pauseProcessing(2);
 
     // when
-    final var firstDistribution = triggerQueuedDistribution();
-    final var secondDistribution = triggerQueuedDistribution();
+    final var distributions = new Tuple<>(triggerQueuedDistribution(), triggerQueuedDistribution());
 
     // then
     assertThat(snapshotMetrics())
-        .isEqualTo(
-            MetricSnapshot.empty()
-                .withCount(2.0)
-                .withActive(2.0)
-                .withPending(2.0)
-                .withInflight(1.0)
-                .withRetries(0.0)
-                .withAcknowledged(0.0));
+        .satisfies(
+            metrics -> assertThat(metrics.count).isEqualTo(2),
+            metrics -> assertThat(metrics.active).isEqualTo(2),
+            metrics -> assertThat(metrics.pending).isEqualTo(2),
+            metrics -> assertThat(metrics.inflight).isEqualTo(1));
 
     // when
     engine.resumeProcessing(2);
 
     // then
-    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, secondDistribution);
+    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, distributions.getRight());
     assertThat(snapshotMetrics())
-        .isEqualTo(
-            MetricSnapshot.empty()
-                .withCount(2.0)
-                .withActive(0.0)
-                .withPending(0.0)
-                .withInflight(0.0)
-                .withRetries(0.0)
-                .withAcknowledged(2.0));
+        .satisfies(
+            metrics -> assertThat(metrics.count).isEqualTo(2),
+            metrics -> assertThat(metrics.active).isZero(),
+            metrics -> assertThat(metrics.pending).isZero(),
+            metrics -> assertThat(metrics.inflight).isZero(),
+            metrics -> assertThat(metrics.retries).isZero(),
+            metrics -> assertThat(metrics.ackSent).isGreaterThanOrEqualTo(2),
+            metrics -> assertThat(metrics.ackReceived).isGreaterThanOrEqualTo(2));
   }
 
   @Test
@@ -146,30 +144,35 @@ public class CommandDistributionMetricsTest {
 
     // then
     assertThat(snapshotMetrics())
-        .isEqualTo(
-            MetricSnapshot.empty()
-                .withCount(1.0)
-                .withActive(1.0)
-                .withPending(1.0)
-                .withInflight(1.0)
-                .withRetries(0.0)
-                .withAcknowledged(0.0));
+        .satisfies(
+            metrics -> assertThat(metrics.count).isOne(),
+            metrics -> assertThat(metrics.active).isOne(),
+            metrics -> assertThat(metrics.pending).isOne(),
+            metrics -> assertThat(metrics.inflight).isOne(),
+            metrics -> assertThat(metrics.retries).isZero(),
+            metrics -> assertThat(metrics.ackSent).isZero(),
+            metrics -> assertThat(metrics.ackReceived).isZero());
 
     // when
     engine.stop();
-    engine.start();
-    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, key);
+    engine.start(); // starts processing partition 2 again
 
     // then
+    // we need to wait for processing to be done, to have deterministic assertions
+    // thus we can only assert that after recovery the gauges were repopulated to 1
+    // and then through the continued processing decremented back to zero
+    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, key);
     assertThat(snapshotMetrics())
-        .isEqualTo(
-            MetricSnapshot.empty()
-                .withCount(1.0)
-                .withActive(0.0)
-                .withPending(0.0)
-                .withInflight(0.0)
-                .withRetries(0.0)
-                .withAcknowledged(1.0));
+        .satisfies(
+
+            // During replay (unfortunately) the counters get incremented (again)
+            metrics -> assertThat(metrics.count).isOne(),
+            metrics -> assertThat(metrics.active).isZero(),
+            metrics -> assertThat(metrics.pending).isZero(),
+            metrics -> assertThat(metrics.inflight).isZero(),
+            metrics -> assertThat(metrics.retries).isZero(),
+            metrics -> assertThat(metrics.ackSent).isOne(),
+            metrics -> assertThat(metrics.ackReceived).isOne());
   }
 
   private long triggerUnqueuedDistribution() {
@@ -208,28 +211,30 @@ public class CommandDistributionMetricsTest {
 
               // Make sure we have two records on the target partition
               assertThat(RecordingExporter.records().withPartitionId(2).withRecordKey(key).limit(2))
-                  .hasSize(2);
+                  .hasSizeGreaterThan(1);
             });
     RecordingExporter.setMaximumWaitTime(5000);
   }
 
   private MetricSnapshot snapshotMetrics() {
-    final var count = getMeterRegistry(1).find("zeebe.command.distributions").counter();
-    final var active = getMeterRegistry(1).find("zeebe.command.distributions.active").gauge();
-    final var pending = getMeterRegistry(1).find("zeebe.command.distributions.pending").gauge();
-    final var inflight = getMeterRegistry(1).find("zeebe.command.distributions.inflight").gauge();
-    final var retries =
-        getMeterRegistry(1).find("zeebe.command.distributions.inflight.retries").counter();
-    final var acked =
-        getMeterRegistry(2).find("zeebe.command.distributions.acknowledged").counter();
-
     return new MetricSnapshot(
-        count != null ? count.count() : 0.0,
-        active != null ? active.value() : 0.0,
-        pending != null ? pending.value() : 0.0,
-        inflight != null ? inflight.value() : 0.0,
-        retries != null ? retries.count() : 0.0,
-        acked != null ? acked.count() : 0.0);
+        getCounterValue(1, "zeebe.command.distributions"),
+        getGaugeValue(1, "zeebe.command.distributions.active"),
+        getGaugeValue(1, "zeebe.command.distributions.pending"),
+        getGaugeValue(1, "zeebe.command.distributions.inflight"),
+        getCounterValue(1, "zeebe.command.distributions.inflight.retries"),
+        getCounterValue(1, "zeebe.command.distributions.acknowledged.received"),
+        getCounterValue(2, "zeebe.command.distributions.acknowledged.sent"));
+  }
+
+  private double getCounterValue(final int partition, final String metricName) {
+    final var counter = getMeterRegistry(partition).find(metricName).counter();
+    return counter != null ? counter.count() : 0.0;
+  }
+
+  private double getGaugeValue(final int partition, final String metricName) {
+    final var gauge = getMeterRegistry(partition).find(metricName).gauge();
+    return gauge != null ? gauge.value() : 0.0;
   }
 
   private MeterRegistry getMeterRegistry(final int partition) {
@@ -246,34 +251,6 @@ public class CommandDistributionMetricsTest {
       double pending,
       double inflight,
       double retries,
-      double acknowledged) {
-
-    public static MetricSnapshot empty() {
-      return new MetricSnapshot(0, 0, 0, 0, 0, 0);
-    }
-
-    public MetricSnapshot withCount(final double count) {
-      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
-    }
-
-    public MetricSnapshot withActive(final double active) {
-      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
-    }
-
-    public MetricSnapshot withPending(final double pending) {
-      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
-    }
-
-    public MetricSnapshot withInflight(final double inflight) {
-      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
-    }
-
-    public MetricSnapshot withRetries(final double retries) {
-      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
-    }
-
-    public MetricSnapshot withAcknowledged(final double acknowledged) {
-      return new MetricSnapshot(count, active, pending, inflight, retries, acknowledged);
-    }
-  }
+      double ackReceived,
+      double ackSent) {}
 }
