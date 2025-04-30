@@ -89,7 +89,7 @@ class OperateProcessesPage {
         return;
       } catch {
         retryCount++;
-        console.warn(`Attempt ${retryCount} failed. Retrying...`);
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
         await this.page.reload();
       }
     }

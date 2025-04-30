@@ -58,7 +58,7 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'chromium-subset',
       use: devices['Desktop Chrome'],
       // Specify only tests in the changed folders for the 'chromium' project
       testMatch: changedFolders.includes('chromium')
@@ -67,36 +67,30 @@ export default defineConfig({
       testIgnore: 'task-panel.spec.ts',
     },
     {
-      name: 'firefox',
+      name: 'firefox-subset',
       use: devices['Desktop Firefox'],
-      testMatch: changedFolders.includes('firefox')
-        ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
-        : undefined,
       testIgnore: 'task-panel.spec.ts',
     },
     {
-      name: 'msedge',
+      name: 'msedge-subset',
       use: devices['Desktop Edge'],
-      testMatch: changedFolders.includes('msedge')
-        ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
-        : undefined,
       testIgnore: 'task-panel.spec.ts',
     },
     {
-      name: 'chromium-task-panel',
-      dependencies: ['chromium'],
+      name: 'chromium',
+      dependencies: ['chromium-subset'],
       testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Chrome'],
     },
     {
-      name: 'firefox-task-panel',
-      dependencies: ['firefox'],
+      name: 'firefox',
+      dependencies: ['firefox-subset'],
       testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Firefox'],
     },
     {
-      name: 'msedge-task-panel',
-      dependencies: ['msedge'],
+      name: 'msedge',
+      dependencies: ['msedge-subset'],
       testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Edge'],
     },
