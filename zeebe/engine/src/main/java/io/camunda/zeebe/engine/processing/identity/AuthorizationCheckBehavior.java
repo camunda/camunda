@@ -308,15 +308,12 @@ public final class AuthorizationCheckBehavior {
         getAuthorizedResourceIdentifiersForOwners(
             AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
     // Get resource identifiers for the user's groups
-    final var groupIds =
-        membershipState.getMemberships(
-            EntityType.USER, user.getUser().getUsername(), RelationType.GROUP);
-    final var groupAuthorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiersForOwners(
-            AuthorizationOwnerType.GROUP, groupIds, resourceType, permissionType);
+    final var groupsAuthorizedResourceIdentifiers =
+        getGroupsAuthorizedResourceIdentifiers(
+            EntityType.USER, user.getUsername(), resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
-        Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
+        Stream.concat(roleAuthorizedResourceIdentifiers, groupsAuthorizedResourceIdentifiers));
   }
 
   private Stream<String> getMappingsAuthorizedResourceIdentifiers(
@@ -325,8 +322,28 @@ public final class AuthorizationCheckBehavior {
         request, getPersistedMappings(request.getCommand()));
   }
 
-  // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
-  // https://github.com/camunda/camunda/issues/26981
+  private Stream<String> getGroupsAuthorizedResourceIdentifiers(
+      final EntityType entityType,
+      final String entityId,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    final var groupIds = membershipState.getMemberships(entityType, entityId, RelationType.GROUP);
+    final var groupAuthorizedResourceIdentifiers =
+        getAuthorizedResourceIdentifiersForOwners(
+            AuthorizationOwnerType.GROUP, groupIds, resourceType, permissionType);
+    // Get resource identifiers for the groups' roles
+    final var roleAuthorizedResourceIdentifiers =
+        groupIds.stream()
+            .flatMap(
+                groupId -> {
+                  final var roleIds =
+                      membershipState.getMemberships(EntityType.GROUP, groupId, RelationType.ROLE);
+                  return getAuthorizedResourceIdentifiersForOwners(
+                      AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
+                });
+    return Stream.concat(groupAuthorizedResourceIdentifiers, roleAuthorizedResourceIdentifiers);
+  }
+
   private Stream<String> getMappingsAuthorizedResourceIdentifiers(
       final AuthorizationRequest request, final List<PersistedMapping> persistedMappings) {
     return persistedMappings.stream()
@@ -338,10 +355,9 @@ public final class AuthorizationCheckBehavior {
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
-              getAuthorizedResourceIdentifiersForOwners(
-                      AuthorizationOwnerType.GROUP,
-                      membershipState.getMemberships(
-                          EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP),
+              getGroupsAuthorizedResourceIdentifiers(
+                      EntityType.MAPPING,
+                      mapping.getMappingId(),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
@@ -353,18 +369,6 @@ public final class AuthorizationCheckBehavior {
                       request.getPermissionType())
                   .forEach(stream);
             });
-  }
-
-  // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
-  // https://github.com/camunda/camunda/issues/26981
-  private Stream<String> getAuthorizedResourceIdentifiersForOwnerKeys(
-      final AuthorizationOwnerType ownerType,
-      final List<Long> ownerKeys,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    final var ownerIds = ownerKeys.stream().map(String::valueOf).toList();
-    return getAuthorizedResourceIdentifiersForOwners(
-        ownerType, ownerIds, resourceType, permissionType);
   }
 
   private Stream<String> getAuthorizedResourceIdentifiersForOwners(
