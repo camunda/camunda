@@ -101,7 +101,6 @@ public final class EngineErrorHandlingTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) ->
             TypedRecordProcessors.processors(keyGenerator, processingContext.getWriters())
                 .onCommand(
@@ -183,7 +182,6 @@ public final class EngineErrorHandlingTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
@@ -223,7 +221,6 @@ public final class EngineErrorHandlingTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
@@ -269,7 +266,6 @@ public final class EngineErrorHandlingTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
           processingState = processingContext.getProcessingState();
@@ -350,7 +346,6 @@ public final class EngineErrorHandlingTest {
     final CountDownLatch latch = new CountDownLatch(1);
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
@@ -394,7 +389,6 @@ public final class EngineErrorHandlingTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
 
@@ -490,7 +484,6 @@ public final class EngineErrorHandlingTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(

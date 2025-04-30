@@ -14,9 +14,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
@@ -32,6 +37,7 @@ import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -98,6 +104,7 @@ public final class TestStreams {
   private final InstantSource clock;
 
   private final CommandResponseWriter mockCommandResponseWriter;
+  private final Map<Integer, MeterRegistry> meterRegistryMap = new HashMap<>();
   private final Map<String, LogContext> logContextMap = new HashMap<>();
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
@@ -161,7 +168,7 @@ public final class TestStreams {
       final int partitionId,
       final LogStorage logStorage,
       final Consumer<TestLogStream> logStreamConsumer) {
-    final var meterRegistry = new SimpleMeterRegistry();
+    final var meterRegistry = getOrCreateMeterRegistry(partitionId);
     final var logStream =
         TestLogStream.builder()
             .withLogName(name)
@@ -221,16 +228,13 @@ public final class TestStreams {
   }
 
   public StreamProcessor startStreamProcessor(
-      final String log,
-      final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+      final String log, final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     return startStreamProcessor(
-        log, zeebeDbFactory, typedRecordProcessorFactory, Optional.empty(), cfg -> {}, true);
+        log, typedRecordProcessorFactory, Optional.empty(), cfg -> {}, true);
   }
 
   public StreamProcessor startStreamProcessor(
       final String log,
-      final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt,
       final Consumer<StreamProcessorBuilder> processorConfiguration,
@@ -238,7 +242,6 @@ public final class TestStreams {
     final TestLogStream stream = getLogStream(log);
     return buildStreamProcessor(
         stream,
-        zeebeDbFactory,
         processorConfiguration,
         typedRecordProcessorFactory,
         awaitOpening,
@@ -247,7 +250,6 @@ public final class TestStreams {
 
   public StreamProcessor buildStreamProcessor(
       final TestLogStream stream,
-      final ZeebeDbFactory zeebeDbFactory,
       final Consumer<StreamProcessorBuilder> processorConfiguration,
       final TypedRecordProcessorFactory factory,
       final boolean awaitOpening,
@@ -272,24 +274,19 @@ public final class TestStreams {
           return factory.createProcessors(ctx).withListener(recoveredAwaiter);
         };
 
+    final String logName = stream.getLogName();
+    final var zeebeDbFactory = createZeebeDbFactory(stream.getPartitionId());
     final ZeebeDb<?> zeebeDb;
     if (snapshotWasTaken) {
       zeebeDb = zeebeDbFactory.createDb(snapshot.toFile());
     } else {
       zeebeDb = zeebeDbFactory.createDb(storage.toFile());
     }
-    final String logName = stream.getLogName();
 
     final var streamProcessorListeners = new ArrayList<StreamProcessorListener>();
     streamProcessorListenerOpt.ifPresent(streamProcessorListeners::add);
 
-    final var meterRegistry = new SimpleMeterRegistry();
-    meterRegistry
-        .config()
-        .commonTags(
-            Tags.of(
-                PartitionKeyNames.PARTITION.asString(), String.valueOf(stream.getPartitionId())));
-
+    final var meterRegistry = getOrCreateMeterRegistry(stream.getPartitionId());
     final var builder =
         StreamProcessor.builder()
             .logStream(stream)
@@ -328,8 +325,7 @@ public final class TestStreams {
             storage,
             snapshot,
             streamClockRef.get(),
-            processingStateRef.get(),
-            meterRegistry);
+            processingStateRef.get());
     streamContextMap.put(logName, processorContext);
     closeables.manage(processorContext);
 
@@ -352,8 +348,21 @@ public final class TestStreams {
     LOG.info("Resume processing for stream {}", streamName);
   }
 
-  public MeterRegistry getMeterRegistry(final String streamName) {
-    return streamContextMap.get(streamName).meterRegistry;
+  public MeterRegistry getMeterRegistry(final int partitionId) {
+    return meterRegistryMap.get(partitionId);
+  }
+
+  private MeterRegistry getOrCreateMeterRegistry(final int partitionId) {
+    return meterRegistryMap.computeIfAbsent(partitionId, this::createMeterRegistry);
+  }
+
+  private MeterRegistry createMeterRegistry(final int partitionId) {
+    final var meterRegistry = new SimpleMeterRegistry();
+    meterRegistry
+        .config()
+        .commonTags(Tags.of(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId)));
+
+    return meterRegistry;
   }
 
   public void resetLog() {
@@ -522,7 +531,6 @@ public final class TestStreams {
     private final Path snapshotPath;
     private final StreamClock streamClock;
     private final MutableProcessingState processingState;
-    private final MeterRegistry meterRegistry;
     private boolean closed = false;
 
     private ProcessorContext(
@@ -531,15 +539,13 @@ public final class TestStreams {
         final Path runtimePath,
         final Path snapshotPath,
         final StreamClock streamClock,
-        final MutableProcessingState processingState,
-        final MeterRegistry meterRegistry) {
+        final MutableProcessingState processingState) {
       this.streamProcessor = streamProcessor;
       this.zeebeDb = zeebeDb;
       this.runtimePath = runtimePath;
       this.snapshotPath = snapshotPath;
       this.streamClock = streamClock;
       this.processingState = processingState;
-      this.meterRegistry = meterRegistry;
     }
 
     public static ProcessorContext createStreamContext(
@@ -548,16 +554,9 @@ public final class TestStreams {
         final Path runtimePath,
         final Path snapshotPath,
         final StreamClock streamClock,
-        final MutableProcessingState processingState,
-        final MeterRegistry meterRegistry) {
+        final MutableProcessingState processingState) {
       return new ProcessorContext(
-          streamProcessor,
-          zeebeDb,
-          runtimePath,
-          snapshotPath,
-          streamClock,
-          processingState,
-          meterRegistry);
+          streamProcessor, zeebeDb, runtimePath, snapshotPath, streamClock, processingState);
     }
 
     public void snapshot() {
@@ -578,5 +577,17 @@ public final class TestStreams {
       }
       closed = true;
     }
+  }
+
+  private ZeebeDbFactory<ZbColumnFamilies> createZeebeDbFactory(final int partitionId) {
+    // enable consistency checks for tests
+    final var consistencyChecks = new ConsistencyChecksSettings(true, true);
+    return new ZeebeRocksDbFactory<>(
+        new RocksDbConfiguration(),
+        consistencyChecks,
+        new AccessMetricsConfiguration(Kind.NONE, partitionId),
+        () ->
+            MicrometerUtil.wrap(
+                getOrCreateMeterRegistry(partitionId), PartitionKeyNames.tags(partitionId)));
   }
 }

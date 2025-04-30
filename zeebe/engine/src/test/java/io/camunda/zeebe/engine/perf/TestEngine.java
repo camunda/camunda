@@ -61,11 +61,7 @@ public final class TestEngine {
                 StreamProcessingComposite.getLogName(partitionId), partitionId));
 
     streamProcessingComposite =
-        new StreamProcessingComposite(
-            testStreams,
-            partitionId,
-            DefaultZeebeDbFactory.defaultFactory(),
-            testContext.actorScheduler());
+        new StreamProcessingComposite(testStreams, partitionId, testContext.actorScheduler());
 
     final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
     final var featureFlags = FeatureFlags.createDefaultForTests();
