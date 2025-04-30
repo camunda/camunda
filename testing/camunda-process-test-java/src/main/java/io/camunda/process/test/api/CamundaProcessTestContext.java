@@ -108,21 +108,84 @@ public interface CamundaProcessTestContext {
    */
   JobWorkerMock mockJobWorker(final String jobType);
 
+  /**
+   * Mocks a child process with the specified ID.
+   *
+   * @param childProcessId the ID of the child process to mock
+   */
+  void mockChildProcess(final String childProcessId);
+
+  /**
+   * Mocks a child process with the specified ID and sets the provided variables.
+   *
+   * @param childProcessId the ID of the child process to mock
+   * @param variables a map of variables to set for the mocked child process
+   */
+  void mockChildProcess(final String childProcessId, final Map<String, Object> variables);
+
+  /**
+   * Completes a job of the specified type.
+   *
+   * @param jobType the type of the job to complete, matching the `zeebeJobType` in the BPMN model
+   */
   void completeJob(final String jobType);
 
+  /**
+   * Completes a job of the specified type and sets the provided variables.
+   *
+   * @param jobType the type of the job to complete, matching the `zeebeJobType` in the BPMN model
+   * @param variables a map of variables to set when completing the job
+   */
   void completeJob(final String jobType, final Map<String, Object> variables);
 
+  /**
+   * Throws a BPMN error from a job of the specified type.
+   *
+   * @param jobType the type of the job to throw the error from, matching the `zeebeJobType` in the
+   *     BPMN model
+   * @param errorCode the error code to throw
+   */
   void throwBpmnErrorFromJob(final String jobType, final String errorCode);
 
+  /**
+   * Throws a BPMN error from a job of the specified type and sets the provided variables.
+   *
+   * @param jobType the type of the job to throw the error from, matching the `zeebeJobType` in the
+   *     BPMN model
+   * @param errorCode the error code to throw
+   * @param variables a map of variables to set when throwing the error
+   */
   void throwBpmnErrorFromJob(
       final String jobType, final String errorCode, final Map<String, Object> variables);
 
+  /**
+   * Completes a user task with the specified task name.
+   *
+   * @param taskName the name of the user task to complete
+   */
   void completeUserTask(final String taskName);
 
+  /**
+   * Completes a user task with the specified task name and sets the provided variables.
+   *
+   * @param taskName the name of the user task to complete
+   * @param variables a map of variables to set when completing the user task
+   */
   void completeUserTask(final String taskName, final Map<String, Object> variables);
 
+  /**
+   * Completes a user task that matches the specified selector.
+   *
+   * @param userTaskSelector the selector to identify the user task to complete
+   */
   void completeUserTask(final UserTaskSelector userTaskSelector);
 
+  /**
+   * Completes a user task that matches the specified selector and sets the provided variables.
+   *
+   * @param userTaskSelector the selector to identify the user task to complete
+   * @param variables a map of variables to set when completing the user task
+   */
   void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables);
 }

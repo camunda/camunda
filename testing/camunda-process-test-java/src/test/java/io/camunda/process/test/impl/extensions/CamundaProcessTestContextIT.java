@@ -338,6 +338,44 @@ public class CamundaProcessTestContextIT {
   }
 
   @Test
+  void shouldMockChildProcess() {
+    // Given
+    final long subprocessDefinitionKey = deployProcessModel(childProcessModel());
+    final long processDefinitionKey = deployProcessModel(processModelWithChildProcess());
+
+    // When
+    processTestContext.mockChildProcess("child-process-1");
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+  }
+
+  @Test
+  void shouldMockChildProcessWithVariables() {
+    // Given
+    final long subprocessDefinitionKey = deployProcessModel(childProcessModel());
+    final long processDefinitionKey = deployProcessModel(processModelWithChildProcess());
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("abc", 123);
+    final Map<String, Object> mapValue = new HashMap<>();
+    mapValue.put("def", 4554534);
+    variables.put("mapKey", mapValue);
+
+    // When
+    processTestContext.mockChildProcess("child-process-1", variables);
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then
+    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
+    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
   void shouldFindUserTaskByElementId() {
     // Given
     final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
@@ -410,6 +448,24 @@ public class CamundaProcessTestContextIT {
             .send()
             .join();
     return deploymentEvent.getProcesses().stream().findFirst().get().getProcessDefinitionKey();
+  }
+
+  private BpmnModelInstance processModelWithChildProcess() {
+    return Bpmn.createExecutableProcess("test-process")
+        .startEvent()
+        .callActivity()
+        .zeebeProcessId("child-process-1")
+        .endEvent("success-end")
+        .done();
+  }
+
+  private BpmnModelInstance childProcessModel() {
+    return Bpmn.createExecutableProcess("child-process-1")
+        .startEvent()
+        .serviceTask("child-service-task")
+        .zeebeJobType("child-job")
+        .endEvent("child-end")
+        .done();
   }
 
   private BpmnModelInstance processModelWithServiceTask() {

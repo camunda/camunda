@@ -88,13 +88,12 @@
       <artifactId>commons-lang3</artifactId>
     </dependency>
 
-    <!--  test scope  -->
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <scope>test</scope>
     </dependency>
+
+    <!--  test scope  -->
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
