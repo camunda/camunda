@@ -11,7 +11,6 @@ import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstance
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -28,13 +27,11 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
   @Autowired private ModifyProcessInstanceHandler modifyProcessInstanceHandler;
 
-  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
-
   @Override
   @Before
   public void before() {
     super.before();
-    modifyProcessInstanceHandler.setCamundaClient(super.getClient());
+    modifyProcessInstanceHandler.setOperateAdapter(operateServicesAdapter);
     mockMvc = mockMvcTestRule.getMockMvc();
     tester.deployProcess("demoProcess_v_2.bpmn").waitUntil().processIsDeployed();
   }
