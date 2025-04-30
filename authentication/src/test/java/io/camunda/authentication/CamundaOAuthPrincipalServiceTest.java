@@ -23,8 +23,6 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,10 +32,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class CamundaOAuthPrincipalServiceTest {
-  private static final String REGISTRATION_ID = "test";
-  private static final String TOKEN_VALUE = "{}";
-  private static final Instant TOKEN_ISSUED_AT = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-  private static final Instant TOKEN_EXPIRES_AT = TOKEN_ISSUED_AT.plus(1, ChronoUnit.DAYS);
 
   private CamundaOAuthPrincipalService camundaOAuthPrincipalService;
 
