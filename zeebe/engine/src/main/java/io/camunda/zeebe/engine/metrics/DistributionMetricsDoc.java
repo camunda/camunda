@@ -11,7 +11,6 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
-import org.jetbrains.annotations.NotNull;
 
 public enum DistributionMetricsDoc implements ExtendedMeterDocumentation {
   COMMAND_DISTRIBUTIONS {
@@ -21,7 +20,7 @@ public enum DistributionMetricsDoc implements ExtendedMeterDocumentation {
     }
 
     @Override
-    public @NotNull String getName() {
+    public String getName() {
       return "zeebe.command.distributions";
     }
 
