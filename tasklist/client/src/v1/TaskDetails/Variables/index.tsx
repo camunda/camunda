@@ -22,17 +22,17 @@ import {
   TaskDetailsContainer,
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
-import {Separator} from './Separator';
+import {Separator} from 'common/tasks/variables-editor/Separator';
 import {useAllVariables} from 'v1/api/useAllVariables.query';
 import {useTranslation} from 'react-i18next';
 import {FailedVariableFetchError} from 'common/tasks/details/FailedVariableFetchError';
 import {CompleteTaskButton} from 'common/tasks/details/CompleteTaskButton';
-import {createVariableFieldName} from './createVariableFieldName';
-import {getVariableFieldName} from './getVariableFieldName';
-import {VariableEditor} from './VariableEditor';
-import {IconButton} from './IconButton';
-import {ResetForm} from './ResetForm';
-import type {FormValues} from './types';
+import {createVariableFieldName} from 'common/tasks/variables-editor/createVariableFieldName';
+import {getVariableFieldName} from 'common/tasks/variables-editor/getVariableFieldName';
+import {VariableEditor} from 'v1/TaskDetails/Variables/VariableEditor';
+import {IconButton} from 'common/tasks/variables-editor/IconButton';
+import {ResetForm} from 'common/tasks/variables-editor/ResetForm';
+import type {FormValues} from 'common/tasks/variables-editor/types';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {completionErrorMap} from 'v1/api/useCompleteTask.mutation';
@@ -40,7 +40,7 @@ import {completionErrorMap} from 'v1/api/useCompleteTask.mutation';
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
     import('common/loadMonaco'),
-    import('./JSONEditorModal'),
+    import('common/tasks/variables-editor/JSONEditorModal'),
   ]);
 
   loadMonaco();
