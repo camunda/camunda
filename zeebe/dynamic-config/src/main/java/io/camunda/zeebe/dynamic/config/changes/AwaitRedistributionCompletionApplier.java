@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.ClusterOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -72,25 +73,25 @@ public class AwaitRedistributionCompletionApplier implements ClusterOperationApp
   }
 
   private ClusterConfiguration updateRequestHandling(final ClusterConfiguration config) {
-    return config
-        .routingState()
-        .map(
-            routingState ->
-                switch (routingState.requestHandling()) {
-                  case final ActivePartitions activePartitions -> {
-                    final var requestHandling =
-                        activePartitions.activatePartitions(operation.redistributedPartitions());
-                    yield new ClusterConfiguration(
-                        config.version(),
-                        config.members(),
-                        config.lastChange(),
-                        config.pendingChanges(),
-                        Optional.of(routingState.updateRequestHandling(requestHandling)));
-                  }
+    final var routingState =
+        config
+            .routingState()
+            .map(state -> state.withRequestHandling(this::updateRequestHandling))
+            .orElseThrow(() -> new IllegalStateException("Missing routingState"));
+    return new ClusterConfiguration(
+        config.version(),
+        config.members(),
+        config.lastChange(),
+        config.pendingChanges(),
+        Optional.of(routingState));
+  }
 
-                  case final AllPartitions ignored ->
-                      throw new IllegalStateException("Cannot be AllPartitions");
-                })
-        .orElseThrow(() -> new IllegalStateException("Missing routingState"));
+  private RequestHandling updateRequestHandling(final RequestHandling requestHandling) {
+    return switch (requestHandling) {
+      case final ActivePartitions activePartitions ->
+          activePartitions.activatePartitions(operation.redistributedPartitions());
+      case final AllPartitions ignored ->
+          throw new IllegalStateException("Cannot be AllPartitions");
+    };
   }
 }

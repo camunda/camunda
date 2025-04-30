@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -33,8 +34,8 @@ public record RoutingState(
     }
   }
 
-  public RoutingState updateRequestHandling(final RequestHandling requestHandling) {
-    return new RoutingState(version + 1, requestHandling, messageCorrelation);
+  public RoutingState withRequestHandling(final UnaryOperator<RequestHandling> update) {
+    return new RoutingState(version + 1, update.apply(requestHandling), messageCorrelation);
   }
 
   public RoutingState merge(final RoutingState other) {
