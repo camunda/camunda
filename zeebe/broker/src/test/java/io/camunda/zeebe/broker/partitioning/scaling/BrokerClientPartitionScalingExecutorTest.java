@@ -21,7 +21,6 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,11 +45,11 @@ public class BrokerClientPartitionScalingExecutorTest {
     final var scaleRecord = new ScaleRecord().setDesiredPartitionCount(2);
     final var future = awaitRedistributionWith(scaleRecord);
 
-    Awaitility.await("Until future completes exceptionally")
-        .untilAsserted(
-            () -> {
-              assertThat(future).isCompletedExceptionally();
-            });
+    assertThat(future)
+        .completesExceptionallyWithin(Duration.ZERO)
+        .withThrowableThat()
+        .withMessageContaining(
+            "expected to await redistribution completion for partition count 5, but got 2");
   }
 
   @Test
@@ -60,11 +59,11 @@ public class BrokerClientPartitionScalingExecutorTest {
     final var future = awaitRedistributionWith(scaleRecord);
 
     // then
-    Awaitility.await("Until future completes exceptionally")
-        .untilAsserted(
-            () -> {
-              assertThat(future).isCompletedExceptionally();
-            });
+    assertThat(future)
+        .completesExceptionallyWithin(Duration.ZERO)
+        .withThrowableThat()
+        .withMessageContaining(
+            "Redistribution not completed yet: waiting for these partitions: [5]");
   }
 
   @Test
@@ -73,14 +72,9 @@ public class BrokerClientPartitionScalingExecutorTest {
         new ScaleRecord()
             .setDesiredPartitionCount(5)
             .setRedistributedPartitionsProperty(Set.of(4, 5));
-    final var future = awaitRedistributionWith(scaleRecord);
-    // then
 
-    Awaitility.await("Until future completes")
-        .untilAsserted(
-            () -> {
-              assertThat(future).isCompleted();
-            });
+    // then
+    assertThat(awaitRedistributionWith(scaleRecord)).isCompleted();
   }
 
   @SuppressWarnings("unchecked")

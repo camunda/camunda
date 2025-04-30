@@ -71,7 +71,7 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
             result.complete(null);
           } else {
             final var missingPartitions = new TreeSet<>(redistributedPartitions);
-            missingPartitions.removeAll(redistributedPartitions);
+            missingPartitions.removeAll(currentlyRedistributedPartitions);
             result.completeExceptionally(
                 new RuntimeException(
                     "Redistribution not completed yet: waiting for these partitions: %s"
