@@ -16,7 +16,6 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -39,7 +38,6 @@ public class RoleTest {
   }
 
   @Test
-  @Ignore("Re-enable in https://github.com/camunda/camunda/issues/30109")
   public void shouldNotDuplicate() {
     // given
     final var id = UUID.randomUUID().toString();
