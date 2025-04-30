@@ -33,14 +33,8 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class CamundaOAuthPrincipalService {
-  static final String USERNAME_CLAIM_NOT_FOUND =
-      "Configured username claim %s not found in claims. Please check your OIDC configuration.";
-  static final String USERNAME_CLAIM_NOT_STRING =
-      "Configured username claim %s is not a string. Please check your OIDC configuration.";
-  static final String APPLICATION_ID_CLAIM_NOT_FOUND =
-      "Configured applicationId claim %s not found in claims. Please check your OIDC configuration.";
-  static final String APPLICATION_ID_CLAIM_NOT_STRING =
-      "Configured applicationId claim %s is not a string. Please check your OIDC configuration.";
+  static final String CLAIM_NOT_STRING =
+      "Configured claim for %s (%s) is not a string. Please check your OIDC configuration.";
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalService.class);
 
@@ -98,9 +92,19 @@ public class CamundaOAuthPrincipalService {
                     .toList())
             .withRoles(assignedRoles);
 
-    if (usernameClaim != null) {
+    final var username = getUsernameFromClaims(claims);
+    final var applicationId = getApplicationIdFromClaims(claims);
+
+    if (username == null && applicationId == null) {
+      throw new IllegalArgumentException(
+          "Neither username claim (%s) nor applicationId claim (%s) could be found in the claims. Please check your OIDC configuration."
+              .formatted(usernameClaim, applicationIdClaim));
+    }
+    if (username != null) {
       authContextBuilder.withUsername(getUsernameFromClaims(claims));
-    } else if (applicationIdClaim != null) {
+    }
+
+    if (applicationId != null) {
       authContextBuilder.withApplicationId(getApplicationIdFromClaims(claims));
     }
 
@@ -111,13 +115,13 @@ public class CamundaOAuthPrincipalService {
     final var maybeUsername = Optional.ofNullable(claims.get(usernameClaim));
 
     if (maybeUsername.isEmpty()) {
-      throw new IllegalArgumentException(USERNAME_CLAIM_NOT_FOUND.formatted(usernameClaim));
+      return null;
     }
 
     if (maybeUsername.get() instanceof final String username) {
       return username;
     } else {
-      throw new IllegalArgumentException(USERNAME_CLAIM_NOT_STRING.formatted(usernameClaim));
+      throw new IllegalArgumentException(CLAIM_NOT_STRING.formatted("username", usernameClaim));
     }
   }
 
@@ -125,15 +129,14 @@ public class CamundaOAuthPrincipalService {
     final var maybeApplicationId = Optional.ofNullable(claims.get(applicationIdClaim));
 
     if (maybeApplicationId.isEmpty()) {
-      throw new IllegalArgumentException(
-          APPLICATION_ID_CLAIM_NOT_FOUND.formatted(applicationIdClaim));
+      return null;
     }
 
     if (maybeApplicationId.get() instanceof final String applicationId) {
       return applicationId;
     } else {
       throw new IllegalArgumentException(
-          APPLICATION_ID_CLAIM_NOT_STRING.formatted(applicationIdClaim));
+          CLAIM_NOT_STRING.formatted("application", applicationIdClaim));
     }
   }
 }
