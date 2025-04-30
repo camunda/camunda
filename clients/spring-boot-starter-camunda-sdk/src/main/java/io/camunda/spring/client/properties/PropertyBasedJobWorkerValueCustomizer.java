@@ -126,84 +126,89 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     return field.getName();
   }
 
-  private void applyOverrides(final JobWorkerValue zeebeWorker) {
+  private void applyOverrides(final JobWorkerValue editedJobWorkerValue) {
     final JobWorkerValue defaults = camundaClientProperties.getWorker().getDefaults();
     try {
       if (defaults != null) {
-        COPY_WITH_PROTECTION_BEAN_UTILS_BEAN.copyProperties(zeebeWorker, defaults);
+        COPY_WITH_PROTECTION_BEAN_UTILS_BEAN.copyProperties(editedJobWorkerValue, defaults);
       }
     } catch (final IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(
-          "Error while copying properties from " + defaults + " to " + zeebeWorker, e);
+          "Error while copying properties from " + defaults + " to " + editedJobWorkerValue, e);
     }
     final Map<String, JobWorkerValue> workerConfigurationMap = new HashMap<>();
     if (camundaClientProperties.getWorker().getOverride() != null) {
       workerConfigurationMap.putAll(camundaClientProperties.getWorker().getOverride());
     }
-    final String workerType = zeebeWorker.getType();
+    final String workerType = editedJobWorkerValue.getType();
     if (workerConfigurationMap.containsKey(workerType)) {
       final JobWorkerValue jobWorkerValue = workerConfigurationMap.get(workerType);
       LOG.debug("Worker '{}': Applying overrides {}", workerType, jobWorkerValue);
       try {
-        COPY_NOT_NULL_BEAN_UTILS_BEAN.copyProperties(zeebeWorker, jobWorkerValue);
+        COPY_NOT_NULL_BEAN_UTILS_BEAN.copyProperties(editedJobWorkerValue, jobWorkerValue);
       } catch (final IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException(
-            "Error while copying properties from " + jobWorkerValue + " to " + zeebeWorker, e);
+            "Error while copying properties from " + jobWorkerValue + " to " + editedJobWorkerValue,
+            e);
       }
     }
   }
 
-  private void applyDefaultWorkerName(final JobWorkerValue zeebeWorker) {
+  private void applyDefaultWorkerName(final JobWorkerValue jobWorkerValue) {
     final String defaultJobWorkerName = camundaClientProperties.getWorker().getDefaults().getName();
-    if (isBlank(zeebeWorker.getName())) {
+    if (isBlank(jobWorkerValue.getName())) {
       if (isNotBlank(defaultJobWorkerName)) {
         LOG.debug(
-            "Worker '{}': Setting name to default {}", zeebeWorker.getName(), defaultJobWorkerName);
-        zeebeWorker.setName(defaultJobWorkerName);
+            "Worker '{}': Setting name to default {}",
+            jobWorkerValue.getName(),
+            defaultJobWorkerName);
+        jobWorkerValue.setName(defaultJobWorkerName);
       } else {
         final String generatedJobWorkerName =
-            zeebeWorker.getMethodInfo().getBeanName()
+            jobWorkerValue.getMethodInfo().getBeanName()
                 + "#"
-                + zeebeWorker.getMethodInfo().getMethodName();
+                + jobWorkerValue.getMethodInfo().getMethodName();
         LOG.debug(
             "Worker '{}': Setting name to generated {}",
-            zeebeWorker.getName(),
+            jobWorkerValue.getName(),
             generatedJobWorkerName);
-        zeebeWorker.setName(generatedJobWorkerName);
+        jobWorkerValue.setName(generatedJobWorkerName);
       }
     }
   }
 
-  private void applyDefaultJobWorkerType(final JobWorkerValue zeebeWorker) {
+  private void applyDefaultJobWorkerType(final JobWorkerValue jobWorkerValue) {
     final String defaultJobWorkerType = camundaClientProperties.getWorker().getDefaults().getType();
-    if (isBlank(zeebeWorker.getType())) {
+    if (isBlank(jobWorkerValue.getType())) {
       if (isNotBlank(defaultJobWorkerType)) {
         LOG.debug(
-            "Worker '{}': Setting type to default {}", zeebeWorker.getName(), defaultJobWorkerType);
-        zeebeWorker.setType(defaultJobWorkerType);
+            "Worker '{}': Setting type to default {}",
+            jobWorkerValue.getName(),
+            defaultJobWorkerType);
+        jobWorkerValue.setType(defaultJobWorkerType);
       } else {
-        final String generatedJobWorkerType = zeebeWorker.getMethodInfo().getMethodName();
+        final String generatedJobWorkerType = jobWorkerValue.getMethodInfo().getMethodName();
         LOG.debug(
             "Worker '{}': Setting type to generated {}",
-            zeebeWorker.getName(),
+            jobWorkerValue.getName(),
             generatedJobWorkerType);
-        zeebeWorker.setType(generatedJobWorkerType);
+        jobWorkerValue.setType(generatedJobWorkerType);
       }
     }
   }
 
-  private void applyDefaultJobWorkerTenantIds(final JobWorkerValue zeebeWorker) {
+  private void applyDefaultJobWorkerTenantIds(final JobWorkerValue jobWorkerValue) {
     final Set<String> defaultJobWorkerTenantIds =
         new HashSet<>(
             ofNullable(camundaClientProperties.getWorker().getDefaults().getTenantIds())
                 .orElse(Collections.emptyList()));
-    if (zeebeWorker.getTenantIds() == null || zeebeWorker.getTenantIds().isEmpty()) {
+    if (jobWorkerValue.getTenantIds() == null || jobWorkerValue.getTenantIds().isEmpty()) {
       if (!defaultJobWorkerTenantIds.isEmpty()) {
         LOG.debug(
             "Worker '{}': Setting tenantIds to default {}",
-            zeebeWorker.getTenantIds(),
+            jobWorkerValue.getTenantIds(),
             defaultJobWorkerTenantIds);
-        zeebeWorker.setTenantIds(new ArrayList<>(defaultJobWorkerTenantIds));
+        jobWorkerValue.setTenantIds(new ArrayList<>(defaultJobWorkerTenantIds));
       }
     }
   }

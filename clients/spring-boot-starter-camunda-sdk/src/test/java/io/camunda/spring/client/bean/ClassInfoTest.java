@@ -35,24 +35,24 @@ public class ClassInfoTest {
   }
 
   @Test
-  public void hasZeebeeDeploymentAnnotation() {
+  public void hasDeploymentAnnotation() {
     assertThat(beanInfo(new WithDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
         .isTrue();
   }
 
   @Test
-  public void hasNoZeebeeDeploymentAnnotation() {
+  public void hasNoDeploymentAnnotation() {
     assertThat(beanInfo(new WithoutDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
         .isFalse();
   }
 
   @Test
-  public void hasZeebeWorkerMethod() {
-    assertThat(beanInfo(new WithZeebeWorker()).hasMethodAnnotation(JobWorker.class)).isTrue();
+  public void hasJobWorkerMethod() {
+    assertThat(beanInfo(new WithJobWorker()).hasMethodAnnotation(JobWorker.class)).isTrue();
   }
 
   @Test
-  public void hasNotZeebeWorkerMethod() {
+  public void hasNotJobWorkerMethod() {
     assertThat(beanInfo("normal String").hasMethodAnnotation(JobWorker.class)).isFalse();
   }
 
@@ -68,13 +68,13 @@ public class ClassInfoTest {
 
   public static class WithoutDeploymentAnnotation {}
 
-  public static class WithZeebeWorker {
+  public static class WithJobWorker {
 
     @JobWorker(type = "bar", timeout = 100L, name = "kermit", autoComplete = false)
     public void handle() {}
   }
 
-  public static class WithZeebeWorkerAllValues {
+  public static class WithJobWorkerAllValues {
 
     @JobWorker(
         type = "bar",
