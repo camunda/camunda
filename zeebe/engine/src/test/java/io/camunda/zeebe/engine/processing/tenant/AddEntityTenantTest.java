@@ -198,7 +198,7 @@ public class AddEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add entity to tenant with id '%s', but no tenant with this id exists."
+            "Expected to add entity to tenant with ID '%s', but no tenant with this ID exists."
                 .formatted(nonExistingTenantId));
   }
 
