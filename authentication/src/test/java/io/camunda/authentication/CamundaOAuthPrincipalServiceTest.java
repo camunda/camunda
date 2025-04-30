@@ -86,7 +86,7 @@ public class CamundaOAuthPrincipalServiceTest {
     final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1");
     when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2")))
         .thenReturn(List.of(roleR1));
-    when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "8")))
+    when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "roleR1")))
         .thenReturn(List.of("*"));
 
     // when
@@ -122,7 +122,7 @@ public class CamundaOAuthPrincipalServiceTest {
     final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1");
     when(roleServices.getRolesByMemberIds(Set.of("map-1", "map-2"))).thenReturn(List.of(roleR1));
 
-    when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "10")))
+    when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "roleR1")))
         .thenReturn(List.of("app-1", "app-2"));
 
     // when
