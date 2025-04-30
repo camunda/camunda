@@ -112,6 +112,16 @@ public class TenantController {
             userQuery -> searchUsersInTenant(tenantId, userQuery));
   }
 
+  @CamundaPutMapping(path = "/{tenantId}/applications/{applicationId}")
+  public CompletableFuture<ResponseEntity<Object>> assignApplicationToTenant(
+      @PathVariable final String tenantId, @PathVariable final String applicationId) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(tenantId, EntityType.APPLICATION, applicationId));
+  }
+
   @CamundaPutMapping(path = "/{tenantId}/mappings/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
@@ -150,6 +160,16 @@ public class TenantController {
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .removeMember(tenantId, EntityType.USER, username));
+  }
+
+  @CamundaDeleteMapping(path = "/{tenantId}/applications/{applicationId}")
+  public CompletableFuture<ResponseEntity<Object>> removeApplicationFromTenant(
+      @PathVariable final String tenantId, @PathVariable final String applicationId) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(tenantId, EntityType.APPLICATION, applicationId));
   }
 
   @CamundaPostMapping(path = "/{tenantId}/mappings/search")
