@@ -9,26 +9,26 @@ package io.camunda.operate.webapp.zeebe.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.SetVariablesCommandStep1;
-import io.camunda.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
-import io.camunda.client.api.response.SetVariablesResponse;
-import io.camunda.client.impl.CamundaClientFutureImpl;
+import io.camunda.client.api.command.ClientException;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.OperationExecutorProperties;
 import io.camunda.operate.webapp.elasticsearch.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,15 +42,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class UpdateVariableHandlerTest {
 
-  @Mock private CamundaClient camundaClient;
+  @Mock private OperateServicesAdapter operateServicesAdapter;
   @Mock private BatchOperationWriter batchOperationWriter;
 
   @Mock(strictness = Strictness.LENIENT)
   private OperateProperties operateProperties;
 
   @Mock private Metrics metrics;
-  @Mock private SetVariablesCommandStep1 setVariablesCommandStep1;
-  @Mock private SetVariablesCommandStep2 setVariablesCommandStep2;
 
   @InjectMocks private UpdateVariableHandler handler;
 
@@ -59,7 +57,6 @@ public class UpdateVariableHandlerTest {
   private final Long variableDocumentKey = 995L;
   private final String variableName = "x";
   private final String variableValue = "1";
-  private final String variablesDocumentJson = "{\"%s\":%s}".formatted(variableName, variableValue);
   private final String workerId = "testWorker";
 
   @BeforeEach
@@ -73,11 +70,9 @@ public class UpdateVariableHandlerTest {
   void shouldSendSetVariablesCommandSuccessfully() throws Exception {
     // given
     final var operation = createLockedOperation();
-
-    final var setVariablesRespFuture = new CamundaClientFutureImpl<SetVariablesResponse, Void>();
-    setVariablesRespFuture.complete(() -> variableDocumentKey);
-    when(setVariablesCommandStep2.send()).thenReturn(setVariablesRespFuture);
-    mockSetVariablesCommand(setVariablesRespFuture);
+    doReturn(variableDocumentKey)
+        .when(operateServicesAdapter)
+        .setVariables(scopeKey, Map.of(variableName, variableValue), true, operationId);
 
     // when
     handler.handle(operation);
@@ -105,11 +100,14 @@ public class UpdateVariableHandlerTest {
   void shouldRetryOnRetriableGrpcStatus(final Code retriableStatusCode) throws Exception {
     // given
     final var operation = createLockedOperation();
-
-    final var statusException =
-        new StatusRuntimeException(
-            Status.fromCode(retriableStatusCode).withDescription("Will be retried"));
-    mockSetVariablesCommand(failedFuture(statusException));
+    // simulate a retriable gRPC status code wrapped in a client exception
+    final var clientException =
+        new ClientException(
+            new StatusRuntimeException(
+                Status.fromCode(retriableStatusCode).withDescription("Will be retried")));
+    doThrow(clientException)
+        .when(operateServicesAdapter)
+        .setVariables(scopeKey, Map.of(variableName, variableValue), true, operationId);
 
     // when
     handler.handle(operation);
@@ -129,7 +127,9 @@ public class UpdateVariableHandlerTest {
     final var statusException =
         new StatusRuntimeException(
             Status.fromCode(Code.FAILED_PRECONDITION).withDescription("Update was denied"));
-    mockSetVariablesCommand(failedFuture(statusException));
+    doThrow(statusException)
+        .when(operateServicesAdapter)
+        .setVariables(scopeKey, Map.of(variableName, variableValue), true, operationId);
 
     // when
     handler.handle(operation);
@@ -165,26 +165,5 @@ public class UpdateVariableHandlerTest {
         .setScopeKey(scopeKey)
         .setState(OperationState.LOCKED)
         .setLockOwner(workerId);
-  }
-
-  /**
-   * Mocks the full {@link CamundaClient#newSetVariablesCommand(long)} command pipeline up to the
-   * {@code .send()} invocation, returning the specified future (success or failure).
-   */
-  private void mockSetVariablesCommand(
-      final CamundaClientFutureImpl<SetVariablesResponse, Void> expectedSetVariablesFuture) {
-    when(camundaClient.newSetVariablesCommand(scopeKey)).thenReturn(setVariablesCommandStep1);
-    when(setVariablesCommandStep1.variables(variablesDocumentJson))
-        .thenReturn(setVariablesCommandStep2);
-    when(setVariablesCommandStep2.local(true)).thenReturn(setVariablesCommandStep2);
-    when(setVariablesCommandStep2.operationReference(Long.parseLong(operationId)))
-        .thenReturn(setVariablesCommandStep2);
-    when(setVariablesCommandStep2.send()).thenReturn(expectedSetVariablesFuture);
-  }
-
-  private <T, Z> CamundaClientFutureImpl<T, Z> failedFuture(Throwable throwable) {
-    final var future = new CamundaClientFutureImpl<T, Z>();
-    future.completeExceptionally(throwable);
-    return future;
   }
 }
