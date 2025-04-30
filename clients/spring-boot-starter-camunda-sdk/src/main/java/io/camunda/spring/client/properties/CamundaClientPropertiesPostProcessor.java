@@ -166,8 +166,12 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
           // saas is set, but another auth method than oidc is set
           log.warn(
               String.format(
-                  "'%s' is '%s', but '%s' is manually set to '%s', will be ignored",
-                  CAMUNDA_CLIENT_MODE, clientMode, CAMUNDA_CLIENT_AUTH_METHOD, authMethod));
+                  "'%s' is '%s', but '%s' is manually set to '%s', will be ignored and the application will fall back to use '%s'",
+                  CAMUNDA_CLIENT_MODE,
+                  clientMode,
+                  CAMUNDA_CLIENT_AUTH_METHOD,
+                  authMethod,
+                  AuthMethod.oidc));
           addMapPropertySourceFirst(
               CAMUNDA_CLIENT_MODE,
               Map.of(CAMUNDA_CLIENT_AUTH_METHOD, AuthMethod.oidc),
