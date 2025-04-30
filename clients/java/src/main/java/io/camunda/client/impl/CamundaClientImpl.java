@@ -24,6 +24,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
@@ -111,6 +112,7 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubprocessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
+import io.camunda.client.impl.command.AssignMappingToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.client.impl.command.AssignUserToGroupCommandImpl;
@@ -975,6 +977,11 @@ public final class CamundaClientImpl implements CamundaClient {
   public BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(
       final Long batchOperationKey) {
     return new BatchOperationItemsGetRequestImpl(httpClient, batchOperationKey);
+  }
+
+  @Override
+  public AssignMappingToGroupStep1 newAssignMappingToGroupCommand(final String groupId) {
+    return new AssignMappingToGroupCommandImpl(httpClient, groupId);
   }
 
   private JobClient newJobClient() {
