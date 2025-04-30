@@ -138,7 +138,8 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
-      case USER -> true; // With simple mappings, any username can be assigned
+      case USER, APPLICATION ->
+          true; // With simple mappings, any username or application id can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
       default -> false;
     };

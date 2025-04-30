@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -35,7 +34,6 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group.";
 
   private final GroupState groupState;
-  private final UserState userState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -55,7 +53,6 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
     groupState = processingState.getGroupState();
-    userState = processingState.getUserState();
     membershipState = processingState.getMembershipState();
     mappingState = processingState.getMappingState();
     stateWriter = writers.state();
@@ -136,7 +133,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
-      case EntityType.USER -> true; // With simple mappings, any username can be assigned
+      case EntityType.USER, APPLICATION ->
+          true; // With simple mappings, any username or application id can be assigned
       case EntityType.MAPPING -> mappingState.get(entityId).isPresent();
       default -> false;
     };
