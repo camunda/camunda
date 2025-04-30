@@ -16,18 +16,14 @@ import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled(
-    "Disabled while groups are not fully supported yet: https://github.com/camunda/camunda/issues/26961 ")
 @ZeebeIntegration
 class UnassignGroupFromTenantTest {
-
-  public static final String TENANT_ID = "tenantId";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =
@@ -35,98 +31,121 @@ class UnassignGroupFromTenantTest {
 
   @AutoClose private CamundaClient client;
 
-  private long groupKey;
+  private String tenantId;
+  private String groupId;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    client
-        .newCreateTenantCommand()
-        .tenantId(TENANT_ID)
-        .name("Tenant Name")
-        .send()
-        .join()
-        .getTenantKey();
+    tenantId =
+        client
+            .newCreateTenantCommand()
+            .tenantId(Strings.newRandomValidIdentityId())
+            .name("Tenant Name")
+            .send()
+            .join()
+            .getTenantId();
 
-    groupKey =
-        client.newCreateGroupCommand().groupId("groupId").name("group").send().join().getGroupKey();
+    groupId =
+        client
+            .newCreateGroupCommand()
+            .groupId(Strings.newRandomValidIdentityId())
+            .name("group")
+            .send()
+            .join()
+            .getGroupId();
 
     // Assign group to tenant to set up test scenario
-    // TODO: revisit when working on unassign command
-    client.newAssignGroupToTenantCommand(TENANT_ID).groupId("groupId").send().join();
+    client.newAssignGroupToTenantCommand(tenantId).groupId(groupId).send().join();
   }
 
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
+    client.newUnassignGroupFromTenantCommand(tenantId).groupId(groupId).send().join();
 
     // then
     ZeebeAssertHelper.assertGroupUnassignedFromTenant(
-        TENANT_ID,
+        tenantId,
         (tenant) -> {
-          assertThat(tenant.getTenantId()).isEqualTo(TENANT_ID);
-          // TODO remove the String parsing once Groups are migrated to work with ids instead of
-          // keys
-          assertThat(tenant.getEntityId()).isEqualTo(String.valueOf(groupKey));
+          assertThat(tenant.getTenantId()).isEqualTo(tenantId);
+          assertThat(tenant.getEntityId()).isEqualTo(groupId);
         });
   }
 
   @Test
   void shouldRejectIfTenantDoesNotExist() {
     // given
-    final var nonExistentTenantId = "nonExistingTenantId";
+    final var nonExistentTenantId = Strings.newRandomValidIdentityId();
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
                     .newUnassignGroupFromTenantCommand(nonExistentTenantId)
-                    .groupKey(groupKey)
+                    .groupId(groupId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to remove entity from tenant with id '%s', but no tenant with this id exists."
+            "Expected to remove entity from tenant '%s', but no tenant with this id exists."
                 .formatted(nonExistentTenantId));
-  }
-
-  @Test
-  void shouldRejectIfGroupDoesNotExist() {
-    // given
-    final long nonExistentGroupKey = 888888L;
-
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUnassignGroupFromTenantCommand(TENANT_ID)
-                    .groupKey(nonExistentGroupKey)
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining(
-            " Expected to remove entity with key '%d' from tenant with id '%s', but the entity does not exist."
-                .formatted(nonExistentGroupKey, TENANT_ID));
   }
 
   @Test
   void shouldRejectIfGroupNotAssignedToTenant() {
     // when / then
+    final String nonAssignedGroupId = Strings.newRandomValidIdentityId();
+
     assertThatThrownBy(
             () ->
                 client
                     // Group key is not assigned
-                    .newUnassignGroupFromTenantCommand(TENANT_ID)
-                    .groupKey(groupKey + 1)
+                    .newUnassignGroupFromTenantCommand(tenantId)
+                    .groupId(nonAssignedGroupId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to remove entity with key '%d' from tenant with id '%s', but the entity does not exist."
-                .formatted(groupKey + 1, TENANT_ID));
+            "Expected to remove group with ID '%s' from tenant with ID '%s', but the group is not assigned to this tenant."
+                .formatted(nonAssignedGroupId, tenantId));
+  }
+
+  @Test
+  void shouldRejectIfMissingTenantId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUnassignGroupFromTenantCommand(null).groupId(groupId).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyTenantId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUnassignGroupFromTenantCommand("").groupId(groupId).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be empty");
+  }
+
+  @Test
+  void shouldRejectIfMissingGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUnassignGroupFromTenantCommand(tenantId).groupId(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUnassignGroupFromTenantCommand(tenantId).groupId("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
   }
 }
