@@ -633,7 +633,7 @@ public class RequestMapper {
         if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
           authenticatedMappingIds.addAll(principal.getOAuthContext().mappingIds());
           authenticatedMappingIds.addAll(
-              principal.getOAuthContext().mappingKeys().stream().map(Object::toString).toList());
+              principal.getOAuthContext().mappingIds().stream().map(Object::toString).toList());
           principal
               .getClaims()
               .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));

@@ -88,7 +88,6 @@ public class CamundaOAuthPrincipalServiceTest {
 
     // then
     assertThat(oAuthContext).isNotNull();
-    assertThat(oAuthContext.mappingKeys()).isEqualTo(Set.of(5L, 7L));
     assertThat(oAuthContext.mappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
     final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
@@ -124,7 +123,6 @@ public class CamundaOAuthPrincipalServiceTest {
 
     // then
     assertThat(oAuthContext).isNotNull();
-    assertThat(oAuthContext.mappingKeys()).isEqualTo(Set.of(1L, 2L));
     assertThat(oAuthContext.mappingIds()).isEqualTo(Set.of("map-1", "map-2"));
 
     final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();

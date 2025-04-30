@@ -49,8 +49,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   private static final List<MappingEntity> MAPPING_ENTITIES =
       List.of(
-          new MappingEntity("mapping-id-1", 100L, "claim1", "value1", "cv1"),
-          new MappingEntity("mapping-id-2", 200L, "claim2", "value2", "cv2"));
+          new MappingEntity("mapping-id-1", 1L, "claim1", "value1", "cv1"),
+          new MappingEntity("mapping-id-2", 2L, "claim2", "value2", "cv2"));
 
   private static final String RESPONSE =
       """
@@ -106,14 +106,12 @@ public class TenantQueryControllerTest extends RestControllerTest {
              "name": "%s",
              "claimName": "%s",
              "claimValue": "%s",
-             "mappingKey": %s,
              "mappingId": %s
            },
            {
              "name": "%s",
              "claimName": "%s",
              "claimValue": "%s",
-             "mappingKey": %s,
              "mappingId": "%s"
            }
          ],
@@ -130,12 +128,10 @@ public class TenantQueryControllerTest extends RestControllerTest {
           MAPPING_ENTITIES.get(0).name(),
           MAPPING_ENTITIES.get(0).claimName(),
           MAPPING_ENTITIES.get(0).claimValue(),
-          "\"%s\"".formatted(MAPPING_ENTITIES.get(0).mappingKey()),
           MAPPING_ENTITIES.get(0).mappingId(),
           MAPPING_ENTITIES.get(1).name(),
           MAPPING_ENTITIES.get(1).claimName(),
           MAPPING_ENTITIES.get(1).claimValue(),
-          "\"%s\"".formatted(MAPPING_ENTITIES.get(1).mappingKey()),
           MAPPING_ENTITIES.get(1).mappingId(),
           MAPPING_ENTITIES.size());
 

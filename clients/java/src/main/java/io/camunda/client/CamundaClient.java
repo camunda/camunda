@@ -1620,7 +1620,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *   .newAssignMappingToTenantCommand(tenantId)
-   *   .mappingKey(mappingKey)
+   *   .mappingId(mappingId)
    *   .send();
    * </pre>
    *
