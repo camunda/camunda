@@ -40,7 +40,6 @@ public class UnassignUserFromGroupCommandImpl implements UnassignUserFromGroupCo
 
   @Override
   public UnassignUserFromGroupCommandStep1 username(final String username) {
-    ArgumentUtil.ensureNotNull("username", username);
     this.username = username;
     return this;
   }
