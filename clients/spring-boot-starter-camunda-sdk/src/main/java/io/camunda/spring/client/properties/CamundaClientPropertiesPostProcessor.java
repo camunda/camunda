@@ -168,7 +168,7 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
         if (authMethod == null && implicitAuthMethods.size() > 1) {
           throw new IllegalStateException(
               String.format(
-                  "Multiple implicit auth method indicators detected (%s)",
+                  "Mutually exclusive implicit auth method indicators detected (%s)",
                   implicitAuthMethods.entrySet().stream()
                       .map(
                           e ->
