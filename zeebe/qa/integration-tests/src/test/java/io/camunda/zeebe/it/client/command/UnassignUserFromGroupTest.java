@@ -13,18 +13,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("Enable with https://github.com/camunda/camunda/issues/29925")
 @ZeebeIntegration
 public class UnassignUserFromGroupTest {
   @TestZeebe
@@ -33,86 +31,101 @@ public class UnassignUserFromGroupTest {
 
   @AutoClose private CamundaClient client;
 
-  private long groupKey;
-  private long userKey;
+  private String groupId;
+  private String username;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    userKey =
+    username =
         client
             .newUserCreateCommand()
             .name("User Name")
-            .username("user")
+            .username(Strings.newRandomValidUsername())
             .email("foo@example.com")
             .password("******")
             .send()
             .join()
-            .getUserKey();
+            .getUsername();
 
-    groupKey =
+    groupId =
         client
             .newCreateGroupCommand()
-            .groupId("groupId")
+            .groupId(Strings.newRandomValidIdentityId())
             .name("groupName")
             .send()
             .join()
-            .getGroupKey();
-    // TODO: this will be changed with unassign user command refactor
-    client.newAssignUserToGroupCommand("groupId").username("username").send().join();
+            .getGroupId();
+    client.newAssignUserToGroupCommand(groupId).username(username).send().join();
   }
 
   @Test
   void shouldUnassignUserFromGroup() {
     // when
-    client.newUnassignUserFromGroupCommand(groupKey).userKey(userKey).send().join();
+    client.newUnassignUserFromGroupCommand(groupId).username(username).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityUnassignedFromGroup(
-        groupKey,
-        userKey,
+        groupId,
+        username,
         group -> {
           assertThat(group).hasEntityType(EntityType.USER);
         });
   }
 
   @Test
-  void shouldRejectIfUserDoesNotExist() {
+  void shouldRejectIfGroupDoesNotExist() {
     // given
-    final long nonExistentUserKey = Protocol.encodePartitionId(1, 111L);
+    final String nonExistentGroupId = Strings.newRandomValidIdentityId();
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignUserFromGroupCommand(groupKey)
-                    .userKey(nonExistentUserKey)
+                    .newUnassignUserFromGroupCommand(nonExistentGroupId)
+                    .username(username)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to remove an entity with key '%d' and type '%s' from group with key '%d', but the entity does not exist."
-                .formatted(nonExistentUserKey, EntityType.USER, groupKey));
+            "Expected to update group with ID '%s', but a group with this ID does not exist."
+                .formatted(nonExistentGroupId));
   }
 
   @Test
-  void shouldRejectIfGroupDoesNotExist() {
-    // given
-    final long nonExistentGroupKey = Protocol.encodePartitionId(1, 111L);
-
+  void shouldRejectIfMissingGroupId() {
     // when / then
     assertThatThrownBy(
-            () ->
-                client
-                    .newUnassignUserFromGroupCommand(nonExistentGroupKey)
-                    .userKey(userKey)
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining(
-            "Expected to update group with key '%s', but a group with this key does not exist."
-                .formatted(nonExistentGroupKey));
+            () -> client.newUnassignUserFromGroupCommand(null).username("username").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUnassignUserFromGroupCommand("").username("username").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
+  }
+
+  @Test
+  void shouldRejectIfMissingUsername() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUnassignUserFromGroupCommand("groupId").username(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyUsername() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUnassignUserFromGroupCommand("groupId").username("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be empty");
   }
 }
