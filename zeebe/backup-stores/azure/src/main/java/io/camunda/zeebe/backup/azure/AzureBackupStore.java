@@ -59,20 +59,15 @@ public final class AzureBackupStore implements BackupStore {
     executor = Executors.newVirtualThreadPerTaskExecutor();
     final BlobContainerClient blobContainerClient = getContainerClient(client, config);
 
-    fileSetManager = new FileSetManager(blobContainerClient, config.createContainer());
-    manifestManager = new ManifestManager(blobContainerClient, config.createContainer());
+    fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(config));
+    manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(config));
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
     // BlobServiceClientBuilder has their own validations, for building the client
-    if (config.accountSasToken() != null) {
+    if (config.sasTokenConfig() != null) {
       return new BlobServiceClientBuilder()
-          .sasToken(config.accountSasToken())
-          .endpoint(config.endpoint())
-          .buildClient();
-    } else if (config.sasToken() != null) {
-      return new BlobServiceClientBuilder()
-          .sasToken(config.sasToken())
+          .sasToken(config.sasTokenConfig().value())
           .endpoint(config.endpoint())
           .buildClient();
     } else if (config.connectionString() != null) {
@@ -113,7 +108,8 @@ public final class AzureBackupStore implements BackupStore {
           blobContainerClient.getBlobContainerName());
       // (delegation and service) sas token don't have the permissions to list containers,
       //  we trust that the user has created the container beforehand.
-      if (config.sasToken() == null && !blobContainerClient.exists()) {
+      if ((config.sasTokenConfig() == null || config.sasTokenConfig().type().isAccount())
+          && !blobContainerClient.exists()) {
         throw new ContainerDoesNotExist(
             ("The container %s does not exist. Please create it before using "
                     + "the backup store. Otherwise set createContainer to true, "
@@ -231,21 +227,17 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   public static void validateConfig(final AzureBackupConfig config) {
-    if (config.sasToken() != null && config.accountSasToken() == null) {
+    if (config.sasTokenConfig() != null && !config.sasTokenConfig().type().isAccount()) {
       LOG.info(
           "User delegation or service SAS tokens are enabled, which do "
               + "not have permissions to access/create containers. The "
               + "creation and checks of the container existence will be skipped.");
     }
     if (moreThanOneNonNull(
-        config.accountKey(),
-        config.connectionString(),
-        config.accountSasToken(),
-        config.sasToken())) {
+        config.accountKey(), config.connectionString(), config.sasTokenConfig())) {
       LOG.warn(
           "More than one authentication method is configured, if present account SAS token will be used, "
-              + "followed by (delegation, or service) SAS token, then connection string, and finally"
-              + " account name with account key.");
+              + "followed by connection string, and then account name with account key.");
     }
     if (config.connectionString() == null && config.endpoint() == null) {
       throw new IllegalArgumentException("Connection string or endpoint is required");
@@ -258,6 +250,16 @@ public final class AzureBackupStore implements BackupStore {
     }
     if (config.containerName() == null) {
       throw new IllegalArgumentException("Container name cannot be null.");
+    }
+  }
+
+  private boolean isCreateContainer(final AzureBackupConfig config) {
+    // if sas token is enabled, and its of the type delegation or service, then we don't create the
+    // container.
+    if (config.sasTokenConfig() != null && !config.sasTokenConfig().type().isAccount()) {
+      return false;
+    } else {
+      return config.createContainer();
     }
   }
 
