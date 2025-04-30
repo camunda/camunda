@@ -30,6 +30,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
 
   public static final String GROUP_ID = "groupId";
   public static final String USERNAME = "username";
+  public static final String MAPPING_ID = "mappingId";
 
   @Test
   void shouldUnassignUserFromGroup() {
@@ -76,6 +77,70 @@ public class UnassignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () -> client.newAssignUserToGroupCommand(GROUP_ID).username(USERNAME).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 400: 'Bad Request'");
+  }
+
+  @Test
+  void shouldUnassignMappingFromGroup() {
+    // when
+    client.newUnassignMappingFromGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getUrl().contains(GROUP_ID + "/mapping-rules/" + MAPPING_ID)).isTrue();
+  }
+
+  @Test
+  void shouldRaiseExceptionOnRequestErrorUnassignMapping() {
+    // given
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Not Found").status(404));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignMappingFromGroupCommand(GROUP_ID)
+                    .mappingId(MAPPING_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnForbiddenRequestUnassignMapping() {
+    // given
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Forbidden").status(403));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignMappingFromGroupCommand(GROUP_ID)
+                    .mappingId(MAPPING_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 403: 'Forbidden'");
+  }
+
+  @Test
+  void shouldHandleValidationErrorResponseUnassignMapping() {
+    // given
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Bad Request").status(400));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignMappingFromGroupCommand(GROUP_ID)
+                    .mappingId(MAPPING_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
