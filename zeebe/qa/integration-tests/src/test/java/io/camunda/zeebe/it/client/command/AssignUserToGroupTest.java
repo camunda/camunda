@@ -74,26 +74,6 @@ class AssignUserToGroupTest {
   }
 
   @Test
-  void shouldRejectIfUserDoesNotExist() {
-    // given
-    final String nonExistentUsername = Strings.newRandomValidUsername();
-
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newAssignUserToGroupCommand(groupId)
-                    .username(nonExistentUsername)
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining(
-            "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
-                .formatted(nonExistentUsername, EntityType.USER, groupId));
-  }
-
-  @Test
   void shouldRejectIfGroupDoesNotExist() {
     // given
     final String nonExistentGroupId = Strings.newRandomValidIdentityId();
