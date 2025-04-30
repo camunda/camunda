@@ -109,12 +109,8 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<DecisionInstance> findDecisionInstances(final Consumer<DecisionInstanceFilter> filter) {
-    return client
-        .newDecisionInstanceSearchRequest()
-        .filter(filter)
-        .send()
-        .join()
-        .items();
+  public List<DecisionInstance> findDecisionInstances(
+      final Consumer<DecisionInstanceFilter> filter) {
+    return client.newDecisionInstanceSearchRequest().filter(filter).send().join().items();
   }
 }

@@ -17,7 +17,6 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
-import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.zeebe.client.ZeebeClient;

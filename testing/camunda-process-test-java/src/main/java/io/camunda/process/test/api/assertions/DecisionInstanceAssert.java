@@ -7,7 +7,7 @@
  */
 package io.camunda.process.test.api.assertions;
 
-/** The assertion object to verify a decision.*/
+/** The assertion object to verify a decision. */
 public interface DecisionInstanceAssert {
   /**
    * Verifies that the decision is evaluated. The verification fails if the decision is not
@@ -20,17 +20,32 @@ public interface DecisionInstanceAssert {
   DecisionInstanceAssert isEvaluated();
 
   /**
-   * Verifies that the decision evaluation has failed.
+   * Verifies that the decision has the given name.
    *
-   * <p>The assertion waits until the decision is evaluated.
-   *
+   * @param expectedDefinitionName the expected name for this decision
    * @return the assertion object
    */
-  DecisionInstanceAssert isFailed();
+  DecisionInstanceAssert hasName(final String expectedDefinitionName);
 
   /**
-   * Verifies that the decision is evaluated with the expected output. The verification fails if
-   * the decision is not evaluated or the output does not match.
+   * Verifies that the definition has the given definition id.
+   *
+   * @param expectedDefinitionId the expected id for this decision
+   * @return the assertion object
+   */
+  DecisionInstanceAssert hasId(final String expectedDefinitionId);
+
+  /**
+   * Verifies that the definition has the given version.
+   *
+   * @param expectedVersion the expected version for this decision
+   * @return the assertion object
+   */
+  DecisionInstanceAssert hasVersion(final int expectedVersion);
+
+  /**
+   * Verifies that the decision is evaluated with the expected output. The verification fails if the
+   * decision is not evaluated or the output does not match.
    *
    * @param expectedOutputValue the expected output value
    * @return the assertion object
@@ -38,22 +53,29 @@ public interface DecisionInstanceAssert {
   DecisionInstanceAssert hasOutput(String expectedOutputValue);
 
   /**
-   * Verifies that the decision is evaluated with the expected output. The verification fails if
-   * the decision failed or the output does not match.
+   * Verifies that the decision is evaluated with the expected output. The verification fails if the
+   * decision failed or the output does not match.
    *
    * @param expectedOutputName the expected output variable name
    * @param expectedOutputValue the expected output value
    * @return the assertion object
    */
-  DecisionInstanceAssert hasOutput(final String expectedOutputName, final String expectedOutputValue);
+  DecisionInstanceAssert hasOutput(
+      final String expectedOutputName, final String expectedOutputValue);
 
   /**
-   * Verifies that the decision is evaluated with the expected output. The verification fails if
-   * the decision is not evaluated or the output does not match.
+   * Verifies that the decision has matched the given rule indices.
    *
-   * @param a
-   * @param b
-   * @return
+   * @param expectedMatchedRuleIndices the rule indices that should have matched
+   * @return the assertion object
    */
-  DecisionInstanceAssert hasMatchedRules(int a, int b);
+  DecisionInstanceAssert hasMatchedRules(final int... expectedMatchedRuleIndices);
+
+  /**
+   * Verifies that the decision has matched the given rule ids.
+   *
+   * @param expectedMatchedRuleIds the rule ids that should have matched
+   * @return the assertion object
+   */
+  DecisionInstanceAssert hasMatchedRules(final String... expectedMatchedRuleIds);
 }

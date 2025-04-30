@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.client.api.response.EvaluatedDecision;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
@@ -183,8 +182,14 @@ public class CamundaAssert {
     return new UserTaskAssertj(getDataSource(), userTaskSelector);
   }
 
-  public static DecisionInstanceAssert assertThat(
-      final DecisionSelector decisionSelector) {
+  /**
+   * To verify a decision instance (via business rule task).
+   *
+   * @param decisionSelector the selector of the decision instance to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.DecisionSelectors
+   */
+  public static DecisionInstanceAssert assertThat(final DecisionSelector decisionSelector) {
     return new DecisionInstanceAssertj(getDataSource(), decisionSelector);
   }
 

@@ -333,7 +333,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *  .newEvaluateDecisionCommand()
-   *  .decisionKey("my-decision") TODO wrong type
+   *  .decisionKey("my-decision")
    *  .variables(json)
    *  .send();
    * </pre>
