@@ -86,6 +86,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
@@ -171,6 +172,7 @@ import io.camunda.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.GroupGetRequestImpl;
 import io.camunda.client.impl.fetch.IncidentGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetFormRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
@@ -989,6 +991,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(final String groupId) {
     return new UnassignMappingFromGroupCommandImpl(httpClient, groupId);
+  }
+
+  @Override
+  public GroupGetRequest newGroupGetRequest(final String groupId) {
+    return new GroupGetRequestImpl(httpClient, groupId);
   }
 
   private JobClient newJobClient() {

@@ -22,6 +22,7 @@ import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -29,6 +30,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.*;
 import java.util.Collections;
 import java.util.List;
@@ -147,6 +149,14 @@ public final class SearchResponseMapper {
   public static BatchOperationItems toBatchOperationItemsGetResponse(
       final BatchOperationItemSearchQueryResult response) {
     return new BatchOperationItemsImpl(response);
+  }
+
+  public static Group toGroupResponse(final GroupResult response) {
+    return new GroupImpl(
+        ParseUtil.parseLongOrNull(response.getGroupKey()),
+        response.getGroupId(),
+        response.getName(),
+        response.getDescription());
   }
 
   private static <T, R> List<R> toSearchResponseInstances(
