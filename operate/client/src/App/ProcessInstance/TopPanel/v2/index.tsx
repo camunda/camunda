@@ -58,7 +58,7 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
-import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import {SubprocessOverlay} from 'modules/stores/processStatistics/processStatistics.base';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -82,7 +82,6 @@ const TopPanel: React.FC = observer(() => {
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const currentSelection = flowNodeSelectionStore.state.selection;
   const {sourceFlowNodeIdForMoveOperation} = modificationsStore.state;
-  const {flowNodesWithSubProcesses} = flowNodeInstanceStore.state;
   const [isInTransition, setIsInTransition] = useState(false);
   const {data: flowNodeInstancesStatistics} = useFlownodeInstancesStatistics();
   const {data: statistics} = useFlownodeStatistics();
@@ -128,18 +127,30 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const subProcessesWithIncidents = flowNodesWithSubProcesses
-    .map(({state, flowNodeId}) => {
-      if (!state || !flowNodeId || state !== 'INCIDENT') return null;
+  const flowNodeIdsWithIncidents = statistics
+    ?.filter(({flowNodeState}) => flowNodeState === 'incidents')
+    ?.map((flowNode) => flowNode.id);
 
-      return {
-        payload: {flowNodeState: 'incidents'},
-        type: OVERLAY_TYPE_STATE,
-        flowNodeId: flowNodeId,
-        position: overlayPositions.subprocessWithIncidents,
-      };
-    })
-    .filter((item) => item !== null);
+  const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
+    (flowNodeId) => businessObjects?.[flowNodeId],
+  );
+
+  const subprocessOverlays: SubprocessOverlay[] = [];
+
+  selectableFlowNodesWithIncidents?.forEach((flowNode) => {
+    while (flowNode?.$parent) {
+      const parent = flowNode.$parent;
+      if (parent.$type === 'bpmn:SubProcess') {
+        subprocessOverlays.push({
+          payload: {flowNodeState: 'incidents'},
+          type: OVERLAY_TYPE_STATE,
+          flowNodeId: parent.id,
+          position: overlayPositions.subprocessWithIncidents,
+        });
+      }
+      flowNode = parent;
+    }
+  });
 
   const allFlowNodeStateOverlays = [
     ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
@@ -148,7 +159,7 @@ const TopPanel: React.FC = observer(() => {
       flowNodeId,
       position: overlayPositions[flowNodeState],
     })) || []),
-    ...subProcessesWithIncidents,
+    ...subprocessOverlays,
   ];
 
   const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays?.filter(
