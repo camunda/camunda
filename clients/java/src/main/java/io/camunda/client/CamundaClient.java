@@ -1679,7 +1679,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *   .newAssignGroupToTenantCommand(tenantId)
-   *   .groupKey(groupKey)
+   *   .groupId(groupId)
    *   .send();
    * </pre>
    *
