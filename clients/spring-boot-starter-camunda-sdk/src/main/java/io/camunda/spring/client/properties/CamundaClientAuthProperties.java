@@ -188,7 +188,10 @@ public class CamundaClientAuthProperties {
   @Override
   public String toString() {
     return "CamundaClientAuthProperties{"
-        + "username='"
+        + "method='"
+        + method
+        + '\''
+        + ", username='"
         + username
         + '\''
         + ", password='"
