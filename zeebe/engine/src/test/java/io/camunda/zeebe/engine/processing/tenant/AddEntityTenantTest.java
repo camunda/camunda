@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.tenant;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
+import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -151,41 +152,112 @@ public class AddEntityTenantTest {
   public void shouldAddGroupToTenant() {
     // given
     final var entityType = GROUP;
-    final var groupId = "123";
-    final var entityKey = Long.parseLong(groupId);
+    final var groupId = Strings.newRandomValidIdentityId();
     createGroup(groupId);
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine
-            .tenant()
-            .newTenant()
-            .withTenantId(tenantId)
-            .withName("Tenant 1")
-            .create()
-            .getValue()
-            .getTenantKey();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
 
     // when add user entity to tenant
     final var updatedTenant =
         engine
             .tenant()
             .addEntity(tenantId)
-            // TODO remove the String parsing once Groups are migrated to work with ids instead of
-            // keys
-            .withEntityId(String.valueOf(entityKey))
+            .withEntityId(groupId)
             .withEntityType(entityType)
             .add()
             .getValue();
 
     // then assert that the entity was added correctly
-    Assertions.assertThat(updatedTenant)
+    assertThat(updatedTenant)
         .describedAs(
-            "Entity of type %s with key %s should be correctly added to tenant with key %s",
-            entityType, entityKey, tenantKey)
+            "Entity of type %s with id %s should be correctly added to tenant with id %s",
+            entityType, groupId, tenantId)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
-        .hasFieldOrPropertyWithValue("tenantId", tenantId)
-        .hasFieldOrPropertyWithValue("entityType", entityType);
+        .hasTenantId(tenantId)
+        .hasEntityType(entityType)
+        .hasEntityId(groupId);
+  }
+
+  @Test
+  public void shouldAddRoleToTenant() {
+    // given
+    final var entityType = ROLE;
+    final var roleId = Strings.newRandomValidIdentityId();
+    createRole(roleId);
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
+
+    // when
+    final var updatedTenant =
+        engine
+            .tenant()
+            .addEntity(tenantId)
+            .withEntityId(roleId)
+            .withEntityType(entityType)
+            .add()
+            .getValue();
+
+    // then
+    assertThat(updatedTenant)
+        .describedAs(
+            "Entity of type %s with id %s should be correctly added to tenant with id %s",
+            entityType, roleId, tenantId)
+        .isNotNull()
+        .hasTenantId(tenantId)
+        .hasEntityType(entityType)
+        .hasEntityId(roleId);
+  }
+
+  @Test
+  public void shouldRejectAddingRoleToTenantIfRoleDoesNotExist() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
+
+    // when
+    final var rejection =
+        engine
+            .tenant()
+            .addEntity(tenantId)
+            .withEntityId(roleId)
+            .withEntityType(ROLE)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to add role with id '%s' to tenant with id '%s', but the role doesn't exist."
+                .formatted(roleId, tenantId));
+  }
+
+  @Test
+  public void shouldRejectAddingRoleToTenantIfRoleAlreadyAssigned() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    createRole(roleId);
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
+    engine.tenant().addEntity(tenantId).withEntityId(roleId).withEntityType(ROLE).add();
+
+    // when
+    final var rejection =
+        engine
+            .tenant()
+            .addEntity(tenantId)
+            .withEntityId(roleId)
+            .withEntityType(ROLE)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add role with id '%s' to tenant with id '%s', but the role is already assigned to the tenant."
+                .formatted(roleId, tenantId));
   }
 
   @Test
@@ -242,6 +314,10 @@ public class AddEntityTenantTest {
 
   private long createGroup(final String groupId) {
     return engine.group().newGroup(groupId).withName("groupName").create().getValue().getGroupKey();
+  }
+
+  private void createRole(final String roleId) {
+    engine.role().newRole(roleId).create();
   }
 
   private String createMapping() {
