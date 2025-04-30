@@ -34,6 +34,14 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class CamundaOAuthPrincipalService {
+  static final String USERNAME_CLAIM_NOT_FOUND =
+      "Configured username claim %s not found in claims. Please check your OIDC configuration.";
+  static final String USERNAME_CLAIM_NOT_STRING =
+      "Configured username claim %s is not a string. Please check your OIDC configuration.";
+  static final String APPLICATION_ID_CLAIM_NOT_FOUND =
+      "Configured applicationId claim %s not found in claims. Please check your OIDC configuration.";
+  static final String APPLICATION_ID_CLAIM_NOT_STRING =
+      "Configured applicationId claim %s is not a string. Please check your OIDC configuration.";
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalService.class);
 
@@ -88,7 +96,8 @@ public class CamundaOAuthPrincipalService {
             .withGroups(
                 groupServices.getGroupsByMemberKeys(mappingIds).stream()
                     .map(GroupEntity::name)
-                    .toList());
+                    .toList())
+            .withRoles(assignedRoles);
 
     if (usernameClaim != null) {
       authContextBuilder.withUsername(getUsernameFromClaims(claims));
@@ -100,22 +109,32 @@ public class CamundaOAuthPrincipalService {
   }
 
   private String getUsernameFromClaims(final Map<String, Object> claims) {
-    return Optional.ofNullable(claims.get(usernameClaim))
-        .map(Object::toString)
-        .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    "Configured username claim %s not found in claims. Please check your OIDC configuration."
-                        .formatted(usernameClaim)));
+    final var maybeUsername = Optional.ofNullable(claims.get(usernameClaim));
+
+    if (maybeUsername.isEmpty()) {
+      throw new IllegalArgumentException(USERNAME_CLAIM_NOT_FOUND.formatted(usernameClaim));
+    }
+
+    if (maybeUsername.get() instanceof final String username) {
+      return username;
+    } else {
+      throw new IllegalArgumentException(USERNAME_CLAIM_NOT_STRING.formatted(usernameClaim));
+    }
   }
 
   private String getApplicationIdFromClaims(final Map<String, Object> claims) {
-    return Optional.ofNullable(claims.get(applicationIdClaim))
-        .map(Object::toString)
-        .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    "Configured applicationId claim %s not found in claims. Please check your OIDC configuration."
-                        .formatted(applicationIdClaim)));
+    final var maybeApplicationId = Optional.ofNullable(claims.get(applicationIdClaim));
+
+    if (maybeApplicationId.isEmpty()) {
+      throw new IllegalArgumentException(
+          APPLICATION_ID_CLAIM_NOT_FOUND.formatted(applicationIdClaim));
+    }
+
+    if (maybeApplicationId.get() instanceof final String applicationId) {
+      return applicationId;
+    } else {
+      throw new IllegalArgumentException(
+          APPLICATION_ID_CLAIM_NOT_STRING.formatted(applicationIdClaim));
+    }
   }
 }
