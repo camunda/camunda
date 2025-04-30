@@ -255,7 +255,7 @@ public class RoleTest {
   }
 
   @Test
-  public void shouldRemoveEntityFromRole() {
+  public void shouldRemoveUserFromRole() {
     final var username = Strings.newRandomValidUsername();
     engine
         .user()
@@ -281,6 +281,62 @@ public class RoleTest {
         .hasRoleId(roleId)
         .hasEntityId(username)
         .hasEntityType(EntityType.USER);
+  }
+
+  @Test
+  public void shouldRemoveMappingFromRole() {
+    final var mappingId = Strings.newRandomValidIdentityId();
+    engine
+        .mapping()
+        .newMapping("claimName")
+        .withMappingId(mappingId)
+        .withClaimValue("claimValue")
+        .create();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create();
+    engine
+        .role()
+        .addEntity(roleId)
+        .withEntityId(mappingId)
+        .withEntityType(EntityType.MAPPING)
+        .add();
+    final var removedEntity =
+        engine
+            .role()
+            .removeEntity(roleId)
+            .withEntityId(mappingId)
+            .withEntityType(EntityType.MAPPING)
+            .remove()
+            .getValue();
+
+    assertThat(removedEntity)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(mappingId)
+        .hasEntityType(EntityType.MAPPING);
+  }
+
+  @Test
+  public void shouldRemoveGroupFromRole() {
+    final var groupId = Strings.newRandomValidUsername();
+    engine.group().newGroup(groupId).create();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create();
+    engine.role().addEntity(roleId).withEntityId(groupId).withEntityType(EntityType.GROUP).add();
+    final var removedEntity =
+        engine
+            .role()
+            .removeEntity(roleId)
+            .withEntityId(groupId)
+            .withEntityType(EntityType.GROUP)
+            .remove()
+            .getValue();
+
+    assertThat(removedEntity)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
   }
 
   @Test
