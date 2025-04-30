@@ -56,6 +56,7 @@ import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
@@ -1811,7 +1812,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(Long batchOperationKey);
 
   /**
-   * Command to assign a user to a group.
+   * Command to assign a mapping rule to a group.
    *
    * <pre>
    *
@@ -1827,4 +1828,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   AssignMappingToGroupStep1 newAssignMappingToGroupCommand(String groupId);
+
+  /**
+   * Command to unassign a mapping rule from a group.
+   *
+   * <pre>
+   *
+   *
+   * camundaClient
+   *  .newUnassignMappingFromGroupCommand(groupId)
+   *  .mappingId(mappingId)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(String groupId);
 }
