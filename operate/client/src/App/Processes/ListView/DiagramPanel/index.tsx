@@ -123,6 +123,7 @@ const DiagramPanel: React.FC = observer(() => {
 
       setOverlays(overlaysData);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     processDefinition?.data?.selectableFlowNodes,
     processStatisticsStore.state.status,
