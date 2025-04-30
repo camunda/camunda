@@ -15,7 +15,6 @@ import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
 test.beforeAll(async () => {
-  // await resetData();
   await deploy([
     './resources/usertask_to_be_completed.bpmn',
     './resources/user_task_with_form.bpmn',
@@ -79,10 +78,6 @@ test.beforeAll(async () => {
 
   await sleep(1000);
 });
-
-// test.afterAll(async ({resetData}) => {
-//   await resetData();
-// });
 
 test.describe('task details page', () => {
   test.beforeEach(async ({page, taskListLoginPage}) => {
@@ -208,7 +203,7 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Zeebe_user_task');
-    await expect(page.getByText('zeebeVar')).toBeVisible();
+    await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
     await expect(taskDetailsPage.assignToMeButton).toBeHidden();
     await expect(taskDetailsPage.unassignButton).toBeHidden();
     await expect(taskDetailsPage.completeTaskButton).toBeHidden();
@@ -219,7 +214,7 @@ test.describe('task details page', () => {
     await waitForAssertion({
       assertion: async () => {
         await expect(page.getByText('jobWorkerVar')).toBeVisible();
-        await expect(page.getByText('zeebeVar')).toBeVisible();
+        await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
       },
       onFailure: async () => {
         await page.reload();

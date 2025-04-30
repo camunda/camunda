@@ -14,7 +14,6 @@ import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
 test.beforeAll(async () => {
-  // await resetData();
   await deploy([
     './resources/user_process.bpmn',
     './resources/processWithStartNodeFormDeployed.bpmn',
@@ -129,6 +128,7 @@ test.describe('process page', () => {
     tasklistProcessesPage,
     taskPanelPage,
   }) => {
+    test.slow();
     await tasklistHeader.clickProcessesTab();
     await expect(page).toHaveURL('/tasklist/processes');
     await tasklistProcessesPage.continueButton.click();

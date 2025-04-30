@@ -57,7 +57,6 @@ class TaskPanelPage {
     await this.expandSidePanelButton.click();
     await this.page.getByRole('link', {name: option, exact: true}).click();
 
-    // Handle special cases for "All open tasks" and "Assigned to me"
     const expectedSegment =
       option === 'All open tasks'
         ? 'all-open'

@@ -30,7 +30,15 @@ const runMode = await select({
   ],
 });
 
-let args = ['run', 'test', '--', `--project=${browser}`];
+let args = ['run', 'test', '--'];
+
+if (browser === 'chromium') {
+  args.push('--project=chromium', '--project=chromium-task-panel');
+} else if (browser === 'firefox') {
+  args.push('--project=firefox', '--project=firefox-task-panel');
+} else if (browser === 'msedge') {
+  args.push('--project=msedge', '--project=msedge-task-panel');
+}
 
 if (runMode === 'headed') {
   args.push('--headed');

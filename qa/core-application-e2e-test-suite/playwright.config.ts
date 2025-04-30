@@ -55,7 +55,6 @@ export default defineConfig({
     baseURL: getBaseURL(),
     actionTimeout: 10000,
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
   },
   projects: [
     {
@@ -65,13 +64,40 @@ export default defineConfig({
       testMatch: changedFolders.includes('chromium')
         ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
         : undefined,
+      testIgnore: 'task-panel.spec.ts',
     },
     {
       name: 'firefox',
       use: devices['Desktop Firefox'],
+      testMatch: changedFolders.includes('firefox')
+        ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+        : undefined,
+      testIgnore: 'task-panel.spec.ts',
     },
     {
       name: 'msedge',
+      use: devices['Desktop Edge'],
+      testMatch: changedFolders.includes('msedge')
+        ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+        : undefined,
+      testIgnore: 'task-panel.spec.ts',
+    },
+    {
+      name: 'chromium-task-panel',
+      dependencies: ['chromium'],
+      testMatch: 'task-panel.spec.ts',
+      use: devices['Desktop Chrome'],
+    },
+    {
+      name: 'firefox-task-panel',
+      dependencies: ['firefox'],
+      testMatch: 'task-panel.spec.ts',
+      use: devices['Desktop Firefox'],
+    },
+    {
+      name: 'msedge-task-panel',
+      dependencies: ['msedge'],
+      testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Edge'],
     },
   ],
