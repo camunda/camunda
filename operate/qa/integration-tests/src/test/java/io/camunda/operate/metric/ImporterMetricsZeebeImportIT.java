@@ -55,9 +55,9 @@ public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
   }
 
   private void injectCamundaClientIntoOperationHandler() {
-    cancelProcessInstanceHandler.setCamundaClient(camundaClient);
-    updateRetriesHandler.setCamundaClient(camundaClient);
-    updateVariableHandler.setCamundaClient(camundaClient);
+    cancelProcessInstanceHandler.setOperateAdapter(operateServicesAdapter);
+    updateRetriesHandler.setOperateAdapter(operateServicesAdapter);
+    updateVariableHandler.setOperateAdapter(operateServicesAdapter);
   }
 
   @Test // OPE-624
