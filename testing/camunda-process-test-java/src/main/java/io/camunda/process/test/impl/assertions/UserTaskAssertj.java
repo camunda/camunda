@@ -26,6 +26,7 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
@@ -66,155 +67,155 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
 
   @Override
   public UserTaskAssert hasAssignee(final String assignee) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getAssignee())
-        .withFailMessage(
-            "Expected [%s] to have assignee %s, but was %s",
-            actual.describe(), assignee, userTask.getAssignee())
-        .isEqualTo(assignee);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getAssignee())
+                .withFailMessage(
+                    "Expected [%s] to have assignee %s, but was %s",
+                    actual.describe(), assignee, userTask.getAssignee())
+                .isEqualTo(assignee));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasPriority(final int priority) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getPriority())
-        .withFailMessage(
-            "Expected [%s] to have priority %d, but was %d",
-            actual.describe(), priority, userTask.getPriority())
-        .isEqualTo(priority);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getPriority())
+                .withFailMessage(
+                    "Expected [%s] to have priority %d, but was %d",
+                    actual.describe(), priority, userTask.getPriority())
+                .isEqualTo(priority));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasElementId(final String elementId) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getElementId().trim())
-        .withFailMessage(
-            "Expected [%s] to have elementId %s, but was %s",
-            actual.describe(), elementId, userTask.getElementId())
-        .isEqualTo(elementId);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getElementId().trim())
+                .withFailMessage(
+                    "Expected [%s] to have elementId %s, but was %s",
+                    actual.describe(), elementId, userTask.getElementId())
+                .isEqualTo(elementId));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasName(final String name) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getName().trim())
-        .withFailMessage(
-            "Expected [%s] to have name %s, but was %s",
-            actual.describe(), name, userTask.getName())
-        .isEqualTo(name);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getName().trim())
+                .withFailMessage(
+                    "Expected [%s] to have name %s, but was %s",
+                    actual.describe(), name, userTask.getName())
+                .isEqualTo(name));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasProcessInstanceKey(final long processInstanceKey) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getProcessInstanceKey())
-        .withFailMessage(
-            "Expected [%s] to have processInstanceKey %d, but was %d",
-            actual.describe(), processInstanceKey, userTask.getProcessInstanceKey())
-        .isEqualTo(processInstanceKey);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getProcessInstanceKey())
+                .withFailMessage(
+                    "Expected [%s] to have processInstanceKey %d, but was %d",
+                    actual.describe(), processInstanceKey, userTask.getProcessInstanceKey())
+                .isEqualTo(processInstanceKey));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasDueDate(final String dueDate) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getDueDate())
-        .withFailMessage(
-            "Expected [%s] to have due date %s, but was %s",
-            actual.describe(), dueDate, userTask.getDueDate())
-        .isEqualTo(dueDate);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getDueDate())
+                .withFailMessage(
+                    "Expected [%s] to have due date %s, but was %s",
+                    actual.describe(), dueDate, userTask.getDueDate())
+                .isEqualTo(dueDate));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasCompletionDate(final String completionDate) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getCompletionDate())
-        .withFailMessage(
-            "Expected [%s] to have completion date %s, but was %s",
-            actual.describe(), completionDate, userTask.getCompletionDate())
-        .isEqualTo(completionDate);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getCompletionDate())
+                .withFailMessage(
+                    "Expected [%s] to have completion date %s, but was %s",
+                    actual.describe(), completionDate, userTask.getCompletionDate())
+                .isEqualTo(completionDate));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasFollowUpDate(final String followUpDate) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getFollowUpDate())
-        .withFailMessage(
-            "Expected [%s] to have follow-up date %s, but was %s",
-            actual.describe(), followUpDate, userTask.getFollowUpDate())
-        .isEqualTo(followUpDate);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getFollowUpDate())
+                .withFailMessage(
+                    "Expected [%s] to have follow-up date %s, but was %s",
+                    actual.describe(), followUpDate, userTask.getFollowUpDate())
+                .isEqualTo(followUpDate));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasCreationDate(final String creationDate) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getCreationDate())
-        .withFailMessage(
-            "Expected [%s] to have creation date %s, but was %s",
-            actual.describe(), creationDate, userTask.getCreationDate())
-        .isEqualTo(creationDate);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getCreationDate())
+                .withFailMessage(
+                    "Expected [%s] to have creation date %s, but was %s",
+                    actual.describe(), creationDate, userTask.getCreationDate())
+                .isEqualTo(creationDate));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasCandidateGroup(final String candidateGroup) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getCandidateGroups())
-        .withFailMessage(
-            "Expected [%s] to have candidate group '%s', but was %s",
-            actual.describe(), candidateGroup, userTask.getCandidateGroups())
-        .contains(candidateGroup);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getCandidateGroups())
+                .withFailMessage(
+                    "Expected [%s] to have candidate group '%s', but was %s",
+                    actual.describe(), candidateGroup, userTask.getCandidateGroups())
+                .contains(candidateGroup));
 
     return this;
   }
 
   @Override
   public UserTaskAssert hasCandidateGroups(final List<String> candidateGroups) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getCandidateGroups())
-        .withFailMessage(
-            "Expected [%s] to have candidate groups %s, but was %s",
-            actual.describe(), candidateGroups, userTask.getCandidateGroups())
-        .containsAll(candidateGroups);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getCandidateGroups())
+                .withFailMessage(
+                    "Expected [%s] to have candidate groups %s, but was %s",
+                    actual.describe(), candidateGroups, userTask.getCandidateGroups())
+                .containsAll(candidateGroups));
 
     return this;
   }
 
   private void hasUserTaskInState(final UserTaskState expectedState) {
-    final UserTask userTask = awaitUserTask();
-
-    assertThat(userTask.getState())
-        .withFailMessage(
-            "Expected [%s] to be %s, but was %s",
-            actual.describe(), formatState(expectedState), formatState(userTask.getState()))
-        .isEqualTo(expectedState);
+    awaitUserTask(
+        userTask ->
+            assertThat(userTask.getState())
+                .withFailMessage(
+                    "Expected [%s] to be %s, but was %s",
+                    actual.describe(), formatState(expectedState), formatState(userTask.getState()))
+                .isEqualTo(expectedState));
   }
 
   private String formatState(final UserTaskState state) {
@@ -225,8 +226,10 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
     return state.name().toLowerCase();
   }
 
-  private UserTask awaitUserTask() {
-    final AtomicReference<UserTask> actualUserTask = new AtomicReference<>();
+  private void awaitUserTask(final Consumer<UserTask> assertion) {
+    // If await() times out, the exception doesn't contain the assertion error. Use a reference to
+    // store the error's failure message.
+    final AtomicReference<String> failureMessage = new AtomicReference<>("?");
 
     try {
       Awaitility.await()
@@ -236,13 +239,20 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
               userTasks -> {
                 final Optional<UserTask> userTask =
                     userTasks.stream().filter(actual::test).findFirst();
-                assertThat(userTask).isPresent();
-                actualUserTask.set(userTask.get());
+
+                try {
+                  assertThat(userTask)
+                      .withFailMessage("No user task [%s] found", actual.describe())
+                      .isPresent();
+
+                  assertion.accept(userTask.get());
+                } catch (final AssertionError e) {
+                  failureMessage.set(e.getMessage());
+                  throw e;
+                }
               });
     } catch (final ConditionTimeoutException ignore) {
-      fail("No user task [%s] found", actual.describe());
+      fail(failureMessage.get());
     }
-
-    return actualUserTask.get();
   }
 }
