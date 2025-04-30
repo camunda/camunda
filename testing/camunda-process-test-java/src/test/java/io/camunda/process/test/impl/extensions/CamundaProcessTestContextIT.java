@@ -22,6 +22,7 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -447,6 +448,50 @@ public class CamundaProcessTestContextIT {
         .hasProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
   }
 
+  @Test
+  void shouldFindBusinessRuleTaskByName() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/decision-table.dmn")
+        .send()
+        .join();
+
+    final long processDefinitionKey = deployProcessModel(processModelWithBusinessRuleTask());
+
+    client.newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .variable("lightsaberColor", "blue")
+        .send().join();
+
+    // Then
+    CamundaAssert.assertThat(DecisionSelectors.byName("Jedi or Sith"))
+        .isEvaluated()
+        .hasOutput("Jedi");;
+  }
+
+  @Test
+  void shouldFindBusinessRuleTaskById() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/decision-table.dmn")
+        .send()
+        .join();
+
+    final long processDefinitionKey = deployProcessModel(processModelWithBusinessRuleTask());
+
+    client.newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .variable("lightsaberColor", "blue")
+        .send().join();
+
+    // Then
+    CamundaAssert.assertThat(DecisionSelectors.byId("jedi_or_sith"))
+        .isEvaluated()
+        .hasOutput("Jedi");
+  }
+
   /**
    * Deploys a process model and waits until it is accessible via the API.
    *
@@ -666,5 +711,16 @@ public class CamundaProcessTestContextIT {
     rule2.addChildElement(rule2OutputEntryDescription);
     decisionTable.addChildElement(rule2);
     return modelInstance;
+  }
+
+  private BpmnModelInstance processModelWithBusinessRuleTask() {
+    return Bpmn.createExecutableProcess("test-process")
+        .startEvent()
+        .businessRuleTask("business-rule-1")
+        .zeebeCalledDecisionId("jedi_or_sith")
+        .zeebeResultVariable("jedi_or_sith")
+        .userTask("user-task-1")
+        .endEvent("success-end")
+        .done();
   }
 }

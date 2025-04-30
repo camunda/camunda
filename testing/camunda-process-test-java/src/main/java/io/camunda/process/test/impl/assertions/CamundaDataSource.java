@@ -109,8 +109,21 @@ public class CamundaDataSource {
         .items();
   }
 
+  // TODO is result property missing from DecisionInstance? Check controller
+    // Check controller to see if the response data has everything we need to be mapped, it just isn't being mapped
+
+  // TODO is required data not being written?
+  // H2 RBDMS Exporter -> Sind da die Daten drin?
+    // Camunda C8-run nutzt ES Datenbank -> Sind da die Daten drin?
+      // Dann wäre nur der RDMS Exporter unvollständig
+      // Sonst müsste das grundlegend implementiert werden.
   public List<DecisionInstance> findDecisionInstances(
       final Consumer<DecisionInstanceFilter> filter) {
-    return client.newDecisionInstanceSearchRequest().filter(filter).send().join().items();
+    return client
+        .newDecisionInstanceSearchRequest()
+        .filter(filter)
+        .send()
+        .join()
+        .items();
   }
 }

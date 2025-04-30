@@ -114,7 +114,7 @@ public class DecisionInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(DecisionSelectors.byName(NAME)).hasName("b"))
-          .hasMessage("Expected [name] to have name b, but was name");
+          .hasMessage("Expected [name] to have name 'b', but was 'name'");
     }
   }
 
@@ -143,7 +143,7 @@ public class DecisionInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(DecisionSelectors.byName(NAME)).hasId("foo"))
-          .hasMessage("Expected [name] to have id foo, but was decisionDefinitionId");
+          .hasMessage("Expected [name] to have id 'foo', but was 'decisionDefinitionId'");
     }
   }
 
@@ -181,7 +181,7 @@ public class DecisionInstanceAssertTest {
     public void hasOutputValueWithSingleMatch() {
       // when
       when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(singleRule())));
+          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", singleRule())));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasOutput("outputValue");
@@ -191,87 +191,24 @@ public class DecisionInstanceAssertTest {
     public void noMatchingOutputValue() {
       // when
       when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(singleRule())));
+          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", singleRule())));
 
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
-          .hasMessage(
-              "Expected [name] to have output foo, but does not. Outputs:\n"
-                  + "\t- outputName (id: outputId): outputValue");
+          .hasMessage("Expected [name] to have output 'foo', but was 'outputValue'");
     }
 
     @Test
     public void hasOutputValueWithNoMatches() {
       // when
       when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers()));
+          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(null)));
 
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
-          .hasMessage("Expected [name] to have output foo, but does not. Outputs:\n\t- <None>");
-    }
-
-    @Test
-    public void hasOutputValueWithMultipleMatch() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(multiRule())));
-
-      // then
-      assertThat(DecisionSelectors.byName(NAME)).hasOutput("outputValue2");
-    }
-
-    @Test
-    public void hasOutputNameAndValueWithSingleMatch() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(singleRule())));
-
-      // then
-      assertThat(DecisionSelectors.byName(NAME)).hasOutput("outputName", "outputValue");
-    }
-
-    @Test
-    public void hasOutputNameAndValueWithNoMatches() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers()));
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo", "bar"))
-          .hasMessage(
-              "Expected [name] to have output (foo: bar), but does not. Outputs:\n\t- <None>");
-    }
-
-    @Test
-    public void hasOutputNameAndValueWithMultipleMatch() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(multiRule())));
-
-      // then
-      assertThat(DecisionSelectors.byName(NAME)).hasOutput("outputName2", "outputValue2");
-    }
-
-    @Test
-    public void hasOutputNameAndValueDoesNotMixMatchedRules() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(multiRule())));
-
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  assertThat(DecisionSelectors.byName(NAME))
-                      .hasOutput("outputName1", "outputValue2"))
-          .hasMessage(
-              "Expected [name] to have output (outputName1: outputValue2), but does not. Outputs:\n"
-                  + "\t- outputName1 (id: outputId1): outputValue1\n"
-                  + "\t- outputName2 (id: outputId2): outputValue2\n"
-                  + "\t- outputName3 (id: outputId3): outputValue3");
+          .hasMessage("Expected [name] to have output 'foo', but was '<None>'");
     }
   }
 
@@ -281,7 +218,7 @@ public class DecisionInstanceAssertTest {
     public void hasMatched() {
       // when
       when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(singleRule())));
+          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", singleRule())));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1);
@@ -291,7 +228,7 @@ public class DecisionInstanceAssertTest {
     public void hasNotMatched() {
       // when
       when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(singleRule())));
+          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", singleRule())));
 
       // then
       Assertions.assertThatThrownBy(
@@ -307,7 +244,7 @@ public class DecisionInstanceAssertTest {
     public void noMatchesExist() {
       // when
       when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers()));
+          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue")));
 
       // then
       Assertions.assertThatThrownBy(
@@ -323,7 +260,7 @@ public class DecisionInstanceAssertTest {
     public void hasMatchedMultiple() {
       // when
       when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(multiRule())));
+          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", multiRule())));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1, 2, 3);
@@ -333,7 +270,7 @@ public class DecisionInstanceAssertTest {
     public void hasMatchedPartial() {
       // when
       when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(multiRule())));
+          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", multiRule())));
 
       // then
       Assertions.assertThatThrownBy(
@@ -343,79 +280,6 @@ public class DecisionInstanceAssertTest {
                   + "\t- matched: [1, 2]\n"
                   + "\t- missing: [4]\n"
                   + "\t- unexpected: [3]");
-    }
-  }
-
-  @Nested
-  public class HasMatchedRulesIds {
-    @Test
-    public void hasMatched() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(singleRule())));
-
-      // then
-      assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules("ruleId");
-    }
-
-    @Test
-    public void hasNotMatched() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(singleRule())));
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules("foo"))
-          .hasMessage(
-              "Expected [name] to have matched rule ids [foo], but did not. Matches:\n"
-                  + "\t- matched: []\n"
-                  + "\t- missing: [foo]\n"
-                  + "\t- unexpected: [ruleId]");
-    }
-
-    @Test
-    public void noMatchesExist() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers()));
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules("foo"))
-          .hasMessage(
-              "Expected [name] to have matched rule ids [foo], but did not. Matches:\n"
-                  + "\t- matched: []\n"
-                  + "\t- missing: [foo]\n"
-                  + "\t- unexpected: []");
-    }
-
-    @Test
-    public void hasMatchedMultiple() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(multiRule())));
-
-      // then
-      assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules("ruleId1", "ruleId2", "ruleId3");
-    }
-
-    @Test
-    public void hasMatchedPartial() {
-      // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(multiRule())));
-
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  assertThat(DecisionSelectors.byName(NAME))
-                      .hasMatchedRules("ruleId1", "ruleId2", "foo"))
-          .hasMessage(
-              "Expected [name] to have matched rule ids [ruleId1, ruleId2, foo], but did not. Matches:\n"
-                  + "\t- matched: [ruleId1, ruleId2]\n"
-                  + "\t- missing: [foo]\n"
-                  + "\t- unexpected: [ruleId3]");
     }
   }
 
@@ -447,10 +311,12 @@ public class DecisionInstanceAssertTest {
     return new DecisionInstanceImpl(resultBuilderFn.apply(basicResult), null);
   }
 
-  private DecisionInstance decisionInstanceWithAnswers(final MatchedDecisionRule... rules) {
+  private DecisionInstance decisionInstanceWithAnswers(
+      final String result, final MatchedDecisionRule... rules) {
     List<MatchedDecisionRule> rulesList = Arrays.stream(rules).collect(Collectors.toList());
 
-    return new DecisionInstanceImpl(
+    return new DecisionInstanceImpl
+        (
         null,
         Integer.parseInt(DECISION_INSTANCE_KEY),
         DECISION_INSTANCE_ID,
@@ -466,7 +332,8 @@ public class DecisionInstanceAssertTest {
         DecisionDefinitionType.DECISION_TABLE,
         "tenantId",
         Collections.emptyList(),
-        rulesList);
+        rulesList,
+        result);
   }
 
   private MatchedDecisionRule rule(MatchedDecisionRuleItem ruleItem) {

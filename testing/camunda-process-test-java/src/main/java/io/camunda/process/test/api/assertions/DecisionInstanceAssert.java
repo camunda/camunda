@@ -53,29 +53,10 @@ public interface DecisionInstanceAssert {
   DecisionInstanceAssert hasOutput(String expectedOutputValue);
 
   /**
-   * Verifies that the decision is evaluated with the expected output. The verification fails if the
-   * decision failed or the output does not match.
-   *
-   * @param expectedOutputName the expected output variable name
-   * @param expectedOutputValue the expected output value
-   * @return the assertion object
-   */
-  DecisionInstanceAssert hasOutput(
-      final String expectedOutputName, final String expectedOutputValue);
-
-  /**
    * Verifies that the decision has matched the given rule indices.
    *
    * @param expectedMatchedRuleIndices the rule indices that should have matched
    * @return the assertion object
    */
   DecisionInstanceAssert hasMatchedRules(final int... expectedMatchedRuleIndices);
-
-  /**
-   * Verifies that the decision has matched the given rule ids.
-   *
-   * @param expectedMatchedRuleIds the rule ids that should have matched
-   * @return the assertion object
-   */
-  DecisionInstanceAssert hasMatchedRules(final String... expectedMatchedRuleIds);
 }
