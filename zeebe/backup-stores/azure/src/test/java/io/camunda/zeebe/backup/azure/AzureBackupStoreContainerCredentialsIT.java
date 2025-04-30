@@ -66,6 +66,11 @@ public class AzureBackupStoreContainerCredentialsIT {
     assertDoesNotThrow(() -> new AzureBackupStore(azureBackupConfig));
   }
 
+  // The test for the user delegation token is not present due to the fact that the azurite
+  // container does not provide a real user delegation key, since this uses Microsoft Entra
+  // credentials in a normal situation, which are not accessible vaia the azurite container.
+  // Further explanation along the description of the manual tests to replace this can be found in
+  // the PR: https://github.com/camunda/camunda/pull/31494
   @ParameterizedTest
   @ArgumentsSource(TestBackupProvider.class)
   void shouldLoginWithAccountSasToken(final Backup backup) {
