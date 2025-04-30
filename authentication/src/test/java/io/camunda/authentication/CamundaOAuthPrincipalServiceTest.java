@@ -46,7 +46,7 @@ public class CamundaOAuthPrincipalServiceTest {
   private CamundaOAuthPrincipalService camundaOAuthPrincipalService;
 
   @Nested
-  class applicationIdClaimConfiguration {
+  class ApplicationIdClaimConfiguration {
     private static final String APPLICATION_ID_CLAIM = "application-id";
     @Mock private MappingServices mappingServices;
     @Mock private TenantServices tenantServices;
@@ -128,7 +128,7 @@ public class CamundaOAuthPrincipalServiceTest {
   }
 
   @Nested
-  class usernameClaimConfiguration {
+  class UsernameClaimConfiguration {
     private static final String USERNAME_CLAIM = "email";
     @Mock private MappingServices mappingServices;
     @Mock private TenantServices tenantServices;

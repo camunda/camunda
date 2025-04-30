@@ -11,7 +11,6 @@ import io.camunda.authentication.entity.AuthenticationContext.AuthenticationCont
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
