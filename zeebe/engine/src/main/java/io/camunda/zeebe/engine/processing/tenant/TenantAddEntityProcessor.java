@@ -68,6 +68,15 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   @Override
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
+    final var tenantId = record.getTenantId();
+    final var authorizationRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
+            .addResourceId(tenantId);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
+      return;
+    }
 
     final var tenantLookup = getPersistedTenant(record);
     if (tenantLookup.isLeft()) {
@@ -77,17 +86,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     final var persistedTenant = tenantLookup.get();
     final var tenantKey = persistedTenant.getTenantKey();
-    final var tenantId = persistedTenant.getTenantId();
     record.setTenantKey(tenantKey);
-
-    final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(tenantId);
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
-      return;
-    }
 
     if (!validateEntityAssignment(command, tenantId)) {
       return;
