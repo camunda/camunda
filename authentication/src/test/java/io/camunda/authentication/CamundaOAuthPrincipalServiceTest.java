@@ -23,8 +23,6 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,10 +32,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class CamundaOAuthPrincipalServiceTest {
-  private static final String REGISTRATION_ID = "test";
-  private static final String TOKEN_VALUE = "{}";
-  private static final Instant TOKEN_ISSUED_AT = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-  private static final Instant TOKEN_EXPIRES_AT = TOKEN_ISSUED_AT.plus(1, ChronoUnit.DAYS);
 
   private CamundaOAuthPrincipalService camundaOAuthPrincipalService;
 
@@ -86,7 +80,7 @@ public class CamundaOAuthPrincipalServiceTest {
     final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1");
     when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2")))
         .thenReturn(List.of(roleR1));
-    when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "8")))
+    when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "roleR1")))
         .thenReturn(List.of("*"));
 
     // when
@@ -122,7 +116,7 @@ public class CamundaOAuthPrincipalServiceTest {
     final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1");
     when(roleServices.getRolesByMemberIds(Set.of("map-1", "map-2"))).thenReturn(List.of(roleR1));
 
-    when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "10")))
+    when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "roleR1")))
         .thenReturn(List.of("app-1", "app-2"));
 
     // when

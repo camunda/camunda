@@ -11,6 +11,7 @@ import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
@@ -78,9 +79,7 @@ public class CamundaOAuthPrincipalService {
             getUsernameFromClaims(claims),
             assignedRoles,
             authorizationServices.getAuthorizedApplications(
-                Stream.concat(
-                        assignedRoles.stream().map(r -> r.roleKey().toString()),
-                        mappingIds.stream())
+                Stream.concat(assignedRoles.stream().map(RoleEntity::roleId), mappingIds.stream())
                     .collect(Collectors.toSet())),
             tenantServices.getTenantsByMemberIds(mappingIds).stream()
                 .map(TenantDTO::fromEntity)
