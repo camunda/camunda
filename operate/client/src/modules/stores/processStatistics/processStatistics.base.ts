@@ -28,18 +28,18 @@ import {
   getProcessInstancesRequestFilters,
 } from 'modules/utils/filter';
 
-type State = {
-  statistics: ProcessInstancesStatisticsDto[];
-  status: 'initial' | 'fetching' | 'fetched' | 'error';
-};
-
-type SubprocessOverlay = {
+export type SubprocessOverlay = {
   payload: {
     flowNodeState: string;
   };
   type: string;
   flowNodeId: string;
   position: OverlayPosition;
+};
+
+type State = {
+  statistics: ProcessInstancesStatisticsDto[];
+  status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
