@@ -132,11 +132,36 @@ public class CommandDistributionMetricsTest {
 
   @Test
   public void shouldRepopulateGaugesAfterRecovery() {
-    // trigger distribution
+    // given
+    engine.pauseProcessing(2);
 
-    // hopefully triggers the recovery
-    // engine.stop();
-    // engine.start();
+    // when
+    final var key = triggerUnqueuedDistribution();
+
+    // then
+    assertThat(snapshotMetrics())
+        .isEqualTo(
+            MetricSnapshot.empty()
+                .withActive(1.0)
+                .withPending(1.0)
+                .withInflight(1.0)
+                .withRetries(0.0)
+                .withAcknowledged(0.0));
+
+    // when
+    engine.stop();
+    engine.start();
+    waitUntilCommandDistributionIs(CommandDistributionIntent.FINISHED, key);
+
+    // then
+    assertThat(snapshotMetrics())
+        .isEqualTo(
+            MetricSnapshot.empty()
+                .withActive(0.0)
+                .withPending(0.0)
+                .withInflight(0.0)
+                .withRetries(0.0)
+                .withAcknowledged(1.0));
   }
 
   private long triggerUnqueuedDistribution() {

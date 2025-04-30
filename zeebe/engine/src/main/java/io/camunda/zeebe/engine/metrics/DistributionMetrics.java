@@ -21,12 +21,12 @@ public final class DistributionMetrics {
       new ConcurrentHashMap<>();
 
   // Metrics
-  private final StatefulGauge commandDistributionsGauge;
+  private final StatefulGauge activeDistributionsGauge;
 
   public DistributionMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
 
-    commandDistributionsGauge =
+    activeDistributionsGauge =
         StatefulGauge.builder(DistributionMetricsDoc.ACTIVE_COMMAND_DISTRIBUTIONS.getName())
             .description(DistributionMetricsDoc.ACTIVE_COMMAND_DISTRIBUTIONS.getDescription())
             .register(meterRegistry);
@@ -36,12 +36,17 @@ public final class DistributionMetrics {
     return meterRegistry;
   }
 
+  public void reset() {
+    activeDistributionsGauge.set(0);
+    partitionMetrics.values().forEach(PartitionDistributionMetrics::reset);
+  }
+
   public void addDistribution(final long distributionKey) {
-    commandDistributionsGauge.increment();
+    activeDistributionsGauge.increment();
   }
 
   public void removeDistribution(final long distributionKey) {
-    commandDistributionsGauge.decrement();
+    activeDistributionsGauge.decrement();
   }
 
   public void addPendingDistribution(final int targetPartitionId, final long distributionKey) {
@@ -135,6 +140,11 @@ public final class DistributionMetrics {
                   DistributionMetricsDoc.ACKNOWLEDGE_COMMAND_DISTRIBUTIONS.getDescription())
               .tags(MicrometerUtil.PartitionKeyNames.targetPartitionTags(targetPartitionId))
               .register(meterRegistry);
+    }
+
+    public void reset() {
+      pendingDistributionsGauge.set(0);
+      inflightDistributionsGauge.set(0);
     }
 
     public void addPendingDistribution(final long distributionKey) {
