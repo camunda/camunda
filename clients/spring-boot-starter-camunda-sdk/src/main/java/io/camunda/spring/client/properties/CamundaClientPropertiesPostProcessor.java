@@ -185,8 +185,10 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
           authMethod = implicitAuthMethods.keySet().stream().findFirst().get();
           log.info(
               String.format(
-                  "Implicit '%s' '%s' detected, will be used",
-                  CAMUNDA_CLIENT_AUTH_METHOD, authMethod));
+                  "Implicit '%s'='%s' detected due to '%s' being set.",
+                  CAMUNDA_CLIENT_AUTH_METHOD,
+                  authMethod,
+                  implicitAuthMethods.entrySet().stream().findFirst().get().getValue()));
         }
       }
       if (authMethod == null) {
