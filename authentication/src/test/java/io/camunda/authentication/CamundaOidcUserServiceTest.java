@@ -90,7 +90,7 @@ public class CamundaOidcUserServiceTest {
   }
 
   @Test
-  public void givenApplicationIdClaimConfigured_whenLoadingUser_thenApplicationIdIsSet() {
+  public void applicationIdIsSetInAuthContext() {
     // given
     final Map<String, Object> claims = Map.of("sub", "test|foo@camunda.test", "client_id", "blah");
 
