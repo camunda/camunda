@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.authentication.CamundaJwtAuthenticationToken;
-import io.camunda.authentication.entity.AuthenticationContext;
+import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
@@ -121,7 +121,7 @@ class RequestMapperTest {
             new TenantDTO(1L, "tenant-1", "Tenant One", "First"),
             new TenantDTO(2L, "tenant-2", "Tenant Two", "Second"));
     final var authenticationContext =
-        new AuthenticationContext(username, List.of(), List.of(), tenants, List.of());
+        new AuthenticationContextBuilder().withUsername(username).withTenants(tenants).build();
 
     final var principal =
         new CamundaOidcUser(
@@ -276,8 +276,10 @@ class RequestMapperTest {
                 jwt,
                 new OAuthContext(
                     new HashSet<>(),
-                    new AuthenticationContext(
-                        sub, List.of(), List.of(), List.of(), List.of("g1", "g2")))),
+                    new AuthenticationContextBuilder()
+                        .withUsername(sub)
+                        .withGroups(List.of("g1", "g2"))
+                        .build())),
             null,
             null);
     SecurityContextHolder.getContext().setAuthentication(token);
@@ -300,8 +302,7 @@ class RequestMapperTest {
                         tokenExpiresAt,
                         Map.of("aud", aud, usernameClaim, usernameValue))),
                 Collections.emptySet(),
-                new AuthenticationContext(
-                    usernameValue, List.of(), List.of(), List.of(), List.of())),
+                new AuthenticationContextBuilder().withUsername(usernameValue).build()),
             List.of(),
             "oidc");
 
