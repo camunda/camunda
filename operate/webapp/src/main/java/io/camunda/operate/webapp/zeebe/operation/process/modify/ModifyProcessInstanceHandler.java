@@ -12,7 +12,6 @@ import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstance
 import static java.util.function.Predicate.not;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
@@ -66,12 +65,6 @@ public class ModifyProcessInstanceHandler extends AbstractOperationHandler
   @Override
   public Set<OperationType> getTypes() {
     return Set.of(OperationType.MODIFY_PROCESS_INSTANCE);
-  }
-
-  // Needed for tests
-  @Override
-  public void setCamundaClient(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
   }
 
   private void updateFinishedInBatchOperation(final OperationEntity operation)
