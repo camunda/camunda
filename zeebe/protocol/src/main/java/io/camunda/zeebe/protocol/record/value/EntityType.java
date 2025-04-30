@@ -20,5 +20,6 @@ public enum EntityType {
   USER,
   APPLICATION,
   MAPPING,
-  GROUP
+  GROUP,
+  ROLE
 }

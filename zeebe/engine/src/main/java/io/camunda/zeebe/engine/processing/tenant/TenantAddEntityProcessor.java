@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -41,6 +42,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final TenantState tenantState;
   private final MappingState mappingState;
   private final GroupState groupState;
+  private final RoleState roleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -58,6 +60,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     tenantState = state.getTenantState();
     mappingState = state.getMappingState();
     groupState = state.getGroupState();
+    roleState = state.getRoleState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
@@ -135,6 +138,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       case USER -> true; // With simple mappings, any username can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
       case GROUP -> groupState.get(entityId).isPresent();
+      case ROLE -> roleState.getRole(entityId).isPresent();
       default -> false;
     };
   }
