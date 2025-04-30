@@ -33,11 +33,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest
@@ -65,7 +65,8 @@ import org.springframework.test.util.ReflectionTestUtils;
       JsonMapperConfiguration.class
     })
 public class CamundaClientStarterAutoConfigurationTest {
-
+  @MockitoBean CamundaClient camundaClient;
+  @MockitoBean ZeebeClient zeebeClient;
   @Autowired private JsonMapper jsonMapper;
   @Autowired private CamundaClientProdAutoConfiguration autoConfiguration;
   @Autowired private ApplicationContext applicationContext;
@@ -114,9 +115,6 @@ public class CamundaClientStarterAutoConfigurationTest {
 
   @EnableConfigurationProperties(CamundaClientProperties.class)
   public static class TestConfig {
-
-    @MockBean CamundaClient camundaClient;
-    @MockBean ZeebeClient zeebeClient;
 
     @Bean
     public ObjectMapper objectMapper() {

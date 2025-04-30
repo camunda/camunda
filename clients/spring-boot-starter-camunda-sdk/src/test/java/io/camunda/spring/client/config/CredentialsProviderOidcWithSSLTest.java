@@ -15,11 +15,8 @@
  */
 package io.camunda.spring.client.config;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -39,35 +36,63 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
     classes = {CredentialsProviderConfiguration.class},
     properties = {
-      "camunda.client.mode=saas",
-      "camunda.client.cloud.cluster-id=12345",
-      "camunda.client.cloud.region=bru-2",
-      "camunda.client.auth.client-id=CredentialsProviderSaasTest-my-client-id",
-      "camunda.client.auth.client-secret=my-client-secret"
+      "camunda.client.auth.method=oidc",
+      "camunda.client.auth.client-id=my-client-id",
+      "camunda.client.auth.client-secret=my-client-secret",
+      "camunda.client.auth.keystore-password=password",
+      "camunda.client.auth.keystore-key-password=password",
+      "camunda.client.auth.truststore-password=password",
     })
 @EnableConfigurationProperties({CamundaClientProperties.class})
-public class CredentialsProviderSaasTest {
+public class CredentialsProviderOidcWithSSLTest {
+
+  private static final String VALID_TRUSTSTORE_PATH =
+      CredentialsProviderOidcWithSSLTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/truststore.jks")
+          .getPath();
+
+  private static final String VALID_IDENTITY_PATH =
+      CredentialsProviderOidcWithSSLTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/identity.p12")
+          .getPath();
 
   @RegisterExtension
   static WireMockExtension wm =
-      WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
+      WireMockExtension.newInstance()
+          .options(
+              new WireMockConfiguration()
+                  .keystorePath(VALID_IDENTITY_PATH)
+                  .keystorePassword("password")
+                  .trustStorePath(VALID_TRUSTSTORE_PATH)
+                  .trustStorePassword("password")
+                  .dynamicHttpsPort())
+          .build();
 
-  private static final String ACCESS_TOKEN = "access-token";
-  @MockBean CamundaClientExecutorService zeebeClientExecutorService;
+  private static final String VALID_CLIENT_PATH =
+      CredentialsProviderOidcWithSSLTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/localhost.p12")
+          .getPath();
+
+  @MockitoBean CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CredentialsProvider credentialsProvider;
 
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {
-    final String issuer = "http://localhost:" + wm.getPort() + "/auth-server";
+    final String issuer = "https://localhost:" + wm.getHttpsPort() + "/auth-server";
     registry.add("camunda.client.auth.token-url", () -> issuer);
+    registry.add("camunda.client.auth.keystore-path", () -> VALID_CLIENT_PATH);
+    registry.add("camunda.client.auth.truststore-path", () -> VALID_TRUSTSTORE_PATH);
   }
 
   @BeforeEach
@@ -80,15 +105,14 @@ public class CredentialsProviderSaasTest {
   }
 
   @Test
-  void shouldBeSaas() {
+  void shouldBeSelfManaged() {
     assertThat(credentialsProvider).isExactlyInstanceOf(OAuthCredentialsProvider.class);
   }
 
   @Test
   void shouldHaveZeebeAuth() throws IOException {
     final Map<String, String> headers = new HashMap<>();
-
-    final String accessToken = ACCESS_TOKEN;
+    final String accessToken = "access-token";
     wm.stubFor(
         post("/auth-server")
             .willReturn(
@@ -100,9 +124,8 @@ public class CredentialsProviderSaasTest {
                             .put("expires_in", 300))));
 
     credentialsProvider.applyCredentials(headers::put);
-    assertThat(headers).isEqualTo(Map.of("Authorization", "Bearer " + accessToken));
-    wm.verify(
-        postRequestedFor(urlEqualTo("/auth-server"))
-            .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded")));
+    assertThat(credentialsProvider).isExactlyInstanceOf(OAuthCredentialsProvider.class);
+    assertThat(headers).containsEntry("Authorization", "Bearer " + accessToken);
+    assertThat(headers).hasSize(1);
   }
 }

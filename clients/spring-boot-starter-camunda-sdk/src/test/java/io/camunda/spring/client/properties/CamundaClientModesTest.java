@@ -76,30 +76,6 @@ public class CamundaClientModesTest {
       assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
       assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
-      assertThat(properties.getAuth().getTokenUrl())
-          .isEqualTo(
-              URI.create(
-                  "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token"));
-      assertThat(properties.getAuth().getAudience()).isEqualTo("zeebe-api");
-    }
-  }
-
-  @Nested
-  @SpringBootTest(
-      classes = CamundaClientPropertiesTestConfig.class,
-      properties = {
-        "camunda.client.mode=basic",
-      })
-  public class Basic {
-    @Autowired CamundaClientProperties properties;
-
-    @Test
-    void shouldLoadDefaultsBasic() {
-      assertThat(properties.getMode()).isEqualTo(ClientMode.basic);
-      assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
-      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
-      assertThat(properties.getAuth().getUsername()).isEqualTo("demo");
-      assertThat(properties.getAuth().getPassword()).isEqualTo("demo");
     }
   }
 }

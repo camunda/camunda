@@ -29,10 +29,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 @TestPropertySource(
@@ -77,7 +77,7 @@ public class JavaClientPropertiesTest {
 
   @EnableConfigurationProperties(CamundaClientProperties.class)
   public static class TestConfig {
-    @MockBean CamundaClient camundaClient;
+    @MockitoBean CamundaClient camundaClient;
 
     @Bean("jsonMapper")
     @ConditionalOnMissingBean(JsonMapper.class)

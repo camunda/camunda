@@ -33,7 +33,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
     classes = {CredentialsProviderConfiguration.class},
     properties = {
-      "camunda.client.mode=basic",
+      "camunda.client.auth.method=basic",
       "camunda.client.auth.username=foo",
       "camunda.client.auth.password=bar"
     })

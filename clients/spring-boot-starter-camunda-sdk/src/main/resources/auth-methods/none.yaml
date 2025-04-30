@@ -1,0 +1,4 @@
+camunda:
+  client:
+    auth:
+      method: none

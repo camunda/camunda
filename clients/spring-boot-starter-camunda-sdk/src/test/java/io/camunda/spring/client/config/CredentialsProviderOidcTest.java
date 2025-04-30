@@ -36,26 +36,26 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
     classes = {CredentialsProviderConfiguration.class},
     properties = {
-      "camunda.client.mode=self-managed",
+      "camunda.client.auth.method=oidc",
       "camunda.client.auth.client-id=CredentialsProviderSelfManagedTest-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
 @EnableConfigurationProperties({CamundaClientProperties.class})
-public class CredentialsProviderSelfManagedTest {
+public class CredentialsProviderOidcTest {
 
   @RegisterExtension
   static WireMockExtension wm =
       WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
-  @MockBean CamundaClientExecutorService zeebeClientExecutorService;
+  @MockitoBean CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CredentialsProvider credentialsProvider;
 
   @DynamicPropertySource
