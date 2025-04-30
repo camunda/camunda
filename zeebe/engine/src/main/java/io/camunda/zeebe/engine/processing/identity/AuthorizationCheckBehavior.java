@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -278,6 +277,20 @@ public final class AuthorizationCheckBehavior {
     for (final var groupId : groupIds) {
       tenantIds.addAll(
           membershipState.getMemberships(EntityType.GROUP, groupId, RelationType.TENANT));
+
+      final var roleIds =
+          new HashSet<>(
+              membershipState.getMemberships(EntityType.GROUP, groupId, RelationType.ROLE));
+      tenantIds.addAll(getTenantIdsForRoles(roleIds));
+    }
+    return tenantIds;
+  }
+
+  private Set<String> getTenantIdsForRoles(final Collection<String> roleIds) {
+    final var tenantIds = new HashSet<String>();
+    for (final var roleId : roleIds) {
+      tenantIds.addAll(
+          membershipState.getMemberships(EntityType.ROLE, roleId, RelationType.TENANT));
     }
     return tenantIds;
   }
@@ -471,13 +484,20 @@ public final class AuthorizationCheckBehavior {
           .map(
               user -> {
                 final var tenantIds =
-                    new ArrayList<>(
+                    new HashSet<>(
                         membershipState.getMemberships(
                             EntityType.USER, user.getUsername(), RelationType.TENANT));
+
                 final var groupIds =
                     membershipState.getMemberships(
                         EntityType.USER, user.getUsername(), RelationType.GROUP);
                 tenantIds.addAll(getTenantIdsForGroups(groupIds));
+
+                final var roleIds =
+                    membershipState.getMemberships(
+                        EntityType.USER, user.getUsername(), RelationType.ROLE);
+                tenantIds.addAll(getTenantIdsForRoles(roleIds));
+
                 return tenantIds;
               })
           .filter(t -> !t.isEmpty())
@@ -488,23 +508,26 @@ public final class AuthorizationCheckBehavior {
     final var tenantsOfMapping =
         getPersistedMappings(command).stream()
             .flatMap(
-                mapping ->
-                    Stream.concat(
-                        membershipState
-                            .getMemberships(
-                                EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT)
-                            .stream(),
-                        membershipState
-                            .getMemberships(
-                                EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP)
-                            .stream()
-                            .flatMap(
-                                groupId ->
-                                    membershipState
-                                        .getMemberships(
-                                            EntityType.GROUP, groupId, RelationType.TENANT)
-                                        .stream())))
-            .toList();
+                mapping -> {
+                  final var tenantIds =
+                      new HashSet<>(
+                          membershipState.getMemberships(
+                              EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT));
+
+                  final var groupIds =
+                      membershipState.getMemberships(
+                          EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP);
+                  tenantIds.addAll(getTenantIdsForGroups(groupIds));
+
+                  final var roleIds =
+                      membershipState.getMemberships(
+                          EntityType.MAPPING, mapping.getMappingId(), RelationType.ROLE);
+                  tenantIds.addAll(getTenantIdsForRoles(roleIds));
+
+                  return tenantIds.stream();
+                })
+            .collect(Collectors.toSet());
+
     return tenantsOfMapping.isEmpty()
         ? AuthorizedTenants.DEFAULT_TENANTS
         : new AuthenticatedAuthorizedTenants(tenantsOfMapping);
