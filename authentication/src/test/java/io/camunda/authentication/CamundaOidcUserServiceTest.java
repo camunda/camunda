@@ -97,7 +97,6 @@ public class CamundaOidcUserServiceTest {
     when(camundaOAuthPrincipalService.loadOAuthContext(claims))
         .thenReturn(
             new OAuthContext(
-                Set.of(5L, 7L),
                 Set.of("test-id", "test-id-2"),
                 new AuthenticationContext.AuthenticationContextBuilder()
                     .withApplicationId("blah")
