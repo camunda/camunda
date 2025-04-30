@@ -11,6 +11,7 @@ For community-maintained Camunda projects, please visit the [Camunda Community H
   - [Code of Conduct](#code-of-conduct)
 - [GitHub issue guidelines](#github-issue-guidelines)
   - [Starting on an issue](#starting-on-an-issue)
+    - [Severity and Likelihood (bugs)](#severity-and-likelihood-bugs)
 - [Build and run Camunda from source](#build-and-run-camunda-from-source)
   - [Build](#build)
   - [Run](#run)
@@ -54,7 +55,7 @@ improve
 - A problem, how we can reproduce it, and what the expected behavior would be
 - A change and the intention of how this would improve the system
 
-Severity and Likelihood (bugs):
+### Severity and Likelihood (bugs):
 To help us prioritize, please also determine the severity and likelihood of the bug. To help you with this, here are the definitions for the options:
 
 Severity:
@@ -69,13 +70,13 @@ Likelihood:
 - *Mid:* occasionally observed
 - *High:* recurring issue
 
-### Determining the severity of an issue
+#### Determining the severity of an issue
 
 Whenever possible, please try to determine the severity of an issue to the best of your knowledge.
 Only select `Unknown` if it's really difficult to tell without spending a non-negligible amount of time (e.g. >1h) to
 figure it out.
 
-#### Zeebe heuristic
+##### Zeebe heuristic
 
 The following is a set of questions which can help determine the severity of a bug in Zeebe:
 
