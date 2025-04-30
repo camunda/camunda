@@ -13,18 +13,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("Enable with https://github.com/camunda/camunda/issues/29925")
 @ZeebeIntegration
 class AssignUserToGroupTest {
 
@@ -34,99 +32,115 @@ class AssignUserToGroupTest {
 
   @AutoClose private CamundaClient client;
 
-  private long groupKey;
-  private long userKey;
+  private String groupId;
+  private String username;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    userKey =
+    username =
         client
             .newUserCreateCommand()
             .name("User Name")
-            .username("user")
+            .username(Strings.newRandomValidUsername())
             .email("foo@example.com")
             .password("******")
             .send()
             .join()
-            .getUserKey();
+            .getUsername();
 
-    groupKey =
+    groupId =
         client
             .newCreateGroupCommand()
-            .groupId("groupId")
+            .groupId(Strings.newRandomValidIdentityId())
             .name("groupName")
             .send()
             .join()
-            .getGroupKey();
+            .getGroupId();
   }
 
   @Test
   void shouldAssignUserToGroup() {
     // when
-    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
+    client.newAssignUserToGroupCommand(groupId).username(username).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityAssignedToGroup(
-        groupKey,
-        userKey,
+        groupId,
+        username,
         group -> {
           assertThat(group).hasEntityType(EntityType.USER);
         });
   }
 
   @Test
-  void shouldRejectIfUserDoesNotExist() {
-    // given
-    final long nonExistentUserKey = Protocol.encodePartitionId(1, 111L);
-
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newAssignUserToGroupCommand(groupKey)
-                    .userKey(nonExistentUserKey)
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining(
-            "Expected to add an entity with key '%d' and type '%s' to group with key '%d', but the entity does not exist."
-                .formatted(nonExistentUserKey, EntityType.USER, groupKey));
-  }
-
-  @Test
   void shouldRejectIfGroupDoesNotExist() {
     // given
-    final long nonExistentGroupKey = Protocol.encodePartitionId(1, 111L);
+    final String nonExistentGroupId = Strings.newRandomValidIdentityId();
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignUserToGroupCommand(nonExistentGroupKey)
-                    .userKey(userKey)
+                    .newAssignUserToGroupCommand(nonExistentGroupId)
+                    .username(username)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to update group with key '%s', but a group with this key does not exist."
-                .formatted(nonExistentGroupKey));
+            "Expected to update group with ID '%s', but a group with this ID does not exist."
+                .formatted(nonExistentGroupId));
   }
 
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
+    client.newAssignUserToGroupCommand(groupId).username(username).send().join();
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join())
+            () -> client.newAssignUserToGroupCommand(groupId).username(username).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to group with key '%d', but the entity is already assigned to this group."
-                .formatted(userKey, groupKey));
+            "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group."
+                .formatted(username, groupId));
+  }
+
+  @Test
+  void shouldRejectIfMissingGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignUserToGroupCommand(null).username("username").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignUserToGroupCommand("").username("username").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
+  }
+
+  @Test
+  void shouldRejectIfMissingUsername() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignUserToGroupCommand("groupId").username(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyUsername() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignUserToGroupCommand("groupId").username("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be empty");
   }
 }

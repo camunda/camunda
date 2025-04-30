@@ -58,7 +58,8 @@ public class UnassignUserFromGroupTest {
             .send()
             .join()
             .getGroupKey();
-    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
+    // TODO: this will be changed with unassign user command refactor
+    client.newAssignUserToGroupCommand("groupId").username("username").send().join();
   }
 
   @Test

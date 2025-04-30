@@ -1186,8 +1186,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newAssignUserToGroupCommand(123L)
-   *  .userKey(456L)
+   *  .newAssignUserToGroupCommand("groupId")
+   *  .username("username")
    *  .send();
    * </pre>
    *
@@ -1195,7 +1195,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(long groupKey);
+  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(String groupId);
 
   /**
    * Command to unassign a user from a group.

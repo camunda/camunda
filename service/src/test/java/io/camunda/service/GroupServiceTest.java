@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.UUID;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -168,8 +169,7 @@ public class GroupServiceTest {
   @Test
   public void shouldAddMemberToGroup() {
     // given
-    final var groupKey = Protocol.encodePartitionId(1, 123);
-    final var groupId = String.valueOf(groupKey);
+    final var groupId = UUID.randomUUID().toString();
     final var memberId = "456";
     final var dto = new GroupMemberDTO(groupId, memberId, EntityType.USER);
 
@@ -181,9 +181,8 @@ public class GroupServiceTest {
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.ADD_ENTITY);
-    assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
-    assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasGroupId(groupId);
     assertThat(record).hasEntityId(memberId);
     assertThat(record).hasEntityType(EntityType.USER);
   }
@@ -191,8 +190,7 @@ public class GroupServiceTest {
   @Test
   public void shouldRemoveMemberFromGroup() {
     // given
-    final var groupKey = Protocol.encodePartitionId(1, 123L);
-    final var groupId = String.valueOf(groupKey);
+    final var groupId = UUID.randomUUID().toString();
     final var username = "username";
     final var memberType = EntityType.USER;
     final var dto = new GroupMemberDTO(groupId, username, EntityType.USER);
@@ -205,9 +203,8 @@ public class GroupServiceTest {
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.REMOVE_ENTITY);
-    assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
-    assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasGroupId(groupId);
     assertThat(record).hasEntityId(username);
     assertThat(record).hasEntityType(EntityType.USER);
   }
