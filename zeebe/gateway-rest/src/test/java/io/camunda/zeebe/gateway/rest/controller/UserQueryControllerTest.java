@@ -21,16 +21,20 @@ import io.camunda.service.search.sort.UserSort;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserQueryController;
+import java.net.URI;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 
 @WebMvcTest(value = UserQueryController.class, properties = "camunda.rest.query.enabled=true")
 public class UserQueryControllerTest extends RestControllerTest {
@@ -70,6 +74,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldSearchUsersWithEmptyBody() {
     // given
     when(userServices.search(any(UserQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
@@ -89,6 +94,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldSearchUsersWithEmptyQuery() {
     // given
     when(userServices.search(any(UserQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
@@ -112,6 +118,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldSearchUserTasksWithSorting() {
     // given
     when(userServices.search(any(UserQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
@@ -146,6 +153,7 @@ public class UserQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("invalidUserSearchQueries")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldInvalidateUserTasksSearchQueryWithBadQueries(
       final String request, final String expectedResponse) {
     // when / then
@@ -164,6 +172,26 @@ public class UserQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userServices, never()).search(any(UserQuery.class));
+  }
+
+  @Test
+  void searchUserShouldNotBeImplemented() {
+
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    expectedBody.setTitle("Bad Request");
+    expectedBody.setInstance(URI.create("/v2/users/search"));
+    expectedBody.setDetail("User search is not yet implemented");
+
+    webClient
+        .post()
+        .uri("/v2/users/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
   }
 
   public static Stream<Arguments> invalidUserSearchQueries() {

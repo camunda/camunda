@@ -8,15 +8,11 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.UserServices;
-import io.camunda.service.search.query.UserQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestQueryController;
-import org.springframework.http.HttpStatus;
+import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,19 +30,6 @@ public class UserQueryController {
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<UserSearchResponse> searchUsers(
       @RequestBody(required = false) final UserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toUserQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
-  }
-
-  private ResponseEntity<UserSearchResponse> search(final UserQuery query) {
-    try {
-      final var result = userServices.search(query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
-    } catch (final Throwable e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, e.getMessage(), "Failed to execute User Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
-    }
+    throw new NotImplementedException("User search is not yet implemented");
   }
 }

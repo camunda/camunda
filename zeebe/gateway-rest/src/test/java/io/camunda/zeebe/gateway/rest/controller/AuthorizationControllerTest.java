@@ -62,7 +62,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void patchAuthorizationShouldReturnNoContent() {
     final var ownerKey = 1L;
     final var action = ActionEnum.ADD;
@@ -113,7 +113,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void patchAuthorizationThrowsExceptionWhenServiceThrowsException() {
     final var ownerKey = 1L;
     final var action = ActionEnum.ADD;
@@ -156,7 +156,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("provideInvalidRequests")
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   public void patchAuthorizationShouldReturnBadRequest(
       final AuthorizationPatchRequest request, final String errorMessage) {
     final var ownerKey = 1L;
