@@ -148,6 +148,66 @@ class RequestMapperTest {
   }
 
   @Test
+  void usernameIsSetInAuthenticationWhenOnAuthenticationContext() {
+    // given
+    final var username = "test-user";
+    final var authenticationContext =
+        new AuthenticationContextBuilder().withUsername(username).build();
+
+    final var principal =
+        new CamundaOidcUser(
+            new DefaultOidcUser(
+                Collections.emptyList(),
+                new OidcIdToken(
+                    "tokenValue",
+                    Instant.now(),
+                    Instant.now().plusSeconds(3600),
+                    Map.of("sub", username))),
+            Collections.emptySet(),
+            authenticationContext);
+
+    final var auth = new OAuth2AuthenticationToken(principal, List.of(), "oidc");
+    SecurityContextHolder.getContext().setAuthentication(auth);
+
+    // when
+    final var authentication = RequestMapper.getAuthentication();
+
+    // then
+    assertThat(authentication.authenticatedUsername()).isEqualTo(username);
+    assertThat(authentication.authenticationApplicationId()).isNull();
+  }
+
+  @Test
+  void applicationIdIsSetInAuthenticationWhenOnAuthenticationContext() {
+    // given
+    final var applicationId = "my-application";
+    final var authenticationContext =
+        new AuthenticationContextBuilder().withApplicationId(applicationId).build();
+
+    final var principal =
+        new CamundaOidcUser(
+            new DefaultOidcUser(
+                Collections.emptyList(),
+                new OidcIdToken(
+                    "tokenValue",
+                    Instant.now(),
+                    Instant.now().plusSeconds(3600),
+                    Map.of("sub", applicationId))),
+            Collections.emptySet(),
+            authenticationContext);
+
+    final var auth = new OAuth2AuthenticationToken(principal, List.of(), "oidc");
+    SecurityContextHolder.getContext().setAuthentication(auth);
+
+    // when
+    final var authContext = RequestMapper.getAuthentication();
+
+    // then
+    assertThat(authContext.authenticatedUsername()).isNull();
+    assertThat(authContext.authenticationApplicationId()).isEqualTo(applicationId);
+  }
+
+  @Test
   void shouldMapToProcessInstanceMigrationBatchOperationRequest() {
     // given
     final var migrationInstruction = new ProcessInstanceMigrationInstruction();

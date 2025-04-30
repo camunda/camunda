@@ -609,11 +609,11 @@ public class RequestMapper {
   }
 
   public static Authentication getAuthentication() {
-    String authenticatedUsername = null;
+    final String authenticatedUsername;
+    final String authenticatedApplicationId;
     final Map<String, Object> claims = new HashMap<>();
-    final List<String> authenticatedRoleIds = new ArrayList<>();
-    final List<String> authenticatedTenantIds = new ArrayList<>();
     final List<String> authenticatedMappingIds = new ArrayList<>();
+    final var authenticationBuilder = new Builder();
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
     if (requestAuthentication != null) {
@@ -621,14 +621,25 @@ public class RequestMapper {
           instanceof final CamundaPrincipal authenticatedPrincipal) {
         final var authenticationContext = authenticatedPrincipal.getAuthenticationContext();
 
-        authenticatedRoleIds.addAll(
-            authenticationContext.roles().stream().map(RoleEntity::roleId).toList());
+        final List<String> authenticatedRoleIds =
+            new ArrayList<>(
+                authenticationContext.roles().stream().map(RoleEntity::roleId).toList());
+        authenticationBuilder.roleIds(authenticatedRoleIds);
 
-        authenticatedTenantIds.addAll(
-            authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
+        final List<String> authenticatedTenantIds =
+            new ArrayList<>(
+                authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
+        authenticationBuilder.tenants(authenticatedTenantIds);
 
-        authenticatedUsername = authenticationContext.username();
-        claims.put(Authorization.AUTHORIZED_USERNAME, authenticationContext.username());
+        if (authenticationContext.username() != null) {
+          authenticatedUsername = authenticationContext.username();
+          claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
+          authenticationBuilder.user(authenticatedUsername);
+        } else {
+          authenticatedApplicationId = authenticationContext.applicationId();
+          claims.put(Authorization.AUTHORIZED_APPLICATION_ID, authenticatedApplicationId);
+          authenticationBuilder.applicationId(authenticatedApplicationId);
+        }
 
         if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
           authenticatedMappingIds.addAll(principal.getOAuthContext().mappingIds());
@@ -637,17 +648,14 @@ public class RequestMapper {
           principal
               .getClaims()
               .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
+          authenticationBuilder.mapping(authenticatedMappingIds);
         }
+
+        authenticationBuilder.claims(claims);
       }
     }
 
-    return new Builder()
-        .claims(claims)
-        .user(authenticatedUsername)
-        .roleIds(authenticatedRoleIds)
-        .tenants(authenticatedTenantIds)
-        .mapping(authenticatedMappingIds)
-        .build();
+    return authenticationBuilder.build();
   }
 
   public static Authentication getAnonymousAuthentication() {
