@@ -19,7 +19,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
@@ -37,15 +36,13 @@ import org.springframework.test.web.servlet.MvcResult;
 
 public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
 
-  @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
-
   @Autowired private UpdateVariableHandler updateVariableHandler;
 
   @Override
   @Before
   public void before() {
     super.before();
-    updateVariableHandler.setCamundaClient(super.getClient());
+    updateVariableHandler.setOperateAdapter(operateServicesAdapter);
   }
 
   protected String getVariablesURL(final Long processInstanceKey) {
