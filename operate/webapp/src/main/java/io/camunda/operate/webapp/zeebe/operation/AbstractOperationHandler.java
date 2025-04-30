@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CommandWithOperationReferenceStep;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -35,7 +34,6 @@ public abstract class AbstractOperationHandler implements OperationHandler {
           Status.RESOURCE_EXHAUSTED.getCode(),
           Status.DEADLINE_EXCEEDED.getCode());
 
-  @Autowired protected CamundaClient camundaClient;
   @Autowired protected OperateServicesAdapter operationServicesAdapter;
   @Autowired protected BatchOperationWriter batchOperationWriter;
   @Autowired protected OperateProperties operateProperties;
@@ -72,8 +70,8 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   // Needed for tests
   @Override
-  public void setCamundaClient(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
+  public void setOperateAdapter(final OperateServicesAdapter operateAdapter) {
+    operationServicesAdapter = operateAdapter;
   }
 
   private boolean isExceptionRetriable(final Exception ex) {
