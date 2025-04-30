@@ -46,6 +46,6 @@ public class JobWorkerValueCustomizerCompatTest {
     assertThat(customizer.getCustomizer()).isNotNull();
     assertThat(capturedOutput)
         .contains(
-            "Bean 'testZeebeWorkerValueCustomizer' is implementing ZeebeWorkerValueCustomizer, please migrate to JobWorkerValueCustomizer");
+            "Bean 'testZeebeWorkerValueCustomizer' is implementing deprecated interface ZeebeWorkerValueCustomizer, please migrate to JobWorkerValueCustomizer");
   }
 }

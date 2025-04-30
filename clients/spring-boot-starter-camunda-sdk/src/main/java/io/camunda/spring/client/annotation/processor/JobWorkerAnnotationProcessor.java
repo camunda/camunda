@@ -83,13 +83,13 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   public void start(final CamundaClient client) {
     jobWorkerValues.stream()
         .peek(
-            zeebeWorkerValue ->
+            jobWorkerValue ->
                 jobWorkerValueCustomizers.forEach(
-                    customizer -> customizer.customize(zeebeWorkerValue)))
+                    customizer -> customizer.customize(jobWorkerValue)))
         .filter(JobWorkerValue::getEnabled)
         .forEach(
-            zeebeWorkerValue -> {
-              jobWorkerManager.openWorker(client, zeebeWorkerValue);
+            jobWorkerValue -> {
+              jobWorkerManager.openWorker(client, jobWorkerValue);
             });
   }
 
