@@ -13,6 +13,7 @@ import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createAndSa
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.insertBatchOperationsItems;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringKey;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -64,7 +65,7 @@ public class BatchOperationIT {
 
     createAndSaveRandomBatchOperations(rdbmsService.createWriter(0), b -> b);
 
-    final var searchResult = rdbmsService.getBatchOperationReader().exists(nextKey());
+    final var searchResult = rdbmsService.getBatchOperationReader().exists(nextStringKey());
 
     assertThat(searchResult).isFalse();
   }
@@ -355,7 +356,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
-                        .batchOperationIds(batchOperation.batchOperationKey().toString())
+                        .batchOperationIds(batchOperation.batchOperationKey())
                         .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -449,8 +450,9 @@ public class BatchOperationIT {
     assertThat(instance).isNotNull();
     assertThat(instance)
         .usingRecursiveComparison()
-        .ignoringFields("startDate", "endDate")
+        .ignoringFields("batchOperationId", "startDate", "endDate")
         .isEqualTo(batchOperation);
+    assertThat(instance.batchOperationId()).isEqualTo(batchOperation.batchOperationKey());
     assertThat(instance.startDate())
         .isCloseTo(batchOperation.startDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.endDate())
@@ -464,7 +466,7 @@ public class BatchOperationIT {
         .search(
             new BatchOperationQuery(
                 new BatchOperationFilter.Builder()
-                    .batchOperationIds(batchOperation.batchOperationKey().toString())
+                    .batchOperationIds(batchOperation.batchOperationKey())
                     .build(),
                 BatchOperationSort.of(b -> b),
                 SearchQueryPage.of(b -> b)));

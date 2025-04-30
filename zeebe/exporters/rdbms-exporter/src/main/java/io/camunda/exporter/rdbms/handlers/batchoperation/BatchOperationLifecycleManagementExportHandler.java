@@ -40,7 +40,7 @@ public class BatchOperationLifecycleManagementExportHandler
   @Override
   public void export(final Record<BatchOperationLifecycleManagementRecordValue> record) {
     final var value = record.getValue();
-    final var batchOperationKey = value.getBatchOperationKey();
+    final var batchOperationKey = String.valueOf(value.getBatchOperationKey());
     if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
       batchOperationWriter.cancel(
           batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));

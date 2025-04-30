@@ -31,18 +31,18 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
     this.batchOperationMapper = batchOperationMapper;
   }
 
-  public boolean exists(final Long batchOperationKey) {
+  public boolean exists(final String batchOperationKey) {
     final var query =
         new BatchOperationDbQuery.Builder()
-            .filter(b -> b.batchOperationIds(batchOperationKey.toString()))
+            .filter(b -> b.batchOperationIds(batchOperationKey))
             .build();
 
     return batchOperationMapper.count(query) == 1;
   }
 
-  public Optional<BatchOperationEntity> findOne(final Long batchOperationKey) {
+  public Optional<BatchOperationEntity> findOne(final String batchOperationKey) {
     final var result =
-        search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationIds(batchOperationKey.toString()))));
+        search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationIds(batchOperationKey))));
     return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
   }
 
@@ -61,7 +61,7 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
-  public List<BatchOperationItemEntity> getItems(final Long batchOperationKey) {
+  public List<BatchOperationItemEntity> getItems(final String batchOperationKey) {
 
     return batchOperationMapper.getItems(batchOperationKey).stream().toList();
   }

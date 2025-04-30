@@ -59,7 +59,7 @@ public class BatchOperationWriter {
   }
 
   public void updateBatchAndInsertItems(
-      final long batchOperationKey, final List<BatchOperationItemDbModel> items) {
+      final String batchOperationKey, final List<BatchOperationItemDbModel> items) {
     if (items != null && !items.isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
@@ -73,7 +73,7 @@ public class BatchOperationWriter {
   }
 
   public void updateItem(
-      final long batchOperationKey,
+      final String batchOperationKey,
       final long itemKey,
       final BatchOperationItemState state,
       final OffsetDateTime endDate,
@@ -107,13 +107,13 @@ public class BatchOperationWriter {
     }
   }
 
-  public void finish(final long batchOperationKey, final OffsetDateTime endDate) {
+  public void finish(final String batchOperationKey, final OffsetDateTime endDate) {
     updateCompleted(
         batchOperationKey,
         new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.COMPLETED, endDate));
   }
 
-  public void cancel(final long batchOperationKey, final OffsetDateTime endDate) {
+  public void cancel(final String batchOperationKey, final OffsetDateTime endDate) {
     updateCompleted(
         batchOperationKey,
         new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.CANCELED, endDate));
@@ -122,19 +122,19 @@ public class BatchOperationWriter {
         batchOperationKey, BatchOperationItemState.ACTIVE, BatchOperationItemState.CANCELED);
   }
 
-  public void pause(final long batchOperationKey) {
+  public void pause(final String batchOperationKey) {
     updateCompleted(
         batchOperationKey,
         new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.PAUSED, null));
   }
 
-  public void resume(final long batchOperationKey) {
+  public void resume(final String batchOperationKey) {
     updateCompleted(
         batchOperationKey,
         new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.ACTIVE, null));
   }
 
-  private void updateCompleted(final long batchOperationKey, final BatchOperationUpdateDto dto) {
+  private void updateCompleted(final String batchOperationKey, final BatchOperationUpdateDto dto) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,
@@ -145,7 +145,7 @@ public class BatchOperationWriter {
   }
 
   private void updateItemsWithState(
-      final long batchOperationKey,
+      final String batchOperationKey,
       final BatchOperationItemState oldState,
       final BatchOperationItemState newState) {
     executionQueue.executeInQueue(
