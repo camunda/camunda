@@ -352,7 +352,7 @@ public final class SearchQueryResponseMapper {
 
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
     return new BatchOperationResponse()
-        .batchOperationKey(entity.batchOperationKey().toString())
+        .batchOperationId(entity.batchOperationId())
         .state(BatchOperationResponse.StateEnum.fromValue(entity.state().name()))
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType()))
         .startDate(formatDate(entity.startDate()))
@@ -372,7 +372,7 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationItemResponse toBatchOperationItem(
       final BatchOperationItemEntity entity) {
     return new BatchOperationItemResponse()
-        .batchOperationKey(entity.batchOperationKey().toString())
+        .batchOperationId(entity.batchOperationId())
         .itemKey(entity.itemKey().toString())
         .processInstanceKey(entity.processInstanceKey().toString())
         .processedDate(formatDate(entity.processedDate()))

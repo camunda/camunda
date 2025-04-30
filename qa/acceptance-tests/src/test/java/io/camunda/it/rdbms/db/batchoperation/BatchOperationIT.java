@@ -355,7 +355,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
-                        .batchOperationKeys(batchOperation.batchOperationKey())
+                        .batchOperationIds(batchOperation.batchOperationKey().toString())
                         .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -464,7 +464,7 @@ public class BatchOperationIT {
         .search(
             new BatchOperationQuery(
                 new BatchOperationFilter.Builder()
-                    .batchOperationKeys(batchOperation.batchOperationKey())
+                    .batchOperationIds(batchOperation.batchOperationKey().toString())
                     .build(),
                 BatchOperationSort.of(b -> b),
                 SearchQueryPage.of(b -> b)));

@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.entities.BatchOperationEntity.getBatchOperationKey;
 import static io.camunda.search.query.SearchQueryBuilders.batchOperationQuery;
 
 import io.camunda.search.clients.BatchOperationSearchClient;
@@ -60,39 +61,46 @@ public final class BatchOperationServices
         .searchBatchOperations(query);
   }
 
-  public BatchOperationEntity getByKey(final Long key) {
+  public BatchOperationEntity getById(final String batchOperationId) {
     final var result =
         batchOperationSearchClient.searchBatchOperations(
-            batchOperationQuery(q -> q.filter(f -> f.batchOperationKeys(key))));
-    return getSingleResultOrThrow(result, key, "BatchOperation");
+            batchOperationQuery(q -> q.filter(f -> f.batchOperationIds(batchOperationId))));
+    return getSingleResultOrThrow(result, batchOperationId, "BatchOperation");
   }
 
-  public List<BatchOperationItemEntity> getItemsByKey(final Long key) {
-    return batchOperationSearchClient.getBatchOperationItems(key);
+  public List<BatchOperationItemEntity> getItemsById(final String batchOperationId) {
+    return batchOperationSearchClient.getBatchOperationItems(batchOperationId);
   }
 
-  public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(final long batchKey) {
-    LOGGER.debug("Cancelling batch operation with key '{}'", batchKey);
+  public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(
+      final String batchOperationId) {
+    LOGGER.debug("Cancelling batch operation with id '{}'", batchOperationId);
 
     final var brokerRequest =
-        new BrokerCancelBatchOperationRequest().setBatchOperationKey(batchKey);
+        new BrokerCancelBatchOperationRequest()
+            .setBatchOperationKey(getBatchOperationKey(batchOperationId));
 
     return sendBrokerRequest(brokerRequest);
   }
 
-  public CompletableFuture<BatchOperationLifecycleManagementRecord> pause(final long batchKey) {
-    LOGGER.debug("Pausing batch operation with key '{}'", batchKey);
+  public CompletableFuture<BatchOperationLifecycleManagementRecord> pause(
+      final String batchOperationId) {
+    LOGGER.debug("Pausing batch operation with id '{}'", batchOperationId);
 
-    final var brokerRequest = new BrokerPauseBatchOperationRequest().setBatchOperationKey(batchKey);
+    final var brokerRequest =
+        new BrokerPauseBatchOperationRequest()
+            .setBatchOperationKey(getBatchOperationKey(batchOperationId));
 
     return sendBrokerRequest(brokerRequest);
   }
 
-  public CompletableFuture<BatchOperationLifecycleManagementRecord> resume(final long batchKey) {
-    LOGGER.debug("Resuming batch operation with key '{}'", batchKey);
+  public CompletableFuture<BatchOperationLifecycleManagementRecord> resume(
+      final String batchOperationId) {
+    LOGGER.debug("Resuming batch operation with id '{}'", batchOperationId);
 
     final var brokerRequest =
-        new BrokerResumeBatchOperationRequest().setBatchOperationKey(batchKey);
+        new BrokerResumeBatchOperationRequest()
+            .setBatchOperationKey(getBatchOperationKey(batchOperationId));
 
     return sendBrokerRequest(brokerRequest);
   }

@@ -12,7 +12,10 @@ import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record BatchOperationEntity(
-    Long batchOperationKey,
+    // To be backwards compatible with legacy batch operations from Operate, we need a String ID
+    // Operate BatchOperation ID is a UUID
+    // Engine BatchOperation ID is a Long
+    String batchOperationId,
     BatchOperationState state,
     String operationType,
     OffsetDateTime startDate,
@@ -21,8 +24,31 @@ public record BatchOperationEntity(
     Integer operationsFailedCount,
     Integer operationsCompletedCount) {
 
+  /**
+   * Because of backwards compatibility (Legacy Batches have a UUID as ID), batchOperationId is a
+   * String. However, the new batch engine uses a Long as ID (Key).
+   *
+   * @param batchOperationId throws IllegalArgumentException if the batchOperationId is not a valid
+   *     number (Legacy Batch Operation IDs are not supported)
+   * @return batchOperationKey
+   */
+  public static Long getBatchOperationKey(final String batchOperationId) {
+    try {
+      return Long.valueOf(batchOperationId);
+    } catch (final NumberFormatException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Batch operation id '%s' is not a valid number. Legacy Batch Operation IDs are not supported!",
+              batchOperationId),
+          e);
+    }
+  }
+
   public record BatchOperationItemEntity(
-      Long batchOperationKey,
+      // To be backwards compatible with legacy batch operations from Operate, we need a String ID
+      // Operate BatchOperation ID is a UUID
+      // Engine BatchOperation ID is a Long
+      String batchOperationId,
       Long itemKey,
       Long processInstanceKey,
       BatchOperationItemState state,

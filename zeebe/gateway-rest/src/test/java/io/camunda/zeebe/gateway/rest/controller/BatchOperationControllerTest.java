@@ -43,14 +43,14 @@ class BatchOperationControllerTest extends RestControllerTest {
 
   @Test
   void shouldReturnBatchOperation() {
-    final var batchOperationKey = 1L;
-    final var batchOperationEntity = getBatchOperationEntity(batchOperationKey);
+    final var batchOperationId = "1";
+    final var batchOperationEntity = getBatchOperationEntity(batchOperationId);
 
-    when(batchOperationServices.getByKey(batchOperationKey)).thenReturn(batchOperationEntity);
+    when(batchOperationServices.getById(batchOperationId)).thenReturn(batchOperationEntity);
 
     webClient
         .get()
-        .uri("/v2/batch-operations/{batchOperationKey}", batchOperationKey)
+        .uri("/v2/batch-operations/{batchOperationKey}", batchOperationId)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -59,7 +59,7 @@ class BatchOperationControllerTest extends RestControllerTest {
         .json(
             """
           {
-              "batchOperationKey":"1",
+              "batchOperationId":"1",
               "state":"COMPLETED",
               "batchOperationType":"CANCEL_PROCESS_INSTANCE",
               "startDate":"2025-03-18T10:57:44.000+01:00",
@@ -73,7 +73,7 @@ class BatchOperationControllerTest extends RestControllerTest {
   @Test
   void shouldSearchBatchOperations() {
     final var searchQueryResult = new BatchOperationSearchQueryResult();
-    final var entity = getBatchOperationEntity(1L);
+    final var entity = getBatchOperationEntity("1");
     when(batchOperationServices.search(any(BatchOperationQuery.class)))
         .thenReturn(new SearchQueryResult(1, List.of(entity), null, null));
 
@@ -94,7 +94,7 @@ class BatchOperationControllerTest extends RestControllerTest {
             """
           {"items":[
           {
-            "batchOperationKey":"1",
+            "batchOperationId":"1",
             "state":"COMPLETED",
             "batchOperationType":"CANCEL_PROCESS_INSTANCE",
             "startDate":"2025-03-18T10:57:44.000+01:00",
@@ -109,13 +109,13 @@ class BatchOperationControllerTest extends RestControllerTest {
 
   @Test
   void shouldCancelBatchOperation() {
-    final var batchOperationKey = 1L;
-    when(batchOperationServices.cancel(batchOperationKey))
+    final var batchOperationId = "1";
+    when(batchOperationServices.cancel(batchOperationId))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
         .put()
-        .uri("/v2/batch-operations/{key}/cancel", batchOperationKey)
+        .uri("/v2/batch-operations/{key}/cancel", batchOperationId)
         .exchange()
         .expectStatus()
         .isAccepted();
@@ -123,13 +123,13 @@ class BatchOperationControllerTest extends RestControllerTest {
 
   @Test
   void shouldPauseBatchOperation() {
-    final var batchOperationKey = 1L;
-    when(batchOperationServices.pause(batchOperationKey))
+    final var batchOperationId = "1";
+    when(batchOperationServices.pause(batchOperationId))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
         .put()
-        .uri("/v2/batch-operations/{key}/pause", batchOperationKey)
+        .uri("/v2/batch-operations/{key}/pause", batchOperationId)
         .exchange()
         .expectStatus()
         .isAccepted();
@@ -137,13 +137,13 @@ class BatchOperationControllerTest extends RestControllerTest {
 
   @Test
   void shouldResumeBatchOperation() {
-    final var batchOperationKey = 1L;
-    when(batchOperationServices.resume(batchOperationKey))
+    final var batchOperationId = "1";
+    when(batchOperationServices.resume(batchOperationId))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
         .put()
-        .uri("/v2/batch-operations/{key}/resume", batchOperationKey)
+        .uri("/v2/batch-operations/{key}/resume", batchOperationId)
         .exchange()
         .expectStatus()
         .isAccepted();
@@ -151,22 +151,22 @@ class BatchOperationControllerTest extends RestControllerTest {
 
   @Test
   void shouldReturnBatchOperationItems() {
-    final var batchOperationKey = 1L;
+    final var batchOperationId = "1";
 
     final var batchOperationItem =
         new BatchOperationEntity.BatchOperationItemEntity(
-            batchOperationKey,
+            batchOperationId,
             11L,
             12L,
             BatchOperationItemState.FAILED,
             OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
             "error");
-    when(batchOperationServices.getItemsByKey(batchOperationKey))
+    when(batchOperationServices.getItemsById(batchOperationId))
         .thenReturn(List.of(batchOperationItem));
 
     webClient
         .get()
-        .uri("/v2/batch-operations/{batchOperationKey}/items", batchOperationKey)
+        .uri("/v2/batch-operations/{batchOperationKey}/items", batchOperationId)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -176,7 +176,7 @@ class BatchOperationControllerTest extends RestControllerTest {
             """
                         {"items":[
                             {
-                                "batchOperationKey":"1",
+                                "batchOperationId":"1",
                                 "itemKey":"11",
                                 "processInstanceKey":"12",
                                 "state":"FAILED",
@@ -187,9 +187,9 @@ class BatchOperationControllerTest extends RestControllerTest {
                       """);
   }
 
-  private static BatchOperationEntity getBatchOperationEntity(final long batchOperationKey) {
+  private static BatchOperationEntity getBatchOperationEntity(final String batchOperationId) {
     return new BatchOperationEntity(
-        batchOperationKey,
+        batchOperationId,
         BatchOperationState.COMPLETED,
         "CANCEL_PROCESS_INSTANCE",
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),

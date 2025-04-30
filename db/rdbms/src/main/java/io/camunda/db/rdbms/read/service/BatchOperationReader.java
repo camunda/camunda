@@ -34,15 +34,15 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
   public boolean exists(final Long batchOperationKey) {
     final var query =
         new BatchOperationDbQuery.Builder()
-            .filter(b -> b.batchOperationKeys(batchOperationKey))
+            .filter(b -> b.batchOperationIds(batchOperationKey.toString()))
             .build();
 
     return batchOperationMapper.count(query) == 1;
   }
 
-  public Optional<BatchOperationEntity> findOne(final long batchOperationKey) {
+  public Optional<BatchOperationEntity> findOne(final Long batchOperationKey) {
     final var result =
-        search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationKeys(batchOperationKey))));
+        search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationIds(batchOperationKey.toString()))));
     return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
   }
 

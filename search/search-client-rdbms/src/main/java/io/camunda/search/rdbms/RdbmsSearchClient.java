@@ -7,6 +7,8 @@
  */
 package io.camunda.search.rdbms;
 
+import static io.camunda.search.entities.BatchOperationEntity.getBatchOperationKey;
+
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -294,11 +296,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
-  public List<BatchOperationItemEntity> getBatchOperationItems(final Long batchOperationKey) {
+  public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
     LOG.debug(
-        "[RDBMS Search Client] Search for batch operation items by batchOperationKey: {}",
-        batchOperationKey);
+        "[RDBMS Search Client] Search for batch operation items by batchOperationId: {}",
+        batchOperationId);
 
-    return rdbmsService.getBatchOperationReader().getItems(batchOperationKey);
+    return rdbmsService.getBatchOperationReader().getItems(getBatchOperationKey(batchOperationId));
   }
 }

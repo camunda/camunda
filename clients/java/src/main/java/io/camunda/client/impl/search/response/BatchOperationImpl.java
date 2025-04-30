@@ -18,7 +18,6 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
-import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
 import java.util.ArrayList;
@@ -26,7 +25,7 @@ import java.util.List;
 
 public class BatchOperationImpl implements BatchOperation {
 
-  private final Long batchOperationKey;
+  private final String batchOperationId;
   private final BatchOperationType type;
   private final BatchOperationState status;
   private final String startDate;
@@ -37,7 +36,7 @@ public class BatchOperationImpl implements BatchOperation {
   private final List<Long> keys = new ArrayList<>();
 
   public BatchOperationImpl(final BatchOperationCreatedResult item) {
-    batchOperationKey = ParseUtil.parseLongOrNull(item.getBatchOperationKey());
+    batchOperationId = item.getBatchOperationKey();
     type =
         item.getBatchOperationType() != null
             ? BatchOperationType.valueOf(item.getBatchOperationType().name())
@@ -51,7 +50,7 @@ public class BatchOperationImpl implements BatchOperation {
   }
 
   public BatchOperationImpl(final BatchOperationResponse item) {
-    batchOperationKey = ParseUtil.parseLongOrNull(item.getBatchOperationKey());
+    batchOperationId = item.getBatchOperationId();
     type =
         item.getBatchOperationType() != null
             ? BatchOperationType.valueOf(item.getBatchOperationType().name())
@@ -65,8 +64,8 @@ public class BatchOperationImpl implements BatchOperation {
   }
 
   @Override
-  public Long getBatchOperationKey() {
-    return batchOperationKey;
+  public String getBatchOperationId() {
+    return batchOperationId;
   }
 
   @Override

@@ -23,7 +23,7 @@
   <resultMap id="BatchOperationItemResultMap"
     type="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemEntity">
     <constructor>
-      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <idArg column="BATCH_OPERATION_ID" javaType="java.lang.String"/>
       <arg column="ITEM_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="STATE"
@@ -158,9 +158,9 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <!-- basic filters -->
-    <if test="filter.batchOperationKeys != null and !filter.batchOperationKeys.isEmpty()">
+    <if test="filter.batchOperationIds != null and !filter.batchOperationIds.isEmpty()">
       AND BATCH_OPERATION_KEY IN
-      <foreach collection="filter.batchOperationKeys" item="value" open="(" separator=", "
+      <foreach collection="filter.batchOperationIds" item="value" open="(" separator=", "
         close=")">#{value}
       </foreach>
     </if>

@@ -464,7 +464,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public List<BatchOperationItemEntity> getBatchOperationItems(final Long batchOperationKey) {
+  public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
     throw new UnsupportedOperationException("Not implemented yet");
   }
 }
