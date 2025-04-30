@@ -8,9 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.AuthorizationServices;
-import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -36,17 +34,6 @@ public class AuthorizationController {
       @PathVariable final long ownerKey,
       @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
 
-    //    return RequestMapper.toAuthorizationPatchRequest(ownerKey, authorizationPatchRequest)
-    //        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::patchAuthorization);
     throw new NotImplementedException("Authorization patching is not yet implemented");
-  }
-
-  private CompletableFuture<ResponseEntity<Object>> patchAuthorization(
-      final PatchAuthorizationRequest patchAuthorizationRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            authorizationServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .patchAuthorization(patchAuthorizationRequest));
   }
 }

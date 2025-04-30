@@ -52,7 +52,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void createUserShouldReturnAccepted() {
     // given
     final var dto = validCreateUserRequest();
@@ -82,7 +82,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void createUserThrowsExceptionWhenServiceThrowsException() {
     // given
     final String message = "message";
@@ -112,7 +112,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldRejectUserCreationWithMissingUsername() {
     // given
     final var request = validUserWithPasswordRequest().username(null);
@@ -133,7 +133,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldRejectUserCreationWithBlankUsername() {
     // given
     final var request = validUserWithPasswordRequest().username("");
@@ -154,7 +154,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldRejectUserCreationWithEmptyName() {
     // given
     final var request = validUserWithPasswordRequest().name(null);
@@ -175,7 +175,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldRejectUserCreationWithBlankName() {
     // given
     final var request = validUserWithPasswordRequest().name("");
@@ -196,7 +196,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldRejectUserCreationWithEmptyPassword() {
     // given
     final var request = validUserWithPasswordRequest().password(null);
@@ -217,7 +217,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldRejectUserCreationWithBlankPassword() {
     // given
     final var request = validUserWithPasswordRequest().password("");
@@ -238,7 +238,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldRejectUserCreationWithEmptyEmail() {
     // given
     final var request = validUserWithPasswordRequest().email(null);
@@ -259,7 +259,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldRejectUserCreationWithBlankEmail() {
     // given
     final var request = validUserWithPasswordRequest().email("");
@@ -280,7 +280,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  @Disabled("Controller is removed for 8.6 as the feature releases in 8.7")
+  @Disabled("Controller is removed for 8.6 as the feature releases in 8.8")
   void shouldRejectUserCreationWithInvalidEmail() {
     // given
     final var email = "invalid@email.reject";
