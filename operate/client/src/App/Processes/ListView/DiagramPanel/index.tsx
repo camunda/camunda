@@ -7,7 +7,7 @@
  */
 
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
@@ -32,6 +32,7 @@ import {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 import {useProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNode} from 'modules/utils/flowNodes';
+import {OverlayData} from 'modules/bpmn-js/BpmnJS';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -59,6 +60,10 @@ const DiagramPanel: React.FC = observer(() => {
   const location = useLocation();
   const {process, version, flowNodeId, tenant} = getProcessInstanceFilters(
     location.search,
+  );
+
+  const [overlays, setOverlays] = useState<OverlayData[] | undefined>(
+    undefined,
   );
 
   const isVersionSelected = version !== undefined && version !== 'all';
@@ -109,6 +114,19 @@ const DiagramPanel: React.FC = observer(() => {
 
     fetchDiagram();
   }, [processId, location.search]);
+
+  useEffect(() => {
+    if (processStatisticsStore.state.status === 'fetched') {
+      const overlaysData = processStatisticsStore.getOverlaysData(
+        processDefinition?.data?.selectableFlowNodes || [],
+      );
+
+      setOverlays(overlaysData);
+    }
+  }, [
+    processDefinition?.data?.selectableFlowNodes,
+    processStatisticsStore.state.status,
+  ]);
 
   const panelHeaderRef = useRef<HTMLDivElement>(null);
 
@@ -172,11 +190,13 @@ const DiagramPanel: React.FC = observer(() => {
                     );
                   },
                   overlaysData: [
-                    ...processStatisticsStore.overlaysData,
-                    ...processStatisticsBatchModificationStore.getOverlaysData({
-                      sourceFlowNodeId: flowNodeId,
-                      targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
-                    }),
+                    ...processStatisticsStore.getOverlaysData([]),
+                    ...processStatisticsBatchModificationStore.getOverlaysDataBatchModification(
+                      {
+                        sourceFlowNodeId: flowNodeId,
+                        targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
+                      },
+                    ),
                   ],
                   // All flow nodes that can be a move modification target,
                   // except the source flow node
@@ -205,7 +225,7 @@ const DiagramPanel: React.FC = observer(() => {
                       );
                     }
                   },
-                  overlaysData: processStatisticsStore.overlaysData,
+                  overlaysData: overlays,
                   selectableFlowNodes: selectableFlowNodeIds,
                 })}
           >
