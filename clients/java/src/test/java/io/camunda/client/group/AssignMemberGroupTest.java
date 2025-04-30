@@ -30,6 +30,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
 
   public static final String GROUP_ID = "groupId";
   public static final String USERNAME = "username";
+  public static final String MAPPING_ID = "mappingId";
 
   @Test
   void shouldAssignUserToGroup() {
@@ -76,6 +77,58 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () -> client.newAssignUserToGroupCommand(GROUP_ID).username(USERNAME).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 400: 'Bad Request'");
+  }
+
+  @Test
+  void shouldAssignMappingToGroup() {
+    // when
+    client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getUrl().contains(GROUP_ID + "/mapping-rules/" + MAPPING_ID)).isTrue();
+  }
+
+  @Test
+  void shouldRaiseExceptionOnRequestErrorAssignMapping() {
+    // given
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Not Found").status(404));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+
+  @Test
+  void shouldRaiseExceptionIfGroupNotExistsAssignMapping() {
+    // given
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Conflict").status(409));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 409: 'Conflict'");
+  }
+
+  @Test
+  void shouldHandleValidationErrorResponseAssignMapping() {
+    // given
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Bad Request").status(400));
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
