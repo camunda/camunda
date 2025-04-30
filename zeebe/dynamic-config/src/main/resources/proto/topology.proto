@@ -160,12 +160,12 @@ message StartPartitionScaleUpOperation {
 
 message AwaitRedistributionCompletion{
   int32 desiredPartitionCount = 1;
-  repeated int32 redistributedPartitions= 2;
+  repeated int32 partitionToRedistribute= 2;
 }
 
 message AwaitRelocationCompletion{
   int32 desiredPartitionCount = 1;
-  repeated int32 relocatedPartitions = 2;
+  repeated int32 partitionsToRelocate = 2;
 }
 
 message DeleteHistoryOperation {

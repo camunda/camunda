@@ -439,13 +439,13 @@ public class ProtoBufSerializer
           builder.setAwaitRedistributionCompletion(
               Topology.AwaitRedistributionCompletion.newBuilder()
                   .setDesiredPartitionCount(msg.desiredPartitionCount())
-                  .addAllRedistributedPartitions(msg.redistributedPartitions())
+                  .addAllPartitionToRedistribute(msg.redistributedPartitions())
                   .build());
       case final AwaitRelocationCompletion msg ->
           builder.setAwaitRelocationCompletion(
               Topology.AwaitRelocationCompletion.newBuilder()
                   .setDesiredPartitionCount(msg.desiredPartitionCount())
-                  .addAllRelocatedPartitions(msg.relocatedPartitions())
+                  .addAllPartitionsToRelocate(msg.relocatedPartitions())
                   .build());
     }
     return builder.build();
@@ -663,13 +663,13 @@ public class ProtoBufSerializer
       return new AwaitRedistributionCompletion(
           memberId,
           redistribution.getDesiredPartitionCount(),
-          new TreeSet<>(redistribution.getRedistributedPartitionsList()));
+          new TreeSet<>(redistribution.getPartitionToRedistributeList()));
     } else if (topologyChangeOperation.hasAwaitRelocationCompletion()) {
       final var relocation = topologyChangeOperation.getAwaitRelocationCompletion();
       return new AwaitRelocationCompletion(
           memberId,
           relocation.getDesiredPartitionCount(),
-          new TreeSet<>(relocation.getRelocatedPartitionsList()));
+          new TreeSet<>(relocation.getPartitionsToRelocateList()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
