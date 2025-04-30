@@ -24,6 +24,8 @@ import java.time.OffsetDateTime;
 public class ProcessInstanceExportHandler
     implements RdbmsExportHandler<ProcessInstanceRecordValue> {
 
+  public static final long NO_PARENT_EXISTS_KEY = -1L;
+
   private final ProcessInstanceWriter processInstanceWriter;
   private final HistoryCleanupService historyCleanupService;
 
@@ -64,6 +66,18 @@ public class ProcessInstanceExportHandler
 
   private ProcessInstanceDbModel map(final Record<ProcessInstanceRecordValue> record) {
     final var value = record.getValue();
+
+    // To be consistent with the other exporters, we use null for the parent keys if there is no
+    // parent
+    final var parentProcessInstanceKey =
+        value.getParentProcessInstanceKey() == NO_PARENT_EXISTS_KEY
+            ? null
+            : value.getParentProcessInstanceKey();
+    final var parentElementInstanceKey =
+        value.getParentElementInstanceKey() == NO_PARENT_EXISTS_KEY
+            ? null
+            : value.getParentElementInstanceKey();
+
     return new ProcessInstanceDbModelBuilder()
         .processInstanceKey(value.getProcessInstanceKey())
         .processDefinitionId(value.getBpmnProcessId())
@@ -71,8 +85,8 @@ public class ProcessInstanceExportHandler
         .state(ProcessInstanceState.ACTIVE)
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .tenantId(value.getTenantId())
-        .parentProcessInstanceKey(value.getParentProcessInstanceKey())
-        .parentElementInstanceKey(value.getParentElementInstanceKey())
+        .parentProcessInstanceKey(parentProcessInstanceKey)
+        .parentElementInstanceKey(parentElementInstanceKey)
         .version(value.getVersion())
         .partitionId(record.getPartitionId())
         .build();

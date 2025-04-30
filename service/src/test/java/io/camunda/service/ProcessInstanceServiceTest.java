@@ -7,7 +7,6 @@
  */
 package io.camunda.service;
 
-import static io.camunda.service.ProcessInstanceServices.NO_PARENT_EXISTS_KEY;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
@@ -173,7 +172,7 @@ public final class ProcessInstanceServiceTest {
     final var enhancedFilter =
         MsgPackConverter.convertToObject(filterBuffer, ProcessInstanceFilter.class);
     assertThat(enhancedFilter.parentProcessInstanceKeyOperations())
-        .containsExactly(Operation.eq(NO_PARENT_EXISTS_KEY));
+        .containsExactly(Operation.exists(false));
     assertThat(enhancedFilter.stateOperations())
         .containsExactly(Operation.eq(ProcessInstanceState.ACTIVE.name()));
   }
