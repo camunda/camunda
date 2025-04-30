@@ -131,19 +131,19 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         + accountName
         + '\''
         + ", accountKey='"
-        + "<redacted>"
+        + (accountKey != null ? "<redacted>" : "null")
         + '\''
         + ", connectionString='"
-        + "<redacted>"
+        + (connectionString != null ? "<redacted>" : "null")
         + '\''
         + ", basePath='"
         + basePath
         + ", createContainer="
         + createContainer
         + ", sasToken='"
-        + "<redacted>"
-        + ", accountSasToken='"
-        + "<redacted>"
+        + (sasToken != null
+            ? ", SasTokenConfig{ type: " + sasToken.type() + ",value: <redacted>}"
+            : "null")
         + '\''
         + '}';
   }
