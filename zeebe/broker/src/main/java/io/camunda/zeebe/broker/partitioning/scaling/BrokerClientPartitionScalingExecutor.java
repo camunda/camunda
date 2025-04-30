@@ -79,10 +79,9 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
           }
         },
         error -> {
-          if (error instanceof final BrokerRejectionException rejection) {
-            if (rejection.getRejection().type() == RejectionType.INVALID_ARGUMENT) {
-              LOGGER.debug("Await redistribution request is invalid", rejection);
-            }
+          if (error instanceof final BrokerRejectionException rejection
+              && rejection.getRejection().type() == RejectionType.INVALID_ARGUMENT) {
+            LOGGER.debug("Await redistribution request is invalid", rejection);
             result.complete(null);
           } else {
             result.completeExceptionally(error);
