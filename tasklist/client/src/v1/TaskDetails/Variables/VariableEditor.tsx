@@ -20,22 +20,22 @@ import {Popup, Close} from '@carbon/react/icons';
 import type {Variable} from 'v1/api/types';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
-import {DelayedErrorField} from './DelayedErrorField';
-import {LoadingTextarea} from './LoadingTextarea';
-import {OnNewVariableAdded} from './OnNewVariableAdded';
-import {mergeValidators} from './mergeValidators';
-import type {FormValues} from '../types';
+import {DelayedErrorField} from 'common/tasks/variables-editor/VariableEditor/DelayedErrorField';
+import {LoadingTextarea} from 'common/tasks/variables-editor/VariableEditor/LoadingTextarea';
+import {OnNewVariableAdded} from 'common/tasks/variables-editor/VariableEditor/OnNewVariableAdded';
+import {mergeValidators} from 'common/tasks/variables-editor/VariableEditor/mergeValidators';
+import type {FormValues} from 'common/tasks/variables-editor/types';
 import {
   createVariableFieldName,
   createNewVariableFieldName,
-} from '../createVariableFieldName';
+} from 'common/tasks/variables-editor/createVariableFieldName';
 import {
   validateValueJSON,
   validateNameCharacters,
   validateNameComplete,
   validateDuplicateNames,
   validateValueComplete,
-} from '../validators';
+} from 'common/tasks/variables-editor/VariableEditor/validators';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {useTranslation} from 'react-i18next';
