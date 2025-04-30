@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -39,6 +40,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       "Expected to remove entity with ID '%s' from role with ID '%s', but the entity is not assigned to this role.";
   private final RoleState roleState;
   private final MappingState mappingState;
+  private final GroupState groupState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -55,6 +57,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
     mappingState = processingState.getMappingState();
+    groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
@@ -131,19 +134,15 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   }
 
   private boolean isEntityAssigned(final RoleRecord record) {
-    return switch (record.getEntityType()) {
-      case USER, MAPPING ->
-          membershipState.hasRelation(
-              record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
-      default ->
-          throw new IllegalArgumentException("Unsupported entity type: " + record.getEntityType());
-    };
+    return membershipState.hasRelation(
+        record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
   }
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
       case USER -> true; // With simple mappings, any username can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
+      case GROUP -> groupState.get(entityId).isPresent();
       default -> false;
     };
   }
