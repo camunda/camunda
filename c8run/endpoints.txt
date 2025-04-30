@@ -7,9 +7,9 @@ Operate:                     http://localhost:{{.OperatePort}}/operate
 Tasklist:                    http://localhost:{{.TasklistPort}}/tasklist
 Identity:                    http://localhost:{{.IdentityPort}}/identity
 
-Camunda 8 API: 
-Inbound Connectors API: http://localhost:8085
-Zeebe API (grpc):      http://localhost:26500
+Camunda 8 API: http://localhost:8080/v2/
+Inbound Connectors API: http://localhost:8085/
+Zeebe API (grpc):      http://localhost:26500/
 
 Camunda metrics endpoint:    http://localhost:9600/actuator/prometheus
 
