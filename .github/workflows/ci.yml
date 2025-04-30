@@ -319,7 +319,6 @@ jobs:
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
-          dockerfile: ${{ matrix.docker-file }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - uses: ./.github/actions/build-platform-docker
