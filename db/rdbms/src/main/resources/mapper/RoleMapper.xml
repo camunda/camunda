@@ -91,7 +91,7 @@
     flushCache="true">
     DELETE
     FROM ${prefix}ROLE_MEMBER
-    WHERE ROLE_KEY = #{roleKey}
+    WHERE ROLE_ID = #{roleId}
       AND ENTITY_ID = #{entityId}
       AND ENTITY_TYPE = #{entityType}
   </delete>
