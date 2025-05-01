@@ -20,6 +20,7 @@ import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
@@ -31,6 +32,7 @@ import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.client.api.search.sort.ElementInstanceSort;
+import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
@@ -42,6 +44,7 @@ import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.client.impl.search.filter.ElementInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.GroupFilterImpl;
 import io.camunda.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
@@ -54,6 +57,7 @@ import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
+import io.camunda.client.impl.search.sort.GroupSortImpl;
 import io.camunda.client.impl.search.sort.IncidentSortImpl;
 import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
@@ -214,5 +218,17 @@ public final class SearchRequestBuilders {
     final ProcessDefinitionStatisticsFilter filter = new ProcessDefinitionStatisticsFilterImpl();
     fn.accept(filter);
     return filter;
+  }
+
+  public static GroupFilter groupFilter(final Consumer<GroupFilter> fn) {
+    final GroupFilter filter = new GroupFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static GroupSort groupSort(final Consumer<GroupSort> fn) {
+    final GroupSort sort = new GroupSortImpl();
+    fn.accept(sort);
+    return sort;
   }
 }

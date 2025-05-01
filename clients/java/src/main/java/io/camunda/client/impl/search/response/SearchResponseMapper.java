@@ -159,6 +159,13 @@ public final class SearchResponseMapper {
         response.getDescription());
   }
 
+  public static SearchResponse<Group> toGroupsResponse(final GroupSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Group> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toGroupResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
   private static <T, R> List<R> toSearchResponseInstances(
       final List<T> items, final Function<T, R> mapper) {
     return Optional.ofNullable(items)
