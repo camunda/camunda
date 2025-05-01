@@ -82,7 +82,7 @@ class RemoveUserFromTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove entity from tenant '%s', but no tenant with this id exists."
+            "Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND': Expected to remove entity from tenant '%s', but no tenant with this ID exists."
                 .formatted(invalidTenantId));
   }
 
