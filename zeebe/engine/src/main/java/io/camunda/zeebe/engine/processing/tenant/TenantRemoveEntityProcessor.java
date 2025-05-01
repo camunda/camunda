@@ -18,6 +18,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
@@ -33,6 +35,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class TenantRemoveEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
   private final TenantState tenantState;
+  private final MappingState mappingState;
+  private final GroupState groupState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -48,6 +52,8 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
+    mappingState = state.getMappingState();
+    groupState = state.getGroupState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
@@ -106,6 +112,10 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final TypedRecord<TenantRecord> command, final String tenantId) {
     final var entityType = command.getValue().getEntityType();
     final var entityId = command.getValue().getEntityId();
+    if (!entityIsPresent(entityType, entityId)) {
+      createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
+      return false;
+    }
     if (!membershipState.hasRelation(entityType, entityId, RelationType.TENANT, tenantId)) {
       createNotAssignedRejectCommand(command, entityId, entityType, tenantId);
       return false;
@@ -113,18 +123,44 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     return true;
   }
 
+  private boolean entityIsPresent(final EntityType entityType, final String entityId) {
+    return switch (entityType) {
+      case GROUP -> groupState.get(entityId).isPresent();
+      case MAPPING -> mappingState.get(entityId).isPresent();
+      default -> true;
+    };
+  }
+
+  private void createEntityNotExistRejectCommand(
+      final TypedRecord<TenantRecord> command,
+      final String entityId,
+      final EntityType entityType,
+      final String tenantId) {
+    rejectCommand(
+        command,
+        RejectionType.NOT_FOUND,
+        formatErrorMessage(entityType, entityId, tenantId, "doesn't exists"));
+  }
+
   private void createNotAssignedRejectCommand(
       final TypedRecord<TenantRecord> command,
       final String entityId,
       final EntityType entityType,
       final String tenantId) {
-    final var entityName = entityType.name().toLowerCase();
     rejectCommand(
         command,
         RejectionType.NOT_FOUND,
-        "Expected to remove %s with ID '%s' from tenant with ID '%s', but the %s %s."
-            .formatted(
-                entityName, entityId, tenantId, entityName, "is not assigned to this tenant"));
+        formatErrorMessage(entityType, entityId, tenantId, "is not assigned to this tenant"));
+  }
+
+  private String formatErrorMessage(
+      final EntityType entityType,
+      final String entityId,
+      final String tenantId,
+      final String reason) {
+    final var entityName = entityType.name().toLowerCase();
+    return "Expected to remove %s with ID '%s' from tenant with ID '%s', but the %s %s."
+        .formatted(entityName, entityId, tenantId, entityName, reason);
   }
 
   private void rejectCommandWithUnauthorizedError(
