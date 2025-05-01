@@ -67,7 +67,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          "Expected to remove entity from tenant '%s', but no tenant with this id exists."
+          "Expected to remove entity from tenant '%s', but no tenant with this ID exists."
               .formatted(tenantId));
       return;
     }
