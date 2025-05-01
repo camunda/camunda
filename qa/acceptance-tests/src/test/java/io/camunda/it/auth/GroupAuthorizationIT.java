@@ -44,6 +44,8 @@ class GroupAuthorizationIT {
 
   private static final String GROUP_ID_1 = Strings.newRandomValidIdentityId();
   private static final String GROUP_ID_2 = Strings.newRandomValidIdentityId();
+  private static final String GROUP_NAME_1 = "AGroupName";
+  private static final String GROUP_NAME_2 = "BGroupName";
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String RESTRICTED_WITH_READ = "restricteUser2";
@@ -75,8 +77,8 @@ class GroupAuthorizationIT {
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createGroup(adminClient, GROUP_ID_1);
-    createGroup(adminClient, GROUP_ID_2);
+    createGroup(adminClient, GROUP_ID_1, GROUP_NAME_1);
+    createGroup(adminClient, GROUP_ID_2, GROUP_NAME_2);
     waitForGroupsToBeCreated(adminClient, 2);
   }
 
@@ -89,6 +91,30 @@ class GroupAuthorizationIT {
         .hasSize(2)
         .map(Group::getGroupId)
         .containsExactlyInAnyOrder(GROUP_ID_1, GROUP_ID_2);
+  }
+
+  @Test
+  void searchShouldReturnGroupsSortedById(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    final var groupSearchResponse =
+        camundaClient.newGroupsSearchRequest().sort(s -> s.name().desc()).send().join();
+
+    assertThat(groupSearchResponse.items())
+        .hasSize(2)
+        .map(Group::getName)
+        .containsExactly(GROUP_NAME_2, GROUP_NAME_1);
+  }
+
+  @Test
+  void searchShouldReturnGroupsFilteredByName(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    final var groupSearchResponse =
+        camundaClient.newGroupsSearchRequest().filter(fn -> fn.name(GROUP_NAME_2)).send().join();
+
+    assertThat(groupSearchResponse.items())
+        .hasSize(1)
+        .map(Group::getName)
+        .containsExactly(GROUP_NAME_2);
   }
 
   @Test
@@ -115,8 +141,9 @@ class GroupAuthorizationIT {
         .hasMessageContaining("404: 'Not Found'");
   }
 
-  private static void createGroup(final CamundaClient adminClient, final String groupId) {
-    adminClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
+  private static void createGroup(
+      final CamundaClient adminClient, final String groupId, final String groupName) {
+    adminClient.newCreateGroupCommand().groupId(groupId).name(groupName).send().join();
   }
 
   private static void waitForGroupsToBeCreated(
