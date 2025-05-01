@@ -58,7 +58,8 @@ public class RoleIT {
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
 
-    final var roleUpdate = RoleFixtures.createRandomized(b -> b.roleKey(role.roleKey()));
+    final var roleUpdate =
+        RoleFixtures.createRandomized(b -> b.roleId(role.roleId()).roleKey(role.roleKey()));
     rdbmsWriter.getRoleWriter().update(roleUpdate);
     rdbmsWriter.flush();
 
@@ -179,7 +180,9 @@ public class RoleIT {
                                 p.size(5)
                                     .searchAfter(
                                         new Object[] {
-                                          instanceAfter.name(), instanceAfter.roleKey()
+                                          instanceAfter.name(),
+                                          instanceAfter.roleId(),
+                                          instanceAfter.roleKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

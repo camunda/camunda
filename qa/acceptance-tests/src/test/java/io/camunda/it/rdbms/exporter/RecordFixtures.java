@@ -332,13 +332,14 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getRoleRecord(
-      final Long roleKey, final RoleIntent intent) {
-    return getRoleRecord(roleKey, intent, null);
+      final String roleId, final RoleIntent intent) {
+    return getRoleRecord(roleId, intent, null);
   }
 
   protected static ImmutableRecord<RecordValue> getRoleRecord(
-      final Long roleKey, final RoleIntent intent, final Long entityKey) {
+      final String roleId, final RoleIntent intent, final String entityId) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.ROLE);
+    final long roleKey = 1L;
     return ImmutableRecord.builder()
         .from(recordValueRecord)
         .withIntent(intent)
@@ -349,8 +350,9 @@ public class RecordFixtures {
             ImmutableRoleRecordValue.builder()
                 .from((RoleRecordValue) recordValueRecord.getValue())
                 .withRoleKey(roleKey)
-                .withEntityKey(entityKey != null ? entityKey : 0)
-                .withEntityType(entityKey != null ? EntityType.USER : null)
+                .withRoleId(roleId)
+                .withEntityId(entityId)
+                .withEntityType(entityId != null ? EntityType.USER : null)
                 .build())
         .build();
   }
