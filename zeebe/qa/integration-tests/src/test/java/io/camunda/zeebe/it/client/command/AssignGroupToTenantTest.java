@@ -17,18 +17,15 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("Enable with https://github.com/camunda/camunda/issues/29925")
 @ZeebeIntegration
 class AssignGroupToTenantTest {
-
-  private static final String TENANT_ID = "tenantId";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =
@@ -36,39 +33,41 @@ class AssignGroupToTenantTest {
 
   @AutoClose private CamundaClient client;
 
-  private long tenantKey;
-  private long groupKey;
+  private String tenantId;
+  private String groupId;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    tenantKey =
+    tenantId =
         client
             .newCreateTenantCommand()
-            .tenantId(TENANT_ID)
+            .tenantId(Strings.newRandomValidIdentityId())
             .name("Tenant Name")
             .send()
             .join()
-            .getTenantKey();
+            .getTenantId();
 
-    groupKey =
-        client.newCreateGroupCommand().groupId("groupId").name("group").send().join().getGroupKey();
+    groupId =
+        client
+            .newCreateGroupCommand()
+            .groupId(Strings.newRandomValidIdentityId())
+            .name("group")
+            .send()
+            .join()
+            .getGroupId();
   }
 
   @Test
   void shouldAssignGroupToTenant() {
     // when
-    client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
+    client.newAssignGroupToTenantCommand(tenantId).groupId(groupId).send().join();
 
     // then
-    // TODO remove the String parsing once Groups are migrated to work with ids instead of keys
     ZeebeAssertHelper.assertEntityAssignedToTenant(
-        TENANT_ID,
-        String.valueOf(groupKey),
-        tenant -> {
-          assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
-          assertThat(tenant.getEntityType()).isEqualTo(EntityType.GROUP);
-        });
+        tenantId,
+        groupId,
+        tenant -> assertThat(tenant.getEntityType()).isEqualTo(EntityType.GROUP));
   }
 
   @Test
@@ -81,7 +80,7 @@ class AssignGroupToTenantTest {
             () ->
                 client
                     .newAssignGroupToTenantCommand(nonExistentTenantId)
-                    .groupKey(groupKey)
+                    .groupId(groupId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -94,35 +93,71 @@ class AssignGroupToTenantTest {
   @Test
   void shouldRejectIfGroupDoesNotExist() {
     // given
-    final long nonExistentGroupKey = 888888L;
+    final String nonExistentGroupId = Strings.newRandomValidIdentityId();
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignGroupToTenantCommand(TENANT_ID)
-                    .groupKey(nonExistentGroupKey)
+                    .newAssignGroupToTenantCommand(tenantId)
+                    .groupId(nonExistentGroupId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add group with id '%d' to tenant with id '%s', but the group doesn't exist."
-                .formatted(nonExistentGroupKey, TENANT_ID));
+            "Expected to add group with id '%s' to tenant with id '%s', but the group doesn't exist."
+                .formatted(nonExistentGroupId, tenantId));
   }
 
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
+    client.newAssignGroupToTenantCommand(tenantId).groupId(groupId).send().join();
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join())
+            () -> client.newAssignGroupToTenantCommand(tenantId).groupId(groupId).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to add group with id '%d' to tenant with id '%s', but the group is already assigned to the tenant."
-                .formatted(groupKey, TENANT_ID));
+            "Expected to add group with id '%s' to tenant with id '%s', but the group is already assigned to the tenant."
+                .formatted(groupId, tenantId));
+  }
+
+  @Test
+  void shouldRejectIfMissingTenantId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignGroupToTenantCommand(null).groupId(groupId).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyTenantId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignGroupToTenantCommand("").groupId(groupId).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be empty");
+  }
+
+  @Test
+  void shouldRejectIfMissingGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignGroupToTenantCommand(tenantId).groupId(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRejectIfEmptyGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignGroupToTenantCommand(tenantId).groupId("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
   }
 }

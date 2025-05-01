@@ -44,7 +44,7 @@ public class RoleDeletedHandler implements ExportHandler<RoleEntity, RoleRecordV
 
   @Override
   public List<String> generateIds(final Record<RoleRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(record.getValue().getRoleId());
   }
 
   @Override
@@ -55,7 +55,11 @@ public class RoleDeletedHandler implements ExportHandler<RoleEntity, RoleRecordV
   @Override
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     final RoleRecordValue value = record.getValue();
-    entity.setKey(value.getRoleKey()).setName(value.getName());
+    entity
+        .setKey(value.getRoleKey())
+        .setRoleId(value.getRoleId())
+        .setName(value.getName())
+        .setDescription(value.getDescription());
   }
 
   @Override
