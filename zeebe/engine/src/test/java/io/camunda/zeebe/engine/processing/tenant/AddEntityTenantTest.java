@@ -61,7 +61,7 @@ public class AddEntityTenantTest {
     // then assert that the entity was added correctly
     Assertions.assertThat(updatedTenant)
         .describedAs(
-            "Entity of type %s with id %s should be correctly added to tenant with id %s",
+            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
             entityType, entityId, tenantKey)
         .isNotNull()
         .hasFieldOrPropertyWithValue("entityId", entityId)
@@ -101,7 +101,7 @@ public class AddEntityTenantTest {
     // then assert that the entity was added correctly
     Assertions.assertThat(updatedTenant)
         .describedAs(
-            "Entity of type %s with key %s should be correctly added to tenant with key %s",
+            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
             entityType, userKey, tenantKey)
         .isNotNull()
         .hasFieldOrPropertyWithValue("entityId", username)
@@ -139,7 +139,7 @@ public class AddEntityTenantTest {
     // then assert that the entity was added correctly
     Assertions.assertThat(updatedTenant)
         .describedAs(
-            "Entity of type %s with ID %s should be correctly added to tenant with key %s",
+            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
             entityType, username, tenantKey)
         .isNotNull()
         .hasFieldOrPropertyWithValue("entityId", username)
@@ -170,7 +170,7 @@ public class AddEntityTenantTest {
     // then assert that the entity was added correctly
     assertThat(updatedTenant)
         .describedAs(
-            "Entity of type %s with id %s should be correctly added to tenant with id %s",
+            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
             entityType, groupId, tenantId)
         .isNotNull()
         .hasTenantId(tenantId)
@@ -200,7 +200,7 @@ public class AddEntityTenantTest {
     // then
     assertThat(updatedTenant)
         .describedAs(
-            "Entity of type %s with id %s should be correctly added to tenant with id %s",
+            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
             entityType, roleId, tenantId)
         .isNotNull()
         .hasTenantId(tenantId)
@@ -229,7 +229,7 @@ public class AddEntityTenantTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add role with id '%s' to tenant with id '%s', but the role doesn't exist."
+            "Expected to add role with ID '%s' to tenant with ID '%s', but the role doesn't exist."
                 .formatted(roleId, tenantId));
   }
 
@@ -256,7 +256,7 @@ public class AddEntityTenantTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to add role with id '%s' to tenant with id '%s', but the role is already assigned to the tenant."
+            "Expected to add role with ID '%s' to tenant with ID '%s', but the role is already assigned to the tenant."
                 .formatted(roleId, tenantId));
   }
 
@@ -297,7 +297,7 @@ public class AddEntityTenantTest {
     assertThat(alreadyAssignedRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to add user with id '%s' to tenant with id '%s', but the user is already assigned to the tenant."
+            "Expected to add user with ID '%s' to tenant with ID '%s', but the user is already assigned to the tenant."
                 .formatted(username, tenantId));
   }
 

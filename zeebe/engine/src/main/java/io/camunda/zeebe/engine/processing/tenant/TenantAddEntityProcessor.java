@@ -176,7 +176,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final String tenantId,
       final String reason) {
     final var entityName = entityType.name().toLowerCase();
-    return "Expected to add %s with id '%s' to tenant with id '%s', but the %s %s."
+    return "Expected to add %s with ID '%s' to tenant with ID '%s', but the %s %s."
         .formatted(entityName, entityId, tenantId, entityName, reason);
   }
 

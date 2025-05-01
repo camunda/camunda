@@ -90,7 +90,7 @@ class AssignMappingToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND': Expected to add entity to tenant with id '%s', but no tenant with this id exists."
+            "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND': Expected to add entity to tenant with ID '%s', but no tenant with this ID exists."
                 .formatted(invalidTenantId));
   }
 
@@ -110,7 +110,7 @@ class AssignMappingToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add mapping with id '%s' to tenant with id '%s', but the mapping doesn't exist."
+            "Expected to add mapping with ID '%s' to tenant with ID '%s', but the mapping doesn't exist."
                 .formatted(invalidMappingId, TENANT_ID));
   }
 
@@ -125,7 +125,7 @@ class AssignMappingToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to add mapping with id '%s' to tenant with id '%s', but the mapping is already assigned to the tenant."
+            "Expected to add mapping with ID '%s' to tenant with ID '%s', but the mapping is already assigned to the tenant."
                 .formatted(ID, TENANT_ID));
   }
 }
