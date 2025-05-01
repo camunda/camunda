@@ -50,7 +50,7 @@ function useForm(
         return response.json();
       }
 
-      throw error ?? new Error('Could not fetch form');
+      throw error;
     },
     initialData: {
       schema: null,
