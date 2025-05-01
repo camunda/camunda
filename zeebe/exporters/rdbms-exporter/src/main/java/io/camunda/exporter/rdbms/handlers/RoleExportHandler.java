@@ -70,10 +70,12 @@ public class RoleExportHandler implements RdbmsExportHandler<RoleRecordValue> {
     }
   }
 
-  private RoleDbModel map(final RoleRecordValue decision) {
+  private RoleDbModel map(final RoleRecordValue role) {
     return new RoleDbModel.Builder()
-        .roleKey(decision.getRoleKey())
-        .name(decision.getName())
+        .roleKey(role.getRoleKey())
+        .roleId(role.getRoleId())
+        .name(role.getName())
+        .description(role.getDescription())
         .build();
   }
 }

@@ -57,8 +57,8 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}ROLES (ROLE_KEY, NAME)
-    VALUES (#{roleKey}, #{name})
+    INSERT INTO ${prefix}ROLES (ROLE_KEY, ROLE_ID, NAME, DESCRIPTION)
+    VALUES (#{roleKey}, #{roleId}, #{name}, #{description})
   </insert>
 
   <update
