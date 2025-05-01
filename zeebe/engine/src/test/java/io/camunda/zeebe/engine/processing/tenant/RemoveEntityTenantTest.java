@@ -25,7 +25,7 @@ public class RemoveEntityTenantTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldRemoveEntityFromTenant() {
+  public void shouldRemoveUserFromTenant() {
     final var tenantId = UUID.randomUUID().toString();
     engine
         .tenant()
@@ -58,11 +58,11 @@ public class RemoveEntityTenantTest {
             .remove()
             .getValue();
 
-    Assertions.assertThat(removedEntity)
+    assertThat(removedEntity)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId)
-        .hasFieldOrPropertyWithValue("entityId", username)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+        .hasTenantId(tenantId)
+        .hasEntityId(username)
+        .hasEntityType(EntityType.USER);
   }
 
   @Test
@@ -92,11 +92,11 @@ public class RemoveEntityTenantTest {
             .remove()
             .getValue();
 
-    Assertions.assertThat(removedEntity)
+    assertThat(removedEntity)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId)
-        .hasFieldOrPropertyWithValue("entityId", username)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+        .hasTenantId(tenantId)
+        .hasEntityId(username)
+        .hasEntityType(EntityType.USER);
   }
 
   @Test
@@ -138,9 +138,7 @@ public class RemoveEntityTenantTest {
             .expectRejection()
             .remove();
 
-    Assertions.assertThat(createdTenant)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId);
+    assertThat(createdTenant).isNotNull().hasTenantId(tenantId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
@@ -209,11 +207,11 @@ public class RemoveEntityTenantTest {
             .remove()
             .getValue();
 
-    Assertions.assertThat(removedEntity)
+    assertThat(removedEntity)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId)
-        .hasFieldOrPropertyWithValue("entityId", groupId)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.GROUP);
+        .hasTenantId(tenantId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
   }
 
   @Test
@@ -250,9 +248,7 @@ public class RemoveEntityTenantTest {
             .expectRejection()
             .remove();
 
-    Assertions.assertThat(createdTenant)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId);
+    assertThat(createdTenant).isNotNull().hasTenantId(tenantId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
