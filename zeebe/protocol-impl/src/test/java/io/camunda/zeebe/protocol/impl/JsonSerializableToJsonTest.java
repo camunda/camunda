@@ -2900,11 +2900,11 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty TenantRecord",
-        (Supplier<UnifiedRecordValue>) TenantRecord::new,
+        (Supplier<UnifiedRecordValue>) () -> new TenantRecord().setTenantId("tenantId"),
         """
           {
             "tenantKey": -1,
-            "tenantId": "",
+            "tenantId": "tenantId",
             "name": "",
             "description": "",
             "entityId": "",
@@ -3154,7 +3154,10 @@ final class JsonSerializableToJsonTest {
       {
         "Empty IdentitySetupRecord",
         (Supplier<IdentitySetupRecord>)
-            () -> new IdentitySetupRecord().setDefaultRole(new RoleRecord().setRoleId("roleId")),
+            () ->
+                new IdentitySetupRecord()
+                    .setDefaultRole(new RoleRecord().setRoleId("roleId"))
+                    .setDefaultTenant(new TenantRecord().setTenantId("tenantId")),
         """
       {
           "defaultRole": {
@@ -3169,7 +3172,7 @@ final class JsonSerializableToJsonTest {
           "users": [],
           "defaultTenant": {
               "tenantKey": -1,
-              "tenantId": "",
+              "tenantId": "tenantId",
               "name": "",
               "description": "",
               "entityId": "",
