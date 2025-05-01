@@ -33,7 +33,7 @@ public class RoleStateTest {
   void shouldCreateRole() {
     // given
     final var roleKey = 1L;
-    final var roleId = "1";
+    final var roleId = Strings.newRandomValidIdentityId();
     final var roleName = "foo";
     final var roleDescription = "bar";
     final var roleRecord =
@@ -57,7 +57,7 @@ public class RoleStateTest {
   @Test
   void shouldReturnNullIfRoleDoesNotExist() {
     // when
-    final var role = roleState.getRole(1L);
+    final var role = roleState.getRole(Strings.newRandomValidIdentityId());
 
     // then
     assertThat(role).isEmpty();
@@ -67,7 +67,7 @@ public class RoleStateTest {
   void shouldUpdateRole() {
     // given
     final var roleKey = 123L;
-    final var roleId = "123";
+    final var roleId = Strings.newRandomValidIdentityId();
     final var roleRecord =
         new RoleRecord().setRoleKey(roleKey).setRoleId(roleId).setName("foo").setDescription("bar");
     roleState.create(roleRecord);
@@ -79,7 +79,7 @@ public class RoleStateTest {
     roleState.update(updatedRecord);
 
     // then
-    final var persistedRole = roleState.getRole(roleKey).get();
+    final var persistedRole = roleState.getRole(roleId).get();
     assertThat(persistedRole.getRoleKey()).isEqualTo(roleKey);
     assertThat(persistedRole.getName()).isEqualTo(updatedName);
   }
