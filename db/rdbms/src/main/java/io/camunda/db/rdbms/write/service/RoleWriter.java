@@ -56,7 +56,7 @@ public class RoleWriter {
         new QueueItem(
             ContextType.ROLE,
             WriteStatementType.INSERT,
-            member.roleKey(),
+            member.roleId(),
             "io.camunda.db.rdbms.sql.RoleMapper.insertMember",
             member));
   }

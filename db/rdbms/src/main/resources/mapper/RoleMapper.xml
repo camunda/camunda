@@ -81,8 +81,8 @@
     id="insertMember"
     parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}ROLE_MEMBER (ROLE_KEY, ENTITY_ID, ENTITY_TYPE)
-    VALUES (#{roleKey}, #{entityId}, #{entityType})
+    INSERT INTO ${prefix}ROLE_MEMBER (ROLE_ID, ENTITY_ID, ENTITY_TYPE)
+    VALUES (#{roleId}, #{entityId}, #{entityType})
   </insert>
 
   <delete

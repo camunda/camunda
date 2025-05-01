@@ -53,9 +53,8 @@ public class RoleExportHandler implements RdbmsExportHandler<RoleRecordValue> {
       case RoleIntent.ENTITY_ADDED ->
           roleWriter.addMember(
               new RoleMemberDbModel.Builder()
-                  .roleKey(value.getRoleKey())
-                  // todo,remove parse in https://github.com/camunda/camunda/issues/30111
-                  .entityId(String.valueOf(value.getEntityKey()))
+                  .roleId(value.getRoleId())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       case RoleIntent.ENTITY_REMOVED ->
