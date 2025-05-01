@@ -8,44 +8,21 @@
 
 import {useLocation, useNavigate, useOutletContext} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
-import {
-  useCompleteTask,
-  completionErrorMap,
-} from 'v1/api/useCompleteTask.mutation';
+import {useCompleteTask} from 'v2/api/useCompleteTask.mutation';
 import {useTranslation} from 'react-i18next';
 import {pages, useTaskDetailsParams} from 'common/routing';
-import type {Task as TaskType, Variable} from 'v1/api/types';
 import {tracking} from 'common/tracking';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
-import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
-import {useTasks} from 'v1/api/useTasks.query';
+import {useTaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
+import {useTasks} from 'v2/api/useTasks.query';
 import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTask';
 import {autoSelectNextTaskStore} from 'common/tasks/next-task/autoSelectFirstTask';
-import type {OutletContext} from 'v1/TaskDetailsLayout';
-import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
+import type {OutletContext} from 'v2/TaskDetailsLayout';
 import {Variables} from './Variables';
-import {FormJS} from './FormJS';
-import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
-import {ERRORS_THAT_SHOULD_FETCH_MORE} from './constants';
-
-const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
-
-function isCamundaForms(formKey: NonNullable<TaskType['formKey']>): boolean {
-  return formKey.startsWith(CAMUNDA_FORMS_PREFIX);
-}
-
-function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
-  return formKey.replace(CAMUNDA_FORMS_PREFIX, '');
-}
 
 const TaskDetails: React.FC = observer(() => {
-  const {
-    task,
-    currentUser,
-    refetch: refetchTask,
-  } = useOutletContext<OutletContext>();
-
+  const {task, currentUser} = useOutletContext<OutletContext>();
   const filters = useTaskFilters();
   const {data, refetch: refetchAllTasks} = useTasks(filters);
   const {t} = useTranslation();
@@ -55,16 +32,13 @@ const TaskDetails: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const {mutateAsync: completeTask} = useCompleteTask();
-  const {mutateAsync: uploadDocuments} = useUploadDocuments();
-  const {formKey, processDefinitionKey, formId, id: taskId} = task;
+  const {formKey, userTaskKey} = task;
   const {enabled: autoSelectNextTaskEnabled} = autoSelectNextTaskStore;
   const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
 
-  async function handleSubmission(
-    variables: Pick<Variable, 'name' | 'value'>[],
-  ) {
+  async function handleSubmission(variables: Record<string, unknown>) {
     await completeTask({
-      taskId,
+      userTaskKey,
       variables,
     });
 
@@ -74,7 +48,7 @@ const TaskDetails: React.FC = observer(() => {
 
     tracking.track({
       eventName: 'task-completed',
-      isCamundaForm: formKey ? isCamundaForms(formKey) : false,
+      isCamundaForm: true,
       hasRemainingTasks,
       filter: filters.filter,
       customFilters: Object.keys(customFilters ?? {}),
@@ -88,28 +62,16 @@ const TaskDetails: React.FC = observer(() => {
     });
   }
 
-  async function handleFileUpload(files: Map<string, File[]>) {
-    if (files.size === 0) {
-      return new Map();
-    }
-
-    return uploadDocuments({
-      files,
-    });
-  }
-
   async function handleSubmissionSuccess() {
     storeStateLocally('hasCompletedTask', true);
 
     if (autoSelectNextTaskEnabled) {
       const newTasks = (await refetchAllTasks()).data?.pages[0] ?? [];
-      const openTasks = newTasks.filter(
-        ({taskState}) => taskState === 'CREATED',
-      );
-      if (openTasks.length > 1 && openTasks[0].id === id) {
-        autoSelectGoToTask(openTasks[1].id);
-      } else if (openTasks.length > 0 && openTasks[0].id !== id) {
-        autoSelectGoToTask(openTasks[0].id);
+      const openTasks = newTasks.filter(({state}) => state === 'CREATED');
+      if (openTasks.length > 1 && openTasks[0].userTaskKey === id) {
+        autoSelectGoToTask(openTasks[1].userTaskKey);
+      } else if (openTasks.length > 0 && openTasks[0].userTaskKey !== id) {
+        autoSelectGoToTask(openTasks[0].userTaskKey);
       } else {
         navigate({
           pathname: pages.initial,
@@ -125,68 +87,28 @@ const TaskDetails: React.FC = observer(() => {
     }
   }
 
-  function handleSubmissionFailure(error: Error) {
-    if (error.name === completionErrorMap.taskProcessingTimeout) {
-      tracking.track({eventName: 'task-completion-delayed-notification'});
-      notificationsStore.displayNotification({
-        kind: 'info',
-        title: t('taskCompletionDelayedInfoTitle'),
-        subtitle: t('taskCompletionDelayedInfoSubtitle'),
-        isDismissable: true,
-      });
-      return;
-    }
-
-    if (error.name === completionErrorMap.invalidState) {
-      tracking.track({eventName: 'task-completion-rejected-notification'});
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: t('taskCouldNotBeCompletedNotification'),
-        subtitle: t('taskDetailsTaskCompletionRejectionErrorSubtitle'),
-        isDismissable: true,
-      });
-    } else {
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: t('taskCouldNotBeCompletedNotification'),
-        subtitle: getCompleteTaskErrorMessage(error.message),
-        isDismissable: true,
-      });
-    }
-
-    if (ERRORS_THAT_SHOULD_FETCH_MORE.includes(error.name)) {
-      refetchTask();
-    }
+  function handleSubmissionFailure() {
+    notificationsStore.displayNotification({
+      kind: 'error',
+      title: t('taskCouldNotBeCompletedNotification'),
+      isDismissable: true,
+    });
   }
 
-  const isDeployedForm = typeof formId === 'string';
-  const isEmbeddedForm = typeof formKey === 'string' && task.isFormEmbedded;
-  if (isEmbeddedForm || isDeployedForm) {
-    return (
-      <FormJS
-        key={task.id}
-        task={task}
-        id={isEmbeddedForm ? getFormId(formKey) : formId!}
-        user={currentUser}
-        onSubmit={handleSubmission}
-        onFileUpload={handleFileUpload}
-        onSubmitSuccess={handleSubmissionSuccess}
-        onSubmitFailure={handleSubmissionFailure}
-        processDefinitionKey={processDefinitionKey!}
-      />
-    );
-  } else {
-    return (
-      <Variables
-        key={task.id}
-        task={task}
-        user={currentUser}
-        onSubmit={handleSubmission}
-        onSubmitSuccess={handleSubmissionSuccess}
-        onSubmitFailure={handleSubmissionFailure}
-      />
-    );
+  if (formKey !== undefined) {
+    return null;
   }
+
+  return (
+    <Variables
+      key={userTaskKey}
+      task={task}
+      user={currentUser}
+      onSubmit={handleSubmission}
+      onSubmitSuccess={handleSubmissionSuccess}
+      onSubmitFailure={handleSubmissionFailure}
+    />
+  );
 });
 
 TaskDetails.displayName = 'Task';

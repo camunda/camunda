@@ -8,14 +8,17 @@
 
 import {
   endpoints as tasklistEndpoints,
+  type CompleteTaskRequestBody,
   type QueryUserTasksRequestBody,
   type UserTask,
+  type QueryVariablesByUserTaskRequestBody,
 } from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {
   endpoints as operateEndpoints,
   type QueryProcessDefinitionsRequestBody,
   type ProcessDefinition,
 } from '@vzeta/camunda-api-zod-schemas/operate';
+import {endpoints as processManagementEndpoints} from '@vzeta/camunda-api-zod-schemas/process-management';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
 
 const api = {
@@ -83,6 +86,56 @@ const api = {
       {
         ...BASE_REQUEST_OPTIONS,
         method: tasklistEndpoints.unassignTask.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+  queryVariablesByUserTask: (
+    params: Pick<UserTask, 'userTaskKey'> & QueryVariablesByUserTaskRequestBody,
+  ) => {
+    const {userTaskKey, ...body} = params;
+    return new Request(
+      getFullURL(
+        tasklistEndpoints.queryVariablesByUserTask.getUrl({userTaskKey}),
+      ),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: tasklistEndpoints.queryVariablesByUserTask.method,
+        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+  completeTask: (
+    params: Pick<UserTask, 'userTaskKey'> & CompleteTaskRequestBody,
+  ) => {
+    const {userTaskKey, variables, ...body} = params;
+
+    return new Request(
+      getFullURL(tasklistEndpoints.completeTask.getUrl({userTaskKey})),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: tasklistEndpoints.completeTask.method,
+        body:
+          Object.keys(body).length > 0 || Object.keys(variables).length > 0
+            ? JSON.stringify({...body, variables})
+            : undefined,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+  getVariable: (variableKey: string) => {
+    return new Request(
+      getFullURL(processManagementEndpoints.getVariable.getUrl({variableKey})),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: processManagementEndpoints.getVariable.method,
         headers: {
           'Content-Type': 'application/json',
         },
