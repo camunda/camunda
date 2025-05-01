@@ -66,8 +66,9 @@
     parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel"
     flushCache="true">
     UPDATE ${prefix}ROLES
-    SET NAME = #{name}
-    WHERE ROLE_KEY = #{roleKey}
+    SET NAME = #{name},
+        DESCRIPTION = #{description}
+    WHERE ROLE_ID = #{roleId}
   </update>
 
   <delete id="delete" parameterType="java.lang.Long" flushCache="true">

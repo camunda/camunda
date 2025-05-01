@@ -35,14 +35,17 @@ public class RoleWriter {
   }
 
   public void update(final RoleDbModel role) {
-    final boolean wasMerged = mergeToQueue(role.roleKey(), b -> b.name(role.name()));
+    final boolean wasMerged =
+        mergeToQueue(
+            role.roleId(),
+            b -> b.roleId(role.roleId()).name(role.name()).description(role.description()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.ROLE,
               WriteStatementType.UPDATE,
-              role.roleKey(),
+              role.roleId(),
               "io.camunda.db.rdbms.sql.RoleMapper.update",
               role));
     }
@@ -86,8 +89,8 @@ public class RoleWriter {
   }
 
   private boolean mergeToQueue(
-      final long key, final Function<RoleDbModel.Builder, RoleDbModel.Builder> mergeFunction) {
+      final String roleId, final Function<RoleDbModel.Builder, RoleDbModel.Builder> mergeFunction) {
     return executionQueue.tryMergeWithExistingQueueItem(
-        new UpsertMerger<>(ContextType.ROLE, key, RoleDbModel.class, mergeFunction));
+        new UpsertMerger<>(ContextType.ROLE, roleId, RoleDbModel.class, mergeFunction));
   }
 }
