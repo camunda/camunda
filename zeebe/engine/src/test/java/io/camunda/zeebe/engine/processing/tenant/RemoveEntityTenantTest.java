@@ -363,4 +363,80 @@ public class RemoveEntityTenantTest {
             "Expected to remove mapping with ID '%s' from tenant with ID '%s', but the mapping is not assigned to this tenant."
                 .formatted(mappingId, tenantId));
   }
+
+  @Test
+  public void shouldRemoveRoleFromTenant() {
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    engine.tenant().addEntity(tenantId).withEntityId(roleId).withEntityType(EntityType.ROLE).add();
+    final var removedEntity =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(roleId)
+            .withEntityType(EntityType.ROLE)
+            .remove()
+            .getValue();
+
+    assertThat(removedEntity)
+        .isNotNull()
+        .hasTenantId(tenantId)
+        .hasEntityId(roleId)
+        .hasEntityType(EntityType.ROLE);
+  }
+
+  @Test
+  public void shouldRejectIfEntityIsNotPresentRoleRemoval() {
+    // given
+    final var tenantId = UUID.randomUUID().toString();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.role().newRole(roleId).create();
+
+    // when
+    final var createdTenant = tenantRecord.getValue();
+    final var notPresentUpdateRecord =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(roleId)
+            .withEntityType(EntityType.ROLE)
+            .expectRejection()
+            .remove();
+
+    assertThat(createdTenant).isNotNull().hasTenantId(tenantId);
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove role with ID '%s' from tenant with ID '%s', but the role is not assigned to this tenant."
+                .formatted(roleId, tenantId));
+  }
+
+  @Test
+  public void shouldRejectIfRoleIsNotAssigned() {
+    // given
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
+
+    // when
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    final var notAssignedUpdateRecord =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(roleId)
+            .withEntityType(EntityType.ROLE)
+            .expectRejection()
+            .remove();
+
+    assertThat(notAssignedUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove role with ID '%s' from tenant with ID '%s', but the role is not assigned to this tenant."
+                .formatted(roleId, tenantId));
+  }
 }
