@@ -89,14 +89,35 @@ class UnassignGroupFromTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to remove entity from tenant '%s', but no tenant with this id exists."
+            "Expected to remove entity from tenant '%s', but no tenant with this ID exists."
                 .formatted(nonExistentTenantId));
+  }
+
+  @Test
+  void shouldRejectIfGroupDoesNotExist() {
+    // given
+    final String nonExistentGroupId = Strings.newRandomValidIdentityId();
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand(tenantId)
+                    .groupId(nonExistentGroupId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            "Expected to remove group with ID '%s' from tenant with ID '%s', but the group doesn't exists."
+                .formatted(nonExistentGroupId, tenantId));
   }
 
   @Test
   void shouldRejectIfGroupNotAssignedToTenant() {
     // when / then
     final String nonAssignedGroupId = Strings.newRandomValidIdentityId();
+    client.newCreateGroupCommand().groupId(nonAssignedGroupId).name("group").send().join();
 
     assertThatThrownBy(
             () ->
