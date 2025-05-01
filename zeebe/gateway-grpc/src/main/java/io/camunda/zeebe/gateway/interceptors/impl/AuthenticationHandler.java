@@ -28,6 +28,7 @@ import org.springframework.security.oauth2.jwt.JwtException;
 /** Used by the {@link AuthenticationInterceptor} to authenticate incoming requests. */
 public sealed interface AuthenticationHandler {
   Context.Key<String> USERNAME = Context.key("io.camunda.zeebe:username");
+  Context.Key<String> APPLICATION_ID = Context.key("io.camunda.zeebe:application_id");
 
   /**
    * Applies authentication logic for the given authorization header. Must not throw exceptions, but
@@ -41,6 +42,8 @@ public sealed interface AuthenticationHandler {
   final class Oidc implements AuthenticationHandler {
     public static final Context.Key<Map<String, Object>> USER_CLAIMS =
         Context.key("io.camunda.zeebe:user_claim");
+    public static final String CONFIGURED_CLAIM_NOT_A_STRING =
+        "Configured claim for %s (%s) is not a string. Please check your OIDC configuration.";
 
     public static final String BEARER_PREFIX = "Bearer ";
     private final JwtDecoder jwtDecoder;
@@ -72,20 +75,70 @@ public sealed interface AuthenticationHandler {
                 .withCause(e));
       }
 
-      final var username =
-          token.getClaims().get(oidcAuthenticationConfiguration.getUsernameClaim());
+      final var username = getUsernameClaim(token.getClaims());
+      final var applicationId = getApplicationIdClaim(token.getClaims());
 
-      if (username == null) {
+      if (username == null && applicationId == null) {
         return Either.left(
             Status.UNAUTHENTICATED.augmentDescription(
-                "Expected a claim '%s' in the token, but it was not present"
-                    .formatted(oidcAuthenticationConfiguration.getUsernameClaim())));
+                "Expected either a username (claim: %s) or application ID (claim: %s) on the token, but no matching claim found"
+                    .formatted(
+                        oidcAuthenticationConfiguration.getUsernameClaim(),
+                        oidcAuthenticationConfiguration.getApplicationIdClaim())));
       }
 
-      return Either.right(
-          Context.current()
-              .withValue(USER_CLAIMS, token.getClaims())
-              .withValue(USERNAME, username.toString()));
+      if (username == null) {
+        if (applicationId.isLeft()) {
+          return Either.left(applicationId.getLeft());
+        }
+        return Either.right(
+            Context.current()
+                .withValue(APPLICATION_ID, applicationId.get())
+                .withValue(USER_CLAIMS, token.getClaims()));
+      } else {
+        if (username.isLeft()) {
+          return Either.left(username.getLeft());
+        }
+        return Either.right(
+            Context.current()
+                .withValue(USERNAME, username.get())
+                .withValue(USER_CLAIMS, token.getClaims()));
+      }
+    }
+
+    private Either<Status, String> getUsernameClaim(final Map<String, Object> claims) {
+      final var usernameClaim = claims.get(oidcAuthenticationConfiguration.getUsernameClaim());
+
+      if (usernameClaim == null) {
+        return null;
+      }
+
+      if (usernameClaim instanceof String) {
+        return Either.right(usernameClaim.toString());
+      }
+
+      return Either.left(
+          Status.UNAUTHENTICATED.augmentDescription(
+              CONFIGURED_CLAIM_NOT_A_STRING.formatted(
+                  "username", oidcAuthenticationConfiguration.getUsernameClaim())));
+    }
+
+    private Either<Status, String> getApplicationIdClaim(final Map<String, Object> claims) {
+      final var applicationIdClaim =
+          claims.get(oidcAuthenticationConfiguration.getApplicationIdClaim());
+
+      if (applicationIdClaim == null) {
+        return null;
+      }
+
+      if (applicationIdClaim instanceof String) {
+        return Either.right(applicationIdClaim.toString());
+      }
+
+      return Either.left(
+          Status.UNAUTHENTICATED.augmentDescription(
+              CONFIGURED_CLAIM_NOT_A_STRING.formatted(
+                  "application id", oidcAuthenticationConfiguration.getApplicationIdClaim())));
     }
   }
 
