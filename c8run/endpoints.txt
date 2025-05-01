@@ -7,7 +7,7 @@ Operate:                     http://localhost:{{.OperatePort}}/operate
 Tasklist:                    http://localhost:{{.TasklistPort}}/tasklist
 Identity:                    http://localhost:{{.IdentityPort}}/identity
 
-Camunda 8 API: http://localhost:{{.OperatePort}}/v2/
+Camunda 8 API: http://localhost:{{.camundaPort}}/v2/
 Inbound Connectors API: http://localhost:8085/
 Zeebe API (grpc):      http://localhost:26500/
 
