@@ -559,12 +559,14 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertMappingCreated(
+      final String mappingId,
       final String claimName,
       final String claimValue,
       final Consumer<MappingRecordValue> consumer) {
     final MappingRecordValue mapping =
         RecordingExporter.mappingRecords()
             .withIntent(MappingIntent.CREATED)
+            .withMappingId(mappingId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .getFirst()

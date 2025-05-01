@@ -764,8 +764,8 @@ public class CommandDistributionIdempotencyTest {
     return ENGINE
         .mapping()
         .newMapping(UUID.randomUUID().toString())
+        .withClaimName(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())
-        .withMappingId(UUID.randomUUID().toString())
         .create();
   }
 

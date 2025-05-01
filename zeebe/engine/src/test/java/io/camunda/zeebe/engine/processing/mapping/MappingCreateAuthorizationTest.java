@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -46,19 +47,22 @@ public class MappingCreateAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToCreateMappingWithDefaultUser() {
     // given
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
 
     // when
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(mappingId)
+        .withClaimName(claimName)
         .withClaimValue(claimValue)
         .create(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
             RecordingExporter.mappingRecords(MappingIntent.CREATED)
+                .withMappingId(mappingId)
                 .withClaimName(claimName)
                 .withClaimValue(claimValue)
                 .exists())
@@ -68,17 +72,24 @@ public class MappingCreateAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToCreateMappingWithPermissions() {
     // given
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var user = createUser();
     addPermissionsToUser(user, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
 
     // when
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create(user.getUsername());
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withClaimName(claimName)
+        .withClaimValue(claimValue)
+        .create(user.getUsername());
 
     // then
     assertThat(
             RecordingExporter.mappingRecords(MappingIntent.CREATED)
+                .withMappingId(mappingId)
                 .withClaimName(claimName)
                 .withClaimValue(claimValue)
                 .exists())
@@ -88,6 +99,7 @@ public class MappingCreateAuthorizationTest {
   @Test
   public void shouldBeUnAuthorizedToCreateMappingWithoutPermissions() {
     // given
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var user = createUser();
@@ -96,7 +108,8 @@ public class MappingCreateAuthorizationTest {
     final var rejection =
         engine
             .mapping()
-            .newMapping(claimName)
+            .newMapping(mappingId)
+            .withClaimName(claimName)
             .withClaimValue(claimValue)
             .expectRejection()
             .create(user.getUsername());

@@ -12,9 +12,9 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
-import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -25,7 +25,7 @@ public class RemoveEntityTenantTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldRemoveEntityFromTenant() {
+  public void shouldRemoveUserFromTenant() {
     final var tenantId = UUID.randomUUID().toString();
     engine
         .tenant()
@@ -58,11 +58,11 @@ public class RemoveEntityTenantTest {
             .remove()
             .getValue();
 
-    Assertions.assertThat(removedEntity)
+    assertThat(removedEntity)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId)
-        .hasFieldOrPropertyWithValue("entityId", username)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+        .hasTenantId(tenantId)
+        .hasEntityId(username)
+        .hasEntityType(EntityType.USER);
   }
 
   @Test
@@ -92,11 +92,11 @@ public class RemoveEntityTenantTest {
             .remove()
             .getValue();
 
-    Assertions.assertThat(removedEntity)
+    assertThat(removedEntity)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId)
-        .hasFieldOrPropertyWithValue("entityId", username)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+        .hasTenantId(tenantId)
+        .hasEntityId(username)
+        .hasEntityType(EntityType.USER);
   }
 
   @Test
@@ -110,7 +110,7 @@ public class RemoveEntityTenantTest {
         .hasRejectionReason(
             "Expected to remove entity from tenant '"
                 + notPresentTenantId
-                + "', but no tenant with this id exists.");
+                + "', but no tenant with this ID exists.");
   }
 
   @Test
@@ -138,9 +138,7 @@ public class RemoveEntityTenantTest {
             .expectRejection()
             .remove();
 
-    Assertions.assertThat(createdTenant)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId);
+    assertThat(createdTenant).isNotNull().hasTenantId(tenantId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
@@ -209,11 +207,11 @@ public class RemoveEntityTenantTest {
             .remove()
             .getValue();
 
-    Assertions.assertThat(removedEntity)
+    assertThat(removedEntity)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId)
-        .hasFieldOrPropertyWithValue("entityId", groupId)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.GROUP);
+        .hasTenantId(tenantId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
   }
 
   @Test
@@ -227,7 +225,7 @@ public class RemoveEntityTenantTest {
         .hasRejectionReason(
             "Expected to remove entity from tenant '"
                 + notPresentTenantId
-                + "', but no tenant with this id exists.");
+                + "', but no tenant with this ID exists.");
   }
 
   @Test
@@ -250,9 +248,7 @@ public class RemoveEntityTenantTest {
             .expectRejection()
             .remove();
 
-    Assertions.assertThat(createdTenant)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId);
+    assertThat(createdTenant).isNotNull().hasTenantId(tenantId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
@@ -285,5 +281,162 @@ public class RemoveEntityTenantTest {
         .hasRejectionReason(
             "Expected to remove group with ID '%s' from tenant with ID '%s', but the group is not assigned to this tenant."
                 .formatted(groupId, tenantId));
+  }
+
+  @Test
+  public void shouldRemoveMappingFromTenant() {
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    engine.mapping().newMapping(mappingId).create();
+    engine
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(mappingId)
+        .withEntityType(EntityType.MAPPING)
+        .add();
+    final var removedEntity =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(mappingId)
+            .withEntityType(EntityType.MAPPING)
+            .remove()
+            .getValue();
+
+    assertThat(removedEntity)
+        .isNotNull()
+        .hasTenantId(tenantId)
+        .hasEntityId(mappingId)
+        .hasEntityType(EntityType.MAPPING);
+  }
+
+  @Test
+  public void shouldRejectIfEntityIsNotPresentMappingRemoval() {
+    // given
+    final var tenantId = UUID.randomUUID().toString();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.mapping().newMapping(mappingId).create();
+
+    // when
+    final var createdTenant = tenantRecord.getValue();
+    final var notPresentUpdateRecord =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(mappingId)
+            .withEntityType(EntityType.MAPPING)
+            .expectRejection()
+            .remove();
+
+    assertThat(createdTenant).isNotNull().hasTenantId(tenantId);
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove mapping with ID '%s' from tenant with ID '%s', but the mapping is not assigned to this tenant."
+                .formatted(mappingId, tenantId));
+  }
+
+  @Test
+  public void shouldRejectIfMappingIsNotAssigned() {
+    // given
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
+
+    // when
+    final var mappingId = "123";
+    engine.mapping().newMapping(mappingId).create();
+    final var notAssignedUpdateRecord =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(mappingId)
+            .withEntityType(EntityType.MAPPING)
+            .expectRejection()
+            .remove();
+
+    assertThat(notAssignedUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove mapping with ID '%s' from tenant with ID '%s', but the mapping is not assigned to this tenant."
+                .formatted(mappingId, tenantId));
+  }
+
+  @Test
+  public void shouldRemoveRoleFromTenant() {
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    engine.tenant().addEntity(tenantId).withEntityId(roleId).withEntityType(EntityType.ROLE).add();
+    final var removedEntity =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(roleId)
+            .withEntityType(EntityType.ROLE)
+            .remove()
+            .getValue();
+
+    assertThat(removedEntity)
+        .isNotNull()
+        .hasTenantId(tenantId)
+        .hasEntityId(roleId)
+        .hasEntityType(EntityType.ROLE);
+  }
+
+  @Test
+  public void shouldRejectIfEntityIsNotPresentRoleRemoval() {
+    // given
+    final var tenantId = UUID.randomUUID().toString();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.role().newRole(roleId).create();
+
+    // when
+    final var createdTenant = tenantRecord.getValue();
+    final var notPresentUpdateRecord =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(roleId)
+            .withEntityType(EntityType.ROLE)
+            .expectRejection()
+            .remove();
+
+    assertThat(createdTenant).isNotNull().hasTenantId(tenantId);
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove role with ID '%s' from tenant with ID '%s', but the role is not assigned to this tenant."
+                .formatted(roleId, tenantId));
+  }
+
+  @Test
+  public void shouldRejectIfRoleIsNotAssigned() {
+    // given
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
+
+    // when
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    final var notAssignedUpdateRecord =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(roleId)
+            .withEntityType(EntityType.ROLE)
+            .expectRejection()
+            .remove();
+
+    assertThat(notAssignedUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove role with ID '%s' from tenant with ID '%s', but the role is not assigned to this tenant."
+                .formatted(roleId, tenantId));
   }
 }

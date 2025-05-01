@@ -37,34 +37,40 @@ public class MappingTest {
     final var mappingRecord =
         engine
             .mapping()
-            .newMapping(claimName)
+            .newMapping(id)
+            .withClaimName(claimName)
             .withClaimValue(claimValue)
-            .withMappingId(id)
             .withName(name)
             .create();
 
     final var createMapping = mappingRecord.getValue();
-    Assertions.assertThat(createMapping)
+    assertThat(createMapping)
         .isNotNull()
-        .hasFieldOrProperty("mappingKey")
-        .hasFieldOrPropertyWithValue("claimName", claimName)
-        .hasFieldOrPropertyWithValue("claimValue", claimValue)
-        .hasFieldOrPropertyWithValue("name", name)
-        .hasFieldOrPropertyWithValue("mappingId", id);
+        .hasClaimName(claimName)
+        .hasClaimValue(claimValue)
+        .hasName(name)
+        .hasMappingId(id);
   }
 
   @Test
   public void shouldNotDuplicateWithSameClaim() {
     // given
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withClaimName(claimName)
+        .withClaimValue(claimValue)
+        .create();
 
     // when
     final var duplicatedMappingRecord =
         engine
             .mapping()
-            .newMapping(claimName)
+            .newMapping(mappingId)
+            .withClaimName(claimName)
             .withClaimValue(claimValue)
             .expectRejection()
             .create();
@@ -83,15 +89,15 @@ public class MappingTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withMappingId(id).create();
+    engine.mapping().newMapping(id).withClaimName(claimName).withClaimValue(claimValue).create();
 
     // when
     final var duplicatedMappingRecord =
         engine
             .mapping()
-            .newMapping(UUID.randomUUID().toString())
+            .newMapping(id)
             .withClaimValue(UUID.randomUUID().toString())
-            .withMappingId(id)
+            .withClaimName(UUID.randomUUID().toString())
             .expectRejection()
             .create();
 
@@ -110,15 +116,14 @@ public class MappingTest {
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    final var mappingKey =
-        engine
-            .mapping()
-            .newMapping(claimName)
-            .withClaimValue(claimValue)
-            .withName(name)
-            .withMappingId(id)
-            .create()
-            .getKey();
+    engine
+        .mapping()
+        .newMapping(id)
+        .withClaimName(claimName)
+        .withClaimValue(claimValue)
+        .withName(name)
+        .create()
+        .getKey();
 
     // when
     final var updatedMapping =
@@ -132,12 +137,12 @@ public class MappingTest {
             .getValue();
 
     // then
-    Assertions.assertThat(updatedMapping)
+    assertThat(updatedMapping)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("mappingId", id)
-        .hasFieldOrPropertyWithValue("name", name + "New")
-        .hasFieldOrPropertyWithValue("claimName", claimName + "New")
-        .hasFieldOrPropertyWithValue("claimValue", claimValue + "New");
+        .hasMappingId(id)
+        .hasName(name + "New")
+        .hasClaimName(claimName + "New")
+        .hasClaimValue(claimValue + "New");
   }
 
   @Test
@@ -170,22 +175,27 @@ public class MappingTest {
   @Test
   public void shouldNotUpdateToExistingClaim() {
     // given
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var existingClaimName = UUID.randomUUID().toString();
     final var existingClaimValue = UUID.randomUUID().toString();
-    engine.mapping().newMapping(existingClaimName).withClaimValue(existingClaimValue).create();
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withClaimName(existingClaimName)
+        .withClaimValue(existingClaimValue)
+        .create();
 
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    final var mappingKey =
-        engine
-            .mapping()
-            .newMapping(claimName)
-            .withClaimValue(claimValue)
-            .withName(name)
-            .withMappingId(id)
-            .create();
+    engine
+        .mapping()
+        .newMapping(id)
+        .withClaimName(claimName)
+        .withClaimValue(claimValue)
+        .withName(name)
+        .create();
 
     // when
     final var updateMappingToExisting =
@@ -216,10 +226,10 @@ public class MappingTest {
 
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(mappingId)
+        .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withMappingId(mappingId)
         .create()
         .getValue();
 
@@ -227,9 +237,7 @@ public class MappingTest {
     final var deletedMapping = engine.mapping().deleteMapping(mappingId).delete().getValue();
 
     // then
-    Assertions.assertThat(deletedMapping)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("mappingId", mappingId);
+    assertThat(deletedMapping).isNotNull().hasMappingId(mappingId);
   }
 
   @Test
@@ -240,9 +248,9 @@ public class MappingTest {
     final var mappingRecord =
         engine
             .mapping()
-            .newMapping(claimName)
+            .newMapping(mappingId)
+            .withClaimName(claimName)
             .withClaimValue(claimValue)
-            .withMappingId(mappingId)
             .create();
     final var groupId = Strings.newRandomValidIdentityId();
     engine.group().newGroup(groupId).withName("group").create();

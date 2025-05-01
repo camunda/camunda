@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -39,9 +40,15 @@ public class CreateMappingMultiPartitionTest {
   @Test
   public void shouldDistributeMappingCreateCommand() {
     // when
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withClaimName(claimName)
+        .withClaimValue(claimValue)
+        .create();
 
     assertThat(
             RecordingExporter.records()
@@ -85,9 +92,15 @@ public class CreateMappingMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withClaimName(claimName)
+        .withClaimValue(claimValue)
+        .create();
 
     // then
     assertThat(
@@ -106,9 +119,15 @@ public class CreateMappingMultiPartitionTest {
     }
     final var roleName = UUID.randomUUID().toString();
     engine.role().newRole(roleName).create();
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withClaimName(claimName)
+        .withClaimValue(claimValue)
+        .create();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

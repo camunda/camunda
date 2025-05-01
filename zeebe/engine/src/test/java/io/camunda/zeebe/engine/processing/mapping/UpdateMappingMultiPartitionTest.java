@@ -41,10 +41,10 @@ public class UpdateMappingMultiPartitionTest {
     final var id = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(id)
+        .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withMappingId(id)
         .create();
 
     // when
@@ -77,10 +77,10 @@ public class UpdateMappingMultiPartitionTest {
     final var id = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(id)
+        .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withMappingId(id)
         .create();
 
     // when
@@ -113,10 +113,10 @@ public class UpdateMappingMultiPartitionTest {
     final var id = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(id)
+        .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withMappingId(id)
         .create();
     engine
         .mapping()
