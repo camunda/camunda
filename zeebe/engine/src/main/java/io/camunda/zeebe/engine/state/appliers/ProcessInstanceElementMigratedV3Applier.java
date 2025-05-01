@@ -20,14 +20,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 
 /** Applies state changes for `ProcessInstance:Element_Migrated` */
-final class ProcessInstanceElementMigratedV2Applier
+final class ProcessInstanceElementMigratedV3Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final MutableMessageState messageState;
 
-  public ProcessInstanceElementMigratedV2Applier(
+  public ProcessInstanceElementMigratedV3Applier(
       final MutableElementInstanceState elementInstanceState,
       final ProcessState processState,
       final MutableMessageState messageState) {
