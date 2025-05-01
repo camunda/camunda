@@ -141,7 +141,7 @@ public class MappingAppliersTest {
         new RoleRecord()
             .setRoleKey(2L)
             .setRoleId(Strings.newRandomValidIdentityId())
-            .setEntityKey(mappingKey)
+            .setEntityId(mappingId)
             .setEntityType(EntityType.MAPPING);
     roleState.create(role);
     membershipState.insertRelation(

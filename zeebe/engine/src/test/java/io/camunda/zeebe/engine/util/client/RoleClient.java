@@ -188,12 +188,6 @@ public class RoleClient {
       roleRecord.setRoleId(id);
     }
 
-    // TODO remove this method, use id instead
-    public RoleAddEntityClient withEntityKey(final long entityKey) {
-      roleRecord.setEntityKey(entityKey);
-      return this;
-    }
-
     public RoleAddEntityClient withEntityId(final String entityId) {
       roleRecord.setEntityId(entityId);
       return this;
@@ -243,11 +237,6 @@ public class RoleClient {
       this.writer = writer;
       roleRecord = new RoleRecord();
       roleRecord.setRoleId(id);
-    }
-
-    public RoleRemoveEntityClient withEntityKey(final long entityKey) {
-      roleRecord.setEntityKey(entityKey);
-      return this;
     }
 
     public RoleRemoveEntityClient withEntityId(final String entityId) {
