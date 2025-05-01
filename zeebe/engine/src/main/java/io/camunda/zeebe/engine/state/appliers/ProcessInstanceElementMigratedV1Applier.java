@@ -19,13 +19,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Migrated` */
-final class ProcessInstanceElementMigratedApplier
+final class ProcessInstanceElementMigratedV1Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
   private final ProcessState processState;
 
-  public ProcessInstanceElementMigratedApplier(
+  public ProcessInstanceElementMigratedV1Applier(
       final MutableElementInstanceState elementInstanceState, final ProcessState processState) {
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
