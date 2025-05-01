@@ -286,8 +286,8 @@ public class RoleTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     engine
         .mapping()
-        .newMapping("claimName")
-        .withMappingId(mappingId)
+        .newMapping(mappingId)
+        .withClaimName("claimName")
         .withClaimValue("claimValue")
         .create();
     final var roleId = UUID.randomUUID().toString();

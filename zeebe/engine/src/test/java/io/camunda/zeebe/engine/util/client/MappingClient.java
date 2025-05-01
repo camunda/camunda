@@ -22,8 +22,8 @@ public class MappingClient {
     this.writer = writer;
   }
 
-  public MappingCreateClient newMapping(final String name) {
-    return new MappingCreateClient(writer, name);
+  public MappingCreateClient newMapping(final String mappingId) {
+    return new MappingCreateClient(writer, mappingId);
   }
 
   public MappingDeleteClient deleteMapping(final String mappingId) {
@@ -54,19 +54,19 @@ public class MappingClient {
     private final MappingRecord mappingRecord;
     private Function<Long, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public MappingCreateClient(final CommandWriter writer, final String claimName) {
+    public MappingCreateClient(final CommandWriter writer, final String mappingId) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
+      mappingRecord.setMappingId(mappingId);
+    }
+
+    public MappingCreateClient withClaimName(final String claimName) {
       mappingRecord.setClaimName(claimName);
+      return this;
     }
 
     public MappingCreateClient withClaimValue(final String claimValue) {
       mappingRecord.setClaimValue(claimValue);
-      return this;
-    }
-
-    public MappingCreateClient withMappingId(final String mappingId) {
-      mappingRecord.setMappingId(mappingId);
       return this;
     }
 
