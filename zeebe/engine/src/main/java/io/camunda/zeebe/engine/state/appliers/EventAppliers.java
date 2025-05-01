@@ -253,6 +253,11 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementMigratedV3Applier(
             elementInstanceState, processState, state.getMessageState()));
     register(
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        4,
+        new ProcessInstanceElementMigratedV4Applier(
+            elementInstanceState, processState, state.getMessageState()));
+    register(
         ProcessInstanceIntent.ANCESTOR_MIGRATED,
         new ProcessInstanceAncestorMigratedApplier(elementInstanceState));
   }
