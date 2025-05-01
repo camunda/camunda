@@ -51,9 +51,9 @@ public class RoleReader extends AbstractEntityReader<RoleEntity> {
   private RoleEntity map(final RoleDbModel model) {
     return new RoleEntity(
         model.roleKey(),
-        // TODO use id instead of key https://github.com/camunda/camunda/issues/30127
-        String.valueOf(model.roleKey()),
+        model.roleId(),
         model.name(),
+        model.description(),
         model.members().stream().map(RoleMemberDbModel::entityId).collect(Collectors.toSet()));
   }
 }

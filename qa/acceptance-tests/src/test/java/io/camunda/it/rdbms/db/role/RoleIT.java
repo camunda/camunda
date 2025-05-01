@@ -24,14 +24,12 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.sort.RoleSort;
 import java.time.OffsetDateTime;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
-@Disabled("https://github.com/camunda/camunda/issues/30127")
 public class RoleIT {
 
   public static final Long PARTITION_ID = 0L;
@@ -80,7 +78,7 @@ public class RoleIT {
     final var instance = roleReader.findOne(role.roleKey()).orElse(null);
     compareRoles(instance, role);
 
-    rdbmsWriter.getRoleWriter().delete(role.roleKey());
+    rdbmsWriter.getRoleWriter().delete(role.roleId());
     rdbmsWriter.flush();
 
     final var deletedInstance = roleReader.findOne(role.roleKey()).orElse(null);

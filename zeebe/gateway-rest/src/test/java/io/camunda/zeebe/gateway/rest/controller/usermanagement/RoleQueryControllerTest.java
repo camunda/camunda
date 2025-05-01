@@ -42,7 +42,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   @Test
   void getRoleShouldReturnOk() {
     // given
-    final var role = new RoleEntity(100L, "roleId", "Role Name");
+    final var role = new RoleEntity(100L, "roleId", "Role Name", "description");
     when(roleServices.getRole(role.roleKey())).thenReturn(role);
 
     // when
@@ -109,9 +109,9 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
-                        new RoleEntity(100L, "role1", "Role 1"),
-                        new RoleEntity(200L, "role2", "Role 2"),
-                        new RoleEntity(300L, "role12", "Role 12")))
+                        new RoleEntity(100L, "role1", "Role 1", "description 1"),
+                        new RoleEntity(200L, "role2", "Role 2", "description 2"),
+                        new RoleEntity(300L, "role12", "Role 12", "description 12")))
                 .build());
 
     // when / then
@@ -163,9 +163,9 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new RoleEntity(100L, "role1", "Role 1"),
-                        new RoleEntity(300L, "role12", "Role 12"),
-                        new RoleEntity(200L, "role2", "Role 2")))
+                        new RoleEntity(100L, "role1", "Role 1", "description 1"),
+                        new RoleEntity(300L, "role12", "Role 12", "description 12"),
+                        new RoleEntity(200L, "role2", "Role 2", "description 2")))
                 .build());
 
     // when / then

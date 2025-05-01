@@ -61,7 +61,7 @@ public class PermissionsServiceTest {
         .thenReturn(
             new AuthenticationContext.AuthenticationContextBuilder()
                 .withUsername("test")
-                .withRoles(List.of(new RoleEntity(roleKey, roleId, "roleName")))
+                .withRoles(List.of(new RoleEntity(roleKey, roleId, "roleName", "description")))
                 .withTenants(List.of(new TenantDTO(123L, tenantId, "tenantName", "")))
                 .build());
     when(mockAuthentication.getPrincipal()).thenReturn(camundaUser);

@@ -58,7 +58,7 @@ public class CamundaOidcUserServiceTest {
             "role", "R1",
             "group", "G1");
 
-    final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1");
+    final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
 
     when(camundaOAuthPrincipalService.loadOAuthContext(claims))
         .thenReturn(
