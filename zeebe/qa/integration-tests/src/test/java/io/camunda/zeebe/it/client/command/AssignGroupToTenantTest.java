@@ -86,7 +86,7 @@ class AssignGroupToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity to tenant with id '%s', but no tenant with this id exists."
+            "Expected to add entity to tenant with ID '%s', but no tenant with this ID exists."
                 .formatted(nonExistentTenantId));
   }
 
@@ -106,7 +106,7 @@ class AssignGroupToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add group with id '%s' to tenant with id '%s', but the group doesn't exist."
+            "Expected to add group with ID '%s' to tenant with ID '%s', but the group doesn't exist."
                 .formatted(nonExistentGroupId, tenantId));
   }
 
@@ -121,7 +121,7 @@ class AssignGroupToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to add group with id '%s' to tenant with id '%s', but the group is already assigned to the tenant."
+            "Expected to add group with ID '%s' to tenant with ID '%s', but the group is already assigned to the tenant."
                 .formatted(groupId, tenantId));
   }
 

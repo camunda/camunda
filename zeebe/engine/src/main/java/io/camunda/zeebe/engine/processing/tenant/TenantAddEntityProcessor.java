@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -36,9 +37,12 @@ import io.camunda.zeebe.util.Either;
 
 public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
+  private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to add entity to tenant with ID '%s', but no tenant with this ID exists.";
   private final TenantState tenantState;
   private final MappingState mappingState;
   private final GroupState groupState;
+  private final RoleState roleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -56,6 +60,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     tenantState = state.getTenantState();
     mappingState = state.getMappingState();
     groupState = state.getGroupState();
+    roleState = state.getRoleState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
@@ -68,18 +73,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   @Override
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
-
-    final var tenantLookup = getPersistedTenant(record);
-    if (tenantLookup.isLeft()) {
-      rejectCommand(command, RejectionType.NOT_FOUND, tenantLookup.getLeft());
-      return;
-    }
-
-    final var persistedTenant = tenantLookup.get();
-    final var tenantKey = persistedTenant.getTenantKey();
-    final var tenantId = persistedTenant.getTenantId();
-    record.setTenantKey(tenantKey);
-
+    final var tenantId = record.getTenantId();
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
             .addResourceId(tenantId);
@@ -89,7 +83,25 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       return;
     }
 
-    if (!validateEntityAssignment(command, tenantId)) {
+    final var tenantLookup = getPersistedTenant(record);
+    if (tenantLookup.isLeft()) {
+      rejectCommand(command, RejectionType.NOT_FOUND, tenantLookup.getLeft());
+      return;
+    }
+
+    final var persistedTenant = tenantLookup.get();
+    final var tenantKey = persistedTenant.getTenantKey();
+    record.setTenantKey(tenantKey);
+
+    final var entityId = record.getEntityId();
+    final var entityType = record.getEntityType();
+    if (!isEntityPresent(entityId, entityType)) {
+      createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
+      return;
+    }
+
+    if (isEntityAssigned(record)) {
+      createAlreadyAssignedRejectCommand(command, entityId, entityType, tenantId);
       return;
     }
 
@@ -102,82 +114,38 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
-    if (validateEntityAssignment(command, record.getTenantId())) {
+    if (isEntityAssigned(record)) {
+      createAlreadyAssignedRejectCommand(
+          command, record.getEntityId(), record.getEntityType(), record.getTenantId());
+    } else {
       stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.ENTITY_ADDED, record);
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  /** Loads the persisted tenant by the tenant key if it is set, otherwise by the tenant id. */
+  /** Loads the persisted tenant by the tenant id. */
   private Either<String, PersistedTenant> getPersistedTenant(final TenantRecord record) {
     final var tenantId = record.getTenantId();
     return tenantState
         .getTenantById(tenantId)
         .<Either<String, PersistedTenant>>map(Either::right)
-        .orElseGet(
-            () ->
-                Either.left(
-                    "Expected to add entity to tenant with id '%s', but no tenant with this id exists."
-                        .formatted(tenantId)));
+        .orElseGet(() -> Either.left(TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId)));
   }
 
-  /**
-   * Writes rejection and returns false if the entity does not exist or is already assigned to the
-   * tenant.
-   */
-  private boolean validateEntityAssignment(
-      final TypedRecord<TenantRecord> command, final String tenantId) {
-    final var entityType = command.getValue().getEntityType();
-    final var entityId = command.getValue().getEntityId();
+  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
-      case USER -> checkUserAssignment(command, tenantId);
-      case MAPPING -> checkMappingAssignment(entityId, command, tenantId);
-      case GROUP -> checkGroupAssignment(entityId, command, tenantId);
-      default ->
-          throw new IllegalStateException(
-              formatErrorMessage(EntityType.UNSPECIFIED, entityId, tenantId, "doesn't exist"));
+      case USER -> true; // With simple mappings, any username can be assigned
+      case MAPPING -> mappingState.get(entityId).isPresent();
+      case GROUP -> groupState.get(entityId).isPresent();
+      case ROLE -> roleState.getRole(entityId).isPresent();
+      default -> false;
     };
   }
 
-  private boolean checkUserAssignment(
-      final TypedRecord<TenantRecord> command, final String tenantId) {
-    final var record = command.getValue();
-    final var entityId = record.getEntityId();
-    if (membershipState.hasRelation(EntityType.USER, entityId, RelationType.TENANT, tenantId)) {
-      createAlreadyAssignedRejectCommand(command, entityId, EntityType.USER, tenantId);
-      return false;
-    }
-    return true;
-  }
-
-  private boolean checkMappingAssignment(
-      final String mappingId, final TypedRecord<TenantRecord> command, final String tenantId) {
-    final var mapping = mappingState.get(mappingId);
-    if (mapping.isEmpty()) {
-      createEntityNotExistRejectCommand(command, mappingId, EntityType.MAPPING, tenantId);
-      return false;
-    }
-    if (membershipState.hasRelation(EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId)) {
-      createAlreadyAssignedRejectCommand(command, mappingId, EntityType.MAPPING, tenantId);
-      return false;
-    }
-    return true;
-  }
-
-  private boolean checkGroupAssignment(
-      final String entityId, final TypedRecord<TenantRecord> command, final String tenantId) {
-    final var group = groupState.get(entityId);
-    if (group.isEmpty()) {
-      createEntityNotExistRejectCommand(command, entityId, EntityType.GROUP, tenantId);
-      return false;
-    }
-
-    if (membershipState.hasRelation(EntityType.GROUP, entityId, RelationType.TENANT, tenantId)) {
-      createAlreadyAssignedRejectCommand(command, entityId, EntityType.GROUP, tenantId);
-      return false;
-    }
-    return true;
+  private boolean isEntityAssigned(final TenantRecord record) {
+    return membershipState.hasRelation(
+        record.getEntityType(), record.getEntityId(), RelationType.TENANT, record.getTenantId());
   }
 
   private void createEntityNotExistRejectCommand(
@@ -208,7 +176,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final String tenantId,
       final String reason) {
     final var entityName = entityType.name().toLowerCase();
-    return "Expected to add %s with id '%s' to tenant with id '%s', but the %s %s."
+    return "Expected to add %s with ID '%s' to tenant with ID '%s', but the %s %s."
         .formatted(entityName, entityId, tenantId, entityName, reason);
   }
 

@@ -24,8 +24,6 @@ import io.camunda.zeebe.engine.state.appliers.GroupEntityAddedApplier;
 import io.camunda.zeebe.engine.state.appliers.MappingCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.RoleCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.RoleEntityAddedApplier;
-import io.camunda.zeebe.engine.state.appliers.TenantCreatedApplier;
-import io.camunda.zeebe.engine.state.appliers.TenantEntityAddedApplier;
 import io.camunda.zeebe.engine.state.appliers.UserCreatedApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -64,8 +62,6 @@ final class AuthorizationCheckBehaviorTest {
   private AuthorizationCreatedApplier authorizationCreatedApplier;
   private GroupCreatedApplier groupCreatedApplier;
   private GroupEntityAddedApplier groupEntityAddedApplier;
-  private TenantCreatedApplier tenantCreatedApplier;
-  private TenantEntityAddedApplier tenantEntityAddedApplier;
   private RoleCreatedApplier roleCreatedApplier;
   private RoleEntityAddedApplier roleEntityAddedApplier;
   private final Random random = new Random();
@@ -84,8 +80,6 @@ final class AuthorizationCheckBehaviorTest {
         new AuthorizationCreatedApplier(processingState.getAuthorizationState());
     groupCreatedApplier = new GroupCreatedApplier(processingState.getGroupState());
     groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
-    tenantCreatedApplier = new TenantCreatedApplier(processingState.getTenantState());
-    tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
     roleCreatedApplier = new RoleCreatedApplier(processingState.getRoleState());
     roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);
   }

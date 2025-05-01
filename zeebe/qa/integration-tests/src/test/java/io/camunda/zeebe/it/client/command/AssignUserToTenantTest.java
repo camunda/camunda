@@ -93,7 +93,7 @@ class AssignUserToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND': Expected to add entity to tenant with id '%s', but no tenant with this id exists."
+            "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND': Expected to add entity to tenant with ID '%s', but no tenant with this ID exists."
                 .formatted(invalidTenantId));
   }
 
@@ -108,7 +108,7 @@ class AssignUserToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to add user with id '%s' to tenant with id '%s', but the user is already assigned to the tenant."
+            "Expected to add user with ID '%s' to tenant with ID '%s', but the user is already assigned to the tenant."
                 .formatted(USERNAME, TENANT_ID));
   }
 }
