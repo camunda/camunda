@@ -504,6 +504,12 @@ public final class EndpointManager {
       claims.put(Authorization.AUTHORIZED_USERNAME, username);
     }
 
+    // retrieve the application id from the context and add it to the authorization if present
+    final String applicationId = Context.current().call(AuthenticationHandler.APPLICATION_ID::get);
+    if (applicationId != null) {
+      claims.put(Authorization.AUTHORIZED_APPLICATION_ID, applicationId);
+    }
+
     brokerRequest.setAuthorization(claims);
 
     return brokerRequest;
