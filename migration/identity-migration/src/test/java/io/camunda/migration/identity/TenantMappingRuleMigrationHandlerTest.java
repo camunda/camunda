@@ -87,9 +87,11 @@ final class TenantMappingRuleMigrationHandlerTest {
   void stopWhenNoMoreRecords() {
     // given
     givenMappingRules();
-    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "tenantId", "", null));
     when(mappingServices.createMapping(any()))
-        .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
+        .thenAnswer(
+            invocation ->
+                CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
     when(tenantServices.addMember(anyString(), any(), anyString()))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     // when
@@ -131,7 +133,9 @@ final class TenantMappingRuleMigrationHandlerTest {
     givenMappingRules();
     when(tenantServices.getById(any())).thenThrow(new RuntimeException());
     when(mappingServices.createMapping(any()))
-        .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
+        .thenAnswer(
+            invocation ->
+                CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
 
     // when
     migrationHandler.migrate();
@@ -154,9 +158,11 @@ final class TenantMappingRuleMigrationHandlerTest {
   void ignoreWhenMappingAlreadyAssigned() {
     // given
     givenMappingRules();
-    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "tenantId", "", null));
     when(mappingServices.createMapping(any()))
-        .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
+        .thenAnswer(
+            invocation ->
+                CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
     when(tenantServices.addMember(anyString(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
