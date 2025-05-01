@@ -3030,13 +3030,13 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty MappingRecord",
-        (Supplier<MappingRecord>) MappingRecord::new,
+        (Supplier<MappingRecord>) () -> new MappingRecord().setMappingId("mappingId"),
         """
       {
         "mappingKey": -1,
+        "mappingId": "mappingId",
         "claimName": "",
         "claimValue": "",
-        "mappingId": "",
         "name": ""
       }
       """
