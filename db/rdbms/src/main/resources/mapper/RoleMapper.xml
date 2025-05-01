@@ -71,10 +71,10 @@
     WHERE ROLE_ID = #{roleId}
   </update>
 
-  <delete id="delete" parameterType="java.lang.Long" flushCache="true">
+  <delete id="delete" parameterType="java.lang.String" flushCache="true">
     DELETE
     FROM ${prefix}ROLES
-    WHERE ROLE_KEY = #{roleKey}
+    WHERE ROLE_ID = #{roleId}
   </delete>
 
   <insert
@@ -94,15 +94,6 @@
     WHERE ROLE_KEY = #{roleKey}
       AND ENTITY_ID = #{entityId}
       AND ENTITY_TYPE = #{entityType}
-  </delete>
-
-  <delete
-    id="deleteAllMembers"
-    parameterType="java.lang.Long"
-    flushCache="true">
-    DELETE
-    FROM ${prefix}ROLE_MEMBER
-    WHERE ROLE_KEY = #{roleKey}
   </delete>
 
 </mapper>

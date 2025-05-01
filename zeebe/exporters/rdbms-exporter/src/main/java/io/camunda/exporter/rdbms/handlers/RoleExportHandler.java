@@ -49,7 +49,7 @@ public class RoleExportHandler implements RdbmsExportHandler<RoleRecordValue> {
     switch (record.getIntent()) {
       case RoleIntent.CREATED -> roleWriter.create(map(value));
       case RoleIntent.UPDATED -> roleWriter.update(map(value));
-      case RoleIntent.DELETED -> roleWriter.delete(value.getRoleKey());
+      case RoleIntent.DELETED -> roleWriter.delete(value.getRoleId());
       case RoleIntent.ENTITY_ADDED ->
           roleWriter.addMember(
               new RoleMemberDbModel.Builder()
