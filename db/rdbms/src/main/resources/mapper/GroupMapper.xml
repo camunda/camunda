@@ -101,13 +101,4 @@
       AND ENTITY_TYPE = #{entityType}
   </delete>
 
-  <delete
-    id="deleteAllMembers"
-    parameterType="java.lang.String"
-    flushCache="true">
-    DELETE
-    FROM ${prefix}GROUP_MEMBER
-    WHERE GROUP_ID = #{groupId}
-  </delete>
-
 </mapper>
