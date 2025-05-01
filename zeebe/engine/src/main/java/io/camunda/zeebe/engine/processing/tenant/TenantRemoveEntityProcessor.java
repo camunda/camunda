@@ -61,6 +61,16 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     final var tenantId = record.getTenantId();
+
+    final var authorizationRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
+            .addResourceId(tenantId);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
+      return;
+    }
+
     final var persistedTenant = tenantState.getTenantById(tenantId);
 
     if (persistedTenant.isEmpty()) {
@@ -69,15 +79,6 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
           RejectionType.NOT_FOUND,
           "Expected to remove entity from tenant '%s', but no tenant with this ID exists."
               .formatted(tenantId));
-      return;
-    }
-
-    final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(tenantId);
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
       return;
     }
 
