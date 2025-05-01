@@ -18,8 +18,14 @@ public final class RoleFixtures extends CommonFixtures {
   private RoleFixtures() {}
 
   public static RoleDbModel createRandomized(final Function<Builder, Builder> builderFunction) {
-    final var userKey = nextKey();
-    final var builder = new Builder().roleKey(userKey).name("Role " + userKey);
+    final var roleKey = nextKey();
+    final var roleId = nextStringId();
+    final var builder =
+        new Builder()
+            .roleKey(roleKey)
+            .roleId(roleId)
+            .name("Role " + roleId)
+            .description("Description " + roleId);
 
     return builderFunction.apply(builder).build();
   }

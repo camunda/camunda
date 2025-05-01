@@ -31,13 +31,13 @@ public class RoleReader extends AbstractEntityReader<RoleEntity> {
     this.roleMapper = roleMapper;
   }
 
-  public Optional<RoleEntity> findOne(final long roleKey) {
-    final var result = search(RoleQuery.of(b -> b.filter(f -> f.roleKey(roleKey))));
+  public Optional<RoleEntity> findOne(final String roleId) {
+    final var result = search(RoleQuery.of(b -> b.filter(f -> f.roleId(roleId))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
   public SearchQueryResult<RoleEntity> search(final RoleQuery query) {
-    final var dbSort = convertSort(query.sort(), RoleSearchColumn.ROLE_KEY);
+    final var dbSort = convertSort(query.sort(), RoleSearchColumn.ROLE_ID);
     final var dbQuery =
         RoleDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));

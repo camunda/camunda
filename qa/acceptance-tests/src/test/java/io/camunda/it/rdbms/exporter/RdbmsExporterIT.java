@@ -386,16 +386,16 @@ class RdbmsExporterIT {
   public void shouldExportUpdateAndDeleteRole() {
     // given
     final var roleRecord = getRoleRecord(42L, RoleIntent.CREATED);
-    final var roleRecordValue = ((RoleRecordValue) roleRecord.getValue());
+    final var recordValue = (RoleRecordValue) roleRecord.getValue();
 
     // when
     exporter.export(roleRecord);
 
     // then
-    final var role = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    final var role = rdbmsService.getRoleReader().findOne(recordValue.getRoleId());
     assertThat(role).isNotEmpty();
-    assertThat(role.get().roleKey()).isEqualTo(roleRecordValue.getRoleKey());
-    assertThat(role.get().name()).isEqualTo(roleRecordValue.getName());
+    assertThat(role.get().roleKey()).isEqualTo(recordValue.getRoleKey());
+    assertThat(role.get().name()).isEqualTo(recordValue.getName());
 
     // given
     final var updateRoleRecord = getRoleRecord(42L, RoleIntent.UPDATED);
@@ -405,7 +405,7 @@ class RdbmsExporterIT {
     exporter.export(updateRoleRecord);
 
     // then
-    final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    final var updatedRole = rdbmsService.getRoleReader().findOne(recordValue.getRoleId());
     assertThat(updatedRole).isNotEmpty();
     assertThat(updatedRole.get().roleKey()).isEqualTo(updateRoleRecordValue.getRoleKey());
     assertThat(updatedRole.get().name()).isEqualTo(updateRoleRecordValue.getName());
@@ -414,7 +414,7 @@ class RdbmsExporterIT {
     exporter.export(getRoleRecord(42L, RoleIntent.DELETED));
 
     // then
-    final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    final var deletedRole = rdbmsService.getRoleReader().findOne(recordValue.getRoleId());
     assertThat(deletedRole).isEmpty();
   }
 
@@ -422,29 +422,31 @@ class RdbmsExporterIT {
   public void shouldExportRoleAndAddAndDeleteMember() {
     // given
     final var roleRecord = getRoleRecord(42L, RoleIntent.CREATED);
-    final var roleRecordValue = ((RoleRecordValue) roleRecord.getValue());
+    final var recordValue = (RoleRecordValue) roleRecord.getValue();
 
     // when
     exporter.export(roleRecord);
 
     // then
-    final var role = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    final var role = rdbmsService.getRoleReader().findOne(recordValue.getRoleId());
     assertThat(role).isNotEmpty();
-    assertThat(role.get().roleKey()).isEqualTo(roleRecordValue.getRoleKey());
-    assertThat(role.get().name()).isEqualTo(roleRecordValue.getName());
+    assertThat(role.get().roleKey()).isEqualTo(recordValue.getRoleKey());
+    assertThat(role.get().name()).isEqualTo(recordValue.getName());
 
     // when
     exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_ADDED, 1337L));
 
     // then
-    final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
+    final var updatedRole =
+        rdbmsService.getRoleReader().findOne(recordValue.getRoleId()).orElseThrow();
     assertThat(updatedRole.assignedMemberIds()).containsExactly("1337");
 
     // when
     exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_REMOVED, 1337L));
 
     // then
-    final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
+    final var deletedRole =
+        rdbmsService.getRoleReader().findOne(recordValue.getRoleId()).orElseThrow();
     assertThat(deletedRole.assignedMemberIds()).isEmpty();
   }
 

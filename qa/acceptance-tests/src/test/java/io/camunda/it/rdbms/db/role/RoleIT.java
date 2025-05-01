@@ -44,7 +44,7 @@ public class RoleIT {
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
 
-    final var instance = roleReader.findOne(role.roleKey()).orElse(null);
+    final var instance = roleReader.findOne(role.roleId()).orElse(null);
 
     compareRoles(instance, role);
   }
@@ -62,7 +62,7 @@ public class RoleIT {
     rdbmsWriter.getRoleWriter().update(roleUpdate);
     rdbmsWriter.flush();
 
-    final var instance = roleReader.findOne(role.roleKey()).orElse(null);
+    final var instance = roleReader.findOne(role.roleId()).orElse(null);
 
     compareRoles(instance, roleUpdate);
   }
@@ -75,13 +75,13 @@ public class RoleIT {
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
-    final var instance = roleReader.findOne(role.roleKey()).orElse(null);
+    final var instance = roleReader.findOne(role.roleId()).orElse(null);
     compareRoles(instance, role);
 
     rdbmsWriter.getRoleWriter().delete(role.roleId());
     rdbmsWriter.flush();
 
-    final var deletedInstance = roleReader.findOne(role.roleKey()).orElse(null);
+    final var deletedInstance = roleReader.findOne(role.roleId()).orElse(null);
     assertThat(deletedInstance).isNull();
   }
 
