@@ -58,11 +58,12 @@ final class UserTenantsMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final TenantServices tenantServices,
       @Mock(answer = Answers.RETURNS_SELF) final MappingServices mappingServices) {
     when(tenantServices.createTenant(any()))
-        .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
+        .thenReturn(CompletableFuture.completedFuture(new TenantRecord().setTenantId("tenantId")));
     when(tenantServices.addMember(anyString(), any(), anyString()))
-        .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
+        .thenReturn(CompletableFuture.completedFuture(new TenantRecord().setTenantId("tenantId")));
     when(mappingServices.createMapping(any()))
-        .thenReturn(CompletableFuture.completedFuture(new MappingRecord()));
+        .thenReturn(
+            CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
 
     this.managementIdentityClient = managementIdentityClient;
     this.tenantServices = tenantServices;
@@ -94,11 +95,12 @@ final class UserTenantsMigrationHandlerTest {
     givenUserTenants();
     when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
     when(tenantServices.createTenant(any()))
-        .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
+        .thenReturn(CompletableFuture.completedFuture(new TenantRecord().setTenantId("tenantId")));
     when(mappingServices.createMapping(any()))
-        .thenReturn(CompletableFuture.completedFuture(new MappingRecord()));
+        .thenReturn(
+            CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
     when(tenantServices.addMember(anyString(), any(), anyString()))
-        .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
+        .thenReturn(CompletableFuture.completedFuture(new TenantRecord().setTenantId("tenantId")));
 
     // when
     migrationHandler.migrate();

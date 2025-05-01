@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,7 +125,7 @@ public class MappingAppliersTest {
 
   private MappingRecord createMapping() {
     final long mappingKey = 1L;
-    final String mappingId = String.valueOf(mappingKey);
+    final String mappingId = Strings.newRandomValidIdentityId();
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mappingRecord =
@@ -136,16 +137,15 @@ public class MappingAppliersTest {
             .setName(claimName);
     mappingState.create(mappingRecord);
     // create role
-    final long roleKey = 2L;
     final var role =
         new RoleRecord()
-            .setRoleKey(roleKey)
+            .setRoleKey(2L)
+            .setRoleId(Strings.newRandomValidIdentityId())
             .setEntityKey(mappingKey)
             .setEntityType(EntityType.MAPPING);
     roleState.create(role);
-    // TODO: Use role id instead of key
     membershipState.insertRelation(
-        EntityType.MAPPING, mappingId, RelationType.ROLE, String.valueOf(roleKey));
+        EntityType.MAPPING, mappingId, RelationType.ROLE, role.getRoleId());
     // create tenant
     final long tenantKey = 3L;
     final var tenantId = "tenant";
@@ -158,17 +158,15 @@ public class MappingAppliersTest {
             .setEntityType(EntityType.MAPPING);
     tenantState.createTenant(tenant);
     // create group
-    final var groupId = "1";
-    final var groupKey = Long.parseLong(groupId);
-    membershipState.insertRelation(EntityType.MAPPING, mappingId, RelationType.GROUP, groupId);
     final var group =
         new GroupRecord()
-            .setGroupKey(groupKey)
-            .setGroupId(groupId)
-            // TODO: revisit
-            .setEntityId(String.valueOf(mappingKey))
+            .setGroupKey(4L)
+            .setGroupId(Strings.newRandomValidIdentityId())
+            .setEntityId(mappingId)
             .setEntityType(EntityType.MAPPING);
     groupState.create(group);
+    membershipState.insertRelation(
+        EntityType.MAPPING, mappingId, RelationType.GROUP, group.getGroupId());
     // create authorization
     authorizationState.create(
         5L,

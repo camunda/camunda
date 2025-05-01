@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -184,8 +185,8 @@ public class IdentitySetupInitializeTest {
         engine
             .identitySetup()
             .initialize()
-            .withUser(new UserRecord().setUserKey(2))
-            .withRole(new RoleRecord().setRoleKey(3))
+            .withUser(new UserRecord().setUsername(Strings.newRandomValidUsername()))
+            .withRole(new RoleRecord().setRoleId(Strings.newRandomValidIdentityId()))
             .withTenant(tenant)
             .initialize();
 

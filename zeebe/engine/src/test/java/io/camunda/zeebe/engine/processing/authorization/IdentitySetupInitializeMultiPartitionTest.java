@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -41,7 +42,11 @@ public class IdentitySetupInitializeMultiPartitionTest {
   @Test
   public void shouldTestLifecycle() {
     // when
-    final var role = new RoleRecord().setRoleKey(1).setName("roleName");
+    final var role =
+        new RoleRecord()
+            .setRoleId(Strings.newRandomValidIdentityId())
+            .setRoleKey(1)
+            .setName("roleName");
     final var user =
         new UserRecord()
             .setUserKey(2)
@@ -107,7 +112,11 @@ public class IdentitySetupInitializeMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var role = new RoleRecord().setRoleKey(1).setName("roleName");
+    final var role =
+        new RoleRecord()
+            .setRoleId(Strings.newRandomValidIdentityId())
+            .setRoleKey(1)
+            .setName("roleName");
     final var user =
         new UserRecord()
             .setUserKey(2)
@@ -145,7 +154,11 @@ public class IdentitySetupInitializeMultiPartitionTest {
     engine.role().newRole("foo").create();
 
     // when
-    final var role = new RoleRecord().setRoleKey(1).setName("roleName");
+    final var role =
+        new RoleRecord()
+            .setRoleId(Strings.newRandomValidIdentityId())
+            .setRoleKey(1)
+            .setName("roleName");
     final var user =
         new UserRecord()
             .setUserKey(2)

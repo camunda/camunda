@@ -2700,20 +2700,14 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "UserRecord",
-        (Supplier<UserRecord>)
-            () ->
-                new UserRecord()
-                    .setUsername("foobar")
-                    .setName("Foo Bar")
-                    .setEmail("foo@bar")
-                    .setPassword("f00b4r"),
+        (Supplier<UserRecord>) () -> new UserRecord().setUsername("foobar"),
         """
         {
           "userKey": -1,
           "username": "foobar",
-          "name": "Foo Bar",
-          "email": "foo@bar",
-          "password": "f00b4r"
+          "name": "",
+          "email": "",
+          "password": ""
         }
         """
       },
@@ -2856,11 +2850,11 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty RoleRecord",
-        (Supplier<RoleRecord>) RoleRecord::new,
+        (Supplier<RoleRecord>) () -> new RoleRecord().setRoleId("roleId"),
         """
         {
           "roleKey": -1,
-          "roleId": "",
+          "roleId": "roleId",
           "name": "",
           "description": "",
           "entityKey": -1,
@@ -2900,11 +2894,11 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty TenantRecord",
-        (Supplier<UnifiedRecordValue>) TenantRecord::new,
+        (Supplier<UnifiedRecordValue>) () -> new TenantRecord().setTenantId("tenantId"),
         """
           {
             "tenantKey": -1,
-            "tenantId": "",
+            "tenantId": "tenantId",
             "name": "",
             "description": "",
             "entityId": "",
@@ -3036,13 +3030,13 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty MappingRecord",
-        (Supplier<MappingRecord>) MappingRecord::new,
+        (Supplier<MappingRecord>) () -> new MappingRecord().setMappingId("mappingId"),
         """
       {
         "mappingKey": -1,
+        "mappingId": "mappingId",
         "claimName": "",
         "claimValue": "",
-        "mappingId": "",
         "name": ""
       }
       """
@@ -3153,12 +3147,16 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty IdentitySetupRecord",
-        (Supplier<IdentitySetupRecord>) IdentitySetupRecord::new,
+        (Supplier<IdentitySetupRecord>)
+            () ->
+                new IdentitySetupRecord()
+                    .setDefaultRole(new RoleRecord().setRoleId("roleId"))
+                    .setDefaultTenant(new TenantRecord().setTenantId("tenantId")),
         """
       {
           "defaultRole": {
               "roleKey": -1,
-              "roleId": "",
+              "roleId": "roleId",
               "name": "",
               "description": "",
               "entityKey": -1,
@@ -3168,7 +3166,7 @@ final class JsonSerializableToJsonTest {
           "users": [],
           "defaultTenant": {
               "tenantKey": -1,
-              "tenantId": "",
+              "tenantId": "tenantId",
               "name": "",
               "description": "",
               "entityId": "",

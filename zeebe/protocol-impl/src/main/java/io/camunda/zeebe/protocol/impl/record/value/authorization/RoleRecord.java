@@ -18,8 +18,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
 
   private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
-  // TODO remove default empty string https://github.com/camunda/camunda/issues/30140
-  private final StringProperty roleIdProp = new StringProperty("roleId", "");
+  private final StringProperty roleIdProp = new StringProperty("roleId");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty descriptionProp = new StringProperty("description", "");
   // TODO remove entityKeyProp https://github.com/camunda/camunda/issues/30111
