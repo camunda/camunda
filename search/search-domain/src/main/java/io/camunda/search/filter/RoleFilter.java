@@ -21,7 +21,7 @@ public record RoleFilter(
     EntityType memberType)
     implements FilterBase {
   public Builder toBuilder() {
-    return new Builder().roleKey(roleKey).name(name).memberIds(memberIds);
+    return new Builder().roleKey(roleKey).roleId(roleId).name(name).memberIds(memberIds);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
