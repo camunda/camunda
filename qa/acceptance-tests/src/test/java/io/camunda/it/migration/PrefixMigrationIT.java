@@ -8,6 +8,7 @@
 package io.camunda.it.migration;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbDatabaseType;
+import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -15,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.operate.property.OperateProperties;
@@ -34,7 +34,6 @@ import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -50,9 +49,6 @@ import org.testcontainers.utility.DockerImageName;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class PrefixMigrationIT {
-  public static final int SERVER_PORT = 8080;
-  public static final int MANAGEMENT_PORT = 9600;
-  public static final int GATEWAY_GRPC_PORT = 26500;
   public static final String OLD_OPERATE_PREFIX = "operate-dev";
   public static final String OLD_TASKLIST_PREFIX = "tasklist-dev";
   private static final String DEFAULT_ES_OS_URL_FOR_MULTI_DB =
@@ -75,11 +71,11 @@ public class PrefixMigrationIT {
         new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7.0-SNAPSHOT"))
             .waitingFor(
                 new HttpWaitStrategy()
-                    .forPort(MANAGEMENT_PORT)
+                    .forPort(MONITORING.port())
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(30)))
             .withAccessToHost(true)
-            .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
+            .withExposedPorts(REST.port(), MONITORING.port(), GATEWAY.port())
             .withEnv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
             .withEnv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
             .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,tasklist,identity,consolidated-auth")
@@ -308,28 +304,12 @@ public class PrefixMigrationIT {
     }
   }
 
-  private CamundaClient createCamundaClient(final GenericContainer<?> container)
-      throws IOException {
+  private CamundaClient createCamundaClient(final GenericContainer<?> container) {
 
     return CamundaClient.newClientBuilder()
-        .grpcAddress(URI.create("http://localhost:" + container.getMappedPort(GATEWAY_GRPC_PORT)))
-        .restAddress(URI.create("http://localhost:" + container.getMappedPort(SERVER_PORT)))
+        .grpcAddress(URI.create("http://localhost:" + container.getMappedPort(GATEWAY.port())))
+        .restAddress(URI.create("http://localhost:" + container.getMappedPort(REST.port())))
         .usePlaintext()
-        .credentialsProvider(
-            new CredentialsProvider() {
-              @Override
-              public void applyCredentials(final CredentialsApplier applier) {
-                applier.put(
-                    "Authorization",
-                    "Basic %s"
-                        .formatted(Base64.getEncoder().encodeToString("demo:demo".getBytes())));
-              }
-
-              @Override
-              public boolean shouldRetryRequest(final StatusCode statusCode) {
-                return false;
-              }
-            })
         .build();
   }
 }
