@@ -6574,8 +6574,9 @@ components:
       type: object
       properties:
         name:
-          type: string
-          description: The name of the group.
+          description: The group name search filters.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     GroupSearchQueryResult:
       description: Group search response.
       type: object
