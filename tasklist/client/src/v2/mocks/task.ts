@@ -52,4 +52,26 @@ const assignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   ...customFields,
 });
 
-export {unassignedTask, assignedTask};
+const completedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
+  userTaskKey: uniqueId.next().value,
+  assignee: currentUser.userId,
+  creationDate: '2024-01-01T00:00:00.000Z',
+  completionDate: '2025-01-01T00:00:00.000Z',
+  priority: 50,
+  state: 'COMPLETED',
+  candidateGroups: [],
+  candidateUsers: [],
+  tenantId: DEFAULT_TENANT_ID,
+  processDefinitionId: 'process-1',
+  processDefinitionVersion: 1,
+  processName: 'Nice Process',
+  elementId: 'element-1',
+  name: 'My Task',
+  elementInstanceKey: '1',
+  processDefinitionKey: '0',
+  processInstanceKey: '0',
+  formKey: '1',
+  ...customFields,
+});
+
+export {unassignedTask, assignedTask, completedTask};

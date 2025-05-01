@@ -17,7 +17,7 @@ import {
   TextInput,
 } from '@carbon/react';
 import {Popup, Close} from '@carbon/react/icons';
-import type {Variable} from 'v1/api/types';
+import type {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {DelayedErrorField} from 'common/tasks/variables-editor/VariableEditor/DelayedErrorField';
@@ -44,7 +44,7 @@ type Props = {
   containerRef: RefObject<HTMLElement | null>;
   variables: Variable[];
   readOnly: boolean;
-  fetchFullVariable: (id: string) => void;
+  fetchFullVariable: (variableKey: string) => void;
   variablesLoadingFullValue: string[];
   onEdit: (id: string) => void;
 };
@@ -87,8 +87,8 @@ const VariableEditor: React.FC<Props> = ({
               >
                 <div className={styles.scrollableOuter}>
                   <div className={styles.scrollableInner}>
-                    {variable.isValueTruncated
-                      ? `${variable.previewValue}...`
+                    {variable.isTruncated
+                      ? `${variable.value}...`
                       : variable.value}
                   </div>
                 </div>
@@ -115,9 +115,7 @@ const VariableEditor: React.FC<Props> = ({
                   <Field
                     name={createVariableFieldName(variable.name)}
                     validate={
-                      variable.isValueTruncated
-                        ? () => undefined
-                        : validateValueJSON
+                      variable.isTruncated ? () => undefined : validateValueJSON
                     }
                   >
                     {({input, meta}) => (
@@ -126,11 +124,11 @@ const VariableEditor: React.FC<Props> = ({
                         id={input.name}
                         invalidText={meta.error}
                         isLoading={variablesLoadingFullValue.includes(
-                          variable.id,
+                          variable.variableKey,
                         )}
                         onFocus={(event) => {
-                          if (variable.isValueTruncated) {
-                            fetchFullVariable(variable.id);
+                          if (variable.isTruncated) {
+                            fetchFullVariable(variable.variableKey);
                           }
                           input.onFocus(event);
                         }}
@@ -150,8 +148,8 @@ const VariableEditor: React.FC<Props> = ({
                     <IconButton
                       label={t('variableEditorOpenJsonLabel')}
                       onClick={() => {
-                        if (variable.isValueTruncated) {
-                          fetchFullVariable(variable.id);
+                        if (variable.isTruncated) {
+                          fetchFullVariable(variable.variableKey);
                         }
 
                         onEdit(createVariableFieldName(variable.name));
