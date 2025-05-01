@@ -21,6 +21,7 @@ import io.camunda.search.sort.RoleSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,12 +44,12 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void getRoleShouldReturnOk() {
     // given
     final var role = new RoleEntity(100L, "roleId", "Role Name", "description");
-    when(roleServices.getRole(role.roleKey())).thenReturn(role);
+    when(roleServices.getRole(role.roleId())).thenReturn(role);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(ROLE_BASE_URL, role.roleKey()))
+        .uri("%s/%s".formatted(ROLE_BASE_URL, role.roleId()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -62,15 +63,15 @@ public class RoleQueryControllerTest extends RestControllerTest {
             }""");
 
     // then
-    verify(roleServices, times(1)).getRole(role.roleKey());
+    verify(roleServices, times(1)).getRole(role.roleId());
   }
 
   @Test
   void getNonExistingRoleShouldReturnNotFound() {
     // given
-    final var roleKey = 100L;
-    final var path = "%s/%s".formatted(ROLE_BASE_URL, roleKey);
-    when(roleServices.getRole(roleKey))
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s".formatted(ROLE_BASE_URL, roleId);
+    when(roleServices.getRole(roleId))
         .thenThrow(
             new CamundaSearchException("role not found", CamundaSearchException.Reason.NOT_FOUND));
 
@@ -84,7 +85,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
         .isNotFound()
         .expectBody()
         .json(
-            """
+                """
             {
               "type": "about:blank",
               "title": "NOT_FOUND",
@@ -95,7 +96,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 .formatted(path));
 
     // then
-    verify(roleServices, times(1)).getRole(roleKey);
+    verify(roleServices, times(1)).getRole(roleId);
   }
 
   @Test
