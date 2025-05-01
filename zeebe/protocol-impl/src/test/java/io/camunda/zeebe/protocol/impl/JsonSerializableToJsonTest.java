@@ -2856,11 +2856,11 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty RoleRecord",
-        (Supplier<RoleRecord>) RoleRecord::new,
+        (Supplier<RoleRecord>) () -> new RoleRecord().setRoleId("roleId"),
         """
         {
           "roleKey": -1,
-          "roleId": "",
+          "roleId": "roleId",
           "name": "",
           "description": "",
           "entityKey": -1,
@@ -3153,12 +3153,13 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty IdentitySetupRecord",
-        (Supplier<IdentitySetupRecord>) IdentitySetupRecord::new,
+        (Supplier<IdentitySetupRecord>)
+            () -> new IdentitySetupRecord().setDefaultRole(new RoleRecord().setRoleId("roleId")),
         """
       {
           "defaultRole": {
               "roleKey": -1,
-              "roleId": "",
+              "roleId": "roleId",
               "name": "",
               "description": "",
               "entityKey": -1,
