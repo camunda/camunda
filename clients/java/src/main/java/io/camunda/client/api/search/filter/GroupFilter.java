@@ -34,5 +34,5 @@ public interface GroupFilter extends SearchRequestFilter {
    * @param fn the name {@link StringProperty} consumer of the group
    * @return the updated filter
    */
-  GroupFilter name(final java.util.function.Consumer<StringProperty> fn);
+  GroupFilter name(final java.util.function.Consumer<String> fn);
 }
