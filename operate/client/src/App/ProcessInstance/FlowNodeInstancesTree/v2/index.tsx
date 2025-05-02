@@ -30,8 +30,13 @@ import {
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
 import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useLatestMigrationDate} from 'modules/queries/operations/useLatestMigrationDate';
+import {
+  fetchNext,
+  fetchPrevious,
+  fetchSubTree,
+} from 'modules/utils/flowNodeInstance';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
 const TREE_NODE_HEIGHT = 32;
 
@@ -103,10 +108,9 @@ const ScrollableNodes: React.FC<
 
 const FlowNodeInstancesTree: React.FC<Props> = observer(
   ({flowNodeInstance, scrollableContainerRef, isRoot = false, ...rest}) => {
-    const {fetchSubTree, removeSubTree, getVisibleChildNodes} =
-      flowNodeInstanceStore;
-    const {data: processInstance} = useProcessInstance();
     const {data: latestMigrationDate} = useLatestMigrationDate();
+    const {data: processInstance} = useProcessInstance();
+    const {removeSubTree, getVisibleChildNodes} = flowNodeInstanceStore;
 
     const isProcessInstance =
       flowNodeInstance.id === processInstance?.processInstanceKey;
@@ -163,7 +167,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
 
     const expandSubtree = (flowNodeInstance: FlowNodeInstance) => {
       if (!flowNodeInstance.isPlaceholder) {
-        fetchSubTree({treePath: flowNodeInstance.treePath});
+        fetchSubTree({treePath: flowNodeInstance.treePath, processInstance});
       } else {
         instanceHistoryModificationStore.addExpandedFlowNodeInstanceIds(
           flowNodeInstance.id,
@@ -188,8 +192,9 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         return;
       }
       if (flowNodeInstance.treePath !== null) {
-        const fetchedInstancesCount = await flowNodeInstanceStore.fetchNext(
+        const fetchedInstancesCount = await fetchNext(
           flowNodeInstance.treePath,
+          processInstance,
         );
 
         // This ensures that the container is scrolling up when MAX_INSTANCES_STORED is reached.
@@ -286,10 +291,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               if (flowNodeInstance.treePath === null) {
                 return;
               }
-              const fetchedInstancesCount =
-                await flowNodeInstanceStore.fetchPrevious(
-                  flowNodeInstance.treePath,
-                );
+              const fetchedInstancesCount = await fetchPrevious(
+                flowNodeInstance.treePath,
+                processInstance,
+              );
 
               if (fetchedInstancesCount !== undefined) {
                 scrollDown(fetchedInstancesCount * TREE_NODE_HEIGHT);

@@ -24,10 +24,8 @@ const init = (processInstance?: ProcessInstance) => {
     () => processInstance?.processInstanceKey !== undefined,
     () => {
       const instanceId = processInstance?.processInstanceKey;
-      if (instanceId !== undefined) {
-        flowNodeInstanceStore.fetchInstanceExecutionHistory(instanceId);
-        startPolling(processInstance);
-      }
+      fetchInstanceExecutionHistory(processInstance)(instanceId);
+      startPolling(processInstance);
     },
   );
 
@@ -84,6 +82,8 @@ const startPolling = (
   processInstance?: ProcessInstance,
   options: {runImmediately?: boolean} = {runImmediately: false},
 ) => {
+  console.log('startPolling');
+
   if (
     document.visibilityState === 'hidden' ||
     (processInstance && !isInstanceRunning(processInstance)) ||
@@ -298,6 +298,7 @@ const getFlowNodeInstances = async ({
 
 export {
   init,
+  pollInstances,
   startPolling,
   fetchNext,
   fetchPrevious,

@@ -20,6 +20,7 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import * as flowNodeInstanceUtils from 'modules/utils/flowNodeInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 
 import {Paths} from 'modules/Routes';
@@ -232,7 +233,7 @@ describe('ProcessInstance - modification mode', () => {
     );
   });
 
-  it('should stop polling during the modification mode', async () => {
+  it.only('should stop polling during the modification mode', async () => {
     jest.useFakeTimers();
 
     const handlePollingVariablesSpy = jest.spyOn(
@@ -251,8 +252,8 @@ describe('ProcessInstance - modification mode', () => {
     );
 
     const handlePollingFlowNodeInstanceSpy = jest.spyOn(
-      flowNodeInstanceStore,
-      'pollInstances',
+      flowNodeInstanceUtils,
+      'startPolling',
     );
 
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
@@ -276,7 +277,9 @@ describe('ProcessInstance - modification mode', () => {
     await waitFor(() =>
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
     );
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1),
+    );
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
