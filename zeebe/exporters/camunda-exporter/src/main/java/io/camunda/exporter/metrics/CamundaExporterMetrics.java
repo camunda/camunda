@@ -11,13 +11,11 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.Timer.ResourceSample;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
 public class CamundaExporterMetrics {
   private static final String NAMESPACE = "zeebe.camunda.exporter";
@@ -46,6 +44,7 @@ public class CamundaExporterMetrics {
   private final DistributionSummary bulkSize;
   private final Timer flushDuration;
   private final Counter failedFlush;
+  private final Timer recordExportDuration;
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -121,6 +120,12 @@ public class CamundaExporterMetrics {
         Counter.builder(meterName("failed.flush"))
             .description("Number of failed flush operations")
             .register(meterRegistry);
+    recordExportDuration =
+        Timer.builder(meterName("record.export.duration"))
+            .description(
+                "How time it took to export a record from the moment it was written (not committed)")
+            .serviceLevelObjectives(MicrometerUtil.defaultPrometheusBuckets())
+            .register(meterRegistry);
   }
 
   public CloseableSilently measureFlushDuration() {
@@ -163,6 +168,10 @@ public class CamundaExporterMetrics {
 
   public void recordBatchOperationsArchiving(final int count) {
     batchOperationsArchiving.increment(count);
+  }
+
+  public void observeRecordExportDurationMillis(final long durationMillis) {
+    recordExportDuration.record(durationMillis, TimeUnit.MILLISECONDS);
   }
 
   private String meterName(final String name) {
