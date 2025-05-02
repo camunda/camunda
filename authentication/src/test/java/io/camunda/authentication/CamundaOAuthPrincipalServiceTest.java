@@ -206,7 +206,7 @@ public class CamundaOAuthPrincipalServiceTest {
                   new MappingEntity("test-id", 5L, "role", "R1", "role-r1"),
                   new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
 
-      final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1");
+      final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
       when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2")))
           .thenReturn(List.of(roleR1));
       when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "8")))
@@ -242,7 +242,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(tenantServices.getTenantsByMemberIds(Set.of("map-1", "map-2")))
           .thenReturn(List.of(tenantEntity1, tenantEntity2));
 
-      final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1");
+      final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1", "R1 description");
       when(roleServices.getRolesByMemberIds(Set.of("map-1", "map-2"))).thenReturn(List.of(roleR1));
 
       when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "10")))

@@ -12,7 +12,9 @@ import java.util.function.Function;
 
 public enum RoleSearchColumn implements SearchColumn<RoleEntity> {
   ROLE_KEY("roleKey", RoleEntity::roleKey),
-  NAME("name", RoleEntity::name);
+  ROLE_ID("roleId", RoleEntity::roleId),
+  NAME("name", RoleEntity::name),
+  DESCRIPTION("description", RoleEntity::description);
 
   private final String property;
   private final Function<RoleEntity, Object> propertyReader;

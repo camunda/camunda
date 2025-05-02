@@ -29,20 +29,23 @@ public class RoleWriter {
         new QueueItem(
             ContextType.ROLE,
             WriteStatementType.INSERT,
-            role.roleKey(),
+            role.roleId(),
             "io.camunda.db.rdbms.sql.RoleMapper.insert",
             role));
   }
 
   public void update(final RoleDbModel role) {
-    final boolean wasMerged = mergeToQueue(role.roleKey(), b -> b.name(role.name()));
+    final boolean wasMerged =
+        mergeToQueue(
+            role.roleId(),
+            b -> b.roleId(role.roleId()).name(role.name()).description(role.description()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.ROLE,
               WriteStatementType.UPDATE,
-              role.roleKey(),
+              role.roleId(),
               "io.camunda.db.rdbms.sql.RoleMapper.update",
               role));
     }
@@ -53,7 +56,7 @@ public class RoleWriter {
         new QueueItem(
             ContextType.ROLE,
             WriteStatementType.INSERT,
-            member.roleKey(),
+            member.roleId(),
             "io.camunda.db.rdbms.sql.RoleMapper.insertMember",
             member));
   }
@@ -63,31 +66,24 @@ public class RoleWriter {
         new QueueItem(
             ContextType.ROLE,
             WriteStatementType.DELETE,
-            member.roleKey(),
+            member.roleId(),
             "io.camunda.db.rdbms.sql.RoleMapper.deleteMember",
             member));
   }
 
-  public void delete(final long roleKey) {
+  public void delete(final String roleId) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.ROLE,
             WriteStatementType.DELETE,
-            roleKey,
+            roleId,
             "io.camunda.db.rdbms.sql.RoleMapper.delete",
-            roleKey));
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.ROLE,
-            WriteStatementType.DELETE,
-            roleKey,
-            "io.camunda.db.rdbms.sql.RoleMapper.deleteAllMembers",
-            roleKey));
+            roleId));
   }
 
   private boolean mergeToQueue(
-      final long key, final Function<RoleDbModel.Builder, RoleDbModel.Builder> mergeFunction) {
+      final String roleId, final Function<RoleDbModel.Builder, RoleDbModel.Builder> mergeFunction) {
     return executionQueue.tryMergeWithExistingQueueItem(
-        new UpsertMerger<>(ContextType.ROLE, key, RoleDbModel.class, mergeFunction));
+        new UpsertMerger<>(ContextType.ROLE, roleId, RoleDbModel.class, mergeFunction));
   }
 }

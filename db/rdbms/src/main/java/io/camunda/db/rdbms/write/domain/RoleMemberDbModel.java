@@ -9,17 +9,17 @@ package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
 
-public record RoleMemberDbModel(Long roleKey, String entityId, String entityType) {
+public record RoleMemberDbModel(String roleId, String entityId, String entityType) {
 
   // create builder implementing ObjectBuilder
   public static class Builder implements ObjectBuilder<RoleMemberDbModel> {
 
-    private Long roleKey;
+    private String roleId;
     private String entityId;
     private String entityType;
 
-    public Builder roleKey(final Long roleKey) {
-      this.roleKey = roleKey;
+    public Builder roleId(final String roleId) {
+      this.roleId = roleId;
       return this;
     }
 
@@ -35,7 +35,7 @@ public record RoleMemberDbModel(Long roleKey, String entityId, String entityType
 
     @Override
     public RoleMemberDbModel build() {
-      return new RoleMemberDbModel(roleKey, entityId, entityType);
+      return new RoleMemberDbModel(roleId, entityId, entityType);
     }
   }
 }

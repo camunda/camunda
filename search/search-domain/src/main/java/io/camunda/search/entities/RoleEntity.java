@@ -12,9 +12,11 @@ import java.io.Serializable;
 import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record RoleEntity(Long roleKey, String roleId, String name, Set<String> assignedMemberIds)
+public record RoleEntity(
+    Long roleKey, String roleId, String name, String description, Set<String> assignedMemberIds)
     implements Serializable {
-  public RoleEntity(final Long roleKey, final String roleId, final String name) {
-    this(roleKey, roleId, name, Set.of());
+  public RoleEntity(
+      final Long roleKey, final String roleId, final String name, final String description) {
+    this(roleKey, roleId, name, description, Set.of());
   }
 }

@@ -62,7 +62,7 @@ public class CamundaUserDetailsServiceTest {
     final var roleId = "admin";
     when(authorizationServices.getAuthorizedApplications(Set.of(roleId, TEST_USER_ID)))
         .thenReturn(List.of("operate", "identity"));
-    final RoleEntity adminRole = new RoleEntity(2L, roleId, "ADMIN");
+    final RoleEntity adminRole = new RoleEntity(2L, roleId, "ADMIN", "description");
     when(roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(TEST_USER_ID)))))
         .thenReturn(List.of(adminRole));
 
