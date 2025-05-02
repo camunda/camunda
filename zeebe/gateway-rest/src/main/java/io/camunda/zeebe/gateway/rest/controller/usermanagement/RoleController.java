@@ -123,6 +123,15 @@ public class RoleController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
+  @CamundaPutMapping(
+      path = "/{roleId}/groups/{groupId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> addGroupToRole(
+      @PathVariable final String roleId, @PathVariable final String groupId) {
+    return RequestMapper.toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> addMemberToRole(
       final RoleMemberRequest request) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(

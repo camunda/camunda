@@ -2595,6 +2595,51 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /roles/{roleId}/groups/{groupId}:
+    put:
+      tags:
+        - Role
+      operationId: addGroupToRole
+      summary: Assign a group to a role (Work-in-Progress)
+      description: |
+        Assigns a group to a role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: groupId
+          in: path
+          required: true
+          description: The group ID.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The group was assigned successfully to the role.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role or group with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: The group with the given ID is already assigned to the role.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /groups:
     post:
