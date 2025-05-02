@@ -14,11 +14,18 @@ import (
 	"os"
 	"text/template"
 	"time"
-        "github.com/camunda/camunda/c8run/internal/types"
+
+	"github.com/camunda/camunda/c8run/internal/types"
 )
 
 type opener interface {
 	OpenBrowser(protocol string, port int) error
+}
+
+type Ports struct {
+	OperatePort  int
+	TasklistPort int
+	IdentityPort int
 }
 
 func QueryCamunda(c8 opener, name string, settings types.C8RunSettings) error {
@@ -59,30 +66,25 @@ func isRunning(name, url string, retries int, delay time.Duration) bool {
 }
 
 func PrintStatus(settings types.C8RunSettings) error {
-        var operatePort, tasklistPort, identityPort int
-        if settings.Docker {
-                operatePort = 8081
-                tasklistPort = 8082
-                identityPort = 8084
-        } else {
-                operatePort = 8080
-                tasklistPort = 8080
-                identityPort = 8080
-        }
+	operatePort, tasklistPort, identityPort := 8080, 8080, 8080
+
+	// Overwrite ports if Docker is enabled
+	if settings.Docker {
+		operatePort = 8081
+		tasklistPort = 8082
+		identityPort = 8084
+	}
+
 	endpoints, _ := os.ReadFile("endpoints.txt")
 	t, err := template.New("endpoints").Parse(string(endpoints))
 	if err != nil {
 		return fmt.Errorf("Error: failed to parse endpoints template: %s", err.Error())
 	}
 
-	data := struct {
-		OperatePort int
-                TasklistPort int
-                IdentityPort int
-	}{
-		OperatePort: operatePort,
-                TasklistPort: tasklistPort,
-                IdentityPort: identityPort,
+	data := Ports{
+		OperatePort:  operatePort,
+		TasklistPort: tasklistPort,
+		IdentityPort: identityPort,
 	}
 
 	err = t.Execute(os.Stdout, data)
