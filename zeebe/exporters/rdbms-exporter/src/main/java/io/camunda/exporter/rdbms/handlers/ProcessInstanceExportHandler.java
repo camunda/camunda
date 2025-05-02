@@ -31,9 +31,8 @@ import org.slf4j.LoggerFactory;
 public class ProcessInstanceExportHandler
     implements RdbmsExportHandler<ProcessInstanceRecordValue> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstanceExportHandler.class);
-
   public static final long NO_PARENT_EXISTS_KEY = -1L;
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstanceExportHandler.class);
 
   private final ProcessInstanceWriter processInstanceWriter;
   private final HistoryCleanupService historyCleanupService;
