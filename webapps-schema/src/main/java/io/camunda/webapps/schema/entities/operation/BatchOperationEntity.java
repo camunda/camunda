@@ -221,7 +221,9 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   @Override
   public String toString() {
     return "BatchOperationEntity{"
-        + "name='"
+        + "id='"
+        + getId()
+        + "', name='"
         + name
         + '\''
         + ", type="
