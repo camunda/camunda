@@ -110,6 +110,7 @@ const useRootNode = () => {
 const useSelectedFlowNodeName = () => {
   const {data: processInstance} = useProcessInstance();
   const {data: businessObjects} = useBusinessObjects();
+  const isRootNodeSelected = useIsRootNodeSelected();
 
   if (
     processInstance === null ||
@@ -118,7 +119,7 @@ const useSelectedFlowNodeName = () => {
     return '';
   }
 
-  if (flowNodeSelectionStore.isRootNodeSelected) {
+  if (isRootNodeSelected) {
     return processInstance?.processDefinitionName;
   }
 
