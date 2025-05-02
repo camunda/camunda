@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.metrics;
 
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
@@ -21,7 +23,6 @@ public class CamundaExporterMetrics {
   private static final String NAMESPACE = "zeebe.camunda.exporter";
 
   private final MeterRegistry meterRegistry;
-  private final AtomicInteger bulkMemorySize = new AtomicInteger(0);
   private final Timer flushLatency;
   private final Counter processInstancesArchived;
 
@@ -42,6 +43,9 @@ public class CamundaExporterMetrics {
   private final Timer archiverReindexTimer;
   private Timer.Sample flushLatencyMeasurement;
   private final Timer archivingDuration;
+  private final DistributionSummary bulkSize;
+  private final Timer flushDuration;
+  private final Counter failedFlush;
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -102,13 +106,25 @@ public class CamundaExporterMetrics {
                 "Duration of how long it takes from resolving to archiving entities, all in all together.")
             .publishPercentileHistogram()
             .register(meterRegistry);
+    bulkSize =
+        DistributionSummary.builder(meterName("bulk.size"))
+            .description("How many items were exported in one bulk request")
+            .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
+            .register(meterRegistry);
+    flushDuration =
+        Timer.builder(meterName("flush.duration.seconds"))
+            .description("Flush duration of bulk exporters in seconds")
+            .publishPercentileHistogram()
+            .minimumExpectedValue(Duration.ofMillis(10))
+            .register(meterRegistry);
+    failedFlush =
+        Counter.builder(meterName("failed.flush"))
+            .description("Number of failed flush operations")
+            .register(meterRegistry);
   }
 
-  public ResourceSample measureFlushDuration() {
-    return Timer.resource(meterRegistry, meterName("flush.duration.seconds"))
-        .description("Flush duration of bulk exporters in seconds")
-        .publishPercentileHistogram()
-        .minimumExpectedValue(Duration.ofMillis(10));
+  public CloseableSilently measureFlushDuration() {
+    return MicrometerUtil.timer(flushDuration, Timer.start(meterRegistry));
   }
 
   public void measureArchiverSearch(final Timer.Sample sample) {
@@ -116,26 +132,11 @@ public class CamundaExporterMetrics {
   }
 
   public void recordBulkSize(final int bulkSize) {
-    DistributionSummary.builder(meterName("bulk.size"))
-        .description("Exporter bulk size")
-        .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
-        .register(meterRegistry)
-        .record(bulkSize);
-  }
-
-  public void recordBulkMemorySize(final int bulkMemorySize) {
-    Gauge.builder(meterName("bulk.memory.size"), this.bulkMemorySize, AtomicInteger::get)
-        .description("Exporter bulk memory size")
-        .register(meterRegistry);
-
-    this.bulkMemorySize.set(bulkMemorySize);
+    this.bulkSize.record(bulkSize);
   }
 
   public void recordFailedFlush() {
-    Counter.builder(meterName("failed.flush"))
-        .description("Number of failed flush operations")
-        .register(meterRegistry)
-        .increment();
+    failedFlush.increment();
   }
 
   public void startFlushLatencyMeasurement() {
