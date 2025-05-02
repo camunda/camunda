@@ -30,5 +30,9 @@ public class ListenerEventTypeTest {
     assertEquals(actual6, ListenerEventType.UNSPECIFIED);
     final ListenerEventType actual7 = ListenerEventType.fromZeebeListenerEventType("UPDATING");
     assertEquals(actual7, ListenerEventType.UPDATING);
+    final ListenerEventType actual8 = ListenerEventType.fromZeebeListenerEventType("CREATING");
+    assertEquals(actual8, ListenerEventType.CREATING);
+    final ListenerEventType actual9 = ListenerEventType.fromZeebeListenerEventType("CANCELING");
+    assertEquals(actual9, ListenerEventType.CANCELING);
   }
 }
