@@ -110,9 +110,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
         commandDistributionRecord.getIntent(),
         retriable.partitionId);
 
-    distributionState
-        .getMetrics()
-        .retryInflightDistribution(retriable.partitionId, retriable.distributionKey);
+    distributionState.getMetrics().retryInflightDistribution(retriable.partitionId);
 
     commandSender.sendCommand(
         retriable.partitionId,

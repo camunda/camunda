@@ -122,21 +122,15 @@ public class DbDistributionState implements MutableDistributionState {
     getMetrics().startReset();
 
     commandDistributionRecordColumnFamily.forEach(
-        (distributionKey, record) -> getMetrics().addDistribution(distributionKey.getValue()));
+        (distributionKey, record) -> getMetrics().addDistribution());
 
     pendingDistributionColumnFamily.forEach(
         (distributionPartitionKey, record) ->
-            getMetrics()
-                .addPendingDistribution(
-                    distributionPartitionKey.second().getValue(),
-                    distributionPartitionKey.first().inner().getValue()));
+            getMetrics().addPendingDistribution(distributionPartitionKey.second().getValue()));
 
     retriableDistributionColumnFamily.forEach(
         (distributionPartitionKey, record) ->
-            getMetrics()
-                .addInflightDistribution(
-                    distributionPartitionKey.second().getValue(),
-                    distributionPartitionKey.first().inner().getValue()));
+            getMetrics().addInflightDistribution(distributionPartitionKey.second().getValue()));
 
     getMetrics().finalizeReset();
   }
@@ -148,7 +142,7 @@ public class DbDistributionState implements MutableDistributionState {
     commandDistributionRecordColumnFamily.insert(
         this.distributionKey, new PersistedCommandDistribution().wrap(commandDistributionRecord));
 
-    getMetrics().addDistribution(distributionKey);
+    getMetrics().addDistribution();
   }
 
   @Override
@@ -156,7 +150,7 @@ public class DbDistributionState implements MutableDistributionState {
     this.distributionKey.wrapLong(distributionKey);
     commandDistributionRecordColumnFamily.deleteIfExists(this.distributionKey);
 
-    getMetrics().removeDistribution(distributionKey);
+    getMetrics().removeDistribution();
   }
 
   @Override
@@ -165,7 +159,7 @@ public class DbDistributionState implements MutableDistributionState {
     partitionKey.wrapInt(partition);
     retriableDistributionColumnFamily.insert(distributionPartitionKey, DbNil.INSTANCE);
 
-    getMetrics().addInflightDistribution(partition, distributionKey);
+    getMetrics().addInflightDistribution(partition);
   }
 
   @Override
@@ -174,7 +168,7 @@ public class DbDistributionState implements MutableDistributionState {
     partitionKey.wrapInt(partition);
     retriableDistributionColumnFamily.deleteExisting(distributionPartitionKey);
 
-    getMetrics().removeInflightDistribution(partition, distributionKey);
+    getMetrics().removeInflightDistribution(partition);
   }
 
   @Override
@@ -183,7 +177,7 @@ public class DbDistributionState implements MutableDistributionState {
     partitionKey.wrapInt(partition);
     pendingDistributionColumnFamily.upsert(distributionPartitionKey, DbNil.INSTANCE);
 
-    getMetrics().addPendingDistribution(partition, distributionKey);
+    getMetrics().addPendingDistribution(partition);
   }
 
   @Override
@@ -192,7 +186,7 @@ public class DbDistributionState implements MutableDistributionState {
     partitionKey.wrapInt(partition);
     pendingDistributionColumnFamily.deleteExisting(distributionPartitionKey);
 
-    getMetrics().removePendingDistribution(partition, distributionKey);
+    getMetrics().removePendingDistribution(partition);
   }
 
   @Override
@@ -289,7 +283,7 @@ public class DbDistributionState implements MutableDistributionState {
 
     return new CommandDistributionRecord()
         .setPartitionId(partition)
-        .setQueueId(persistedDistribution.getQueueId().orElse(""))
+        .setQueueId(persistedDistribution.getQueueId().orElse(null))
         .setValueType(persistedDistribution.getValueType())
         .setIntent(persistedDistribution.getIntent())
         .setCommandValue(persistedDistribution.getCommandValue());

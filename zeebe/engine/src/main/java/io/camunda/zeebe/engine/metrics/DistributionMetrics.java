@@ -53,31 +53,31 @@ public final class DistributionMetrics {
     isResetting = false;
   }
 
-  public void addDistribution(final long distributionKey) {
+  public void addDistribution() {
     if (!isResetting) {
       distributionsCounter.increment();
     }
     activeDistributionsGauge.increment();
   }
 
-  public void removeDistribution(final long distributionKey) {
+  public void removeDistribution() {
     activeDistributionsGauge.decrement();
   }
 
-  public void addPendingDistribution(final int targetPartitionId, final long distributionKey) {
-    getPartitionMetrics(targetPartitionId).addPendingDistribution(distributionKey);
+  public void addPendingDistribution(final int targetPartitionId) {
+    getPartitionMetrics(targetPartitionId).addPendingDistribution();
   }
 
-  public void removePendingDistribution(final int targetPartitionId, final long distributionKey) {
-    getPartitionMetrics(targetPartitionId).removePendingDistribution(distributionKey);
+  public void removePendingDistribution(final int targetPartitionId) {
+    getPartitionMetrics(targetPartitionId).removePendingDistribution();
   }
 
-  public void addInflightDistribution(final int targetPartitionId, final long distributionKey) {
-    getPartitionMetrics(targetPartitionId).addInflightDistribution(distributionKey);
+  public void addInflightDistribution(final int targetPartitionId) {
+    getPartitionMetrics(targetPartitionId).addInflightDistribution();
   }
 
-  public void removeInflightDistribution(final int targetPartitionId, final long distributionKey) {
-    getPartitionMetrics(targetPartitionId).removeInflightDistribution(distributionKey);
+  public void removeInflightDistribution(final int targetPartitionId) {
+    getPartitionMetrics(targetPartitionId).removeInflightDistribution();
   }
 
   /**
@@ -86,10 +86,9 @@ public final class DistributionMetrics {
    *
    * @param originPartitionId the source partition id of the distribution (where the distribution
    *     was started)
-   * @param distributionKey the key of the distribution
    */
-  public void sentAcknowledgeDistribution(final int originPartitionId, final long distributionKey) {
-    getPartitionMetrics(originPartitionId).sentAcknowledgeDistribution(distributionKey);
+  public void sentAcknowledgeDistribution(final int originPartitionId) {
+    getPartitionMetrics(originPartitionId).sentAcknowledgeDistribution();
   }
 
   /**
@@ -98,11 +97,9 @@ public final class DistributionMetrics {
    *
    * @param targetPartitionId the source partition id of the distribution (where the distribution
    *     was started)
-   * @param distributionKey the key of the distribution
    */
-  public void receivedAcknowledgeDistribution(
-      final int targetPartitionId, final long distributionKey) {
-    getPartitionMetrics(targetPartitionId).receivedAcknowledgeDistribution(distributionKey);
+  public void receivedAcknowledgeDistribution(final int targetPartitionId) {
+    getPartitionMetrics(targetPartitionId).receivedAcknowledgeDistribution();
   }
 
   /**
@@ -111,10 +108,9 @@ public final class DistributionMetrics {
    * See {@link CommandRedistribution}.
    *
    * @param targetPartitionId the target partition id of the distribution
-   * @param distributionKey the key of the distribution
    */
-  public void retryInflightDistribution(final int targetPartitionId, final long distributionKey) {
-    getPartitionMetrics(targetPartitionId).retryInflightDistribution(distributionKey);
+  public void retryInflightDistribution(final int targetPartitionId) {
+    getPartitionMetrics(targetPartitionId).retryInflightDistribution();
   }
 
   private PartitionDistributionMetrics getPartitionMetrics(final int targetPartitionId) {
@@ -185,31 +181,31 @@ public final class DistributionMetrics {
       inflightDistributionsGauge.set(0);
     }
 
-    public void addPendingDistribution(final long distributionKey) {
+    public void addPendingDistribution() {
       pendingDistributionsGauge.increment();
     }
 
-    public void removePendingDistribution(final long distributionKey) {
+    public void removePendingDistribution() {
       pendingDistributionsGauge.decrement();
     }
 
-    public void addInflightDistribution(final long distributionKey) {
+    public void addInflightDistribution() {
       inflightDistributionsGauge.increment();
     }
 
-    public void removeInflightDistribution(final long distributionKey) {
+    public void removeInflightDistribution() {
       inflightDistributionsGauge.decrement();
     }
 
-    public void retryInflightDistribution(final long distributionKey) {
+    public void retryInflightDistribution() {
       retryInflightDistributionsCounter.increment();
     }
 
-    public void sentAcknowledgeDistribution(final long distributionKey) {
+    public void sentAcknowledgeDistribution() {
       sentAcknowledgeDistributionsCounter.increment();
     }
 
-    public void receivedAcknowledgeDistribution(final long distributionKey) {
+    public void receivedAcknowledgeDistribution() {
       receivedAcknowledgeDistributionsCounter.increment();
     }
   }
