@@ -18,7 +18,8 @@ package io.camunda.zeebe.client.api.search.response;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link ProcessInstanceCallHierarchyEntryResponse}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     ProcessInstanceCallHierarchyEntryResponse}
  */
 @Deprecated
 public interface ProcessInstanceReference {
