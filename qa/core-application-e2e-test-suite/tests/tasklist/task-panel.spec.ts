@@ -50,9 +50,7 @@ test.describe('task panel page', () => {
     test.slow();
     await expect(
       taskPanelPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50, {
-      timeout: 10000,
-    });
+    ).toHaveCount(50);
 
     await taskPanelPage.filterBy('Assigned to me');
     await expect(taskPanelPage.availableTasks).toContainText('No tasks found');
@@ -60,14 +58,10 @@ test.describe('task panel page', () => {
     await taskPanelPage.filterBy('All open tasks');
     await expect(
       taskPanelPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50, {
-      timeout: 10000,
-    });
+    ).toHaveCount(50);
     await expect(
       taskPanelPage.availableTasks.getByText('No tasks found'),
-    ).toHaveCount(0, {
-      timeout: 10000,
-    });
+    ).toHaveCount(0);
   });
 
   test('update task list according to user actions', async ({
