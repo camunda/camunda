@@ -7,7 +7,7 @@
  */
 
 import React, {useRef} from 'react';
-import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
+import {FlowNodeInstancesTree} from '../../FlowNodeInstancesTree/v2';
 import {observer} from 'mobx-react';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {
@@ -16,12 +16,12 @@ import {
   InstanceHistory,
   PanelHeader,
   ErrorMessage,
-} from './styled';
-import {TimeStampPill} from './TimeStampPill';
+} from '../styled';
+import {TimeStampPill} from '../TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Stack, TreeView} from '@carbon/react';
-import {Skeleton} from './Skeleton';
-import {ExecutionCountToggle} from './ExecutionCountToggle';
+import {Skeleton} from '../Skeleton';
+import {ExecutionCountToggle} from '../ExecutionCountToggle';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 
