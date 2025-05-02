@@ -7,32 +7,53 @@
  */
 package io.camunda.operate.enties;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.camunda.webapps.schema.entities.listener.ListenerEventType;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class ListenerEventTypeTest {
 
-  @Test
-  public void convertStatesFromZeebeJobs() {
-    final ListenerEventType actual1 = ListenerEventType.fromZeebeListenerEventType("START");
-    assertEquals(actual1, ListenerEventType.START);
-    final ListenerEventType actual2 = ListenerEventType.fromZeebeListenerEventType("END");
-    assertEquals(actual2, ListenerEventType.END);
-    final ListenerEventType actual3 = ListenerEventType.fromZeebeListenerEventType("COMPLETING");
-    assertEquals(actual3, ListenerEventType.COMPLETING);
-    final ListenerEventType actual4 = ListenerEventType.fromZeebeListenerEventType("ASSIGNING");
-    assertEquals(actual4, ListenerEventType.ASSIGNING);
-    final ListenerEventType actual5 = ListenerEventType.fromZeebeListenerEventType("TEST");
-    assertEquals(actual5, ListenerEventType.UNKNOWN);
-    final ListenerEventType actual6 = ListenerEventType.fromZeebeListenerEventType(null);
-    assertEquals(actual6, ListenerEventType.UNSPECIFIED);
-    final ListenerEventType actual7 = ListenerEventType.fromZeebeListenerEventType("UPDATING");
-    assertEquals(actual7, ListenerEventType.UPDATING);
-    final ListenerEventType actual8 = ListenerEventType.fromZeebeListenerEventType("CREATING");
-    assertEquals(actual8, ListenerEventType.CREATING);
-    final ListenerEventType actual9 = ListenerEventType.fromZeebeListenerEventType("CANCELING");
-    assertEquals(actual9, ListenerEventType.CANCELING);
+  static Stream<Arguments> listenerEventTypeProvider() {
+    return Stream.of(
+        // Known Execution Listener event types
+        arguments("START", ListenerEventType.START),
+        arguments("END", ListenerEventType.END),
+
+        // Known User Task Listener event types
+        arguments("CREATING", ListenerEventType.CREATING),
+        arguments("ASSIGNING", ListenerEventType.ASSIGNING),
+        arguments("UPDATING", ListenerEventType.UPDATING),
+        arguments("COMPLETING", ListenerEventType.COMPLETING),
+        arguments("CANCELING", ListenerEventType.CANCELING),
+
+        // Unknown event types (invalid or unexpected input)
+        arguments("FOO", ListenerEventType.UNKNOWN),
+        arguments("", ListenerEventType.UNKNOWN),
+
+        // Lowercase variants (not supported, should map to 'UNKNOWN')
+        arguments("start", ListenerEventType.UNKNOWN),
+        arguments("end", ListenerEventType.UNKNOWN),
+        arguments("creating", ListenerEventType.UNKNOWN),
+        arguments("canceling", ListenerEventType.UNKNOWN),
+
+        // Explicit 'UNSPECIFIED' and 'null' input
+        arguments("UNSPECIFIED", ListenerEventType.UNSPECIFIED),
+        arguments(null, ListenerEventType.UNSPECIFIED));
+  }
+
+  @ParameterizedTest(name = "should map \"{0}\" to ListenerEventType.{1}")
+  @MethodSource("listenerEventTypeProvider")
+  void verifyMappingFromZeebeListenerEventTypeToEnumValue(
+      final String input, final ListenerEventType expected) {
+    // when
+    final var result = ListenerEventType.fromZeebeListenerEventType(input);
+
+    // then
+    assertThat(result).isEqualTo(expected);
   }
 }
