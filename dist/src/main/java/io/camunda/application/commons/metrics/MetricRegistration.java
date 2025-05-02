@@ -12,7 +12,6 @@ import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.netty4.NettyAllocatorMetrics;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import jdk.jfr.consumer.RecordingStream;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
