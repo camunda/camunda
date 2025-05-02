@@ -26,14 +26,14 @@ import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from '../ProcessInstanceHeader/v2';
 import {TopPanel} from '../TopPanel/v2';
 import {BottomPanel, ModificationFooter, Buttons} from '../styled';
-import {FlowNodeInstanceLog} from '../FlowNodeInstanceLog';
+import {FlowNodeInstanceLog} from '../FlowNodeInstanceLog/v2';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {ModificationSummaryModal} from '../ModificationSummaryModal/v2';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from '../LastModification';
-import {VariablePanel} from '../BottomPanel/VariablePanel';
+import {VariablePanel} from '../BottomPanel/VariablePanel/v2';
 import {Forbidden} from 'modules/components/Forbidden';
 import {notificationsStore} from 'modules/stores/notifications';
 import {Frame} from 'modules/components/Frame';
@@ -43,16 +43,26 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {startPolling as startPollingIncidents} from 'modules/utils/incidents';
+import {
+  init as initFlowNodeInstance,
+  startPolling as startPollingFlowNodeInstance,
+} from 'modules/utils/flowNodeInstance';
+import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
+import {ProcessInstance as ProcessInstanceT} from '@vzeta/camunda-api-zod-schemas/operate';
+import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
-const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
+const startPolling = (processInstance?: ProcessInstanceT) => {
+  const processInstanceId = processInstance?.processInstanceKey || '';
+
   variablesStore.startPolling(processInstanceId, {runImmediately: true});
   processInstanceDetailsStore.startPolling(processInstanceId, {
     runImmediately: true,
   });
-  incidentsStore.startPolling(processInstanceId, {
+  startPollingIncidents(processInstance, {
     runImmediately: true,
   });
-  flowNodeInstanceStore.startPolling({runImmediately: true});
+  startPollingFlowNodeInstance(processInstance, {runImmediately: true});
 };
 
 const stopPolling = () => {
@@ -67,6 +77,8 @@ const ProcessInstance: React.FC = observer(() => {
   const {data: processTitle} = useProcessTitle();
   const {data: callHierarchy} = useCallHierarchy();
   const {processInstanceId = ''} = useProcessInstancePageParams();
+  const {data: processInstanceData} = useProcessInstance();
+  const isRootNodeSelected = useIsRootNodeSelected();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -83,14 +95,14 @@ const ProcessInstance: React.FC = observer(() => {
           stopPolling();
         } else {
           instanceHistoryModificationStore.reset();
-          startPolling(processInstanceId);
+          startPolling(processInstanceData);
         }
       },
     );
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        startPolling(processInstanceId);
+        startPolling(processInstanceData);
       } else {
         stopPolling();
       }
@@ -102,14 +114,10 @@ const ProcessInstance: React.FC = observer(() => {
       disposer();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [processInstanceId]);
+  }, [processInstanceData]);
 
   useEffect(() => {
-    const {
-      state: {processInstance},
-    } = processInstanceDetailsStore;
-
-    if (processInstanceId !== processInstance?.id) {
+    if (processInstanceId !== processInstance?.processInstanceKey) {
       processInstanceDetailsStore.init({
         id: processInstanceId,
         onRefetchFailure: () => {
@@ -136,10 +144,16 @@ const ProcessInstance: React.FC = observer(() => {
           });
         },
       });
-      flowNodeInstanceStore.init();
-      flowNodeSelectionStore.init();
+      initFlowNodeInstance(processInstance);
+      initFlowNodeSelection(processInstanceId, isRootNodeSelected);
     }
-  }, [processInstanceId, navigate, location]);
+  }, [
+    processInstance,
+    isRootNodeSelected,
+    processInstanceId,
+    navigate,
+    location,
+  ]);
 
   useEffect(() => {
     return () => {

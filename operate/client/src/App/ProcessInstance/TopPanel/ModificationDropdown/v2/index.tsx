@@ -24,7 +24,10 @@ import {
   Button,
   InlineLoading,
 } from '../styled';
-import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
+import {
+  clearSelection,
+  getSelectedRunningInstanceCount,
+} from 'modules/utils/flowNodeSelection';
 import {
   useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesForFlowNode,
@@ -44,6 +47,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getParentElement} from 'modules/bpmn-js/utils/getParentElement';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -70,6 +74,7 @@ const ModificationDropdown: React.FC<Props> = observer(
       selectedRunningInstanceCount,
     );
     const canBeModified = useCanBeModified();
+    const rootNode = useRootNode();
 
     const processDefinitionKey = useProcessDefinitionKeyContext();
     const {data: processDefinitionData} = useProcessInstanceXml({
@@ -167,7 +172,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                               });
                             }
 
-                            flowNodeSelectionStore.clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Add
@@ -193,7 +198,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                               flowNodeInstanceId,
                               businessObjects,
                             );
-                            flowNodeSelectionStore.clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Cancel instance
@@ -219,7 +224,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                               totalRunningInstancesVisible ?? 0,
                               businessObjects,
                             );
-                            flowNodeSelectionStore.clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Cancel all
@@ -239,7 +244,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                               flowNodeId,
                               flowNodeInstanceId,
                             );
-                            flowNodeSelectionStore.clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Move instance
@@ -253,7 +258,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                         renderIcon={ArrowRight}
                         onClick={() => {
                           modificationsStore.startMovingToken(flowNodeId);
-                          flowNodeSelectionStore.clearSelection();
+                          clearSelection(rootNode);
                         }}
                       >
                         Move all

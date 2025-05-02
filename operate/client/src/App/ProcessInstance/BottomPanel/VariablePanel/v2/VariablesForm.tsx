@@ -21,6 +21,7 @@ import {useWillAllFlowNodesBeCanceled} from 'modules/hooks/modifications';
 import {
   useHasPendingCancelOrMoveModification,
   useIsPlaceholderSelected,
+  useIsRootNodeSelected,
 } from 'modules/hooks/flowNodeSelection';
 
 const VariablesForm: React.FC<
@@ -30,6 +31,7 @@ const VariablesForm: React.FC<
   const hasPendingCancelOrMoveModification =
     useHasPendingCancelOrMoveModification();
   const isPlaceholderSelected = useIsPlaceholderSelected();
+  const isRootNodeSelected = useIsRootNodeSelected();
   const hasEmptyNewVariable = (values: VariableFormValues) =>
     values.newVariables?.some(
       (variable) =>
@@ -48,7 +50,7 @@ const VariablesForm: React.FC<
       return false;
     }
 
-    if (flowNodeSelectionStore.isRootNodeSelected) {
+    if (isRootNodeSelected) {
       return !willAllFlowNodesBeCanceled;
     }
 
