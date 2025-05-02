@@ -101,7 +101,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
     if (!isEntityAssigned(record)) {
       final var errorMessage =
-          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), record.getRoleKey());
+          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;

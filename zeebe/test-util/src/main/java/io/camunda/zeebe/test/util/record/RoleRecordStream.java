@@ -35,10 +35,6 @@ public class RoleRecordStream extends ExporterRecordStream<RoleRecordValue, Role
     return valueFilter(v -> v.getName().equals(name));
   }
 
-  public RoleRecordStream withEntityKey(final long entityKey) {
-    return valueFilter(v -> v.getEntityKey() == entityKey);
-  }
-
   public RoleRecordStream withEntityId(final String entityId) {
     return valueFilter(v -> v.getEntityId().equals(entityId));
   }
