@@ -7,6 +7,7 @@
  */
 
 import {makeObservable, action, observable, override, computed} from 'mobx';
+import {BusinessObject, OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {logger} from 'modules/logger';
 import {
   ProcessInstancesStatisticsDto,
@@ -20,11 +21,21 @@ import {
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
   INCIDENTS_BADGE,
+  SUBPROCESS_WITH_INCIDENTS,
 } from 'modules/bpmn-js/badgePositions';
 import {
   RequestFilters,
   getProcessInstancesRequestFilters,
 } from 'modules/utils/filter';
+
+export type SubprocessOverlay = {
+  payload: {
+    flowNodeState: string;
+  };
+  type: string;
+  flowNodeId: string;
+  position: OverlayPosition;
+};
 
 type State = {
   statistics: ProcessInstancesStatisticsDto[];
@@ -42,6 +53,7 @@ const overlayPositions = {
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
   completedEndEvents: COMPLETED_END_EVENT_BADGE,
+  subprocessWithIncidents: SUBPROCESS_WITH_INCIDENTS,
 } as const;
 
 class ProcessStatistics extends NetworkReconnectionHandler {
@@ -57,7 +69,7 @@ class ProcessStatistics extends NetworkReconnectionHandler {
       startFetching: action,
       flowNodeStates: computed,
       resetState: action,
-      overlaysData: computed,
+      getOverlaysData: action,
     });
   }
 
@@ -105,8 +117,8 @@ class ProcessStatistics extends NetworkReconnectionHandler {
     this.state.statistics = statistics;
   };
 
-  get overlaysData() {
-    return this.flowNodeStates.map(
+  getOverlaysData(selectableFlowNodes: BusinessObject[]) {
+    const overlaysMinusSubprocesses = this.flowNodeStates.map(
       ({flowNodeState: originalFlowNodeState, count, flowNodeId}) => {
         const flowNodeState =
           originalFlowNodeState === 'completed'
@@ -121,12 +133,43 @@ class ProcessStatistics extends NetworkReconnectionHandler {
         };
       },
     );
+
+    if (selectableFlowNodes.length === 0) return overlaysMinusSubprocesses;
+
+    const flowNodeIdsWithIncidents = this.flowNodeStates
+      .filter(({flowNodeState}) => flowNodeState === 'incidents')
+      .map((flowNode) => flowNode.flowNodeId);
+
+    const selectableFlowNodesWithIncidents = selectableFlowNodes.filter(
+      ({id}) => flowNodeIdsWithIncidents.includes(id),
+    );
+
+    const subprocessOverlays: SubprocessOverlay[] = [];
+
+    selectableFlowNodesWithIncidents.forEach((flowNode) => {
+      while (flowNode.$parent) {
+        const parent = flowNode.$parent;
+        if (parent.$type === 'bpmn:SubProcess') {
+          subprocessOverlays.push({
+            payload: {flowNodeState: 'incidents'},
+            type: 'statistics-incidents',
+            flowNodeId: parent.id,
+            position: overlayPositions.subprocessWithIncidents,
+          });
+        }
+        flowNode = parent;
+      }
+    });
+
+    const allOverlays = [...overlaysMinusSubprocesses, ...subprocessOverlays];
+
+    return allOverlays;
   }
 
   get flowNodeStates() {
     return this.statistics.flatMap((statistics) => {
       const types = ['active', 'incidents', 'canceled', 'completed'] as const;
-      return types.reduce<
+      const flowNodeStatesPerType = types.reduce<
         {
           flowNodeId: string;
           count: number;
@@ -148,6 +191,8 @@ class ProcessStatistics extends NetworkReconnectionHandler {
           return states;
         }
       }, []);
+
+      return flowNodeStatesPerType;
     });
   }
 

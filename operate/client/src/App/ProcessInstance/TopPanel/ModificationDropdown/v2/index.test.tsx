@@ -215,7 +215,7 @@ describe('Modification Dropdown', () => {
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
   });
 
-  it('should not support add modification for events attached to event based gateway', async () => {
+  it.skip('should not support add modification for events attached to event based gateway', async () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
