@@ -82,6 +82,8 @@ const startPolling = (
   processInstance?: ProcessInstance,
   options: {runImmediately?: boolean} = {runImmediately: false},
 ) => {
+  console.log('startPolling');
+
   if (
     document.visibilityState === 'hidden' ||
     (processInstance && !isInstanceRunning(processInstance)) ||
@@ -296,6 +298,7 @@ const getFlowNodeInstances = async ({
 
 export {
   init,
+  pollInstances,
   startPolling,
   fetchNext,
   fetchPrevious,
