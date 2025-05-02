@@ -86,7 +86,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
         .isNotFound()
         .expectBody()
         .json(
-                """
+            """
             {
               "type": "about:blank",
               "title": "NOT_FOUND",
