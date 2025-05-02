@@ -6618,9 +6618,12 @@ components:
       description: Group filter request
       type: object
       properties:
-        name:
+        groupId:
+          description: The group ID search filters.
           type: string
-          description: The name of the group.
+        name:
+          description: The group name search filters.
+          type: string
     GroupSearchQueryResult:
       description: Group search response.
       type: object

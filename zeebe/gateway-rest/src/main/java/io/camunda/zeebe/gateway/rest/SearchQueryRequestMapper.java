@@ -281,7 +281,8 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromGroupSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::group,
             SearchQueryRequestMapper::applyGroupSortField);
-    return buildSearchQuery(sort, page, SearchQueryBuilders::groupSearchQuery);
+    final var filter = toGroupFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
   public static Either<ProblemDetail, TenantQuery> toTenantQuery(
@@ -746,6 +747,15 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.tenant();
     if (filter != null) {
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+      ofNullable(filter.getName()).ifPresent(builder::name);
+    }
+    return builder.build();
+  }
+
+  private static GroupFilter toGroupFilter(final GroupFilterRequest filter) {
+    final var builder = FilterBuilders.group();
+    if (filter != null) {
+      ofNullable(filter.getGroupId()).ifPresent(builder::groupId);
       ofNullable(filter.getName()).ifPresent(builder::name);
     }
     return builder.build();

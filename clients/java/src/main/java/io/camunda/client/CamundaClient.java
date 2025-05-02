@@ -75,6 +75,8 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GroupGetRequest;
+import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
@@ -1846,4 +1848,36 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(String groupId);
+
+  /**
+   * Request to get a group by group ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newGroupGetRequest(groupId)
+   *  .send();
+   * </pre>
+   *
+   * @param groupId the ID of the group
+   * @return a builder for the request to get a group
+   */
+  GroupGetRequest newGroupGetRequest(String groupId);
+
+  /**
+   * Executes a search request to query groups.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newGroupsSearchRequest()
+   *  .filter((f) -> f.name(name))
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the groups search request
+   */
+  GroupsSearchRequest newGroupsSearchRequest();
 }

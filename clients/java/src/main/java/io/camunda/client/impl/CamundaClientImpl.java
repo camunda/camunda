@@ -86,6 +86,8 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GroupGetRequest;
+import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
@@ -171,6 +173,7 @@ import io.camunda.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.GroupGetRequestImpl;
 import io.camunda.client.impl.fetch.IncidentGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetFormRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
@@ -186,6 +189,7 @@ import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
 import io.camunda.client.impl.search.request.ElementInstanceSearchRequestImpl;
+import io.camunda.client.impl.search.request.GroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
@@ -989,6 +993,16 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(final String groupId) {
     return new UnassignMappingFromGroupCommandImpl(httpClient, groupId);
+  }
+
+  @Override
+  public GroupGetRequest newGroupGetRequest(final String groupId) {
+    return new GroupGetRequestImpl(httpClient, groupId);
+  }
+
+  @Override
+  public GroupsSearchRequest newGroupsSearchRequest() {
+    return new GroupSearchRequestImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {
