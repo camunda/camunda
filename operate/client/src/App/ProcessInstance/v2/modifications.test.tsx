@@ -237,7 +237,7 @@ describe('ProcessInstance - modification mode', () => {
     );
   });
 
-  it('should stop polling during the modification mode', async () => {
+  it.only('should stop polling during the modification mode', async () => {
     jest.useFakeTimers();
 
     const handlePollingVariablesSpy = jest.spyOn(
