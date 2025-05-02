@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -408,6 +409,27 @@ public class RoleControllerTest extends RestControllerTest {
     webClient
         .put()
         .uri("%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldAssignMappingToRoleAndReturnAccepted() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
