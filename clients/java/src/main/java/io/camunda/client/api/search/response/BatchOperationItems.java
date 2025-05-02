@@ -29,6 +29,10 @@ public interface BatchOperationItems {
 
     Long getProcessInstanceKey();
 
+    String getProcessedDate();
+
+    String getErrorMessage();
+
     BatchOperationItemState getStatus();
   }
 }

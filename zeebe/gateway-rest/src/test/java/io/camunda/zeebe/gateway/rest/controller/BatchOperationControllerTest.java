@@ -155,7 +155,12 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     final var batchOperationItem =
         new BatchOperationEntity.BatchOperationItemEntity(
-            batchOperationKey, 11L, 12L, BatchOperationItemState.COMPLETED);
+            batchOperationKey,
+            11L,
+            12L,
+            BatchOperationItemState.FAILED,
+            OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
+            "error");
     when(batchOperationServices.getItemsByKey(batchOperationKey))
         .thenReturn(List.of(batchOperationItem));
 
@@ -169,14 +174,17 @@ class BatchOperationControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {"items":[
-                {
-                   "batchOperationKey":"1",
-                   "itemKey":"11",
-                   "processInstanceKey":"12",
-                   "state":"COMPLETED"}
-                ]}
-          """);
+                        {"items":[
+                            {
+                                "batchOperationKey":"1",
+                                "itemKey":"11",
+                                "processInstanceKey":"12",
+                                "state":"FAILED",
+                                "processedDate":"2025-03-18T10:57:44.000+01:00",
+                                "errorMessage": "error"
+                            }
+                        ]}
+                      """);
   }
 
   private static BatchOperationEntity getBatchOperationEntity(final long batchOperationKey) {

@@ -14,9 +14,11 @@ import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.util.DateUtil;
 
 public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordValue>
     implements RdbmsExportHandler<T> {
+  public static final String ERROR_MSG = "%s: %s";
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -34,10 +36,18 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
   public void export(final Record<T> record) {
     if (isCompleted(record)) {
       batchOperationWriter.updateItem(
-          record.getOperationReference(), getItemKey(record), BatchOperationItemState.COMPLETED);
+          record.getOperationReference(),
+          getItemKey(record),
+          BatchOperationItemState.COMPLETED,
+          DateUtil.toOffsetDateTime(record.getTimestamp()),
+          null);
     } else if (isFailed(record)) {
       batchOperationWriter.updateItem(
-          record.getOperationReference(), getItemKey(record), BatchOperationItemState.FAILED);
+          record.getOperationReference(),
+          getItemKey(record),
+          BatchOperationItemState.FAILED,
+          DateUtil.toOffsetDateTime(record.getTimestamp()),
+          String.format(ERROR_MSG, record.getRejectionType(), record.getRejectionReason()));
     }
   }
 

@@ -28,6 +28,8 @@
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="STATE"
         javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"/>
+      <arg column="PROCESSED_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
@@ -70,13 +72,15 @@
   <update id="updateItem"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
     UPDATE ${prefix}BATCH_OPERATION_ITEM
-    SET STATE = #{state}
+    SET STATE = #{state},
+        PROCESSED_DATE = #{processedDate},
+        ERROR_MESSAGE = #{errorMessage}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
       AND ITEM_KEY = #{itemKey}
   </update>
 
   <update id="updateItemsWithState"
-    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemStatusUpdateDto">
     UPDATE ${prefix}BATCH_OPERATION_ITEM
     SET STATE = #{newState}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
@@ -117,7 +121,7 @@
   <select id="getItems"
     parameterType="java.lang.Long"
     resultMap="BatchOperationItemResultMap">
-    SELECT BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE
+    SELECT BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE, PROCESSED_DATE, ERROR_MESSAGE
     FROM ${prefix}BATCH_OPERATION_ITEM
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </select>

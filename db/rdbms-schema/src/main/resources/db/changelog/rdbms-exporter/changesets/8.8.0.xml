@@ -499,6 +499,8 @@
       </column>
       <column name="ITEM_KEY" type="BIGINT"/>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESSED_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="ERROR_MESSAGE" type="VARCHAR(4000)"/>
       <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
 
