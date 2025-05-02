@@ -755,6 +755,7 @@ public final class SearchQueryRequestMapper {
   private static GroupFilter toGroupFilter(final GroupFilterRequest filter) {
     final var builder = FilterBuilders.group();
     if (filter != null) {
+      ofNullable(filter.getGroupId()).ifPresent(builder::groupId);
       ofNullable(filter.getName()).ifPresent(builder::name);
     }
     return builder.build();

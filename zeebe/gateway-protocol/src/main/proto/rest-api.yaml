@@ -6573,6 +6573,9 @@ components:
       description: Group filter request
       type: object
       properties:
+        groupId:
+          description: The group ID search filters.
+          type: string
         name:
           description: The group name search filters.
           type: string

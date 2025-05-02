@@ -106,6 +106,18 @@ class GroupAuthorizationIT {
   }
 
   @Test
+  void searchShouldReturnGroupFilteredByGroupId(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    final var groupSearchResponse =
+        camundaClient.newGroupsSearchRequest().filter(fn -> fn.groupId(GROUP_ID_1)).send().join();
+
+    assertThat(groupSearchResponse.items())
+        .hasSize(1)
+        .map(Group::getGroupId)
+        .containsExactly(GROUP_ID_1);
+  }
+
+  @Test
   void searchShouldReturnGroupsFilteredByName(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     final var groupSearchResponse =
