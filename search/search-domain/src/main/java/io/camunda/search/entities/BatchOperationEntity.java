@@ -22,7 +22,10 @@ public record BatchOperationEntity(
     Integer operationsCompletedCount) {
 
   public record BatchOperationItemEntity(
-      Long batchOperationKey, Long itemKey, BatchOperationItemState state) {}
+      Long batchOperationKey,
+      Long itemKey,
+      Long processInstanceKey,
+      BatchOperationItemState state) {}
 
   public enum BatchOperationState {
     CREATED,

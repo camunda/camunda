@@ -9,12 +9,12 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.BatchOperationDbQuery;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
+import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Set;
 
 public interface BatchOperationMapper {
 
@@ -45,7 +45,7 @@ public interface BatchOperationMapper {
 
   record BatchOperationUpdateCountsDto(long batchOperationKey, long itemKey) {}
 
-  record BatchOperationItemsDto(Long batchOperationKey, Set<Long> items) {}
+  record BatchOperationItemsDto(Long batchOperationKey, List<BatchOperationItemDbModel> items) {}
 
   record BatchOperationItemDto(
       Long batchOperationKey, Long itemKey, BatchOperationEntity.BatchOperationItemState state) {}

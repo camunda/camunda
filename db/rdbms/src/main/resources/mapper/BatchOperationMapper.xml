@@ -25,6 +25,7 @@
     <constructor>
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
       <arg column="ITEM_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="STATE"
         javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"/>
     </constructor>
@@ -51,10 +52,10 @@
 
   <insert id="insertItems"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto">
-    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY)
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY)
     VALUES
-    <foreach collection="items" item="itemKey" separator=",">
-      (#{batchOperationKey}, #{itemKey})
+    <foreach collection="items" item="item" separator=",">
+      (#{batchOperationKey}, #{item.itemKey}, #{item.processInstanceKey})
     </foreach>
   </insert>
 
@@ -116,7 +117,7 @@
   <select id="getItems"
     parameterType="java.lang.Long"
     resultMap="BatchOperationItemResultMap">
-    SELECT BATCH_OPERATION_KEY, ITEM_KEY, STATE
+    SELECT BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE
     FROM ${prefix}BATCH_OPERATION_ITEM
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </select>

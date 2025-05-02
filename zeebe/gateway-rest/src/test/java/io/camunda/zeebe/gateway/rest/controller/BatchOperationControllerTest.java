@@ -155,7 +155,7 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     final var batchOperationItem =
         new BatchOperationEntity.BatchOperationItemEntity(
-            batchOperationKey, 1L, BatchOperationItemState.COMPLETED);
+            batchOperationKey, 11L, 12L, BatchOperationItemState.COMPLETED);
     when(batchOperationServices.getItemsByKey(batchOperationKey))
         .thenReturn(List.of(batchOperationItem));
 
@@ -172,7 +172,8 @@ class BatchOperationControllerTest extends RestControllerTest {
             {"items":[
                 {
                    "batchOperationKey":"1",
-                   "itemKey":"1",
+                   "itemKey":"11",
+                   "processInstanceKey":"12",
                    "state":"COMPLETED"}
                 ]}
           """);

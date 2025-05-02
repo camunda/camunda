@@ -234,7 +234,7 @@ public class BatchOperationModifyProcessInstanceTest {
     final var filteredItems =
         itemsObj.items().stream().filter(i -> i.getStatus() == state).toList();
     assertThat(filteredItems).hasSize(failedItemKeys.size());
-    assertThat(filteredItems.stream().map(BatchOperationItem::getKey))
+    assertThat(filteredItems.stream().map(BatchOperationItem::getItemKey))
         .hasSize(failedItemKeys.size());
   }
 

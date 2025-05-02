@@ -374,6 +374,7 @@ public final class SearchQueryResponseMapper {
     return new BatchOperationItemResponse()
         .batchOperationKey(entity.batchOperationKey().toString())
         .itemKey(entity.itemKey().toString())
+        .processInstanceKey(entity.processInstanceKey().toString())
         .state(BatchOperationItemResponse.StateEnum.fromValue(entity.state().name()));
   }
 

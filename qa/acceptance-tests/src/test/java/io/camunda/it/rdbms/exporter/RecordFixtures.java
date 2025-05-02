@@ -39,6 +39,7 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationExecutionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
@@ -457,7 +458,20 @@ public class RecordFixtures {
             ImmutableBatchOperationChunkRecordValue.builder()
                 .from((ImmutableBatchOperationChunkRecordValue) recordValueRecord.getValue())
                 .withBatchOperationKey(batchOperationKey)
-                .withItemKeys(List.of(1L, 2L, 3L))
+                .withItems(
+                    List.of(
+                        ImmutableBatchOperationItemValue.builder()
+                            .withItemKey(1L)
+                            .withProcessInstanceKey(1L)
+                            .build(),
+                        ImmutableBatchOperationItemValue.builder()
+                            .withItemKey(2L)
+                            .withProcessInstanceKey(2L)
+                            .build(),
+                        ImmutableBatchOperationItemValue.builder()
+                            .withItemKey(3L)
+                            .withProcessInstanceKey(3L)
+                            .build()))
                 .build())
         .build();
   }

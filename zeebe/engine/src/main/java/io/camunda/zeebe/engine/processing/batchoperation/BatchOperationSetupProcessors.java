@@ -92,7 +92,7 @@ public final class BatchOperationSetupProcessors {
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
-                new BatchOperationItemKeyProvider(searchClientsProxy),
+                new BatchOperationItemProvider(searchClientsProxy),
                 Duration.ofMillis(1000)));
   }
 }

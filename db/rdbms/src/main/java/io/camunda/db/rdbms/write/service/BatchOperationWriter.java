@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateCountsDt
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateTotalCountDto;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
+import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
@@ -22,7 +23,7 @@ import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
-import java.util.Set;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +58,8 @@ public class BatchOperationWriter {
     executionQueue.flush();
   }
 
-  public void updateBatchAndInsertItems(final long batchOperationKey, final Set<Long> items) {
+  public void updateBatchAndInsertItems(
+      final long batchOperationKey, final List<BatchOperationItemDbModel> items) {
     if (items != null && !items.isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
