@@ -135,7 +135,13 @@ outputs:
         github.event_name == 'push' ||
         (steps.filter-common.outputs.protobuf-change == 'true' && github.event_name != 'schedule')
       }}
-
+  stable-branch-changes:
+    description: Output whether the change is occurring on a stable/X.Y branch or not
+    value: >-
+      ${{
+        github.event_name == 'push' &&
+        steps.filter-stable-branch.outputs.stable-branch == 'true'
+      }}
 
 runs:
   using: composite
@@ -247,3 +253,12 @@ runs:
           - optimize/client/**
           - optimize/c4/**
           - optimize/backend/src/main/resources/localization/**
+
+  - id: filter-stable-branch
+    shell: bash
+    run: |
+      if [[ '${{ github.ref_name }}' =~ ^stable\/[0-9]+\.[0-9]+$ ]]; then
+        echo "stable-branch=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "stable-branch=false" >> "$GITHUB_OUTPUT"
+      fi
