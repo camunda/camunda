@@ -14,7 +14,6 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -153,17 +152,37 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   }
 
   @Override
-  public CompletionStage<Boolean> wasProcessInstanceDeleted(final long processInstanceKey) {
-    final var query = createProcessInstanceDeletedQuery(processInstanceKey);
+  public CompletionStage<Map<Long, Boolean>> wereProcessInstancesDeleted(
+      final List<Long> processInstanceKeys) {
+    final var query = createProcessInstanceDeletedQuery(processInstanceKeys);
     final var request =
-        new CountRequest.Builder()
+        new SearchRequest.Builder()
             .index(operationAlias)
-            .query(query)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
+            .query(query)
+            .size(0)
+            .aggregations(
+                "keys",
+                a ->
+                    a.terms(
+                        t ->
+                            t.field(OperationTemplate.PROCESS_INSTANCE_KEY)
+                                .size(processInstanceKeys.size())))
             .build();
 
-    return client.count(request).thenApplyAsync(r -> r.count() > 0, executor);
+    return client
+        .search(request, Void.class)
+        .thenApplyAsync(
+            r -> {
+              final var buckets = r.aggregations().get("keys").lterms().buckets().array();
+              final Map<Long, Boolean> matchedPIs = new HashMap<>();
+              for (final var key : processInstanceKeys) {
+                matchedPIs.put(key, buckets.stream().anyMatch(bucket -> bucket.key() == key));
+              }
+              return matchedPIs;
+            },
+            executor);
   }
 
   @Override
@@ -224,10 +243,13 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
   }
 
-  private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {
+  private Query createProcessInstanceDeletedQuery(final List<Long> processInstanceKeys) {
     final var piKeyQ =
-        QueryBuilders.term(
-            t -> t.field(OperationTemplate.PROCESS_INSTANCE_KEY).value(processInstanceKey));
+        QueryBuilders.terms(
+            t ->
+                t.field(OperationTemplate.PROCESS_INSTANCE_KEY)
+                    .terms(
+                        f -> f.value(processInstanceKeys.stream().map(FieldValue::of).toList())));
     final var typeQ =
         QueryBuilders.term(
             t ->

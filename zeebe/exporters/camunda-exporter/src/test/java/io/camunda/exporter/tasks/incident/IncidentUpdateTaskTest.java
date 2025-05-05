@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.stream.Collectors;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -138,10 +139,14 @@ final class IncidentUpdateTaskTest {
     }
 
     @Override
-    public CompletionStage<Boolean> wasProcessInstanceDeleted(final long processInstanceKey) {
+    public CompletionStage<Map<Long, Boolean>> wereProcessInstancesDeleted(
+        final List<Long> processInstanceKeys) {
       return wasProcessInstanceDeleted != null
-          ? wasProcessInstanceDeleted
-          : super.wasProcessInstanceDeleted(processInstanceKey);
+          ? CompletableFuture.completedFuture(
+              processInstanceKeys.stream()
+                  .collect(
+                      Collectors.toMap(key -> key, key -> wasProcessInstanceDeleted.getNow(false))))
+          : super.wereProcessInstancesDeleted(processInstanceKeys);
     }
 
     @Override

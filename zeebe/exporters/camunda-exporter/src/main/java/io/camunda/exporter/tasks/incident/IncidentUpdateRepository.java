@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -81,13 +82,14 @@ public interface IncidentUpdateRepository extends AutoCloseable {
       List<String> processInstanceIds);
 
   /**
-   * Returns whether the process instance was explicitly deleted, meaning a user executed an
-   * operation to explicitly delete it from the historic data.
+   * Returns whether the process instances were explicitly deleted, meaning a user executed an
+   * operation to explicitly delete them from the historic data.
    *
-   * @param processInstanceKey the key of the process instance
-   * @return true if it was deleted, false otherwise
+   * @param processInstanceKeys list of process instance keys
+   * @return a map of process instance keys to whether they were deleted
    */
-  CompletionStage<Boolean> wasProcessInstanceDeleted(final long processInstanceKey);
+  CompletionStage<Map<Long, Boolean>> wereProcessInstancesDeleted(
+      final List<Long> processInstanceKeys);
 
   /**
    * Executes the given bulk update against the underlying document store, waiting until the
@@ -204,8 +206,10 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletionStage<Boolean> wasProcessInstanceDeleted(final long processInstanceKey) {
-      return CompletableFuture.completedFuture(false);
+    public CompletionStage<Map<Long, Boolean>> wereProcessInstancesDeleted(
+        final List<Long> processInstanceKeys) {
+      return CompletableFuture.completedFuture(
+          processInstanceKeys.stream().collect(Collectors.toMap(key -> key, key -> false)));
     }
 
     @Override

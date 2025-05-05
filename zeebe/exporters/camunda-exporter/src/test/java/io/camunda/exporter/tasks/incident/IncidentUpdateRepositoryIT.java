@@ -671,10 +671,11 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+      final var wasDeleted = repository.wereProcessInstancesDeleted(List.of(1L));
 
       // then
-      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(Map.of(1L, false));
+      // assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
     }
 
     @Test
@@ -691,10 +692,10 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+      final var wasDeleted = repository.wereProcessInstancesDeleted(List.of(1L));
 
       // then
-      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(Map.of(1L, false));
     }
 
     @ParameterizedTest
@@ -716,10 +717,11 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+      final var wasDeleted = repository.wereProcessInstancesDeleted(List.of(1L));
 
       // then
-      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+      // assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(Map.of(1L, false));
     }
 
     @ParameterizedTest
@@ -740,10 +742,11 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+      final var wasDeleted = repository.wereProcessInstancesDeleted(List.of(1L));
 
       // then
-      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(true);
+      // assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(true);
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(Map.of(1L, true));
     }
   }
 
