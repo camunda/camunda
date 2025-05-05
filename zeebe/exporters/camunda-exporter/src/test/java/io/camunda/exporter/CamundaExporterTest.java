@@ -30,8 +30,6 @@ import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
