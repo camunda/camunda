@@ -8,7 +8,6 @@
 
 import {select} from '@inquirer/prompts';
 import {spawn} from 'node:child_process';
-import {object, string, safeParse} from 'valibot';
 
 const IS_LOCAL = Boolean(process.env.LOCAL_TEST);
 
@@ -47,10 +46,5 @@ spawn('npm', args, {
 });
 
 function getBaseURL() {
-  return (
-    process.env.PLAYWRIGHT_BASE_URL ||
-    (IS_LOCAL
-      ? 'http://localhost:8080'
-      : 'https://integration-stage.example.com')
-  );
+  return process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8080';
 }
