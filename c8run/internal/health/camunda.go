@@ -72,7 +72,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 	if settings.Docker {
 		operatePort = 8081
 		tasklistPort = 8082
-		camundaPort = 8083
+		camundaPort = 8088
 	}
 
 	endpoints, _ := os.ReadFile("endpoints.txt")
