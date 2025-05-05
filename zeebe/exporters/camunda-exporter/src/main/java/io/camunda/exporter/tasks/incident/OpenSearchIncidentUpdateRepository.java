@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -165,8 +166,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Map<Long, Boolean>> wereProcessInstancesDeleted(
-      final List<Long> processInstanceKeys) {
+  public CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys) {
     final var query = createProcessInstanceDeletedQuery(processInstanceKeys);
     final var request =
         new SearchRequest.Builder()
@@ -174,30 +174,24 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
             .query(query)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
-            .size(0)
-            .aggregations(
-                "keys",
-                a ->
-                    a.terms(
-                        t ->
-                            t.field(OperationTemplate.PROCESS_INSTANCE_KEY)
-                                .size(processInstanceKeys.size())))
+            .size(processInstanceKeys.size())
+            .source(s -> s.filter(f -> f.includes(OperationTemplate.PROCESS_INSTANCE_KEY)))
             .build();
 
     try {
       return client
-          .search(request, Void.class)
+          .search(request, Map.class)
           .thenApplyAsync(
               r -> {
-                final var buckets = r.aggregations().get("keys").lterms().buckets().array();
-                final Map<Long, Boolean> matchedPIs = new HashMap<>();
-                for (final var key : processInstanceKeys) {
-                  matchedPIs.put(
-                      key,
-                      buckets.stream()
-                          .anyMatch(bucket -> bucket.key().equals(String.valueOf(key))));
+                if (r.hits().hits().isEmpty()) {
+                  return Set.of();
                 }
-                return matchedPIs;
+
+                return r.hits().hits().stream()
+                    .map(h -> h.source().get(OperationTemplate.PROCESS_INSTANCE_KEY))
+                    .map(Object::toString)
+                    .map(Long::valueOf)
+                    .collect(Collectors.toSet());
               },
               executor);
     } catch (final IOException e) {
@@ -278,7 +272,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
   }
 
-  private Query createProcessInstanceDeletedQuery(final List<Long> processInstanceKeys) {
+  private Query createProcessInstanceDeletedQuery(final Set<Long> processInstanceKeys) {
     final var piKeyQ =
         QueryBuilders.terms()
             .field(OperationTemplate.PROCESS_INSTANCE_KEY)

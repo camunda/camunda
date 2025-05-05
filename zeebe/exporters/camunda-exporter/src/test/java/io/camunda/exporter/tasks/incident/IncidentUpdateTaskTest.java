@@ -30,10 +30,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.stream.Collectors;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -139,14 +139,10 @@ final class IncidentUpdateTaskTest {
     }
 
     @Override
-    public CompletionStage<Map<Long, Boolean>> wereProcessInstancesDeleted(
-        final List<Long> processInstanceKeys) {
+    public CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys) {
       return wasProcessInstanceDeleted != null
-          ? CompletableFuture.completedFuture(
-              processInstanceKeys.stream()
-                  .collect(
-                      Collectors.toMap(key -> key, key -> wasProcessInstanceDeleted.getNow(false))))
-          : super.wereProcessInstancesDeleted(processInstanceKeys);
+          ? CompletableFuture.completedFuture(processInstanceKeys)
+          : super.deletedProcessInstances(processInstanceKeys);
     }
 
     @Override

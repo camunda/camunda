@@ -36,9 +36,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -152,8 +154,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   }
 
   @Override
-  public CompletionStage<Map<Long, Boolean>> wereProcessInstancesDeleted(
-      final List<Long> processInstanceKeys) {
+  public CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys) {
     final var query = createProcessInstanceDeletedQuery(processInstanceKeys);
     final var request =
         new SearchRequest.Builder()
@@ -161,26 +162,23 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .query(query)
-            .size(0)
-            .aggregations(
-                "keys",
-                a ->
-                    a.terms(
-                        t ->
-                            t.field(OperationTemplate.PROCESS_INSTANCE_KEY)
-                                .size(processInstanceKeys.size())))
+            .size(processInstanceKeys.size())
+            .source(s -> s.filter(f -> f.includes(OperationTemplate.PROCESS_INSTANCE_KEY)))
             .build();
 
     return client
-        .search(request, Void.class)
+        .search(request, Map.class)
         .thenApplyAsync(
             r -> {
-              final var buckets = r.aggregations().get("keys").lterms().buckets().array();
-              final Map<Long, Boolean> matchedPIs = new HashMap<>();
-              for (final var key : processInstanceKeys) {
-                matchedPIs.put(key, buckets.stream().anyMatch(bucket -> bucket.key() == key));
+              if (r.hits().total().value() == 0) {
+                return Set.of();
               }
-              return matchedPIs;
+
+              return r.hits().hits().stream()
+                  .map(h -> h.source().get(OperationTemplate.PROCESS_INSTANCE_KEY))
+                  .map(Object::toString)
+                  .map(Long::valueOf)
+                  .collect(Collectors.toSet());
             },
             executor);
   }
@@ -243,7 +241,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
   }
 
-  private Query createProcessInstanceDeletedQuery(final List<Long> processInstanceKeys) {
+  private Query createProcessInstanceDeletedQuery(final Set<Long> processInstanceKeys) {
     final var piKeyQ =
         QueryBuilders.terms(
             t ->

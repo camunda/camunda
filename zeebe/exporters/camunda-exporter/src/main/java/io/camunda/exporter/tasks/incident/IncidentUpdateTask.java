@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
@@ -177,20 +178,20 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final boolean forceIgnoreMissingData) {
 
     int countMissingInstance = 0;
-    final List<Long> processInstanceKeys =
+    final Set<Long> processInstanceKeys =
         incidents.stream()
             .map(IncidentDocument::incident)
             .map(IncidentEntity::getProcessInstanceKey)
-            .toList();
+            .collect(Collectors.toSet());
 
-    final Map<Long, Boolean> deletedProcessInstances =
-        repository.wereProcessInstancesDeleted(processInstanceKeys).toCompletableFuture().join();
+    final Set<Long> deletedProcessInstances =
+        repository.deletedProcessInstances(processInstanceKeys).toCompletableFuture().join();
 
     for (final Iterator<IncidentDocument> iterator = incidents.iterator(); iterator.hasNext(); ) {
       final IncidentEntity incident = iterator.next().incident();
       String piTreePath = data.processInstanceTreePaths().get(incident.getProcessInstanceKey());
       if (piTreePath == null || piTreePath.isEmpty()) {
-        if (deletedProcessInstances.get(incident.getProcessInstanceKey())) {
+        if (deletedProcessInstances.contains(incident.getProcessInstanceKey())) {
           logger.debug(
               """
                 Process instance with the key {} was deleted. Incident post processing will be \
@@ -201,29 +202,28 @@ public final class IncidentUpdateTask implements BackgroundTask {
           // Concurrent modify operation: the underlying map is concurrent
           iterator.remove();
           continue;
-        } else {
-          if (!forceIgnoreMissingData) {
-            throw new ExporterException(
-                """
+        }
+        if (!forceIgnoreMissingData) {
+          throw new ExporterException(
+              """
                 Process instance %d is not yet imported for incident %s; the update cannot be \
                 correctly applied.
                 """
-                    .formatted(incident.getProcessInstanceKey(), incident.getId()));
-          } else {
-            countMissingInstance++;
-            logger.warn(
-                """
+                  .formatted(incident.getProcessInstanceKey(), incident.getId()));
+        } else {
+          countMissingInstance++;
+          logger.warn(
+              """
                 Process instance {} is not yet imported for incident {}; the update cannot be \
                 correctly applied. Since ignoreMissingData is on, we will apply with sparse tree
                 path.
                 """,
-                incident.getId(),
-                incident.getProcessInstanceKey());
-            piTreePath =
-                new TreePath()
-                    .startTreePath(String.valueOf(incident.getProcessInstanceKey()))
-                    .toString();
-          }
+              incident.getId(),
+              incident.getProcessInstanceKey());
+          piTreePath =
+              new TreePath()
+                  .startTreePath(String.valueOf(incident.getProcessInstanceKey()))
+                  .toString();
         }
       }
 
