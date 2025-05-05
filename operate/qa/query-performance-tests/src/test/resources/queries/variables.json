@@ -1,7 +1,0 @@
-[
-  {
-    "title": "Get full variable with id",
-    "url": "/api/variables/${variableId}",
-    "method": "GET"
-  }
-]

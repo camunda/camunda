@@ -1,3 +1,7 @@
+# description: Workflow that runs the backup restore tests for Operate
+# test location: operate/qa/backup-restore-tests
+# owner:
+---
 name: Operate Run Test Backup/Restore
 on:
   schedule:

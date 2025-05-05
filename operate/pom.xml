@@ -144,19 +144,10 @@
 
   <profiles>
     <profile>
-      <id>operateItStage1</id>
+      <id>operateBackendIt</id>
       <properties>
         <includeITNames>**/*IT.java</includeITNames>
         <excludeITNames>**/*ZeebeIT.java, **/*ZeebeImportIT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>operateItStage2</id>
-      <properties>
-        <includeITNames>**/*ZeebeIT.java</includeITNames>
-        <excludeITNames>none</excludeITNames>
-        <skipSurefire>true</skipSurefire>
       </properties>
     </profile>
 
@@ -172,7 +163,7 @@
     <profile>
       <id>operateItOpensearch</id>
       <properties>
-        <includeITNames>**/api/v1/**/*IT.java, **/OpensearchFinishedImportingIT.java</includeITNames>
+        <includeITNames>**/api/v1/**/*IT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>

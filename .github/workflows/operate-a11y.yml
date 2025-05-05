@@ -1,3 +1,7 @@
+# description: This workflow runs a11y accessibility tests on Operate
+# test location: operate/client/e2e-playwright/a11y
+# owner:
+---
 name: Operate a11y tests
 on:
   push:
