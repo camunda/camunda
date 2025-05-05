@@ -9,7 +9,7 @@ Identity:                 http://localhost:{{.IdentityPort}}/identity
 
 Camunda 8 API:            http://localhost:{{.CamundaPort}}/v2/
 Inbound Connectors API:   http://localhost:8085/
-Zeebe API (grpc):         http://localhost:26500/
+Zeebe API (gRPC):         http://localhost:26500/
 
 Camunda metrics endpoint: http://localhost:9600/actuator/prometheus
 
