@@ -8052,7 +8052,7 @@ components:
           default: false
         fetchVariables:
           description: |
-            List of variables names to be included in the response.
+            List of variables by name to be included in the response when awaitCompletion is set to true.
             If empty, all visible variables in the root scope will be returned.
           type: array
           items:
