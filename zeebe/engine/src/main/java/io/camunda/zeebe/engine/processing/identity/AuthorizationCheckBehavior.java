@@ -13,12 +13,9 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
-import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -48,12 +45,8 @@ public final class AuthorizationCheckBehavior {
   public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
   public static final String WILDCARD_PERMISSION = "*";
-  private static final String UNAUTHORIZED_ERROR_MESSAGE =
-      "Unauthorized to perform operation '%s' on resource '%s'";
   private final AuthorizationState authorizationState;
-  private final UserState userState;
   private final MappingState mappingState;
-  private final GroupState groupState;
   private final MembershipState membershipState;
 
   private final boolean authorizationsEnabled;
@@ -62,9 +55,7 @@ public final class AuthorizationCheckBehavior {
   public AuthorizationCheckBehavior(
       final ProcessingState processingState, final SecurityConfiguration securityConfig) {
     authorizationState = processingState.getAuthorizationState();
-    userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
-    groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isEnabled();
@@ -124,18 +115,8 @@ public final class AuthorizationCheckBehavior {
    */
   private Either<Rejection, Void> isUserAuthorized(
       final AuthorizationRequest request, final String username) {
-    final var userOptional = userState.getUser(username);
-    if (userOptional.isEmpty()) {
-      return Either.left(
-          new Rejection(
-              RejectionType.UNAUTHORIZED,
-              UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                  request.getPermissionType(), request.getResourceType())));
-    }
-
-    final var user = userOptional.get();
     if (multiTenancyEnabled) {
-      if (!isUserAuthorizedForTenant(request, user)) {
+      if (!isUserAuthorizedForTenant(request, username)) {
         final var rejectionType =
             request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
         return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
@@ -145,7 +126,7 @@ public final class AuthorizationCheckBehavior {
     if (authorizationsEnabled) {
       final var authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
-              user, request.getResourceType(), request.getPermissionType());
+              username, request.getResourceType(), request.getPermissionType());
       return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
     }
     return Either.right(null);
@@ -203,9 +184,8 @@ public final class AuthorizationCheckBehavior {
   }
 
   private boolean isUserAuthorizedForTenant(
-      final AuthorizationRequest request, final PersistedUser user) {
+      final AuthorizationRequest request, final String username) {
     final var tenantId = request.tenantId;
-    final var username = user.getUsername();
     final var hasTenant =
         membershipState.hasRelation(EntityType.USER, username, RelationType.TENANT, tenantId);
     if (hasTenant) {
@@ -307,15 +287,8 @@ public final class AuthorizationCheckBehavior {
     return getUsername(request)
         .map(
             username ->
-                userState
-                    .getUser(username)
-                    .map(
-                        persistedUser ->
-                            getUserAuthorizedResourceIdentifiers(
-                                persistedUser,
-                                request.getResourceType(),
-                                request.getPermissionType()))
-                    .orElseGet(Stream::empty))
+                getUserAuthorizedResourceIdentifiers(
+                    username, request.getResourceType(), request.getPermissionType()))
         .orElseGet(() -> getMappingsAuthorizedResourceIdentifiers(request))
         .collect(Collectors.toSet());
   }
@@ -337,23 +310,23 @@ public final class AuthorizationCheckBehavior {
   // TODO: refactor role and group keys to use groupNames and roleNames after
   // https://github.com/camunda/camunda/issues/26981
   private Stream<String> getUserAuthorizedResourceIdentifiers(
-      final PersistedUser user,
+      final String username,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     // Get resource identifiers for this user
     final var userAuthorizedResourceIdentifiers =
         authorizationState.getResourceIdentifiers(
-            AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
+            AuthorizationOwnerType.USER, username, resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleIds =
-        membershipState.getMemberships(EntityType.USER, user.getUsername(), RelationType.ROLE);
+        membershipState.getMemberships(EntityType.USER, username, RelationType.ROLE);
     final var roleAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
             AuthorizationOwnerType.ROLE, roleIds, resourceType, permissionType);
     // Get resource identifiers for the user's groups
     final var groupsAuthorizedResourceIdentifiers =
         getGroupsAuthorizedResourceIdentifiers(
-            EntityType.USER, user.getUsername(), resourceType, permissionType);
+            EntityType.USER, username, resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
         Stream.concat(roleAuthorizedResourceIdentifiers, groupsAuthorizedResourceIdentifiers));
@@ -479,30 +452,23 @@ public final class AuthorizationCheckBehavior {
 
     final var username = getUsername(command);
     if (username.isPresent()) {
-      return userState
-          .getUser(username.get())
-          .map(
-              user -> {
-                final var tenantIds =
-                    new HashSet<>(
-                        membershipState.getMemberships(
-                            EntityType.USER, user.getUsername(), RelationType.TENANT));
+      final var tenantIds =
+          new HashSet<>(
+              membershipState.getMemberships(EntityType.USER, username.get(), RelationType.TENANT));
 
-                final var groupIds =
-                    membershipState.getMemberships(
-                        EntityType.USER, user.getUsername(), RelationType.GROUP);
-                tenantIds.addAll(getTenantIdsForGroups(groupIds));
+      final var groupIds =
+          membershipState.getMemberships(EntityType.USER, username.get(), RelationType.GROUP);
+      tenantIds.addAll(getTenantIdsForGroups(groupIds));
 
-                final var roleIds =
-                    membershipState.getMemberships(
-                        EntityType.USER, user.getUsername(), RelationType.ROLE);
-                tenantIds.addAll(getTenantIdsForRoles(roleIds));
+      final var roleIds =
+          membershipState.getMemberships(EntityType.USER, username.get(), RelationType.ROLE);
+      tenantIds.addAll(getTenantIdsForRoles(roleIds));
 
-                return tenantIds;
-              })
-          .filter(t -> !t.isEmpty())
-          .<AuthorizedTenants>map(AuthenticatedAuthorizedTenants::new)
-          .orElse(AuthorizedTenants.DEFAULT_TENANTS);
+      if (tenantIds.isEmpty()) {
+        return AuthorizedTenants.DEFAULT_TENANTS;
+      } else {
+        return new AuthenticatedAuthorizedTenants(tenantIds);
+      }
     }
 
     final var tenantsOfMapping =
