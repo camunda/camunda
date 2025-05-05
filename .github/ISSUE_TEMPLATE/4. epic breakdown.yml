@@ -6,11 +6,11 @@ body:
   - type: dropdown
     id: Component
     attributes:
-      label: Component
-      description: For which component your improvement idea is for?
-      # The components should be kept in alphabetical order, with "Not sure" at the top
+      label: <!-- Component -->
+      multiple: true
+      description: What component(s) are affected by this epic?
+      # The components should be kept in alphabetical order.
       options:
-        - <!-- Not sure- -->
         - <!-- C8-API- -->
         - <!-- C8Run- -->
         - <!-- Feel- -->
