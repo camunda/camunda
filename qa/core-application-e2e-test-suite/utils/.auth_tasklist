@@ -1,1 +1,15 @@
-{}
+{
+  "cookies": [
+    {
+      "name": "TASKLIST-SESSION",
+      "value": "964D29EF6DC908E38853FCDB247B1531",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

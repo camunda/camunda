@@ -61,7 +61,7 @@ services:
     ports:
       - 8080:8080
     environment:
-      - SPRING_PROFILES_ACTIVE=dev,auth
+      - SPRING_PROFILES_ACTIVE=dev,auth,e2e-test
     depends_on:
       - ${DATABASE}
       - zeebe
