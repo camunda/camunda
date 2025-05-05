@@ -15,15 +15,13 @@ import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
-public final class BrokerPartitionScaleUpRequest extends BrokerExecuteCommand<ScaleRecord> {
+public class GetScaleUpProgress extends BrokerExecuteCommand<ScaleRecord> {
 
   private final ScaleRecord requestDto = new ScaleRecord();
 
-  public BrokerPartitionScaleUpRequest(final int desiredPartitionCount) {
+  public GetScaleUpProgress(final int desiredPartitionCount) {
     super(ValueType.SCALE, ScaleIntent.SCALE_UP);
     requestDto.setDesiredPartitionCount(desiredPartitionCount);
-
-    // set the target partition for this request
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 

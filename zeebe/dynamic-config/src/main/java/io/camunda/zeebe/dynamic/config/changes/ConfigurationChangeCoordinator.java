@@ -71,7 +71,7 @@ public interface ConfigurationChangeCoordinator {
      * applied in the given order in the list.
      *
      * @param clusterConfiguration the current cluster configuration
-     * @return an Either with the list of operations to apply or an exception if the request is not
+     * @return Either with the list of operations to apply or an exception if the request is not
      *     valid.
      */
     Either<Exception, List<ClusterConfigurationChangeOperation>> operations(

@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -31,6 +32,10 @@ public record RoutingState(
     if (version < 0) {
       throw new IllegalArgumentException("Version must be positive");
     }
+  }
+
+  public RoutingState withRequestHandling(final UnaryOperator<RequestHandling> update) {
+    return new RoutingState(version + 1, update.apply(requestHandling), messageCorrelation);
   }
 
   public RoutingState merge(final RoutingState other) {
@@ -133,6 +138,19 @@ public record RoutingState(
         all.addAll(additionalActivePartitions);
         all.removeAll(inactivePartitions);
         return all;
+      }
+
+      public RequestHandling activatePartitions(final Set<Integer> partitions) {
+        final var updatedInactivePartitions = new HashSet<>(inactivePartitions());
+        updatedInactivePartitions.removeAll(partitions);
+        final var updatedAdditionalActivePartitions = new HashSet<>(additionalActivePartitions);
+        updatedAdditionalActivePartitions.addAll(partitions);
+        if (updatedInactivePartitions.isEmpty()) {
+          return new AllPartitions(basePartitionCount + updatedAdditionalActivePartitions.size());
+        } else {
+          return new ActivePartitions(
+              basePartitionCount, updatedAdditionalActivePartitions, updatedInactivePartitions);
+        }
       }
     }
   }

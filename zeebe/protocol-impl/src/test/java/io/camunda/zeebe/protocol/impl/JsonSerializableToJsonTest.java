@@ -2912,7 +2912,9 @@ final class JsonSerializableToJsonTest {
         (Supplier<ScaleRecord>) ScaleRecord::new,
         """
         {
-          "desiredPartitionCount": -1
+          "desiredPartitionCount": -1,
+          "redistributedPartitions": [],
+          "relocatedPartitions": []
         }
         """
       },
@@ -2921,7 +2923,25 @@ final class JsonSerializableToJsonTest {
         (Supplier<ScaleRecord>) () -> new ScaleRecord().setDesiredPartitionCount(5),
         """
         {
-         "desiredPartitionCount": 5
+         "desiredPartitionCount": 5,
+          "redistributedPartitions": [],
+          "relocatedPartitions": []
+        }
+        """
+      },
+      {
+        "ScaleRecord w/ redistributedPartitions & relocatedPartitions",
+        (Supplier<ScaleRecord>)
+            () ->
+                new ScaleRecord()
+                    .setDesiredPartitionCount(5)
+                    .setRelocatedPartitionsProperty(List.of(4, 5))
+                    .setRedistributedPartitionsProperty(List.of(4, 5)),
+        """
+        {
+         "desiredPartitionCount": 5,
+          "redistributedPartitions": [4,5],
+          "relocatedPartitions": [4,5]
         }
         """
       },
