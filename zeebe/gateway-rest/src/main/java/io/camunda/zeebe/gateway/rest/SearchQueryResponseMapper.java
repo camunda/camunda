@@ -90,6 +90,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -707,19 +708,29 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  private static List<VariableResult> toVariables(final List<VariableEntity> variableEntities) {
+  private static List<VariableSearchResult> toVariables(
+      final List<VariableEntity> variableEntities) {
     return variableEntities.stream().map(SearchQueryResponseMapper::toVariable).toList();
   }
 
-  public static VariableResult toVariable(final VariableEntity variableEntity) {
-    return new VariableResult()
+  private static VariableSearchResult toVariable(final VariableEntity variableEntity) {
+    return new VariableSearchResult()
         .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
         .name(variableEntity.name())
         .value(variableEntity.value())
-        .fullValue(variableEntity.fullValue())
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
         .tenantId(variableEntity.tenantId())
         .isTruncated(variableEntity.isPreview())
+        .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
+  }
+
+  public static VariableResult toVariableItem(final VariableEntity variableEntity) {
+    return new VariableResult()
+        .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
+        .name(variableEntity.name())
+        .value(variableEntity.isPreview() ? variableEntity.fullValue() : variableEntity.value())
+        .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
+        .tenantId(variableEntity.tenantId())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
   }
 
