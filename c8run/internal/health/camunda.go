@@ -74,7 +74,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 		operatePort = 8081
 		tasklistPort = 8082
 		identityPort = 8084
-		camundaPort = 8085
+		camundaPort = 8088
 	}
 
 	endpoints, _ := os.ReadFile("endpoints.txt")
