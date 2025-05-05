@@ -18,13 +18,8 @@ package io.camunda.zeebe.spring.client.configuration;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.actuator.MicrometerMetricsRecorder;
 import io.camunda.zeebe.spring.client.actuator.ZeebeClientHealthIndicator;
-import io.camunda.zeebe.spring.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -41,33 +36,9 @@ import org.springframework.context.annotation.Lazy;
 }) // only if actuator is on classpath
 public class ZeebeActuatorConfiguration {
   @Bean
-  // ConditionalOnBean for MeterRegistry does not work (always missing, seems to be created too
-  // late)
-  // so using @Autowired(required=false) with null check
-  public MetricsRecorder micrometerMetricsRecorder(
-      final @Autowired(required = false) @Lazy MeterRegistry meterRegistry) {
-    if (meterRegistry == null) {
-      // We might have Actuator on the classpath without starting a MetricsRecorder in some cases
-      return new DefaultNoopMetricsRecorder();
-    } else {
-      return new MicrometerMetricsRecorder(meterRegistry);
-    }
-  }
-
-  /**
-   * Workaround to fix premature initialization of MeterRegistry that seems to happen here, see
-   * https://github.com/camunda-community-hub/spring-zeebe/issues/296
-   */
-  @Bean
-  InitializingBean forceMeterRegistryPostProcessor(
-      final @Autowired(required = false) @Qualifier("meterRegistryPostProcessor") BeanPostProcessor
-              meterRegistryPostProcessor,
-      final @Autowired(required = false) MeterRegistry registry) {
-    if (registry == null || meterRegistryPostProcessor == null) {
-      return () -> {};
-    } else {
-      return () -> meterRegistryPostProcessor.postProcessAfterInitialization(registry, "");
-    }
+  @ConditionalOnMissingBean
+  public MetricsRecorder micrometerMetricsRecorder(@Lazy final MeterRegistry meterRegistry) {
+    return new MicrometerMetricsRecorder(meterRegistry);
   }
 
   @Bean
