@@ -10,10 +10,12 @@ package io.camunda.application.commons.metrics;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.boot.actuate.autoconfigure.metrics.export.ConditionalOnEnabledMetricsExport;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MetricsConfiguration implements BeanPostProcessor {
+@ConditionalOnEnabledMetricsExport("prometheus")
+public class PrometheusConfiguration implements BeanPostProcessor {
 
   /** Configure PrometheusMeterRegistry if it's configured */
   @Override

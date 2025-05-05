@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.shared;
+package io.camunda.application.commons.metrics;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
@@ -16,7 +16,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public final class MetricRegistration implements MeterBinder {
-
   @SuppressWarnings("NullableProblems")
   @Override
   public void bindTo(final MeterRegistry registry) {
