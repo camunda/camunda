@@ -54,7 +54,7 @@ public class CamundaProcessTestResultCollector {
 
     result.setProcessInstance(processInstance);
     result.setVariables(collectVariables(processInstanceKey));
-    result.setOpenIncidents(collectOpenIncidents(processInstanceKey));
+    result.setActiveIncidents(collectActiveIncidents(processInstanceKey));
     result.setActiveElementInstances(collectActiveElementInstances(processInstanceKey));
 
     return result;
@@ -73,7 +73,7 @@ public class CamundaProcessTestResultCollector {
         .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
   }
 
-  private List<Incident> collectOpenIncidents(final long processInstanceKey) {
+  private List<Incident> collectActiveIncidents(final long processInstanceKey) {
     return dataSource.findIncidents(
         filter -> filter.processInstanceKey(processInstanceKey).state(IncidentState.ACTIVE));
   }

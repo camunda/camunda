@@ -101,7 +101,7 @@ public class CamundaProcessResultCollectorTest {
 
     assertThat(result.getProcessInstanceTestResults())
         .allMatch(processInstanceResult -> processInstanceResult.getVariables().isEmpty())
-        .allMatch(processInstanceResult -> processInstanceResult.getOpenIncidents().isEmpty());
+        .allMatch(processInstanceResult -> processInstanceResult.getActiveIncidents().isEmpty());
   }
 
   @Test
@@ -158,7 +158,7 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
-  void shouldReturnOpenIncidents() {
+  void shouldReturnActiveIncidents() {
     // given
     when(camundaDataSource.findProcessInstances())
         .thenReturn(Arrays.asList(PROCESS_INSTANCE_1, PROCESS_INSTANCE_2));
@@ -218,14 +218,14 @@ public class CamundaProcessResultCollectorTest {
     // then
     assertThat(result.getProcessInstanceTestResults()).hasSize(2);
 
-    assertThat(result.getProcessInstanceTestResults().get(0).getOpenIncidents())
+    assertThat(result.getProcessInstanceTestResults().get(0).getActiveIncidents())
         .hasSize(2)
         .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getElementId)
         .contains(
             tuple(IncidentErrorType.JOB_NO_RETRIES, "No retries left.", "A"),
             tuple(IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.", "B"));
 
-    assertThat(result.getProcessInstanceTestResults().get(1).getOpenIncidents())
+    assertThat(result.getProcessInstanceTestResults().get(1).getActiveIncidents())
         .hasSize(1)
         .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getElementId)
         .contains(
