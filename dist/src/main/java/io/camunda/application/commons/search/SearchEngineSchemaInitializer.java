@@ -40,12 +40,12 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
               searchEngineConfiguration.connect().getTypeEnum().isElasticSearch());
       final SchemaManager schemaManager =
           new SchemaManager(
-              clientAdapter.getSearchEngineClient(),
-              indexDescriptors.indices(),
-              indexDescriptors.templates(),
-              searchEngineConfiguration,
-              clientAdapter.objectMapper(),
-              schemaManagerMetrics);
+                  clientAdapter.getSearchEngineClient(),
+                  indexDescriptors.indices(),
+                  indexDescriptors.templates(),
+                  searchEngineConfiguration,
+                  clientAdapter.objectMapper())
+              .withMetrics(schemaManagerMetrics);
       schemaManager.startup();
     }
     LOGGER.info("Search engine schema initialization complete.");

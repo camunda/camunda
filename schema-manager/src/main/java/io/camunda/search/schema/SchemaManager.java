@@ -7,6 +7,8 @@
  */
 package io.camunda.search.schema;
 
+import static java.util.Optional.ofNullable;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
@@ -48,6 +50,16 @@ public class SchemaManager {
       final Collection<IndexDescriptor> indexDescriptors,
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
       final SearchEngineConfiguration config,
+      final ObjectMapper objectMapper) {
+    this(
+        searchEngineClient, indexDescriptors, indexTemplateDescriptors, config, objectMapper, null);
+  }
+
+  private SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
       final ObjectMapper objectMapper,
       final SchemaManagerMetrics schemaManagerMetrics) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
@@ -60,19 +72,14 @@ public class SchemaManager {
     this.schemaManagerMetrics = schemaManagerMetrics;
   }
 
-  public SchemaManager(
-      final SearchEngineClient searchEngineClient,
-      final Collection<IndexDescriptor> indexDescriptors,
-      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
-      final SearchEngineConfiguration config,
-      final ObjectMapper objectMapper) {
-    this(
+  public SchemaManager withMetrics(final SchemaManagerMetrics schemaManagerMetrics) {
+    return new SchemaManager(
         searchEngineClient,
         indexDescriptors,
         indexTemplateDescriptors,
         config,
         objectMapper,
-        SchemaManagerMetrics.DEFAULT);
+        schemaManagerMetrics);
   }
 
   public void startup() {
@@ -81,9 +88,13 @@ public class SchemaManager {
           "Will not make any changes to indices and index templates as [createSchema] is false");
       return;
     }
-    final var timer = schemaManagerMetrics.startSchemaInitTimer();
+    final var timer =
+        ofNullable(schemaManagerMetrics)
+            .map(SchemaManagerMetrics::startSchemaInitTimer)
+            .orElse(() -> {});
     retryDecorator.decorate("init schema", this::initializeSchema);
-    timer.close(); // record the time taken to initialize schema only if it was successful
+    // record the time taken to initialize schema only if it was successful
+    timer.close();
   }
 
   private void initializeSchema() {

@@ -10,31 +10,24 @@ package io.camunda.search.schema.metrics;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.TimeGauge;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import io.micrometer.core.instrument.Timer;
 
 public class SchemaManagerMetrics {
-  public static final SchemaManagerMetrics DEFAULT =
-      new SchemaManagerMetrics(new SimpleMeterRegistry());
-
   private static final String NAMESPACE = "camunda.schema";
 
   private final MeterRegistry meterRegistry;
 
-  private final AtomicLong schemaInitTime = new AtomicLong();
+  private final Timer schemaInitTimer;
 
   public SchemaManagerMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
-    TimeGauge.builder(
-            NAMESPACE + ".init.time", schemaInitTime, TimeUnit.MILLISECONDS, Number::longValue)
-        .description("Duration of init schema operations (in milliseconds)")
-        .register(meterRegistry);
+    schemaInitTimer =
+        Timer.builder(NAMESPACE + ".init.time")
+            .description("Duration of initializing the schema in the secondary storage")
+            .register(meterRegistry);
   }
 
   public CloseableSilently startSchemaInitTimer() {
-    return MicrometerUtil.timer(
-        schemaInitTime::set, TimeUnit.MILLISECONDS, meterRegistry.config().clock());
+    return MicrometerUtil.timer(schemaInitTimer, Timer.start(meterRegistry));
   }
 }

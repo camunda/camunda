@@ -18,9 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -38,7 +35,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
-import io.camunda.zeebe.util.CloseableSilently;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
@@ -47,6 +44,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -794,50 +792,40 @@ public class SchemaManagerIT {
   void shouldRecordSchemaInitTimerMetric(
       final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
     // given
-    final var schemaManagerMetrics = mock(SchemaManagerMetrics.class);
-    final var timer = mock(CloseableSilently.class);
-    when(schemaManagerMetrics.startSchemaInitTimer()).thenReturn(timer);
+    final var registry = new SimpleMeterRegistry();
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config),
-            Set.of(index),
-            Set.of(),
-            config,
-            objectMapper,
-            schemaManagerMetrics);
+                searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper)
+            .withMetrics(new SchemaManagerMetrics(registry));
 
     // when
     schemaManager.startup();
 
     // then
-    verify(schemaManagerMetrics).startSchemaInitTimer();
-    verify(timer).close();
+    final var measuredTime = registry.find("camunda.schema.init.time").timer();
+    assertThat(measuredTime.count()).isEqualTo(1);
+    assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isGreaterThan(0);
   }
 
   @TestTemplate
   void shouldNotRecordSchemaInitTimerMetricOnFailure(
       final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
     // given
-    final var schemaManagerMetrics = mock(SchemaManagerMetrics.class);
-    final var timer = mock(CloseableSilently.class);
-    when(schemaManagerMetrics.startSchemaInitTimer()).thenReturn(timer);
+    final var registry = new SimpleMeterRegistry();
     // alter configuration to trigger failure
     config.connect().setUrl("http://bad-url");
     config.schemaManager().getRetry().setMaxRetries(1);
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config),
-            Set.of(index),
-            Set.of(),
-            config,
-            objectMapper,
-            schemaManagerMetrics);
+                searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper)
+            .withMetrics(new SchemaManagerMetrics(registry));
 
     // when
     assertThrows(SearchEngineException.class, () -> schemaManager.startup());
 
     // then
-    verify(schemaManagerMetrics).startSchemaInitTimer();
-    verify(timer, never()).close();
+    final var measuredTime = registry.find("camunda.schema.init.time").timer();
+    assertThat(measuredTime.count()).isEqualTo(0);
+    assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(0);
   }
 }

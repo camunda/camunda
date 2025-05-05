@@ -9,9 +9,11 @@ package io.camunda.search.schema.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.micrometer.core.instrument.TimeGauge;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 class SchemaManagerMetricsTest {
@@ -25,28 +27,28 @@ class SchemaManagerMetricsTest {
     final var metrics = new SchemaManagerMetrics(registry);
 
     // then
-    final TimeGauge gauge = registry.find("camunda.schema.init.time").timeGauge();
+    final Timer timer = registry.find("camunda.schema.init.time").timer();
 
-    assertThat(gauge).isNotNull();
-    assertThat(gauge.getId().getDescription())
-        .isEqualTo("Duration of init schema operations (in milliseconds)");
+    assertThat(timer).isNotNull();
+    assertThat(timer.getId().getDescription())
+        .isEqualTo("Duration of initializing the schema in the secondary storage");
   }
 
   @Test
-  void shouldUpdateSchemaInitTime() throws InterruptedException {
+  void shouldUpdateSchemaInitTime() {
     // given
     final var registry = new SimpleMeterRegistry();
     final var metrics = new SchemaManagerMetrics(registry);
 
     // when
     try (final var timer = metrics.startSchemaInitTimer()) {
-      Thread.sleep(50); // simulate processing
+      Awaitility.await().during(Duration.ofMillis(50)); // simulate processing
     }
 
     // then
-    final var measuredTime =
-        registry.find("camunda.schema.init.time").timeGauge().value(TimeUnit.MILLISECONDS);
+    final var measuredTime = registry.find("camunda.schema.init.time").timer();
 
-    assertThat(measuredTime).isGreaterThanOrEqualTo(50);
+    assertThat(measuredTime.count()).isEqualTo(1);
+    assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isGreaterThan(0);
   }
 }
