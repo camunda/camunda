@@ -43,8 +43,8 @@ public final class ExportDurationObserver {
    * Caches a single record's write timestamp; this method is idempotent and can be called multiple
    * times without any effect until {@link #observeDurations()} has been called.
    */
-  public void cacheRecordTimestamp(final long key, final long timestamp) {
-    writeTimestamps.put(key, timestamp);
+  public void cacheRecordTimestamp(final long position, final long timestamp) {
+    writeTimestamps.put(position, timestamp);
   }
 
   /**
@@ -59,6 +59,7 @@ public final class ExportDurationObserver {
     // ensure we don't observe the same record write timestamp twice
     writeTimestamps.clear();
     timestamps.stream()
+        .filter(t -> t < 0) // ignore the "null" or default values
         .map(timestamp -> flushTime - timestamp)
         .forEach(metrics::observeRecordExportDurationMillis);
   }
