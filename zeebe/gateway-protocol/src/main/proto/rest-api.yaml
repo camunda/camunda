@@ -6054,6 +6054,7 @@ components:
       description: The type of the owner of permissions.
       enum:
         - USER
+        - APPLICATION
         - ROLE
         - GROUP
         - MAPPING
