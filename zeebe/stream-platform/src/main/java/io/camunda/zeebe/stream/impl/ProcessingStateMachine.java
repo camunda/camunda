@@ -106,8 +106,6 @@ public final class ProcessingStateMachine {
       "Expected to roll back the current transaction for record '{} {}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED =
       "Expected to execute side effects for record '{} {}' successfully, but exception was thrown.";
-  private static final String ERROR_MESSAGE_UPDATE_STATE_FAILED =
-      "Expected to successfully update state for record '{} {}', but caught an exception. Retry.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING =
       "Expected to process record '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE =
