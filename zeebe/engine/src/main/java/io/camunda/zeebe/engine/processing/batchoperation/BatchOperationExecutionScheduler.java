@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -49,10 +50,10 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final BatchOperationItemProvider entityKeyProvider,
-      final Duration pollingInterval) {
+      final EngineConfiguration engineConfiguration) {
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
     this.entityKeyProvider = entityKeyProvider;
-    this.pollingInterval = pollingInterval;
+    pollingInterval = engineConfiguration.getBatchOperationSchedulerInterval();
   }
 
   @Override

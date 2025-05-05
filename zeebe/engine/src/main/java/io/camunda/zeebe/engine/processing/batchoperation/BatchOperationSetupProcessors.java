@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.CancelProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.time.Duration;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -37,6 +37,7 @@ public final class BatchOperationSetupProcessors {
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final SearchClientsProxy searchClientsProxy,
       final ProcessingState processingState,
+      final EngineConfiguration engineConfiguration,
       final int partitionId) {
     final var batchExecutionHandlers =
         Map.of(
@@ -93,6 +94,6 @@ public final class BatchOperationSetupProcessors {
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
                 new BatchOperationItemProvider(searchClientsProxy),
-                Duration.ofMillis(1000)));
+                engineConfiguration));
   }
 }
