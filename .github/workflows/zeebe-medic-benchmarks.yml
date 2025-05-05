@@ -23,13 +23,22 @@ jobs:
       - name: Collect benchmark data
         id: data
         run: |
+          # Count normal weekly namespaces
+          echo "count=$(kubectl get ns -o name | grep -E namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$ | wc -l)" >> $GITHUB_OUTPUT
           # Get all namespaces, filter for medic benchmarks and select the oldest one
           echo "normal=$(kubectl get ns -o name | grep -E namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
       - name: Delete benchmarks
         run: |
-          kubectl delete ${{ steps.data.outputs.normal }}
-          kubectl delete ${{ steps.data.outputs.normal }}-mixed
-          kubectl delete ${{ steps.data.outputs.normal }}-latency
+          if [[  ${{ steps.data.outputs.count }} -ge 4 ]];
+          then
+            # We want to have always at least 4 benchmarks running
+            echo "Delete namespaces for ${{ steps.data.outputs.normal }}"
+            # kubectl delete ${{ steps.data.outputs.normal }}
+            # kubectl delete ${{ steps.data.outputs.normal }}-mixed
+            # kubectl delete ${{ steps.data.outputs.normal }}-latency
+          else 
+            echo "Detected only ${{ steps.data.outputs.count }} benchmarks. Do not delete the oldest."
+          fi
   benchmark-data:
     name: Collect benchmark data
     runs-on: ubuntu-latest
