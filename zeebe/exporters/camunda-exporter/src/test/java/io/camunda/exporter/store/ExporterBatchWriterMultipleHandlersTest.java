@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.ExporterBatchWriter.Builder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -23,8 +24,15 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -205,6 +213,87 @@ public class ExporterBatchWriterMultipleHandlersTest {
     verify(batchRequest).execute(any());
   }
 
+  @Nested
+  final class ExportDurationObserverTest {
+    private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private final ExporterBatchWriter batchWriter =
+        ExporterBatchWriter.Builder.begin(
+                new CamundaExporterMetrics(
+                    meterRegistry, InstantSource.fixed(Instant.ofEpochMilli(20L))))
+            .withHandler(
+                TestExportHandler.handlerAcceptingOnly(
+                    r -> r.getOperationReference() != Long.MAX_VALUE))
+            .build();
+    private final ProtocolFactory protocolFactory = new ProtocolFactory();
+    private final BatchRequest batchRequest = mock(BatchRequest.class);
+
+    @Test
+    void shouldObserveDurationOfHandledRecordsOnly() {
+      // given
+      final var observedRecords =
+          List.of(
+              protocolFactory.generateRecord(
+                  ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L)),
+              protocolFactory.generateRecord(
+                  ValueType.PROCESS_INSTANCE, b -> b.withPosition(2L).withTimestamp(8L)));
+      final var unobservedRecord =
+          protocolFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE,
+              b -> b.withPosition(10L).withTimestamp(12L).withOperationReference(Long.MAX_VALUE));
+
+      //  when
+      observedRecords.forEach(batchWriter::addRecord);
+      batchWriter.addRecord(unobservedRecord);
+      batchWriter.flush(batchRequest);
+
+      // then
+      final var timer = meterRegistry.get("zeebe.camunda.exporter.record.export.duration").timer();
+      Assertions.assertThat(timer.count()).isEqualTo(2);
+      Assertions.assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(16L);
+      Assertions.assertThat(timer.mean(TimeUnit.MILLISECONDS)).isEqualTo(14L);
+    }
+
+    @Test
+    void shouldNotObserveSameMetricsOnSuccessiveFlush() {
+      // given
+      final var record =
+          protocolFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L));
+
+      //  when
+      batchWriter.addRecord(record);
+      batchWriter.addRecord(record);
+      batchWriter.addRecord(record);
+      batchWriter.flush(batchRequest);
+
+      // then
+      final var timer = meterRegistry.get("zeebe.camunda.exporter.record.export.duration").timer();
+      Assertions.assertThat(timer.count()).isOne();
+      Assertions.assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(16L);
+      Assertions.assertThat(timer.mean(TimeUnit.MILLISECONDS)).isEqualTo(16L);
+    }
+
+    @Test
+    void shouldNotObserveSameRecordTwice() {
+      // given
+      final var record =
+          protocolFactory.generateRecord(
+              ValueType.PROCESS_INSTANCE, b -> b.withPosition(1L).withTimestamp(4L));
+
+      //  when
+      batchWriter.addRecord(record);
+      batchWriter.addRecord(record);
+      batchWriter.addRecord(record);
+      batchWriter.flush(batchRequest);
+
+      // then
+      final var timer = meterRegistry.get("zeebe.camunda.exporter.record.export.duration").timer();
+      Assertions.assertThat(timer.count()).isOne();
+      Assertions.assertThat(timer.max(TimeUnit.MILLISECONDS)).isEqualTo(16L);
+      Assertions.assertThat(timer.mean(TimeUnit.MILLISECONDS)).isEqualTo(16L);
+    }
+  }
+
   private static class TestEntity implements ExporterEntity<TestEntity> {
 
     private String id;
@@ -251,12 +340,22 @@ public class ExporterBatchWriterMultipleHandlersTest {
     private final String indexName;
     private final Class<T> clazz;
     private final Function<String, T> constructor;
+    private final Predicate<Record> handlesRecord;
 
     public TestExportHandler(
         final String indexName, final Class<T> clazz, final Function<String, T> constructor) {
+      this(indexName, clazz, constructor, ignored -> true);
+    }
+
+    public TestExportHandler(
+        final String indexName,
+        final Class<T> clazz,
+        final Function<String, T> constructor,
+        final Predicate<Record> handlesRecord) {
       this.indexName = indexName;
       this.clazz = clazz;
       this.constructor = constructor;
+      this.handlesRecord = handlesRecord;
     }
 
     public static TestExportHandler<TestEntity> defaultHandler() {
@@ -272,6 +371,11 @@ public class ExporterBatchWriterMultipleHandlersTest {
       return new TestExportHandler<>(indexName, TestEntity.class, TestEntity::new);
     }
 
+    public static TestExportHandler<TestEntity> handlerAcceptingOnly(
+        final Predicate<Record> handlesRecord) {
+      return new TestExportHandler<>("indexA", TestEntity.class, TestEntity::new, handlesRecord);
+    }
+
     @Override
     public ValueType getHandledValueType() {
       return ValueType.PROCESS_INSTANCE;
@@ -284,7 +388,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
 
     @Override
     public boolean handlesRecord(final Record record) {
-      return true;
+      return handlesRecord.test(record);
     }
 
     @Override

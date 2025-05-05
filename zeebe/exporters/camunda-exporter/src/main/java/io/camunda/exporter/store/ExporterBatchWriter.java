@@ -10,10 +10,13 @@ package io.camunda.exporter.store;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,10 +28,22 @@ import java.util.function.BiConsumer;
 
 /** Caches exporter entities of different types and provide the method to flush them in a batch. */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class ExporterBatchWriter {
-  private final Map<ValueType, List<ExportHandler>> handlers = new HashMap<>();
+public final class ExporterBatchWriter {
   private final Map<EntityIdAndEntityType, EntityAndHandlers> cachedEntities = new HashMap<>();
-  private BiConsumer<String, Error> customErrorHandlers;
+  private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
+
+  private final Map<ValueType, List<ExportHandler>> handlers;
+  private final BiConsumer<String, Error> customErrorHandler;
+  private final CamundaExporterMetrics metrics;
+
+  private ExporterBatchWriter(
+      final Map<ValueType, List<ExportHandler>> handlers,
+      final BiConsumer<String, Error> customErrorHandler,
+      final CamundaExporterMetrics metrics) {
+    this.handlers = new HashMap<>(handlers);
+    this.customErrorHandler = customErrorHandler;
+    this.metrics = metrics;
+  }
 
   public void addRecord(final Record<?> record) {
     final ValueType valueType = record.getValueType();
@@ -58,6 +73,7 @@ public class ExporterBatchWriter {
 
     final var entity = entityAndHandlers.entity;
     handler.updateEntity(record, entity);
+    cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
 
     // we store all handlers for an entity to make sure not to miss any flushes
     entityAndHandlers.handlers.add(handler);
@@ -78,43 +94,58 @@ public class ExporterBatchWriter {
         handler.flush(entity, batchRequest);
       }
     }
-    batchRequest.execute(customErrorHandlers);
+
+    batchRequest.execute(customErrorHandler);
+    observeRecordTimestamps();
     reset();
   }
 
-  public void reset() {
-    cachedEntities.clear();
+  private void observeRecordTimestamps() {
+    final var timestamps = new ArrayList<>(cachedRecordTimestamps.values());
+    cachedRecordTimestamps.clear();
+    metrics.observeRecordExportLatencies(timestamps);
   }
 
   public int getBatchSize() {
     return cachedEntities.size();
   }
 
-  public static class Builder {
-    private ExporterBatchWriter writer;
+  private void reset() {
+    cachedEntities.clear();
+  }
 
-    public static Builder begin() {
-      final Builder builder = new Builder();
-      builder.writer = new ExporterBatchWriter();
-      return builder;
+  public static final class Builder {
+    private final CamundaExporterMetrics metrics;
+    private final Map<ValueType, List<ExportHandler>> handlers = new HashMap<>();
+    private BiConsumer<String, Error> customErrorHandler = (ignored, error) -> {};
+
+    private Builder(final CamundaExporterMetrics metrics) {
+      this.metrics = metrics;
+    }
+
+    public static Builder begin(final CamundaExporterMetrics metrics) {
+      return new Builder(metrics);
+    }
+
+    @VisibleForTesting
+    static Builder begin() {
+      return new Builder(new CamundaExporterMetrics(new SimpleMeterRegistry()));
     }
 
     public <T extends ExporterEntity<T>, R extends RecordValue> Builder withHandler(
         final ExportHandler<T, R> handler) {
-      writer
-          .handlers
-          .computeIfAbsent(handler.getHandledValueType(), k -> new ArrayList<>())
-          .add(handler);
+      handlers.computeIfAbsent(handler.getHandledValueType(), k -> new ArrayList<>()).add(handler);
 
       return this;
     }
 
     public ExporterBatchWriter build() {
-      return writer;
+      return new ExporterBatchWriter(handlers, customErrorHandler, metrics);
     }
 
-    public void withCustomErrorHandlers(final BiConsumer<String, Error> customErrorHandlers) {
-      writer.customErrorHandlers = customErrorHandlers;
+    public Builder withCustomErrorHandlers(final BiConsumer<String, Error> customErrorHandler) {
+      this.customErrorHandler = customErrorHandler;
+      return this;
     }
   }
 

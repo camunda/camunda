@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.metrics;
 
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
@@ -15,12 +16,16 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
+import java.time.InstantSource;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 public class CamundaExporterMetrics {
   private static final String NAMESPACE = "zeebe.camunda.exporter";
 
   private final MeterRegistry meterRegistry;
+  private final InstantSource streamClock;
+
   private final Timer flushLatency;
   private final Counter processInstancesArchived;
 
@@ -47,7 +52,13 @@ public class CamundaExporterMetrics {
   private final Timer recordExportDuration;
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
+    this(meterRegistry, InstantSource.system());
+  }
+
+  public CamundaExporterMetrics(
+      final MeterRegistry meterRegistry, final InstantSource streamClock) {
     this.meterRegistry = meterRegistry;
+    this.streamClock = streamClock;
 
     flushLatency =
         Timer.builder(meterName("flush.latency"))
@@ -170,8 +181,17 @@ public class CamundaExporterMetrics {
     batchOperationsArchiving.increment(count);
   }
 
-  public void observeRecordExportDurationMillis(final long durationMillis) {
-    recordExportDuration.record(durationMillis, TimeUnit.MILLISECONDS);
+  /**
+   * For each record write timestamp, observes the export latency by subtracting the timestamp from
+   * the current stream clock.
+   *
+   * @param recordTimestamps a collection of {@link Record#getTimestamp()}
+   */
+  public void observeRecordExportLatencies(final Collection<Long> recordTimestamps) {
+    final var now = streamClock.millis();
+    recordTimestamps.stream()
+        .mapToLong(timestamp -> now - timestamp)
+        .forEach(duration -> recordExportDuration.record(duration, TimeUnit.MILLISECONDS));
   }
 
   private String meterName(final String name) {

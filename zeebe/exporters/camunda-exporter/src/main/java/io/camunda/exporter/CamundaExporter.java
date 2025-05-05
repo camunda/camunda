@@ -31,7 +31,6 @@ import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.metrics.ExportDurationObserver;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
@@ -77,7 +76,6 @@ public class CamundaExporter implements Exporter {
   private boolean zeebeIndicesVersion87Exist = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
-  private ExportDurationObserver exportDurationObserver;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -100,8 +98,7 @@ public class CamundaExporter implements Exporter {
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
-    metrics = new CamundaExporterMetrics(context.getMeterRegistry());
-    exportDurationObserver = new ExportDurationObserver(metrics, context.clock());
+    metrics = new CamundaExporterMetrics(context.getMeterRegistry(), context.clock());
     clientAdapter = ClientAdapter.of(configuration.getConnect());
     if (metadata == null) {
       metadata = new ExporterMetadata(clientAdapter.objectMapper());
@@ -204,7 +201,6 @@ public class CamundaExporter implements Exporter {
       ensureCachedRecordsLessThanBulkSize(record);
 
       writer.addRecord(record);
-      exportDurationObserver.cacheRecordTimestamp(record.getPosition(), record.getTimestamp());
 
       LOG.info(
           "Waiting for importers to finish, cached record with key {} but did not flush",
@@ -219,7 +215,6 @@ public class CamundaExporter implements Exporter {
 
     // adding record is idempotent
     writer.addRecord(record);
-    exportDurationObserver.cacheRecordTimestamp(record.getPosition(), record.getTimestamp());
 
     lastPosition = record.getPosition();
 
@@ -277,11 +272,6 @@ public class CamundaExporter implements Exporter {
         clientAdapter.objectMapper());
   }
 
-  @VisibleForTesting
-  ExporterMetadata getMetadata() {
-    return metadata;
-  }
-
   private List<String> prefixedNames(final String... names) {
     final var indexPrefix =
         AbstractIndexDescriptor.formatIndexPrefix(configuration.getConnect().getIndexPrefix());
@@ -326,9 +316,10 @@ processing records from previous version
   }
 
   private ExporterBatchWriter createBatchWriter() {
-    final var builder = ExporterBatchWriter.Builder.begin();
+    final var builder =
+        ExporterBatchWriter.Builder.begin(metrics)
+            .withCustomErrorHandlers(provider.getCustomErrorHandlers());
     provider.getExportHandlers().forEach(builder::withHandler);
-    builder.withCustomErrorHandlers(provider.getCustomErrorHandlers());
     return builder.build();
   }
 
@@ -394,7 +385,6 @@ processing records from previous version
       metrics.recordBulkSize(writer.getBatchSize());
       final BatchRequest batchRequest = clientAdapter.createBatchRequest();
       writer.flush(batchRequest);
-      exportDurationObserver.observeDurations();
     } catch (final PersistenceException ex) {
       throw new ExporterException(ex.getMessage(), ex);
     }
