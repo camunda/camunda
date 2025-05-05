@@ -44,6 +44,7 @@ jobs:
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       operate-backend-changes: ${{ steps.filter.outputs.operate-backend-changes }}
+      operate-frontend-changes: ${{ steps.filter.outputs.operate-frontend-changes }}
       tasklist-frontend-changes: ${{ steps.filter.outputs.tasklist-frontend-changes }}
       tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
@@ -232,7 +233,8 @@ jobs:
             #
             # NOTE: optimize-qa-integrity-tests is temporarily skipped because it needs adjustment
             #   to work with migration from 8.7.0 to 8.8.0.
-            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config','-:optimize-schema-integrity-tests'"
+            # NOTE: Operate is skipped here as it's UTs are run in consolidated-unit-tests
+            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config','-:optimize-schema-integrity-tests','-:operate-common','-:operate-importer-8_7','-:operate-schema','-:operate-webapp'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-default
@@ -269,6 +271,7 @@ jobs:
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -DskipCoreFeaturesUTs -DskipDataLayerUTs -DskipIdentityUTs
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
@@ -298,6 +301,81 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # description: Runs unit tests broken down by team and component
+  # test location: Operate
+  # owner: Core Features, Data Layers, Identity
+  consolidated-unit-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "[UT] ${{ matrix.componentName }} - ${{ matrix.suiteName }}"
+    needs: [ detect-changes ]
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [ operate ]
+        suite: [ coreFeatures, dataLayer, identity ]
+        include:
+          - suite: coreFeatures
+            firstSkip: DskipDataLayerUTs
+            secondSkip: DskipDataLayerUTs
+            suiteName: Core Features
+          - suite: dataLayer
+            firstSkip: DskipCoreFeaturesUTs
+            secondSkip: DskipIdentityUTs
+            suiteName: Data Layers
+          - suite: identity
+            firstSkip: DskipDataLayerUTs
+            secondSkip: DskipCoreFeaturesUTs
+            suiteName: Identity
+          - component: operate
+            componentName: Operate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: consolidated-ut-${{ matrix.component }}-${{ matrix.suite }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Run Unit Tests
+        run: >
+          ./mvnw -f ${{matrix.component}} verify -T1C -B -P skipFrontendBuild
+          -DskipITs
+          -${{matrix.firstSkip}}
+          -${{matrix.secondSkip}}
+          -DskipDockerProfile
+          -DskipChecks
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[Consolidated UT] ${{ matrix.component }} ${{ matrix.suite }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "core-features-unit-tests/${{ matrix.component }}/${{ matrix.suite }}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId:
+            ${{ secrets.VAULT_ROLE_ID }}
 
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -898,8 +976,11 @@ jobs:
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
 
+  # Checks to see if Operate can properly build itself and a docker image
+  # owner: Core Features
   build-operate-backend:
     if: needs.detect-changes.outputs.operate-backend-changes == 'true'
+    name: "Operate Build Checks"
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -937,6 +1018,31 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Runs Operate's front end tests
+  # owner: Core Features
+  operate-frontend-tests:
+    if: needs.detect-changes.outputs.operate-frontend-changes == 'true'
+    needs: [ detect-changes ]
+    name: "[FE] Operate"
+    uses: ./.github/workflows/operate-ci-fe-reusable.yml
+    secrets: inherit
+    permissions: {}  # GITHUB_TOKEN unused in this job
+
+  # Runs the CI tests owned by Data Layer. Runs integration tests
+  # owner: Data Layers
+  data-layer-it:
+    if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
+    name: "[IT] Operate - Data Layers"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
+    secrets: inherit
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: ./mvnw -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
+      test-type: Opensearch ITs
+      runner-type: gcp-core-32-default
 
   tasklist-docker-tests:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
@@ -1142,6 +1248,8 @@ jobs:
       - build-operate-backend
       - build-platform-frontend
       - commitlint
+      - consolidated-unit-tests
+      - data-layer-it
       - detect-changes
       - docker-checks
       - elasticsearch-integration-tests
@@ -1152,6 +1260,7 @@ jobs:
       - maven-spotless-linter
       - openapi-lint
       - opensearch-integration-tests
+      - operate-frontend-tests
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks

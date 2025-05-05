@@ -1,0 +1,200 @@
+# Runs front end tests for Operate. Tests include a type check, linting, unit tests, and visual regression tests
+# test location: operate/client/e2e-playwright/a11y, operate/client/src/App
+# called by: ci.yml
+# owner: Core Features
+name: Operate Frontend
+
+on:
+  workflow_call: {}
+  workflow_dispatch:
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  # Typescript Checker
+  # owner: Core Features
+  operate-fe-type-check:
+    name: Type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
+      - run: yarn install --frozen-lockfile
+        name: Install dependencies
+      - run: yarn ts-check
+        name: Type checks
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Code linting
+  # owner: Core Featyres
+  operate-fe-eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
+      - run: yarn install --frozen-lockfile
+        name: Install dependencies
+      - run: yarn eslint
+        name: ESLint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Front end unit tests
+  # owner: Core Featyres
+  operate-fe-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
+      - run: yarn install --frozen-lockfile
+        name: Install dependencies
+      - run: yarn test:ci
+        name: Unit & Integration tests
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # description: This workflow runs a11y accessibility tests on Operate
+  # test location: operate/client/e2e-playwright/a11y
+  operate-fe-a11y-tests:
+    name: a11y tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
+      - name: Install node dependencies
+        run: yarn
+      - name: Build frontend
+        run: yarn build
+      - name: Start server
+        run: yarn start:visual-regression &
+      - name: Run A11y tests
+        run: yarn playwright a11y
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operate-a11y-report
+          path: operate/client/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  operate-update-screenshots:
+    name: Update Screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { } # GITHUB_TOKEN unused in this job
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
+      - run: yarn install --frozen-lockfile
+        name: Install dependencies
+      - name: Build frontend
+        run: yarn build
+      - name: Start server
+        run: yarn start:visual-regression &
+      - name: Run Playwright
+        working-directory: ./operate/client
+        run: yarn playwright e2e-playwright/docs-screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Playwright report
+          path: e2e-playwright/docs-screenshots
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

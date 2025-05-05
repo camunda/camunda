@@ -45,8 +45,7 @@ on:
         default: gcp-core-32-default
         type: string
 
-permissions:
-  contents: read
+permissions: {}
 
 defaults:
   run:
