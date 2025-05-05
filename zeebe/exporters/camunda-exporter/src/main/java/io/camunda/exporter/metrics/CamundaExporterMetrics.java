@@ -123,7 +123,7 @@ public class CamundaExporterMetrics {
     recordExportDuration =
         Timer.builder(meterName("record.export.duration"))
             .description(
-                "How time it took to export a record from the moment it was written (not committed)")
+                "How much time it took to export a record from the moment it was written (not committed)")
             .serviceLevelObjectives(MicrometerUtil.defaultPrometheusBuckets())
             .register(meterRegistry);
   }
