@@ -50,18 +50,18 @@ func stopCommand(c8 types.C8Run, settings types.C8RunSettings, processes types.P
 	if !settings.DisableElasticsearch {
 		err := stopProcess(c8, processes.Elasticsearch.Pid)
 		if err != nil {
-			fmt.Printf("%+v", err)
+			fmt.Printf("%+v\n", err)
 		}
 		fmt.Println("Elasticsearch is stopped.")
 	}
 	err := stopProcess(c8, processes.Connectors.Pid)
 	if err != nil {
-		fmt.Printf("%+v", err)
+		fmt.Printf("%+v\n", err)
 	}
 	fmt.Println("Connectors is stopped.")
 	err = stopProcess(c8, processes.Camunda.Pid)
 	if err != nil {
-		fmt.Printf("%+v", err)
+		fmt.Printf("%+v\n", err)
 	}
 	fmt.Println("Camunda is stopped.")
 }
