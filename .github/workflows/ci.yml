@@ -228,7 +228,7 @@ jobs:
             name: "General Unit Tests"
             # Here we exclude all modules that are separated in extra jobs below
             # Example: '[-+]<groupId>:artifactId' -> '-' excludes
-            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config'"
+            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config','-:optimize-schema-integrity-tests'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-default
