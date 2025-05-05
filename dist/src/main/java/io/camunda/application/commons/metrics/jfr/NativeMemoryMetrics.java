@@ -9,13 +9,16 @@ package io.camunda.application.commons.metrics.jfr;
 
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NMT_USAGE;
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NMT_USAGE_TOTAL;
+import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NativeMemoryValueType.COMMITTED;
+import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NativeMemoryValueType.RESERVED;
+import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NativeMemoryUsageKeys.VALUE;
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.RSS;
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.RSS_PEAK;
 
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
-import java.util.List;
+import io.micrometer.core.instrument.Tags;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -102,12 +105,12 @@ public final class NativeMemoryMetrics {
       Gauge.builder(doc.getName(), reserved, AtomicLong::get)
           .description(doc.getDescription())
           .baseUnit("bytes")
-          .tags(List.of(tags))
+          .tags(Tags.of(tags).and(Tag.of(VALUE.asString(), RESERVED.value())))
           .register(registry);
       Gauge.builder(doc.getName(), committed, AtomicLong::get)
           .description(doc.getDescription())
           .baseUnit("bytes")
-          .tags(List.of(tags))
+          .tags(Tags.of(tags).and(Tag.of(VALUE.asString(), COMMITTED.value())))
           .register(registry);
     }
   }
