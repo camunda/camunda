@@ -14,6 +14,19 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 
+/**
+ * {@code @SearchDBExtension} is an extension factory for concrete extensions: {@link
+ * ContainerizedSearchDBExtension} and {@link AWSSearchDBExtension}.
+ *
+ * <p>Which extension will be created is controlled by the property
+ * `test.integration.opensearch.aws.url`. If the mentioned property is defined then tests assume
+ * that URL is correct and points to the AWS OS instance.
+ *
+ * <p>A user can pass property locally via `mvn -D test.integration.opensearch.aws.url=$AWS_OS_URL
+ *
+ * <p>If concrete extension not selected, the {@link ContainerizedSearchDBExtension} as selected by
+ * default.
+ */
 public abstract class SearchDBExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
@@ -30,17 +43,39 @@ public abstract class SearchDBExtension
     }
   }
 
+  /**
+   * @return context configuration {@link OpensearchExporterConfiguration}
+   */
   abstract OpensearchExporterConfiguration config();
 
+  /**
+   * @return context {@link ProtocolFactory}
+   */
   abstract ProtocolFactory recordFactory();
 
+  /**
+   * @return context {@link TemplateReader}
+   */
   abstract TemplateReader templateReader();
 
+  /**
+   * @return context {@link RecordIndexRouter}
+   */
   abstract RecordIndexRouter indexRouter();
 
+  /**
+   * @return context {@link BulkIndexRequest}
+   */
   abstract BulkIndexRequest bulkRequest();
 
+  /**
+   * @return test thin OpenSearch client simplifies certain test procedures.
+   * @see TestClient
+   */
   abstract TestClient testClient();
 
+  /**
+   * @return configured {@link OpensearchClient}
+   */
   abstract OpensearchClient client();
 }

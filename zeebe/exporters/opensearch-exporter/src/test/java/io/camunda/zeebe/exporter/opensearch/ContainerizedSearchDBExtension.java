@@ -15,6 +15,11 @@ import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.testcontainers.OpensearchContainer;
 
+/**
+ * {@code ContainerizedSearchDBExtension} is an extension that creates and manages a containerized
+ * test containers based OpenSearch instance, creates and configures respective client, and provides
+ * a client for interaction for usage in tests.
+ */
 public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
   private static final String PASSWORD = "P@a$5w0rd";
@@ -69,41 +74,49 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
     CloseHelper.quietCloseAll(testClient, client);
   }
 
+  /** {@inheritDoc} */
   @Override
   public OpensearchExporterConfiguration config() {
     return config;
   }
 
+  /** {@inheritDoc} */
   @Override
   public ProtocolFactory recordFactory() {
     return recordFactory;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TemplateReader templateReader() {
     return templateReader;
   }
 
+  /** {@inheritDoc} */
   @Override
   public RecordIndexRouter indexRouter() {
     return indexRouter;
   }
 
+  /** {@inheritDoc} */
   @Override
   public BulkIndexRequest bulkRequest() {
     return bulkRequest;
   }
 
+  /** {@inheritDoc} */
   @Override
   public TestClient testClient() {
     return testClient;
   }
 
+  /** {@inheritDoc} */
   @Override
   public OpensearchClient client() {
     return client;
   }
 
+  /** {@inheritDoc} */
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {}
 }
