@@ -19,6 +19,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,15 +42,21 @@ public final class NativeMemoryMetrics {
   private final NativeMemoryUsage nativeMemoryUsageTotal = new NativeMemoryUsage();
 
   public void registerEvents(final RecordingStream stream, final MeterRegistry registry) {
-    stream.enable(RSS.getJfrEventName()).withoutStackTrace();
+    stream.enable(RSS.getJfrEventName()).withPeriod(Duration.ofSeconds(5)).withoutStackTrace();
     stream.onEvent(RSS.getJfrEventName(), residentSetSize::onEvent);
     residentSetSize.register(registry);
 
-    stream.enable(NMT_USAGE_TOTAL.getJfrEventName()).withoutStackTrace();
+    stream
+        .enable(NMT_USAGE_TOTAL.getJfrEventName())
+        .withPeriod(Duration.ofSeconds(5))
+        .withoutStackTrace();
     stream.onEvent(NMT_USAGE_TOTAL.getJfrEventName(), nativeMemoryUsageTotal::onEvent);
     nativeMemoryUsageTotal.register(NMT_USAGE_TOTAL, registry);
 
-    stream.enable(NMT_USAGE.getJfrEventName()).withoutStackTrace();
+    stream
+        .enable(NMT_USAGE.getJfrEventName())
+        .withPeriod(Duration.ofSeconds(5))
+        .withoutStackTrace();
     stream.onEvent(
         NMT_USAGE.getJfrEventName(),
         event ->
