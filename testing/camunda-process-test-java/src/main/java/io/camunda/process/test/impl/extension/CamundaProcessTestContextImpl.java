@@ -299,16 +299,4 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
     return activatedJob.get();
   }
-
-  @Override
-  public EvaluateDecisionResponse evaluateDecision(final String decisionId,
-      final Map<String, Object> variables) {
-
-    return createClient()
-        .newEvaluateDecisionCommand()
-        .decisionId(decisionId)
-        .variables(variables)
-        .send()
-        .join();
-  }
 }
