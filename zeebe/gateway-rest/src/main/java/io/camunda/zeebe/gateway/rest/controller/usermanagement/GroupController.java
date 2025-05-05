@@ -84,6 +84,15 @@ public class GroupController {
   }
 
   @CamundaPutMapping(
+      path = "/{groupId}/applications/{applicationId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> assignApplicationToGroup(
+      @PathVariable final String groupId, @PathVariable final String applicationId) {
+    return RequestMapper.toGroupMemberRequest(groupId, applicationId, EntityType.APPLICATION)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
+  }
+
+  @CamundaPutMapping(
       path = "/{groupId}/mapping-rules/{mappingId}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> assignMappingToGroup(
@@ -96,6 +105,13 @@ public class GroupController {
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromGroup(
       @PathVariable final String groupId, @PathVariable final String username) {
     return RequestMapper.toGroupMemberRequest(groupId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
+  }
+
+  @CamundaDeleteMapping(path = "/{groupId}/applications/{applicationId}")
+  public CompletableFuture<ResponseEntity<Object>> unassignApplicationFromGroup(
+      @PathVariable final String groupId, @PathVariable final String applicationId) {
+    return RequestMapper.toGroupMemberRequest(groupId, applicationId, EntityType.APPLICATION)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
