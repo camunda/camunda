@@ -442,7 +442,7 @@ test('version selection', async (t) => {
   await t.typeText(Alert.inputWithLabel('Alert name'), 'Test alert', {replace: true});
   await t.click(Common.comboBox);
   await t.click(Common.carbonOption('Number report'));
-  await t.typeText(Alert.inputWithLabel('Send email to'), 'demo@demo.com ');
+  await t.typeText(Alert.inputWithLabel('Send email to'), 'demo@example.com ');
   await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
 

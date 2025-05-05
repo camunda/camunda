@@ -227,7 +227,7 @@ final class IdentitySetupInitializerIT {
         authorizationsEnabled,
         partitionCount,
         cfg -> {
-          final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@demo.com");
+          final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
           cfg.getInitialization().getUsers().add(user);
         });
   }
