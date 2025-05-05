@@ -9,14 +9,10 @@ package io.camunda.zeebe.exporter.test;
 
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
-import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.MockClock;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,11 +26,9 @@ import org.slf4j.LoggerFactory;
 public final class ExporterTestContext implements Context {
   private static final Logger DEFAULT_LOGGER = LoggerFactory.getLogger(ExporterTestContext.class);
 
-  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final ExporterTestClock clock = new ExporterTestClock();
-
   private Configuration configuration;
   private RecordFilter recordFilter;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private int partitionId;
 
   @Override
@@ -49,7 +43,7 @@ public final class ExporterTestContext implements Context {
 
   @Override
   public InstantSource clock() {
-    return clock;
+    return InstantSource.system();
   }
 
   @Override
@@ -79,23 +73,5 @@ public final class ExporterTestContext implements Context {
 
   public RecordFilter getRecordFilter() {
     return recordFilter;
-  }
-
-  public void pinClock(final long epochMillis) {
-    clock.pinnedTime.set(epochMillis);
-  }
-
-  public static final class ExporterTestClock implements InstantSource {
-    private final AtomicLong pinnedTime = new AtomicLong(-1);
-
-    @Override
-    public Instant instant() {
-      final var pinnedMillis = pinnedTime.get();
-      if (pinnedMillis < 0) {
-        return Instant.now();
-      }
-
-      return Instant.ofEpochMilli(pinnedMillis);
-    }
   }
 }
