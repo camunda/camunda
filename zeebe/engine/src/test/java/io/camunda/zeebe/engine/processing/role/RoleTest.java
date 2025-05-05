@@ -410,4 +410,60 @@ public class RoleTest {
             "Expected to delete role with ID '%s', but a role with this ID doesn't exist."
                 .formatted(notPresentRoleId));
   }
+
+  @Test
+  public void shouldAddApplicationEntityToRole() {
+    // given
+    final var applicationId = "application-" + UUID.randomUUID();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create().getValue().getRoleKey();
+
+    // when
+    final var updatedRole =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(applicationId)
+            .withEntityType(EntityType.APPLICATION)
+            .add()
+            .getValue();
+
+    // then
+    assertThat(updatedRole)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(applicationId)
+        .hasEntityType(EntityType.APPLICATION);
+  }
+
+  @Test
+  public void shouldRejectIfApplicationEntityIsAlreadyAssigned() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    final var applicationId = "application-" + UUID.randomUUID().toString();
+    engine
+        .role()
+        .addEntity(roleId)
+        .withEntityId(applicationId)
+        .withEntityType(EntityType.APPLICATION)
+        .add();
+
+    // when
+    final var notPresentUpdateRecord =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(applicationId)
+            .withEntityType(EntityType.APPLICATION)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add entity with ID '%s' to role with ID '%s', but the entity is already assigned to this role."
+                .formatted(applicationId, roleId));
+  }
 }

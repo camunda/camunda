@@ -124,6 +124,15 @@ public class RoleController {
   }
 
   @CamundaPutMapping(
+      path = "/{roleId}/applications/{applicationId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> addApplicationToRole(
+      @PathVariable final String roleId, @PathVariable final String applicationId) {
+    return RequestMapper.toRoleMemberRequest(roleId, applicationId, EntityType.APPLICATION)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+  }
+
+  @CamundaPutMapping(
       path = "/{roleId}/groups/{groupId}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> addGroupToRole(
@@ -143,6 +152,13 @@ public class RoleController {
   public CompletableFuture<ResponseEntity<Object>> removeUserFromRole(
       @PathVariable final String roleId, @PathVariable final String username) {
     return RequestMapper.toRoleMemberRequest(roleId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+  }
+
+  @CamundaDeleteMapping(path = "/{roleId}/applications/{applicationId}")
+  public CompletableFuture<ResponseEntity<Object>> removeApplicationFromRole(
+      @PathVariable final String roleId, @PathVariable final String applicationId) {
+    return RequestMapper.toRoleMemberRequest(roleId, applicationId, EntityType.USER)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
