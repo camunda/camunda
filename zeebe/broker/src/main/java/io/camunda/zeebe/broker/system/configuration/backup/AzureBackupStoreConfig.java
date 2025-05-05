@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration.backup;
 
 import io.camunda.zeebe.backup.azure.AzureBackupConfig;
+import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.util.Objects;
 
@@ -18,6 +19,7 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
   private String connectionString;
   private String basePath;
   private boolean createContainer = true;
+  private SasTokenConfig sasToken;
 
   public String getEndpoint() {
     return endpoint;
@@ -71,7 +73,19 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
     this.createContainer = createContainer;
   }
 
+  public SasTokenConfig getSasToken() {
+    return sasToken;
+  }
+
+  public void setSasToken(final SasTokenConfig sasToken) {
+    this.sasToken = sasToken;
+  }
+
   public static AzureBackupConfig toStoreConfig(final AzureBackupStoreConfig config) {
+    // if sas token is enabled, then we don't create the container initially. This is due to the
+    // fact that both delegation sas token and service sas token don't have permissions to
+    // create/list a container. On the other hand account sas token can be configured to have the
+    // permissions to do so.
     return new AzureBackupConfig.Builder()
         .withEndpoint(config.getEndpoint())
         .withAccountName(config.getAccountName())
@@ -79,13 +93,14 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         .withConnectionString(config.getConnectionString())
         .withContainerName(config.getBasePath())
         .withCreateContainer(config.isCreateContainer())
+        .withSasToken(config.getSasToken())
         .build();
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        endpoint, accountName, accountKey, connectionString, basePath, createContainer);
+        endpoint, accountName, accountKey, connectionString, basePath, createContainer, sasToken);
   }
 
   @Override
@@ -102,7 +117,8 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(accountKey, that.accountKey)
         && Objects.equals(connectionString, that.connectionString)
         && Objects.equals(basePath, that.basePath)
-        && createContainer == that.createContainer;
+        && createContainer == that.createContainer
+        && Objects.equals(sasToken, that.sasToken);
   }
 
   @Override
@@ -115,15 +131,19 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         + accountName
         + '\''
         + ", accountKey='"
-        + "<redacted>"
+        + (accountKey != null ? "<redacted>" : "null")
         + '\''
         + ", connectionString='"
-        + "<redacted>"
+        + (connectionString != null ? "<redacted>" : "null")
         + '\''
         + ", basePath='"
         + basePath
         + ", createContainer="
         + createContainer
+        + ", sasToken='"
+        + (sasToken != null
+            ? ", SasTokenConfig{ type: " + sasToken.type() + ",value: <redacted>}"
+            : "null")
         + '\''
         + '}';
   }

@@ -362,7 +362,6 @@
           # accountKey:
 
           # The connection string configures endpoint, account name and account key all at once.
-          # If neither connection string, account name, nor account key are defined, the azure client uses
           # If connection string or account credentials are not provided, authentication will use credentials from the
           # runtime environment: https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_CONNECTIONSTRING
@@ -377,6 +376,21 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_CREATECONTAINER
           # createContainer: true
 
+          # This setting defines the SAS token to use. These can be of user delegation, service or account type.
+          # Note that user delegation and service SAS tokens do not support the
+          # creation of containers, therefore createContainer configuration
+          # will be overridden to false if sasToken is configured. The user must make sure that
+          # the container already exists, or it will lead to a runtime error.
+          # See more in: https://learn.microsoft.com/en-us/rest/api/storageservices/delegate-access-with-shared-access-signature
+          # sasToken:
+
+            # The SAS token must be of the following types: "delegation", "service" or "account".
+            # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_SASTOKEN_TYPE
+            # type:
+
+            # Specifies the key value of the SAS token.
+            # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_SASTOKEN_VALUE
+            # value:
 
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
