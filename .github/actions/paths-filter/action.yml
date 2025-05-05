@@ -21,7 +21,8 @@ outputs:
     value: >-
       ${{
         github.event_name == 'pull_request' &&
-        !contains(github.event.pull_request.labels.*.name, 'ci:ignore-commitlint')
+        !contains(github.event.pull_request.labels.*.name, 'ci:ignore-commitlint') &&
+        steps.filter-special-branch.outputs.release-branch != 'true'
       }}
   maven-spotless-linter:
     description: Output whether jobs depending on files relevant for Maven spotless should be run, related checks are based on GitHub events and file changes
@@ -135,7 +136,13 @@ outputs:
         github.event_name == 'push' ||
         (steps.filter-common.outputs.protobuf-change == 'true' && github.event_name != 'schedule')
       }}
-
+  stable-branch-changes:
+    description: Output whether the change is occurring on a stable/X.Y branch or not
+    value: >-
+      ${{
+        github.event_name == 'push' &&
+        steps.filter-special-branch.outputs.stable-branch == 'true'
+      }}
 
 runs:
   using: composite
@@ -247,3 +254,30 @@ runs:
           - optimize/client/**
           - optimize/c4/**
           - optimize/backend/src/main/resources/localization/**
+
+  # only works `on: push` and `on: pull_request` GitHub trigger events
+  - id: filter-special-branch
+    shell: bash
+    run: |
+      if [[ $GITHUB_EVENT_NAME == 'push' ]]; then
+        test_branch_name="$GITHUB_REF_NAME"
+      elif [[ $GITHUB_EVENT_NAME == 'pull_request' ]]; then
+        test_branch_name="$GITHUB_HEAD_REF"
+      fi
+      echo "Branch name: $test_branch_name"
+
+      if [[ $test_branch_name =~ ^stable\/[0-9]+\.[0-9]+$ ]]; then
+        echo "Stable branch: true"
+        echo "stable-branch=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "Stable branch: false"
+        echo "stable-branch=false" >> "$GITHUB_OUTPUT"
+      fi
+
+      if [[ $test_branch_name =~ ^release.*$ ]]; then
+        echo "Release branch: true"
+        echo "release-branch=true" >> "$GITHUB_OUTPUT"
+      else
+        echo "Release branch: false"
+        echo "release-branch=false" >> "$GITHUB_OUTPUT"
+      fi
