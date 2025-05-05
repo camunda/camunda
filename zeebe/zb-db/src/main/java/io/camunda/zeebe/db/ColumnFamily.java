@@ -7,17 +7,19 @@
  */
 package io.camunda.zeebe.db;
 
+import io.camunda.zeebe.protocol.ColumnFamilyScoped;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Represents an column family, where it is possible to store keys of type {@link KeyType} and
+ * Represents a column family, where it is possible to store keys of type {@link KeyType} and
  * corresponding values of type {@link ValueType}.
  *
  * @param <KeyType> the type of the keys
  * @param <ValueType> the type of the values
  */
-public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> {
+public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
+    extends ColumnFamilyScoped {
 
   /**
    * Inserts a new key value pair into the column family.

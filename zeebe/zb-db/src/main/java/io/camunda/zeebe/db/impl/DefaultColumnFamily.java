@@ -7,13 +7,15 @@
  */
 package io.camunda.zeebe.db.impl;
 
+import io.camunda.zeebe.protocol.ColumnFamilyScope;
+import io.camunda.zeebe.protocol.ColumnFamilyScoped;
 import io.camunda.zeebe.protocol.EnumValue;
 
 /**
  * Contains only one column family {@link #DEFAULT}, which can be used for tests or simple
  * databases.
  */
-public enum DefaultColumnFamily implements EnumValue {
+public enum DefaultColumnFamily implements EnumValue, ColumnFamilyScoped {
   DEFAULT(0);
 
   private final int value;
@@ -25,5 +27,10 @@ public enum DefaultColumnFamily implements EnumValue {
   @Override
   public int getValue() {
     return value;
+  }
+
+  @Override
+  public ColumnFamilyScope partitionScope() {
+    return ColumnFamilyScope.PARTITION_LOCAL;
   }
 }

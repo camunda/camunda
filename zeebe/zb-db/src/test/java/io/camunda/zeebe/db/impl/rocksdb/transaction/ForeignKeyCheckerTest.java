@@ -24,6 +24,8 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.protocol.ColumnFamilyScope;
+import io.camunda.zeebe.protocol.ColumnFamilyScoped;
 import io.camunda.zeebe.protocol.EnumValue;
 import java.io.File;
 import org.junit.jupiter.api.Test;
@@ -215,12 +217,17 @@ final class ForeignKeyCheckerTest {
     db.close();
   }
 
-  private enum TestColumnFamilies implements EnumValue {
+  private enum TestColumnFamilies implements EnumValue, ColumnFamilyScoped {
     TEST_COLUMN_FAMILY;
 
     @Override
     public int getValue() {
       return ordinal();
+    }
+
+    @Override
+    public ColumnFamilyScope partitionScope() {
+      return ColumnFamilyScope.PARTITION_LOCAL;
     }
   }
 }

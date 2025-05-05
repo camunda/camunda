@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.protocol;
 
-public enum ZbColumnFamilies implements EnumValue {
+public enum ZbColumnFamilies implements EnumValue, PartitionScoped {
   DEFAULT(0),
 
   // util
@@ -238,13 +238,25 @@ public enum ZbColumnFamilies implements EnumValue {
   USER_TASK_INITIAL_ASSIGNEE(122);
 
   private final int value;
+  private final PartitionScope partitionScope;
 
   ZbColumnFamilies(final int value) {
     this.value = value;
+    partitionScope = PartitionScope.PARTITION_LOCAL;
+  }
+
+  ZbColumnFamilies(final int value, final PartitionScope partitionScope) {
+    this.value = value;
+    this.partitionScope = partitionScope;
   }
 
   @Override
   public int getValue() {
     return value;
+  }
+
+  @Override
+  public PartitionScope partitionScope() {
+    return partitionScope;
   }
 }

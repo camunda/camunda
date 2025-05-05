@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.protocol.ColumnFamilyScoped;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -20,12 +21,12 @@ import java.util.function.Supplier;
 
 public final class DefaultZeebeDbFactory {
 
-  public static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
+  public static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ColumnFamilyScoped>
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory() {
     return getDefaultFactory(SimpleMeterRegistry::new);
   }
 
-  public static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
+  public static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ColumnFamilyScoped>
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory(
           final Supplier<MeterRegistry> meterRegistry) {
     // enable consistency checks for tests

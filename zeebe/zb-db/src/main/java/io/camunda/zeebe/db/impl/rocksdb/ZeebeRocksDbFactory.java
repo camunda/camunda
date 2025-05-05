@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
+import io.camunda.zeebe.protocol.ColumnFamilyScoped;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
@@ -44,7 +45,7 @@ import org.rocksdb.StatsLevel;
 import org.rocksdb.TableFormatConfig;
 
 public final class ZeebeRocksDbFactory<
-        ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
+        ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ColumnFamilyScoped>
     implements ZeebeDbFactory<ColumnFamilyType> {
 
   static {
