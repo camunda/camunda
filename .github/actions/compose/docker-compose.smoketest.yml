@@ -148,7 +148,7 @@ services:
       KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8090
       KEYCLOAK_USERS_0_USERNAME: "demo"
       KEYCLOAK_USERS_0_PASSWORD: "demo"
-      KEYCLOAK_USERS_0_EMAIL: "demo@demo.com"
+      KEYCLOAK_USERS_0_EMAIL: "demo@example.com"
       KEYCLOAK_USERS_0_FIRST_NAME: "demo"
       KEYCLOAK_USERS_0_ROLES_0: "Optimize"
       KEYCLOAK_USERS_0_ROLES_1: "Identity"
