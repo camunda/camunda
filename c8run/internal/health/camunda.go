@@ -14,6 +14,7 @@ import (
 	"os"
 	"text/template"
 	"time"
+
 	"github.com/camunda/camunda/c8run/internal/types"
 )
 
@@ -24,6 +25,7 @@ type opener interface {
 type Ports struct {
 	OperatePort  int
 	TasklistPort int
+	CamundaPort  int
 }
 
 func QueryCamunda(c8 opener, name string, settings types.C8RunSettings) error {
@@ -64,12 +66,13 @@ func isRunning(name, url string, retries int, delay time.Duration) bool {
 }
 
 func PrintStatus(settings types.C8RunSettings) error {
-	operatePort, tasklistPort := 8080, 8080
+	operatePort, tasklistPort, camundaPort := 8080, 8080, 8080
 
 	// Overwrite ports if Docker is enabled
 	if settings.Docker {
 		operatePort = 8081
 		tasklistPort = 8082
+		camundaPort = 8088
 	}
 
 	endpoints, _ := os.ReadFile("endpoints.txt")
@@ -81,6 +84,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 	data := Ports{
 		OperatePort:  operatePort,
 		TasklistPort: tasklistPort,
+		CamundaPort:  camundaPort,
 	}
 
 	err = t.Execute(os.Stdout, data)
