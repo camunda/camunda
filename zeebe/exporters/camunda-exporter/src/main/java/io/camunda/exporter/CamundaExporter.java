@@ -204,7 +204,7 @@ public class CamundaExporter implements Exporter {
       ensureCachedRecordsLessThanBulkSize(record);
 
       writer.addRecord(record);
-      exportDurationObserver.cacheRecordTimestamp(record.getKey(), record.getTimestamp());
+      exportDurationObserver.cacheRecordTimestamp(record.getPosition(), record.getTimestamp());
 
       LOG.info(
           "Waiting for importers to finish, cached record with key {} but did not flush",
@@ -219,7 +219,7 @@ public class CamundaExporter implements Exporter {
 
     // adding record is idempotent
     writer.addRecord(record);
-    exportDurationObserver.cacheRecordTimestamp(record.getKey(), record.getTimestamp());
+    exportDurationObserver.cacheRecordTimestamp(record.getPosition(), record.getTimestamp());
 
     lastPosition = record.getPosition();
 
