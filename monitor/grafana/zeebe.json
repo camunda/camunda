@@ -23400,24 +23400,59 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Time taken to init Schema.",
+          "description": "Time taken to init secondary storage schema.",
           "fieldConfig": {
             "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": 3600000,
+                "lineInterpolation": "linear",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "always",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "fieldMinMax": false,
               "mappings": [],
-              "min": 0,
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
-                  },
-                  {
-                    "color": "#EAB839",
-                    "value": 60000
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
-                    "value": 120000
+                    "value": 10
                   }
                 ]
               },
@@ -23426,33 +23461,25 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 6,
-            "w": 12,
+            "h": 8,
+            "w": 24,
             "x": 0,
-            "y": 45
+            "y": 35
           },
-          "id": 663,
+          "id": 664,
           "maxPerRow": 6,
           "options": {
-            "displayMode": "basic",
-            "maxVizHeight": 20,
-            "minVizHeight": 10,
-            "minVizWidth": 0,
-            "namePlacement": "auto",
-            "orientation": "vertical",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
             },
-            "showUnfilled": true,
-            "sizing": "auto",
-            "text": {},
-            "valueMode": "color"
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
           },
-          "pluginVersion": "10.4.0",
           "repeat": "namespace",
           "repeatDirection": "h",
           "targets": [
@@ -23461,14 +23488,23 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "camunda_schema_init_time_seconds{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
+              "disableTextWrap": false,
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "max by (pod) (camunda_schema_init_time_seconds_max{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"})",
+              "format": "time_series",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "instant": false,
               "interval": "",
-              "legendFormat": "{{pod}}",
-              "refId": "A"
+              "legendFormat": "{{pod}} schema init",
+              "range": true,
+              "refId": "A",
+              "useBackend": false
             }
           ],
-          "title": "Schema Init $namespace",
-          "type": "bargauge"
+          "title": "$namespace",
+          "type": "timeseries"
         }
       ],
       "title": "Schema Manager",
