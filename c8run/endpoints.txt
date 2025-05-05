@@ -1,5 +1,5 @@
 -------------------------------------------
-Access each component at the following urls with these credentials:
+Access each component at the following urls with these default credentials:
 - username: demo
 - password: demo
 
