@@ -27,15 +27,11 @@ import org.springframework.stereotype.Component;
  * <p>Defaults to being enabled.
  *
  * <p>NOTE: the stream is not closed, as this is a singleton component; it will live until the
- * application is closed. Since it's not using a daemon thread, this will not prevent the
- * application from stopping.
+ * application is closed. Since it's using a daemon thread, this will not prevent the application
+ * from stopping.
  */
 @Component
-@ConditionalOnProperty(
-    prefix = "camunda.flags.jfr",
-    name = "metrics",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnProperty(prefix = "camunda.flags.jfr", name = "metrics", havingValue = "true")
 @Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
 public final class JfrMetricRecorder {
   private final RecordingStream jfrStream;
