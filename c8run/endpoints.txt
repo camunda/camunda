@@ -1,13 +1,17 @@
 -------------------------------------------
-Access each component at the following urls:
+Access each component at the following urls with these default credentials:
+- username: demo
+- password: demo
 
-Operate:                     http://localhost:{{.OperatePort}}/operate
-Tasklist:                    http://localhost:{{.TasklistPort}}/tasklist
-Identity:                    http://localhost:{{.IdentityPort}}/identity
-Zeebe Cluster Endpoint:      http://localhost:26500
-Inbound Connectors Endpoint: http://localhost:8085
+Operate:                  http://localhost:{{.OperatePort}}/operate
+Tasklist:                 http://localhost:{{.TasklistPort}}/tasklist
+Identity:                 http://localhost:{{.IdentityPort}}/identity
 
-Camunda metrics endpoint:    http://localhost:9600/actuator/prometheus
+Camunda 8 API:            http://localhost:{{.CamundaPort}}/v2/
+Inbound Connectors API:   http://localhost:8085/
+Zeebe API (gRPC):         http://localhost:26500/
+
+Camunda metrics endpoint: http://localhost:9600/actuator/prometheus
 
 When using the Desktop Modeler, Authentication may be set to None.
 
