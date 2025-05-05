@@ -65,20 +65,19 @@ public sealed interface ClusterConfigurationChangeOperation {
     /**
      * @param memberId the id of the member that initiated the scale up
      * @param desiredPartitionCount the desired partition count after scaling up
-     * @param redistributedPartitions the partitions to add to {@link RoutingState.RequestHandling}
+     * @param partitionsToRedistribute the partitions to add to {@link RoutingState.RequestHandling}
      */
     record AwaitRedistributionCompletion(
-        MemberId memberId, int desiredPartitionCount, SortedSet<Integer> redistributedPartitions)
+        MemberId memberId, int desiredPartitionCount, SortedSet<Integer> partitionsToRedistribute)
         implements ScaleUpOperation {}
 
     /**
      * @param memberId the id of the member that initiated the scale up
      * @param desiredPartitionCount the desired partition count after scaling up
-     * @param relocatedPartitions the partitions to add to {@link RoutingState.MessageCorrelation}
+     * @param partitionsToRelocate the partitions to add to {@link RoutingState.MessageCorrelation}
      */
-    // TODO NOT IMPLEMENTED YET
     record AwaitRelocationCompletion(
-        MemberId memberId, int desiredPartitionCount, SortedSet<Integer> relocatedPartitions)
+        MemberId memberId, int desiredPartitionCount, SortedSet<Integer> partitionsToRelocate)
         implements ScaleUpOperation {}
   }
 

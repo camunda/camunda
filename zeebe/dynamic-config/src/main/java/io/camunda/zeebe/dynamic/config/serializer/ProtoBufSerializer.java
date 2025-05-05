@@ -439,13 +439,13 @@ public class ProtoBufSerializer
           builder.setAwaitRedistributionCompletion(
               Topology.AwaitRedistributionCompletion.newBuilder()
                   .setDesiredPartitionCount(msg.desiredPartitionCount())
-                  .addAllPartitionToRedistribute(msg.redistributedPartitions())
+                  .addAllPartitionsToRedistribute(msg.partitionsToRedistribute())
                   .build());
       case final AwaitRelocationCompletion msg ->
           builder.setAwaitRelocationCompletion(
               Topology.AwaitRelocationCompletion.newBuilder()
                   .setDesiredPartitionCount(msg.desiredPartitionCount())
-                  .addAllPartitionsToRelocate(msg.relocatedPartitions())
+                  .addAllPartitionsToRelocate(msg.partitionsToRelocate())
                   .build());
     }
     return builder.build();
@@ -663,7 +663,7 @@ public class ProtoBufSerializer
       return new AwaitRedistributionCompletion(
           memberId,
           redistribution.getDesiredPartitionCount(),
-          new TreeSet<>(redistribution.getPartitionToRedistributeList()));
+          new TreeSet<>(redistribution.getPartitionsToRedistributeList()));
     } else if (topologyChangeOperation.hasAwaitRelocationCompletion()) {
       final var relocation = topologyChangeOperation.getAwaitRelocationCompletion();
       return new AwaitRelocationCompletion(

@@ -36,7 +36,7 @@ public class AwaitRedistributionCompletionApplier implements ClusterOperationApp
   public Either<Exception, UnaryOperator<ClusterConfiguration>> init(
       final ClusterConfiguration currentClusterConfiguration) {
 
-    if (operation.redistributedPartitions().isEmpty()) {
+    if (operation.partitionsToRedistribute().isEmpty()) {
       return Either.left(
           new IllegalArgumentException("Cannot activate partitions: empty list provided"));
     }
@@ -60,7 +60,7 @@ public class AwaitRedistributionCompletionApplier implements ClusterOperationApp
     final var result = new CompletableActorFuture<UnaryOperator<ClusterConfiguration>>();
     executor
         .awaitRedistributionCompletion(
-            operation.desiredPartitionCount(), operation.redistributedPartitions(), null)
+            operation.desiredPartitionCount(), operation.partitionsToRedistribute(), null)
         .onComplete(
             (ignored, error) -> {
               if (error != null) {
@@ -89,7 +89,7 @@ public class AwaitRedistributionCompletionApplier implements ClusterOperationApp
   private RequestHandling updateRequestHandling(final RequestHandling requestHandling) {
     return switch (requestHandling) {
       case final ActivePartitions activePartitions ->
-          activePartitions.activatePartitions(operation.redistributedPartitions());
+          activePartitions.activatePartitions(operation.partitionsToRedistribute());
       case final AllPartitions ignored ->
           throw new IllegalStateException("Cannot be AllPartitions");
     };
