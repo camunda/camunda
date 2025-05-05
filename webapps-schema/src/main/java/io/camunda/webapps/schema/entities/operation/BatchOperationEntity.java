@@ -26,21 +26,11 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   private Integer operationsFinishedCount = 0;
 
   // new fields for batch operation in zeebe engine
-  private Long batchOperationKey;
   private BatchOperationState state;
   private Integer operationsFailedCount = 0; // Just failed / rejected operations
   private Integer operationsCompletedCount = 0; // Just successfully completed operations
 
   @JsonIgnore private Object[] sortValues;
-
-  public Long getBatchOperationKey() {
-    return batchOperationKey;
-  }
-
-  public BatchOperationEntity setBatchOperationKey(final Long batchOperationKey) {
-    this.batchOperationKey = batchOperationKey;
-    return this;
-  }
 
   public String getName() {
     return name;
@@ -231,9 +221,9 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   @Override
   public String toString() {
     return "BatchOperationEntity{"
-        + "batchOperationKey="
-        + batchOperationKey
-        + "name='"
+        + "id='"
+        + getId()
+        + "', name='"
         + name
         + '\''
         + ", type="

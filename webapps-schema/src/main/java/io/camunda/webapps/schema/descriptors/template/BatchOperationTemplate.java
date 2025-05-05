@@ -29,7 +29,6 @@ public class BatchOperationTemplate extends AbstractTemplateDescriptor implement
   public static final String COMPLETED_OPERATIONS_COUNT = "completedOperationsCount";
 
   // New fields for engine batch operations
-  public static final String BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String STATE = "state";
   public static final String OPERATIONS_FAILED_COUNT = "operationsFailedCount";
   public static final String OPERATIONS_COMPLETED_COUNT = "operationsCompletedCount";
