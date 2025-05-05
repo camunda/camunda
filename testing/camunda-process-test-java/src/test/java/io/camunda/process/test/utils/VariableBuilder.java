@@ -44,11 +44,6 @@ public class VariableBuilder implements Variable {
   }
 
   @Override
-  public String getFullValue() {
-    return fullValue;
-  }
-
-  @Override
   public Long getScopeKey() {
     return scopeKey;
   }
@@ -83,11 +78,6 @@ public class VariableBuilder implements Variable {
     return this;
   }
 
-  public VariableBuilder setFullValue(final String fullValue) {
-    this.fullValue = fullValue;
-    return this;
-  }
-
   public VariableBuilder setValue(final String value) {
     this.value = value;
     return this;
@@ -100,6 +90,11 @@ public class VariableBuilder implements Variable {
 
   public VariableBuilder setVariableKey(final Long variableKey) {
     this.variableKey = variableKey;
+    return this;
+  }
+
+  public VariableBuilder setFullValue(final String fullValue) {
+    this.fullValue = fullValue;
     return this;
   }
 
