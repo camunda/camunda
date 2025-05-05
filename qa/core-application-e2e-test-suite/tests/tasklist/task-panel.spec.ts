@@ -50,7 +50,7 @@ test.describe('task panel page', () => {
     test.slow();
     await expect(
       taskPanelPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(5);
+    ).toHaveCount(50);
 
     await taskPanelPage.filterBy('Assigned to me');
     await expect(taskPanelPage.availableTasks).toContainText('No tasks found');

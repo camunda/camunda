@@ -30,7 +30,6 @@ export async function captureFailureVideo(page: Page, testInfo: TestInfo) {
   if (testInfo.status === 'failed') {
     const video = page.video();
     if (video) {
-      // Playwright will automatically save the video; no need to call saveAs
       testInfo.annotations.push({
         type: 'testrail_attachment',
         description: 'Video recorded for failed test',
