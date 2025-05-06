@@ -13,6 +13,9 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}ROLES r
+    <if test="filter.groupId != null">
+      JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
+    </if>
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
   </select>
 
@@ -41,6 +44,7 @@
     <if test="filter.roleKey != null">AND r.ROLE_KEY = #{filter.roleKey}</if>
     <if test="filter.roleId != null">AND r.ROLE_ID = #{filter.roleId}</if>
     <if test="filter.name != null">AND r.NAME = #{filter.name}</if>
+    <if test="filter.groupId != null">AND rm.ENTITY_ID = #{filter.groupId}</if>
   </sql>
 
   <resultMap id="roleResultMap" type="io.camunda.db.rdbms.write.domain.RoleDbModel">
