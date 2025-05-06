@@ -100,19 +100,25 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "variableKey":"0",
               "name":"name",
               "value":"value",
-              "fullValue":"test",
               "scopeKey":"1",
               "processInstanceKey":"2",
               "tenantId":"<default>",
               "isTruncated":false
+          },
+          {
+              "variableKey":"1",
+              "name":"name2",
+              "value":"value",
+              "scopeKey":"1",
+              "processInstanceKey":"2",
+              "tenantId":"<default>",
+              "isTruncated":true
           }
         ],
         "page": {
-          "totalItems": 1,
-          "firstSortValues": ["f"],
-          "lastSortValues": [
-            "v"
-          ]
+          "totalItems": 2,
+          "firstSortValues": ["0"],
+          "lastSortValues": ["1"]
         }
       }
       """;
@@ -190,13 +196,14 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   private static final SearchQueryResult<VariableEntity> SEARCH_VAR_QUERY_RESULT =
       new Builder<VariableEntity>()
-          .total(1L)
+          .total(2L)
           .items(
               List.of(
+                  new VariableEntity(0L, "name", "value", null, false, 1L, 2L, "bpid", "<default>"),
                   new VariableEntity(
-                      0L, "name", "value", "test", false, 1L, 2L, "bpid", "<default>")))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+                      1L, "name2", "value", "valueLong", true, 1L, 2L, "bpid", "<default>")))
+          .firstSortValues(new Object[] {"0"})
+          .lastSortValues(new Object[] {"1"})
           .build();
 
   @MockBean UserTaskServices userTaskServices;
