@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -138,5 +139,19 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    */
   default T awaitCompleteTopology() {
     return awaitCompleteTopology(1, 1, 1, Duration.ofSeconds(30));
+  }
+
+  /**
+   * Method to await the complete topology of a cluster with the given configuration.
+   *
+   * @return itself for chaining
+   */
+  default T awaitCompleteTopology(BrokerBasedProperties brokerBasedProperties) {
+    final var clusterCfg = brokerBasedProperties.getCluster();
+    return awaitCompleteTopology(
+        clusterCfg.getClusterSize(),
+        clusterCfg.getPartitionsCount(),
+        clusterCfg.getReplicationFactor(),
+        Duration.ofSeconds(30));
   }
 }
