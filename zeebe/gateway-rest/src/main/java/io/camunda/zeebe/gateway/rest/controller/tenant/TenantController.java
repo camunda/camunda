@@ -186,6 +186,13 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
+  @CamundaDeleteMapping(path = "/{tenantId}/roles/{roleId}")
+  public CompletableFuture<ResponseEntity<Object>> removeRoleFromTenant(
+      @PathVariable final String tenantId, @PathVariable final String roleId) {
+    return RequestMapper.toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {
     return RequestMapper.executeServiceMethod(
         () ->
