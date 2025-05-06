@@ -446,9 +446,9 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
         getSearchExecutor()
             .findAll(
                 new GroupQuery.Builder()
-                    .filter(f -> f.groupId(userQuery.filter().groupId()).memberType(USER))
+                    .filter(f -> f.joinParentId(userQuery.filter().groupId()).memberType(USER))
                     .build(),
-                io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
+                io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class);
     final var usernames =
         groupMembers.stream().map(GroupMemberEntity::id).collect(Collectors.toSet());
 

@@ -9,9 +9,11 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.index.GroupIndex.GROUP_ID;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.MEMBER_ID;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.NAME;
@@ -31,7 +33,6 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
   public SearchQuery toSearchQuery(final GroupFilter filter) {
 
     return and(
-        term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()),
         filter.groupKey() == null ? null : term(KEY, filter.groupKey()),
         filter.groupId() == null ? null : term(GroupIndex.GROUP_ID, filter.groupId()),
         filter.name() == null ? null : term(NAME, filter.name()),
@@ -42,6 +43,14 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
                 ? matchNone()
                 : hasChildQuery(
                     IdentityJoinRelationshipType.MEMBER.getType(),
-                    stringTerms(MEMBER_ID, filter.memberIds())));
+                    stringTerms(MEMBER_ID, filter.memberIds())),
+        filter.memberType() == null
+            ? null
+            : term(GroupIndex.MEMBER_TYPE, filter.memberType().name()),
+        filter.joinParentId() == null
+            ? term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType())
+            : hasParentQuery(
+                IdentityJoinRelationshipType.GROUP.getType(),
+                term(GROUP_ID, filter.joinParentId())));
   }
 }

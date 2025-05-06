@@ -30,6 +30,7 @@ import io.camunda.search.clients.transformers.entity.DecisionRequirementsEntityT
 import io.camunda.search.clients.transformers.entity.FlowNodeInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.FormEntityTransformer;
 import io.camunda.search.clients.transformers.entity.GroupEntityTransformer;
+import io.camunda.search.clients.transformers.entity.GroupMemberEntityTransformer;
 import io.camunda.search.clients.transformers.entity.IncidentEntityTransformer;
 import io.camunda.search.clients.transformers.entity.MappingEntityTransformer;
 import io.camunda.search.clients.transformers.entity.ProcessDefinitionEntityTransfomer;
@@ -287,7 +288,7 @@ public final class ServiceTransformers {
     mappers.put(TenantEntity.class, new TenantEntityTransformer());
     mappers.put(TenantMemberEntity.class, new TenantMemberEntityTransformer());
     mappers.put(GroupEntity.class, new GroupEntityTransformer());
-    mappers.put(GroupMemberEntity.class, new GroupEntityTransformer());
+    mappers.put(GroupMemberEntity.class, new GroupMemberEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(MappingEntity.class, new MappingEntityTransformer());
     mappers.put(UsageMetricsEntity.class, new UsageMetricsEntityTransformer());
