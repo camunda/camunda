@@ -28,6 +28,7 @@ import org.springframework.security.oauth2.jwt.JwtException;
 /** Used by the {@link AuthenticationInterceptor} to authenticate incoming requests. */
 public sealed interface AuthenticationHandler {
   Context.Key<String> USERNAME = Context.key("io.camunda.zeebe:username");
+  Context.Key<String> APPLICATION_ID = Context.key("io.camunda.zeebe:application_id");
 
   /**
    * Applies authentication logic for the given authorization header. Must not throw exceptions, but
@@ -41,6 +42,8 @@ public sealed interface AuthenticationHandler {
   final class Oidc implements AuthenticationHandler {
     public static final Context.Key<Map<String, Object>> USER_CLAIMS =
         Context.key("io.camunda.zeebe:user_claim");
+    public static final String CONFIGURED_CLAIM_NOT_A_STRING =
+        "Configured claim for %s (%s) is not a string. Please check your OIDC configuration.";
 
     public static final String BEARER_PREFIX = "Bearer ";
     private final JwtDecoder jwtDecoder;
@@ -75,17 +78,43 @@ public sealed interface AuthenticationHandler {
       final var username =
           token.getClaims().get(oidcAuthenticationConfiguration.getUsernameClaim());
 
-      if (username == null) {
-        return Either.left(
-            Status.UNAUTHENTICATED.augmentDescription(
-                "Expected a claim '%s' in the token, but it was not present"
-                    .formatted(oidcAuthenticationConfiguration.getUsernameClaim())));
+      if (username != null) {
+        if (username instanceof String) {
+          return Either.right(
+              Context.current()
+                  .withValue(USERNAME, username.toString())
+                  .withValue(USER_CLAIMS, token.getClaims()));
+        } else {
+          return Either.left(
+              Status.UNAUTHENTICATED.augmentDescription(
+                  CONFIGURED_CLAIM_NOT_A_STRING.formatted(
+                      "username", oidcAuthenticationConfiguration.getUsernameClaim())));
+        }
       }
 
-      return Either.right(
-          Context.current()
-              .withValue(USER_CLAIMS, token.getClaims())
-              .withValue(USERNAME, username.toString()));
+      final var applicationId =
+          token.getClaims().get(oidcAuthenticationConfiguration.getApplicationIdClaim());
+
+      if (applicationId != null) {
+        if (applicationId instanceof String) {
+          return Either.right(
+              Context.current()
+                  .withValue(APPLICATION_ID, applicationId.toString())
+                  .withValue(USER_CLAIMS, token.getClaims()));
+        } else {
+          return Either.left(
+              Status.UNAUTHENTICATED.augmentDescription(
+                  CONFIGURED_CLAIM_NOT_A_STRING.formatted(
+                      "application id", oidcAuthenticationConfiguration.getApplicationIdClaim())));
+        }
+      }
+
+      return Either.left(
+          Status.UNAUTHENTICATED.augmentDescription(
+              "Expected either a username (claim: %s) or application ID (claim: %s) on the token, but no matching claim found"
+                  .formatted(
+                      oidcAuthenticationConfiguration.getUsernameClaim(),
+                      oidcAuthenticationConfiguration.getApplicationIdClaim())));
     }
   }
 
