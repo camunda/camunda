@@ -21,6 +21,7 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -33,15 +34,13 @@ import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-@Disabled("Enable with https://github.com/camunda/camunda/issues/29926")
-class RoleSearchingAuthorizationIT {
+class RoleAuthorizationIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -50,6 +49,10 @@ class RoleSearchingAuthorizationIT {
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+  private static final String ROLE_ID_1 = Strings.newRandomValidIdentityId();
+  private static final String ROLE_ID_2 = Strings.newRandomValidIdentityId();
+  private static final String ROLE_NAME_1 = "ARoleName";
+  private static final String ROLE_NAME_2 = "BRoleName";
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String RESTRICTED_WITH_READ = "restrictedUser2";
@@ -79,13 +82,12 @@ class RoleSearchingAuthorizationIT {
           List.of(new Permissions(ResourceType.ROLE, PermissionType.READ, List.of("*"))));
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-  private boolean initialized;
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createRole(adminClient, "role2");
-    createRole(adminClient, "role3");
-    final int expectedCount = 3; // Admin, role2, role3
+    createRole(adminClient, ROLE_ID_1, ROLE_NAME_1);
+    createRole(adminClient, ROLE_ID_2, ROLE_NAME_2);
+    final int expectedCount = 3; // Admin, role1, role2
     waitForRolesToBeCreated(
         adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
   }
@@ -118,7 +120,7 @@ class RoleSearchingAuthorizationIT {
     assertThat(roleSearchResponse.items())
         .hasSize(3)
         .map(RoleResponse::name)
-        .containsExactlyInAnyOrder("Admin", "role2", "role3");
+        .containsExactlyInAnyOrder("Admin", ROLE_NAME_1, ROLE_NAME_2);
   }
 
   @Test
@@ -130,8 +132,9 @@ class RoleSearchingAuthorizationIT {
     assertThat(roleSearchResponse.items()).hasSize(0).map(RoleResponse::name).isEmpty();
   }
 
-  private static void createRole(final CamundaClient adminClient, final String roleName) {
-    adminClient.newCreateRoleCommand().name(roleName).send().join();
+  private static void createRole(
+      final CamundaClient adminClient, final String roleId, final String roleName) {
+    adminClient.newCreateRoleCommand().roleId(roleId).name(roleName).send().join();
   }
 
   private static void waitForRolesToBeCreated(
