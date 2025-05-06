@@ -501,8 +501,9 @@ public class TenantControllerTest extends RestControllerTest {
     // given
     final var tenantId = "some-tenant-id";
     final var entityId = "entity-id";
+    final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
-    when(tenantServices.removeMember(tenantId, entityType, entityId))
+    when(tenantServices.removeMember(tenantMemberRequest))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -515,7 +516,79 @@ public class TenantControllerTest extends RestControllerTest {
         .isNoContent();
 
     // then
-    verify(tenantServices, times(1)).removeMember(tenantId, entityType, entityId);
+    verify(tenantServices, times(1)).removeMember(tenantMemberRequest);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAddMemberByIdTestCases")
+  void testRemoveMemberToTenantWithInvalidTenantId(
+      final EntityType entityType, final String entityPath) {
+    // given
+    final var tenantId = "invalidTenantId!";
+    final var entityId = "some-entity-id";
+    final var request = new TenantMemberRequest(tenantId, entityId, entityType);
+
+    when(tenantServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    final var uri = "%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityId);
+    webClient
+        .put()
+        .uri(uri)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
+              "instance": "%s"
+            }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, uri));
+
+    // then
+    verifyNoInteractions(tenantServices);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAddMemberByIdTestCases")
+  void testRemoveMemberToTenantWithInvalidEntityId(
+      final EntityType entityType, final String entityPath, final String entityIdName) {
+    // given
+    final var tenantId = "some-tenant-id";
+    final var entityId = "invalidEntityId!";
+    final var request = new TenantMemberRequest(tenantId, entityId, entityType);
+
+    when(tenantServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    final var uri = "%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityId);
+    webClient
+        .put()
+        .uri(uri)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
+              "instance": "%s"
+            }"""
+                .formatted(entityIdName, IdentifierPatterns.ID_PATTERN, uri));
+
+    // then
+    verifyNoInteractions(tenantServices);
   }
 
   private static Stream<Arguments> provideAddMemberByIdTestCases() {
@@ -529,8 +602,10 @@ public class TenantControllerTest extends RestControllerTest {
 
   private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
     return Stream.of(
-        Arguments.of(EntityType.USER, "users"),
-        Arguments.of(EntityType.MAPPING, "mappings"),
-        Arguments.of(EntityType.GROUP, "groups"));
+        Arguments.of(EntityType.USER, "users", "username"),
+        Arguments.of(EntityType.MAPPING, "mappings", "mappingId"),
+        Arguments.of(EntityType.GROUP, "groups", "groupId"),
+        Arguments.of(EntityType.ROLE, "roles", "roleId"),
+        Arguments.of(EntityType.APPLICATION, "applications", "applicationId"));
   }
 }
