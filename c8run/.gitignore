@@ -5,3 +5,7 @@ docker-compose-8*
 camunda.process
 camunda8-run-8*
 connectors.process
+
+/c8run
+/main
+/packager
