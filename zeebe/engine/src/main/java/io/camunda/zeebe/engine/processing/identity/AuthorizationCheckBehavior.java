@@ -97,6 +97,15 @@ public final class AuthorizationCheckBehavior {
       }
     }
 
+    final var applicationId = getApplicationId(request);
+    if (applicationId.isPresent()) {
+      final var applicationAuthorized =
+          isEntityAuthorized(request, EntityType.APPLICATION, Stream.of(applicationId.get()));
+      if (applicationAuthorized.isRight()) {
+        return applicationAuthorized;
+      }
+    }
+
     final var mappingAuthorized =
         isEntityAuthorized(
             request,
@@ -174,6 +183,15 @@ public final class AuthorizationCheckBehavior {
         (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME));
   }
 
+  private Optional<String> getApplicationId(final AuthorizationRequest request) {
+    return getApplicationId(request.getCommand());
+  }
+
+  private Optional<String> getApplicationId(final TypedRecord<?> command) {
+    return Optional.ofNullable(
+        (String) command.getAuthorizations().get(Authorization.AUTHORIZED_APPLICATION_ID));
+  }
+
   private Stream<String> getAuthorizedTenantIds(
       final EntityType entityType, final String entityId) {
     return Stream.concat(
@@ -216,6 +234,16 @@ public final class AuthorizationCheckBehavior {
                     username,
                     request.getResourceType(),
                     request.getPermissionType()))
+        .or(
+            () ->
+                getApplicationId(request)
+                    .map(
+                        applicationId ->
+                            getAuthorizedResourceIdentifiers(
+                                EntityType.APPLICATION,
+                                applicationId,
+                                request.getResourceType(),
+                                request.getPermissionType())))
         .orElseGet(
             () ->
                 getPersistedMappings(request.getCommand())
@@ -320,6 +348,17 @@ public final class AuthorizationCheckBehavior {
     final var username = getUsername(command);
     if (username.isPresent()) {
       final var tenantIds = getAuthorizedTenantIds(EntityType.USER, username.get()).toList();
+      if (tenantIds.isEmpty()) {
+        return AuthorizedTenants.DEFAULT_TENANTS;
+      } else {
+        return new AuthenticatedAuthorizedTenants(tenantIds);
+      }
+    }
+
+    final var applicationId = getApplicationId(command);
+    if (applicationId.isPresent()) {
+      final var tenantIds =
+          getAuthorizedTenantIds(EntityType.APPLICATION, applicationId.get()).toList();
       if (tenantIds.isEmpty()) {
         return AuthorizedTenants.DEFAULT_TENANTS;
       } else {
