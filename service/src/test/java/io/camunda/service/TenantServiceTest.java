@@ -22,6 +22,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
@@ -192,14 +193,15 @@ public class TenantServiceTest {
   @ParameterizedTest
   @EnumSource(
       value = EntityType.class,
-      names = {"USER", "MAPPING", "GROUP"})
+      names = {"USER", "MAPPING", "GROUP", "ROLE", "APPLICATION"})
   public void shouldAddEntityToTenant(final EntityType entityType) {
     // given
     final var tenantId = "tenantId";
     final var entityId = "entityId";
+    final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
     // when
-    services.addMember(tenantId, entityType, entityId);
+    services.addMember(tenantMemberRequest);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();

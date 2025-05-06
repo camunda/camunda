@@ -15,6 +15,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.service.MappingServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
@@ -95,11 +96,8 @@ public class TenantController {
   @CamundaPutMapping(path = "/{tenantId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> assignUsersToTenant(
       @PathVariable final String tenantId, @PathVariable final String username) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantId, EntityType.USER, username));
+    return RequestMapper.toTenantMemberRequest(tenantId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
   @CamundaPostMapping(path = "/{tenantId}/users/search")
@@ -115,31 +113,29 @@ public class TenantController {
   @CamundaPutMapping(path = "/{tenantId}/applications/{applicationId}")
   public CompletableFuture<ResponseEntity<Object>> assignApplicationToTenant(
       @PathVariable final String tenantId, @PathVariable final String applicationId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantId, EntityType.APPLICATION, applicationId));
+    return RequestMapper.toTenantMemberRequest(tenantId, applicationId, EntityType.APPLICATION)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
   @CamundaPutMapping(path = "/{tenantId}/mappings/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantId, EntityType.MAPPING, mappingId));
+    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantId, EntityType.GROUP, groupId));
+    return RequestMapper.toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
+  }
+
+  @CamundaPutMapping(path = "/{tenantId}/roles/{roleId}")
+  public CompletableFuture<ResponseEntity<Object>> assignRoleToTenant(
+      @PathVariable final String tenantId, @PathVariable final String roleId) {
+    return RequestMapper.toTenantMemberRequest(tenantId, roleId, EntityType.ROLE)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}")
@@ -209,6 +205,15 @@ public class TenantController {
                 .withAuthentication(RequestMapper.getAuthentication())
                 .createTenant(tenantDTO),
         ResponseMapper::toTenantCreateResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> addMemberToTenant(
+      final TenantMemberRequest request) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(request));
   }
 
   private ResponseEntity<TenantSearchQueryResult> search(final TenantQuery query) {

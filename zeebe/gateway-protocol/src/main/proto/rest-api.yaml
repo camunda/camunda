@@ -801,6 +801,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants/{tenantId}/roles/{roleId}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignRoleToTenant
+      summary: Assign a role to a tenant
+      description: Assign a single role to a specified tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+        - name: roleId
+          in: path
+          required: true
+          description: The unique identifier of the role.
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The role was successfully assigned to the tenant.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or role was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /tenants/search:
     post:
       tags:
