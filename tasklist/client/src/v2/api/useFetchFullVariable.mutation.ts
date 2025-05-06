@@ -42,7 +42,7 @@ function useFetchFullVariable() {
                 oldVariable.variableKey === variableKey
                   ? {
                       ...variable,
-                      value: variable.fullValue,
+                      value: variable.value,
                       isTruncated: false,
                     }
                   : oldVariable,
