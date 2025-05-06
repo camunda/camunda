@@ -13,15 +13,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,10 +38,12 @@ public class RoleQueryControllerTest extends RestControllerTest {
   private static final String ROLE_BASE_URL = "/v2/roles";
 
   @MockBean private RoleServices roleServices;
+  @MockBean private UserServices userServices;
 
   @BeforeEach
   void setup() {
     when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
   }
 
   @Test
@@ -199,6 +205,71 @@ public class RoleQueryControllerTest extends RestControllerTest {
             new RoleQuery.Builder()
                 .sort(RoleSort.of(builder -> builder.name().asc()))
                 .page(SearchQueryPage.of(builder -> builder.from(20).size(10)))
+                .build());
+  }
+
+  @Test
+  void shouldSearchUsersByRole() {
+    // given
+    final var roleId = "roleId";
+    when(userServices.search(any(UserQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<UserEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new UserEntity(100L, "user1", "User 1", "user1@example.com", "password1"),
+                        new UserEntity(200L, "user2", "User 2", "user2@example.com", "password2"),
+                        new UserEntity(300L, "user3", "User 3", "user3@example.com", "password3")))
+                .build());
+
+    // when /then
+    webClient
+        .post()
+        .uri("%s/%s/users/search".formatted(ROLE_BASE_URL, roleId))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "userKey": "100",
+                 "username": "user1",
+                 "name": "User 1",
+                 "email": "user1@example.com"
+               },
+               {
+                 "userKey": "200",
+                 "username": "user2",
+                 "name": "User 2",
+                 "email": "user2@example.com"
+               },
+               {
+                 "userKey": "300",
+                 "username": "user3",
+                 "name": "User 3",
+                 "email": "user3@example.com"
+               }
+             ],
+             "page": {
+               "totalItems": 3,
+               "firstSortValues": [],
+               "lastSortValues": []
+             }
+           }""");
+
+    verify(userServices)
+        .search(
+            new UserQuery.Builder()
+                .filter(f -> f.roleId(roleId).usernames(Collections.emptySet()))
                 .build());
   }
 }
