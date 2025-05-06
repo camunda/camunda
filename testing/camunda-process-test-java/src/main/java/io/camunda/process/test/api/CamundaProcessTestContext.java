@@ -188,4 +188,12 @@ public interface CamundaProcessTestContext {
    */
   void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables);
+
+  /**
+   * Mocks a DMN decision with the specified decision ID and sets the provided variables.
+   *
+   * @param decisionId the ID of the DMN decision to mock
+   * @param variables a map of variables to set for the mocked DMN decision
+   */
+  void mockDmnDecision(final String decisionId, final Map<String, Object> variables);
 }

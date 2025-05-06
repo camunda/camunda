@@ -15,23 +15,36 @@
  */
 package io.camunda.process.test.impl.extensions;
 
+import static io.camunda.process.test.api.CamundaAssert.assertThat;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.bpm.model.dmn.instance.Decision;
+import org.camunda.bpm.model.dmn.instance.DecisionTable;
+import org.camunda.bpm.model.dmn.instance.Definitions;
+import org.camunda.bpm.model.dmn.instance.Input;
+import org.camunda.bpm.model.dmn.instance.InputEntry;
+import org.camunda.bpm.model.dmn.instance.InputExpression;
+import org.camunda.bpm.model.dmn.instance.Output;
+import org.camunda.bpm.model.dmn.instance.OutputEntry;
+import org.camunda.bpm.model.dmn.instance.Rule;
+import org.camunda.bpm.model.dmn.instance.Text;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
 public class CamundaProcessTestContextIT {
 
-  private static final int TIMEOUT = 40;
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
 
@@ -46,7 +59,7 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("error-end");
+    assertThat(processInstanceEvent).hasCompletedElements("error-end");
   }
 
   @Test
@@ -62,8 +75,8 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("error-end");
-    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+    assertThat(processInstanceEvent).hasCompletedElements("error-end");
+    assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   @Test
@@ -77,8 +90,8 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
   }
 
   @Test
@@ -94,9 +107,9 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
-    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   @Test
@@ -115,8 +128,8 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("error-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("error-end");
   }
 
   @Test
@@ -135,8 +148,8 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
   }
 
   @Test
@@ -150,8 +163,8 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeJob("test");
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
   }
 
   @Test
@@ -167,9 +180,9 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeJob("test", variables);
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
-    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   @Test
@@ -183,8 +196,8 @@ public class CamundaProcessTestContextIT {
     processTestContext.throwBpmnErrorFromJob("test", "bpmn-error");
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("error-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("error-end");
   }
 
   @Test
@@ -200,9 +213,9 @@ public class CamundaProcessTestContextIT {
     processTestContext.throwBpmnErrorFromJob("test", "bpmn-error", variables);
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("error-end");
-    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("error-end");
+    assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   @Test
@@ -216,8 +229,8 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeUserTask("user-task");
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
   }
 
   @Test
@@ -233,9 +246,9 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeUserTask("user-task", variables);
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
-    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   @Test
@@ -249,8 +262,8 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeUserTask(UserTaskSelectors.byTaskName("user-task"));
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
   }
 
   @Test
@@ -266,9 +279,9 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeUserTask(UserTaskSelectors.byTaskName("user-task"), variables);
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
-    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   @Test
@@ -282,8 +295,8 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeUserTask(UserTaskSelectors.byElementId("user-task-1"));
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
   }
 
   @Test
@@ -299,9 +312,9 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeUserTask(UserTaskSelectors.byElementId("user-task-1"), variables);
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
-    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   @Test
@@ -315,8 +328,8 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeUserTask(t -> t.getName().equals("user-task"));
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
   }
 
   @Test
@@ -332,9 +345,9 @@ public class CamundaProcessTestContextIT {
     processTestContext.completeUserTask(t -> t.getName().equals("user-task"), variables);
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
-    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   @Test
@@ -349,8 +362,8 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
   }
 
   @Test
@@ -370,9 +383,9 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(processInstanceEvent).isCompleted();
-    CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("success-end");
-    CamundaAssert.assertThat(processInstanceEvent).hasVariables(variables);
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent).hasVariables(variables);
   }
 
   @Test
@@ -383,7 +396,7 @@ public class CamundaProcessTestContextIT {
     client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(UserTaskSelectors.byElementId("user-task-1")).isCreated();
+    assertThat(UserTaskSelectors.byElementId("user-task-1")).isCreated();
   }
 
   @Test
@@ -399,7 +412,7 @@ public class CamundaProcessTestContextIT {
     client.newCreateInstanceCommand().processDefinitionKey(thirdInstanceKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(
+    assertThat(
             UserTaskSelectors.byElementId(
                 "user-task-1", processInstanceEvent.getProcessInstanceKey()))
         .hasProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
@@ -413,7 +426,7 @@ public class CamundaProcessTestContextIT {
     client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(UserTaskSelectors.byTaskName("user-task")).isCreated();
+    assertThat(UserTaskSelectors.byTaskName("user-task")).isCreated();
   }
 
   @Test
@@ -429,7 +442,7 @@ public class CamundaProcessTestContextIT {
     client.newCreateInstanceCommand().processDefinitionKey(thirdInstanceKey).send().join();
 
     // Then
-    CamundaAssert.assertThat(
+    assertThat(
             UserTaskSelectors.byTaskName("user-task", processInstanceEvent.getProcessInstanceKey()))
         .hasProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
   }
@@ -440,7 +453,6 @@ public class CamundaProcessTestContextIT {
    * @return the process definition key
    */
   private long deployProcessModel(final BpmnModelInstance processModel) {
-
     final DeploymentEvent deploymentEvent =
         client
             .newDeployResourceCommand()
@@ -448,6 +460,18 @@ public class CamundaProcessTestContextIT {
             .send()
             .join();
     return deploymentEvent.getProcesses().stream().findFirst().get().getProcessDefinitionKey();
+  }
+
+  private long deployDmnModel(final DmnModelInstance dmnModel) {
+    final DeploymentEvent deploymentEvent =
+        client
+            .newDeployResourceCommand()
+            .addResourceStream(
+                new ByteArrayInputStream(Dmn.convertToString(dmnModel).getBytes()),
+                "test-decision.dmn")
+            .send()
+            .join();
+    return deploymentEvent.getDecisions().stream().findFirst().get().getDecisionKey();
   }
 
   private BpmnModelInstance processModelWithChildProcess() {
@@ -498,5 +522,149 @@ public class CamundaProcessTestContextIT {
         .moveToActivity("user-task-1")
         .endEvent("success-end")
         .done();
+  }
+
+  @Test
+  void shouldMockBusinessRule() {
+
+    // Given
+    final BpmnModelInstance instance = processModelWithBusinessRule();
+    final long processDefinitionKey = deployProcessModel(instance);
+
+    final String decisionId = "decision-id-1";
+
+    final DmnModelInstance dmnModel = dmnModelWithBusinessRule(decisionId);
+    deployDmnModel(dmnModel);
+
+    final Map<String, Object> inputVariables = new HashMap<>();
+    inputVariables.put("experience", 11);
+    inputVariables.put("type", "luxury");
+
+    final Map<String, Object> resultValues = new HashMap<>();
+    resultValues.put("code", "pink");
+    resultValues.put("description", "Pink");
+
+    // When
+    processTestContext.mockDmnDecision(decisionId, resultValues);
+
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variables(inputVariables)
+            .send()
+            .join();
+
+    // Then
+    assertThat(processInstanceEvent).isCompleted();
+    final Map<String, Object> expectedVariables = new HashMap<>();
+    expectedVariables.put("result", resultValues);
+    assertThat(processInstanceEvent).hasVariables(expectedVariables);
+  }
+
+  private BpmnModelInstance processModelWithBusinessRule() {
+    return Bpmn.createExecutableProcess("test-process")
+        .startEvent()
+        .businessRuleTask(
+            "br-task",
+            builder -> builder.zeebeCalledDecisionId("decision-id-1").zeebeResultVariable("result"))
+        .endEvent("success-end")
+        .done();
+  }
+
+  private DmnModelInstance dmnModelWithBusinessRule(final String decisionId) {
+    // Create an empty DMN model
+    final DmnModelInstance modelInstance = Dmn.createEmptyModel();
+
+    // Create and configure the definitions element
+    final Definitions definitions = modelInstance.newInstance(Definitions.class);
+    definitions.setName("DRD");
+    definitions.setNamespace("http://camunda.org/schema/1.0/dmn");
+    modelInstance.setDefinitions(definitions);
+
+    // Create the decision element
+    final Decision decision = modelInstance.newInstance(Decision.class);
+    decision.setId(decisionId);
+    decision.setName("Decision 1");
+    definitions.addChildElement(decision);
+
+    // Create the decision table
+    final DecisionTable decisionTable = modelInstance.newInstance(DecisionTable.class);
+    decision.addChildElement(decisionTable);
+
+    // Add input clauses
+    final Input inputExperience = modelInstance.newInstance(Input.class);
+    final InputExpression inputExpressionExperience =
+        modelInstance.newInstance(InputExpression.class);
+    final Text textExperience = modelInstance.newInstance(Text.class);
+    textExperience.setTextContent("experience");
+    inputExpressionExperience.setText(textExperience);
+    inputExperience.setInputExpression(inputExpressionExperience);
+    decisionTable.addChildElement(inputExperience);
+
+    final Input inputType = modelInstance.newInstance(Input.class);
+    final InputExpression inputExpressionType = modelInstance.newInstance(InputExpression.class);
+    final Text textElementType = modelInstance.newInstance(Text.class);
+    textElementType.setTextContent("type");
+    inputExpressionType.setText(textElementType);
+    inputType.setInputExpression(inputExpressionType);
+    decisionTable.addChildElement(inputType);
+
+    // Add output clauses
+    final Output outputCode = modelInstance.newInstance(Output.class);
+    outputCode.setName("code");
+    decisionTable.addChildElement(outputCode);
+
+    final Output outputDescription = modelInstance.newInstance(Output.class);
+    outputDescription.setName("description");
+    decisionTable.addChildElement(outputDescription);
+
+    // Add rules
+    final Rule rule1 = modelInstance.newInstance(Rule.class);
+    final InputEntry rule1InputExperience = modelInstance.newInstance(InputEntry.class);
+    final Text rule1TextExperience = modelInstance.newInstance(Text.class);
+    rule1TextExperience.setTextContent(">10");
+    rule1InputExperience.setText(rule1TextExperience);
+    rule1.addChildElement(rule1InputExperience);
+    final InputEntry rule1InputCode = modelInstance.newInstance(InputEntry.class);
+    final Text rule1TextType = modelInstance.newInstance(Text.class);
+    rule1TextType.setTextContent("\"luxury\"");
+    rule1InputCode.setText(rule1TextType);
+    rule1.addChildElement(rule1InputCode);
+    final OutputEntry rule1OutputCode = modelInstance.newInstance(OutputEntry.class);
+    final Text rule1TextCode = modelInstance.newInstance(Text.class);
+    rule1TextCode.setTextContent("\"green\"");
+    rule1OutputCode.setText(rule1TextCode);
+    rule1.addChildElement(rule1OutputCode);
+    final OutputEntry rule1OutputDescription = modelInstance.newInstance(OutputEntry.class);
+    final Text rule1TextDescription = modelInstance.newInstance(Text.class);
+    rule1TextDescription.setTextContent("\"Green\"");
+    rule1OutputDescription.setText(rule1TextDescription);
+    rule1.addChildElement(rule1OutputDescription);
+    decisionTable.addChildElement(rule1);
+
+    final Rule rule2 = modelInstance.newInstance(Rule.class);
+    final InputEntry rule2InputExperience = modelInstance.newInstance(InputEntry.class);
+    final Text rule2TextExperience = modelInstance.newInstance(Text.class);
+    rule2TextExperience.setTextContent("<=10");
+    rule2InputExperience.setText(rule2TextExperience);
+    rule2.addChildElement(rule2InputExperience);
+    final InputEntry rule2InputType = modelInstance.newInstance(InputEntry.class);
+    final Text rule2TextType = modelInstance.newInstance(Text.class);
+    rule2TextType.setTextContent("\"standard\"");
+    rule2InputType.setText(rule2TextType);
+    rule2.addChildElement(rule2InputType);
+    final OutputEntry rule2OutputCode = modelInstance.newInstance(OutputEntry.class);
+    final Text rule2TextCode = modelInstance.newInstance(Text.class);
+    rule2TextCode.setTextContent("\"red\"");
+    rule2OutputCode.setText(rule2TextCode);
+    rule2.addChildElement(rule2OutputCode);
+    final OutputEntry rule2OutputEntryDescription = modelInstance.newInstance(OutputEntry.class);
+    final Text rule2TextDescription = modelInstance.newInstance(Text.class);
+    rule2TextDescription.setTextContent("\"Red\"");
+    rule2OutputEntryDescription.setText(rule2TextDescription);
+    rule2.addChildElement(rule2OutputEntryDescription);
+    decisionTable.addChildElement(rule2);
+    return modelInstance;
   }
 }
