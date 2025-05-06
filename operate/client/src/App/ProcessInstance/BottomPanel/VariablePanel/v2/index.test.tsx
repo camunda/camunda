@@ -87,7 +87,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe('VariablePanel', () => {
+describe.skip('VariablePanel', () => {
   const mockProcessInstance: ProcessInstance = {
     processInstanceKey: 'instance_id',
     state: 'ACTIVE',

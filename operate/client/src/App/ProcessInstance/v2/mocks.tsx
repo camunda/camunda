@@ -50,6 +50,8 @@ import {
   SequenceFlow,
 } from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 const mockProcessInstance: ProcessInstance = {
@@ -116,7 +118,33 @@ const mockRequests = (contextPath: string = '') => {
   mockFetchFlowNodeInstances(contextPath).withSuccess(
     processInstancesMock.level1,
   );
+  mockFetchFlowNodeInstances(contextPath).withSuccess(
+    processInstancesMock.level1,
+  );
+  mockFetchFlownodeInstancesStatistics().withSuccess({
+    items: [
+      {
+        elementId: 'service-task-1',
+        active: 0,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        elementId: 'service-task-7',
+        active: 5,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+    ],
+  });
   mockFetchVariables(contextPath).withSuccess([createVariable()]);
+  mockFetchVariables(contextPath).withSuccess([createVariable()]);
+  mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+    ...mockIncidents,
+    count: 2,
+  });
   mockFetchProcessInstanceIncidents(contextPath).withSuccess({
     ...mockIncidents,
     count: 2,
@@ -134,7 +162,7 @@ const FlowNodeSelector: React.FC<FlowNodeSelectorProps> = ({
 }) => (
   <button
     onClick={() => {
-      flowNodeSelectionStore.selectFlowNode(selectableFlowNode);
+      selectFlowNode({}, selectableFlowNode);
     }}
   >
     {`Select flow node`}
@@ -198,6 +226,12 @@ const waitForPollingsToBeComplete = async () => {
   });
 };
 
-export {getWrapper, testData, waitForPollingsToBeComplete, mockProcessInstance};
+export {
+  getWrapper,
+  testData,
+  waitForPollingsToBeComplete,
+  mockProcessInstance,
+  processInstancesMock,
+};
 
 export {mockRequests};

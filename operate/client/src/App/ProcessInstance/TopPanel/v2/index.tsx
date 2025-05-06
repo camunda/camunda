@@ -16,7 +16,7 @@ import {IncidentsBanner} from '../IncidentsBanner';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from '../styled';
-import {IncidentsWrapper} from '../../IncidentsWrapper';
+import {IncidentsWrapper} from '../../IncidentsWrapper/v2';
 import {
   CANCELED_BADGE,
   MODIFICATIONS,
@@ -44,6 +44,7 @@ import {useModifiableFlowNodes} from 'modules/hooks/processInstanceDetailsDiagra
 import {
   clearSelection,
   getSelectedRunningInstanceCount,
+  selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
 import {
   useTotalRunningInstancesForFlowNode,
@@ -122,8 +123,11 @@ const TopPanel: React.FC = observer(() => {
   });
 
   useEffect(() => {
-    if (flowNodeInstancesStatistics?.items) {
-      init('process-instance', flowNodeInstancesStatistics.items);
+    if (flowNodeInstancesStatistics?.items && processInstance) {
+      init(
+        processInstance.processInstanceKey,
+        flowNodeInstancesStatistics.items,
+      );
     }
   });
 
@@ -317,7 +321,7 @@ const TopPanel: React.FC = observer(() => {
                   );
                 } else {
                   if (modificationsStore.state.status !== 'adding-token') {
-                    flowNodeSelectionStore.selectFlowNode({
+                    selectFlowNode(rootNode, {
                       flowNodeId,
                       isMultiInstance,
                     });
@@ -388,7 +392,10 @@ const TopPanel: React.FC = observer(() => {
           )}
         </DiagramShell>
         {processInstance?.hasIncident && (
-          <IncidentsWrapper setIsInTransition={setIsInTransition} />
+          <IncidentsWrapper
+            setIsInTransition={setIsInTransition}
+            processInstance={processInstance}
+          />
         )}
       </DiagramPanel>
     </Container>
