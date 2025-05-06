@@ -95,17 +95,6 @@ func main() {
 	}
 }
 
-type processes struct {
-	camunda       process
-	connectors    process
-	elasticsearch process
-}
-
-type process struct {
-	version string
-	pid     string
-}
-
 func cleanCommand(camundaVersion string, elasticsearchVersion string) {
 	packages.Clean(camundaVersion, elasticsearchVersion)
 }
