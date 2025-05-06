@@ -17,6 +17,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
+import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -45,6 +46,7 @@ public class GroupControllerTest extends RestControllerTest {
 
   @MockBean private GroupServices groupServices;
   @MockBean private UserServices userServices;
+  @MockBean private RoleServices roleServices;
 
   @BeforeEach
   void setup() {

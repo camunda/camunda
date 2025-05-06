@@ -14,15 +14,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -113,6 +116,49 @@ public class GroupQueryControllerTest extends RestControllerTest {
       }
       """;
 
+  private static final List<RoleEntity> ROLE_ENTITIES =
+      List.of(
+          new RoleEntity(1L, Strings.newRandomValidIdentityId(), "role1", "role1 description"),
+          new RoleEntity(2L, Strings.newRandomValidIdentityId(), "role2", "role2 description"),
+          new RoleEntity(3L, Strings.newRandomValidIdentityId(), "role3", "role3 description"));
+
+  private static final String ROLE_RESPONSE =
+      """
+      {
+        "items":[
+          {
+            "roleKey":"1",
+            "roleId":"%s",
+            "name":"role1",
+            "description":"role1 description"
+          },
+          {
+            "roleKey":"2",
+            "roleId":"%s",
+            "name":"role2",
+            "description":"role2 description"
+          },
+          {
+            "roleKey":"3",
+            "roleId":"%s",
+            "name":"role3",
+            "description":"role3 description"
+          }
+        ],
+        "page":{
+          "totalItems":3,
+          "firstSortValues":["f"],
+          "lastSortValues":["v"]
+        }
+      }
+      """;
+
+  private static final String EXPECTED_ROLE_RESPONSE =
+      ROLE_RESPONSE.formatted(
+          ROLE_ENTITIES.get(0).roleId(),
+          ROLE_ENTITIES.get(1).roleId(),
+          ROLE_ENTITIES.get(2).roleId());
+
   private static final String EXPECTED_USER_RESPONSE =
       USER_RESPONSE.formatted(
           USER_ENTITIES.get(0).username(),
@@ -121,11 +167,13 @@ public class GroupQueryControllerTest extends RestControllerTest {
 
   @MockBean private GroupServices groupServices;
   @MockBean private UserServices userServices;
+  @MockBean private RoleServices roleServices;
 
   @BeforeEach
   void setup() {
     when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+    when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
   }
 
   @Test
@@ -403,6 +451,71 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_USER_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupRolesWithSorting() {
+    // given
+    when(roleServices.search(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(ROLE_ENTITIES.size())
+                .items(ROLE_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/roles/search".formatted(GROUP_BASE_URL, "groupId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "name", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_ROLE_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupRolesWithEmptyQuery() {
+    // given
+    when(roleServices.search(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(ROLE_ENTITIES.size())
+                .items(ROLE_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/roles/search".formatted(GROUP_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_ROLE_RESPONSE);
   }
 
   @ParameterizedTest
