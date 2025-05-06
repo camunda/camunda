@@ -7,10 +7,9 @@
  */
 
 import {useMemo, useRef, useState} from 'react';
-import type {Form, Variable, Task} from 'v1/api/types';
+import type {Form, Task} from 'v1/api/types';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
 import {useRemoveFormReference} from 'v1/api/useTask.query';
-import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import {DetailsFooter} from 'common/tasks/details/DetailsFooter';
 import {type InlineLoadingProps, Layer} from '@carbon/react';
 import {notificationsStore} from 'common/notifications/notifications.store';
@@ -27,30 +26,8 @@ import {FailedVariableFetchError} from 'common/tasks/details/FailedVariableFetch
 import {Pattern, match} from 'ts-pattern';
 import {CompleteTaskButton} from 'common/tasks/details/CompleteTaskButton';
 import {useTranslation} from 'react-i18next';
-
-function formatVariablesToFormData(variables: Variable[]) {
-  return variables.reduce(
-    (accumulator, {name, value}) => ({
-      ...accumulator,
-      [name]: value === null ? '' : JSON.parse(value),
-    }),
-    {},
-  );
-}
-
-function extractVariablesFromFormSchema(
-  schema: string | null,
-): Variable['name'][] {
-  if (schema === null) {
-    return [];
-  }
-
-  try {
-    return getSchemaVariables(JSON.parse(schema ?? '{}'));
-  } catch {
-    return [];
-  }
-}
+import {extractVariablesFromFormSchema} from 'common/tasks/details/extractVariablesFromFormSchema';
+import {formatVariablesToFormData} from 'common/tasks/details/formatVariablesToFormData';
 
 type Props = {
   id: Form['id'];

@@ -139,6 +139,18 @@ const api = {
       },
     );
   },
+  getUserTaskForm: (params: Pick<UserTask, 'userTaskKey'>) => {
+    return new Request(
+      getFullURL(tasklistEndpoints.getUserTaskForm.getUrl(params)),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: tasklistEndpoints.getUserTaskForm.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
 } as const;
 
 export {api};
