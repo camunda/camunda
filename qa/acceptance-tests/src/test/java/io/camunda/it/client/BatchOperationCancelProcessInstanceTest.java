@@ -101,7 +101,6 @@ public class BatchOperationCancelProcessInstanceTest {
 
     // then
     assertThat(result).isNotNull();
-    //    assertThat(result.getBatchOperationKey()).isNotNull();
 
     // and
     Awaitility.await("should complete batch operation")
@@ -112,10 +111,7 @@ public class BatchOperationCancelProcessInstanceTest {
             () -> {
               // and
               final var batch =
-                  camundaClient
-                      .newBatchOperationGetRequest(result.getBatchOperationKey())
-                      .send()
-                      .join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getEndDate()).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
@@ -127,8 +123,7 @@ public class BatchOperationCancelProcessInstanceTest {
       waitForProcessInstanceToBeTerminated(camundaClient, key);
     }
 
-    final var batch =
-        camundaClient.newBatchOperationGetRequest(result.getBatchOperationKey()).send().join();
+    final var batch = camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
     assertThat(batch).isNotNull();
     assertThat(batch.getEndDate()).isNotNull();
     assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
