@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.client.command;
 
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -19,11 +20,14 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 class CreateRoleTest {
+
+  private static final String ROLE_ID = "roleId";
+  private static final String ROLE_NAME = "roleName";
+  private static final String ROLE_DESCRIPTION = "roleDescription";
 
   @AutoClose CamundaClient client;
 
@@ -37,37 +41,57 @@ class CreateRoleTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/29926")
   void shouldCreateRole() {
     // when
-    final var response = client.newCreateRoleCommand().name("Role Name").send().join();
+    final var response =
+        client
+            .newCreateRoleCommand()
+            .roleId(ROLE_ID)
+            .name(ROLE_NAME)
+            .description(ROLE_DESCRIPTION)
+            .send()
+            .join();
 
     // then
     assertThat(response.getRoleKey()).isGreaterThan(0);
+    assertThat(response.getRoleId()).isEqualTo(ROLE_ID);
+    assertThat(response.getName()).isEqualTo(ROLE_NAME);
+    assertThat(response.getDescription()).isEqualTo(ROLE_DESCRIPTION);
+
     ZeebeAssertHelper.assertRoleCreated(
-        "Role Name",
+        ROLE_NAME,
         (role) -> {
-          assertThat(role.getName()).isEqualTo("Role Name");
+          assertThat(role).hasRoleId(ROLE_ID);
+          assertThat(role).hasName(ROLE_NAME);
+          assertThat(role).hasDescription(ROLE_DESCRIPTION);
         });
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/29926")
   void shouldRejectIfRoleIdAlreadyExists() {
     // given
-    client.newCreateRoleCommand().name("Role Name").send().join();
+    client.newCreateRoleCommand().roleId(ROLE_ID).name(ROLE_NAME).send().join();
 
     // when / then
-    assertThatThrownBy(() -> client.newCreateRoleCommand().name("Role Name").send().join())
+    assertThatThrownBy(
+            () -> client.newCreateRoleCommand().roleId(ROLE_ID).name(ROLE_NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
-        .hasMessageContaining("a role with this name already exists");
+        .hasMessageContaining("a role with this ID already exists");
+  }
+
+  @Test
+  void shouldRejectIfMissingRoleId() {
+    // when / then
+    assertThatThrownBy(() -> client.newCreateRoleCommand().send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be null");
   }
 
   @Test
   void shouldRejectIfMissingRoleName() {
     // when / then
-    assertThatThrownBy(() -> client.newCreateRoleCommand().send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().roleId(ROLE_ID).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be null");
   }
