@@ -605,6 +605,7 @@ public class TenantControllerTest extends RestControllerTest {
         Arguments.of(EntityType.USER, "users", "username"),
         Arguments.of(EntityType.MAPPING, "mappings", "mappingId"),
         Arguments.of(EntityType.GROUP, "groups", "groupId"),
+        Arguments.of(EntityType.ROLE, "roles", "roleId"),
         Arguments.of(EntityType.APPLICATION, "applications", "applicationId"));
   }
 }

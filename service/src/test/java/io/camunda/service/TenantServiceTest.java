@@ -216,7 +216,7 @@ public class TenantServiceTest {
   @ParameterizedTest
   @EnumSource(
       value = EntityType.class,
-      names = {"USER", "MAPPING", "GROUP"})
+      names = {"USER", "MAPPING", "GROUP", "ROLE", "APPLICATION"})
   public void shouldRemoveEntityFromTenant(final EntityType entityType) {
     // given
     final var tenantId = "tenantId";
