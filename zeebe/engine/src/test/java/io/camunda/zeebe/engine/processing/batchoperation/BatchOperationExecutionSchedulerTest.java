@@ -51,6 +51,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class BatchOperationExecutionSchedulerTest {
 
+  private static final int PARTITION_ID = 1;
+
   @Mock private Supplier<ScheduledTaskState> scheduledTaskStateFactory;
   @Mock private BatchOperationItemProvider entityKeyProvider;
   @Mock private TaskResultBuilder taskResultBuilder;
@@ -88,7 +90,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     scheduler =
         new BatchOperationExecutionScheduler(
-            scheduledTaskStateFactory, entityKeyProvider, engineConfiguration, 1);
+            scheduledTaskStateFactory, entityKeyProvider, engineConfiguration, PARTITION_ID);
   }
 
   @Test
@@ -120,7 +122,8 @@ public class BatchOperationExecutionSchedulerTest {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
 
     // given
-    when(entityKeyProvider.fetchProcessInstanceItems(queryCaptor.capture(), any()))
+    when(entityKeyProvider.fetchProcessInstanceItems(
+            eq(PARTITION_ID), queryCaptor.capture(), any()))
         .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -144,7 +147,7 @@ public class BatchOperationExecutionSchedulerTest {
     when(batchOperation.getBatchOperationType()).thenReturn(RESOLVE_INCIDENT);
 
     // given
-    when(entityKeyProvider.fetchIncidentItems(queryCaptor.capture(), any()))
+    when(entityKeyProvider.fetchIncidentItems(eq(PARTITION_ID), queryCaptor.capture(), any()))
         .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -168,7 +171,8 @@ public class BatchOperationExecutionSchedulerTest {
     when(batchOperation.getBatchOperationType()).thenReturn(MIGRATE_PROCESS_INSTANCE);
 
     // given
-    when(entityKeyProvider.fetchProcessInstanceItems(queryCaptor.capture(), any()))
+    when(entityKeyProvider.fetchProcessInstanceItems(
+            eq(PARTITION_ID), queryCaptor.capture(), any()))
         .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -192,7 +196,8 @@ public class BatchOperationExecutionSchedulerTest {
 
     // given
     final var queryItems = createItems(LongStream.range(0, CHUNK_SIZE_IN_RECORD * 2).toArray());
-    when(entityKeyProvider.fetchProcessInstanceItems(queryCaptor.capture(), any()))
+    when(entityKeyProvider.fetchProcessInstanceItems(
+            eq(PARTITION_ID), queryCaptor.capture(), any()))
         .thenReturn(new HashSet<>(queryItems));
 
     // when our scheduler fires
@@ -224,7 +229,8 @@ public class BatchOperationExecutionSchedulerTest {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
 
     // given
-    when(entityKeyProvider.fetchProcessInstanceItems(queryCaptor.capture(), any()))
+    when(entityKeyProvider.fetchProcessInstanceItems(
+            eq(PARTITION_ID), queryCaptor.capture(), any()))
         .thenReturn(new HashSet<>(createItems(1L)));
 
     // when our scheduler fires

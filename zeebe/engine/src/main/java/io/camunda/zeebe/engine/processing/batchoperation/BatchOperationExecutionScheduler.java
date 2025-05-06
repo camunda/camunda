@@ -180,10 +180,14 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     return switch (batchOperation.getBatchOperationType()) {
       case CANCEL_PROCESS_INSTANCE, MIGRATE_PROCESS_INSTANCE, MODIFY_PROCESS_INSTANCE ->
           entityKeyProvider.fetchProcessInstanceItems(
-              batchOperation.getEntityFilter(ProcessInstanceFilter.class), abortCondition);
+              partitionId,
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              abortCondition);
       case RESOLVE_INCIDENT ->
           entityKeyProvider.fetchIncidentItems(
-              batchOperation.getEntityFilter(ProcessInstanceFilter.class), abortCondition);
+              partitionId,
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              abortCondition);
       default ->
           throw new IllegalArgumentException(
               "Unexpected batch operation type: " + batchOperation.getBatchOperationType());

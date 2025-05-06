@@ -26,6 +26,8 @@ import org.mockito.ArgumentCaptor;
 
 class BatchOperationItemProviderTest {
 
+  private static final int PARTITION_ID = 1;
+
   private final SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
 
   private final BatchOperationItemProvider provider =
@@ -49,10 +51,14 @@ class BatchOperationItemProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceItems(filter, () -> false);
+    final var resultKeys = provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false);
 
     // then
     assertThat(resultKeys).containsExactly(new Item(1L, 1L), new Item(2L, 2L), new Item(3L, 3L));
+
+    // and partitionId is set in filter
+    final var query = queryCaptor.getValue();
+    assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
   }
 
   @Test
@@ -84,7 +90,7 @@ class BatchOperationItemProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceItems(filter, () -> false);
+    final var resultKeys = provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false);
 
     // then
     assertThat(resultKeys)
@@ -95,6 +101,10 @@ class BatchOperationItemProviderTest {
             new Item(4L, 4L),
             new Item(5L, 5L),
             new Item(6L, 6L));
+
+    // and partitionId is set in filter
+    final var query = queryCaptor.getValue();
+    assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
   }
 
   @Test
@@ -119,10 +129,14 @@ class BatchOperationItemProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceItems(filter, () -> false);
+    final var resultKeys = provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false);
 
     // then
     assertThat(resultKeys).containsExactly(new Item(1L, 1L), new Item(2L, 2L), new Item(3L, 3L));
+
+    // and partitionId is set in filter
+    final var query = queryCaptor.getValue();
+    assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
   }
 
   @Test
@@ -159,14 +173,21 @@ class BatchOperationItemProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultItems = provider.fetchProcessInstanceItems(filter, shouldAbort::get);
+    final var resultItems =
+        provider.fetchProcessInstanceItems(PARTITION_ID, filter, shouldAbort::get);
 
     // then
     assertThat(resultItems).isEmpty();
+
+    // and partitionId is set in filter
+    final var query = queryCaptor.getValue();
+    assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
   }
 
   @Test
   public void shouldFetchIncidentItems() {
+    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceQuery.class);
+
     // given
     final var processInstanceResult =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
@@ -177,7 +198,8 @@ class BatchOperationItemProviderTest {
                     mockProcessInstanceEntity(3L)))
             .total(3)
             .build();
-    when(searchClientsProxy.searchProcessInstances(any())).thenReturn(processInstanceResult);
+    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture()))
+        .thenReturn(processInstanceResult);
 
     // given
     final var incidentResult =
@@ -193,10 +215,14 @@ class BatchOperationItemProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchIncidentItems(filter, () -> false);
+    final var resultKeys = provider.fetchIncidentItems(PARTITION_ID, filter, () -> false);
 
     // then
     assertThat(resultKeys).containsExactly(new Item(11L, 1L), new Item(12L, 2L), new Item(13L, 3L));
+
+    // and partitionId is set in process instance filter
+    final var query = queryCaptor.getValue();
+    assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
   }
 
   private ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
