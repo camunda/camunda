@@ -17,7 +17,8 @@ public record UserFilter(
     String name,
     String email,
     String tenantId,
-    String groupId)
+    String groupId,
+    String roleId)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -27,7 +28,8 @@ public record UserFilter(
         .name(name)
         .email(email)
         .tenantId(tenantId)
-        .groupId(groupId);
+        .groupId(groupId)
+        .roleId(roleId);
   }
 
   public static final class Builder implements ObjectBuilder<UserFilter> {
@@ -38,6 +40,7 @@ public record UserFilter(
     private String email;
     private String tenantId;
     private String groupId;
+    private String roleId;
 
     public Builder key(final Long value) {
       key = value;
@@ -74,9 +77,14 @@ public record UserFilter(
       return this;
     }
 
+    public Builder roleId(final String value) {
+      roleId = value;
+      return this;
+    }
+
     @Override
     public UserFilter build() {
-      return new UserFilter(key, username, usernames, name, email, tenantId, groupId);
+      return new UserFilter(key, username, usernames, name, email, tenantId, groupId, roleId);
     }
   }
 }

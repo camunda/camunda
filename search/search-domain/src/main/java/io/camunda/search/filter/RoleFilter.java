@@ -16,6 +16,7 @@ public record RoleFilter(
     String roleId,
     String name,
     String description,
+    String joinParentId,
     Set<String> memberIds,
     EntityType memberType,
     Set<String> roleIds)
@@ -29,6 +30,7 @@ public record RoleFilter(
     private String roleId;
     private String name;
     private String description;
+    private String joinParentId;
     private Set<String> memberIds;
     private EntityType memberType;
     private Set<String> roleIds;
@@ -53,6 +55,11 @@ public record RoleFilter(
       return this;
     }
 
+    public Builder joinParentId(final String value) {
+      joinParentId = value;
+      return this;
+    }
+
     public Builder memberIds(final Set<String> value) {
       memberIds = value;
       return this;
@@ -74,7 +81,8 @@ public record RoleFilter(
 
     @Override
     public RoleFilter build() {
-      return new RoleFilter(roleKey, roleId, name, description, memberIds, memberType, roleIds);
+      return new RoleFilter(
+          roleKey, roleId, name, description, joinParentId, memberIds, memberType, roleIds);
     }
   }
 }
