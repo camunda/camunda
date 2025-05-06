@@ -2653,6 +2653,51 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /roles/{roleId}/users/search:
+    post:
+      tags:
+        - Role
+      operationId: searchUsersForRole
+      summary: Search role users (Work-in-Progress)
+      description: |
+        Search users assigned to a role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSearchQueryRequest"
+      responses:
+        "200":
+          description: The users assigned to the role.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /roles/{roleId}/users/{username}:
     put:
       tags:
