@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.authorization;
 
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_APPLICATION_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -648,6 +649,91 @@ final class AuthorizationCheckBehaviorTest {
     assertThat(directAuthorizedResourceIdentifiers).isEmpty();
   }
 
+  @Test
+  void shouldBeAuthorizedWhenApplicationHasPermission() {
+    // given
+    final var applicationId = createApplicationId();
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        applicationId,
+        AuthorizationOwnerType.APPLICATION,
+        resourceType,
+        permissionType,
+        resourceId);
+    final var command = mockCommandWithApplicationId(applicationId);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldNotBeAuthorizedWhenApplicationHasNoPermission() {
+    // given
+    final var applicationId = createApplicationId();
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    final var command = mockCommandWithApplicationId(applicationId);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isFalse();
+  }
+
+  @Test
+  void shouldGetResourceIdentifiersWhenApplicationHasPermissions() {
+    // given
+    final var applicationId = createApplicationId();
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId1 = UUID.randomUUID().toString();
+    final var resourceId2 = UUID.randomUUID().toString();
+    addPermission(
+        applicationId,
+        AuthorizationOwnerType.APPLICATION,
+        resourceType,
+        permissionType,
+        resourceId1,
+        resourceId2);
+    final var command = mockCommandWithApplicationId(applicationId);
+
+    // when
+    final var request = new AuthorizationRequest(command, resourceType, permissionType);
+    final var resourceIdentifiers =
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+
+    // then
+    assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
+  }
+
+  @Test
+  void shouldGetEmptySetWhenApplicationHasNoPermissions() {
+    // given
+    final var applicationId = createApplicationId();
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.DELETE;
+    final var command = mockCommandWithApplicationId(applicationId);
+
+    // when
+    final var request = new AuthorizationRequest(command, resourceType, permissionType);
+    final var resourceIdentifiers =
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+
+    // then
+    assertThat(resourceIdentifiers).isEmpty();
+  }
+
   private TypedRecord<?> mockCommandWithMapping(final String claimName, final String claimValue) {
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations())
@@ -740,5 +826,16 @@ final class AuthorizationCheckBehaviorTest {
     when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_ANONYMOUS_USER, true));
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
+  }
+
+  private TypedRecord<?> mockCommandWithApplicationId(final String applicationId) {
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_APPLICATION_ID, applicationId));
+    when(command.hasRequestMetadata()).thenReturn(true);
+    return command;
+  }
+
+  private String createApplicationId() {
+    return Strings.newRandomValidIdentityId();
   }
 }
