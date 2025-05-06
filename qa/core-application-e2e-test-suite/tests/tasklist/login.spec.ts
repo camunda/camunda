@@ -96,6 +96,7 @@ test.describe.parallel('Login Tests', () => {
     page,
     taskPanelPage,
   }) => {
+    test.slow();
     await page.goto('tasklist/123');
     await expect(taskPanelPage.taskListPageBanner).toBeVisible({
       timeout: 60000,
