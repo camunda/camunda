@@ -17,7 +17,6 @@ import {ProcessInstance} from './index';
 import {createBatchOperation, createVariable} from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {variablesStore} from 'modules/stores/variables';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import * as flowNodeInstanceUtils from 'modules/utils/flowNodeInstance';
@@ -31,16 +30,19 @@ import {
   getWrapper,
   mockProcessInstance,
   mockRequests,
+  processInstancesMock,
   waitForPollingsToBeComplete,
 } from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
+import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
+import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
+import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
-  processInstanceDetailsStore.isPollRequestRunning = false;
   incidentsStore.isPollRequestRunning = false;
   flowNodeInstanceStore.isPollRequestRunning = false;
 };
@@ -48,6 +50,10 @@ const clearPollingStates = () => {
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/stores/process', () => ({
   processStore: {state: {process: {}}, fetchProcess: jest.fn()},
+}));
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
 }));
 
 describe('ProcessInstance - modification mode', () => {
@@ -58,6 +64,7 @@ describe('ProcessInstance - modification mode', () => {
 
   afterEach(() => {
     window.clientConfig = undefined;
+    jest.clearAllMocks();
   });
 
   it('should display the modifications header and footer when modification mode is enabled', async () => {
@@ -233,16 +240,11 @@ describe('ProcessInstance - modification mode', () => {
     );
   });
 
-  it.only('should stop polling during the modification mode', async () => {
+  it('should stop polling during the modification mode', async () => {
     jest.useFakeTimers();
 
     const handlePollingVariablesSpy = jest.spyOn(
       variablesStore,
-      'handlePolling',
-    );
-
-    const handlePollingInstanceDetailsSpy = jest.spyOn(
-      processInstanceDetailsStore,
       'handlePolling',
     );
 
@@ -251,7 +253,8 @@ describe('ProcessInstance - modification mode', () => {
       'handlePolling',
     );
 
-    const handlePollingFlowNodeInstanceSpy = jest.spyOn(
+    const initFlowNodeInstanceSpy = jest.spyOn(flowNodeInstanceUtils, 'init');
+    const startPollingFlowNodeInstanceSpy = jest.spyOn(
       flowNodeInstanceUtils,
       'startPolling',
     );
@@ -264,27 +267,20 @@ describe('ProcessInstance - modification mode', () => {
 
     mockRequests();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
     jest.runOnlyPendingTimers();
     await waitFor(() =>
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1),
-    );
-    await waitFor(() =>
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
     );
-    await waitFor(() =>
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1),
-    );
+    expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
       expect(variablesStore.state.status).toBe('fetched');
-      expect(processInstanceDetailsStore.state.status).toBe('fetched');
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
 
@@ -304,9 +300,7 @@ describe('ProcessInstance - modification mode', () => {
 
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     clearPollingStates();
@@ -314,9 +308,7 @@ describe('ProcessInstance - modification mode', () => {
 
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     mockRequests();
@@ -331,8 +323,7 @@ describe('ProcessInstance - modification mode', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(3);
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(3);
+      expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3);
     });
 
@@ -375,6 +366,12 @@ describe('ProcessInstance - modification mode', () => {
 
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
 
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 

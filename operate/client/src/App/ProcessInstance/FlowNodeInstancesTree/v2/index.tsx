@@ -37,6 +37,8 @@ import {
   fetchSubTree,
 } from 'modules/utils/flowNodeInstance';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
 
 const TREE_NODE_HEIGHT = 32;
 
@@ -110,6 +112,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
   ({flowNodeInstance, scrollableContainerRef, isRoot = false, ...rest}) => {
     const {data: latestMigrationDate} = useLatestMigrationDate();
     const {data: processInstance} = useProcessInstance();
+    const rootNode = useRootNode();
     const {removeSubTree, getVisibleChildNodes} = flowNodeInstanceStore;
 
     const isProcessInstance =
@@ -248,7 +251,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             );
           } else {
             tracking.track({eventName: 'instance-history-item-clicked'});
-            flowNodeSelectionStore.selectFlowNode({
+            selectFlowNode(rootNode, {
               flowNodeId: isProcessInstance
                 ? undefined
                 : flowNodeInstance.flowNodeId,

@@ -9,18 +9,15 @@
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {InstanceDetail} from '../../Layout/InstanceDetail';
 import {Breadcrumb} from '../Breadcrumb/v2';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
-import {useLocation, useNavigate} from 'react-router-dom';
-import {useEffect} from 'react';
+import {useEffect, useRef} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
 import {variablesStore} from 'modules/stores/variables';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
-import {Locations} from 'modules/Routes';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
@@ -36,7 +33,6 @@ import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from '../LastModification';
 import {VariablePanel} from '../BottomPanel/VariablePanel/v2';
 import {Forbidden} from 'modules/components/Forbidden';
-import {notificationsStore} from 'modules/stores/notifications';
 import {Frame} from 'modules/components/Frame';
 import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -49,17 +45,16 @@ import {
   init as initFlowNodeInstance,
   startPolling as startPollingFlowNodeInstance,
 } from 'modules/utils/flowNodeInstance';
+import {startPolling as startPollingVariables} from 'modules/utils/variables';
 import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
 import {ProcessInstance as ProcessInstanceT} from '@vzeta/camunda-api-zod-schemas/operate';
-import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
 
 const startPolling = (processInstance?: ProcessInstanceT) => {
-  const processInstanceId = processInstance?.processInstanceKey || '';
-
-  variablesStore.startPolling(processInstanceId, {runImmediately: true});
-  processInstanceDetailsStore.startPolling(processInstanceId, {
-    runImmediately: true,
-  });
+  startPollingVariables(processInstance, {runImmediately: true});
   startPollingIncidents(processInstance, {
     runImmediately: true,
   });
@@ -68,7 +63,6 @@ const startPolling = (processInstance?: ProcessInstanceT) => {
 
 const stopPolling = () => {
   variablesStore.stopPolling();
-  processInstanceDetailsStore.stopPolling();
   incidentsStore.stopPolling();
   flowNodeInstanceStore.stopPolling();
 };
@@ -80,8 +74,7 @@ const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: processInstanceData} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const rootNode = useRootNode();
 
   const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
     useCallbackPrompt({
@@ -117,50 +110,23 @@ const ProcessInstance: React.FC = observer(() => {
     };
   }, [processInstanceData]);
 
+  const isInitialized = useRef(false);
   useEffect(() => {
-    if (processInstanceId !== processInstance?.processInstanceKey) {
-      processInstanceDetailsStore.init({
-        id: processInstanceId,
-        onRefetchFailure: () => {
-          navigate(
-            Locations.processes({
-              active: true,
-              incidents: true,
-            }),
-          );
-
-          notificationsStore.displayNotification({
-            kind: 'error',
-            title: `Instance ${processInstanceId} could not be found`,
-            isDismissable: true,
-          });
-        },
-        onPollingFailure: () => {
-          navigate(Locations.processes());
-
-          notificationsStore.displayNotification({
-            kind: 'success',
-            title: 'Instance deleted',
-            isDismissable: true,
-          });
-        },
-      });
-      initFlowNodeInstance(processInstance);
+    if (
+      !isInitialized.current &&
+      processInstance?.processInstanceKey &&
+      rootNode
+    ) {
       processInstanceDetailsDiagramStore.init();
-      initFlowNodeSelection(processInstanceId, isRootNodeSelected);
+      initFlowNodeSelection(rootNode, processInstanceId, isRootNodeSelected);
+      initFlowNodeInstance(processInstance);
+      isInitialized.current = true;
     }
-  }, [
-    processInstance,
-    isRootNodeSelected,
-    processInstanceId,
-    navigate,
-    location,
-  ]);
+  }, [processInstance, rootNode, processInstanceId, isRootNodeSelected]);
 
   useEffect(() => {
     return () => {
       instanceHistoryModificationStore.reset();
-      processInstanceDetailsStore.reset();
       flowNodeInstanceStore.reset();
       processInstanceDetailsDiagramStore.reset();
       flowNodeTimeStampStore.reset();

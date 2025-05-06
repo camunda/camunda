@@ -39,6 +39,7 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -240,9 +241,12 @@ describe('TopPanel', () => {
       wrapper: getWrapper(),
     });
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-1',
+      },
+    );
 
     expect(
       await screen.findByText(/Flow Node Instance Key/),
@@ -263,9 +267,12 @@ describe('TopPanel', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-1',
+      },
+    );
 
     expect(
       await screen.findByText(/Flow Node Modifications/),
@@ -295,9 +302,12 @@ describe('TopPanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-7',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-7',
+      },
+    );
 
     expect(
       await screen.findByText(
@@ -307,9 +317,12 @@ describe('TopPanel', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-1',
+      },
+    );
 
     await waitForElementToBeRemoved(() =>
       screen.queryByText(
@@ -317,9 +330,12 @@ describe('TopPanel', () => {
       ),
     );
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-7',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-7',
+      },
+    );
 
     expect(
       await screen.findByText(
@@ -329,10 +345,13 @@ describe('TopPanel', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-7',
-      flowNodeInstanceId: 'some-instance-id',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-7',
+        flowNodeInstanceId: 'some-instance-id',
+      },
+    );
 
     await waitForElementToBeRemoved(() =>
       screen.queryByText(
@@ -360,9 +379,12 @@ describe('TopPanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-1',
+      },
+    );
 
     expect(
       await screen.findByText(/Flow Node Modifications/),
@@ -400,9 +422,12 @@ describe('TopPanel', () => {
 
       modificationsStore.enableModificationMode();
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'user_task',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'user_task',
+        },
+      );
 
       await user.click(
         await screen.findByTitle(/Add single flow node instance/),

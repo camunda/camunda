@@ -33,6 +33,7 @@ import {labels, renderPopover} from './mocks';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {init} from 'modules/utils/flowNodeMetadata';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -55,7 +56,7 @@ const mockProcessInstance: ProcessInstance = {
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
-    init([]);
+    init('process-instance', []);
     flowNodeSelectionStore.init();
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -71,9 +72,12 @@ describe('MetadataPopover', () => {
         state: 'ACTIVE',
       }),
     );
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: FLOW_NODE_ID,
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: FLOW_NODE_ID,
+      },
+    );
 
     renderPopover();
 
@@ -116,7 +120,7 @@ describe('MetadataPopover', () => {
     );
     incidentsStore.init();
 
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: FLOW_NODE_ID});
+    selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
 
     renderPopover();
 
@@ -167,9 +171,12 @@ describe('MetadataPopover', () => {
         state: 'ACTIVE',
       }),
     );
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+      },
+    );
 
     const {user} = renderPopover();
 
@@ -236,9 +243,12 @@ describe('MetadataPopover', () => {
         state: 'ACTIVE',
       }),
     );
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: FLOW_NODE_ID,
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: FLOW_NODE_ID,
+      },
+    );
 
     renderPopover();
 
@@ -268,9 +278,12 @@ describe('MetadataPopover', () => {
         state: 'ACTIVE',
       }),
     );
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+      },
+    );
 
     renderPopover();
 
@@ -297,7 +310,7 @@ describe('MetadataPopover', () => {
     );
     incidentsStore.init();
 
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: FLOW_NODE_ID});
+    selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
 
     renderPopover();
 
@@ -325,7 +338,7 @@ describe('MetadataPopover', () => {
       }),
     );
 
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: USER_TASK_FLOW_NODE_ID});
+    selectFlowNode({}, {flowNodeId: USER_TASK_FLOW_NODE_ID});
 
     renderPopover();
 
@@ -344,7 +357,7 @@ describe('MetadataPopover', () => {
       }),
     );
 
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: USER_TASK_FLOW_NODE_ID});
+    selectFlowNode({}, {flowNodeId: USER_TASK_FLOW_NODE_ID});
 
     renderPopover();
 

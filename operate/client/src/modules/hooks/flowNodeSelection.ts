@@ -98,10 +98,18 @@ const useIsPlaceholderSelected = () => {
   );
 };
 
+const useRootNode = () => {
+  const {data: processInstance} = useProcessInstance();
+
+  return {
+    flowNodeInstanceId: processInstance?.processInstanceKey,
+    isMultiInstance: false,
+  };
+};
+
 const useSelectedFlowNodeName = () => {
   const {data: processInstance} = useProcessInstance();
   const {data: businessObjects} = useBusinessObjects();
-  const isRootNodeSelected = useIsRootNodeSelected();
 
   if (
     processInstance === null ||
@@ -110,7 +118,7 @@ const useSelectedFlowNodeName = () => {
     return '';
   }
 
-  if (isRootNodeSelected) {
+  if (flowNodeSelectionStore.isRootNodeSelected) {
     return processInstance?.processDefinitionName;
   }
 
@@ -130,5 +138,6 @@ export {
   useIsPlaceholderSelected,
   useIsRootNodeSelected,
   useNewTokenCountForSelectedNode,
+  useRootNode,
   useSelectedFlowNodeName,
 };

@@ -17,15 +17,19 @@ import {
 import {reaction, when} from 'mobx';
 import {modificationsStore} from 'modules/stores/modifications';
 
-const init = (processInstanceKey?: string, isRootNodeSelected?: boolean) => {
+const init = (
+  rootNode: Selection | null,
+  processInstanceKey?: string,
+  isRootNodeSelected?: boolean,
+) => {
   flowNodeSelectionStore.rootNodeSelectionDisposer = when(
     () => processInstanceKey !== undefined,
-    () => flowNodeSelectionStore.clearSelection(),
+    () => clearSelection(rootNode),
   );
 
   flowNodeSelectionStore.modificationModeChangeDisposer = reaction(
     () => modificationsStore.isModificationModeEnabled,
-    flowNodeSelectionStore.clearSelection,
+    () => clearSelection(rootNode),
   );
   flowNodeSelectionStore.lastModificationRemovedDisposer = reaction(
     () => modificationsStore.flowNodeModifications,
@@ -67,7 +71,7 @@ const init = (processInstanceKey?: string, isRootNodeSelected?: boolean) => {
       }, []);
 
       if (!newScopeIds.includes(flowNodeInstanceId)) {
-        flowNodeSelectionStore.clearSelection();
+        clearSelection(rootNode);
       }
     },
   );
@@ -75,6 +79,18 @@ const init = (processInstanceKey?: string, isRootNodeSelected?: boolean) => {
 
 const clearSelection = (rootNode: Selection | null) => {
   flowNodeSelectionStore.setSelection(rootNode);
+};
+
+const selectFlowNode = (rootNode: Selection, selection: Selection) => {
+  if (
+    selection.flowNodeId === undefined ||
+    (!flowNodeSelectionStore.areMultipleInstancesSelected &&
+      flowNodeSelectionStore.isSelected(selection))
+  ) {
+    flowNodeSelectionStore.setSelection(rootNode);
+  } else {
+    flowNodeSelectionStore.setSelection(selection);
+  }
 };
 
 const getSelectedRunningInstanceCount = (
@@ -126,6 +142,7 @@ const getSelectedFlowNodeName = (businessObjects?: BusinessObjects) => {
 export {
   init,
   clearSelection,
+  selectFlowNode,
   getSelectedRunningInstanceCount,
   getSelectedFlowNodeName,
 };
