@@ -30,6 +30,7 @@ import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import io.camunda.operate.webapp.security.auth.AuthUserService;
+import io.camunda.operate.webapp.security.auth.OperateAuthConfiguration;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.security.auth.Role;
 import io.camunda.operate.webapp.security.auth.RolePermissionService;
@@ -74,6 +75,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       AuthUserService.class,
       RolePermissionService.class,
       AuthenticationRestService.class,
+      OperateAuthConfiguration.class,
       OperateUserDetailsService.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,

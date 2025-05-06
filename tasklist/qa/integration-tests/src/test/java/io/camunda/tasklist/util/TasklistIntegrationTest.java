@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.util;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.service.CamundaUserService;
@@ -36,7 +37,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"tasklist", "standalone", "test"})
+@ActiveProfiles({"tasklist", "standalone", "test", AUTH_PROFILE})
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;

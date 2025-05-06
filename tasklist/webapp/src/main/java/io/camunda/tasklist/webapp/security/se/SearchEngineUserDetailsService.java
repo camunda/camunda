@@ -8,9 +8,7 @@
 package io.camunda.tasklist.webapp.security.se;
 
 import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aCamundaUser;
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.CONSOLIDATED_AUTH_PROFILE;
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.tasklist.entities.UserEntity;
@@ -21,20 +19,17 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Configuration
 @Component
-@Profile(
-    "!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE + " & !" + CONSOLIDATED_AUTH_PROFILE)
+@Profile(AUTH_PROFILE)
 /*
  * Required as primary for now due to a clashing bean in the always active Identity service classes.
  * In future versions this class will be removed and the Identity service will be used instead.
@@ -49,11 +44,7 @@ public class SearchEngineUserDetailsService implements UserDetailsService {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Bean
-  @Primary
-  public PasswordEncoder getPasswordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+  @Autowired private PasswordEncoder passwordEncoder;
 
   public void initializeUsers() {
     final boolean createSchema =
@@ -102,7 +93,7 @@ public class SearchEngineUserDetailsService implements UserDetailsService {
       final String password,
       final List<String> roles) {
     LOGGER.info("Create user with userId {}", userId);
-    final String passwordEncoded = getPasswordEncoder().encode(password);
+    final String passwordEncoded = passwordEncoder.encode(password);
     final UserEntity userEntity =
         new UserEntity()
             .setId(userId)

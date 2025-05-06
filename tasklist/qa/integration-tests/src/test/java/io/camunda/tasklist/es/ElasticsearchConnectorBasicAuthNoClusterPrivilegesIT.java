@@ -16,14 +16,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.security.IndicesPrivileges;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.tasklist.management.SearchEngineHealthIndicator;
-import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.webapp.security.WebSecurityConfig;
-import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,9 +30,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
@@ -46,28 +38,10 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(
-    classes = {
-      TestElasticsearchSchemaManager.class,
-      TestApplication.class,
-      SearchEngineHealthIndicator.class,
-      WebSecurityConfig.class,
-      OAuth2WebConfigurer.class,
-    },
-    properties = {
-      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
-    },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(
-    initializers = {
-      ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT.ElasticsearchStarter.class
-    })
+    initializers = ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT.ElasticsearchStarter.class)
 public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends TasklistIntegrationTest {
 
   private static final String ES_ADMIN_USER = "elastic";

@@ -36,7 +36,7 @@ public class OldRoutesRedirectionControllerIT extends TasklistIntegrationTest {
 
   @ParameterizedTest
   @MethodSource("redirectionTestDataProvider")
-  public void testRedirections(final String path) {
+  void testRedirections(final String path) {
     final ResponseEntity<String> response =
         restTemplate.getForEntity(baseUrl() + path, String.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
@@ -45,14 +45,26 @@ public class OldRoutesRedirectionControllerIT extends TasklistIntegrationTest {
   }
 
   static Stream<String> notFoundTestDataProvider() {
-    return Stream.of("/v1/user-tasks", "/decisions", "/a12345", "/new");
+    return Stream.of("/decisions", "/a12345", "/new");
   }
 
   @ParameterizedTest
   @MethodSource("notFoundTestDataProvider")
-  public void testNotFound(final String path) {
+  void testNotFound(final String path) {
     final ResponseEntity<String> response =
         restTemplate.getForEntity(baseUrl() + path, String.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+  }
+
+  static Stream<String> requiredAuthTestDataProvider() {
+    return Stream.of("/v1/tasks", "/v2/user-tasks");
+  }
+
+  @ParameterizedTest
+  @MethodSource("requiredAuthTestDataProvider")
+  void testUnauthorized(final String path) {
+    final ResponseEntity<String> response =
+        restTemplate.getForEntity(baseUrl() + path, String.class);
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 }

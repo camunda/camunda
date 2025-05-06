@@ -20,26 +20,14 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
-@Configuration
-@Profile({
-  "!"
-      + OperateProfileService.LDAP_AUTH_PROFILE
-      + " & !"
-      + OperateProfileService.SSO_AUTH_PROFILE
-      + " & !"
-      + OperateProfileService.IDENTITY_AUTH_PROFILE
-      + " & !"
-      + OperateProfileService.CONSOLIDATED_AUTH
-})
+@Component
+@Profile(OperateProfileService.AUTH_PROFILE)
 public class OperateUserDetailsService implements UserDetailsService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperateUserDetailsService.class);
@@ -48,12 +36,7 @@ public class OperateUserDetailsService implements UserDetailsService {
   private static final String ACT_PASSWORD = ACT_USERNAME;
   @Autowired private UserStore userStore;
   @Autowired private OperateProperties operateProperties;
-
-  @Bean
-  @Primary
-  public PasswordEncoder getPasswordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+  @Autowired private PasswordEncoder passwordEncoder;
 
   public void initializeUsers() {
     if (needsToCreateUser()) {
@@ -88,7 +71,7 @@ public class OperateUserDetailsService implements UserDetailsService {
       final String password,
       final List<String> roles) {
     LOGGER.info("Create user in {} for userId {}", DatabaseInfo.getCurrent().getCode(), userId);
-    final String passwordEncoded = getPasswordEncoder().encode(password);
+    final String passwordEncoded = passwordEncoder.encode(password);
     final UserEntity userEntity =
         new UserEntity()
             .setId(userId)

@@ -10,15 +10,10 @@ package io.camunda.tasklist.webapp.security.se;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.webapp.security.WebSecurityConfig;
-import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
 import java.io.IOException;
 import java.time.Duration;
@@ -31,32 +26,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * This test tests that: 1. If we configure custom username and password, this user is added to
  * Elasticsearch 2. If we adjust firstname and lastname in Elasticsearch, this values are returned
  * by UserDetailsService
  */
-@SpringBootTest(
-    classes = {
-      TestElasticsearchSchemaManager.class,
-      TestApplication.class,
-      SearchEngineHealthIndicator.class,
-      WebSecurityConfig.class,
-      OAuth2WebConfigurer.class,
-    },
+@TestPropertySource(
     properties = {
-      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + ".userId = user1",
       TasklistProperties.PREFIX + ".password = psw1",
-      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
-    },
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+    })
 public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
 
   private static final String TEST_USERNAME = "user1";

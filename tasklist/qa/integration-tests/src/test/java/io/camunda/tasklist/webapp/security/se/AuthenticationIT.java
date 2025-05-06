@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp.security.se;
 
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -35,10 +34,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
 /** This tests: authentication and security over REST API /currentUser to get current user */
-@ActiveProfiles({AUTH_PROFILE, "tasklist", "test", "standalone"})
 public class AuthenticationIT extends TasklistIntegrationTest implements AuthenticationTestable {
 
   private static final String REST_CURRENT_USER = TasklistURIs.USERS_URL_V1.concat("/current");
