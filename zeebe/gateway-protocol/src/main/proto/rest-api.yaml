@@ -2791,6 +2791,50 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /roles/{roleId}/mappings/{mappingId}:
+    put:
+      tags:
+        - Role
+      operationId: addMappingToRole
+      summary: Assign a mapping to a role (Work-in-Progress)
+      description: |
+        Assigns a mapping to a role.
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
+        its release with an upcoming minor release.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+        - name: mappingId
+          in: path
+          required: true
+          description: The mapping ID.
+          schema:
+            type: string
+      responses:
+        "202":
+          description: The mapping was assigned successfully to the role.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role or mapping with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: The mapping with the given ID is already assigned to the role.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /groups:
     post:

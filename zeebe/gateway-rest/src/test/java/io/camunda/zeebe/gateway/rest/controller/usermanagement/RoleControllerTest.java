@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -415,6 +416,144 @@ public class RoleControllerTest extends RestControllerTest {
 
     // then
     verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldAssignMappingToRoleAndReturnAccepted() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingMissingMappingToRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.addMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Mapping not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingMappingToMissingRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.addMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = "mappingId!";
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingMappingToRole() {
+    // given
+    final String roleId = "roleId!";
+    final String mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
   }
 
   @Test

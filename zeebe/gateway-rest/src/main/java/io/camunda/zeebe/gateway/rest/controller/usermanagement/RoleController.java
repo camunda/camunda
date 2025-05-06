@@ -148,6 +148,15 @@ public class RoleController {
             roleServices.withAuthentication(RequestMapper.getAuthentication()).addMember(request));
   }
 
+  @CamundaPutMapping(
+      path = "/{roleId}/mappings/{mappingId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> assignMappingToRole(
+      @PathVariable final String roleId, @PathVariable final String mappingId) {
+    return RequestMapper.toRoleMemberRequest(roleId, mappingId, EntityType.MAPPING)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+  }
+
   @CamundaDeleteMapping(path = "/{roleId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> removeUserFromRole(
       @PathVariable final String roleId, @PathVariable final String username) {
