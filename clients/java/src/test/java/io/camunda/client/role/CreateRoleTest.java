@@ -27,16 +27,32 @@ import org.junit.jupiter.api.Test;
 
 public class CreateRoleTest extends ClientRestTest {
 
-  public static final String NAME = "Role Name";
+  public static final String ROLE_ID = "roleId";
+  public static final String NAME = "roleName";
+  public static final String DESCRIPTION = "roleDescription";
 
   @Test
   void shouldCreateRole() {
     // when
-    client.newCreateRoleCommand().name(NAME).send().join();
+    client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).description(DESCRIPTION).send().join();
 
     // then
     final RoleCreateRequest request = gatewayService.getLastRequest(RoleCreateRequest.class);
+    assertThat(request.getRoleId()).isEqualTo(ROLE_ID);
     assertThat(request.getName()).isEqualTo(NAME);
+    assertThat(request.getDescription()).isEqualTo(DESCRIPTION);
+  }
+
+  @Test
+  void shouldCreateRoleWithoutDescription() {
+    // when
+    client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join();
+
+    // then
+    final RoleCreateRequest request = gatewayService.getLastRequest(RoleCreateRequest.class);
+    assertThat(request.getRoleId()).isEqualTo(ROLE_ID);
+    assertThat(request.getName()).isEqualTo(NAME);
+    assertThat(request.getDescription()).isNull();
   }
 
   @Test
@@ -46,29 +62,37 @@ public class CreateRoleTest extends ClientRestTest {
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newCreateRoleCommand().name(NAME).send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
 
   @Test
-  void shouldRaiseExceptionOnNullName() {
+  void shouldRaiseExceptionOnNullRoleId() {
     // when / then
     assertThatThrownBy(() -> client.newCreateRoleCommand().send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullName() {
+    // when / then
+    assertThatThrownBy(() -> client.newCreateRoleCommand().roleId(ROLE_ID).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be null");
   }
 
   @Test
-  void shouldRaiseExceptionIfRoleNameAlreadyExists() {
+  void shouldRaiseExceptionIfRoleAlreadyExists() {
     // given
-    client.newCreateRoleCommand().name(NAME).send().join();
+    client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join();
 
     gatewayService.errorOnRequest(
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Conflict").status(409));
 
     // when / then
-    assertThatThrownBy(() -> client.newCreateRoleCommand().name(NAME).send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
@@ -80,7 +104,7 @@ public class CreateRoleTest extends ClientRestTest {
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
-    assertThatThrownBy(() -> client.newCreateRoleCommand().name(NAME).send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().roleId(ROLE_ID).name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
