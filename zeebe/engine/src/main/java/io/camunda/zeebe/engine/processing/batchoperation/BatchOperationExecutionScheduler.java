@@ -43,6 +43,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private final BatchOperationState batchOperationState;
   private ReadonlyStreamProcessorContext processingContext;
   private final BatchOperationItemProvider entityKeyProvider;
+  private final int partitionId;
 
   /** Marks if this scheduler is currently executing or not. */
   private final AtomicBoolean executing = new AtomicBoolean(false);
@@ -50,10 +51,12 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final BatchOperationItemProvider entityKeyProvider,
-      final EngineConfiguration engineConfiguration) {
+      final EngineConfiguration engineConfiguration,
+      final int partitionId) {
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
     this.entityKeyProvider = entityKeyProvider;
     pollingInterval = engineConfiguration.getBatchOperationSchedulerInterval();
+    this.partitionId = partitionId;
   }
 
   @Override

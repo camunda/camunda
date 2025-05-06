@@ -88,7 +88,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     scheduler =
         new BatchOperationExecutionScheduler(
-            scheduledTaskStateFactory, entityKeyProvider, engineConfiguration);
+            scheduledTaskStateFactory, entityKeyProvider, engineConfiguration, 1);
   }
 
   @Test
