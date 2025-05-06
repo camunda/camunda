@@ -74,4 +74,55 @@ const completedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   ...customFields,
 });
 
-export {unassignedTask, assignedTask, completedTask};
+const assignedTaskWithForm = (
+  customFields: Partial<UserTask> = {},
+): UserTask => ({
+  userTaskKey: uniqueId.next().value,
+  assignee: currentUser.userId,
+  creationDate: '2024-01-01T00:00:00.000Z',
+  priority: 50,
+  state: 'CREATED',
+  formKey: 'form-0',
+  processDefinitionKey: 'process',
+  processInstanceKey: '123',
+  candidateGroups: [],
+  candidateUsers: [],
+  tenantId: DEFAULT_TENANT_ID,
+  processDefinitionVersion: 1,
+  processDefinitionId: 'process-1',
+  processName: 'Nice Process',
+  elementId: 'element-1',
+  name: 'My Task',
+  elementInstanceKey: '1',
+  ...customFields,
+});
+
+const unassignedTaskWithForm = (
+  customFields: Partial<UserTask> = {},
+): UserTask => ({
+  userTaskKey: uniqueId.next().value,
+  creationDate: '2024-01-01T00:00:00.000Z',
+  priority: 50,
+  state: 'CREATED',
+  formKey: 'form-0',
+  processDefinitionKey: 'process',
+  processInstanceKey: '123',
+  candidateGroups: [],
+  candidateUsers: [],
+  tenantId: DEFAULT_TENANT_ID,
+  processDefinitionVersion: 1,
+  processDefinitionId: 'process-1',
+  processName: 'Nice Process',
+  elementId: 'element-1',
+  name: 'My Task',
+  elementInstanceKey: '1',
+  ...customFields,
+});
+
+export {
+  unassignedTask,
+  assignedTask,
+  completedTask,
+  assignedTaskWithForm,
+  unassignedTaskWithForm,
+};

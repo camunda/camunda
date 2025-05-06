@@ -36,14 +36,7 @@ import type {FormValues} from 'common/tasks/variables-editor/types';
 import styles from 'common/tasks/variables-editor/styles.module.scss';
 import cn from 'classnames';
 import {useFetchFullVariable} from 'v2/api/useFetchFullVariable.mutation';
-
-function tryParseJSON(value: string) {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-}
+import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
