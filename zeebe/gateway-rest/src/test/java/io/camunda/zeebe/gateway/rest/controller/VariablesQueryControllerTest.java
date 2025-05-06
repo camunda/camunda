@@ -40,6 +40,7 @@ import org.springframework.http.MediaType;
 public class VariablesQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_VARIABLE_KEY = 0L;
+  private static final Long VALID_TRUNCATED_VARIABLE_KEY = 1L;
   private static final Long INVALID_VARIABLE_KEY = 99L;
 
   private static final String EXPECT_SINGLE_VARIABLE_RESPONSE =
@@ -48,11 +49,19 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "variableKey": "0",
               "name": "n",
               "value": "v",
-              "fullValue": "v",
               "scopeKey": "2",
               "processInstanceKey": "3",
-              "tenantId": "<default>",
-              "isTruncated": false
+              "tenantId": "<default>"
+          }""";
+  private static final String EXPECT_SINGLE_TRUNCATED_VARIABLE_RESPONSE =
+      """
+          {
+              "variableKey": "1",
+              "name": "ne",
+              "value": "ve",
+              "scopeKey": "2",
+              "processInstanceKey": "3",
+              "tenantId": "<default>"
           }""";
   private static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -62,29 +71,38 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "variableKey": "0",
                         "name": "n",
                         "value": "v",
-                        "fullValue": "v",
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "tenantId": "<default>",
                         "isTruncated": false
+                  },
+                  {
+                        "variableKey": "1",
+                        "name": "ne",
+                        "value": "v",
+                        "scopeKey": "2",
+                        "processInstanceKey": "3",
+                        "tenantId": "<default>",
+                        "isTruncated": true
                   }
               ],
               "page": {
-                  "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                  "totalItems": 2,
+                  "firstSortValues": ["0"],
+                  "lastSortValues": ["1"]
               }
           }""";
 
   private static final String VARIABLE_TASKS_SEARCH_URL = "/v2/variables/search";
   private static final SearchQueryResult<VariableEntity> SEARCH_QUERY_RESULT =
       new Builder<VariableEntity>()
-          .total(1L)
-          .items(List.of(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "bpid", "<default>")))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .total(2L)
+          .items(
+              List.of(
+                  new VariableEntity(0L, "n", "v", null, false, 2L, 3L, "bpid", "<default>"),
+                  new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, "bpid", "<default>")))
+          .firstSortValues(new Object[] {"0"})
+          .lastSortValues(new Object[] {"1"})
           .build();
   @MockBean VariableServices variableServices;
   @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;
@@ -95,19 +113,21 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .thenReturn(variableServices);
 
     when(variableServices.getByKey(VALID_VARIABLE_KEY))
-        .thenReturn(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "bpid", "<default>"));
+        .thenReturn(new VariableEntity(0L, "n", "v", null, false, 2L, 3L, "bpid", "<default>"));
+    when(variableServices.getByKey(VALID_TRUNCATED_VARIABLE_KEY))
+        .thenReturn(new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, "bpid", "<default>"));
 
     when(variableServices.getByKey(INVALID_VARIABLE_KEY))
         .thenThrow(
             new CamundaSearchException(
                 String.format("Variable with key %d not found", INVALID_VARIABLE_KEY),
                 CamundaSearchException.Reason.NOT_FOUND));
+
+    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
   }
 
   @Test
   void shouldSearchVariablesWithEmptyBody() {
-    // given
-    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
         .post()
@@ -125,16 +145,13 @@ public class VariablesQueryControllerTest extends RestControllerTest {
 
   @Test
   void shouldSearchVariableWithEmptyQuery() {
-    // given
-    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
-    final String request = "{}";
     // when / then
     webClient
         .post()
         .uri(VARIABLE_TASKS_SEARCH_URL)
         .accept(APPLICATION_JSON)
         .contentType(APPLICATION_JSON)
-        .bodyValue(request)
+        .bodyValue("{}")
         .exchange()
         .expectStatus()
         .isOk()
@@ -324,6 +341,23 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .json(EXPECT_SINGLE_VARIABLE_RESPONSE);
 
     verify(variableServices).getByKey(VALID_VARIABLE_KEY);
+  }
+
+  @Test
+  void shouldGetTruncatedVariableByKey() {
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/variables/" + VALID_TRUNCATED_VARIABLE_KEY)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECT_SINGLE_TRUNCATED_VARIABLE_RESPONSE);
+
+    verify(variableServices).getByKey(VALID_TRUNCATED_VARIABLE_KEY);
   }
 
   @Test

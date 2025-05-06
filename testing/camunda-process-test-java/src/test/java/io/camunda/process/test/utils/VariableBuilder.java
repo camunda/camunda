@@ -22,7 +22,6 @@ public class VariableBuilder implements Variable {
   private Long variableKey;
   private String name;
   private String value;
-  private String fullValue;
   private Long scopeKey;
   private Long processInstanceKey;
   private String tenantId;
@@ -41,11 +40,6 @@ public class VariableBuilder implements Variable {
   @Override
   public String getValue() {
     return value;
-  }
-
-  @Override
-  public String getFullValue() {
-    return fullValue;
   }
 
   @Override
@@ -83,11 +77,6 @@ public class VariableBuilder implements Variable {
     return this;
   }
 
-  public VariableBuilder setFullValue(final String fullValue) {
-    this.fullValue = fullValue;
-    return this;
-  }
-
   public VariableBuilder setValue(final String value) {
     this.value = value;
     return this;
@@ -113,10 +102,6 @@ public class VariableBuilder implements Variable {
   }
 
   public static VariableBuilder newVariable(final String name, final String value) {
-    return new VariableBuilder()
-        .setName(name)
-        .setValue(value)
-        .setFullValue(value)
-        .setTruncated(false);
+    return new VariableBuilder().setName(name).setValue(value).setTruncated(false);
   }
 }

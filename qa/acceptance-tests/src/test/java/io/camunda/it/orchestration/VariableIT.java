@@ -62,7 +62,6 @@ public class VariableIT {
         variables.items().stream().filter(v -> v.getName().equals("smallVariable")).findFirst();
     assertThat(smallVariable).isPresent();
     assertThat(smallVariable.get().getValue()).isEqualTo("\"smallValue\"");
-    assertThat(smallVariable.get().getFullValue()).isNull();
     assertThat(smallVariable.get().isTruncated()).isFalse();
   }
 
@@ -109,10 +108,60 @@ public class VariableIT {
     final var largeVariable =
         variables.items().stream().filter(v -> v.getName().equals("largeVariable")).findFirst();
     assertThat(largeVariable).isPresent();
-    assertThat(largeVariable.get().getFullValue()).isEqualTo("\"" + largeValue + "\"");
     assertThat(largeVariable.get().isTruncated()).isTrue();
     assertThat(largeVariable.get().getValue())
         .isEqualTo("\"" + largeValue.substring(0, DEFAULT_VARIABLE_SIZE_THRESHOLD - 1));
+  }
+
+  @Test
+  void shouldGetFullVariable() {
+    // given
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("process/bpm_variable_test.bpmn")
+            .send()
+            .join();
+
+    final String largeValue = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 1);
+
+    final var processInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(deployment.getProcesses().getFirst().getBpmnProcessId())
+            .latestVersion()
+            .variables(Map.of("largeVariable", largeValue))
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    waitForVariables(client, f -> f.processInstanceKey(processInstanceKey));
+
+    final var variables =
+        client
+            .newVariableSearchRequest()
+            .filter(
+                f ->
+                    f.processInstanceKey(processInstanceKey)
+                        .name("largeVariable")
+                        .isTruncated(true))
+            .send()
+            .join();
+    assertThat(variables.items()).isNotEmpty();
+    assertThat(variables.items().stream().filter(v -> v.getName().equals("largeVariable")).count())
+        .isEqualTo(1);
+    var largeVariable =
+        variables.items().stream()
+            .filter(v -> v.getName().equals("largeVariable"))
+            .findFirst()
+            .get();
+
+    // when
+    largeVariable = client.newVariableGetRequest(largeVariable.getVariableKey()).send().join();
+
+    // then
+    assertThat(largeVariable.isTruncated()).isFalse();
+    assertThat(largeVariable.getValue()).isEqualTo("\"" + largeValue + "\"");
   }
 
   @Test
@@ -157,7 +206,6 @@ public class VariableIT {
         .isEqualTo(1);
     final var largeVariable =
         variables.items().stream().filter(v -> v.getName().equals("largeVariable")).findFirst();
-    assertThat(largeVariable.get().getFullValue()).isEqualTo("\"" + largeValue + "\"");
     assertThat(largeVariable.get().isTruncated()).isTrue();
 
     // when
@@ -191,7 +239,6 @@ public class VariableIT {
             .findFirst();
     assertThat(updatedVariable).isPresent();
     assertThat(updatedVariable.get().getValue()).isEqualTo("\"smallValue\"");
-    assertThat(updatedVariable.get().getFullValue()).isNull();
     assertThat(updatedVariable.get().isTruncated()).isFalse();
   }
 

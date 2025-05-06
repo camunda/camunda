@@ -5133,33 +5133,38 @@ components:
           description: The matching variables.
           type: array
           items:
-            $ref: "#/components/schemas/VariableResult"
-    VariableResult:
+            $ref: "#/components/schemas/VariableSearchResult"
+    VariableSearchResult:
       description: Variable search response item.
+      type: object
+      allOf:
+        - "$ref": "#/components/schemas/VariableResultBase"
+      properties:
+        value:
+          description: Value of this variable. Can be truncated.
+          type: string
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
+    VariableResult:
+        description: Variable search response item.
+        type: object
+        allOf:
+          - "$ref": "#/components/schemas/VariableResultBase"
+        properties:
+          value:
+            description: Full value of this variable.
+            type: string
+    VariableResultBase:
+      description: Variable response item.
       type: object
       properties:
         name:
           description: Name of this variable.
           type: string
-        value:
-          description: |
-            Value of this variable. If `isTruncated` is `true`, this value is truncated. Use
-            `fullValue` to get the full value instead.
-          type: string
-        fullValue:
-          description: |
-            Full value of this variable. If `isTruncated` is `true`, this value resembles the full
-            variable value. Otherwise, this is empty and `value` contains the full value.
-          type: string
         tenantId:
           description: Tenant ID of this variable.
           type: string
-        isTruncated:
-          description: |
-            Whether the value is truncated or not. If this is `true`, the `fullValue` contains the
-            full variable value and `value` is a truncated view. Otherwise, `value` contains the
-            full value.
-          type: boolean
         variableKey:
           description: The key for this variable.
           type: string
