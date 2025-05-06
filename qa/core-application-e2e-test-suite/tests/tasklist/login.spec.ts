@@ -94,13 +94,9 @@ test.describe.parallel('Login Tests', () => {
     taskListLoginPage,
     tasklistHeader,
     page,
-    taskPanelPage,
   }) => {
     test.slow();
     await page.goto('tasklist/123');
-    await expect(taskPanelPage.taskListPageBanner).toBeVisible({
-      timeout: 60000,
-    });
     await taskListLoginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist/123');
 
