@@ -15,28 +15,30 @@
  */
 package io.camunda.spring.client.properties;
 
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class CamundaClientWorkerProperties {
-  @NestedConfigurationProperty private JobWorkerValue defaults = new JobWorkerValue();
-  @NestedConfigurationProperty private Map<String, JobWorkerValue> override = new HashMap<>();
+  @NestedConfigurationProperty
+  private CamundaClientJobWorkerProperties defaults = new CamundaClientJobWorkerProperties();
 
-  public JobWorkerValue getDefaults() {
+  @NestedConfigurationProperty
+  private Map<String, CamundaClientJobWorkerProperties> override = new HashMap<>();
+
+  public CamundaClientJobWorkerProperties getDefaults() {
     return defaults;
   }
 
-  public void setDefaults(final JobWorkerValue defaults) {
+  public void setDefaults(final CamundaClientJobWorkerProperties defaults) {
     this.defaults = defaults;
   }
 
-  public Map<String, JobWorkerValue> getOverride() {
+  public Map<String, CamundaClientJobWorkerProperties> getOverride() {
     return override;
   }
 
-  public void setOverride(final Map<String, JobWorkerValue> override) {
+  public void setOverride(final Map<String, CamundaClientJobWorkerProperties> override) {
     this.override = override;
   }
 
