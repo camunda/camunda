@@ -104,24 +104,32 @@ jobs:
             id: ubuntu-latest
             artifactFileSuffix: linux-x86_64.tar.gz
             workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
             command: ./c8run
             packagingCmd: ./packager
           - name: MacOS (ARM64)
             id: macos-latest
             artifactFileSuffix: darwin-aarch64.zip
             workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
             command: ./c8run
             packagingCmd: ./packager
           - name: MacOS (AMD64)
             id: macos-13
             artifactFileSuffix: darwin-x86_64.zip
             workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
             command: ./c8run
             packagingCmd: ./packager
           - name: Windows (AMD64)
             id: windows-latest
             artifactFileSuffix: windows-x86_64.zip
             workingDir: ./c8run
+            c8runArtifactName: c8run.exe
+            packagerArtifactName: packager.exe
             command: ./c8run.exe
             packagingCmd: ./packager.exe
     env:
@@ -157,11 +165,11 @@ jobs:
           cache: false # disabling since not working anyways without a cache-dependency-path specified
       - name: Build artifact runtime distro
         working-directory: ${{ matrix.os.workingDir }}
-        run: go build -o c8run ./cmd/c8run
+        run: go build -o ${{ matrix.os.c8runArtifactName }} ./cmd/c8run
 
       - name: Build artifact packaging distro
         working-directory: ${{ matrix.os.workingDir }}
-        run: go build -o packager ./cmd/packager
+        run: go build -o ${{ matrix.os.packagerArtifactName }} ./cmd/packager
 
       - name: Create artifact package
         working-directory: ${{ matrix.os.workingDir }}
