@@ -11,6 +11,7 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import java.util.Map;
 import java.util.Optional;
 
 public class ExporterEntityCache<K, T> {
@@ -37,6 +38,10 @@ public class ExporterEntityCache<K, T> {
 
   public Optional<T> get(final K entityKey) {
     return Optional.ofNullable(cache.get(entityKey));
+  }
+
+  public Map<K, T> getAll(final Iterable<K> keys) {
+    return cache.getAll(keys);
   }
 
   public void put(final K entityKey, final T entity) {

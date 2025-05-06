@@ -114,6 +114,9 @@ public class ProcessInstanceExportHandler
       return new TreePath().startTreePath(processInstanceKey);
     }
 
+    final var callActivities =
+        ProcessCacheUtil.getCallActivityIds(processCache, processDefinitionPath);
+
     final TreePath treePath = new TreePath();
     for (int i = 0; i < elementInstancePath.size(); i++) {
       final List<Long> keysWithinOnePI = elementInstancePath.get(i);
@@ -122,11 +125,9 @@ public class ProcessInstanceExportHandler
         // we reached the leaf of the tree path, when we reached current processInstanceKey
         break;
       }
-      final var callActivity =
-          ProcessCacheUtil.getCallActivityId(
-              processCache, processDefinitionPath.get(i), callingElementPath.get(i));
-      if (callActivity.isPresent()) {
-        treePath.appendFlowNode(callActivity.get());
+      final var callActivity = callActivities.get(i);
+      if (callActivity != null && !callActivity.isEmpty()) {
+        treePath.appendFlowNode(callActivity.get(callingElementPath.get(i)));
       } else {
         final var index = callingElementPath.get(i);
         LOGGER.warn(

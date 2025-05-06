@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public class ProcessCacheUtil {
 
@@ -34,20 +33,15 @@ public class ProcessCacheUtil {
     return callActivities.stream().map(BaseElement::getId).sorted().toList();
   }
 
-  public static Optional<String> getCallActivityId(
+  public static List<List<String>> getCallActivityIds(
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final Long processDefinitionKey,
-      final Integer callActivityIndex) {
+      final List<Long> processDefinitionKeys) {
+    if (processDefinitionKeys == null) {
+      return List.of();
+    }
 
-    if (processDefinitionKey == null) {
-      return Optional.empty();
-    }
-    final var cachedProcess = processCache.get(processDefinitionKey);
-    if (cachedProcess.isEmpty()
-        || cachedProcess.get().callElementIds() == null
-        || callActivityIndex == null) {
-      return Optional.empty();
-    }
-    return Optional.of(cachedProcess.get().callElementIds().get(callActivityIndex));
+    return processCache.getAll(processDefinitionKeys).values().stream()
+        .map(CachedProcessEntity::callElementIds)
+        .toList();
   }
 }

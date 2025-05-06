@@ -10,6 +10,12 @@ package io.camunda.exporter.rdbms.cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.exporter.rdbms.utils.ProcessCacheUtil;
+import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.query.ProcessDefinitionQuery;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,5 +41,22 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
     }
     LOG.debug("Process '{}' not found in RDBMS", key);
     return null;
+  }
+
+  @Override
+  public @NotNull Map<Long, CachedProcessEntity> loadAll(final @NotNull Set<? extends Long> keys) {
+    final var query =
+        ProcessDefinitionQuery.of(b -> b.filter(f -> f.processDefinitionKeys(List.copyOf(keys))));
+    final var response = reader.search(query);
+
+    return response.items().stream()
+        .collect(
+            Collectors.toMap(
+                ProcessDefinitionEntity::processDefinitionKey,
+                pde ->
+                    new CachedProcessEntity(
+                        pde.name(),
+                        pde.versionTag(),
+                        ProcessCacheUtil.extractCallActivityIdsFromDiagram(pde))));
   }
 }

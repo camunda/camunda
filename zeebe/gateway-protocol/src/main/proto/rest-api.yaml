@@ -5445,7 +5445,7 @@ components:
           description: The key of the process definition.
         processDefinitionName:
           type: string
-          description: The name of the process definition (fallbacks to process definition ID if not available).
+          description: The name of the process definition (fall backs to the process definition ID if not available).
     ProcessDefinitionElementStatisticsQuery:
       description: Process definition element statistics request.
       type: object

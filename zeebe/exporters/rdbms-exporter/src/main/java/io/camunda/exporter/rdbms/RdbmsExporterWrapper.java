@@ -46,6 +46,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import java.time.Duration;
+import java.util.Map;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
 public class RdbmsExporterWrapper implements Exporter {
@@ -53,7 +54,7 @@ public class RdbmsExporterWrapper implements Exporter {
   /** The partition on which all process deployments are published */
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
-  public static final String NAMESPACE = "zeebe.rdbms.exporter.cache";
+  public static final String NAMESPACE = "camunda.rdbms.exporter.cache";
   private static final int DEFAULT_FLUSH_INTERVAL = 500;
   private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
   private static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
@@ -181,7 +182,17 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private long readMaxCacheSize(final Context context) {
-    return readLong(context, "maxCacheSize", DEFAULT_MAX_CACHE_SIZE);
+    final var arguments = context.getConfiguration().getArguments();
+    if (arguments != null && arguments.containsKey("processCache")) {
+      final var processCacheObject = arguments.get("processCache");
+      if (processCacheObject instanceof final Map<?, ?> processCacheMap) {
+        final var maxCacheSize = processCacheMap.get("maxCacheSize");
+        if (maxCacheSize instanceof Number) {
+          return ((Number) maxCacheSize).longValue();
+        }
+      }
+    }
+    return DEFAULT_MAX_CACHE_SIZE;
   }
 
   private void createHandlers(
