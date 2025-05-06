@@ -142,6 +142,16 @@ public class TenantController {
                 .addMember(tenantId, EntityType.GROUP, groupId));
   }
 
+  @CamundaPutMapping(path = "/{tenantId}/roles/{roleId}")
+  public CompletableFuture<ResponseEntity<Object>> assignRoleToTenant(
+      @PathVariable final String tenantId, @PathVariable final String roleId) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(tenantId, EntityType.ROLE, roleId));
+  }
+
   @CamundaDeleteMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> deleteTenant(
       @PathVariable final String tenantId) {

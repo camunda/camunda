@@ -18,7 +18,7 @@ import org.agrona.DirectBuffer;
 
 public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<TenantRecord> {
   private static final Set<EntityType> ALLOWED_ENTITY_TYPES =
-      EnumSet.of(EntityType.USER, EntityType.MAPPING, EntityType.GROUP);
+      EnumSet.of(EntityType.USER, EntityType.MAPPING, EntityType.GROUP, EntityType.ROLE);
 
   private final TenantRecord tenantDto = new TenantRecord();
 
