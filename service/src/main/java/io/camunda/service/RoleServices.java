@@ -109,13 +109,6 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .findFirst();
   }
 
-  public Optional<RoleEntity> findRoleByName(final String name) {
-    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.name(name)).build())
-        .items()
-        .stream()
-        .findFirst();
-  }
-
   public CompletableFuture<RoleRecord> deleteRole(final String roleId) {
     return sendBrokerRequest(new BrokerRoleDeleteRequest(roleId));
   }
