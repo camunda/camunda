@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -138,10 +139,10 @@ final class IncidentUpdateTaskTest {
     }
 
     @Override
-    public CompletionStage<Boolean> wasProcessInstanceDeleted(final long processInstanceKey) {
+    public CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys) {
       return wasProcessInstanceDeleted != null
-          ? wasProcessInstanceDeleted
-          : super.wasProcessInstanceDeleted(processInstanceKey);
+          ? CompletableFuture.completedFuture(processInstanceKeys)
+          : super.deletedProcessInstances(processInstanceKeys);
     }
 
     @Override

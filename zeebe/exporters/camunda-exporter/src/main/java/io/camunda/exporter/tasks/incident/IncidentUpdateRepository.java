@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,13 +82,13 @@ public interface IncidentUpdateRepository extends AutoCloseable {
       List<String> processInstanceIds);
 
   /**
-   * Returns whether the process instance was explicitly deleted, meaning a user executed an
-   * operation to explicitly delete it from the historic data.
+   * Returns the process instances that were explicitly deleted, meaning a user executed an
+   * operation to explicitly delete them from the historic data.
    *
-   * @param processInstanceKey the key of the process instance
-   * @return true if it was deleted, false otherwise
+   * @param processInstanceKeys list of process instance keys
+   * @return a set of process instance keys that were deleted
    */
-  CompletionStage<Boolean> wasProcessInstanceDeleted(final long processInstanceKey);
+  CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys);
 
   /**
    * Executes the given bulk update against the underlying document store, waiting until the
@@ -204,8 +205,8 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletionStage<Boolean> wasProcessInstanceDeleted(final long processInstanceKey) {
-      return CompletableFuture.completedFuture(false);
+    public CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys) {
+      return CompletableFuture.completedFuture(Set.of());
     }
 
     @Override

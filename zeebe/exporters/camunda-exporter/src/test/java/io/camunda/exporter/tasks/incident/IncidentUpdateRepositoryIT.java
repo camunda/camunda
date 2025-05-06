@@ -54,6 +54,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.LongStream;
@@ -671,10 +672,10 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+      final var wasDeleted = repository.deletedProcessInstances(Set.of(1L));
 
       // then
-      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(Set.of());
     }
 
     @Test
@@ -691,10 +692,10 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+      final var wasDeleted = repository.deletedProcessInstances(Set.of(1L));
 
       // then
-      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(Set.of());
     }
 
     @ParameterizedTest
@@ -716,10 +717,10 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+      final var wasDeleted = repository.deletedProcessInstances(Set.of());
 
       // then
-      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(Set.of());
     }
 
     @ParameterizedTest
@@ -740,10 +741,10 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+      final var wasDeleted = repository.deletedProcessInstances(Set.of(1L));
 
       // then
-      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(true);
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(Set.of(1L));
     }
   }
 
