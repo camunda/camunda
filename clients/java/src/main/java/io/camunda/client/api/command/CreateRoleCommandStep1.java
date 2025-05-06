@@ -19,11 +19,28 @@ import io.camunda.client.api.response.CreateRoleResponse;
 
 public interface CreateRoleCommandStep1 extends FinalCommandStep<CreateRoleResponse> {
   /**
-   * Set the name to create role with.
+   * Set the ID to create role with.
    *
-   * @param name the name value
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
+   * @param roleId the role ID
+   * @return the builder for this command.
    */
-  CreateRoleCommandStep1 name(String name);
+  CreateRoleCommandStep2 roleId(String roleId);
+
+  interface CreateRoleCommandStep2 extends FinalCommandStep<CreateRoleResponse> {
+    /**
+     * Set the name for the role to be created.
+     *
+     * @param name the role name
+     * @return the builder for this command
+     */
+    CreateRoleCommandStep2 name(String name);
+
+    /**
+     * Set the description for the role to be created.
+     *
+     * @param description the role description
+     * @return the builder for this command
+     */
+    CreateRoleCommandStep2 description(String description);
+  }
 }

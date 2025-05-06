@@ -18,6 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
+import io.camunda.client.api.command.CreateRoleCommandStep1.CreateRoleCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -29,7 +30,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
+public final class CreateRoleCommandImpl implements CreateRoleCommandStep1, CreateRoleCommandStep2 {
   private final RoleCreateRequest request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
@@ -43,9 +44,20 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
   }
 
   @Override
-  public CreateRoleCommandStep1 name(final String name) {
-    ArgumentUtil.ensureNotNull("name", name);
-    request.setName(name);
+  public CreateRoleCommandStep2 roleId(final String roleId) {
+    request.setRoleId(roleId);
+    return this;
+  }
+
+  @Override
+  public CreateRoleCommandStep2 name(final String name) {
+    request.name(name);
+    return this;
+  }
+
+  @Override
+  public CreateRoleCommandStep2 description(final String description) {
+    request.description(description);
     return this;
   }
 
@@ -57,6 +69,7 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
 
   @Override
   public CamundaFuture<CreateRoleResponse> send() {
+    ArgumentUtil.ensureNotNull("roleId", request.getRoleId());
     ArgumentUtil.ensureNotNull("name", request.getName());
     final HttpCamundaFuture<CreateRoleResponse> result = new HttpCamundaFuture<>();
     final CreateRoleResponseImpl response = new CreateRoleResponseImpl();
