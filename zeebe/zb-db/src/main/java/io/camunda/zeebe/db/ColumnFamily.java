@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.db;
 
-import io.camunda.zeebe.protocol.ColumnFamilyScoped;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -19,7 +19,7 @@ import java.util.function.Consumer;
  * @param <ValueType> the type of the values
  */
 public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
-    extends ColumnFamilyScoped {
+    extends ScopedColumnFamily {
 
   /**
    * Inserts a new key value pair into the column family.

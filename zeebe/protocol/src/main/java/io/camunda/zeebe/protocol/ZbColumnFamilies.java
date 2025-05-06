@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.protocol;
 
-public enum ZbColumnFamilies implements EnumValue, ColumnFamilyScoped {
+public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   DEFAULT(0),
 
   // util

@@ -8,14 +8,14 @@
 package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
-import io.camunda.zeebe.protocol.ColumnFamilyScoped;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.protocol.EnumValue;
 
 /**
  * Contains only one column family {@link #DEFAULT}, which can be used for tests or simple
  * databases.
  */
-public enum DefaultColumnFamily implements EnumValue, ColumnFamilyScoped {
+public enum DefaultColumnFamily implements EnumValue, ScopedColumnFamily {
   DEFAULT(0);
 
   private final int value;

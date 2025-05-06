@@ -15,6 +15,6 @@
  */
 package io.camunda.zeebe.protocol;
 
-public interface ColumnFamilyScoped {
+public interface ScopedColumnFamily {
   ColumnFamilyScope partitionScope();
 }
