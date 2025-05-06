@@ -21,8 +21,8 @@ import io.camunda.zeebe.db.impl.NoopColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDBMetricExporter;
-import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
@@ -95,7 +95,8 @@ public class ZeebeTransactionDb<
     closables.add(defaultWriteOptions);
   }
 
-  public static <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+  public static <
+          ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
           final RocksDbOptions options,
           final String path,

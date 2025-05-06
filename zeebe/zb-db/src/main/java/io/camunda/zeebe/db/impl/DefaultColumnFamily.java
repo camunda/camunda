@@ -8,8 +8,8 @@
 package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
-import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
 
 /**
  * Contains only one column family {@link #DEFAULT}, which can be used for tests or simple
