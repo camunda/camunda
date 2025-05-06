@@ -133,4 +133,30 @@ public class CreateAuthorizationTest {
                     resourceType,
                     resourceType.getSupportedPermissionTypes()));
   }
+
+  @Test
+  public void shouldRejectCreateWhenMappingDoesNotExist() {
+    // given
+    final var nonexistentMappingId = "nonexistent-mapping-id";
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(nonexistentMappingId)
+            .withOwnerType(AuthorizationOwnerType.MAPPING)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to create or update authorization with ownerId '%s', but a mapping with this ID does not exist."
+                .formatted(nonexistentMappingId));
+  }
 }
