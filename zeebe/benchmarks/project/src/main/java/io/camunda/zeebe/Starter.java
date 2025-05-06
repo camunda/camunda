@@ -111,10 +111,15 @@ public class Starter extends App {
             TimeUnit.NANOSECONDS);
 
     if (starterCfg.isMonitorApiVisibility()) {
-      final var operateClient =
-          new OperateClient(
-              URI.create((appCfg.isTls() ? "https://" : "http://") + appCfg.getOperateUrl()),
-              virtualExecutor);
+      final var operateUri =
+          URI.create((appCfg.isTls() ? "https://" : "http://") + appCfg.getOperateUrl());
+      LOG.atInfo()
+          .addKeyValue("operateUrl", operateUri)
+          .log(
+              """
+              Starting API visibility monitor, polling for newly created process instances; make \
+              sure Operate is deployed and accessible as configured""");
+      final var operateClient = new OperateClient(operateUri, virtualExecutor);
       apiVisibilityMonitor = new ProcessInstanceMonitor(operateClient, virtualExecutor, registry);
     }
 
