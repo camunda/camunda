@@ -1,0 +1,26 @@
+{
+  "components": [
+    {
+      "values": [
+        {
+          "label": "Value",
+          "value": "value"
+        },
+        {
+          "label": "Value 2",
+          "value": "value2"
+        }
+      ],
+      "label": "Tag list",
+      "type": "taglist",
+      "layout": {
+        "row": "Row_1ygbwjl",
+        "columns": null
+      },
+      "id": "Field_03604cb",
+      "key": "field_05jv3ul"
+    }
+  ],
+  "type": "default",
+  "id": "form_with_tag_list"
+}
