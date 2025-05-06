@@ -189,8 +189,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
 
                 return r.hits().hits().stream()
                     .map(h -> h.source().get(OperationTemplate.PROCESS_INSTANCE_KEY))
-                    .map(Object::toString)
-                    .map(Long::valueOf)
+                    .map(v -> ((Number) v).longValue())
                     .collect(Collectors.toSet());
               },
               executor);

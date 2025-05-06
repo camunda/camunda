@@ -240,7 +240,8 @@ public final class IncidentUpdateTask implements BackgroundTask {
       throw new ExporterException(
           """
         "%d process instances are not yet imported for incident post processing; operation will \
-        be retried..."""
+        be retried...
+        """
               .formatted(countMissingInstance));
     }
   }
