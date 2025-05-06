@@ -17,6 +17,7 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -40,6 +41,15 @@ public final class TenantRequestValidator {
         violations -> {
           validateTenantName(request.getName(), violations);
           validateTenantDescription(request.getDescription(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateMemberRequest(
+      final String tenantId, final String memberId, final EntityType memberType) {
+    return validate(
+        violations -> {
+          validateTenantId(tenantId, violations);
+          validateMemberId(memberId, memberType, violations);
         });
   }
 
@@ -68,6 +78,29 @@ public final class TenantRequestValidator {
       final String description, final List<String> violations) {
     if (description == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
+    }
+  }
+
+  public static void validateMemberId(
+      final String entityId, final EntityType entityType, final List<String> violations) {
+    switch (entityType) {
+      case USER:
+        validateId(entityId, "username", violations);
+        break;
+      case GROUP:
+        validateId(entityId, "groupId", violations);
+        break;
+      case MAPPING:
+        validateId(entityId, "mappingId", violations);
+        break;
+      case ROLE:
+        validateId(entityId, "roleId", violations);
+        break;
+      case APPLICATION:
+        validateId(entityId, "applicationId", violations);
+        break;
+      default:
+        validateId(entityId, "entityId", violations);
     }
   }
 }

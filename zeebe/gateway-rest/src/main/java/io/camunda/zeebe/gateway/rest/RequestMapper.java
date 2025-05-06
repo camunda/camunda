@@ -73,6 +73,7 @@ import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
@@ -895,6 +896,13 @@ public class RequestMapper {
                 tenantId,
                 tenantUpdateRequest.getName(),
                 tenantUpdateRequest.getDescription()));
+  }
+
+  public static Either<ProblemDetail, TenantMemberRequest> toTenantMemberRequest(
+      final String tenantId, final String memberId, final EntityType entityType) {
+    return getResult(
+        TenantRequestValidator.validateMemberRequest(tenantId, memberId, entityType),
+        () -> new TenantMemberRequest(tenantId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, AdHocSubprocessActivityQuery> toAdHocSubprocessActivityQuery(
