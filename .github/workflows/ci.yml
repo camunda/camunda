@@ -395,7 +395,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] OpenSearch"
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
@@ -454,6 +454,7 @@ jobs:
       # -D test.integration.camunda.database.type=os
       #
       - name: Run integration test with externalized OS
+        timeout-minutes: 10
         run: >
           ./mvnw -B -T 1 --no-snapshot-updates
           -D forkCount=4
@@ -493,7 +494,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] RDBMS - H2"
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     env:
@@ -519,6 +520,7 @@ jobs:
       # -Dcamunda.it.database.type=rdbms
       #
       - name: Run integration test with InMemory H2
+        timeout-minutes: 10
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=3
