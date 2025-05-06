@@ -46,6 +46,7 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -60,6 +61,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UsageMetricsQuery;
@@ -510,6 +512,17 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
-    throw new UnsupportedOperationException("Not implemented yet");
+    // TODO must be refactored to always use paged filter #31777
+    return searchBatchOperationItems(
+            SearchQueryBuilders.batchOperationItemQuery()
+                .filter(f -> f.batchOperationIds(batchOperationId))
+                .build())
+        .items();
+  }
+
+  public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
+      final BatchOperationItemQuery query) {
+    return getSearchExecutor()
+        .search(query, io.camunda.webapps.schema.entities.operation.OperationEntity.class);
   }
 }
