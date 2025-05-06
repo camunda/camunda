@@ -5620,9 +5620,9 @@
           },
           "gridPos": {
             "h": 7,
-            "w": 24,
+            "w": 12,
             "x": 0,
-            "y": 1266
+            "y": 5
           },
           "id": 261,
           "options": {
@@ -5674,6 +5674,166 @@
             }
           ],
           "title": "Process memory usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Native memory usage provided by NMT (mmapped files are not included)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "decbytes"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "limit"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#E02F44",
+                      "mode": "fixed"
+                    }
+                  },
+                  {
+                    "id": "custom.fillOpacity",
+                    "value": 0
+                  },
+                  {
+                    "id": "custom.lineWidth",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#56A64B",
+                      "mode": "fixed"
+                    }
+                  },
+                  {
+                    "id": "custom.fillOpacity",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
+          "id": 659,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "10.4.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "camunda_memory_nmt_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", state=~\"$memory_state\"}",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} {{type}} {{memory_state}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "camunda_memory_nmt_total_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", state=~\"$memory_state\"}",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} {{type}} {{memory_state}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Native memory usage",
           "type": "timeseries"
         },
         {
@@ -5741,7 +5901,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1273
+            "y": 12
           },
           "id": 98,
           "options": {
@@ -5879,7 +6039,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1273
+            "y": 12
           },
           "id": 35,
           "options": {
@@ -5984,7 +6144,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1281
+            "y": 20
           },
           "id": 579,
           "options": {
@@ -6075,7 +6235,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1281
+            "y": 20
           },
           "id": 580,
           "options": {
@@ -6170,7 +6330,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1289
+            "y": 28
           },
           "id": 285,
           "options": {
@@ -6279,7 +6439,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1289
+            "y": 28
           },
           "id": 286,
           "options": {
@@ -23501,6 +23661,37 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "committed",
+          "value": "committed"
+        },
+        "hide": 0,
+        "includeAll": true,
+        "multi": false,
+        "name": "memory_state",
+        "options": [
+          {
+            "selected": false,
+            "text": "All",
+            "value": "$__all"
+          },
+          {
+            "selected": true,
+            "text": "committed",
+            "value": "committed"
+          },
+          {
+            "selected": false,
+            "text": "reserved",
+            "value": "reserved"
+          }
+        ],
+        "query": "committed, reserved",
+        "skipUrlSync": false,
+        "type": "custom"
       }
     ]
   },
