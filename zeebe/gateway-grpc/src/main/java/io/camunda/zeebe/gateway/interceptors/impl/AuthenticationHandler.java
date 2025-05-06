@@ -75,52 +75,46 @@ public sealed interface AuthenticationHandler {
                 .withCause(e));
       }
 
-      final var username = getUsernameClaim(token.getClaims());
-      final var applicationId = getApplicationIdClaim(token.getClaims());
+      final var username =
+          token.getClaims().get(oidcAuthenticationConfiguration.getUsernameClaim());
 
-      if (username == null && applicationId == null) {
-        return Either.left(
-            Status.UNAUTHENTICATED.augmentDescription(
-                "Expected either a username (claim: %s) or application ID (claim: %s) on the token, but no matching claim found"
-                    .formatted(
-                        oidcAuthenticationConfiguration.getUsernameClaim(),
-                        oidcAuthenticationConfiguration.getApplicationIdClaim())));
-      }
-
-      if (username == null) {
-        if (applicationId.isLeft()) {
-          return Either.left(applicationId.getLeft());
+      if (username != null) {
+        if (username instanceof String) {
+          return Either.right(
+              Context.current()
+                  .withValue(USERNAME, username.toString())
+                  .withValue(USER_CLAIMS, token.getClaims()));
+        } else {
+          return Either.left(
+              Status.UNAUTHENTICATED.augmentDescription(
+                  CONFIGURED_CLAIM_NOT_A_STRING.formatted(
+                      "username", oidcAuthenticationConfiguration.getUsernameClaim())));
         }
-        return Either.right(
-            Context.current()
-                .withValue(APPLICATION_ID, applicationId.get())
-                .withValue(USER_CLAIMS, token.getClaims()));
-      } else {
-        if (username.isLeft()) {
-          return Either.left(username.getLeft());
+      }
+
+      final var applicationId =
+          token.getClaims().get(oidcAuthenticationConfiguration.getApplicationIdClaim());
+
+      if (applicationId != null) {
+        if (applicationId instanceof String) {
+          return Either.right(
+              Context.current()
+                  .withValue(APPLICATION_ID, applicationId.toString())
+                  .withValue(USER_CLAIMS, token.getClaims()));
+        } else {
+          return Either.left(
+              Status.UNAUTHENTICATED.augmentDescription(
+                  CONFIGURED_CLAIM_NOT_A_STRING.formatted(
+                      "application id", oidcAuthenticationConfiguration.getApplicationIdClaim())));
         }
-        return Either.right(
-            Context.current()
-                .withValue(USERNAME, username.get())
-                .withValue(USER_CLAIMS, token.getClaims()));
-      }
-    }
-
-    private Either<Status, String> getUsernameClaim(final Map<String, Object> claims) {
-      final var usernameClaim = claims.get(oidcAuthenticationConfiguration.getUsernameClaim());
-
-      if (usernameClaim == null) {
-        return null;
-      }
-
-      if (usernameClaim instanceof String) {
-        return Either.right(usernameClaim.toString());
       }
 
       return Either.left(
           Status.UNAUTHENTICATED.augmentDescription(
-              CONFIGURED_CLAIM_NOT_A_STRING.formatted(
-                  "username", oidcAuthenticationConfiguration.getUsernameClaim())));
+              "Expected either a username (claim: %s) or application ID (claim: %s) on the token, but no matching claim found"
+                  .formatted(
+                      oidcAuthenticationConfiguration.getUsernameClaim(),
+                      oidcAuthenticationConfiguration.getApplicationIdClaim())));
     }
 
     private Either<Status, String> getApplicationIdClaim(final Map<String, Object> claims) {
