@@ -7,7 +7,6 @@
  */
 package io.camunda.search.filter;
 
-import io.camunda.search.filter.GroupFilter.Builder;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
@@ -18,10 +17,12 @@ public record RoleFilter(
     String name,
     String description,
     Set<String> memberIds,
-    EntityType memberType)
+    EntityType memberType,
+    String groupId,
+    Set<String> roleIds)
     implements FilterBase {
   public Builder toBuilder() {
-    return new Builder().roleKey(roleKey).roleId(roleId).name(name).memberIds(memberIds);
+    return new Builder().roleKey(roleKey).roleId(roleId).name(name).memberIds(memberIds).groupId(groupId);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
@@ -31,6 +32,8 @@ public record RoleFilter(
     private String description;
     private Set<String> memberIds;
     private EntityType memberType;
+    private String groupId;
+    private Set<String> roleIds;
 
     public Builder roleKey(final Long value) {
       roleKey = value;
@@ -66,9 +69,20 @@ public record RoleFilter(
       return this;
     }
 
+    public Builder groupId(final String value) {
+      groupId = value;
+      return this;
+    }
+
+    public Builder roleIds(final Set<String> value) {
+      roleIds = value == null ? Set.of() : value;
+      return this;
+    }
+
     @Override
     public RoleFilter build() {
-      return new RoleFilter(roleKey, roleId, name, description, memberIds, memberType);
+      return new RoleFilter(
+          roleKey, roleId, name, description, memberIds, memberType, groupId, roleIds);
     }
   }
 }
