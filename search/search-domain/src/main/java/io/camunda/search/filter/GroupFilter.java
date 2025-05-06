@@ -16,6 +16,7 @@ public record GroupFilter(
     String groupId,
     String name,
     String description,
+    String joinParentId,
     Set<String> memberIds,
     EntityType memberType)
     implements FilterBase {
@@ -25,6 +26,7 @@ public record GroupFilter(
     private String groupId;
     private String name;
     private String description;
+    private String joinParentId;
     private Set<String> memberIds;
     private EntityType memberType;
 
@@ -48,6 +50,11 @@ public record GroupFilter(
       return this;
     }
 
+    public Builder joinParentId(final String value) {
+      joinParentId = value;
+      return this;
+    }
+
     public Builder memberId(final String value) {
       return memberIds(Set.of(value));
     }
@@ -64,7 +71,8 @@ public record GroupFilter(
 
     @Override
     public GroupFilter build() {
-      return new GroupFilter(groupKey, groupId, name, description, memberIds, memberType);
+      return new GroupFilter(
+          groupKey, groupId, name, description, joinParentId, memberIds, memberType);
     }
   }
 }
