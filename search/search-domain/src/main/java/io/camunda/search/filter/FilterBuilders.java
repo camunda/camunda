@@ -199,6 +199,16 @@ public final class FilterBuilders {
     return fn.apply(batchOperation()).build();
   }
 
+  public static BatchOperationItemFilter.Builder batchOperationItem() {
+    return new BatchOperationItemFilter.Builder();
+  }
+
+  public static BatchOperationItemFilter batchOperationItem(
+      final Function<BatchOperationItemFilter.Builder, ObjectBuilder<BatchOperationItemFilter>>
+          fn) {
+    return fn.apply(batchOperationItem()).build();
+  }
+
   public static FormFilter.Builder form() {
     return new FormFilter.Builder();
   }
