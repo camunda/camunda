@@ -84,6 +84,7 @@ import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
+import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
@@ -1880,4 +1881,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the groups search request
    */
   GroupsSearchRequest newGroupsSearchRequest();
+
+  /**
+   * Executes a search request to query users by group.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newUsersByGroupSearchRequest(groupId)
+   *  .filter((f) -> f.username(username))
+   *  .sort((s) -> s.username().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the users by group search request
+   */
+  UsersByGroupSearchRequest newUsersByGroupSearchRequest(String groupId);
 }

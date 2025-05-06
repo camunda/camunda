@@ -95,6 +95,7 @@ import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
+import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
@@ -195,6 +196,7 @@ import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
+import io.camunda.client.impl.search.request.UsersByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
@@ -1003,6 +1005,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public GroupsSearchRequest newGroupsSearchRequest() {
     return new GroupSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public UsersByGroupSearchRequest newUsersByGroupSearchRequest(final String groupId) {
+    return new UsersByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
   }
 
   private JobClient newJobClient() {

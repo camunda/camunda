@@ -28,6 +28,7 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
+import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.util.ParseUtil;
@@ -159,10 +160,25 @@ public final class SearchResponseMapper {
         response.getDescription());
   }
 
+  public static User toUserResponse(final UserResult response) {
+    return new UserImpl(
+        ParseUtil.parseLongOrNull(response.getUserKey()),
+        response.getUsername(),
+        response.getName(),
+        response.getEmail());
+  }
+
   public static SearchResponse<Group> toGroupsResponse(final GroupSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Group> instances =
         toSearchResponseInstances(response.getItems(), SearchResponseMapper::toGroupResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<User> toUsersResponse(final UserSearchResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<User> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toUserResponse);
     return new SearchResponseImpl<>(instances, page);
   }
 
