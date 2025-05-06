@@ -11,9 +11,9 @@ import {testData} from '../index.setup';
 import {ProcessInstance} from './index';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {variablesStore} from 'modules/stores/variables';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
+import * as flowNodeInstanceUtils from 'modules/utils/flowNodeInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
@@ -23,10 +23,13 @@ import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 jest.mock('modules/utils/bpmn');
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
+}));
 
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
-  processInstanceDetailsStore.isPollRequestRunning = false;
   incidentsStore.isPollRequestRunning = false;
   flowNodeInstanceStore.isPollRequestRunning = false;
 };
@@ -193,23 +196,10 @@ describe('ProcessInstance', () => {
     );
   });
 
-  it.skip('should display forbidden content after polling', async () => {
+  it('should display forbidden content after polling', async () => {
     jest.useFakeTimers();
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
-    expect(screen.queryByTestId('variables-skeleton')).not.toBeInTheDocument();
-    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    expect(screen.getByTestId('diagram-body')).toBeInTheDocument();
-    expect(screen.getByText('Instance History')).toBeInTheDocument();
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId('instance-header')).getByTestId(
-        'INCIDENT-icon',
-      ),
-    ).toBeInTheDocument();
-
-    mockRequests();
-    mockFetchProcessInstanceDeprecated().withServerError(403);
     mockFetchProcessInstance().withServerError(403);
 
     jest.runOnlyPendingTimers();
@@ -243,40 +233,32 @@ describe('ProcessInstance', () => {
       'handlePolling',
     );
 
-    const handlePollingInstanceDetailsSpy = jest.spyOn(
-      processInstanceDetailsStore,
-      'handlePolling',
-    );
-
     const handlePollingIncidentsSpy = jest.spyOn(
       incidentsStore,
       'handlePolling',
     );
 
-    const handlePollingFlowNodeInstanceSpy = jest.spyOn(
-      flowNodeInstanceStore,
-      'pollInstances',
+    const initFlowNodeInstanceSpy = jest.spyOn(flowNodeInstanceUtils, 'init');
+    const startPollingFlowNodeInstanceSpy = jest.spyOn(
+      flowNodeInstanceUtils,
+      'startPolling',
     );
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
     mockRequests();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
     jest.runOnlyPendingTimers();
     await waitFor(() =>
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1),
-    );
-    await waitFor(() =>
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
     );
     await waitFor(() =>
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1),
+      expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(1),
     );
     await waitFor(() =>
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1),
@@ -284,7 +266,6 @@ describe('ProcessInstance', () => {
 
     await waitFor(() => {
       expect(variablesStore.state.status).toBe('fetched');
-      expect(processInstanceDetailsStore.state.status).toBe('fetched');
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
 
@@ -295,9 +276,7 @@ describe('ProcessInstance', () => {
 
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     clearPollingStates();
@@ -305,9 +284,8 @@ describe('ProcessInstance', () => {
 
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     mockRequests();
@@ -320,10 +298,9 @@ describe('ProcessInstance', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(3);
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(3);
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(3);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3);
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(4);
+      expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(4);
     });
 
     await waitForPollingsToBeComplete();
@@ -341,61 +318,49 @@ describe('ProcessInstance', () => {
       'handlePolling',
     );
 
-    const handlePollingInstanceDetailsSpy = jest.spyOn(
-      processInstanceDetailsStore,
-      'handlePolling',
-    );
-
     const handlePollingIncidentsSpy = jest.spyOn(
       incidentsStore,
       'handlePolling',
     );
 
-    const handlePollingFlowNodeInstanceSpy = jest.spyOn(
-      flowNodeInstanceStore,
-      'pollInstances',
+    const initFlowNodeInstanceSpy = jest.spyOn(flowNodeInstanceUtils, 'init');
+    const startPollingFlowNodeInstanceSpy = jest.spyOn(
+      flowNodeInstanceUtils,
+      'startPolling',
     );
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
 
     mockRequests();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
+    expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
 
     triggerVisibilityChange('visible');
 
     clearPollingStates();
     await waitFor(() =>
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1),
-    );
-    await waitFor(() =>
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
     );
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     mockRequests();
     jest.runOnlyPendingTimers();
 
     await waitFor(() =>
-      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(3),
-    );
-    await waitFor(() =>
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(2),
     );
     await waitFor(() =>
-      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(3),
+      expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1),
     );
     await waitFor(() =>
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2),
@@ -419,11 +384,6 @@ describe('ProcessInstance', () => {
       'handlePolling',
     );
 
-    const handlePollingInstanceDetailsSpy = jest.spyOn(
-      processInstanceDetailsStore,
-      'handlePolling',
-    );
-
     const handlePollingIncidentsSpy = jest.spyOn(
       incidentsStore,
       'handlePolling',
@@ -438,7 +398,6 @@ describe('ProcessInstance', () => {
 
     mockRequests();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
@@ -450,7 +409,6 @@ describe('ProcessInstance', () => {
 
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);

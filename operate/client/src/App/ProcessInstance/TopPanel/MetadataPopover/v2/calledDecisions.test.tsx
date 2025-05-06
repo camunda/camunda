@@ -23,6 +23,7 @@ import {
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {createInstance, mockCallActivityProcessXML} from 'modules/testUtils';
 import {init} from 'modules/utils/flowNodeMetadata';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -47,9 +48,12 @@ describe('MetadataPopover', () => {
         state: 'ACTIVE',
       }),
     );
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+      },
+    );
 
     renderPopover();
 
@@ -91,7 +95,7 @@ describe('MetadataPopover', () => {
       }),
     );
 
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
+    selectFlowNode({}, {flowNodeId: 'BusinessRuleTask'});
 
     const {user} = renderPopover();
 
@@ -139,7 +143,7 @@ describe('MetadataPopover', () => {
       }),
     );
 
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
+    selectFlowNode({}, {flowNodeId: 'BusinessRuleTask'});
 
     const {user} = renderPopover();
 
@@ -193,7 +197,7 @@ describe('MetadataPopover', () => {
       }),
     );
 
-    flowNodeSelectionStore.selectFlowNode({flowNodeId: 'BusinessRuleTask'});
+    selectFlowNode({}, {flowNodeId: 'BusinessRuleTask'});
 
     renderPopover();
 

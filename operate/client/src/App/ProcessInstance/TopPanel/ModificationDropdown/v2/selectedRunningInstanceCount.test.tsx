@@ -7,12 +7,12 @@
  */
 
 import {act, screen} from 'modules/testing-library';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
 import {open} from 'modules/mocks/diagrams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
 describe('selectedRunningInstanceCount', () => {
   beforeEach(() => {
@@ -85,9 +85,12 @@ describe('selectedRunningInstanceCount', () => {
     renderPopover();
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'StartEvent_1',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'StartEvent_1',
+        },
+      );
     });
 
     expect(
@@ -109,9 +112,12 @@ describe('selectedRunningInstanceCount', () => {
     );
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'service-task-7',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'service-task-7',
+        },
+      );
     });
 
     expect(
