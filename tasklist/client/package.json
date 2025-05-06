@@ -14,7 +14,7 @@
     "@tanstack/eslint-plugin-query": "5.74.7",
     "@tanstack/react-query": "5.75.5",
     "@uidotdev/usehooks": "2.4.1",
-    "@vzeta/camunda-api-zod-schemas": "0.0.2-beta.43",
+    "@vzeta/camunda-api-zod-schemas": "0.0.2-beta.45",
     "bpmn-js": "18.6.1",
     "classnames": "2.5.1",
     "date-fns": "4.1.0",
