@@ -40,6 +40,16 @@ public class StarterCfg {
   private boolean startViaMessage;
   private String msgName;
 
+  private boolean monitorApiVisibility;
+
+  public boolean isMonitorApiVisibility() {
+    return monitorApiVisibility;
+  }
+
+  public void setMonitorApiVisibility(final boolean monitorApiVisibility) {
+    this.monitorApiVisibility = monitorApiVisibility;
+  }
+
   public boolean isStartViaMessage() {
     return startViaMessage;
   }
