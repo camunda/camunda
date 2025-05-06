@@ -1692,9 +1692,9 @@ public class ProcessInstanceAndElementInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result).isNotNull();
-    assertThat(result).hasSize(2);
     assertThat(result)
+        .isNotNull()
+        .hasSize(2)
         .extracting("processDefinitionName")
         .containsExactly("Parent process v1", "Child process v1");
   }
@@ -1720,7 +1720,6 @@ public class ProcessInstanceAndElementInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result).isNotNull();
-    assertThat(result).isEmpty();
+    assertThat(result).isNotNull().isEmpty();
   }
 }
