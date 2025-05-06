@@ -22,9 +22,16 @@ function useAllProcessDefinitions(
   },
 ) {
   return useQuery({
-    queryKey: ['process-definitions', filter],
+    queryKey: ['process-definitions', filter, 1000],
     queryFn: async () => {
-      const {response, error} = await request(api.queryProcesses({filter}));
+      const {response, error} = await request(
+        api.queryProcesses({
+          filter,
+          page: {
+            limit: 1000,
+          },
+        }),
+      );
 
       if (response !== null) {
         return response.json() as Promise<QueryProcessDefinitionsResponseBody>;
