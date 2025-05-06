@@ -590,7 +590,7 @@ public class RoleControllerTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
                     new BrokerRejection(
-                        RoleIntent.ENTITY_ADDED,
+                        RoleIntent.REMOVE_ENTITY,
                         1L,
                         RejectionType.NOT_FOUND,
                         "Mapping not found"))));
@@ -620,7 +620,7 @@ public class RoleControllerTest extends RestControllerTest {
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
                     new BrokerRejection(
-                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+                        RoleIntent.REMOVE_ENTITY, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
     // when
     webClient
