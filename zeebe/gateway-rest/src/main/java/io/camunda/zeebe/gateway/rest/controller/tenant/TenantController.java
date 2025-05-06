@@ -151,21 +151,15 @@ public class TenantController {
   @CamundaDeleteMapping(path = "/{tenantId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> removeUserFromTenant(
       @PathVariable final String tenantId, @PathVariable final String username) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(tenantId, EntityType.USER, username));
+    return RequestMapper.toTenantMemberRequest(tenantId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/applications/{applicationId}")
   public CompletableFuture<ResponseEntity<Object>> removeApplicationFromTenant(
       @PathVariable final String tenantId, @PathVariable final String applicationId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(tenantId, EntityType.APPLICATION, applicationId));
+    return RequestMapper.toTenantMemberRequest(tenantId, applicationId, EntityType.APPLICATION)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   @CamundaPostMapping(path = "/{tenantId}/mappings/search")
@@ -181,21 +175,15 @@ public class TenantController {
   @CamundaDeleteMapping(path = "/{tenantId}/mappings/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(tenantId, EntityType.MAPPING, mappingId));
+    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> removeGroupFromTenant(
       @PathVariable final String tenantId, @PathVariable final String groupId) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(tenantId, EntityType.GROUP, groupId));
+    return RequestMapper.toTenantMemberRequest(tenantId, groupId, EntityType.GROUP)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {
@@ -214,6 +202,15 @@ public class TenantController {
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .addMember(request));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> removeMemberFromTenant(
+      final TenantMemberRequest request) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(request));
   }
 
   private ResponseEntity<TenantSearchQueryResult> search(final TenantQuery query) {

@@ -221,9 +221,10 @@ public class TenantServiceTest {
     // given
     final var tenantId = "tenantId";
     final var entityId = "entityId";
+    final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
     // when
-    services.removeMember(tenantId, entityType, entityId);
+    services.removeMember(tenantMemberRequest);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();

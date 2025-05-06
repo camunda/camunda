@@ -501,8 +501,9 @@ public class TenantControllerTest extends RestControllerTest {
     // given
     final var tenantId = "some-tenant-id";
     final var entityId = "entity-id";
+    final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
-    when(tenantServices.removeMember(tenantId, entityType, entityId))
+    when(tenantServices.removeMember(tenantMemberRequest))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -515,7 +516,7 @@ public class TenantControllerTest extends RestControllerTest {
         .isNoContent();
 
     // then
-    verify(tenantServices, times(1)).removeMember(tenantId, entityType, entityId);
+    verify(tenantServices, times(1)).removeMember(tenantMemberRequest);
   }
 
   private static Stream<Arguments> provideAddMemberByIdTestCases() {
