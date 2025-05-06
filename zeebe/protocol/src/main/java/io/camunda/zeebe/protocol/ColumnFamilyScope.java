@@ -17,7 +17,22 @@ package io.camunda.zeebe.protocol;
 
 /**
  * Identifies whether a Column Family contains data that must be available on all partitions or just
- * on one
+ * on one.
+ *
+ * <p>As a rule of thumb, if a Column Family contains:
+ *
+ * <ul>
+ *   <li>process definitions, decisions definitions, forms definitions or identity entities they
+ *       should be GLOBAL.
+ *   <li>an instance of any kind, e.g. process instance, variables ecc, then it's likely that it's a
+ *       PARTITION_LOCAL Column Family.
+ * </ul>
+ *
+ * <p>Note that a Column Family should not contain both: if that is the case, then the Column Family
+ * should be split in two.
+ *
+ * <p>This information is crucial to be able to correctly bootstrap a new partition based on the
+ * state of another partition.
  */
 public enum ColumnFamilyScope {
   /* All partitions need this data*/
