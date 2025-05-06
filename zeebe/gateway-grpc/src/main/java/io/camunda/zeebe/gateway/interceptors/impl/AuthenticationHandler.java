@@ -116,24 +116,6 @@ public sealed interface AuthenticationHandler {
                       oidcAuthenticationConfiguration.getUsernameClaim(),
                       oidcAuthenticationConfiguration.getApplicationIdClaim())));
     }
-
-    private Either<Status, String> getApplicationIdClaim(final Map<String, Object> claims) {
-      final var applicationIdClaim =
-          claims.get(oidcAuthenticationConfiguration.getApplicationIdClaim());
-
-      if (applicationIdClaim == null) {
-        return null;
-      }
-
-      if (applicationIdClaim instanceof String) {
-        return Either.right(applicationIdClaim.toString());
-      }
-
-      return Either.left(
-          Status.UNAUTHENTICATED.augmentDescription(
-              CONFIGURED_CLAIM_NOT_A_STRING.formatted(
-                  "application id", oidcAuthenticationConfiguration.getApplicationIdClaim())));
-    }
   }
 
   final class BasicAuth implements AuthenticationHandler {
