@@ -107,7 +107,7 @@ public enum NativeMemoryMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return new KeyName[] {NativeMemoryUsageKeys.VALUE};
+      return new KeyName[] {NativeMemoryUsageKeys.STATE};
     }
 
     @Override
@@ -136,15 +136,15 @@ public enum NativeMemoryMetricsDoc implements ExtendedMeterDocumentation {
     },
 
     /** Specifies if this is the committed or reserved value for the given NMT type. */
-    VALUE {
+    STATE {
       @Override
       public String asString() {
-        return "value";
+        return "state";
       }
     }
   }
 
-  /** The possible values for the {@link NativeMemoryUsageKeys#VALUE} tag. */
+  /** The possible values for the {@link NativeMemoryUsageKeys#STATE} tag. */
   public enum NativeMemoryValueType {
     RESERVED("reserved"),
     COMMITTED("committed");

@@ -9,9 +9,9 @@ package io.camunda.application.commons.metrics.jfr;
 
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NMT_USAGE;
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NMT_USAGE_TOTAL;
+import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NativeMemoryUsageKeys.STATE;
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NativeMemoryValueType.COMMITTED;
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NativeMemoryValueType.RESERVED;
-import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.NativeMemoryUsageKeys.VALUE;
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.RSS;
 import static io.camunda.application.commons.metrics.jfr.NativeMemoryMetricsDoc.RSS_PEAK;
 
@@ -112,12 +112,12 @@ public final class NativeMemoryMetrics {
       Gauge.builder(doc.getName(), reserved, AtomicLong::get)
           .description(doc.getDescription())
           .baseUnit("bytes")
-          .tags(Tags.of(tags).and(Tag.of(VALUE.asString(), RESERVED.value())))
+          .tags(Tags.of(tags).and(Tag.of(STATE.asString(), RESERVED.value())))
           .register(registry);
       Gauge.builder(doc.getName(), committed, AtomicLong::get)
           .description(doc.getDescription())
           .baseUnit("bytes")
-          .tags(Tags.of(tags).and(Tag.of(VALUE.asString(), COMMITTED.value())))
+          .tags(Tags.of(tags).and(Tag.of(STATE.asString(), COMMITTED.value())))
           .register(registry);
     }
   }
