@@ -24,21 +24,23 @@ import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployReso
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
+import org.agrona.CloseHelper;
+import org.agrona.concurrent.BackoffIdleStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +54,11 @@ public class Starter extends App {
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final AppCfg appCfg;
+
+  // assume a no-op visibility monitor initially
+  private ApiVisibilityMonitor apiVisibilityMonitor = ignored -> {};
+
+  private final ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
   Starter(final AppCfg appCfg) {
     this.appCfg = appCfg;
@@ -85,7 +92,7 @@ public class Starter extends App {
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     final AtomicLong businessKey = new AtomicLong(0);
 
-    final ScheduledFuture scheduledTask =
+    final var scheduledTask =
         executorService.scheduleAtFixedRate(
             () -> {
               variables.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
@@ -103,6 +110,14 @@ public class Starter extends App {
             intervalNanos,
             TimeUnit.NANOSECONDS);
 
+    if (starterCfg.isMonitorApiVisibility()) {
+      final var operateClient =
+          new OperateClient(
+              URI.create((appCfg.isTls() ? "https://" : "http://") + appCfg.getOperateUrl()),
+              virtualExecutor);
+      apiVisibilityMonitor = new ProcessInstanceMonitor(operateClient, virtualExecutor, registry);
+    }
+
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
 
@@ -110,17 +125,14 @@ public class Starter extends App {
         .addShutdownHook(
             new Thread(
                 () -> {
-                  if (!executorService.isShutdown()) {
-                    executorService.shutdown();
-                    try {
-                      executorService.awaitTermination(60, TimeUnit.SECONDS);
-                    } catch (final InterruptedException e) {
-                      LOG.error("Shutdown executor service was interrupted", e);
-                    }
-                  }
+                  awaitExecutorShutdown(executorService);
+
                   if (responseChecker.isAlive()) {
                     responseChecker.close();
                   }
+
+                  CloseHelper.quietCloseAll(apiVisibilityMonitor);
+                  awaitExecutorShutdown(virtualExecutor);
                 }));
 
     // wait for starter to finish
@@ -137,12 +149,26 @@ public class Starter extends App {
     responseChecker.close();
   }
 
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  private static void awaitExecutorShutdown(final ExecutorService executorService) {
+    if (executorService.isShutdown()) {
+      return;
+    }
+
+    try {
+      executorService.shutdown();
+      executorService.awaitTermination(60, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      LOG.warn("Shutdown executor service was interrupted", e);
+    }
+  }
+
   private static HashMap<String, Object> deserializeVariables(final String variablesString) {
     final HashMap<String, Object> variables;
     try {
       variables = OBJECT_MAPPER.readValue(variablesString, VARIABLES_TYPE_REF);
     } catch (final JsonProcessingException e) {
-      LOG.error(String.format("Failed to parse variables '%s'.", variablesString), e);
+      LOG.error("Failed to parse variables '{}'", variablesString, e);
       throw new RuntimeException(e);
     }
     return variables;
@@ -152,7 +178,7 @@ public class Starter extends App {
     try {
       return OBJECT_MAPPER.writeValueAsString(variables);
     } catch (final JsonProcessingException e) {
-      LOG.error(String.format("Failed to convert variables to string: '%s' ", variables), e);
+      LOG.error("Failed to convert variables to string: '{}' ", variables, e);
       throw new RuntimeException(e);
     }
   }
@@ -188,7 +214,7 @@ public class Starter extends App {
     }
   }
 
-  private static void startViaCommand(
+  private void startViaCommand(
       final StarterCfg starterCfg,
       final String processId,
       final BlockingQueue<Future<?>> requestFutures,
@@ -206,13 +232,17 @@ public class Starter extends App {
               .requestTimeout(starterCfg.getWithResultsTimeout())
               .send());
     } else {
-      requestFutures.put(
+      final var request =
           client
               .newCreateInstanceCommand()
               .bpmnProcessId(processId)
               .latestVersion()
               .variables(variables)
-              .send());
+              .send();
+
+      request.thenAcceptAsync(
+          r -> apiVisibilityMonitor.monitor(r.getProcessInstanceKey()), virtualExecutor);
+      requestFutures.put(request);
     }
   }
 
@@ -233,18 +263,18 @@ public class Starter extends App {
 
   private void deployProcess(final ZeebeClient client, final StarterCfg starterCfg) {
     final var deployCmd = constructDeploymentCommand(client, starterCfg);
+    final var idleStrategy =
+        new BackoffIdleStrategy(
+            0, 0, Duration.ofMillis(200).toNanos(), Duration.ofSeconds(1).toNanos());
 
-    while (true) {
+    // allow exiting on shutdown signal and so on if the thread is interrupted
+    while (!Thread.currentThread().isInterrupted()) {
       try {
         deployCmd.send().join();
         break;
       } catch (final Exception e) {
-        THROTTLED_LOGGER.warn("Failed to deploy process, retrying", e);
-        try {
-          Thread.sleep(200);
-        } catch (final InterruptedException ex) {
-          // ignore
-        }
+        THROTTLED_LOGGER.warn("Failed to deploy process, backing off and retrying...", e);
+        idleStrategy.idle();
       }
     }
   }
@@ -268,7 +298,7 @@ public class Starter extends App {
 
     if (durationLimit > 0) {
       // if there is a duration limit
-      final LocalDateTime endTime = LocalDateTime.now().plus(durationLimit, ChronoUnit.SECONDS);
+      final LocalDateTime endTime = LocalDateTime.now().plusSeconds(durationLimit);
       // continue until time is up
       return () -> LocalDateTime.now().isBefore(endTime);
     } else {
