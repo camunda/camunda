@@ -11,26 +11,35 @@ import { expect, Locator, Page } from "@playwright/test";
 export const waitForItemInList = async (
   page: Page,
   item: Locator,
-  shouldBeVisible: boolean = true,
-  timeout: number = 10000,
+  options?: {
+    shouldBeVisible?: boolean;
+    timeout?: number;
+    emptyStateLocator?: Locator;
+  },
 ) => {
+  const {
+    shouldBeVisible = true,
+    timeout = 10000,
+    emptyStateLocator,
+  } = options || {};
+
   const poll = expect.poll(
     async () => {
       await page.reload();
-      await page.getByRole("table").waitFor();
-      await page.getByRole("cell").first().waitFor();
-      const isVisible = await item.isVisible();
 
-      return isVisible;
+      if (emptyStateLocator) {
+        await Promise.race([
+          page.getByRole("cell").first().waitFor(),
+          emptyStateLocator?.waitFor(),
+        ]);
+      } else {
+        await page.getByRole("cell").first().waitFor();
+      }
+
+      return await item.isVisible();
     },
-    {
-      timeout,
-    },
+    { timeout },
   );
 
-  if (shouldBeVisible) {
-    return await poll.toBeTruthy();
-  }
-
-  return await poll.toBeFalsy();
+  return shouldBeVisible ? await poll.toBeTruthy() : await poll.toBeFalsy();
 };

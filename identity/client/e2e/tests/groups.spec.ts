@@ -90,7 +90,7 @@ test.describe[IS_GROUPS_BASE_PAGE_INTEGRATED ? "serial" : "skip"](
         name: EDITED_GROUP.name,
       });
 
-      await waitForItemInList(page, item, false);
+      await waitForItemInList(page, item, { shouldBeVisible: false });
     });
   },
 );
