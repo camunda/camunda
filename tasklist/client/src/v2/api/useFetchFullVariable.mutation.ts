@@ -37,7 +37,7 @@ function useFetchFullVariable() {
           client.setQueryData<QueryVariablesByUserTaskResponseBody>(
             variablesQueryKey,
             {
-              ...allVariables,
+              ...allVariables!,
               items: allVariables!.items.map((oldVariable) =>
                 oldVariable.variableKey === variableKey
                   ? {
