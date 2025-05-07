@@ -111,8 +111,9 @@ public class ElasticsearchExporterConfiguration {
   }
 
   /**
-   * Only Optimize consumed records are considered required for 8.8 and later. For the {@link
-   * ElasticsearchExporter}
+   * Not all value records are required to be exported from 8.8 onward. The following included
+   * records are required by Optimize and Zeebe-Analytics so they must continue to be exported by
+   * the {@link ElasticsearchExporter}:
    *
    * @param valueType the value type of the record
    * @return true if the record should be indexed, false otherwise
@@ -125,6 +126,7 @@ public class ElasticsearchExporterConfiguration {
       case VARIABLE -> index.variable;
       case PROCESS_INSTANCE -> index.processInstance;
       case USER_TASK -> index.userTask;
+      case JOB -> index.job;
       default -> false;
     };
   }

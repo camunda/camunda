@@ -333,7 +333,8 @@ final class OpensearchExporterIT {
         || valueType == ValueType.VARIABLE
         || valueType == ValueType.INCIDENT
         || valueType == ValueType.USER_TASK
-        || valueType == ValueType.DEPLOYMENT) {
+        || valueType == ValueType.DEPLOYMENT
+        || valueType == ValueType.JOB) {
       final var response = testClient.getExportedDocumentFor(record);
       assertThat(response)
           .extracting(
