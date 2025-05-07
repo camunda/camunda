@@ -59,6 +59,7 @@ public abstract class ErrorHandlingUtils {
   public static boolean isCausedByTimeoutException(final Throwable throwable) {
     return throwable != null
         && (throwable.getCause() instanceof TimeoutException
-            || throwable.getCause().getCause() instanceof java.net.SocketTimeoutException);
+            || throwable.getCause() != null
+                && throwable.getCause().getCause() instanceof java.net.SocketTimeoutException);
   }
 }

@@ -13,13 +13,19 @@ import static org.mockito.Mockito.*;
 import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.net.SocketTimeoutException;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 
 class ErrorHandlingUtilsTest {
 
   @Test
-  void testGetErrorMessageWithInvalidStateProblem() {
+  void testGetErrorMessageWithInvalidStateClientException() {
     // Given
     final ProblemDetail problemDetail =
         new ProblemDetail()
@@ -40,6 +46,31 @@ class ErrorHandlingUtilsTest {
             "detail": "Task is already in progress."
           }
           """;
+    assertEquals(expectedMessage, result);
+  }
+
+  @Test
+  void testGetErrorMessageWithInvalidStateBrokerException() {
+    // Given
+    final String reason =
+        "Expected to assign user task with key '123L', but it is in state 'ASSIGNING'";
+    final CamundaBrokerException brokerException =
+        new CamundaBrokerException(
+            new BrokerRejectionException(
+                new BrokerRejection(
+                    UserTaskIntent.ASSIGN, 123L, RejectionType.INVALID_STATE, reason)));
+
+    // When
+    final String result = ErrorHandlingUtils.getErrorMessage(brokerException);
+
+    // Then
+    final String expectedMessage =
+        """
+          { "title": "INVALID_STATE",
+            "detail": "%s"
+          }
+          """
+            .formatted(reason);
     assertEquals(expectedMessage, result);
   }
 
@@ -95,7 +126,7 @@ class ErrorHandlingUtilsTest {
   }
 
   @Test
-  void testIsCausedByTimeoutExceptionWithTimeoutException() {
+  void testIsCausedByTimeoutExceptionWithClientTimeoutException() {
     // Given
     final SocketTimeoutException socketTimeoutException = new SocketTimeoutException("10 SECONDS");
     final Throwable timeoutException =
@@ -103,6 +134,19 @@ class ErrorHandlingUtilsTest {
 
     // When
     final boolean result = ErrorHandlingUtils.isCausedByTimeoutException(timeoutException);
+
+    // Then
+    assertTrue(result);
+  }
+
+  @Test
+  void testIsCausedByTimeoutExceptionWithBrokerTimeoutException() {
+    // Given
+    final TimeoutException timeoutException = new TimeoutException("10 SECONDS");
+    final Throwable camundaBrokerException = new CamundaBrokerException(timeoutException);
+
+    // When
+    final boolean result = ErrorHandlingUtils.isCausedByTimeoutException(camundaBrokerException);
 
     // Then
     assertTrue(result);
