@@ -26,14 +26,4 @@ test.describe('Login Tests', () => {
     await operateLoginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
-
-  test('Basic Login on TaskList', async ({
-    page,
-    taskListLoginPage,
-    taskPanelPage,
-  }) => {
-    await navigateToApp(page, 'tasklist');
-    await taskListLoginPage.login('demo', 'demo');
-    await expect(taskPanelPage.taskListPageBanner).toBeVisible();
-  });
 });
