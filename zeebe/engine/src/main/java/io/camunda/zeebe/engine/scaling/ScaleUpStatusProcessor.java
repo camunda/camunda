@@ -40,7 +40,7 @@ public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord>
       final String message =
           String.format(
               "In progress scale up number of desired partitions is %d, but desired partitions in the request are %d.",
-              request.getDesiredPartitionCount(), desiredPartitions.size());
+              desiredPartitions.size(), request.getDesiredPartitionCount());
       writers.rejection().appendRejection(command, RejectionType.INVALID_ARGUMENT, message);
       writers.response().writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, message);
     } else {
