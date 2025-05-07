@@ -40,27 +40,35 @@ const mockSequenceFlows = createSequenceFlows();
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
     processInstanceKey: '2251799813693731',
-    sequenceFlowKey: 'SequenceFlow_0drux68',
+    sequenceFlowId: 'SequenceFlow_0drux68',
     processDefinitionId: '123',
-    processDefinitionKey: 123,
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
   },
   {
     processInstanceKey: '2251799813693731',
-    sequenceFlowKey: 'SequenceFlow_0j6tsnn',
+    sequenceFlowId: 'SequenceFlow_0j6tsnn',
     processDefinitionId: '123',
-    processDefinitionKey: 123,
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
   },
   {
     processInstanceKey: '2251799813693731',
-    sequenceFlowKey: 'SequenceFlow_1dwqvrt',
+    sequenceFlowId: 'SequenceFlow_1dwqvrt',
     processDefinitionId: '123',
-    processDefinitionKey: 123,
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
   },
   {
     processInstanceKey: '2251799813693731',
-    sequenceFlowKey: 'SequenceFlow_1fgekwd',
+    sequenceFlowId: 'SequenceFlow_1fgekwd',
     processDefinitionId: '123',
-    processDefinitionKey: 123,
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
   },
 ];
 

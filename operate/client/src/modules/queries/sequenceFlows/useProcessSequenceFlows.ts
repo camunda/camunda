@@ -19,7 +19,7 @@ const processedSequenceFlowsParser = (
   sequenceFlowsResponse: GetProcessSequenceFlowsResponseBody,
 ) => {
   return sequenceFlowsResponse.items
-    .map((sequenceFlow) => sequenceFlow.sequenceFlowKey)
+    .map((sequenceFlow) => sequenceFlow.elementId)
     .filter((value, index, self) => self.indexOf(value) === index);
 };
 
