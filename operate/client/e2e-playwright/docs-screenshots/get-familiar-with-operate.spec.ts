@@ -121,6 +121,7 @@ test.describe('get familiar with operate', () => {
         flowNodeInstances: runningOrderProcessInstance.flowNodeInstances,
         statisticsV2: runningOrderProcessInstance.statisticsV2,
         sequenceFlows: runningOrderProcessInstance.sequenceFlows,
+        sequenceFlowsV2: runningOrderProcessInstance.sequenceFlowsV2,
         variables: runningOrderProcessInstance.variables,
         xml: runningOrderProcessInstance.xml,
       }),

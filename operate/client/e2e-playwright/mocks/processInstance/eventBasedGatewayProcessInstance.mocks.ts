@@ -375,6 +375,26 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       activityId: 'SequenceFlow_0lplwad',
     },
   ],
+  sequenceFlowsV2: {
+    items: [
+      {
+        processInstanceKey: '2251799813888430',
+        elementId: 'SequenceFlow_027co6p',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '2251799813888430',
+        elementId: 'SequenceFlow_0lplwad',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+    ],
+  },
   statisticsV2: {
     items: [
       {

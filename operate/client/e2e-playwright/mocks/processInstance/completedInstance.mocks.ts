@@ -149,6 +149,26 @@ const completedInstance: InstanceMock = {
       activityId: 'SequenceFlow_15toaun',
     },
   ],
+  sequenceFlowsV2: {
+    items: [
+      {
+        processInstanceKey: '2551799813954282',
+        elementId: 'SequenceFlow_0prd963',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '2551799813954282',
+        elementId: 'SequenceFlow_15toaun',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+    ],
+  },
   variables: [],
 };
 

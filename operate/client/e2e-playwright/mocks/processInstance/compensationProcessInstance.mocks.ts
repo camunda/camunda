@@ -182,6 +182,50 @@ const compensationProcessInstance: InstanceMock = {
     {processInstanceId: '9007199254744341', activityId: 'Flow_6'},
     {processInstanceId: '9007199254744341', activityId: 'Flow_8'},
   ],
+  sequenceFlowsV2: {
+    items: [
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_1',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_2',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_4',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_6',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_8',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+    ],
+  },
   variables: [],
 };
 

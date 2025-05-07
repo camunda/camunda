@@ -165,6 +165,7 @@ test.describe('delete finished instances', () => {
         flowNodeInstances: completedOrderProcessInstance.flowNodeInstances,
         statisticsV2: completedOrderProcessInstance.statisticsV2,
         sequenceFlows: completedOrderProcessInstance.sequenceFlows,
+        sequenceFlowsV2: completedOrderProcessInstance.sequenceFlowsV2,
         variables: completedOrderProcessInstance.variables,
         xml: completedOrderProcessInstance.xml,
       }),

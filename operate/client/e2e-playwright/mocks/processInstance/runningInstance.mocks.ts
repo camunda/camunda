@@ -113,6 +113,18 @@ const runningInstance: InstanceMock = {
       activityId: 'Flow_0s222mp',
     },
   ],
+  sequenceFlowsV2: {
+    items: [
+      {
+        processInstanceKey: '2251799813687144',
+        elementId: 'Flow_0s222mp',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+    ],
+  },
   statisticsV2: {
     items: [
       {

@@ -60,6 +60,42 @@ const completedOrderProcessInstance: InstanceMock = {
       activityId: 'SequenceFlow_19klrd3',
     },
   ],
+  sequenceFlowsV2: {
+    items: [
+      {
+        processInstanceKey: '225179981395430',
+        elementId: 'SequenceFlow_0j6tsnn',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '225179981395430',
+        elementId: 'SequenceFlow_1s6g17c',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '225179981395430',
+        elementId: 'SequenceFlow_1dq2rqw',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '225179981395430',
+        elementId: 'SequenceFlow_19klrd3',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+    ],
+  },
   flowNodeInstances: {
     '225179981395430': {
       children: [
