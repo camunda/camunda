@@ -2935,8 +2935,8 @@ final class JsonSerializableToJsonTest {
             () ->
                 new ScaleRecord()
                     .setDesiredPartitionCount(5)
-                    .setRelocatedPartitionsProperty(List.of(4, 5))
-                    .setRedistributedPartitionsProperty(List.of(4, 5)),
+                    .setRelocatedPartitions(List.of(4, 5))
+                    .setRedistributedPartitions(List.of(4, 5)),
         """
         {
          "desiredPartitionCount": 5,
