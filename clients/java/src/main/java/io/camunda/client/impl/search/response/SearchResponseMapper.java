@@ -27,6 +27,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
+import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.User;
@@ -36,8 +37,10 @@ import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.*;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -154,6 +157,15 @@ public final class SearchResponseMapper {
     return new BatchOperationItemsImpl(response);
   }
 
+  public static Role toRoleResponse(final RoleResult response) {
+    return new RoleImpl(
+        ParseUtil.parseLongOrNull(response.getRoleKey()),
+        response.getRoleId(),
+        response.getName(),
+        response.getDescription(),
+        convertListToSet(response.getAssignedMemberKeys()));
+  }
+
   public static Group toGroupResponse(final GroupResult response) {
     return new GroupImpl(
         ParseUtil.parseLongOrNull(response.getGroupKey()),
@@ -196,5 +208,13 @@ public final class SearchResponseMapper {
     return Optional.ofNullable(items)
         .map(i -> i.stream().map(mapper).collect(Collectors.toList()))
         .orElse(Collections.emptyList());
+  }
+
+  private static Set<String> convertListToSet(final List<String> values) {
+    if (values == null || values.isEmpty()) {
+      return Collections.emptySet();
+    }
+
+    return new HashSet<>(values);
   }
 }
