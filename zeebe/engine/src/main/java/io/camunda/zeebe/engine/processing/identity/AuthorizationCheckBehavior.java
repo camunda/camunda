@@ -110,7 +110,7 @@ public final class AuthorizationCheckBehavior {
         isEntityAuthorized(
             request,
             EntityType.MAPPING,
-            getPersistedMappings(request.command)
+            getPersistedMappings(request)
                 .map(PersistedMapping::getMappingId)
                 .collect(Collectors.toSet()));
     if (mappingAuthorized.isLeft()) {
@@ -234,35 +234,43 @@ public final class AuthorizationCheckBehavior {
       return Set.of(WILDCARD_PERMISSION);
     }
 
-    return getUsername(request)
-        .map(
-            username ->
+    final var authorizedResourceIds = new HashSet<String>();
+
+    final var optionalUsername = getUsername(request);
+    if (optionalUsername.isPresent()) {
+      getAuthorizedResourceIdentifiers(
+              EntityType.USER,
+              optionalUsername.get(),
+              request.getResourceType(),
+              request.getPermissionType())
+          .forEach(authorizedResourceIds::add);
+    }
+    // If a username was present, don't use the application id
+    else {
+      getApplicationId(request)
+          .map(
+              applicationId ->
+                  getAuthorizedResourceIdentifiers(
+                      EntityType.APPLICATION,
+                      applicationId,
+                      request.getResourceType(),
+                      request.getPermissionType()))
+          .ifPresent(
+              idsForApplicationId -> idsForApplicationId.forEach(authorizedResourceIds::add));
+    }
+
+    // mappings can layer on top of username/application id
+    getPersistedMappings(request)
+        .flatMap(
+            mapping ->
                 getAuthorizedResourceIdentifiers(
-                    EntityType.USER,
-                    username,
+                    EntityType.MAPPING,
+                    mapping.getMappingId(),
                     request.getResourceType(),
                     request.getPermissionType()))
-        .or(
-            () ->
-                getApplicationId(request)
-                    .map(
-                        applicationId ->
-                            getAuthorizedResourceIdentifiers(
-                                EntityType.APPLICATION,
-                                applicationId,
-                                request.getResourceType(),
-                                request.getPermissionType())))
-        .orElseGet(
-            () ->
-                getPersistedMappings(request.getCommand())
-                    .flatMap(
-                        mapping ->
-                            getAuthorizedResourceIdentifiers(
-                                EntityType.MAPPING,
-                                mapping.getMappingId(),
-                                request.getResourceType(),
-                                request.getPermissionType())))
-        .collect(Collectors.toSet());
+        .forEach(authorizedResourceIds::add);
+
+    return authorizedResourceIds;
   }
 
   /**
@@ -382,6 +390,10 @@ public final class AuthorizationCheckBehavior {
     return tenantsOfMapping.isEmpty()
         ? AuthorizedTenants.DEFAULT_TENANTS
         : new AuthenticatedAuthorizedTenants(tenantsOfMapping);
+  }
+
+  private Stream<PersistedMapping> getPersistedMappings(final AuthorizationRequest request) {
+    return getPersistedMappings(request.getCommand());
   }
 
   private Stream<PersistedMapping> getPersistedMappings(final TypedRecord<?> command) {
