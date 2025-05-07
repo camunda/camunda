@@ -125,11 +125,13 @@ public final class AuthorizationCheckBehavior {
       final EntityType entityType,
       final Collection<String> entityIds) {
     if (multiTenancyEnabled) {
-      if (entityIds.stream()
-          .noneMatch(
-              entityId ->
-                  getAuthorizedTenantIds(entityType, entityId)
-                      .anyMatch(request.tenantId::equals))) {
+      final var isAssignedToTenant =
+          entityIds.stream()
+              .noneMatch(
+                  entityId ->
+                      getAuthorizedTenantIds(entityType, entityId)
+                          .anyMatch(request.tenantId::equals));
+      if (isAssignedToTenant) {
         final var rejectionType =
             request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
         return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
@@ -140,7 +142,7 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    final var authorizedResourceIdentifiers =
+    final var isAuthorizedForResource =
         entityIds.stream()
             .flatMap(
                 entityId ->
@@ -148,9 +150,9 @@ public final class AuthorizationCheckBehavior {
                         entityType,
                         entityId,
                         request.getResourceType(),
-                        request.getPermissionType()));
-    if (authorizedResourceIdentifiers.anyMatch(
-        resourceId -> request.getResourceIds().contains(resourceId))) {
+                        request.getPermissionType()))
+            .anyMatch(resourceId -> request.getResourceIds().contains(resourceId));
+    if (isAuthorizedForResource) {
       return Either.right(null);
     }
 
