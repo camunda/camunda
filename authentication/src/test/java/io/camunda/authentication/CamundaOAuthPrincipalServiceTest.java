@@ -25,6 +25,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -204,7 +205,7 @@ public class CamundaOAuthPrincipalServiceTest {
                   new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
 
       final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
-      when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2")))
+      when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2"), EntityType.MAPPING))
           .thenReturn(List.of(roleR1));
       when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "8")))
           .thenReturn(List.of("*"));
@@ -240,7 +241,8 @@ public class CamundaOAuthPrincipalServiceTest {
           .thenReturn(List.of(tenantEntity1, tenantEntity2));
 
       final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1", "R1 description");
-      when(roleServices.getRolesByMemberIds(Set.of("map-1", "map-2"))).thenReturn(List.of(roleR1));
+      when(roleServices.getRolesByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING))
+          .thenReturn(List.of(roleR1));
 
       when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "10")))
           .thenReturn(List.of("app-1", "app-2"));

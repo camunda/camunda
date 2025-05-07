@@ -19,6 +19,7 @@ import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,7 +73,7 @@ public class CamundaOAuthPrincipalService {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
-    final var assignedRoles = roleServices.getRolesByMemberIds(mappingIds);
+    final var assignedRoles = roleServices.getRolesByMemberIds(mappingIds, EntityType.MAPPING);
 
     final var authContextBuilder =
         new AuthenticationContextBuilder()
