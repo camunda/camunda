@@ -2866,7 +2866,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The role or mapping with the given ID or username was not found.
+          description: The role or mapping with the given ID was not found.
           content:
             application/problem+json:
               schema:
