@@ -50,8 +50,8 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   TIMER_DUE_DATES(13),
 
   // pending deployments
-  PENDING_DEPLOYMENT(14, ColumnFamilyScope.GLOBAL),
-  DEPLOYMENT_RAW(15, ColumnFamilyScope.GLOBAL),
+  PENDING_DEPLOYMENT(14),
+  DEPLOYMENT_RAW(15),
 
   // jobs
   JOBS(16),
@@ -103,7 +103,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   BANNED_INSTANCE(39),
 
-  EXPORTER(40, ColumnFamilyScope.GLOBAL),
+  EXPORTER(40),
 
   AWAIT_WORKLOW_RESULT(41),
 
@@ -197,7 +197,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   @Deprecated
   OWNER_TYPE_BY_OWNER_KEY(95, ColumnFamilyScope.GLOBAL),
 
-  ROUTING(96, ColumnFamilyScope.GLOBAL),
+  ROUTING(96),
 
   QUEUED_DISTRIBUTION(97),
   RETRIABLE_DISTRIBUTION(98),
