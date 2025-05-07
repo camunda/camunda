@@ -87,18 +87,15 @@ public final class AuthorizationCheckBehavior {
     }
 
     final var username = getUsername(request);
+    final var applicationId = getApplicationId(request);
 
-    // TODO: remove this check when username retrieval is supported in JWT modes
     if (username.isPresent()) {
       final var userAuthorized =
           isEntityAuthorized(request, EntityType.USER, Set.of(username.get()));
       if (userAuthorized.isRight()) {
         return userAuthorized;
       }
-    }
-
-    final var applicationId = getApplicationId(request);
-    if (applicationId.isPresent()) {
+    } else if (applicationId.isPresent()) {
       final var applicationAuthorized =
           isEntityAuthorized(request, EntityType.APPLICATION, Set.of(applicationId.get()));
       if (applicationAuthorized.isRight()) {
