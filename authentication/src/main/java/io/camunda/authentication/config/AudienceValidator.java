@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.config;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +41,7 @@ final class AudienceValidator implements OAuth2TokenValidator<Jwt> {
 
   @Override
   public OAuth2TokenValidatorResult validate(final Jwt token) {
-    final var tokenAudiences = token.getAudience();
+    final var tokenAudiences = Objects.requireNonNullElse(token.getAudience(), List.<String>of());
 
     // Iterate over token audiences first, usually there is only one
     for (final var tokenAudience : tokenAudiences) {
