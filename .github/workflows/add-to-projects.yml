@@ -117,3 +117,12 @@ jobs:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           # any of the following labels:
           labeled: component/build-pipeline, component/release, area/build
+      - id: add-to-camunda-ex
+        name: Add to CamundaEx Team project
+        uses: actions/add-to-project@v1.0.2
+        if: ${{ steps.has-project.outputs.result == 'false' }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/182
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+          # any of the following labels:
+          labeled: component/clients, scope/clients-spring, scope/clients-java, scope/spring-boot-starter-camunda, component/camunda-process-test
