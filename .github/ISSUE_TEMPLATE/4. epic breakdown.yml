@@ -35,7 +35,7 @@ body:
       label: PDP Epic link
       description: Add the PDP epic link here.
     validations:
-      required: true
+      required: false
   - type: textarea
     id: breakdown
     attributes:
