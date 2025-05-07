@@ -557,6 +557,85 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldUnassignMappingFromRoleAndReturnAccepted() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingMissingMappingFromRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.removeMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.REMOVE_ENTITY,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Mapping not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingMappingFromMissingRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.removeMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.REMOVE_ENTITY, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
   void shouldReturnErrorForAddingMissingUserToRole() {
     // given
     final var roleId = "roleId";
