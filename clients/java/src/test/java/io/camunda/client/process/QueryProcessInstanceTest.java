@@ -364,6 +364,18 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .isEqualTo(expectedExtras);
   }
 
+  @Test
+  public void shouldFetchProcessInstanceCallHierarchy() {
+    // when
+    client.newProcessInstanceGetCallHierarchyRequest(123L).send().join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/123/call-hierarchy");
+    assertThat(request.getBodyAsString()).isEmpty();
+  }
+
   private static Set<String> publicMethodSignatures(final Class<?> clazz) {
     return Arrays.stream(clazz.getMethods())
         .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())

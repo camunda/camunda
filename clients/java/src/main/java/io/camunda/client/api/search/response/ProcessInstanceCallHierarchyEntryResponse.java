@@ -13,17 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search.response;
+package io.camunda.client.api.search.response;
 
-/**
- * @deprecated this class will be removed with version 8.9.
- */
-@Deprecated
-public interface ProcessInstanceReference {
+public interface ProcessInstanceCallHierarchyEntryResponse {
 
-  String getInstanceId();
+  Long getProcessInstanceKey();
 
-  String getProcessDefinitionId();
+  Long getProcessDefinitionKey();
 
-  String processDefinitionName();
+  String getProcessDefinitionName();
 }

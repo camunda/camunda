@@ -1670,4 +1670,56 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v2");
   }
+
+  @Test
+  void shouldQueryProcessInstanceCallHierarchy() {
+    // given
+    final long childProcessInstanceKey =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.processDefinitionId("child_process_v1"))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceGetCallHierarchyRequest(childProcessInstanceKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(result)
+        .isNotNull()
+        .hasSize(2)
+        .extracting("processDefinitionName")
+        .containsExactly("Parent process v1", "Child process v1");
+  }
+
+  @Test
+  void shouldReturnEmptyCallHierarchyForParentProcessInstance() {
+    // given
+    final long parentProcessInstanceKey =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.processDefinitionId("parent_process_v1"))
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getProcessInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceGetCallHierarchyRequest(parentProcessInstanceKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(result).isNotNull().isEmpty();
+  }
 }

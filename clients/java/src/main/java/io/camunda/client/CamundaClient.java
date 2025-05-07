@@ -81,6 +81,7 @@ import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
+import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
@@ -1898,4 +1899,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the users by group search request
    */
   UsersByGroupSearchRequest newUsersByGroupSearchRequest(String groupId);
+
+  /**
+   * Retrieves the call hierarchy for a given process instance by its key.
+   *
+   * <pre>
+   * camundaClient
+   *   .newProcessInstanceGetCallHierarchyRequest(processInstanceKey)
+   *   .send();
+   * </pre>
+   *
+   * <p>The returned hierarchical structure represents the relationship of the given process
+   * instance to its parent and child process instances, if any.
+   *
+   * @param processInstanceKey the key of the process instance
+   * @return a builder for the request
+   */
+  ProcessInstanceGetCallHierarchyRequest newProcessInstanceGetCallHierarchyRequest(
+      Long processInstanceKey);
 }
