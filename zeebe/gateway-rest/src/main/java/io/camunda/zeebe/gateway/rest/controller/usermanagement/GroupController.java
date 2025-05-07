@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.RoleQuery;
@@ -228,13 +229,13 @@ public class GroupController {
   }
 
   private ResponseEntity<RoleSearchQueryResult> searchRolesInGroup(
-      final String groupId, final RoleQuery userQuery) {
+      final String groupId, final RoleQuery roleQuery) {
     try {
-      final var composedUserQuery = buildRoleQuery(groupId, userQuery);
+      final var composedRoleQuery = buildRoleQuery(groupId, roleQuery);
       final var result =
           roleServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .search(composedUserQuery);
+              .search(composedRoleQuery);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -249,7 +250,12 @@ public class GroupController {
 
   private RoleQuery buildRoleQuery(final String groupId, final RoleQuery roleQuery) {
     return roleQuery.toBuilder()
-        .filter(roleQuery.filter().toBuilder().groupId(groupId).build())
+        .filter(
+            roleQuery.filter().toBuilder()
+                .groupId(groupId)
+                .memberId(groupId)
+                .memberType(GROUP)
+                .build())
         .build();
   }
 

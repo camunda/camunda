@@ -297,8 +297,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery roleQuery) {
-    final var query = applyFilters(roleQuery);
+  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery query) {
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class);
   }
@@ -426,13 +425,6 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return userQuery;
   }
 
-  private RoleQuery applyFilters(final RoleQuery roleQuery) {
-    if (roleQuery.filter().groupId() != null) {
-      return expandGroupFilterForRole(roleQuery);
-    }
-    return roleQuery;
-  }
-
   private UserQuery expandTenantFilter(final UserQuery userQuery) {
     final List<TenantMemberEntity> tenantMembers =
         getSearchExecutor()
@@ -462,12 +454,6 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
     return userQuery.toBuilder()
         .filter(userQuery.filter().toBuilder().usernames(usernames).build())
-        .build();
-  }
-
-  private RoleQuery expandGroupFilterForRole(final RoleQuery roleQuery) {
-    return roleQuery.toBuilder()
-        .filter(roleQuery.filter().toBuilder().memberId(roleQuery.filter().groupId()).build())
         .build();
   }
 
