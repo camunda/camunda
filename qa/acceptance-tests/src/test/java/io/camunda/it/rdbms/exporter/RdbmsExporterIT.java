@@ -33,6 +33,9 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.filter.UserFilter.Builder;
+import io.camunda.search.query.UserQuery;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -429,6 +432,9 @@ class RdbmsExporterIT {
     final var roleId = "roleId";
     final var roleRecord = getRoleRecord(roleId, RoleIntent.CREATED);
     final var recordValue = (RoleRecordValue) roleRecord.getValue();
+    final var username = "username";
+    final var userRecord = getUserRecord(1L, username, UserIntent.CREATED);
+    exporter.export(userRecord);
 
     // when
     exporter.export(roleRecord);
@@ -442,21 +448,30 @@ class RdbmsExporterIT {
     assertThat(role.get().description()).isEqualTo(recordValue.getDescription());
 
     // when
-    final var entityId = "entityId";
-    exporter.export(getRoleRecord(roleId, RoleIntent.ENTITY_ADDED, entityId));
+    exporter.export(getRoleRecord(roleId, RoleIntent.ENTITY_ADDED, username));
 
     // then
-    final var updatedRole =
-        rdbmsService.getRoleReader().findOne(recordValue.getRoleId()).orElseThrow();
-    assertThat(updatedRole.assignedMemberIds()).containsExactly(entityId);
+    assertThat(rdbmsService.getRoleReader().findOne(recordValue.getRoleId())).isPresent();
+    final var usersWithRole =
+        rdbmsService
+            .getUserReader()
+            .search(
+                UserQuery.of(q -> q.filter(new Builder().roleId(recordValue.getRoleId()).build())))
+            .items();
+    assertThat(usersWithRole).extracting(UserEntity::username).containsExactly(username);
 
     // when
-    exporter.export(getRoleRecord(roleId, RoleIntent.ENTITY_REMOVED, entityId));
+    exporter.export(getRoleRecord(roleId, RoleIntent.ENTITY_REMOVED, username));
 
     // then
-    final var deletedRole =
-        rdbmsService.getRoleReader().findOne(recordValue.getRoleId()).orElseThrow();
-    assertThat(deletedRole.assignedMemberIds()).isEmpty();
+    assertThat(rdbmsService.getRoleReader().findOne(recordValue.getRoleId())).isPresent();
+    final var usersWithRoleAfterDeletion =
+        rdbmsService
+            .getUserReader()
+            .search(
+                UserQuery.of(q -> q.filter(new Builder().roleId(recordValue.getRoleId()).build())))
+            .items();
+    assertThat(usersWithRoleAfterDeletion).isEmpty();
   }
 
   @Test
