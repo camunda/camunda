@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.tasklist.util.ErrorHandlingUtils.getErrorMessage;
+import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.getErrorMessage;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;

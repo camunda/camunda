@@ -5,11 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.util;
+package io.camunda.tasklist.webapp.util;
 
 import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 public abstract class ErrorHandlingUtils {
 
@@ -23,7 +26,11 @@ public abstract class ErrorHandlingUtils {
   public static String getErrorMessage(final Throwable exception) {
     final String errorMessage;
 
-    if (exception instanceof final ProblemException ex
+    if (exception.getCause() instanceof final BrokerRejectionException ex
+        && ex.getRejection().type().equals(RejectionType.INVALID_STATE)) {
+      errorMessage =
+          createErrorMessage(ex.getRejection().type().name(), ex.getRejection().reason());
+    } else if (exception instanceof final ProblemException ex
         && Objects.equals(ex.details().getStatus(), 409)
         && INVALID_STATE.equals(ex.details().getTitle())) {
       final ProblemDetail problemDetail = ex.details();
@@ -35,6 +42,7 @@ public abstract class ErrorHandlingUtils {
     } else {
       errorMessage = exception.getMessage();
     }
+
     return errorMessage;
   }
 
@@ -50,7 +58,7 @@ public abstract class ErrorHandlingUtils {
 
   public static boolean isCausedByTimeoutException(final Throwable throwable) {
     return throwable != null
-        && throwable.getCause() != null
-        && throwable.getCause().getCause() instanceof java.net.SocketTimeoutException;
+        && (throwable.getCause() instanceof TimeoutException
+            || throwable.getCause().getCause() instanceof java.net.SocketTimeoutException);
   }
 }
