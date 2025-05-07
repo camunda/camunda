@@ -101,5 +101,17 @@ public interface ActivateJobsCommandStep1
      *     it to the broker.
      */
     ActivateJobsCommandStep3 fetchVariables(String... fetchVariables);
+
+    /**
+     * Sets the request timeout for the command and adjusts the HTTP response timeout to be 100ms
+     * longer than the specified value, ensuring that the client timeout does not occur before the
+     * server timeout.
+     *
+     * @see FinalCommandStep#requestTimeout(Duration)
+     * @param requestTimeout the request timeout
+     * @return the configured command
+     */
+    @Override
+    FinalCommandStep<ActivateJobsResponse> requestTimeout(Duration requestTimeout);
   }
 }

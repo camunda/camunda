@@ -142,7 +142,8 @@ public final class ActivateJobsCommandImpl
     grpcRequestObjectBuilder.setRequestTimeout(requestTimeout.toMillis());
     httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
     this.requestTimeout = requestTimeout;
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    // increment response timeout so client doesn't time out before the server
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis() + 100, TimeUnit.MILLISECONDS);
     return this;
   }
 
