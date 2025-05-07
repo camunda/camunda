@@ -1,0 +1,35 @@
+{
+  "components": [
+    {
+      "text": "# Subscribe to newsletter",
+      "type": "text",
+      "layout": {
+        "row": "Row_0jjnqip",
+        "columns": null
+      },
+      "id": "Field_1xn41dw"
+    },
+    {
+      "label": "Name",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_15ghdy6",
+        "columns": null
+      },
+      "id": "Field_0ibsmz4",
+      "key": "field_1lfayry"
+    },
+    {
+      "label": "Email",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_1klibf9",
+        "columns": null
+      },
+      "id": "Field_0msuoi3",
+      "key": "field_1prtdvl"
+    }
+  ],
+  "type": "default",
+  "id": "subscribe"
+}
