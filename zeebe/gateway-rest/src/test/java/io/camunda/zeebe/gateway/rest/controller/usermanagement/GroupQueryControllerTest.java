@@ -14,17 +14,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -165,8 +168,45 @@ public class GroupQueryControllerTest extends RestControllerTest {
           USER_ENTITIES.get(1).username(),
           USER_ENTITIES.get(2).username());
 
+  private static final List<MappingEntity> MAPPNING_ENTITIES =
+      List.of(
+          new MappingEntity(
+              Strings.newRandomValidIdentityId(), 1L, "claimName1", "claimValue1", "name"),
+          new MappingEntity(
+              Strings.newRandomValidIdentityId(), 2L, "claimName2", "claimValue2", "name"));
+
+  private static final String MAPPING_RESPONSE =
+      """
+      {
+        "items":[
+          {
+            "name":"name",
+            "mappingId":"%s",
+            "claimName":"claimName1",
+            "claimValue":"claimValue1"
+          },
+          {
+            "name":"name",
+            "mappingId":"%s",
+            "claimName":"claimName2",
+            "claimValue":"claimValue2"
+          }
+        ],
+        "page":{
+          "totalItems":2,
+          "firstSortValues":["f"],
+          "lastSortValues":["v"]
+        }
+      }
+      """;
+
+  private static final String EXPECTED_MAPPING_RESPONSE =
+      MAPPING_RESPONSE.formatted(
+          MAPPNING_ENTITIES.get(0).mappingId(), MAPPNING_ENTITIES.get(1).mappingId());
+
   @MockBean private GroupServices groupServices;
   @MockBean private UserServices userServices;
+  @MockBean private MappingServices mappingServices;
   @MockBean private RoleServices roleServices;
 
   @BeforeEach
@@ -174,6 +214,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
     when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
+    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
   }
 
   @Test
@@ -451,6 +492,71 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_USER_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupMappingsWithSorting() {
+    // given
+    when(mappingServices.search(any(MappingQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingEntity>()
+                .total(MAPPNING_ENTITIES.size())
+                .items(MAPPNING_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/mapping-rules/search".formatted(GROUP_BASE_URL, "groupId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "mappingId", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_MAPPING_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupMappingsWithEmptyQuery() {
+    // given
+    when(mappingServices.search(any(MappingQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingEntity>()
+                .total(MAPPNING_ENTITIES.size())
+                .items(MAPPNING_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/mapping-rules/search".formatted(GROUP_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_MAPPING_RESPONSE);
   }
 
   @Test
