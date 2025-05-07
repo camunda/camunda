@@ -388,7 +388,8 @@ public final class SearchQueryResponseMapper {
     return new RoleResult()
         .roleKey(KeyUtil.keyToString(roleEntity.roleKey()))
         .roleId(roleEntity.roleId())
-        .name(roleEntity.name());
+        .name(roleEntity.name())
+        .description(roleEntity.description());
   }
 
   private static List<GroupResult> toGroups(final List<GroupEntity> groups) {

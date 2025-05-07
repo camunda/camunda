@@ -60,7 +60,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
             {
               "name": "Role Name",
               "roleKey": "100",
-              "roleId": "roleId"
+              "roleId": "roleId",
+              "description": "description"
             }""");
 
     // then
