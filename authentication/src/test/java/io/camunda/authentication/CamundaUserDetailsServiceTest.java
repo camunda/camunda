@@ -21,6 +21,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -63,7 +64,8 @@ public class CamundaUserDetailsServiceTest {
     when(authorizationServices.getAuthorizedApplications(Set.of(roleId, TEST_USER_ID)))
         .thenReturn(List.of("operate", "identity"));
     final RoleEntity adminRole = new RoleEntity(2L, roleId, "ADMIN", "description");
-    when(roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(TEST_USER_ID)))))
+    when(roleServices.findAll(
+            RoleQuery.of(q -> q.filter(f -> f.memberId(TEST_USER_ID).memberType(EntityType.USER)))))
         .thenReturn(List.of(adminRole));
 
     // when
