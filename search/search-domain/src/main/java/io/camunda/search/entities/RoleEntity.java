@@ -9,14 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
-import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record RoleEntity(
-    Long roleKey, String roleId, String name, String description, Set<String> assignedMemberIds)
-    implements Serializable {
-  public RoleEntity(
-      final Long roleKey, final String roleId, final String name, final String description) {
-    this(roleKey, roleId, name, description, Set.of());
-  }
-}
+public record RoleEntity(Long roleKey, String roleId, String name, String description)
+    implements Serializable {}
