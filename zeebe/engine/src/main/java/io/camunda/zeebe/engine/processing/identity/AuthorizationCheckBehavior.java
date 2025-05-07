@@ -103,18 +103,12 @@ public final class AuthorizationCheckBehavior {
       }
     }
 
-    final var mappingAuthorized =
-        isEntityAuthorized(
-            request,
-            EntityType.MAPPING,
-            getPersistedMappings(request)
-                .map(PersistedMapping::getMappingId)
-                .collect(Collectors.toSet()));
-    if (mappingAuthorized.isLeft()) {
-      return Either.left(mappingAuthorized.getLeft());
-    }
-
-    return Either.right(null);
+    return isEntityAuthorized(
+        request,
+        EntityType.MAPPING,
+        getPersistedMappings(request)
+            .map(PersistedMapping::getMappingId)
+            .collect(Collectors.toSet()));
   }
 
   /**
