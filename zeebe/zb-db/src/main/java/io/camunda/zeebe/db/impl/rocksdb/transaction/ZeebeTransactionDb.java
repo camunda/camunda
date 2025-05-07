@@ -22,6 +22,7 @@ import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDBMetricExporter;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
@@ -43,7 +44,8 @@ import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 
-public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
+public class ZeebeTransactionDb<
+        ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDb<ColumnFamilyNames>, TransactionRenovator {
 
   private static final Logger LOG = Loggers.DB_LOGGER;
@@ -93,7 +95,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<? extends EnumVal
     closables.add(defaultWriteOptions);
   }
 
-  public static <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
+  public static <
+          ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
           final RocksDbOptions options,
           final String path,

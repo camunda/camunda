@@ -18,7 +18,9 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,7 +44,7 @@ import org.rocksdb.RocksIterator;
  * </ul>
  */
 class TransactionalColumnFamily<
-        ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue,
+        ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily,
         KeyType extends DbKey,
         ValueType extends DbValue>
     implements ColumnFamily<KeyType, ValueType> {
@@ -473,5 +475,10 @@ class TransactionalColumnFamily<
     valueInstance.wrap(valueViewBuffer, 0, valueViewBuffer.capacity());
 
     return iteratorConsumer.visit(keyInstance, valueInstance);
+  }
+
+  @Override
+  public ColumnFamilyScope partitionScope() {
+    return columnFamily.partitionScope();
   }
 }
