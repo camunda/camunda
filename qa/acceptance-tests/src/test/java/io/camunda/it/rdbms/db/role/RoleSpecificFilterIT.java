@@ -83,7 +83,7 @@ public class RoleSpecificFilterIT {
         roleReader.search(
             new RoleQuery(
                 new RoleFilter.Builder()
-                    .groupId(group.groupId())
+                    .memberId(group.groupId())
                     .memberType(EntityType.GROUP)
                     .build(),
                 RoleSort.of(b -> b),

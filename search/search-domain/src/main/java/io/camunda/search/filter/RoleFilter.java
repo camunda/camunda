@@ -18,11 +18,10 @@ public record RoleFilter(
     String description,
     Set<String> memberIds,
     EntityType memberType,
-    String groupId,
     Set<String> roleIds)
     implements FilterBase {
   public Builder toBuilder() {
-    return new Builder().roleKey(roleKey).roleId(roleId).name(name).memberIds(memberIds).groupId(groupId);
+    return new Builder().roleKey(roleKey).roleId(roleId).name(name).memberIds(memberIds);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
@@ -32,7 +31,6 @@ public record RoleFilter(
     private String description;
     private Set<String> memberIds;
     private EntityType memberType;
-    private String groupId;
     private Set<String> roleIds;
 
     public Builder roleKey(final Long value) {
@@ -69,11 +67,6 @@ public record RoleFilter(
       return this;
     }
 
-    public Builder groupId(final String value) {
-      groupId = value;
-      return this;
-    }
-
     public Builder roleIds(final Set<String> value) {
       roleIds = value == null ? Set.of() : value;
       return this;
@@ -81,8 +74,7 @@ public record RoleFilter(
 
     @Override
     public RoleFilter build() {
-      return new RoleFilter(
-          roleKey, roleId, name, description, memberIds, memberType, groupId, roleIds);
+      return new RoleFilter(roleKey, roleId, name, description, memberIds, memberType, roleIds);
     }
   }
 }
