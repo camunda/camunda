@@ -10,6 +10,7 @@ package io.camunda.zeebe.stream.impl;
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
@@ -42,6 +43,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
   private final long operationReference;
+  private final AuthInfo authInfo;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
     this(predicate, operationReferenceNullValue());
@@ -49,8 +51,16 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   BufferedProcessingResultBuilder(
       final RecordBatchSizePredicate predicate, final long operationReference) {
+    this(predicate, operationReference, null);
+  }
+
+  BufferedProcessingResultBuilder(
+      final RecordBatchSizePredicate predicate,
+      final long operationReference,
+      final AuthInfo authInfo) {
     mutableRecordBatch = new RecordBatch(predicate);
     this.operationReference = operationReference;
+    this.authInfo = authInfo;
   }
 
   @Override
@@ -59,6 +69,10 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
     if (operationReference != operationReferenceNullValue()) {
       metadata.operationReference(operationReference);
+    }
+
+    if (authInfo != null) {
+      metadata.authorization(authInfo);
     }
 
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
