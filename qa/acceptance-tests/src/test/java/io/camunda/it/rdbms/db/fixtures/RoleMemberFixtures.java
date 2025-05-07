@@ -13,7 +13,7 @@ import io.camunda.db.rdbms.write.domain.RoleMemberDbModel.Builder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.function.Function;
 
-public class RoleMemberFixtures extends CommonFixtures {
+public final class RoleMemberFixtures extends CommonFixtures {
   private RoleMemberFixtures() {}
 
   public static RoleMemberDbModel createRandomized(
