@@ -14,6 +14,7 @@ import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
@@ -22,6 +23,8 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +45,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
@@ -291,14 +296,27 @@ public class WebSecurityConfig {
               .getJwkSetUri();
 
       final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+      decoder.setJwtValidator(
+          getTokenValidator(securityConfiguration.getAuthentication().getOidc()));
+      return decoder;
+    }
 
-      final var validAudiences = securityConfiguration.getAuthentication().getOidc().getAudiences();
+    private static OAuth2TokenValidator<Jwt> getTokenValidator(
+        final OidcAuthenticationConfiguration configuration) {
+      final var validAudiences = configuration.getAudiences();
+      final var organizationId = configuration.getOrganizationId();
+      final var validators = new LinkedList<OAuth2TokenValidator<Jwt>>();
       if (validAudiences != null) {
-        decoder.setJwtValidator(
-            JwtValidators.createDefaultWithValidators(new AudienceValidator(validAudiences)));
+        validators.add(new AudienceValidator(validAudiences));
+      }
+      if (organizationId != null) {
+        validators.add(new OrganizationValidator(organizationId));
       }
 
-      return decoder;
+      if (!validators.isEmpty()) {
+        return JwtValidators.createDefaultWithValidators(validators);
+      }
+      return JwtValidators.createDefault();
     }
 
     @Bean
