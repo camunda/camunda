@@ -112,6 +112,9 @@ public class UsersByGroupSearchTest {
             () -> {
               final var result = camundaClient.newGroupsSearchRequest().send().join();
               assertThat(result.items().size()).isEqualTo(1);
+
+              final var users = camundaClient.newUsersByGroupSearchRequest(GROUP_ID).send().join();
+              assertThat(users.items().size()).isEqualTo(2);
             });
   }
 }
