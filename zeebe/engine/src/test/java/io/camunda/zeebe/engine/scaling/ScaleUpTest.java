@@ -240,16 +240,15 @@ public class ScaleUpTest {
     engine.writeRecords(command);
 
     // then
-    assertThat(
-            RecordingExporter.scaleRecords()
-                .filter(r -> r.getRecordType() == RecordType.COMMAND_REJECTION))
-        .hasSize(1)
-        .allSatisfy(
-            r -> {
-              assertThat(r.getIntent()).isEqualTo(ScaleIntent.STATUS);
-              assertThat(r.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-              assertThat(r.getRejectionReason()).contains("desired partition count");
-            });
+    final var record =
+        RecordingExporter.scaleRecords()
+            .limit(r -> r.getRecordType() == RecordType.COMMAND_REJECTION)
+            .getLast();
+    assertThat(record.getIntent()).isEqualTo(ScaleIntent.STATUS);
+    assertThat(record.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(record.getRejectionReason())
+        .contains(
+            "In progress scale up number of desired partitions is 0, but desired partitions in the request are 4.");
   }
 
   @Test
@@ -273,18 +272,15 @@ public class ScaleUpTest {
 
     // then
 
-    assertThat(
-            RecordingExporter.scaleRecords()
-                .filter(r -> r.getIntent() == ScaleIntent.STATUS_RESPONSE))
-        .hasSize(1)
-        .allSatisfy(
-            r -> {
-              assertThat(r.getValue().getRedistributedPartitions())
-                  // NOTE: currently scaling up is immediate as it's implemented as noop.
-                  // In the future, the expected number of partitions should be (1,2,3)
-                  // until redistribution is completed
-                  .containsExactlyInAnyOrder(1, 2, 3, 4);
-            });
+    final var record =
+        RecordingExporter.scaleRecords()
+            .limit(r -> r.getIntent() == ScaleIntent.STATUS_RESPONSE)
+            .getLast();
+    assertThat(record.getValue().getRedistributedPartitions())
+        // NOTE: currently scaling up is immediate as it's implemented as noop.
+        // In the future, the expected number of partitions should be (1,2,3)
+        // until redistribution is completed
+        .containsExactlyInAnyOrder(1, 2, 3, 4);
   }
 
   private void initRoutingState() {
