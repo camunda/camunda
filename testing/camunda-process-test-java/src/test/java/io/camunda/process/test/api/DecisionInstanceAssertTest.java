@@ -15,6 +15,7 @@ import io.camunda.client.api.response.MatchedDecisionRule;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.MatchedDecisionRuleImpl;
 import io.camunda.client.impl.search.response.DecisionInstanceImpl;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
@@ -26,7 +27,9 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
@@ -64,16 +67,27 @@ public class DecisionInstanceAssertTest {
     CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
   }
 
+  private void mockDecisionInstanceSearch(final DecisionInstance mockedResult) {
+    mockDecisionInstanceSearch(Collections.singletonList(mockedResult), mockedResult);
+  }
+
+  private void mockDecisionInstanceSearch(
+      final List<DecisionInstance> mockedSearchResults,
+      final DecisionInstance mockedDecisionInstance) {
+
+    when(camundaDataSource.findDecisionInstances(any()))
+        .thenReturn(mockedSearchResults);
+    when (camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+        .thenReturn(mockedDecisionInstance);
+  }
+
   @Nested
   public class IsEvaluated {
 
     @Test
     public void isEvaluated() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(
-              Collections.singletonList(
-                  decisionInstance(d -> d.state(DecisionInstanceStateEnum.EVALUATED))));
+      mockDecisionInstanceSearch(decisionInstance(d -> d.state(DecisionInstanceStateEnum.EVALUATED)));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).isEvaluated();
@@ -82,10 +96,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void evaluationFailure() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(
-              Collections.singletonList(
-                  decisionInstance(d -> d.state(DecisionInstanceStateEnum.FAILED))));
+      mockDecisionInstanceSearch(decisionInstance(d -> d.state(DecisionInstanceStateEnum.FAILED)));
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(DecisionSelectors.byName(NAME)).isEvaluated())
@@ -99,8 +110,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void hasName() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstance()));
+      mockDecisionInstanceSearch(decisionInstance());
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasName(NAME);
@@ -109,8 +119,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void nameMismatch() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstance()));
+      mockDecisionInstanceSearch(decisionInstance());
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(DecisionSelectors.byName(NAME)).hasName("b"))
@@ -124,10 +133,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void hasId() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(
-              Collections.singletonList(
-                  decisionInstance(d -> d.decisionDefinitionId("decisionDefinitionId"))));
+      mockDecisionInstanceSearch(decisionInstance(d -> d.decisionDefinitionId("decisionDefinitionId")));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasId("decisionDefinitionId");
@@ -136,10 +142,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void idMismatch() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(
-              Collections.singletonList(
-                  decisionInstance(d -> d.decisionDefinitionId("decisionDefinitionId"))));
+      mockDecisionInstanceSearch(decisionInstance(d -> d.decisionDefinitionId("decisionDefinitionId")));
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(DecisionSelectors.byName(NAME)).hasId("foo"))
@@ -153,9 +156,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void hasVersion() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(
-              Collections.singletonList(decisionInstance(d -> d.decisionDefinitionVersion(1))));
+      mockDecisionInstanceSearch(decisionInstance(d -> d.decisionDefinitionVersion(1)));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasVersion(1);
@@ -164,9 +165,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void versionMismatch() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(
-              Collections.singletonList(decisionInstance(d -> d.decisionDefinitionVersion(1))));
+      mockDecisionInstanceSearch(decisionInstance(d -> d.decisionDefinitionVersion(1)));
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(DecisionSelectors.byName(NAME)).hasVersion(2))
@@ -180,35 +179,83 @@ public class DecisionInstanceAssertTest {
     @Test
     public void hasOutputValueWithSingleMatch() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", singleRule())));
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue"));
 
       // then
-      assertThat(DecisionSelectors.byName(NAME)).hasOutput("outputValue");
+      assertThat(DecisionSelectors.byName(NAME)).containsOutput("outputValue");
+    }
+
+    @Test
+    public void containsOutputPartiallyMatches() {
+      // when
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("{\"a\":\"b\",\"v\":2}"));
+
+      // then
+      assertThat(DecisionSelectors.byName(NAME))
+          .containsOutput("b")
+          .containsOutput("2");
+    }
+
+    @Test
+    public void hasOutputPartiallyMatches() {
+      // when
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("{\"a\":\"b\",\"v\":2}"));
+      when(camundaDataSource.getJsonMapper()).thenReturn(new CamundaObjectMapper());
+
+      // then
+      final Map<String, Object> expected = new HashMap<>();
+      expected.put("a", "b");
+      assertThat(DecisionSelectors.byName(NAME))
+          .hasOutput(expected);
+    }
+
+    @Test
+    public void hasOutputMatchesAVariableMap() {
+      // when
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("{\"a\":\"b\",\"v\":2}"));
+      when(camundaDataSource.getJsonMapper()).thenReturn(new CamundaObjectMapper());
+
+      // then
+      final Map<String, Object> expected = new HashMap<>();
+      expected.put("a", "b");
+      expected.put("v", 2);
+      assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected);
     }
 
     @Test
     public void noMatchingOutputValue() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", singleRule())));
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", singleRule()));
+      when(camundaDataSource.getJsonMapper()).thenReturn(new CamundaObjectMapper());
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
+              () -> assertThat(DecisionSelectors.byName(NAME)).containsOutput("foo"))
           .hasMessage("Expected [name] to have output 'foo', but was 'outputValue'");
+
+      final Map<String, Object> expected = new HashMap<>();
+      expected.put("a", "b");
+      Assertions.assertThatThrownBy(
+              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected))
+          .hasMessage("Expected [name] to have output '{a=b}', but was 'outputValue'");
     }
 
     @Test
     public void hasOutputValueWithNoMatches() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers(null)));
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers(null));
+      when(camundaDataSource.getJsonMapper()).thenReturn(new CamundaObjectMapper());
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
+              () -> assertThat(DecisionSelectors.byName(NAME)).containsOutput("foo"))
           .hasMessage("Expected [name] to have output 'foo', but was '<None>'");
+
+      final Map<String, Object> expected = new HashMap<>();
+      expected.put("a", "b");
+      Assertions.assertThatThrownBy(
+              () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected))
+          .hasMessage("Expected [name] to have output '{a=b}', but was '<None>'");
     }
   }
 
@@ -217,8 +264,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void hasMatched() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", singleRule())));
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", singleRule()));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1);
@@ -227,8 +273,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void hasNotMatched() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", singleRule())));
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", singleRule()));
 
       // then
       Assertions.assertThatThrownBy(
@@ -243,8 +288,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void noMatchesExist() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue")));
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue"));
 
       // then
       Assertions.assertThatThrownBy(
@@ -259,8 +303,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void hasMatchedMultiple() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", multiRule())));
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", multiRule()));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1, 2, 3);
@@ -269,8 +312,7 @@ public class DecisionInstanceAssertTest {
     @Test
     public void hasMatchedPartial() {
       // when
-      when(camundaDataSource.findDecisionInstances(any()))
-          .thenReturn(Collections.singletonList(decisionInstanceWithAnswers("outputValue", multiRule())));
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", multiRule()));
 
       // then
       Assertions.assertThatThrownBy(

@@ -82,7 +82,9 @@ public final class DecisionInstanceServices
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchDecisionInstances(
                 decisionInstanceSearchQuery(
-                    q -> q.filter(f -> f.decisionInstanceIds(decisionInstanceId))));
+                    q -> q
+                        .resultConfig(rc -> rc.includeEvaluatedInputs(true).includeEvaluatedOutputs(true))
+                        .filter(f -> f.decisionInstanceIds(decisionInstanceId))));
     final var decisionInstanceEntity =
         getSingleResultOrThrow(result, decisionInstanceId, "Decision instance");
     final var authorization = Authorization.of(a -> a.decisionDefinition().readDecisionInstance());

@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -109,14 +110,6 @@ public class CamundaDataSource {
         .items();
   }
 
-  // TODO is result property missing from DecisionInstance? Check controller
-    // Check controller to see if the response data has everything we need to be mapped, it just isn't being mapped
-
-  // TODO is required data not being written?
-  // H2 RBDMS Exporter -> Sind da die Daten drin?
-    // Camunda C8-run nutzt ES Datenbank -> Sind da die Daten drin?
-      // Dann wäre nur der RDMS Exporter unvollständig
-      // Sonst müsste das grundlegend implementiert werden.
   public List<DecisionInstance> findDecisionInstances(
       final Consumer<DecisionInstanceFilter> filter) {
     return client
@@ -125,5 +118,16 @@ public class CamundaDataSource {
         .send()
         .join()
         .items();
+  }
+
+  public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
+    return client
+        .newDecisionInstanceGetRequest(decisionInstanceId)
+        .send()
+        .join();
+  }
+
+  public JsonMapper getJsonMapper() {
+    return client.getConfiguration().getJsonMapper();
   }
 }

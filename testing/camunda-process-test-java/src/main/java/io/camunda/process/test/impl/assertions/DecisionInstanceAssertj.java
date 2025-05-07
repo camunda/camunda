@@ -16,10 +16,9 @@ import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
-import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -94,16 +93,42 @@ public class DecisionInstanceAssertj
   }
 
   @Override
-  public DecisionInstanceAssert hasOutput(final String expectedValue) {
-    awaitDecisionInstance(instance ->
-        assertThat(instance.getResult())
+  public DecisionInstanceAssert containsOutput(final String expectedValue) {
+    awaitDecisionInstance(instance -> assertThat(instance.getResult())
+        .withFailMessage(
+            "Expected [%s] to have output '%s', but was '%s'",
+            actual.describe(),
+            expectedValue,
+            formatResult(instance.getResult()))
+        .contains(expectedValue));
+
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceAssert hasOutput(final Map<String, Object> expectedOutput) {
+    awaitDecisionInstance(instance -> {
+      try {
+        Map<String, Object> resultMap = dataSource
+            .getJsonMapper()
+            .fromJsonAsMap(instance.getResult());
+
+        assertThat(resultMap)
             .withFailMessage(
                 "Expected [%s] to have output '%s', but was '%s'",
                 actual.describe(),
-                expectedValue,
-                formatResult(instance.getResult()))
-            .contains(expectedValue)
-    );
+                expectedOutput,
+                resultMap)
+            .containsAllEntriesOf(expectedOutput);
+      } catch (final ClientException | IllegalArgumentException e) {
+        // instance.getResult() could not be deserialized to a map.
+        fail(
+            "Expected [%s] to have output '%s', but was '%s'",
+            actual.describe(),
+            expectedOutput,
+            formatResult(instance.getResult()));
+      }
+    });
 
     return this;
   }
@@ -169,21 +194,6 @@ public class DecisionInstanceAssertj
     return state.name().toLowerCase();
   }
 
-  private String formatEvaluatedOutputs(final List<MatchedDecisionRule> matchedRules) {
-    if (matchedRules == null || matchedRules.isEmpty()) {
-      return "\t- <None>";
-    }
-
-    return matchedRules.stream()
-        .map(MatchedDecisionRule::getEvaluatedOutputs)
-        .flatMap(Collection::stream)
-        .map(
-            o ->
-                String.format(
-                    "\t- %s (id: %s): %s", o.getOutputName(), o.getOutputId(), o.getOutputValue()))
-        .collect(Collectors.joining("\n"));
-  }
-
   private void awaitDecisionInstance(
       final Consumer<DecisionInstance> assertion
   ) {
@@ -191,17 +201,22 @@ public class DecisionInstanceAssertj
 
     try {
       Awaitility.await()
-          .timeout(Duration.ofSeconds(60))
           .ignoreException(ClientException.class)
           .untilAsserted(
               () -> dataSource.findDecisionInstances(actual::applyFilter),
               decisionInstances -> {
-                final Optional<DecisionInstance> decisionInstance =
+                final Optional<DecisionInstance> discoveredDecisionInstance =
                     decisionInstances.stream().filter(actual::test).findFirst();
 
                 try {
-                  assertThat(decisionInstance).isPresent();
-                  assertion.accept(decisionInstance.get());
+                  assertThat(discoveredDecisionInstance).isPresent();
+                  // We need to use the getById endpoint because only that endpoint contains
+                  // the matchedRules() and evaluatedInput data.
+                  final DecisionInstance completeDecisionInstance =
+                      dataSource.getDecisionInstance(
+                          discoveredDecisionInstance.get().getDecisionInstanceId());
+
+                  assertion.accept(completeDecisionInstance);
                 } catch (final AssertionError e) {
                   failureMessage.set(e.getMessage());
                   throw e;

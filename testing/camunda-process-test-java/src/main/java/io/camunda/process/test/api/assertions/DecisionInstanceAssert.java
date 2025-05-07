@@ -7,6 +7,8 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import java.util.Map;
+
 /** The assertion object to verify a decision. */
 public interface DecisionInstanceAssert {
   /**
@@ -50,7 +52,16 @@ public interface DecisionInstanceAssert {
    * @param expectedOutputValue the expected output value
    * @return the assertion object
    */
-  DecisionInstanceAssert hasOutput(String expectedOutputValue);
+  DecisionInstanceAssert containsOutput(final String expectedOutputValue);
+
+  /**
+   * Verifies that the decision is evaluated with the expected output. The verification fails if the
+   * decision is not evaluated or the output does not match.
+   *
+   * @param expectedOutput the expected output values represented as a key-value map
+   * @return the assertion object
+   */
+  DecisionInstanceAssert hasOutput(final Map<String, Object> expectedOutput);
 
   /**
    * Verifies that the decision has matched the given rule indices.

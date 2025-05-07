@@ -467,7 +467,7 @@ public class CamundaProcessTestContextIT {
     // Then
     CamundaAssert.assertThat(DecisionSelectors.byName("Jedi or Sith"))
         .isEvaluated()
-        .hasOutput("Jedi");;
+        .containsOutput("Jedi");;
   }
 
   @Test
@@ -487,9 +487,14 @@ public class CamundaProcessTestContextIT {
         .send().join();
 
     // Then
+    Map<String, Object> expectedResult = new HashMap<>();
+    expectedResult.put("jedi_or_sith", "Jedi");
+    expectedResult.put("force_user", "Mace");
+
     CamundaAssert.assertThat(DecisionSelectors.byId("jedi_or_sith"))
         .isEvaluated()
-        .hasOutput("Jedi");
+        .hasOutput(expectedResult)
+        .hasMatchedRules(1);
   }
 
   /**

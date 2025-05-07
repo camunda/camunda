@@ -12,12 +12,20 @@
           <text>"Jedi","Sith"</text>
         </outputValues>
       </output>
+      <output id="Output_2" label="Jedi or Sith" name="force_user" typeRef="string" biodi:width="192">
+        <outputValues id="UnaryTests_0hj346b">
+          <text>"Mace","Anakin"</text>
+        </outputValues>
+      </output>
       <rule id="DecisionRule_0zumznl">
         <inputEntry id="UnaryTests_0leuxqi">
           <text>"blue"</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_0c9vpz8">
           <text>"Jedi"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0c9vpd8">
+          <text>"Mace"</text>
         </outputEntry>
       </rule>
       <rule id="DecisionRule_1utwb1e">
@@ -27,6 +35,9 @@
         <outputEntry id="LiteralExpression_0tgh8k1">
           <text>"Jedi"</text>
         </outputEntry>
+        <outputEntry id="LiteralExpression_2c9vpd8">
+          <text>"Mace"</text>
+        </outputEntry>
       </rule>
       <rule id="DecisionRule_1bwgcym">
         <inputEntry id="UnaryTests_0n1ewm3">
@@ -34,6 +45,9 @@
         </inputEntry>
         <outputEntry id="LiteralExpression_19xnlkw">
           <text>"Sith"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_1c9vpd8">
+          <text>"Mace"</text>
         </outputEntry>
       </rule>
     </decisionTable>
