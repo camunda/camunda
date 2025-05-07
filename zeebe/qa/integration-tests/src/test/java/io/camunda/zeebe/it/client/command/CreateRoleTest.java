@@ -83,7 +83,7 @@ class CreateRoleTest {
   @Test
   void shouldRejectIfMissingRoleId() {
     // when / then
-    assertThatThrownBy(() -> client.newCreateRoleCommand().send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().roleId(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }

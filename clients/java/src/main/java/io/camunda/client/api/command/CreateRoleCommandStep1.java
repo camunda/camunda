@@ -17,7 +17,7 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateRoleResponse;
 
-public interface CreateRoleCommandStep1 extends FinalCommandStep<CreateRoleResponse> {
+public interface CreateRoleCommandStep1 {
   /**
    * Set the ID to create role with.
    *
