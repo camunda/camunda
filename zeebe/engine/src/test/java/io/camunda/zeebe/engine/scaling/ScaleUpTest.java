@@ -22,10 +22,12 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
@@ -219,6 +221,70 @@ public class ScaleUpTest {
                 .map(Record::getKey)
                 .limit(2))
         .containsExactly(deploymentKey1, deploymentKey2);
+  }
+
+  @Test
+  public void shouldRejectScaleUpStatusCommandWhenDesiredPartitionCountIsWrong() {
+    // given
+    initRoutingState();
+
+    final var command =
+        RecordToWrite.command()
+            .scale(
+                ScaleIntent.STATUS,
+                new ScaleRecord()
+                    .setDesiredPartitionCount(4)
+                    .setRedistributedPartitions(List.of(4)));
+
+    // when
+    engine.writeRecords(command);
+
+    // then
+    assertThat(
+            RecordingExporter.scaleRecords()
+                .filter(r -> r.getRecordType() == RecordType.COMMAND_REJECTION))
+        .hasSize(1)
+        .allSatisfy(
+            r -> {
+              assertThat(r.getIntent()).isEqualTo(ScaleIntent.STATUS);
+              assertThat(r.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+              assertThat(r.getRejectionReason()).contains("desired partition count");
+            });
+  }
+
+  @Test
+  public void shouldRespondWithTheCurrentNumberOfRedistributedPartitions() {
+    // given
+    initRoutingState();
+
+    final var scaleUpCommand =
+        RecordToWrite.command()
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(4));
+
+    final var getStatusCommand =
+        RecordToWrite.command()
+            .scale(
+                ScaleIntent.STATUS,
+                new ScaleRecord()
+                    .setDesiredPartitionCount(4)
+                    .setRedistributedPartitions(List.of(4)));
+    // when
+    engine.writeRecords(scaleUpCommand, getStatusCommand);
+
+    // then
+
+    assertThat(
+            RecordingExporter.scaleRecords()
+                .filter(r -> r.getIntent() == ScaleIntent.STATUS_RESPONSE))
+        .hasSize(1)
+        .allSatisfy(
+            r -> {
+              assertThat(r.getValue().getRedistributedPartitions())
+                  // NOTE: currently scaling up is immediate as it's implemented as noop.
+                  // In the future, the expected number of partitions should be (1,2,3)
+                  // until redistribution is completed
+                  .containsExactlyInAnyOrder(1, 2, 3, 4);
+            });
   }
 
   private void initRoutingState() {

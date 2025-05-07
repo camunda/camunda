@@ -20,8 +20,12 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 public enum ScaleIntent implements Intent {
   SCALE_UP((short) 1, false),
   SCALING_UP((short) 2, true),
-  SCALED_UP((short) 3, true);
+  SCALED_UP((short) 3, true),
+  STATUS((short) 4, false),
+  STATUS_RESPONSE((short) 5, true);
 
+  // A static field is needed as values() would allocate at every call
+  private static final ScaleIntent[] intents = values();
   private final short value;
   private final boolean isEvent;
 
@@ -41,15 +45,10 @@ public enum ScaleIntent implements Intent {
   }
 
   public static Intent from(final short intent) {
-    switch (intent) {
-      case 1:
-        return SCALE_UP;
-      case 2:
-        return SCALING_UP;
-      case 3:
-        return SCALED_UP;
-      default:
-        return Intent.UNKNOWN;
+    try {
+      return intents[intent - 1];
+    } catch (final ArrayIndexOutOfBoundsException e) {
+      return Intent.UNKNOWN;
     }
   }
 }
