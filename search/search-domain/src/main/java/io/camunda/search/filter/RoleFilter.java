@@ -81,6 +81,9 @@ public record RoleFilter(
 
     @Override
     public RoleFilter build() {
+      if (memberIds != null && memberType == null) {
+        throw new IllegalArgumentException("If memberIds is set, memberType must be set too");
+      }
       return new RoleFilter(
           roleKey, roleId, name, description, joinParentId, memberIds, memberType, roleIds);
     }

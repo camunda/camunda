@@ -15,6 +15,7 @@
     FROM ${prefix}ROLES r
     <if test="filter.memberIds != null">
       JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
+      AND rm.ENTITY_TYPE = #{filter.memberType}
     </if>
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
   </select>
@@ -44,7 +45,13 @@
     <if test="filter.roleKey != null">AND r.ROLE_KEY = #{filter.roleKey}</if>
     <if test="filter.roleId != null">AND r.ROLE_ID = #{filter.roleId}</if>
     <if test="filter.name != null">AND r.NAME = #{filter.name}</if>
-    <if test="filter.memberIds != null">AND rm.ENTITY_ID IN <foreach item="id" collection="filter.memberIds" open="(" separator="," close=")">#{id}</foreach> AND rm.ENTITY_TYPE = #{filter.memberType}</if>
+    <if test="filter.memberIds != null">
+      AND rm.ENTITY_ID IN
+      <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
+        #{memberId}
+      </foreach>
+      AND rm.ENTITY_TYPE = #{filter.memberType}
+    </if>
   </sql>
 
   <resultMap id="roleResultMap" type="io.camunda.db.rdbms.write.domain.RoleDbModel">
