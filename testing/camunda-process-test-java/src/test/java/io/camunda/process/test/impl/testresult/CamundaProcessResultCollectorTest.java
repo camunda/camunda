@@ -18,9 +18,11 @@ package io.camunda.process.test.impl.testresult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -31,9 +33,13 @@ import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.VariableBuilder;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -51,6 +57,11 @@ public class CamundaProcessResultCollectorTest {
           .build();
 
   @Mock private CamundaDataSource camundaDataSource;
+
+  @Mock(answer = Answers.RETURNS_SELF)
+  private VariableFilter variableFilter;
+
+  @Captor private ArgumentCaptor<Consumer<VariableFilter>> variableFilterCaptor;
 
   private CamundaProcessTestResultCollector resultCollector;
 
@@ -90,40 +101,36 @@ public class CamundaProcessResultCollectorTest {
 
     assertThat(result.getProcessInstanceTestResults())
         .allMatch(processInstanceResult -> processInstanceResult.getVariables().isEmpty())
-        .allMatch(processInstanceResult -> processInstanceResult.getOpenIncidents().isEmpty());
+        .allMatch(processInstanceResult -> processInstanceResult.getActiveIncidents().isEmpty());
   }
 
   @Test
   void shouldReturnProcessInstanceVariables() {
     // given
     when(camundaDataSource.findProcessInstances())
-        .thenReturn(Arrays.asList(PROCESS_INSTANCE_1, PROCESS_INSTANCE_2));
+        .thenReturn(Collections.singletonList(PROCESS_INSTANCE_1));
 
-    when(camundaDataSource.findVariablesByProcessInstanceKey(
-            PROCESS_INSTANCE_1.getProcessInstanceKey()))
+    when(camundaDataSource.findVariables(variableFilterCaptor.capture()))
         .thenReturn(
             Arrays.asList(
                 VariableBuilder.newVariable("var-1", "1").build(),
                 VariableBuilder.newVariable("var-2", "2").build()));
 
-    when(camundaDataSource.findVariablesByProcessInstanceKey(
-            PROCESS_INSTANCE_2.getProcessInstanceKey()))
-        .thenReturn(Collections.singletonList(VariableBuilder.newVariable("var-3", "3").build()));
-
     // when
     final ProcessTestResult result = resultCollector.collect();
 
     // then
-    assertThat(result.getProcessInstanceTestResults()).hasSize(2);
+    assertThat(result.getProcessInstanceTestResults()).hasSize(1);
 
     assertThat(result.getProcessInstanceTestResults().get(0).getVariables())
         .hasSize(2)
         .containsEntry("var-1", "1")
         .containsEntry("var-2", "2");
 
-    assertThat(result.getProcessInstanceTestResults().get(1).getVariables())
-        .hasSize(1)
-        .containsEntry("var-3", "3");
+    // assert that it collects only global variables
+    variableFilterCaptor.getValue().accept(variableFilter);
+    verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_1.getProcessInstanceKey());
+    verify(variableFilter).scopeKey(PROCESS_INSTANCE_1.getProcessInstanceKey());
   }
 
   @Test
@@ -132,8 +139,7 @@ public class CamundaProcessResultCollectorTest {
     when(camundaDataSource.findProcessInstances())
         .thenReturn(Collections.singletonList(PROCESS_INSTANCE_1));
 
-    when(camundaDataSource.findVariablesByProcessInstanceKey(
-            PROCESS_INSTANCE_1.getProcessInstanceKey()))
+    when(camundaDataSource.findVariables(any()))
         .thenReturn(
             Arrays.asList(
                 VariableBuilder.newVariable("var-1", "1").build(),
@@ -152,7 +158,7 @@ public class CamundaProcessResultCollectorTest {
   }
 
   @Test
-  void shouldReturnOpenIncidents() {
+  void shouldReturnActiveIncidents() {
     // given
     when(camundaDataSource.findProcessInstances())
         .thenReturn(Arrays.asList(PROCESS_INSTANCE_1, PROCESS_INSTANCE_2));
@@ -212,14 +218,14 @@ public class CamundaProcessResultCollectorTest {
     // then
     assertThat(result.getProcessInstanceTestResults()).hasSize(2);
 
-    assertThat(result.getProcessInstanceTestResults().get(0).getOpenIncidents())
+    assertThat(result.getProcessInstanceTestResults().get(0).getActiveIncidents())
         .hasSize(2)
         .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getElementId)
         .contains(
             tuple(IncidentErrorType.JOB_NO_RETRIES, "No retries left.", "A"),
             tuple(IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.", "B"));
 
-    assertThat(result.getProcessInstanceTestResults().get(1).getOpenIncidents())
+    assertThat(result.getProcessInstanceTestResults().get(1).getActiveIncidents())
         .hasSize(1)
         .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getElementId)
         .contains(

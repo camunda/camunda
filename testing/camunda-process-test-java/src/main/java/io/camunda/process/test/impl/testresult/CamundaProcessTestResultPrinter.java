@@ -74,8 +74,8 @@ public class CamundaProcessTestResultPrinter {
         + "Variables:\n"
         + formatVariables(result.getVariables())
         + "\n\n"
-        + "Open incidents:\n"
-        + formatIncidents(result.getOpenIncidents());
+        + "Active incidents:\n"
+        + formatIncidents(result.getActiveIncidents());
   }
 
   private static String formatVariables(final Map<String, String> variables) {
