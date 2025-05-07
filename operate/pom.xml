@@ -39,8 +39,8 @@
     <testForkCount>${env.LIMITS_CPU}</testForkCount>
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
-    <includeUnitTestNames>*.java</includeUnitTestNames>
-    <excludeUnitTestNames>*IT.java</excludeUnitTestNames>
+    <includeUnitTestNames>**/*.java</includeUnitTestNames>
+    <excludeUnitTestNames>**/*IT.java</excludeUnitTestNames>
     <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
@@ -179,6 +179,11 @@
 
     <profile>
       <id>operateCoreFeaturesUnitTests</id>
+      <activation>
+        <property>
+          <name>runCoreFeaturesUTs</name>
+        </property>
+      </activation>
       <properties>
         <includeUnitTestNames>*.java</includeUnitTestNames>
         <excludeUnitTestNames>*IT.java,**/identity/**/*.java,**/elasticsearch/**/*.java,**/opensearch/**/*.java,**/zeebeimport/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java</excludeUnitTestNames>
@@ -187,6 +192,11 @@
 
     <profile>
       <id>operateDataLayerUnitTests</id>
+      <activation>
+        <property>
+          <name>runDataLayerUTs</name>
+        </property>
+      </activation>
       <properties>
         <includeUnitTestNames>**/elasticsearch/**/*.java,,**/opensearch/**/*.java,**/zeebeimport/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java</includeUnitTestNames>
       </properties>
@@ -194,6 +204,11 @@
 
     <profile>
       <id>operateIdentityUnitTests</id>
+      <activation>
+        <property>
+          <name>runIdentityUTs</name>
+        </property>
+      </activation>
       <properties>
         <includeUnitTestNames>**/identity/**/*.java</includeUnitTestNames>
       </properties>
