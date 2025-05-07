@@ -27,11 +27,6 @@ public class RoleClient {
     return new RoleCreateClient(writer, id);
   }
 
-  // TODO remove this method and use the one with role Id
-  public RoleUpdateClient updateRole(final long roleKey) {
-    return updateRole(String.valueOf(roleKey));
-  }
-
   public RoleUpdateClient updateRole(final String roleId) {
     return new RoleUpdateClient(writer, roleId);
   }
@@ -43,11 +38,6 @@ public class RoleClient {
 
   public RoleAddEntityClient addEntity(final String roleId) {
     return new RoleAddEntityClient(writer, roleId);
-  }
-
-  // TODO remove this method and use the one with role Id
-  public RoleRemoveEntityClient removeEntity(final long key) {
-    return new RoleRemoveEntityClient(writer, key);
   }
 
   public RoleRemoveEntityClient removeEntity(final String roleId) {

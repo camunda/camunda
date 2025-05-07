@@ -6951,6 +6951,12 @@ components:
         roleKey:
           type: string
           description: The role key.
+        roleId:
+          type: string
+          description: The role id.
+        description:
+          type: string
+          description: The description of the role.
         assignedMemberKeys:
           type: array
           description: The set of keys of members assigned to the role.

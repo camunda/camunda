@@ -83,15 +83,15 @@ public class RoleController {
             roleServices.withAuthentication(RequestMapper.getAuthentication()).deleteRole(roleId));
   }
 
-  @CamundaGetMapping(path = "/{roleKey}")
-  public ResponseEntity<Object> getRole(@PathVariable final long roleKey) {
+  @CamundaGetMapping(path = "/{roleId}")
+  public ResponseEntity<Object> getRole(@PathVariable final String roleId) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toRole(
                   roleServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .getRole(roleKey)));
+                      .getRole(roleId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }

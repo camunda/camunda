@@ -52,12 +52,6 @@ public class DbRoleState implements MutableRoleState {
     roleColumnFamily.deleteExisting(roleId);
   }
 
-  // TODO remove this method after the key > id refactoring
-  @Override
-  public Optional<PersistedRole> getRole(final long roleKey) {
-    return getRole(String.valueOf(roleKey));
-  }
-
   @Override
   public Optional<PersistedRole> getRole(final String roleId) {
     this.roleId.wrapString(roleId);

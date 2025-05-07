@@ -93,24 +93,17 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             .setDescription(updateRoleRequest.description()));
   }
 
-  public RoleEntity getRole(final Long roleKey) {
-    return findRole(roleKey)
+  public RoleEntity getRole(final String roleId) {
+    return findRole(roleId)
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_ROLE_BY_KEY.formatted(roleKey),
+                    ErrorMessages.ERROR_NOT_FOUND_ROLE_BY_ID.formatted(roleId),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
-  public Optional<RoleEntity> findRole(final Long roleKey) {
-    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleKey(roleKey)).build())
-        .items()
-        .stream()
-        .findFirst();
-  }
-
-  public Optional<RoleEntity> findRole(final String name) {
-    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.name(name)).build())
+  public Optional<RoleEntity> findRole(final String roleId) {
+    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleId(roleId)).build())
         .items()
         .stream()
         .findFirst();
