@@ -104,7 +104,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
    *   <li>BATCH: getPendingIncidentsBatch
    *   <li>BATCH: searchForInstances
    *       <ul>
-   *         <li>PARALLEL: checkDataAndCollectParentTreePaths (modifies state adding treePath)
+   *         <li>BATCH: checkDataAndCollectParentTreePaths (modifies state adding treePath)
    *       </ul>
    *   <li>BATCH: processIncidents
    *       <ul>
