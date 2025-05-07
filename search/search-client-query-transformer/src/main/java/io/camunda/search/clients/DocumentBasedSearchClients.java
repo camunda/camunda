@@ -69,6 +69,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.HashSet;
 import java.util.List;
@@ -121,10 +122,8 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<MappingEntity> searchMappings(MappingQuery query) {
-    if (query.filter().tenantId() != null) {
-      query = expandTenantFilter(query);
-    }
+  public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery mappingQuery) {
+    final var query = applyFilters(mappingQuery);
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
   }
@@ -398,18 +397,25 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
   }
 
-  private MappingQuery expandTenantFilter(final MappingQuery mappingQuery) {
-    final List<TenantMemberEntity> tenantMembers =
-        getSearchExecutor()
-            .findAll(
-                new TenantQuery.Builder()
-                    .filter(
-                        f -> f.joinParentId(mappingQuery.filter().tenantId()).memberType(MAPPING))
-                    .build(),
-                io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
-    final var mappingIds =
-        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+  private MappingQuery applyFilters(final MappingQuery mappingQuery) {
+    if (mappingQuery.filter().tenantId() != null) {
+      return expandTenantFilter(mappingQuery);
+    }
+    if (mappingQuery.filter().groupId() != null) {
+      return expandGroupFilter(mappingQuery);
+    }
+    return mappingQuery;
+  }
 
+  private MappingQuery expandGroupFilter(final MappingQuery mappingQuery) {
+    final var mappingIds = getGroupMembers(mappingQuery.filter().groupId(), MAPPING);
+    return mappingQuery.toBuilder()
+        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .build();
+  }
+
+  private MappingQuery expandTenantFilter(final MappingQuery mappingQuery) {
+    final var mappingIds = getTenantMembers(mappingQuery.filter().tenantId(), MAPPING);
     return mappingQuery.toBuilder()
         .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
         .build();
@@ -426,19 +432,39 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   private UserQuery expandTenantFilter(final UserQuery userQuery) {
+    final var usernames = getTenantMembers(userQuery.filter().tenantId(), USER);
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
+  }
+
+  private UserQuery expandGroupFilter(final UserQuery userQuery) {
+    final var usernames = getGroupMembers(userQuery.filter().groupId(), USER);
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
+  }
+
+  private Set<String> getTenantMembers(final String tenantId, final EntityType entityType) {
     final List<TenantMemberEntity> tenantMembers =
         getSearchExecutor()
             .findAll(
                 new TenantQuery.Builder()
-                    .filter(f -> f.joinParentId(userQuery.filter().tenantId()).memberType(USER))
+                    .filter(f -> f.joinParentId(tenantId).memberType(entityType))
                     .build(),
                 io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
-    final var usernames =
-        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+    return tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+  }
 
-    return userQuery.toBuilder()
-        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
-        .build();
+  private Set<String> getGroupMembers(final String groupId, final EntityType entityType) {
+    final List<GroupMemberEntity> groupMembers =
+        getSearchExecutor()
+            .findAll(
+                new GroupQuery.Builder()
+                    .filter(f -> f.joinParentId(groupId).memberType(entityType))
+                    .build(),
+                io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class);
+    return groupMembers.stream().map(GroupMemberEntity::id).collect(Collectors.toSet());
   }
 
   private UserQuery expandGroupFilterForUser(final UserQuery userQuery) {
