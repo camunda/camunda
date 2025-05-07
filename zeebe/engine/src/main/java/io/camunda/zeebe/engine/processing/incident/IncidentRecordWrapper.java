@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
@@ -118,6 +119,11 @@ final class IncidentRecordWrapper<T extends UnifiedRecordValue> implements Typed
   @Override
   public T getValue() {
     return record;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return null;
   }
 
   @Override
