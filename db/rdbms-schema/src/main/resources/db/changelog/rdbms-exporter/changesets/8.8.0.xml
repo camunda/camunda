@@ -61,6 +61,7 @@
       <column name="ELEMENT_ID" type="VARCHAR(255)"/>
       <column name="VERSION" type="SMALLINT" />
       <column name="PARTITION_ID" type="NUMBER"/>
+      <column name="TREE_PATH" type="VARCHAR(4000)" />
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
     </createTable>
 

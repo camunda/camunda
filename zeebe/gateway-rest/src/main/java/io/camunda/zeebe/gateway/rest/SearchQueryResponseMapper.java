@@ -73,6 +73,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatistics
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCallHierarchyEntry;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
@@ -772,6 +773,24 @@ public final class SearchQueryResponseMapper {
       return ProcessInstanceStateEnum.TERMINATED;
     }
     return ProcessInstanceStateEnum.fromValue(value.name());
+  }
+
+  public static List<ProcessInstanceCallHierarchyEntry> toProcessInstanceCallHierarchyEntries(
+      final List<ProcessInstanceEntity> processInstanceEntities) {
+    return processInstanceEntities.stream()
+        .map(SearchQueryResponseMapper::toProcessInstanceCallHierarchyEntry)
+        .toList();
+  }
+
+  public static ProcessInstanceCallHierarchyEntry toProcessInstanceCallHierarchyEntry(
+      final ProcessInstanceEntity processInstanceEntity) {
+    return new ProcessInstanceCallHierarchyEntry()
+        .processInstanceKey(KeyUtil.keyToString(processInstanceEntity.processInstanceKey()))
+        .processDefinitionKey(KeyUtil.keyToString(processInstanceEntity.processDefinitionKey()))
+        .processDefinitionName(
+            processInstanceEntity.processDefinitionName().isBlank()
+                ? processInstanceEntity.processDefinitionId()
+                : processInstanceEntity.processDefinitionName());
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

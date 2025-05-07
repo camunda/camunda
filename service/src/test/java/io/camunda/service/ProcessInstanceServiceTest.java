@@ -178,6 +178,70 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Test
+  public void shouldReturnOrderedProcessHierarchy() {
+    // given
+    final var childProcess = mock(ProcessInstanceEntity.class);
+    when(childProcess.processInstanceKey()).thenReturn(789L);
+    when(childProcess.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
+    when(childProcess.processDefinitionId()).thenReturn("child_process_id");
+    authorizeProcessReadInstance(true, "child_process_id");
+
+    final var parentProcess = mock(ProcessInstanceEntity.class);
+    when(parentProcess.processInstanceKey()).thenReturn(123L);
+    when(parentProcess.processDefinitionId()).thenReturn("parent_process_id");
+    authorizeProcessReadInstance(true, "parent_process_id");
+
+    when(client.searchProcessInstances(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(childProcess, parentProcess), null, null));
+
+    // when
+    final var result = services.callHierarchy(childProcess.processInstanceKey());
+
+    // then
+    assertThat(result).hasSize(2);
+    assertThat(result.get(0).processInstanceKey()).isEqualTo(123L); // Parent comes first
+    assertThat(result.get(1).processInstanceKey()).isEqualTo(789L); // Child comes next
+  }
+
+  @Test
+  public void shouldReturnEmptyListForBlankTreePath() {
+    // given
+    final var rootInstance = mock(ProcessInstanceEntity.class);
+    when(rootInstance.processInstanceKey()).thenReturn(123L);
+    when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
+    authorizeProcessReadInstance(true, "root_process_id");
+    when(rootInstance.treePath()).thenReturn(null); // No treePath
+
+    when(client.searchProcessInstances(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(rootInstance), null, null));
+
+    // when
+    final var result = services.callHierarchy(123L);
+
+    // then
+    assertThat(result).isEmpty(); // No hierarchy should return an empty list
+  }
+
+  @Test
+  public void shouldReturnEmptyListForRootTreePath() {
+    // given
+    final var rootInstance = mock(ProcessInstanceEntity.class);
+    when(rootInstance.processInstanceKey()).thenReturn(123L);
+    when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
+    authorizeProcessReadInstance(true, "root_process_id");
+    when(rootInstance.treePath()).thenReturn("PI_123"); // Root treePath
+
+    when(client.searchProcessInstances(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(rootInstance), null, null));
+
+    // when
+    final var result = services.callHierarchy(123L);
+
+    // then
+    assertThat(result).isEmpty(); // No hierarchy should return an empty list
+  }
+
+  @Test
   void shouldModifyProcessInstanceBatchOperationWithResult() {
     // given
     final var filter =
