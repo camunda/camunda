@@ -1,0 +1,16 @@
+{
+  "components": [
+    {
+      "label": "Number",
+      "type": "number",
+      "layout": {
+        "row": "Row_19tsbk6",
+        "columns": null
+      },
+      "id": "Field_13msghy",
+      "key": "field_1nmvdj2"
+    }
+  ],
+  "type": "default",
+  "id": "form_with_number"
+}

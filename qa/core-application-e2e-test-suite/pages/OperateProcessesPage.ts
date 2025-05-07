@@ -7,7 +7,6 @@
  */
 
 import {Page, Locator} from '@playwright/test';
-import {sleep} from 'utils/sleep';
 
 class OperateProcessesPage {
   private page: Page;
@@ -19,6 +18,8 @@ class OperateProcessesPage {
   readonly processPageHeading: Locator;
   readonly noMatchingInstancesMessage: Locator;
   readonly processFinishedInstancesCheckbox: Locator;
+  readonly processNameFilter: Locator;
+  readonly processInstanceLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -44,6 +45,12 @@ class OperateProcessesPage {
     this.processFinishedInstancesCheckbox = page
       .getByTestId('filter-finished-instances')
       .getByRole('checkbox');
+    this.processNameFilter = page.getByRole('combobox', {name: 'name'});
+    this.processInstanceLink = page
+      .getByRole('link', {
+        name: 'view instance',
+      })
+      .first();
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
@@ -66,22 +73,40 @@ class OperateProcessesPage {
     await this.processFinishedInstancesCheckbox.click({timeout: 90000});
   }
 
-  async clickProcessInstanceLink(processName: string): Promise<void> {
-    let retryCount = 0;
+  async filterByProcessName(name: string): Promise<void> {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await this.processNameFilter.click({timeout: 20000});
+        break;
+      } catch (error) {
+        if (attempt < 3) {
+          console.log(
+            `Attempt ${attempt} failed to click processNameFilter. Reloading page and retrying...`,
+          );
+          await this.page.reload();
+        } else {
+          throw new Error(
+            `Failed to click processNameFilter after 3 attempts: ${error}`,
+          );
+        }
+      }
+    }
+    await this.processNameFilter.fill(name);
+    await this.page.keyboard.press('Enter');
+    await this.page.getByRole('heading', {name}).waitFor({state: 'visible'});
+  }
+
+  async clickProcessInstanceLink(): Promise<void> {
     const maxRetries = 3;
+    let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
-        await this.page
-          .locator(`td:right-of(:text("${processName}"))`)
-          .first()
-          .click({timeout: 90000});
-        return; // Exit the function if the click is successful
+        await this.processInstanceLink.click();
+        return;
       } catch {
-        // If process isn't found, reload the page and try again
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
         await this.page.reload();
-        await sleep(10000);
       }
     }
     throw new Error(
