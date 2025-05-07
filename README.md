@@ -91,3 +91,4 @@ The Zeebe Gateway Protocol (API) as published in the
 under the [Camunda License 1.0](/licenses/CAMUNDA-LICENSE-1.0.txt). Using gRPC tooling to generate stubs for
 the protocol does not constitute creating a derivative work under the Camunda License 1.0 and no licensing restrictions are imposed on the
 resulting stub code by the Camunda License 1.0.
+
