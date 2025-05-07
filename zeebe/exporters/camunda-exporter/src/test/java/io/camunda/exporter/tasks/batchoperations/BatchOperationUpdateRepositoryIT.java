@@ -30,6 +30,7 @@ import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -190,14 +191,14 @@ abstract class BatchOperationUpdateRepositoryIT {
 
   @Nested
   @Order(2)
-  final class GetFinishedOperationsCountTest {
+  final class GetOperationsCountTest {
     @Test
     void shouldReturnEmptyList() {
       // given
       final var repository = createRepository();
 
       // when
-      var operationsAggData = repository.getFinishedOperationsCount(List.of());
+      var operationsAggData = repository.getOperationsCount(List.of());
       // then
       assertThat(operationsAggData)
           .succeedsWithin(REQUEST_TIMEOUT)
@@ -205,7 +206,7 @@ abstract class BatchOperationUpdateRepositoryIT {
           .isEmpty();
 
       // when
-      operationsAggData = repository.getFinishedOperationsCount(null);
+      operationsAggData = repository.getOperationsCount(null);
       // then
       assertThat(operationsAggData)
           .succeedsWithin(REQUEST_TIMEOUT)
@@ -224,16 +225,22 @@ abstract class BatchOperationUpdateRepositoryIT {
       createOperationEntity("444", "3", OperationState.COMPLETED);
       createOperationEntity("555", "4", OperationState.LOCKED);
       createOperationEntity("666", "5", OperationState.SENT);
-      final var expected = List.of(new OperationsAggData("1", 2), new OperationsAggData("2", 1));
+
+      final var expected =
+          List.of(
+              new OperationsAggData("1", Map.of("COMPLETED", 1L, "FAILED", 1L)),
+              new OperationsAggData("2", Map.of("COMPLETED", 1L)),
+              new OperationsAggData("4", Map.of("LOCKED", 1L)),
+              new OperationsAggData("5", Map.of("SENT", 1L)));
 
       // when
-      final var documents = repository.getFinishedOperationsCount(List.of("1", "2", "4", "5"));
+      final var documents = repository.getOperationsCount(List.of("1", "2", "4", "5"));
 
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(OperationsAggData.class))
-          .hasSize(2)
+          .hasSize(4)
           .isEqualTo(expected);
     }
 
@@ -267,7 +274,8 @@ abstract class BatchOperationUpdateRepositoryIT {
 
       // when
       final var updated =
-          repository.bulkUpdate(List.of(new DocumentUpdate("1", 2), new DocumentUpdate("2", 50)));
+          repository.bulkUpdate(
+              List.of(new DocumentUpdate("1", 2, 0, 2, 2), new DocumentUpdate("2", 50, 0, 50, 50)));
 
       // then
       assertThat(updated)

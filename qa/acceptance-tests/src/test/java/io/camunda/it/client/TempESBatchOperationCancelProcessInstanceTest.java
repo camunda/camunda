@@ -118,6 +118,8 @@ public class TempESBatchOperationCancelProcessInstanceTest {
               assertThat(batch.getStartDate()).isNotNull();
               assertThat(batch.getType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
               assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batch.getOperationsTotalCount())
+                  .isEqualTo(ACTIVE_PROCESS_INSTANCES.size());
               assertThat(batch.getEndDate()).isNotNull();
             });
 

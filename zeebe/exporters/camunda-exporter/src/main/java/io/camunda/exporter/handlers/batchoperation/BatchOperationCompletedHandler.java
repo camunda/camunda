@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
-import io.camunda.zeebe.util.DateUtil;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,9 +58,7 @@ public class BatchOperationCompletedHandler
   @Override
   public void updateEntity(
       final Record<BatchOperationExecutionRecordValue> record, final BatchOperationEntity entity) {
-    entity
-        .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
-        .setState(BatchOperationState.COMPLETED);
+    entity.setState(BatchOperationState.COMPLETED);
   }
 
   @Override
@@ -69,7 +66,6 @@ public class BatchOperationCompletedHandler
       throws PersistenceException {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BatchOperationTemplate.STATE, entity.getState());
-    updateFields.put(BatchOperationTemplate.END_DATE, entity.getEndDate());
     batchRequest.update(indexName, entity.getId(), updateFields);
   }
 

@@ -7,8 +7,10 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -21,23 +23,19 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
   CompletionStage<Collection<String>> getNotFinishedBatchOperations();
 
   /**
-   * Counts amount of single operations that are finished (COMPLETED or FAILED state) that are
-   * included in given batch operations. Those batch operations that does not have any finished
-   * operations will not be included in the result. Therefore, the result list size may be less than
-   * the input list size.
+   * Counts amount of single operations by state that are included in given batch operations.
    *
    * @param batchOperationIds list of batch operation ids
    */
-  CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
-      Collection<String> batchOperationIds);
+  CompletionStage<List<OperationsAggData>> getOperationsCount(Collection<String> batchOperationIds);
 
   /**
-   * Updates the batch operations with the amount of finished operations. Update method additionally
-   * includes the script to set endDate field to the current time for those batch operations that
-   * have all operations finished (operationsTotalCount <= operationsFinishedCount).
+   * Updates the batch operations with the different amounts operations by state. Update method
+   * additionally includes the script to set endDate field to the current time for those batch
+   * operations that have all operations finished (operationsTotalCount <= operationsFinishedCount).
    *
-   * @param documentUpdates
-   * @return
+   * @param documentUpdates the update records
+   * @return the number of updated documents
    */
   CompletionStage<Integer> bulkUpdate(List<DocumentUpdate> documentUpdates);
 
@@ -46,9 +44,30 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    *
    * <p>All fields are expected to be non-null.
    */
-  record DocumentUpdate(String id, long finishedOperationsCount) {}
+  record DocumentUpdate(
+      String id,
+      long finishedOperationsCount,
+      long failedOperationsCount,
+      long completedOperationsCount,
+      long totalOperationsCount) {}
 
-  record OperationsAggData(String batchOperationId, long finishedOperationsCount) {}
+  record OperationsAggData(String batchOperationId, Map<String, Long> stateCounts) {
+    public long getFinishedOperationsCount() {
+      return getCompletedOperationsCount() + getFailedOperationsCount();
+    }
+
+    public long getCompletedOperationsCount() {
+      return stateCounts.getOrDefault(OperationState.COMPLETED.name(), 0L);
+    }
+
+    public long getFailedOperationsCount() {
+      return stateCounts.getOrDefault(OperationState.FAILED.name(), 0L);
+    }
+
+    public long getTotalOperationsCount() {
+      return stateCounts.values().stream().mapToLong(Long::longValue).sum();
+    }
+  }
 
   class NoopBatchOperationUpdateRepository implements BatchOperationUpdateRepository {
 
@@ -58,7 +77,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
+    public CompletionStage<List<OperationsAggData>> getOperationsCount(
         final Collection<String> batchOperationIds) {
       return CompletableFuture.completedFuture(List.of());
     }
