@@ -58,7 +58,36 @@ const api = {
     return new Request(getFullURL(tasklistEndpoints.getTask.getUrl(body)), {
       ...BASE_REQUEST_OPTIONS,
       method: tasklistEndpoints.getTask.method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
+  },
+  assignTask: (params: Pick<UserTask, 'userTaskKey'> & {assignee: string}) => {
+    const {userTaskKey, ...body} = params;
+    return new Request(
+      getFullURL(tasklistEndpoints.assignTask.getUrl({userTaskKey})),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: tasklistEndpoints.assignTask.method,
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+  unassignTask: (body: Pick<UserTask, 'userTaskKey'>) => {
+    return new Request(
+      getFullURL(tasklistEndpoints.unassignTask.getUrl(body)),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: tasklistEndpoints.unassignTask.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
   },
 } as const;
 

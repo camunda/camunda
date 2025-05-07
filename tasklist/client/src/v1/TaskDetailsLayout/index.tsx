@@ -7,7 +7,7 @@
  */
 
 import {Section} from '@carbon/react';
-import {Outlet, useMatch, useNavigate} from 'react-router-dom';
+import {Outlet, useMatch, useNavigate, useSearchParams} from 'react-router-dom';
 import type {Process, Task} from 'v1/api/types';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
@@ -24,6 +24,8 @@ import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {AssignButton} from './AssignButton';
+import {tracking} from 'common/tracking';
+import {decodeTaskOpenedRef} from 'common/tracking/reftags';
 
 type OutletContext = {
   task: Task;
@@ -50,6 +52,7 @@ const TaskDetailsLayout: React.FC = () => {
     },
   );
   const onAssignmentError = () => refetch();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -63,6 +66,21 @@ const TaskDetailsLayout: React.FC = () => {
       navigate(pages.initial);
     }
   }, [navigate, task?.processInstanceKey, task?.processName, taskState, t]);
+
+  useEffect(() => {
+    const search = new URLSearchParams(searchParams);
+    const ref = search.get('ref');
+    if (search.has('ref')) {
+      search.delete('ref');
+      setSearchParams(search, {replace: true});
+    }
+
+    const taskOpenedRef = decodeTaskOpenedRef(ref);
+    tracking.track({
+      eventName: 'task-opened',
+      ...(taskOpenedRef ?? {}),
+    });
+  }, [searchParams, setSearchParams, id]);
 
   const tabs = [
     {
