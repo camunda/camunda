@@ -43,6 +43,7 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 
 const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
   variablesStore.startPolling(processInstanceId, {runImmediately: true});
@@ -180,7 +181,7 @@ const ProcessInstance: React.FC = observer(() => {
     state: {isListenerTabSelected},
   } = processInstanceListenersStore;
 
-  if (error?.response?.status === 403) {
+  if (error?.response?.status === HTTP_STATUS_FORBIDDEN) {
     return <Forbidden />;
   }
 

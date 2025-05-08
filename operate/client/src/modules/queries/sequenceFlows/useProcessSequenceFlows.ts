@@ -11,8 +11,10 @@ import {skipToken, useQuery, UseQueryResult} from '@tanstack/react-query';
 import {GetProcessSequenceFlowsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 import {RequestError} from 'modules/request';
 
+const SEQUENCE_FLOWS_QUERY_KEY = 'processSequenceFlows';
+
 function getQueryKey(processInstanceKey?: string) {
-  return ['processSequenceFlows', processInstanceKey];
+  return [SEQUENCE_FLOWS_QUERY_KEY, processInstanceKey];
 }
 
 const processedSequenceFlowsParser = (
@@ -44,4 +46,4 @@ function useProcessSequenceFlows(
   });
 }
 
-export {useProcessSequenceFlows};
+export {SEQUENCE_FLOWS_QUERY_KEY, useProcessSequenceFlows};

@@ -29,6 +29,7 @@ import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
 import {useQueryClient} from '@tanstack/react-query';
+import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
 
 const headerColumns = [
   'Process Name',
@@ -266,12 +267,12 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
               instance={processInstance}
               onOperation={() => {
                 queryClient.invalidateQueries({
-                  queryKey: ['processInstanceDeprecated'],
+                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
                 });
               }}
               onError={({statusCode}) => {
                 queryClient.invalidateQueries({
-                  queryKey: ['processInstanceDeprecated'],
+                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
                 });
 
                 notificationsStore.displayNotification({
@@ -286,7 +287,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
               }}
               onSuccess={(operationType) => {
                 queryClient.invalidateQueries({
-                  queryKey: ['processInstanceDeprecated'],
+                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
                 });
 
                 tracking.track({

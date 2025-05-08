@@ -171,7 +171,7 @@ describe('Operations - Cancel Operation', () => {
       screen.getByRole('button', {name: 'Cancel Instance instance_1'}),
     );
 
-    expect(await screen.findByText(modalText));
+    expect(await screen.findByText(modalText)).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Apply'})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
 

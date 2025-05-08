@@ -12,8 +12,10 @@ import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchProcessInstance} from 'modules/api/v2/processInstances/fetchProcessInstance';
 
+const PROCESS_INSTANCE_QUERY_KEY = 'processInstance';
+
 function getQueryKey(processInstanceKey?: string) {
-  return ['processInstance', processInstanceKey];
+  return [PROCESS_INSTANCE_QUERY_KEY, processInstanceKey];
 }
 
 const useProcessInstance = <T = ProcessInstance>(
@@ -39,4 +41,4 @@ const useProcessInstance = <T = ProcessInstance>(
   });
 };
 
-export {useProcessInstance};
+export {PROCESS_INSTANCE_QUERY_KEY, useProcessInstance};
