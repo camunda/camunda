@@ -59,6 +59,8 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
+import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
+import {IS_PROCESS_SEQUENCE_FLOWS_V2_ENABLED} from 'modules/feature-flags';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -103,6 +105,8 @@ const TopPanel: React.FC = observer(() => {
   const affectedTokenCount = totalMoveOperationRunningInstances || 1;
   const visibleAffectedTokenCount =
     totalMoveOperationRunningInstancesVisible || 1;
+  const {data: processedSequenceFlowsFromHook} =
+    useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
 
   const {
@@ -195,7 +199,9 @@ const TopPanel: React.FC = observer(() => {
     }, []),
   );
 
-  const {items: processedSequenceFlows} = sequenceFlowsStore.state;
+  const processedSequenceFlows = IS_PROCESS_SEQUENCE_FLOWS_V2_ENABLED
+    ? processedSequenceFlowsFromHook
+    : sequenceFlowsStore.state.items;
   const {processInstance} = processInstanceDetailsStore.state;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_STATE,
@@ -337,7 +343,7 @@ const TopPanel: React.FC = observer(() => {
                 )
               }
               highlightedSequenceFlows={[
-                ...processedSequenceFlows,
+                ...(processedSequenceFlows || []),
                 ...compensationAssociationIds,
               ]}
               highlightedFlowNodeIds={executedFlowNodes?.map(
