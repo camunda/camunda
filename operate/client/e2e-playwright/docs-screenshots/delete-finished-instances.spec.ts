@@ -12,7 +12,6 @@ import {expect} from '@playwright/test';
 import {
   mockBatchOperations,
   mockGroupedProcesses,
-  mockStatistics,
   mockResponses as mockProcessesResponses,
   mockNewDeleteOperation,
   mockProcessInstances,
@@ -44,7 +43,6 @@ test.describe('delete finished instances', () => {
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
         processInstances: mockFinishedOrderProcessInstances,
-        statistics: mockStatistics,
         statisticsV2: mockStatisticsV2,
         processXml: open('orderProcess.bpmn'),
       }),
@@ -107,7 +105,6 @@ test.describe('delete finished instances', () => {
         groupedProcesses: mockGroupedProcesses,
         batchOperations: [mockNewDeleteOperation, ...mockBatchOperations],
         processInstances: processInstancesMock,
-        statistics: mockStatistics,
         statisticsV2: mockStatisticsV2,
         processXml: open('orderProcess.bpmn'),
       }),
@@ -166,7 +163,6 @@ test.describe('delete finished instances', () => {
       mockProcessDetailResponses({
         processInstanceDetail: completedOrderProcessInstance.detail,
         flowNodeInstances: completedOrderProcessInstance.flowNodeInstances,
-        statistics: completedOrderProcessInstance.statistics,
         statisticsV2: completedOrderProcessInstance.statisticsV2,
         sequenceFlows: completedOrderProcessInstance.sequenceFlows,
         variables: completedOrderProcessInstance.variables,

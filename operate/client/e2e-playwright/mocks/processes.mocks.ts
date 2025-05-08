@@ -9,7 +9,6 @@
 import {Route} from '@playwright/test';
 import {GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
-import {ProcessInstancesStatisticsDto} from 'modules/api/processInstances/fetchProcessInstancesStatistics';
 import {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
 import {BatchOperationDto} from 'modules/api/sharedTypes';
 
@@ -17,7 +16,6 @@ function mockResponses({
   batchOperations,
   batchOperation,
   groupedProcesses,
-  statistics,
   statisticsV2,
   processInstances,
   processXml,
@@ -26,7 +24,6 @@ function mockResponses({
   batchOperations?: OperationEntity[];
   batchOperation?: OperationEntity;
   groupedProcesses?: ProcessDto[];
-  statistics?: ProcessInstancesStatisticsDto[];
   statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   processInstances?: ProcessInstancesDto;
   processXml?: string;
@@ -87,16 +84,6 @@ function mockResponses({
       return route.fulfill({
         status: statisticsV2 === undefined ? 400 : 200,
         body: JSON.stringify(statisticsV2),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/api/process-instances/statistics')) {
-      return route.fulfill({
-        status: statistics === undefined ? 400 : 200,
-        body: JSON.stringify(statistics),
         headers: {
           'content-type': 'application/json',
         },

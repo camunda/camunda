@@ -12,12 +12,10 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {
   createUser,
   groupedProcessesMock,
-  mockProcessStatistics,
   mockProcessXML,
 } from 'modules/testUtils';
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {
   selectProcess,
   selectTenant,
@@ -31,7 +29,6 @@ jest.unmock('modules/utils/date/formatDate');
 describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({

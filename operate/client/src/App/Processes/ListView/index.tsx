@@ -9,10 +9,8 @@
 import {InstancesList} from '../../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
-import {InstancesTable as InstancesTableV2} from './InstancesTable/v2';
-import {InstancesTable} from './InstancesTable';
-import {DiagramPanel as DiagramPanelV2} from './DiagramPanel/v2';
-import {DiagramPanel} from './DiagramPanel';
+import {InstancesTable} from './InstancesTable/v2';
+import {DiagramPanel} from './DiagramPanel/v2';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
@@ -28,7 +26,6 @@ import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 import {ProcessDefinitionKeyContext} from './processDefinitionKeyContext';
 
 type LocationType = Omit<Location, 'state'> & {
@@ -134,20 +131,8 @@ const ListView: React.FC = observer(() => {
       <InstancesList
         type="process"
         leftPanel={<Filters />}
-        topPanel={
-          IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED ? (
-            <DiagramPanelV2 />
-          ) : (
-            <DiagramPanel />
-          )
-        }
-        bottomPanel={
-          IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED ? (
-            <InstancesTableV2 />
-          ) : (
-            <InstancesTable />
-          )
-        }
+        topPanel={<DiagramPanel />}
+        bottomPanel={<InstancesTable />}
         rightPanel={<OperationsPanel />}
         frame={{
           isVisible: batchModificationStore.state.isEnabled,

@@ -29,7 +29,7 @@ import {
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
-import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+import {OverlayPosition, SubprocessOverlay} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
@@ -55,7 +55,6 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
-import {SubprocessOverlay} from 'modules/stores/processStatistics/processStatistics.base';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';

@@ -28,7 +28,7 @@ import {
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
-import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+import {OverlayPosition, SubprocessOverlay} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from '../MetadataPopover/v2';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
@@ -57,7 +57,6 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
-import {SubprocessOverlay} from 'modules/stores/processStatistics/processStatistics.base';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
