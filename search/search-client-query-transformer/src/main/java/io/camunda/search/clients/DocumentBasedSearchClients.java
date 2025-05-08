@@ -544,6 +544,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
         .items();
   }
 
+  @Override
   public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final BatchOperationItemQuery query) {
     return getSearchExecutor()
