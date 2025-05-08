@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.incident.IncidentRecordWrapper;
+import io.camunda.zeebe.engine.processing.incident.RetryTypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -233,7 +233,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
    * @return {@code true} if the record represents a retried command
    */
   private boolean isRetriedCommand(final TypedRecord<UserTaskRecord> command) {
-    return command instanceof IncidentRecordWrapper<UserTaskRecord>;
+    return command instanceof RetryTypedRecord<UserTaskRecord>;
   }
 
   private void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
