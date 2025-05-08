@@ -7242,11 +7242,6 @@ components:
         description:
           type: string
           description: The group description.
-        assignedMemberIds:
-          type: array
-          description: The IDs of members assigned to the group.
-          items:
-            type: string
     GroupSearchQuerySortRequest:
       type: object
       properties:
