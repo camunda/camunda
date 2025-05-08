@@ -65,6 +65,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: install yarn
+        run: npm install -g yarn
+        shell: bash
 
       - uses: ./.github/actions/setup-build
         with:
