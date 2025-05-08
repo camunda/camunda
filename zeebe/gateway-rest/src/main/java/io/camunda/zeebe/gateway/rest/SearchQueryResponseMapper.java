@@ -284,6 +284,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
+      final SearchQueryResult<BatchOperationItemEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new BatchOperationItemSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toBatchOperationItems)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
       final SearchQueryResult<IncidentEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -369,6 +380,13 @@ public final class SearchQueryResponseMapper {
     return new BatchOperationItemSearchQueryResult()
         .items(
             batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList());
+  }
+
+  public static List<BatchOperationItemResponse> toBatchOperationItems(
+      final List<BatchOperationItemEntity> batchOperationItems) {
+    return batchOperationItems.stream()
+        .map(SearchQueryResponseMapper::toBatchOperationItem)
+        .toList();
   }
 
   public static BatchOperationItemResponse toBatchOperationItem(

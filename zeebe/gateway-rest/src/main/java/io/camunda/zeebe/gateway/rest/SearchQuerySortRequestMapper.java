@@ -106,6 +106,12 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  public static List<SearchQuerySortRequest<BatchOperationItemSearchQuerySortRequest.FieldEnum>>
+      fromBatchOperationItemSearchQuerySortRequest(
+          final List<BatchOperationItemSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   private static <T> SearchQuerySortRequest<T> createFrom(
       final T field, final SortOrderEnum order) {
     return new SearchQuerySortRequest<T>(field, order);
