@@ -202,7 +202,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
 
   private static final String EXPECTED_MAPPING_RESPONSE =
       MAPPING_RESPONSE.formatted(
-          MAPPNING_ENTITIES.get(0).mappingId(), MAPPNING_ENTITIES.get(1).mappingId());
+          MAPPNING_ENTITIES.get(0).mappingRuleId(), MAPPNING_ENTITIES.get(1).mappingRuleId());
 
   @MockBean private GroupServices groupServices;
   @MockBean private UserServices userServices;
