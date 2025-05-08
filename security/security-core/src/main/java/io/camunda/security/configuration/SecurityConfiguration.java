@@ -13,6 +13,7 @@ public class SecurityConfiguration {
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
   private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
+  private SaasConfiguration saas = new SaasConfiguration();
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
@@ -48,5 +49,13 @@ public class SecurityConfiguration {
 
   public boolean isApiProtected() {
     return !authentication.getUnprotectedApi();
+  }
+
+  public SaasConfiguration getSaas() {
+    return saas;
+  }
+
+  public void setSaas(final SaasConfiguration saas) {
+    this.saas = saas;
   }
 }

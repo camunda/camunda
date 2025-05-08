@@ -14,7 +14,6 @@ import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
@@ -290,7 +289,7 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration) {
       final var decoderFactory = new OidcIdTokenDecoderFactory();
       decoderFactory.setJwtValidatorFactory(
-          registration -> getTokenValidator(securityConfiguration.getAuthentication().getOidc()));
+          registration -> getTokenValidator(securityConfiguration));
       return decoderFactory;
     }
 
@@ -307,21 +306,19 @@ public class WebSecurityConfig {
               .getJwkSetUri();
 
       final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
-      decoder.setJwtValidator(
-          getTokenValidator(securityConfiguration.getAuthentication().getOidc()));
+      decoder.setJwtValidator(getTokenValidator(securityConfiguration));
       return decoder;
     }
 
     private static OAuth2TokenValidator<Jwt> getTokenValidator(
-        final OidcAuthenticationConfiguration configuration) {
-      final var validAudiences = configuration.getAudiences();
-      final var organizationId = configuration.getOrganizationId();
+        final SecurityConfiguration configuration) {
+      final var validAudiences = configuration.getAuthentication().getOidc().getAudiences();
       final var validators = new LinkedList<OAuth2TokenValidator<Jwt>>();
       if (validAudiences != null) {
         validators.add(new AudienceValidator(validAudiences));
       }
-      if (organizationId != null) {
-        validators.add(new OrganizationValidator(organizationId));
+      if (configuration.getSaas().isConfigured()) {
+        validators.add(new OrganizationValidator(configuration.getSaas().getOrganizationId()));
       }
 
       if (!validators.isEmpty()) {
