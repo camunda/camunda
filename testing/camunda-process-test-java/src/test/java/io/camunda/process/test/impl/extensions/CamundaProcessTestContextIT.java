@@ -459,15 +459,15 @@ public class CamundaProcessTestContextIT {
 
     final long processDefinitionKey = deployProcessModel(processModelWithBusinessRuleTask());
 
-    client.newCreateInstanceCommand()
+    client
+        .newCreateInstanceCommand()
         .processDefinitionKey(processDefinitionKey)
         .variable("lightsaberColor", "blue")
-        .send().join();
+        .send()
+        .join();
 
     // Then
-    CamundaAssert.assertThat(DecisionSelectors.byName("Jedi or Sith"))
-        .isEvaluated()
-        .containsOutput("Jedi");;
+    assertThat(DecisionSelectors.byName("Jedi or Sith")).isEvaluated().containsOutput("Jedi");
   }
 
   @Test
@@ -481,17 +481,19 @@ public class CamundaProcessTestContextIT {
 
     final long processDefinitionKey = deployProcessModel(processModelWithBusinessRuleTask());
 
-    client.newCreateInstanceCommand()
+    client
+        .newCreateInstanceCommand()
         .processDefinitionKey(processDefinitionKey)
         .variable("lightsaberColor", "blue")
-        .send().join();
+        .send()
+        .join();
 
     // Then
     Map<String, Object> expectedResult = new HashMap<>();
     expectedResult.put("jedi_or_sith", "Jedi");
     expectedResult.put("force_user", "Mace");
 
-    CamundaAssert.assertThat(DecisionSelectors.byId("jedi_or_sith"))
+    assertThat(DecisionSelectors.byId("jedi_or_sith"))
         .isEvaluated()
         .hasOutput(expectedResult)
         .hasMatchedRules(1);

@@ -75,9 +75,8 @@ public class DecisionInstanceAssertTest {
       final List<DecisionInstance> mockedSearchResults,
       final DecisionInstance mockedDecisionInstance) {
 
-    when(camundaDataSource.findDecisionInstances(any()))
-        .thenReturn(mockedSearchResults);
-    when (camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+    when(camundaDataSource.findDecisionInstances(any())).thenReturn(mockedSearchResults);
+    when(camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
         .thenReturn(mockedDecisionInstance);
   }
 
@@ -87,7 +86,8 @@ public class DecisionInstanceAssertTest {
     @Test
     public void isEvaluated() {
       // when
-      mockDecisionInstanceSearch(decisionInstance(d -> d.state(DecisionInstanceStateEnum.EVALUATED)));
+      mockDecisionInstanceSearch(
+          decisionInstance(d -> d.state(DecisionInstanceStateEnum.EVALUATED)));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).isEvaluated();
@@ -133,7 +133,8 @@ public class DecisionInstanceAssertTest {
     @Test
     public void hasId() {
       // when
-      mockDecisionInstanceSearch(decisionInstance(d -> d.decisionDefinitionId("decisionDefinitionId")));
+      mockDecisionInstanceSearch(
+          decisionInstance(d -> d.decisionDefinitionId("decisionDefinitionId")));
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasId("decisionDefinitionId");
@@ -142,7 +143,8 @@ public class DecisionInstanceAssertTest {
     @Test
     public void idMismatch() {
       // when
-      mockDecisionInstanceSearch(decisionInstance(d -> d.decisionDefinitionId("decisionDefinitionId")));
+      mockDecisionInstanceSearch(
+          decisionInstance(d -> d.decisionDefinitionId("decisionDefinitionId")));
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(DecisionSelectors.byName(NAME)).hasId("foo"))
@@ -191,9 +193,7 @@ public class DecisionInstanceAssertTest {
       mockDecisionInstanceSearch(decisionInstanceWithAnswers("{\"a\":\"b\",\"v\":2}"));
 
       // then
-      assertThat(DecisionSelectors.byName(NAME))
-          .containsOutput("b")
-          .containsOutput("2");
+      assertThat(DecisionSelectors.byName(NAME)).containsOutput("b").containsOutput("2");
     }
 
     @Test
@@ -205,8 +205,7 @@ public class DecisionInstanceAssertTest {
       // then
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
-      assertThat(DecisionSelectors.byName(NAME))
-          .hasOutput(expected);
+      assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected);
     }
 
     @Test
@@ -357,8 +356,7 @@ public class DecisionInstanceAssertTest {
       final String result, final MatchedDecisionRule... rules) {
     List<MatchedDecisionRule> rulesList = Arrays.stream(rules).collect(Collectors.toList());
 
-    return new DecisionInstanceImpl
-        (
+    return new DecisionInstanceImpl(
         null,
         Integer.parseInt(DECISION_INSTANCE_KEY),
         DECISION_INSTANCE_ID,

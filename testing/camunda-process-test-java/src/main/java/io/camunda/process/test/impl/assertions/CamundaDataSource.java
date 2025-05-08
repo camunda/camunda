@@ -112,19 +112,11 @@ public class CamundaDataSource {
 
   public List<DecisionInstance> findDecisionInstances(
       final Consumer<DecisionInstanceFilter> filter) {
-    return client
-        .newDecisionInstanceSearchRequest()
-        .filter(filter)
-        .send()
-        .join()
-        .items();
+    return client.newDecisionInstanceSearchRequest().filter(filter).send().join().items();
   }
 
   public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
-    return client
-        .newDecisionInstanceGetRequest(decisionInstanceId)
-        .send()
-        .join();
+    return client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
   }
 
   public JsonMapper getJsonMapper() {

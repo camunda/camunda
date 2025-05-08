@@ -43,119 +43,116 @@ public class DecisionInstanceAssertj
 
   @Override
   public DecisionInstanceAssert isEvaluated() {
-    awaitDecisionInstance(instance ->
-        assertThat(instance.getState())
-            .withFailMessage(
-                "Expected [%s] to have been evaluated, but was %s",
-                actual.describe(), formatState(instance.getState()))
-            .isEqualTo(DecisionInstanceState.EVALUATED)
-    );
+    awaitDecisionInstance(
+        instance ->
+            assertThat(instance.getState())
+                .withFailMessage(
+                    "Expected [%s] to have been evaluated, but was %s",
+                    actual.describe(), formatState(instance.getState()))
+                .isEqualTo(DecisionInstanceState.EVALUATED));
     return this;
   }
 
   @Override
   public DecisionInstanceAssert hasName(final String expectedDefinitionName) {
-    awaitDecisionInstance(instance ->
-        assertThat(instance.getDecisionDefinitionName())
-            .withFailMessage(
-                "Expected [%s] to have name '%s', but was '%s'",
-                actual.describe(), expectedDefinitionName, instance.getDecisionDefinitionName())
-            .isEqualTo(expectedDefinitionName)
-    );
+    awaitDecisionInstance(
+        instance ->
+            assertThat(instance.getDecisionDefinitionName())
+                .withFailMessage(
+                    "Expected [%s] to have name '%s', but was '%s'",
+                    actual.describe(), expectedDefinitionName, instance.getDecisionDefinitionName())
+                .isEqualTo(expectedDefinitionName));
 
     return this;
   }
 
   @Override
   public DecisionInstanceAssert hasId(final String expectedDefinitionId) {
-    awaitDecisionInstance(instance ->
-        assertThat(instance.getDecisionDefinitionId())
-            .withFailMessage(
-                "Expected [%s] to have id '%s', but was '%s'",
-                actual.describe(), expectedDefinitionId, instance.getDecisionDefinitionId())
-            .isEqualTo(expectedDefinitionId)
-    );
+    awaitDecisionInstance(
+        instance ->
+            assertThat(instance.getDecisionDefinitionId())
+                .withFailMessage(
+                    "Expected [%s] to have id '%s', but was '%s'",
+                    actual.describe(), expectedDefinitionId, instance.getDecisionDefinitionId())
+                .isEqualTo(expectedDefinitionId));
 
     return this;
   }
 
   @Override
   public DecisionInstanceAssert hasVersion(final int expectedVersion) {
-    awaitDecisionInstance(instance ->
-        assertThat(instance.getDecisionDefinitionVersion())
-            .withFailMessage(
-                "Expected [%s] to have version %d, but was %d",
-                actual.describe(), expectedVersion, instance.getDecisionDefinitionVersion())
-            .isEqualTo(expectedVersion)
-    );
+    awaitDecisionInstance(
+        instance ->
+            assertThat(instance.getDecisionDefinitionVersion())
+                .withFailMessage(
+                    "Expected [%s] to have version %d, but was %d",
+                    actual.describe(), expectedVersion, instance.getDecisionDefinitionVersion())
+                .isEqualTo(expectedVersion));
 
     return this;
   }
 
   @Override
   public DecisionInstanceAssert containsOutput(final String expectedValue) {
-    awaitDecisionInstance(instance -> assertThat(instance.getResult())
-        .withFailMessage(
-            "Expected [%s] to have output '%s', but was '%s'",
-            actual.describe(),
-            expectedValue,
-            formatResult(instance.getResult()))
-        .contains(expectedValue));
+    awaitDecisionInstance(
+        instance ->
+            assertThat(instance.getResult())
+                .withFailMessage(
+                    "Expected [%s] to have output '%s', but was '%s'",
+                    actual.describe(), expectedValue, formatResult(instance.getResult()))
+                .contains(expectedValue));
 
     return this;
   }
 
   @Override
   public DecisionInstanceAssert hasOutput(final Map<String, Object> expectedOutput) {
-    awaitDecisionInstance(instance -> {
-      try {
-        Map<String, Object> resultMap = dataSource
-            .getJsonMapper()
-            .fromJsonAsMap(instance.getResult());
+    awaitDecisionInstance(
+        instance -> {
+          try {
+            Map<String, Object> resultMap =
+                dataSource.getJsonMapper().fromJsonAsMap(instance.getResult());
 
-        assertThat(resultMap)
-            .withFailMessage(
+            assertThat(resultMap)
+                .withFailMessage(
+                    "Expected [%s] to have output '%s', but was '%s'",
+                    actual.describe(), expectedOutput, resultMap)
+                .containsAllEntriesOf(expectedOutput);
+          } catch (final ClientException | IllegalArgumentException e) {
+            // instance.getResult() could not be deserialized to a map.
+            fail(
                 "Expected [%s] to have output '%s', but was '%s'",
-                actual.describe(),
-                expectedOutput,
-                resultMap)
-            .containsAllEntriesOf(expectedOutput);
-      } catch (final ClientException | IllegalArgumentException e) {
-        // instance.getResult() could not be deserialized to a map.
-        fail(
-            "Expected [%s] to have output '%s', but was '%s'",
-            actual.describe(),
-            expectedOutput,
-            formatResult(instance.getResult()));
-      }
-    });
+                actual.describe(), expectedOutput, formatResult(instance.getResult()));
+          }
+        });
 
     return this;
   }
 
   @Override
   public DecisionInstanceAssert hasMatchedRules(final int... expectedMatchedRuleIndexes) {
-    awaitDecisionInstance(instance -> {
-      final List<Integer> expectedMatches =
-          Arrays.stream(expectedMatchedRuleIndexes).boxed().collect(Collectors.toList());
-      final List<Integer> actualMatchedRuleIndices =
-          instance.getMatchedRules().stream()
-              .map(MatchedDecisionRule::getRuleIndex)
-              .collect(Collectors.toList());
+    awaitDecisionInstance(
+        instance -> {
+          final List<Integer> expectedMatches =
+              Arrays.stream(expectedMatchedRuleIndexes).boxed().collect(Collectors.toList());
+          final List<Integer> actualMatchedRuleIndices =
+              instance.getMatchedRules().stream()
+                  .map(MatchedDecisionRule::getRuleIndex)
+                  .collect(Collectors.toList());
 
-      assertThat(actualMatchedRuleIndices)
-          .withFailMessage(
-              "Expected [%s] to have matched rule indexes %s, but did not. Matches:\n"
-                  + "\t- matched: %s\n"
-                  + "\t- missing: %s\n"
-                  + "\t- unexpected: %s",
-              actual.describe(),
-              Arrays.toString(expectedMatchedRuleIndexes),
-              matchingRules(actualMatchedRuleIndices, expectedMatches),
-              missingRules(actualMatchedRuleIndices, expectedMatches),
-              unexpectedRules(actualMatchedRuleIndices, expectedMatches))
-          .containsAll(expectedMatches);
-    });
+          assertThat(actualMatchedRuleIndices)
+              .withFailMessage(
+                  "Expected [%s] to have matched rule indexes %s, but did not. Matches:\n"
+                      + "\t- matched: %s\n"
+                      + "\t- missing: %s\n"
+                      + "\t- unexpected: %s",
+                  actual.describe(),
+                  Arrays.toString(expectedMatchedRuleIndexes),
+                  matchingRules(actualMatchedRuleIndices, expectedMatches),
+                  missingRules(actualMatchedRuleIndices, expectedMatches),
+                  unexpectedRules(actualMatchedRuleIndices, expectedMatches))
+              .containsAll(expectedMatches);
+        });
 
     return this;
   }
@@ -194,9 +191,7 @@ public class DecisionInstanceAssertj
     return state.name().toLowerCase();
   }
 
-  private void awaitDecisionInstance(
-      final Consumer<DecisionInstance> assertion
-  ) {
+  private void awaitDecisionInstance(final Consumer<DecisionInstance> assertion) {
     final AtomicReference<String> failureMessage = new AtomicReference<>("?");
 
     try {

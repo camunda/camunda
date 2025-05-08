@@ -66,8 +66,8 @@ public interface DecisionInstanceAssert {
   /**
    * Verifies that the decision has matched the given rule indices.
    *
-   * @param expectedMatchedRuleIndices the rule indices that should have matched
+   * @param expectedMatchedRuleIndexes the rule indices that should have matched
    * @return the assertion object
    */
-  DecisionInstanceAssert hasMatchedRules(final int... expectedMatchedRuleIndices);
+  DecisionInstanceAssert hasMatchedRules(final int... expectedMatchedRuleIndexes);
 }
