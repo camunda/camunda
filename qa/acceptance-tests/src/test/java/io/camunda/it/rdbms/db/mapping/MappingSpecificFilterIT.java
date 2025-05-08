@@ -53,16 +53,21 @@ public class MappingSpecificFilterIT {
   @Test
   public void shouldFilterMappingsForGroup() {
     // Create and save a mapping
-    final var mapping = MappingFixtures.createRandomized();
-    final var anotherMapping = MappingFixtures.createRandomized();
-    createAndSaveMapping(rdbmsService, mapping);
-    createAndSaveMapping(rdbmsService, anotherMapping);
+    final var mapping1 = MappingFixtures.createRandomized();
+    final var mapping2 = MappingFixtures.createRandomized();
+    final var mapping3 = MappingFixtures.createRandomized();
+    createAndSaveMapping(rdbmsService, mapping1);
+    createAndSaveMapping(rdbmsService, mapping2);
+    createAndSaveMapping(rdbmsService, mapping3);
 
     final var group = GroupFixtures.createRandomized(b -> b);
+    final var anotherGroup = GroupFixtures.createRandomized(b -> b);
     createAndSaveGroup(rdbmsWriter, group);
+    createAndSaveGroup(rdbmsWriter, anotherGroup);
 
-    addMappingToGroup(group.groupId(), mapping.mappingId());
-    addMappingToGroup(group.groupId(), anotherMapping.mappingId());
+    addMappingToGroup(group.groupId(), mapping1.mappingId());
+    addMappingToGroup(group.groupId(), mapping2.mappingId());
+    addMappingToGroup(anotherGroup.groupId(), mapping3.mappingId());
 
     final var mappings =
         mappingReader.search(
