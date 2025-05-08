@@ -39,7 +39,6 @@
     <testForkCount>${env.LIMITS_CPU}</testForkCount>
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
-    <includeUnitTestNames>**/*.java</includeUnitTestNames>
     <excludeUnitTestNames>**/*IT.java</excludeUnitTestNames>
     <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
@@ -79,9 +78,6 @@
             <systemPropertyVariables>
               <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             </systemPropertyVariables>
-            <includes>
-              <include>${includeUnitTestNames}</include>
-            </includes>
             <excludes>
               <exclude>${excludeUnitTestNames}</exclude>
             </excludes>
