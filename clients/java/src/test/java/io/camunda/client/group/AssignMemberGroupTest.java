@@ -30,7 +30,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
 
   public static final String GROUP_ID = "groupId";
   public static final String USERNAME = "username";
-  public static final String MAPPING_ID = "mappingId";
+  public static final String MAPPING_ID = "mappingRuleId";
 
   @Test
   void shouldAssignUserToGroup() {
@@ -84,7 +84,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldAssignMappingToGroup() {
     // when
-    client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join();
+    client.newAssignMappingToGroupCommand(GROUP_ID).mappingRuleId(MAPPING_ID).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -100,7 +100,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join())
+                client.newAssignMappingToGroupCommand(GROUP_ID).mappingRuleId(MAPPING_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -114,7 +114,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join())
+                client.newAssignMappingToGroupCommand(GROUP_ID).mappingRuleId(MAPPING_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
@@ -128,7 +128,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join())
+                client.newAssignMappingToGroupCommand(GROUP_ID).mappingRuleId(MAPPING_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }

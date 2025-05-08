@@ -79,7 +79,7 @@ public class CamundaOidcUserServiceTest {
     assertThat(oidcUser).isInstanceOf(CamundaOidcUser.class);
     final var camundaUser = (CamundaOidcUser) oidcUser;
     assertThat(camundaUser.getEmail()).isEqualTo("foo@camunda.test");
-    assertThat(camundaUser.getMappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
+    assertThat(camundaUser.getMappingRuleIds()).isEqualTo(Set.of("test-id", "test-id-2"));
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
     assertThat(authenticationContext.groups()).isEmpty();

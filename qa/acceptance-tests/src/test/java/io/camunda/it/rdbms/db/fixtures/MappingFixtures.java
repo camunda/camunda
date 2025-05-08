@@ -27,8 +27,8 @@ public final class MappingFixtures extends CommonFixtures {
     final var id = nextKey();
     final var builder =
         new MappingDbModelBuilder()
-            .mappingId(String.valueOf(id))
-            .mappingKey(id)
+            .mappingRuleId(String.valueOf(id))
+            .mappingRuleKey(id)
             .claimName("claimName-" + UUID.randomUUID())
             .claimValue("claimValue-" + UUID.randomUUID())
             .name("name" + UUID.randomUUID());

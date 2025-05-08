@@ -37,7 +37,7 @@ class AssignMappingToTenantTest {
 
   @AutoClose private CamundaClient client;
 
-  private String mappingId;
+  private String mappingRuleId;
 
   @BeforeEach
   void initClientAndInstances() {
@@ -53,16 +53,16 @@ class AssignMappingToTenantTest {
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .mappingId(ID)
+        .mappingRuleId(ID)
         .send()
         .join();
-    mappingId = ID;
+    mappingRuleId = ID;
   }
 
   @Test
   void shouldAssignMappingToTenant() {
     // When
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingRuleId(ID).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
@@ -84,7 +84,7 @@ class AssignMappingToTenantTest {
             () ->
                 client
                     .newAssignMappingToTenantCommand(invalidTenantId)
-                    .mappingId(mappingId)
+                    .mappingRuleId(mappingRuleId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -97,31 +97,31 @@ class AssignMappingToTenantTest {
   @Test
   void shouldRejectAssignIfMappingDoesNotExist() {
     // Given
-    final String invalidMappingId = "invalid-id";
+    final String invalidMappingRuleId = "invalid-id";
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
                     .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(invalidMappingId)
+                    .mappingRuleId(invalidMappingRuleId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
             "Expected to add mapping with ID '%s' to tenant with ID '%s', but the mapping doesn't exist."
-                .formatted(invalidMappingId, TENANT_ID));
+                .formatted(invalidMappingRuleId, TENANT_ID));
   }
 
   @Test
   void shouldRejectAssignIfTenantAlreadyAssignedToMapping() {
     // given
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingRuleId(ID).send().join();
 
     // When / Then
     assertThatThrownBy(
-            () -> client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join())
+            () -> client.newAssignMappingToTenantCommand(TENANT_ID).mappingRuleId(ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
