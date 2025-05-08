@@ -7,18 +7,18 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.entities.AdHocSubprocessActivityEntity;
-import io.camunda.search.entities.AdHocSubprocessActivityEntity.ActivityType;
+import io.camunda.search.entities.AdHocSubProcessActivityEntity;
+import io.camunda.search.entities.AdHocSubProcessActivityEntity.ActivityType;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
-import io.camunda.search.query.AdHocSubprocessActivityQuery;
+import io.camunda.search.query.AdHocSubProcessActivityQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest.AdHocSubprocessActivateActivityReference;
+import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubprocessActivityRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubProcessActivityRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
@@ -31,11 +31,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocessActivityServices> {
+public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcessActivityServices> {
 
   private final ProcessDefinitionServices processDefinitionServices;
 
-  public AdHocSubprocessActivityServices(
+  public AdHocSubProcessActivityServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionServices processDefinitionServices,
@@ -45,16 +45,16 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
   }
 
   @Override
-  public AdHocSubprocessActivityServices withAuthentication(final Authentication authentication) {
-    return new AdHocSubprocessActivityServices(
+  public AdHocSubProcessActivityServices withAuthentication(final Authentication authentication) {
+    return new AdHocSubProcessActivityServices(
         brokerClient,
         securityContextProvider,
         processDefinitionServices.withAuthentication(authentication),
         authentication);
   }
 
-  public SearchQueryResult<AdHocSubprocessActivityEntity> search(
-      final AdHocSubprocessActivityQuery query) {
+  public SearchQueryResult<AdHocSubProcessActivityEntity> search(
+      final AdHocSubProcessActivityQuery query) {
     final ProcessDefinitionEntity processDefinitionEntity =
         processDefinitionServices.getByKey(query.filter().processDefinitionKey());
 
@@ -64,11 +64,11 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
                 processDefinitionEntity.bpmnXml().getBytes(StandardCharsets.UTF_8)));
 
     final var processElement =
-        modelInstance.getModelElementById(query.filter().adHocSubprocessId());
+        modelInstance.getModelElementById(query.filter().adHocSubProcessId());
     if (!(processElement instanceof final AdHocSubProcess adHocSubProcess)) {
       throw new CamundaSearchException(
           ErrorMessages.ERROR_NOT_FOUND_AD_HOC_SUBPROCESS.formatted(
-              query.filter().adHocSubprocessId()),
+              query.filter().adHocSubProcessId()),
           CamundaSearchException.Reason.NOT_FOUND);
     }
 
@@ -77,18 +77,18 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
             .filter(element -> element.getIncoming().isEmpty())
             .map(
                 element ->
-                    toAdHocSubprocessActivityEntity(
+                    toAdHocSubProcessActivityEntity(
                         processDefinitionEntity, adHocSubProcess, element))
             .toList();
 
-    return new SearchQueryResult.Builder<AdHocSubprocessActivityEntity>().items(activities).build();
+    return new SearchQueryResult.Builder<AdHocSubProcessActivityEntity>().items(activities).build();
   }
 
-  private AdHocSubprocessActivityEntity toAdHocSubprocessActivityEntity(
+  private AdHocSubProcessActivityEntity toAdHocSubProcessActivityEntity(
       final ProcessDefinitionEntity processDefinitionEntity,
       final AdHocSubProcess adHocSubProcess,
       final FlowNode element) {
-    return new AdHocSubprocessActivityEntity(
+    return new AdHocSubProcessActivityEntity(
         processDefinitionEntity.processDefinitionKey(),
         processDefinitionEntity.processDefinitionId(),
         adHocSubProcess.getId(),
@@ -113,20 +113,20 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
   }
 
   public CompletableFuture<AdHocSubProcessActivityActivationRecord> activateActivities(
-      final AdHocSubprocessActivateActivitiesRequest request) {
+      final AdHocSubProcessActivateActivitiesRequest request) {
     final var brokerRequest =
-        new BrokerActivateAdHocSubprocessActivityRequest()
-            .setAdHocSubProcessInstanceKey(request.adHocSubprocessInstanceKey());
+        new BrokerActivateAdHocSubProcessActivityRequest()
+            .setAdHocSubProcessInstanceKey(request.adHocSubProcessInstanceKey());
 
     request.elements().stream()
-        .map(AdHocSubprocessActivateActivityReference::elementId)
+        .map(AdHocSubProcessActivateActivityReference::elementId)
         .forEach(brokerRequest::addElement);
 
     return sendBrokerRequest(brokerRequest);
   }
 
-  public record AdHocSubprocessActivateActivitiesRequest(
-      String adHocSubprocessInstanceKey, List<AdHocSubprocessActivateActivityReference> elements) {
-    public record AdHocSubprocessActivateActivityReference(String elementId) {}
+  public record AdHocSubProcessActivateActivitiesRequest(
+      String adHocSubProcessInstanceKey, List<AdHocSubProcessActivateActivityReference> elements) {
+    public record AdHocSubProcessActivateActivityReference(String elementId) {}
   }
 }

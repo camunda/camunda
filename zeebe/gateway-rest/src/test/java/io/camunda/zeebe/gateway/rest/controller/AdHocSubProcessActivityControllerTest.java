@@ -16,17 +16,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.AdHocSubprocessActivityEntity;
-import io.camunda.search.entities.AdHocSubprocessActivityEntity.ActivityType;
+import io.camunda.search.entities.AdHocSubProcessActivityEntity;
+import io.camunda.search.entities.AdHocSubProcessActivityEntity.ActivityType;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.AdHocSubprocessActivityServices;
-import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest;
-import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest.AdHocSubprocessActivateActivityReference;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult.TypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQueryResult;
+import io.camunda.service.AdHocSubProcessActivityServices;
+import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
+import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult.TypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import java.util.List;
@@ -42,35 +42,35 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(value = AdHocSubprocessActivityController.class)
-class AdHocSubprocessActivityControllerTest extends RestControllerTest {
+@WebMvcTest(value = AdHocSubProcessActivityController.class)
+class AdHocSubProcessActivityControllerTest extends RestControllerTest {
   private static final String AD_HOC_ACTIVITIES_URL = "/v2/element-instances/ad-hoc-activities";
   private static final String SEARCH_ACTIVITIES_URL = AD_HOC_ACTIVITIES_URL + "/search";
   private static final String ACTIVATE_ACTIVITIES_URL =
-      AD_HOC_ACTIVITIES_URL + "/{adHocSubprocessInstanceKey}/activation";
+      AD_HOC_ACTIVITIES_URL + "/{adHocSubProcessInstanceKey}/activation";
 
-  @MockitoBean private AdHocSubprocessActivityServices adHocSubprocessActivityServices;
+  @MockitoBean private AdHocSubProcessActivityServices adHocSubProcessActivityServices;
 
   @BeforeEach
   void setUpServices() {
-    when(adHocSubprocessActivityServices.withAuthentication(any(Authentication.class)))
-        .thenReturn(adHocSubprocessActivityServices);
+    when(adHocSubProcessActivityServices.withAuthentication(any(Authentication.class)))
+        .thenReturn(adHocSubProcessActivityServices);
   }
 
   @Nested
   class SearchActivities {
     private static final Long PROCESS_DEFINITION_KEY = 2251799813685281L;
-    private static final String PROCESS_DEFINITION_ID = "TestParentAdHocSubprocess";
-    private static final String AD_HOC_SUBPROCESS_ID = "TestAdHocSubprocess";
+    private static final String PROCESS_DEFINITION_ID = "TestParentAdHocSubProcess";
+    private static final String AD_HOC_SUBPROCESS_ID = "TestAdHocSubProcess";
 
     @Test
     void shouldMapSearchResultToSuccessfulResponse() {
-      when(adHocSubprocessActivityServices.search(any()))
+      when(adHocSubProcessActivityServices.search(any()))
           .thenReturn(
-              new SearchQueryResult.Builder<AdHocSubprocessActivityEntity>()
+              new SearchQueryResult.Builder<AdHocSubProcessActivityEntity>()
                   .items(
                       List.of(
-                          new AdHocSubprocessActivityEntity(
+                          new AdHocSubProcessActivityEntity(
                               PROCESS_DEFINITION_KEY,
                               PROCESS_DEFINITION_ID,
                               AD_HOC_SUBPROCESS_ID,
@@ -79,7 +79,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                               ActivityType.SERVICE_TASK,
                               "The first task in the ad-hoc sub-process",
                               null),
-                          new AdHocSubprocessActivityEntity(
+                          new AdHocSubProcessActivityEntity(
                               PROCESS_DEFINITION_KEY,
                               PROCESS_DEFINITION_ID,
                               AD_HOC_SUBPROCESS_ID,
@@ -100,14 +100,14 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
             {
               "filter": {
                 "processDefinitionKey": 2251799813685281,
-                "adHocSubprocessId": "TestAdHocSubprocess"
+                "adHocSubProcessId": "TestAdHocSubProcess"
               }
             }
             """)
           .exchange()
           .expectStatus()
           .isOk()
-          .expectBody(AdHocSubprocessActivitySearchQueryResult.class)
+          .expectBody(AdHocSubProcessActivitySearchQueryResult.class)
           .consumeWith(
               result -> {
                 final var responseBody = result.getResponseBody();
@@ -115,14 +115,14 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                 assertThat(responseBody.getItems())
                     .hasSize(2)
                     .extracting(
-                        AdHocSubprocessActivityResult::getProcessDefinitionKey,
-                        AdHocSubprocessActivityResult::getProcessDefinitionId,
-                        AdHocSubprocessActivityResult::getAdHocSubprocessId,
-                        AdHocSubprocessActivityResult::getElementId,
-                        AdHocSubprocessActivityResult::getElementName,
-                        AdHocSubprocessActivityResult::getType,
-                        AdHocSubprocessActivityResult::getDocumentation,
-                        AdHocSubprocessActivityResult::getTenantId)
+                        AdHocSubProcessActivityResult::getProcessDefinitionKey,
+                        AdHocSubProcessActivityResult::getProcessDefinitionId,
+                        AdHocSubProcessActivityResult::getAdHocSubProcessId,
+                        AdHocSubProcessActivityResult::getElementId,
+                        AdHocSubProcessActivityResult::getElementName,
+                        AdHocSubProcessActivityResult::getType,
+                        AdHocSubProcessActivityResult::getDocumentation,
+                        AdHocSubProcessActivityResult::getTenantId)
                     .containsExactly(
                         tuple(
                             PROCESS_DEFINITION_KEY.toString(),
@@ -144,12 +144,12 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                             null));
               });
 
-      verify(adHocSubprocessActivityServices)
+      verify(adHocSubProcessActivityServices)
           .search(
               assertArg(
                   r -> {
                     assertThat(r.filter().processDefinitionKey()).isEqualTo(PROCESS_DEFINITION_KEY);
-                    assertThat(r.filter().adHocSubprocessId()).isEqualTo(AD_HOC_SUBPROCESS_ID);
+                    assertThat(r.filter().adHocSubProcessId()).isEqualTo(AD_HOC_SUBPROCESS_ID);
                   }));
     }
 
@@ -179,15 +179,15 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
           .jsonPath(".detail")
           .isEqualTo(expectedErrorDetail);
 
-      verifyNoInteractions(adHocSubprocessActivityServices);
+      verifyNoInteractions(adHocSubProcessActivityServices);
     }
 
     @Test
     void shouldMapServiceExceptionToErrorResponse() {
-      when(adHocSubprocessActivityServices.search(any()))
+      when(adHocSubProcessActivityServices.search(any()))
           .thenThrow(
               new CamundaSearchException(
-                  "Failed to find Ad-Hoc Subprocess with ID 'TestAdHocSubprocess'",
+                  "Failed to find Ad-Hoc Subprocess with ID 'TestAdHocSubProcess'",
                   CamundaSearchException.Reason.NOT_FOUND));
 
       webClient
@@ -200,7 +200,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
             {
               "filter": {
                 "processDefinitionKey": 2251799813685281,
-                "adHocSubprocessId": "TestAdHocSubprocess"
+                "adHocSubProcessId": "TestAdHocSubProcess"
               }
             }
             """)
@@ -214,7 +214,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "title": "NOT_FOUND",
                 "status": 404,
-                "detail": "Failed to find Ad-Hoc Subprocess with ID 'TestAdHocSubprocess'",
+                "detail": "Failed to find Ad-Hoc Subprocess with ID 'TestAdHocSubProcess'",
                 "instance": "/v2/element-instances/ad-hoc-activities/search"
             }
             """);
@@ -233,13 +233,13 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                 "filter": {}
               }
               """,
-              "The value for filter.processDefinitionKey is 'null' but must be a non-negative numeric value. No filter.adHocSubprocessId provided."),
+              "The value for filter.processDefinitionKey is 'null' but must be a non-negative numeric value. No filter.adHocSubProcessId provided."),
           arguments(
               """
               {
                 "filter": {
                   "processDefinitionKey": 0,
-                  "adHocSubprocessId": "TestAdHocSubprocess"
+                  "adHocSubProcessId": "TestAdHocSubProcess"
                 }
               }
               """,
@@ -249,7 +249,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
               {
                 "filter": {
                   "processDefinitionKey": -1,
-                  "adHocSubprocessId": "TestAdHocSubprocess"
+                  "adHocSubProcessId": "TestAdHocSubProcess"
                 }
               }
               """,
@@ -262,27 +262,27 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                 }
               }
               """,
-              "No filter.adHocSubprocessId provided."),
+              "No filter.adHocSubProcessId provided."),
           arguments(
               """
               {
                 "filter": {
                   "processDefinitionKey": 2251799813685281,
-                  "adHocSubprocessId": ""
+                  "adHocSubProcessId": ""
                 }
               }
               """,
-              "No filter.adHocSubprocessId provided."),
+              "No filter.adHocSubProcessId provided."),
           arguments(
               """
               {
                 "filter": {
                   "processDefinitionKey": 2251799813685281,
-                  "adHocSubprocessId": "   "
+                  "adHocSubProcessId": "   "
                 }
               }
               """,
-              "No filter.adHocSubprocessId provided."));
+              "No filter.adHocSubProcessId provided."));
     }
   }
 
@@ -293,8 +293,8 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
 
     @Test
     void shouldActivateActivities() {
-      when(adHocSubprocessActivityServices.activateActivities(
-              any(AdHocSubprocessActivateActivitiesRequest.class)))
+      when(adHocSubProcessActivityServices.activateActivities(
+              any(AdHocSubProcessActivateActivitiesRequest.class)))
           .thenReturn(
               CompletableFuture.completedFuture(new AdHocSubProcessActivityActivationRecord()));
 
@@ -317,15 +317,15 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
           .expectStatus()
           .isNoContent();
 
-      verify(adHocSubprocessActivityServices)
+      verify(adHocSubProcessActivityServices)
           .activateActivities(
               assertArg(
                   request -> {
-                    assertThat(request.adHocSubprocessInstanceKey())
+                    assertThat(request.adHocSubProcessInstanceKey())
                         .isEqualTo(AD_HOC_SUBPROCESS_INSTANCE_KEY);
 
                     assertThat(request.elements())
-                        .extracting(AdHocSubprocessActivateActivityReference::elementId)
+                        .extracting(AdHocSubProcessActivateActivityReference::elementId)
                         .containsExactly("A", "B", "C");
                   }));
     }
@@ -357,7 +357,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
           .jsonPath(".detail")
           .isEqualTo(expectedErrorDetail);
 
-      verifyNoInteractions(adHocSubprocessActivityServices);
+      verifyNoInteractions(adHocSubProcessActivityServices);
     }
 
     static Stream<Arguments> invalidActivateParameters() {

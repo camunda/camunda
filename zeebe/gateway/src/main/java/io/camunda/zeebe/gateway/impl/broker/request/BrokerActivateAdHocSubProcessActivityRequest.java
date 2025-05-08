@@ -13,25 +13,25 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerActivateAdHocSubprocessActivityRequest
+public class BrokerActivateAdHocSubProcessActivityRequest
     extends BrokerExecuteCommand<AdHocSubProcessActivityActivationRecord> {
 
   private final AdHocSubProcessActivityActivationRecord requestDto =
       new AdHocSubProcessActivityActivationRecord();
 
-  public BrokerActivateAdHocSubprocessActivityRequest() {
+  public BrokerActivateAdHocSubProcessActivityRequest() {
     super(
         ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
         AdHocSubProcessActivityActivationIntent.ACTIVATE);
   }
 
-  public BrokerActivateAdHocSubprocessActivityRequest setAdHocSubProcessInstanceKey(
+  public BrokerActivateAdHocSubProcessActivityRequest setAdHocSubProcessInstanceKey(
       final String adHocSubProcessInstanceKey) {
     requestDto.setAdHocSubProcessInstanceKey(adHocSubProcessInstanceKey);
     return this;
   }
 
-  public BrokerActivateAdHocSubprocessActivityRequest addElement(final String elementId) {
+  public BrokerActivateAdHocSubProcessActivityRequest addElement(final String elementId) {
     requestDto.elements().add().setElementId(elementId);
     return this;
   }

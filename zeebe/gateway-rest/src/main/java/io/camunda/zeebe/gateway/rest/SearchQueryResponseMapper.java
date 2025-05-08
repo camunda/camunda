@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.search.entities.AdHocSubprocessActivityEntity;
+import io.camunda.search.entities.AdHocSubProcessActivityEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -37,7 +37,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
@@ -473,15 +473,15 @@ public final class SearchQueryResponseMapper {
         .tenantId(instance.tenantId());
   }
 
-  public static AdHocSubprocessActivityResult toAdHocSubprocessActivity(
-      final AdHocSubprocessActivityEntity entity) {
-    return new AdHocSubprocessActivityResult()
+  public static AdHocSubProcessActivityResult toAdHocSubProcessActivity(
+      final AdHocSubProcessActivityEntity entity) {
+    return new AdHocSubProcessActivityResult()
         .processDefinitionKey(entity.processDefinitionKey().toString())
         .processDefinitionId(entity.processDefinitionId())
-        .adHocSubprocessId(entity.adHocSubprocessId())
+        .adHocSubProcessId(entity.adHocSubProcessId())
         .elementId(entity.elementId())
         .elementName(entity.elementName())
-        .type(AdHocSubprocessActivityResult.TypeEnum.fromValue(entity.type().name()))
+        .type(AdHocSubProcessActivityResult.TypeEnum.fromValue(entity.type().name()))
         .documentation(entity.documentation())
         .tenantId(entity.tenantId());
   }

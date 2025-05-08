@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.util.KeyUtil.tryParseLong;
-import static io.camunda.zeebe.gateway.rest.validator.AdHocSubprocessActivityRequestValidator.validateAdHocSubprocessActivationRequest;
-import static io.camunda.zeebe.gateway.rest.validator.AdHocSubprocessActivityRequestValidator.validateAdHocSubprocessSearchActivitiesRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessActivationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessSearchActivitiesRequest;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -43,12 +43,12 @@ import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.filter.AdHocSubprocessActivityFilter;
-import io.camunda.search.query.AdHocSubprocessActivityQuery;
+import io.camunda.search.filter.AdHocSubProcessActivityFilter;
+import io.camunda.search.query.AdHocSubProcessActivityQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
-import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest;
-import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest.AdHocSubprocessActivateActivityReference;
+import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
+import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
@@ -77,8 +77,8 @@ import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivateActivitiesInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
@@ -905,8 +905,8 @@ public class RequestMapper {
         () -> new TenantMemberRequest(tenantId, memberId, entityType));
   }
 
-  public static Either<ProblemDetail, AdHocSubprocessActivityQuery> toAdHocSubprocessActivityQuery(
-      final AdHocSubprocessActivitySearchQuery request) {
+  public static Either<ProblemDetail, AdHocSubProcessActivityQuery> toAdHocSubProcessActivityQuery(
+      final AdHocSubProcessActivitySearchQuery request) {
     final var filter = request.getFilter();
     if (filter == null) {
       return Either.left(
@@ -916,30 +916,30 @@ public class RequestMapper {
     final var processDefinitionKey = tryParseLong(filter.getProcessDefinitionKey()).orElse(null);
 
     return getResult(
-        validateAdHocSubprocessSearchActivitiesRequest(filter, processDefinitionKey),
+        validateAdHocSubProcessSearchActivitiesRequest(filter, processDefinitionKey),
         () ->
-            AdHocSubprocessActivityQuery.builder()
+            AdHocSubProcessActivityQuery.builder()
                 .filter(
-                    AdHocSubprocessActivityFilter.builder()
+                    AdHocSubProcessActivityFilter.builder()
                         .processDefinitionKey(processDefinitionKey)
-                        .adHocSubprocessId(filter.getAdHocSubprocessId())
+                        .adHocSubProcessId(filter.getAdHocSubProcessId())
                         .build())
                 .build());
   }
 
-  public static Either<ProblemDetail, AdHocSubprocessActivateActivitiesRequest>
-      toAdHocSubprocessActivateActivitiesRequest(
-          final String adHocSubprocessInstanceKey,
-          final AdHocSubprocessActivateActivitiesInstruction request) {
+  public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>
+      toAdHocSubProcessActivateActivitiesRequest(
+          final String adHocSubProcessInstanceKey,
+          final AdHocSubProcessActivateActivitiesInstruction request) {
     return getResult(
-        validateAdHocSubprocessActivationRequest(request),
+        validateAdHocSubProcessActivationRequest(request),
         () ->
-            new AdHocSubprocessActivateActivitiesRequest(
-                adHocSubprocessInstanceKey,
+            new AdHocSubProcessActivateActivitiesRequest(
+                adHocSubProcessInstanceKey,
                 request.getElements().stream()
                     .map(
                         element ->
-                            new AdHocSubprocessActivateActivityReference(element.getElementId()))
+                            new AdHocSubProcessActivateActivityReference(element.getElementId()))
                     .toList()));
   }
 
