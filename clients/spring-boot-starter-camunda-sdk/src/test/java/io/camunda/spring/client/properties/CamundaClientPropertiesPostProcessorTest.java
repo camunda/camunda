@@ -760,6 +760,330 @@ public class CamundaClientPropertiesPostProcessorTest {
       }
     }
   }
-  // TODO add more tests to verify that all properties are mapped accordingly
 
+  @Nested
+  class Version87 {
+
+    @Nested
+    @SpringBootTest(properties = "spring.config.location=classpath:properties/8.7/saas.yaml")
+    class Saas {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadClientId() {
+        assertThat(camundaClientProperties.getAuth().getClientId()).isEqualTo("<your client id>");
+      }
+
+      @Test
+      void shouldReadClientSecret() {
+        assertThat(camundaClientProperties.getAuth().getClientSecret())
+            .isEqualTo("<your client secret>");
+      }
+
+      @Test
+      void shouldReadClientRestAddress() {
+        assertThat(camundaClientProperties.getRestAddress())
+            .isEqualTo(
+                URI.create("https://your-cluster-region-id.zeebe.camunda.io:443/your-cluster-id"));
+      }
+
+      @Test
+      void shouldReadClientGrpcAddress() {
+        assertThat(camundaClientProperties.getGrpcAddress())
+            .isEqualTo(
+                URI.create("https://your-cluster-id.your-cluster-region-id.zeebe.camunda.io:443"));
+      }
+
+      @Test
+      void shouldConfigureIssuer() {
+        assertThat(camundaClientProperties.getAuth().getTokenUrl())
+            .isEqualTo(URI.create("https://login.cloud.camunda.io/oauth/token"));
+      }
+    }
+
+    @Nested
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/self-managed.yaml")
+    class SelfManaged {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadClientId() {
+        assertThat(camundaClientProperties.getAuth().getClientId()).isEqualTo("<your client id>");
+      }
+
+      @Test
+      void shouldReadClientSecret() {
+        assertThat(camundaClientProperties.getAuth().getClientSecret())
+            .isEqualTo("<your client secret>");
+      }
+
+      @Test
+      void shouldReadIssuer() {
+        assertThat(camundaClientProperties.getAuth().getTokenUrl())
+            .isEqualTo(
+                URI.create(
+                    "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token"));
+      }
+    }
+
+    @Nested
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/self-managed-extended.yaml")
+    class SelfManagedExtended {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadClientId() {
+        assertThat(camundaClientProperties.getAuth().getClientId()).isEqualTo("<your client id>");
+      }
+
+      @Test
+      void shouldReadClientSecret() {
+        assertThat(camundaClientProperties.getAuth().getClientSecret())
+            .isEqualTo("<your client secret>");
+      }
+
+      @Test
+      void shouldReadIssuer() {
+        assertThat(camundaClientProperties.getAuth().getTokenUrl())
+            .isEqualTo(
+                URI.create(
+                    "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token"));
+      }
+
+      @Test
+      void shouldReadZeebeEnabled() {
+        assertThat(camundaClientProperties.getEnabled()).isTrue();
+      }
+
+      @Test
+      void shouldReadZeebeGrpcAddress() {
+        assertThat(camundaClientProperties.getGrpcAddress())
+            .isEqualTo(URI.create("http://localhost:26500"));
+      }
+
+      @Test
+      void shouldReadZeebeRestAddress() {
+        assertThat(camundaClientProperties.getRestAddress())
+            .isEqualTo(URI.create("http://localhost:8080"));
+      }
+
+      @Test
+      void shouldReadPreferRestOverGrpc() {
+        assertThat(camundaClientProperties.getPreferRestOverGrpc()).isFalse();
+      }
+
+      @Test
+      void shouldReadAudience() {
+        assertThat(camundaClientProperties.getAuth().getAudience()).isEqualTo("zeebe-api");
+      }
+
+      @Test
+      void shouldReadScope() {
+        assertThat(camundaClientProperties.getAuth().getScope()).isEqualTo("scope");
+      }
+    }
+
+    @Nested
+    @SpringBootTest(
+        properties = {"spring.config.location=classpath:properties/8.7/default-type.yaml"})
+    class DefaultType {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadType() {
+        assertThat(camundaClientProperties.getWorker().getDefaults().getType()).isEqualTo("foo");
+      }
+    }
+
+    @Nested
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/default-auto-complete.yaml")
+    class DefaultAutoComplete {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadAutoComplete() {
+        assertThat(camundaClientProperties.getWorker().getDefaults().getAutoComplete()).isFalse();
+      }
+    }
+
+    @Nested
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/worker-auto-complete.yaml")
+    class FooAutoComplete {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadAutoComplete() {
+        assertThat(camundaClientProperties.getWorker().getOverride().get("foo").getAutoComplete())
+            .isFalse();
+      }
+    }
+
+    @Nested
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/client-id-secret.yaml")
+    class ClientIdSecret {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadClientId() {
+        assertThat(camundaClientProperties.getAuth().getClientId()).isEqualTo("<your client id>");
+      }
+
+      @Test
+      void shouldReadClientSecret() {
+        assertThat(camundaClientProperties.getAuth().getClientSecret())
+            .isEqualTo("<your client secret>");
+      }
+    }
+
+    @Nested
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/credentials-cache-path.yaml")
+    class CredentialsCachePath {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadCredentialsCachePath() {
+        assertThat(camundaClientProperties.getAuth().getCredentialsCachePath())
+            .isEqualTo("/tmp/credentials");
+      }
+    }
+
+    @Nested
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/execution-threads.yaml")
+    class ExecutionThreads {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadExecutionThreads() {
+        assertThat(camundaClientProperties.getExecutionThreads()).isEqualTo(2);
+      }
+    }
+
+    @Nested
+    @SpringBootTest(properties = "spring.config.location=classpath:properties/8.7/message-ttl.yaml")
+    class MessageTimeToLive {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadMessageTimeToLive() {
+        assertThat(camundaClientProperties.getMessageTimeToLive()).isEqualTo(Duration.ofHours(2));
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/max-message-size.yaml")
+    @Nested
+    class MessageSize {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadMessageSize() {
+        assertThat(camundaClientProperties.getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(6));
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/max-metadata-size.yaml")
+    @Nested
+    class MetadataSize {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadMessageSize() {
+        assertThat(camundaClientProperties.getMaxMetadataSize()).isEqualTo(DataSize.ofMegabytes(6));
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/request-timeout.yaml")
+    @Nested
+    class RequestTimeout {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadRequestTimeout() {
+        assertThat(camundaClientProperties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/ca-cert-path.yaml")
+    @Nested
+    class CaCertificatePath {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadCaCertificatePath() {
+        assertThat(camundaClientProperties.getCaCertificatePath())
+            .isEqualTo("/path/to/certificate.pem");
+      }
+    }
+
+    @SpringBootTest(properties = "spring.config.location=classpath:properties/8.7/keep-alive.yaml")
+    @Nested
+    class KeepAlive {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadKeepAlive() {
+        assertThat(camundaClientProperties.getKeepAlive()).isEqualTo(Duration.ofMinutes(1));
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/override-authority.yaml")
+    @Nested
+    class OverrideAuthority {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadOverrideAuthority() {
+        assertThat(camundaClientProperties.getOverrideAuthority()).isEqualTo("host:port");
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/rest-over-grpc.yaml")
+    @Nested
+    class PreferRestOverGrpc {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadPreferRestOverGrpc() {
+        assertThat(camundaClientProperties.getPreferRestOverGrpc()).isEqualTo(true);
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/grpc-address.yaml")
+    @Nested
+    class GrpcAddress {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadGrpcAddress() {
+        assertThat(camundaClientProperties.getGrpcAddress())
+            .isEqualTo(URI.create("http://localhost:26500"));
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/rest-address.yaml")
+    @Nested
+    class RestAddress {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadGrpcAddress() {
+        assertThat(camundaClientProperties.getRestAddress())
+            .isEqualTo(URI.create("http://localhost:8080"));
+      }
+    }
+  }
 }
