@@ -239,10 +239,10 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "groupKey": "%d",
+              "groupKey": "%s",
               "groupId": "%s",
               "name": "%s",
-              "description": "%s",
+              "description": "%s"
             }"""
                 .formatted(groupKey, groupId, groupName, groupDescription));
 
