@@ -7,15 +7,21 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.UserQuery;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -37,9 +43,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/roles")
 public class RoleController {
   private final RoleServices roleServices;
+  private final UserServices userServices;
 
-  public RoleController(final RoleServices roleServices) {
+  public RoleController(final RoleServices roleServices, final UserServices userServices) {
     this.roleServices = roleServices;
+    this.userServices = userServices;
   }
 
   @CamundaPostMapping
@@ -112,6 +120,36 @@ public class RoleController {
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
+  }
+
+  @CamundaPostMapping(path = "/{roleId}/users/search")
+  public ResponseEntity<UserSearchResult> searchUsersByRole(
+      @PathVariable final String roleId,
+      @RequestBody(required = false) final UserSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toUserQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            userQuery -> searchUsersInRole(roleId, userQuery));
+  }
+
+  private ResponseEntity<UserSearchResult> searchUsersInRole(
+      final String roleId, final UserQuery userQuery) {
+    try {
+      final var composedUserQuery = buildUserQuery(roleId, userQuery);
+      final var result =
+          userServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(composedUserQuery);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private UserQuery buildUserQuery(final String roleId, final UserQuery userQuery) {
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().roleId(roleId).build())
+        .build();
   }
 
   @CamundaPutMapping(

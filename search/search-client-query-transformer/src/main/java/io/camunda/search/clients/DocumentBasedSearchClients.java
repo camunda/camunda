@@ -31,6 +31,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricsEntity;
@@ -422,6 +423,9 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     if (userQuery.filter().groupId() != null) {
       return expandGroupFilterForUser(userQuery);
     }
+    if (userQuery.filter().roleId() != null) {
+      return expandRoleFilter(userQuery);
+    }
     return userQuery;
   }
 
@@ -451,6 +455,22 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                 io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class);
     final var usernames =
         groupMembers.stream().map(GroupMemberEntity::id).collect(Collectors.toSet());
+
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
+  }
+
+  private UserQuery expandRoleFilter(final UserQuery userQuery) {
+    final List<RoleMemberEntity> roleMembers =
+        getSearchExecutor()
+            .findAll(
+                new RoleQuery.Builder()
+                    .filter(f -> f.joinParentId(userQuery.filter().roleId()).memberType(USER))
+                    .build(),
+                io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity.class);
+    final var usernames =
+        roleMembers.stream().map(RoleMemberEntity::id).collect(Collectors.toSet());
 
     return userQuery.toBuilder()
         .filter(userQuery.filter().toBuilder().usernames(usernames).build())

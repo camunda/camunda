@@ -8,8 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.io.Serializable;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record RoleEntity(Long roleKey, String roleId, String name, String description)
-    implements Serializable {}
+public record RoleMemberEntity(String id, EntityType entityType) {}

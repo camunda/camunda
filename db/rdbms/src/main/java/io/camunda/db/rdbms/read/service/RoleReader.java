@@ -11,12 +11,10 @@ import io.camunda.db.rdbms.read.domain.RoleDbQuery;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.columns.RoleSearchColumn;
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
-import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +47,6 @@ public class RoleReader extends AbstractEntityReader<RoleEntity> {
   }
 
   private RoleEntity map(final RoleDbModel model) {
-    return new RoleEntity(
-        model.roleKey(),
-        model.roleId(),
-        model.name(),
-        model.description(),
-        model.members().stream().map(RoleMemberDbModel::entityId).collect(Collectors.toSet()));
+    return new RoleEntity(model.roleKey(), model.roleId(), model.name(), model.description());
   }
 }

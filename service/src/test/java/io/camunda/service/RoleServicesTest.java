@@ -187,15 +187,17 @@ public class RoleServicesTest {
   @Test
   public void shouldGetAllRolesByMemberId() {
     // given
-    final var memberKey = 100L;
-    // todo use memberIds (String) in https://github.com/camunda/camunda/issues/30111
-    final var memberId = String.valueOf(memberKey);
+    final var memberId = "memberId";
+    final var memberType = EntityType.USER;
     final var roleEntity = mock(RoleEntity.class);
-    when(client.findAllRoles(RoleQuery.of(q -> q.filter(f -> f.memberId(memberId)))))
+    when(client.findAllRoles(
+            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).memberType(memberType)))))
         .thenReturn(List.of(roleEntity));
 
     // when
-    final var result = services.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(memberId))));
+    final var result =
+        services.findAll(
+            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).memberType(memberType))));
 
     // then
     assertThat(result).isEqualTo(List.of(roleEntity));

@@ -17,6 +17,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,7 +56,9 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
     final Long userKey = storedUser.userKey();
 
-    final var roles = roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(username))));
+    final var roles =
+        roleServices.findAll(
+            RoleQuery.of(q -> q.filter(f -> f.memberId(username).memberType(EntityType.USER))));
 
     final var authorizedApplications =
         authorizationServices.getAuthorizedApplications(

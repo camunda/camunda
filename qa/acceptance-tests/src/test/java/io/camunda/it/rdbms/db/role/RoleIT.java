@@ -36,7 +36,7 @@ public class RoleIT {
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
-  public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSaveAndFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final RoleReader roleReader = rdbmsService.getRoleReader();

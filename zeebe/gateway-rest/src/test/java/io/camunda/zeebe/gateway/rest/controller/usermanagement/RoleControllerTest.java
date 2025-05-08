@@ -18,6 +18,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
+import io.camunda.service.UserServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
@@ -44,10 +45,12 @@ public class RoleControllerTest extends RestControllerTest {
   private static final String ROLE_BASE_URL = "/v2/roles";
 
   @MockBean private RoleServices roleServices;
+  @MockBean private UserServices userServices;
 
   @BeforeEach
   void setup() {
     when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
   }
 
   @ParameterizedTest

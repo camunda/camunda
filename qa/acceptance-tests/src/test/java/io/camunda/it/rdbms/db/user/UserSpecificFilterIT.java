@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.user;
 
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
+import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRole;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
 import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveRandomUsers;
 import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
@@ -18,8 +19,10 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
+import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
+import io.camunda.it.rdbms.db.fixtures.RoleFixtures;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -122,6 +125,38 @@ public class UserSpecificFilterIT {
     assertThat(users.total()).isEqualTo(1);
   }
 
+  @Test
+  public void shouldFilterUsersForRole() {
+    final var role = RoleFixtures.createRandomized(b -> b);
+    final var anotherRole = RoleFixtures.createRandomized(b -> b);
+    createAndSaveRole(rdbmsWriter, role);
+    createAndSaveRole(rdbmsWriter, anotherRole);
+
+    Arrays.asList("user-abc", "user-123", "user-1337")
+        .forEach(
+            username ->
+                createAndSaveUser(
+                    rdbmsWriter,
+                    UserFixtures.createRandomized(
+                        b ->
+                            b.name("User 1337")
+                                .username(username)
+                                .email(username + "@camunda-test.com"))));
+
+    addUserToRole(role.roleId(), "user-1337");
+    addUserToRole(anotherRole.roleId(), "user-abc");
+    addUserToRole(anotherRole.roleId(), "user-123");
+
+    final var users =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder().roleId(role.roleId()).build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(users.total()).isEqualTo(1);
+  }
+
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
   public void shouldFindWithSpecificFilter(final UserFilter filter) {
@@ -159,6 +194,11 @@ public class UserSpecificFilterIT {
 
   private void addUserToGroup(final String groupId, final String entityId) {
     rdbmsWriter.getGroupWriter().addMember(new GroupMemberDbModel(groupId, entityId, "USER"));
+    rdbmsWriter.flush();
+  }
+
+  private void addUserToRole(final String roleId, final String entityId) {
+    rdbmsWriter.getRoleWriter().addMember(new RoleMemberDbModel(roleId, entityId, "USER"));
     rdbmsWriter.flush();
   }
 }
