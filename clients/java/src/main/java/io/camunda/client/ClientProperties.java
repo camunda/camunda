@@ -93,6 +93,12 @@ public final class ClientProperties {
   public static final String DEFAULT_REQUEST_TIMEOUT = "camunda.client.requestTimeout";
 
   /**
+   * @see CamundaClientBuilder#defaultActivateJobsResponseTimeoutOffset(Duration)
+   */
+  public static final String DEFAULT_ACTIVATE_JOBS_RESPONSE_TIMEOUT_OFFSET =
+      "camunda.client.activateJobsResponseTimeoutOffset";
+
+  /**
    * @see CamundaClientBuilder#usePlaintext()
    */
   public static final String USE_PLAINTEXT_CONNECTION = "camunda.client.security.plaintext";

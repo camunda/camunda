@@ -145,6 +145,12 @@ public interface CamundaClientBuilder {
   /** The request timeout used if not overridden by the command. Default is 10 seconds. */
   CamundaClientBuilder defaultRequestTimeout(Duration requestTimeout);
 
+  /**
+   * The {@link io.camunda.client.impl.command.ActivateJobsCommandImpl}'s response timeout offset.
+   * Default is 1 second.
+   */
+  CamundaClientBuilder defaultActivateJobsResponseTimeoutOffset(Duration responseTimeoutOffset);
+
   /** Use a plaintext connection between the client and the gateway. */
   CamundaClientBuilder usePlaintext();
 

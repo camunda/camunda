@@ -90,6 +90,11 @@ public interface CamundaClientConfiguration {
   Duration getDefaultRequestTimeout();
 
   /**
+   * @see CamundaClientBuilder#defaultActivateJobsResponseTimeoutOffset(Duration)
+   */
+  Duration getDefaultActivateJobsResponseTimeoutOffset();
+
+  /**
    * @see CamundaClientBuilder#usePlaintext()
    */
   boolean isPlaintextConnectionEnabled();

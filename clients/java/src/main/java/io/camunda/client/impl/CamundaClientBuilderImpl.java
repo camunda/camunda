@@ -17,6 +17,7 @@ package io.camunda.client.impl;
 
 import static io.camunda.client.ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES;
 import static io.camunda.client.ClientProperties.CA_CERTIFICATE_PATH;
+import static io.camunda.client.ClientProperties.DEFAULT_ACTIVATE_JOBS_RESPONSE_TIMEOUT_OFFSET;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_POLL_INTERVAL;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_TIMEOUT;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_NAME;
@@ -105,6 +106,7 @@ public final class CamundaClientBuilderImpl
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
   private Duration defaultRequestTimeout = Duration.ofSeconds(10);
+  private Duration defaultActivateJobsResponseTimeoutOffset = Duration.ofSeconds(1);
   private boolean usePlaintextConnection = false;
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
@@ -177,6 +179,11 @@ public final class CamundaClientBuilderImpl
   @Override
   public Duration getDefaultRequestTimeout() {
     return defaultRequestTimeout;
+  }
+
+  @Override
+  public Duration getDefaultActivateJobsResponseTimeoutOffset() {
+    return defaultActivateJobsResponseTimeoutOffset;
   }
 
   @Override
@@ -336,6 +343,11 @@ public final class CamundaClientBuilderImpl
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> defaultActivateJobsResponseTimeoutOffset(Duration.ofMillis(Long.parseLong(value))),
+        DEFAULT_ACTIVATE_JOBS_RESPONSE_TIMEOUT_OFFSET);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
         value -> {
           /**
            * The following condition is phrased in this particular way in order to be backwards
@@ -482,6 +494,13 @@ public final class CamundaClientBuilderImpl
   @Override
   public CamundaClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
     defaultRequestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder defaultActivateJobsResponseTimeoutOffset(
+      final Duration responseTimeoutOffset) {
+    defaultActivateJobsResponseTimeoutOffset = responseTimeoutOffset;
     return this;
   }
 
@@ -652,6 +671,8 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "defaultJobPollInterval", defaultJobPollInterval);
     BuilderUtils.appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
     BuilderUtils.appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
+    BuilderUtils.appendProperty(
+        sb, "defaultActivateJobsResponseTimeoutOffset", defaultActivateJobsResponseTimeoutOffset);
     BuilderUtils.appendProperty(sb, "overrideAuthority", overrideAuthority);
     BuilderUtils.appendProperty(sb, "maxMessageSize", maxMessageSize);
     BuilderUtils.appendProperty(sb, "maxMetadataSize", maxMetadataSize);

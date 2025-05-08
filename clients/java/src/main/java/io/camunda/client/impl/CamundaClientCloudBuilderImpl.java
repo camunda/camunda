@@ -217,6 +217,13 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder defaultActivateJobsResponseTimeoutOffset(
+      final Duration responseTimeoutOffset) {
+    innerBuilder.defaultActivateJobsResponseTimeoutOffset(responseTimeoutOffset);
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder usePlaintext() {
     innerBuilder.usePlaintext();
     return this;

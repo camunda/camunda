@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import java.time.Duration;
 import java.util.List;
@@ -103,9 +104,12 @@ public interface ActivateJobsCommandStep1
     ActivateJobsCommandStep3 fetchVariables(String... fetchVariables);
 
     /**
-     * Sets the request timeout for the command and adjusts the HTTP response timeout to be 100ms
-     * longer than the specified value, ensuring that the client timeout does not occur before the
-     * server timeout.
+     * Sets the request timeout for the command.
+     *
+     * <p>Additionally, it sets the HTTP response timeout to the specified value, incremented by the
+     * offset defined in {@link
+     * CamundaClientConfiguration#getDefaultActivateJobsResponseTimeoutOffset()} (default 1 second),
+     * ensuring that the client timeout does not occur before the server timeout.
      *
      * @see FinalCommandStep#requestTimeout(Duration)
      * @param requestTimeout the request timeout

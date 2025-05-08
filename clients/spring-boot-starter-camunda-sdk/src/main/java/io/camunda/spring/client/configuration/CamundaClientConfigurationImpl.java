@@ -146,6 +146,13 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
   }
 
   @Override
+  public Duration getDefaultActivateJobsResponseTimeoutOffset() {
+    return propertyOrDefault(
+        camundaClientProperties.getActivateJobsResponseTimeoutOffset(),
+        DEFAULT.getDefaultActivateJobsResponseTimeoutOffset());
+  }
+
+  @Override
   public boolean isPlaintextConnectionEnabled() {
     return plaintext;
   }
