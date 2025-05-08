@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.incident.IncidentRecordWrapper;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -165,12 +166,20 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private void processOperationCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskIntent intent) {
     final var commandProcessor = commandProcessors.getCommandProcessor(intent);
-    commandProcessor
-        .validateCommand(command)
-        .ifRightOrLeft(
-            persistedRecord ->
-                handleCommandProcessing(commandProcessor, command, persistedRecord.copy(), intent),
-            rejection -> handleCommandRejection(command, rejection));
+
+    if (isRetriedCommand(command)) {
+      // Skip validation for retried command, as it was already validated
+      // during the original execution
+      handleCommandProcessing(commandProcessor, command, command.getValue(), intent);
+    } else {
+      commandProcessor
+          .validateCommand(command)
+          .ifRightOrLeft(
+              persistedRecord ->
+                  handleCommandProcessing(
+                      commandProcessor, command, persistedRecord.copy(), intent),
+              rejection -> handleCommandRejection(command, rejection));
+    }
   }
 
   private void handleCommandProcessing(
@@ -179,11 +188,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final UserTaskRecord persistedRecord,
       final UserTaskIntent intent) {
 
-    // If a user-triggered command (ASSIGN, CLAIM, UPDATE, COMPLETE) lacks request metadata,
-    // it indicates the command was retried by the engine after resolving an incident caused
-    // by a task listener property expression evaluation failure. In this case, the `onCommand`
-    // method was already processed during the initial execution, so we can safely skip it now.
-    if (command.hasRequestMetadata()) {
+    // For retried commands (reconstructed after an incident), we skip `onCommand()`
+    // since it was already executed during the original command handling before the failure.
+    if (!isRetriedCommand(command)) {
       processor.onCommand(command, persistedRecord);
     }
 
@@ -215,7 +222,21 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     }
   }
 
-  void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
+  /**
+   * Determines whether the given {@link TypedRecord} is a retried command reconstructed for
+   * reprocessing after an incident was resolved.
+   *
+   * <p>Used to skip redundant processing steps that were already performed during the original
+   * command execution.
+   *
+   * @param command the typed record to check
+   * @return {@code true} if the record represents a retried command
+   */
+  private boolean isRetriedCommand(final TypedRecord<UserTaskRecord> command) {
+    return command instanceof IncidentRecordWrapper<UserTaskRecord>;
+  }
+
+  private void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
     if (!command.hasRequestMetadata()) {
       return;
     }
