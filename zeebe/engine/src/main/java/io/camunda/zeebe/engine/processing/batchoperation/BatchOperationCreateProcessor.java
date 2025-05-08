@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -18,12 +20,14 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ExcludeAuthorizationCheck
 public final class BatchOperationCreateProcessor
     implements DistributedTypedRecordProcessor<BatchOperationCreationRecord> {
 
@@ -37,16 +41,19 @@ public final class BatchOperationCreateProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public BatchOperationCreateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -54,6 +61,16 @@ public final class BatchOperationCreateProcessor
     if (isEmptyOrNullFilter(command)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
+      return;
+    }
+
+    final var authorizationResult = isAuthorized(command);
+    if (authorizationResult.isLeft()) {
+      final Rejection rejection = authorizationResult.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -81,6 +98,33 @@ public final class BatchOperationCreateProcessor
     stateWriter.appendFollowUpEvent(
         command.getKey(), BatchOperationIntent.CREATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private Either<Rejection, Void> isAuthorized(
+      final TypedRecord<BatchOperationCreationRecord> command) {
+
+    // first check for general CREATE_BATCH_OPERATION permission
+    final var isAuthorized =
+        authCheckBehavior.isAuthorized(
+            new AuthorizationRequest(
+                command, AuthorizationResourceType.BATCH_OPERATION, PermissionType.CREATE));
+    if (isAuthorized.isLeft()) {
+      // if that's not present, check for the BO type dependent permission
+      final var permission =
+          switch (command.getValue().getBatchOperationType()) {
+            case CANCEL_PROCESS_INSTANCE ->
+                PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE;
+            case MIGRATE_PROCESS_INSTANCE ->
+                PermissionType.CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE;
+            case MODIFY_PROCESS_INSTANCE ->
+                PermissionType.CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE;
+            case RESOLVE_INCIDENT -> PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT;
+          };
+      return authCheckBehavior.isAuthorized(
+          new AuthorizationRequest(command, AuthorizationResourceType.BATCH_OPERATION, permission));
+    }
+
+    return isAuthorized;
   }
 
   private static boolean isEmptyOrNullFilter(

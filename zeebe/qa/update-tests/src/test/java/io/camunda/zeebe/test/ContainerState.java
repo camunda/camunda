@@ -253,7 +253,8 @@ final class ContainerState implements CloseableResource {
   }
 
   public long getIncidentKey() {
-    final String incidentCreated = getLogContaining("INCIDENT", "CREATED");
+    final String incidentCreated =
+        getLogContaining("\"valueType\":\"INCIDENT\"", "\"intent\":\"CREATED\"");
 
     final Pattern pattern = Pattern.compile("(\"key\":)(\\d+)", Pattern.CASE_INSENSITIVE);
     final Matcher matcher = pattern.matcher(incidentCreated);

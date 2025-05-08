@@ -244,4 +244,94 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.RESUME);
   }
+
+  @Test
+  public void shouldRejectCancelBatchOperationWithNoPermission() {
+    // given
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
+
+    // and we add a new user with no permissions
+    final var user = createUser();
+
+    // when we cancel the batch operation
+    engine
+        .batchOperation()
+        .newLifecycle()
+        .withBatchOperationKey(batchOperationKey)
+        .expectRejection()
+        .cancel(user.getUsername());
+
+    // then we have a rejected cancel command
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .onlyCommandRejections()
+                .withBatchOperationKey(batchOperationKey))
+        .allSatisfy(
+            r -> {
+              assertThat(r.getIntent()).isEqualTo(BatchOperationIntent.CANCEL);
+              assertThat(r.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+            });
+  }
+
+  @Test
+  public void shouldRejectPauseBatchOperationWithNoPermission() {
+    // given
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
+
+    // and we add a new user with no permissions
+    final var user = createUser();
+
+    // when we cancel the batch operation
+    engine
+        .batchOperation()
+        .newLifecycle()
+        .withBatchOperationKey(batchOperationKey)
+        .expectRejection()
+        .pause(user.getUsername());
+
+    // then we have a rejected cancel command
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .onlyCommandRejections()
+                .withBatchOperationKey(batchOperationKey))
+        .allSatisfy(
+            r -> {
+              assertThat(r.getIntent()).isEqualTo(BatchOperationIntent.PAUSE);
+              assertThat(r.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+            });
+  }
+
+  @Test
+  public void shouldRejectResumeBatchOperationWithNoPermission() {
+    // given
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
+
+    // and we pause the batch operation
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+
+    // and we add a new user with no permissions
+    final var user = createUser();
+
+    // when we resume the batch operation
+    engine
+        .batchOperation()
+        .newLifecycle()
+        .withBatchOperationKey(batchOperationKey)
+        .expectRejection()
+        .resume(user.getUsername());
+
+    // then we have a rejected cancel command
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .onlyCommandRejections()
+                .withBatchOperationKey(batchOperationKey))
+        .allSatisfy(
+            r -> {
+              assertThat(r.getIntent()).isEqualTo(BatchOperationIntent.RESUME);
+              assertThat(r.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+            });
+  }
 }

@@ -17,23 +17,37 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.mockito.Mockito;
 
 abstract class AbstractBatchOperationTest {
+
+  protected static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -44,7 +58,11 @@ abstract class AbstractBatchOperationTest {
 
   @Rule
   public final EngineRule engine =
-      EngineRule.singlePartition().withSearchClientsProxy(searchClientsProxy);
+      EngineRule.singlePartition()
+          .withIdentitySetup()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withSearchClientsProxy(searchClientsProxy);
 
   protected long createNewCancelProcessInstanceBatchOperation(final Set<Long> itemKeys) {
     final var result =
@@ -64,7 +82,7 @@ abstract class AbstractBatchOperationTest {
         .batchOperation()
         .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
-        .create()
+        .create(DEFAULT_USER.getUsername())
         .getValue()
         .getBatchOperationKey();
   }
@@ -94,7 +112,7 @@ abstract class AbstractBatchOperationTest {
         .newCreation(BatchOperationType.MODIFY_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
         .withModificationPlan(modificationPlan)
-        .create()
+        .create(DEFAULT_USER.getUsername())
         .getValue()
         .getBatchOperationKey();
   }
@@ -112,7 +130,7 @@ abstract class AbstractBatchOperationTest {
         .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
         .waitForStarted()
-        .create()
+        .create(DEFAULT_USER.getUsername())
         .getValue()
         .getBatchOperationKey();
   }
@@ -147,7 +165,7 @@ abstract class AbstractBatchOperationTest {
         .batchOperation()
         .newCreation(BatchOperationType.RESOLVE_INCIDENT)
         .withFilter(filterBuffer)
-        .create()
+        .create(DEFAULT_USER.getUsername())
         .getValue()
         .getBatchOperationKey();
   }
@@ -185,7 +203,7 @@ abstract class AbstractBatchOperationTest {
         .newCreation(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
         .withMigrationPlan(migrationPlan)
-        .create()
+        .create(DEFAULT_USER.getUsername())
         .getValue()
         .getBatchOperationKey();
   }
@@ -204,5 +222,29 @@ abstract class AbstractBatchOperationTest {
     final var entity = mock(IncidentEntity.class);
     when(entity.incidentKey()).thenReturn(incidentKey);
     return entity;
+  }
+
+  protected UserRecordValue createUser() {
+    return engine
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getValue();
+  }
+
+  protected void addPermissionsToUser(
+      final UserRecordValue user, final PermissionType permissionType) {
+    engine
+        .authorization()
+        .newAuthorization()
+        .withPermissions(permissionType)
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.BATCH_OPERATION)
+        .withResourceId("*")
+        .create(DEFAULT_USER.getUsername());
   }
 }
