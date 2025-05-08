@@ -31,6 +31,11 @@ public class OrganizationValidator implements OAuth2TokenValidator<Jwt> {
   @Override
   public OAuth2TokenValidatorResult validate(final Jwt token) {
     final var claimValue = token.getClaims().get(ORGANIZATION_CLAIM_KEY);
+    if (claimValue == null) {
+      // Not all tokens contain an organization claim, only validate those that do.
+      return OAuth2TokenValidatorResult.success();
+    }
+
     if (claimValue instanceof final Collection<?> claimedOrgs) {
       for (final Object claimedOrg : claimedOrgs) {
         if (claimedOrg instanceof final Map<?, ?> orgDetails) {

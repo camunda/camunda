@@ -81,7 +81,7 @@ final class OrganizationValidatorTest {
   }
 
   @Test
-  void shouldRejectTokenWithNoOrganizationClaim() {
+  void shouldValidateTokenWithNoOrganizationClaim() {
     // given
     final var organizationId = "valid-org-id";
     final var validator = new OrganizationValidator(organizationId);
@@ -91,16 +91,7 @@ final class OrganizationValidatorTest {
     final var result = validator.validate(token);
 
     // then
-    assertThat(result.hasErrors()).isTrue();
-
-    final var errors = result.getErrors();
-    assertThat(errors).hasSize(1);
-
-    final var error = errors.iterator().next();
-    assertThat(error.getErrorCode()).isEqualTo(OAuth2ErrorCodes.INVALID_TOKEN);
-    assertThat(error.getDescription())
-        .contains("Token claims organizations")
-        .contains("expected " + organizationId);
+    assertThat(result.hasErrors()).isFalse();
   }
 
   @Test
