@@ -37,6 +37,14 @@
   },
   "packageRules": [
     {
+      "description": "Enable separateMinorPatch so updates to latest patch are not ignored in maintenance branches.",
+      "separateMinorPatch": true,
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/",
+        "stable/operate-8.5"
+      ]
+    },
+    {
       "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
       "matchBaseBranches": [
         "/^stable\\/8\\..*/",
