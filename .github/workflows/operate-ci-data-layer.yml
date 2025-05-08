@@ -47,7 +47,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: ./mvnw -f operate verify -T1C -B -P skipFrontendBuild -DrunDataLayerUTs -DskipITs -DskipDockerProfile -DskipChecks
+      command: ./mvnw -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipCoreFeaturesUTs -DskipIdentityUTs -DskipDockerProfile -DskipChecks
       test-type: Unit Tests
       runner-type: gcp-core-4-default
 
