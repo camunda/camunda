@@ -33,21 +33,21 @@ public class AssignMappingToGroupTest {
   @AutoClose private CamundaClient client;
 
   private String groupId;
-  private String mappingId;
+  private String mappingRuleId;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    mappingId =
+    mappingRuleId =
         client
             .newCreateMappingCommand()
-            .mappingId(Strings.newRandomValidIdentityId())
+            .mappingRuleId(Strings.newRandomValidIdentityId())
             .name("mappingName")
             .claimName("name")
             .claimValue("value")
             .send()
             .join()
-            .getMappingId();
+            .getMappingRuleId();
 
     groupId =
         client
@@ -62,12 +62,12 @@ public class AssignMappingToGroupTest {
   @Test
   void shouldAssignMappingToGroup() {
     // when
-    client.newAssignMappingToGroupCommand(groupId).mappingId(mappingId).send().join();
+    client.newAssignMappingToGroupCommand(groupId).mappingRuleId(mappingRuleId).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityAssignedToGroup(
         groupId,
-        mappingId,
+        mappingRuleId,
         group -> {
           assertThat(group).hasEntityType(EntityType.MAPPING);
         });
@@ -83,7 +83,7 @@ public class AssignMappingToGroupTest {
             () ->
                 client
                     .newAssignMappingToGroupCommand(nonExistentGroupId)
-                    .mappingId(mappingId)
+                    .mappingRuleId(mappingRuleId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -96,23 +96,33 @@ public class AssignMappingToGroupTest {
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignMappingToGroupCommand(groupId).mappingId(mappingId).send().join();
+    client.newAssignMappingToGroupCommand(groupId).mappingRuleId(mappingRuleId).send().join();
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignMappingToGroupCommand(groupId).mappingId(mappingId).send().join())
+            () ->
+                client
+                    .newAssignMappingToGroupCommand(groupId)
+                    .mappingRuleId(mappingRuleId)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
             "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group."
-                .formatted(mappingId, groupId));
+                .formatted(mappingRuleId, groupId));
   }
 
   @Test
   void shouldRejectIfMissingGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignMappingToGroupCommand(null).mappingId(mappingId).send().join())
+            () ->
+                client
+                    .newAssignMappingToGroupCommand(null)
+                    .mappingRuleId(mappingRuleId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -121,26 +131,31 @@ public class AssignMappingToGroupTest {
   void shouldRejectIfEmptyGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignMappingToGroupCommand("").mappingId(mappingId).send().join())
+            () ->
+                client
+                    .newAssignMappingToGroupCommand("")
+                    .mappingRuleId(mappingRuleId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
 
   @Test
-  void shouldRejectIfMissingMappingId() {
+  void shouldRejectIfMissingMappingRuleId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignMappingToGroupCommand(groupId).mappingId(null).send().join())
+            () -> client.newAssignMappingToGroupCommand(groupId).mappingRuleId(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be null");
+        .hasMessageContaining("mappingRuleId must not be null");
   }
 
   @Test
-  void shouldRejectIfEmptyMappingId() {
+  void shouldRejectIfEmptyMappingRuleId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignMappingToGroupCommand(groupId).mappingId("").send().join())
+            () -> client.newAssignMappingToGroupCommand(groupId).mappingRuleId("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be empty");
+        .hasMessageContaining("mappingRuleId must not be empty");
   }
 }

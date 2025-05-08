@@ -17,7 +17,7 @@ import { SearchResponse } from "src/utility/api";
 export const MAPPINGS_ENDPOINT = "/mapping-rules";
 
 export type Mapping = {
-  mappingId: string;
+  mappingRuleId: string;
   name: string;
   claimName: string;
   claimValue: string;
@@ -30,25 +30,25 @@ export const createMapping: ApiDefinition<undefined, Mapping> = (mapping) =>
   apiPost(MAPPINGS_ENDPOINT, mapping);
 
 export type UpdateMappingParams = {
-  mappingId: string;
+  mappingRuleId: string;
   name: string;
   claimName: string;
   claimValue: string;
 };
 
 export const updateMapping: ApiDefinition<undefined, UpdateMappingParams> = ({
-  mappingId,
+  mappingRuleId,
   claimName,
   claimValue,
   name,
 }) =>
-  apiPut(`${MAPPINGS_ENDPOINT}/${mappingId}`, {
+  apiPut(`${MAPPINGS_ENDPOINT}/${mappingRuleId}`, {
     name,
     claimName,
     claimValue,
   });
 
 export type DeleteMappingParams = UpdateMappingParams;
-export const deleteMapping: ApiDefinition<undefined, { mappingId: string }> = ({
-  mappingId,
-}) => apiDelete(`${MAPPINGS_ENDPOINT}/${mappingId}`);
+export const deleteMapping: ApiDefinition<undefined, { mappingRuleId: string }> = ({
+  mappingRuleId,
+}) => apiDelete(`${MAPPINGS_ENDPOINT}/${mappingRuleId}`);

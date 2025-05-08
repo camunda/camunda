@@ -27,7 +27,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [apiCall, { loading, error }] = useApiCall(createMapping, {
     suppressErrorNotification: true,
   });
-  const [mappingId, setMappingId] = useState("");
+  const [mappingRuleId, setMappingRuleId] = useState("");
   const [mappingName, setMappingName] = useState("");
   const [claimName, setClaimName] = useState("");
   const [claimValue, setClaimValue] = useState("");
@@ -36,7 +36,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      mappingId: mappingId,
+      mappingRuleId: mappingRuleId,
       name: mappingName,
       claimName,
       claimValue,
@@ -64,10 +64,10 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       onSubmit={handleSubmit}
     >
       <TextField
-        label={t("mappingId")}
-        placeholder={t("enterMappingId")}
-        onChange={setMappingId}
-        value={mappingId}
+        label={t("mappingRuleId")}
+        placeholder={t("enterMappingRuleId")}
+        onChange={setMappingRuleId}
+        value={mappingRuleId}
         helperText={t("uniqueIdForMapping")}
         autoFocus
       />

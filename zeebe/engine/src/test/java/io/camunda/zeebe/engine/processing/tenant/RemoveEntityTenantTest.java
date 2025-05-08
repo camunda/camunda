@@ -287,19 +287,19 @@ public class RemoveEntityTenantTest {
   public void shouldRemoveMappingFromTenant() {
     final var tenantId = UUID.randomUUID().toString();
     engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    engine.mapping().newMapping(mappingId).create();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    engine.mapping().newMapping(mappingRuleId).create();
     engine
         .tenant()
         .addEntity(tenantId)
-        .withEntityId(mappingId)
+        .withEntityId(mappingRuleId)
         .withEntityType(EntityType.MAPPING)
         .add();
     final var removedEntity =
         engine
             .tenant()
             .removeEntity(tenantId)
-            .withEntityId(mappingId)
+            .withEntityId(mappingRuleId)
             .withEntityType(EntityType.MAPPING)
             .remove()
             .getValue();
@@ -307,7 +307,7 @@ public class RemoveEntityTenantTest {
     assertThat(removedEntity)
         .isNotNull()
         .hasTenantId(tenantId)
-        .hasEntityId(mappingId)
+        .hasEntityId(mappingRuleId)
         .hasEntityType(EntityType.MAPPING);
   }
 
@@ -315,9 +315,9 @@ public class RemoveEntityTenantTest {
   public void shouldRejectIfEntityIsNotPresentMappingRemoval() {
     // given
     final var tenantId = UUID.randomUUID().toString();
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
-    engine.mapping().newMapping(mappingId).create();
+    engine.mapping().newMapping(mappingRuleId).create();
 
     // when
     final var createdTenant = tenantRecord.getValue();
@@ -325,7 +325,7 @@ public class RemoveEntityTenantTest {
         engine
             .tenant()
             .removeEntity(tenantId)
-            .withEntityId(mappingId)
+            .withEntityId(mappingRuleId)
             .withEntityType(EntityType.MAPPING)
             .expectRejection()
             .remove();
@@ -336,7 +336,7 @@ public class RemoveEntityTenantTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to remove mapping with ID '%s' from tenant with ID '%s', but the mapping is not assigned to this tenant."
-                .formatted(mappingId, tenantId));
+                .formatted(mappingRuleId, tenantId));
   }
 
   @Test
@@ -346,13 +346,13 @@ public class RemoveEntityTenantTest {
     engine.tenant().newTenant().withTenantId(tenantId).create();
 
     // when
-    final var mappingId = "123";
-    engine.mapping().newMapping(mappingId).create();
+    final var mappingRuleId = "123";
+    engine.mapping().newMapping(mappingRuleId).create();
     final var notAssignedUpdateRecord =
         engine
             .tenant()
             .removeEntity(tenantId)
-            .withEntityId(mappingId)
+            .withEntityId(mappingRuleId)
             .withEntityType(EntityType.MAPPING)
             .expectRejection()
             .remove();
@@ -361,7 +361,7 @@ public class RemoveEntityTenantTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to remove mapping with ID '%s' from tenant with ID '%s', but the mapping is not assigned to this tenant."
-                .formatted(mappingId, tenantId));
+                .formatted(mappingRuleId, tenantId));
   }
 
   @Test

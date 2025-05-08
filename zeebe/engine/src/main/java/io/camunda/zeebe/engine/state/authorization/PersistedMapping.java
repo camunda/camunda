@@ -15,19 +15,19 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class PersistedMapping extends UnpackedObject implements DbValue {
 
-  private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
+  private final LongProperty mappingRuleKeyProp = new LongProperty("mappingRuleKey", -1L);
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty mappingIdProp = new StringProperty("mappingId", "");
+  private final StringProperty mappingRuleIdProp = new StringProperty("mappingRuleId", "");
 
   public PersistedMapping() {
     super(5);
-    declareProperty(mappingKeyProp)
+    declareProperty(mappingRuleKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
-        .declareProperty(mappingIdProp);
+        .declareProperty(mappingRuleIdProp);
   }
 
   public PersistedMapping copy() {
@@ -36,12 +36,12 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
     return copy;
   }
 
-  public long getMappingKey() {
-    return mappingKeyProp.getValue();
+  public long getMappingRuleKey() {
+    return mappingRuleKeyProp.getValue();
   }
 
-  public PersistedMapping setMappingKey(final long mappingKey) {
-    mappingKeyProp.setValue(mappingKey);
+  public PersistedMapping setMappingRuleKey(final long mappingRuleKey) {
+    mappingRuleKeyProp.setValue(mappingRuleKey);
     return this;
   }
 
@@ -72,12 +72,12 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public String getMappingId() {
-    return BufferUtil.bufferAsString(mappingIdProp.getValue());
+  public String getMappingRuleId() {
+    return BufferUtil.bufferAsString(mappingRuleIdProp.getValue());
   }
 
-  public PersistedMapping setMappingId(final String mappingId) {
-    mappingIdProp.setValue(mappingId);
+  public PersistedMapping setMappingRuleId(final String mappingRuleId) {
+    mappingRuleIdProp.setValue(mappingRuleId);
     return this;
   }
 }
