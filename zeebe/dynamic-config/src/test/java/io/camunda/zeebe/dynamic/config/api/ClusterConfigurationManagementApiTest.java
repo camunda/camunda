@@ -375,7 +375,8 @@ final class ClusterConfigurationManagementApiTest {
   void shouldPatchCluster() {
     // given
     final var request =
-        new ClusterPatchRequest(Set.of(id1), Set.of(), Optional.of(3), Optional.empty(), false);
+        new ClusterPatchRequest(
+            Set.of(id1), Set.of(), Optional.of(3), Optional.empty(), Optional.empty(), false);
     final ClusterConfiguration currentTopology =
         initialTopology
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
