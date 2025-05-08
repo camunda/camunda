@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
@@ -29,6 +29,8 @@ import {useBatchModificationOverlayData} from 'modules/queries/processInstancesS
 import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNode} from 'modules/utils/flowNodes';
+import {OverlayData} from 'modules/bpmn-js/BpmnJS';
+import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -55,6 +57,10 @@ const DiagramPanel: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const {version, flowNodeId} = getProcessInstanceFilters(location.search);
+
+  const [overlays, setOverlays] = useState<OverlayData[] | undefined>(
+    undefined,
+  );
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
@@ -90,7 +96,10 @@ const DiagramPanel: React.FC = observer(() => {
       `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
   });
 
-  const {data: overlayData} = useProcessInstancesOverlayData({}, processId);
+  const {data: processInstanceOverlayData} = useProcessInstancesOverlayData(
+    {},
+    processId,
+  );
 
   const {data: batchOverlayData} = useBatchModificationOverlayData(
     {},
@@ -120,6 +129,20 @@ const DiagramPanel: React.FC = observer(() => {
     }
     return 'content';
   };
+
+  useEffect(() => {
+    if (processStatisticsStore.state.status === 'fetched') {
+      const overlaysData = processStatisticsStore.getOverlaysData(
+        processDefinition?.data?.selectableFlowNodes,
+      );
+
+      setOverlays(overlaysData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    processDefinition?.data?.selectableFlowNodes,
+    processStatisticsStore.state.status,
+  ]);
 
   return (
     <Section aria-label="Diagram Panel">
@@ -163,7 +186,7 @@ const DiagramPanel: React.FC = observer(() => {
                     );
                   },
                   overlaysData: [
-                    ...(overlayData ?? []),
+                    ...(processInstanceOverlayData ?? []),
                     ...(batchOverlayData ?? []),
                   ],
                   // All flow nodes that can be a move modification target,
@@ -193,7 +216,10 @@ const DiagramPanel: React.FC = observer(() => {
                       );
                     }
                   },
-                  overlaysData: overlayData,
+                  overlaysData: [
+                    ...(processInstanceOverlayData ?? []),
+                    ...(overlays ?? []),
+                  ],
                   selectableFlowNodes: selectableIds,
                 })}
           >
