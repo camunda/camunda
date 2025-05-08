@@ -18,10 +18,10 @@ package io.camunda.client.adhocsubprocess;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1;
-import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1.ActivateAdHocSubprocessActivitiesCommandStep2;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivateActivitiesInstruction;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivateActivityReference;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1.ActivateAdHocSubProcessActivitiesCommandStep2;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivityReference;
 import io.camunda.client.util.ClientRestTest;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,50 +32,50 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 
-public class AdHocSubprocessActivityActivationTest extends ClientRestTest {
+public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
 
   private static final String AD_HOC_SUBPROCESS_INSTANCE_KEY = "123456789";
 
   @ParameterizedTest
   @MethodSource("requestModifiers")
-  void shouldActivateAdHocSubprocessActivities(
+  void shouldActivateAdHocSubProcessActivities(
       final Function<
-              ActivateAdHocSubprocessActivitiesCommandStep1,
-              ActivateAdHocSubprocessActivitiesCommandStep2>
+              ActivateAdHocSubProcessActivitiesCommandStep1,
+              ActivateAdHocSubProcessActivitiesCommandStep2>
           requestModifier) {
-    final ActivateAdHocSubprocessActivitiesCommandStep1 command =
-        client.newActivateAdHocSubprocessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY);
+    final ActivateAdHocSubProcessActivitiesCommandStep1 command =
+        client.newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY);
     requestModifier.apply(command).send().join();
 
-    final AdHocSubprocessActivateActivitiesInstruction request =
-        gatewayService.getLastRequest(AdHocSubprocessActivateActivitiesInstruction.class);
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
     assertThat(request.getElements())
-        .extracting(AdHocSubprocessActivateActivityReference::getElementId)
+        .extracting(AdHocSubProcessActivateActivityReference::getElementId)
         .containsExactly("A", "B", "C");
   }
 
   @Test
-  void shouldActivateAdHocSubprocessActivitiesCombiningActivationMethods() {
+  void shouldActivateAdHocSubProcessActivitiesCombiningActivationMethods() {
     client
-        .newActivateAdHocSubprocessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
+        .newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY)
         .activateElement("A")
         .activateElements("B", "C")
         .activateElements(Arrays.asList("D", "E"))
         .send()
         .join();
 
-    final AdHocSubprocessActivateActivitiesInstruction request =
-        gatewayService.getLastRequest(AdHocSubprocessActivateActivitiesInstruction.class);
+    final AdHocSubProcessActivateActivitiesInstruction request =
+        gatewayService.getLastRequest(AdHocSubProcessActivateActivitiesInstruction.class);
     assertThat(request.getElements())
-        .extracting(AdHocSubprocessActivateActivityReference::getElementId)
+        .extracting(AdHocSubProcessActivateActivityReference::getElementId)
         .containsExactly("A", "B", "C", "D", "E");
   }
 
   @ParameterizedTest
   @NullAndEmptySource
   void throwsExceptionWhenElementsCollectionIsNullOrEmpty(final Collection<String> elementIds) {
-    final ActivateAdHocSubprocessActivitiesCommandStep1 command =
-        client.newActivateAdHocSubprocessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY);
+    final ActivateAdHocSubProcessActivitiesCommandStep1 command =
+        client.newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY);
 
     assertThatThrownBy(() -> command.activateElements(elementIds))
         .isInstanceOf(IllegalArgumentException.class)
@@ -84,8 +84,8 @@ public class AdHocSubprocessActivityActivationTest extends ClientRestTest {
 
   @Test
   void throwsExceptionWhenElementsArrayIsEmpty() {
-    final ActivateAdHocSubprocessActivitiesCommandStep1 command =
-        client.newActivateAdHocSubprocessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY);
+    final ActivateAdHocSubProcessActivitiesCommandStep1 command =
+        client.newActivateAdHocSubProcessActivitiesCommand(AD_HOC_SUBPROCESS_INSTANCE_KEY);
 
     assertThatThrownBy(() -> command.activateElements(new String[] {}))
         .isInstanceOf(IllegalArgumentException.class)
@@ -94,8 +94,8 @@ public class AdHocSubprocessActivityActivationTest extends ClientRestTest {
 
   static Stream<
           Function<
-              ActivateAdHocSubprocessActivitiesCommandStep1,
-              ActivateAdHocSubprocessActivitiesCommandStep2>>
+              ActivateAdHocSubProcessActivitiesCommandStep1,
+              ActivateAdHocSubProcessActivitiesCommandStep2>>
       requestModifiers() {
     return Stream.of(
         command -> command.activateElement("A").activateElement("B").activateElement("C"),

@@ -17,7 +17,7 @@ package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
 
-public interface AdHocSubprocessActivityFilter extends SearchRequestFilter {
+public interface AdHocSubProcessActivityFilter extends SearchRequestFilter {
 
   /**
    * Filters ad-hoc sub-process activities by process definition key.
@@ -25,13 +25,13 @@ public interface AdHocSubprocessActivityFilter extends SearchRequestFilter {
    * @param processDefinitionKey the process definition key of the ad-hoc sub-process
    * @return the updated filter
    */
-  AdHocSubprocessActivityFilter processDefinitionKey(final long processDefinitionKey);
+  AdHocSubProcessActivityFilter processDefinitionKey(final long processDefinitionKey);
 
   /**
    * Filters element instances by ad-hoc sub-process id.
    *
-   * @param adHocSubprocessId the id of the ad-hoc sub-process
+   * @param adHocSubProcessId the id of the ad-hoc sub-process
    * @return the updated filter
    */
-  AdHocSubprocessActivityFilter adHocSubprocessId(final String adHocSubprocessId);
+  AdHocSubProcessActivityFilter adHocSubProcessId(final String adHocSubProcessId);
 }

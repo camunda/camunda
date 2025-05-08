@@ -15,34 +15,34 @@
  */
 package io.camunda.client.impl.search.filter;
 
-import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
+import io.camunda.client.api.search.filter.AdHocSubProcessActivityFilter;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 
-public class AdHocSubprocessActivityFilterImpl
+public class AdHocSubProcessActivityFilterImpl
     extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter>
-    implements AdHocSubprocessActivityFilter {
+        io.camunda.client.protocol.rest.AdHocSubProcessActivityFilter>
+    implements AdHocSubProcessActivityFilter {
 
-  private final io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter filter;
+  private final io.camunda.client.protocol.rest.AdHocSubProcessActivityFilter filter;
 
-  public AdHocSubprocessActivityFilterImpl() {
-    filter = new io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter();
+  public AdHocSubProcessActivityFilterImpl() {
+    filter = new io.camunda.client.protocol.rest.AdHocSubProcessActivityFilter();
   }
 
   @Override
-  public AdHocSubprocessActivityFilter processDefinitionKey(final long processDefinitionKey) {
+  public AdHocSubProcessActivityFilter processDefinitionKey(final long processDefinitionKey) {
     filter.setProcessDefinitionKey(String.valueOf(processDefinitionKey));
     return this;
   }
 
   @Override
-  public AdHocSubprocessActivityFilter adHocSubprocessId(final String adHocSubprocessId) {
-    filter.setAdHocSubprocessId(adHocSubprocessId);
+  public AdHocSubProcessActivityFilter adHocSubProcessId(final String adHocSubProcessId) {
+    filter.setAdHocSubProcessId(adHocSubProcessId);
     return this;
   }
 
   @Override
-  protected io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter
+  protected io.camunda.client.protocol.rest.AdHocSubProcessActivityFilter
       getSearchRequestProperty() {
     return filter;
   }

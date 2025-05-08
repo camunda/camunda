@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 @ZeebeIntegration
-public class ActivateAdHocSubprocessActivityTest {
+public class ActivateAdHocSubProcessActivityTest {
 
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
 
@@ -81,7 +81,7 @@ public class ActivateAdHocSubprocessActivityTest {
             tuple("C", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
-    final var activatedAdHocSubprocess =
+    final var activatedAdHocSubProcess =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstance.getProcessInstanceKey())
             .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
@@ -89,8 +89,8 @@ public class ActivateAdHocSubprocessActivityTest {
 
     // when
     client
-        .newActivateAdHocSubprocessActivitiesCommand(
-            String.valueOf(activatedAdHocSubprocess.getKey()))
+        .newActivateAdHocSubProcessActivitiesCommand(
+            String.valueOf(activatedAdHocSubProcess.getKey()))
         .activateElements("A", "C")
         .send()
         .join();
@@ -123,7 +123,7 @@ public class ActivateAdHocSubprocessActivityTest {
         },
         Map.of("condition", false));
 
-    final var activatedAdHocSubprocess =
+    final var activatedAdHocSubProcess =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstance.getProcessInstanceKey())
             .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
@@ -131,8 +131,8 @@ public class ActivateAdHocSubprocessActivityTest {
 
     // when1
     client
-        .newActivateAdHocSubprocessActivitiesCommand(
-            String.valueOf(activatedAdHocSubprocess.getKey()))
+        .newActivateAdHocSubProcessActivitiesCommand(
+            String.valueOf(activatedAdHocSubProcess.getKey()))
         .activateElements("A", "B")
         .send()
         .join();
@@ -152,8 +152,8 @@ public class ActivateAdHocSubprocessActivityTest {
 
     // when2
     client
-        .newActivateAdHocSubprocessActivitiesCommand(
-            String.valueOf(activatedAdHocSubprocess.getKey()))
+        .newActivateAdHocSubProcessActivitiesCommand(
+            String.valueOf(activatedAdHocSubProcess.getKey()))
         .activateElements("ServiceTask")
         .send()
         .join();
@@ -207,7 +207,7 @@ public class ActivateAdHocSubprocessActivityTest {
             tuple("ServiceTask", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
-    final var activatedAdHocSubprocess =
+    final var activatedAdHocSubProcess =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstance.getProcessInstanceKey())
             .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
@@ -215,8 +215,8 @@ public class ActivateAdHocSubprocessActivityTest {
 
     // when
     client
-        .newActivateAdHocSubprocessActivitiesCommand(
-            String.valueOf(activatedAdHocSubprocess.getKey()))
+        .newActivateAdHocSubProcessActivitiesCommand(
+            String.valueOf(activatedAdHocSubProcess.getKey()))
         .activateElements("A", "ServiceTask")
         .send()
         .join();
@@ -254,7 +254,7 @@ public class ActivateAdHocSubprocessActivityTest {
           adHocSubProcess.task("C");
         });
 
-    final var activatedAdHocSubprocess =
+    final var activatedAdHocSubProcess =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstance.getProcessInstanceKey())
             .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
@@ -264,8 +264,8 @@ public class ActivateAdHocSubprocessActivityTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newActivateAdHocSubprocessActivitiesCommand(
-                        String.valueOf(activatedAdHocSubprocess.getKey()))
+                    .newActivateAdHocSubProcessActivitiesCommand(
+                        String.valueOf(activatedAdHocSubProcess.getKey()))
                     .activateElements("A", "A")
                     .send()
                     .join())
@@ -273,7 +273,7 @@ public class ActivateAdHocSubprocessActivityTest {
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining(
             "Command 'ACTIVATE' rejected with code 'INVALID_ARGUMENT': Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given."
-                .formatted(activatedAdHocSubprocess.getKey()));
+                .formatted(activatedAdHocSubProcess.getKey()));
   }
 
   private void deployAndStartInstance(

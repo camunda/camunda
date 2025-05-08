@@ -21,7 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
@@ -100,7 +100,7 @@ import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -115,7 +115,7 @@ import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisti
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.client.impl.command.ActivateAdHocSubprocessActivitiesCommandImpl;
+import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
@@ -187,7 +187,7 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
-import io.camunda.client.impl.search.request.AdHocSubprocessActivitySearchRequestImpl;
+import io.camunda.client.impl.search.request.AdHocSubProcessActivitySearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
@@ -713,26 +713,26 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest() {
-    return new AdHocSubprocessActivitySearchRequestImpl(httpClient, jsonMapper);
+  public AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest() {
+    return new AdHocSubProcessActivitySearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest(
-      final long processDefinitionKey, final String adHocSubprocessId) {
-    return newAdHocSubprocessActivitySearchRequest()
+  public AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest(
+      final long processDefinitionKey, final String adHocSubProcessId) {
+    return newAdHocSubProcessActivitySearchRequest()
         .filter(
             filter ->
                 filter
                     .processDefinitionKey(processDefinitionKey)
-                    .adHocSubprocessId(adHocSubprocessId));
+                    .adHocSubProcessId(adHocSubProcessId));
   }
 
   @Override
-  public ActivateAdHocSubprocessActivitiesCommandStep1 newActivateAdHocSubprocessActivitiesCommand(
-      final String adHocSubprocessInstanceKey) {
-    return new ActivateAdHocSubprocessActivitiesCommandImpl(
-        httpClient, jsonMapper, adHocSubprocessInstanceKey);
+  public ActivateAdHocSubProcessActivitiesCommandStep1 newActivateAdHocSubProcessActivitiesCommand(
+      final String adHocSubProcessInstanceKey) {
+    return new ActivateAdHocSubProcessActivitiesCommandImpl(
+        httpClient, jsonMapper, adHocSubProcessInstanceKey);
   }
 
   @Override

@@ -61,7 +61,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenActivatingExistingElementThenTheElementIsActivated() {
+      givenRunningAdHocSubProcessInstanceWhenActivatingExistingElementThenTheElementIsActivated() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
@@ -84,7 +84,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenActivatingExistingElementThenTheElementHasCorrectTreePath() {
+      givenRunningAdHocSubProcessInstanceWhenActivatingExistingElementThenTheElementHasCorrectTreePath() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
@@ -114,7 +114,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubprocessInstanceWhenActivatingElementsThenAdhocSubprocessIsOnlyCompletedWhenCompletionConditionIsMet() {
+      givenRunningAdHocSubProcessInstanceWhenActivatingElementsThenAdHocSubProcessIsOnlyCompletedWhenCompletionConditionIsMet() {
     // prepare the test case by setting the completion condition variable to false which ensures
     // that the ad-hoc sub-process doesn't complete before we want it to.
     ENGINE
@@ -163,7 +163,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenElementIsSuccessfullyActivatedThenActivatedEventIsWrittenToLog() {
+      givenRunningAdHocSubProcessInstanceWhenElementIsSuccessfullyActivatedThenActivatedEventIsWrittenToLog() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
@@ -180,7 +180,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenActivatingMoreThanOneElementThenAllGivenElementsAreActivated() {
+      givenRunningAdHocSubProcessInstanceWhenActivatingMoreThanOneElementThenAllGivenElementsAreActivated() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
@@ -203,7 +203,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenActivatingElementThatDoesNotExistThenTheActivationIsRejected() {
+      givenRunningAdHocSubProcessInstanceWhenActivatingElementThatDoesNotExistThenTheActivationIsRejected() {
     final var nonExistingActivities = List.of("does_not_exist");
     final var rejection =
         ENGINE
@@ -230,13 +230,13 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenAdhocSubProcessThatDoesNotExistWhenActivatingElementsThenTheActivationIsRejected() {
-    final var nonExistingAdhocSubProcessInstanceKey = "1";
+      givenAdHocSubProcessThatDoesNotExistWhenActivatingElementsThenTheActivationIsRejected() {
+    final var nonExistingAdHocSubProcessInstanceKey = "1";
 
     final var rejection =
         ENGINE
             .adHocSubProcessActivity()
-            .withAdHocSubProcessInstanceKey(nonExistingAdhocSubProcessInstanceKey)
+            .withAdHocSubProcessInstanceKey(nonExistingAdHocSubProcessInstanceKey)
             .withElementIds("A")
             .expectRejection()
             .activate();
@@ -246,11 +246,11 @@ public class ActivateAdHocSubProcessActivityTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'."
-                .formatted(nonExistingAdhocSubProcessInstanceKey));
+                .formatted(nonExistingAdHocSubProcessInstanceKey));
 
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
-                .withAdHocSubProcessInstanceKey(nonExistingAdhocSubProcessInstanceKey)
+                .withAdHocSubProcessInstanceKey(nonExistingAdHocSubProcessInstanceKey)
                 .onlyCommandRejections()
                 .limit(1))
         .describedAs(
@@ -259,7 +259,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void givenNotActiveAdhocSubProcessWhenActivatingElementsThenTheActivationIsRejected() {
+  public void givenNotActiveAdHocSubProcessWhenActivatingElementsThenTheActivationIsRejected() {
     final var faultyProcessId = "process-rejection-test";
     deployProcess(
         faultyProcessId,
@@ -273,19 +273,19 @@ public class ActivateAdHocSubProcessActivityTest {
         });
 
     final var faultyProcessInstanceKey = getProcessInstanceKey(faultyProcessId);
-    final var faultyAdhocSubProcessInstanceKey =
+    final var faultyAdHocSubProcessInstanceKey =
         getAdHocSubProcessInstanceKey(faultyProcessInstanceKey);
 
     ENGINE
         .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(faultyAdhocSubProcessInstanceKey))
+        .withAdHocSubProcessInstanceKey(String.valueOf(faultyAdHocSubProcessInstanceKey))
         .withElementIds("A")
         .activate();
 
     final var rejection =
         ENGINE
             .adHocSubProcessActivity()
-            .withAdHocSubProcessInstanceKey(String.valueOf(faultyAdhocSubProcessInstanceKey))
+            .withAdHocSubProcessInstanceKey(String.valueOf(faultyAdHocSubProcessInstanceKey))
             .withElementIds("A")
             .expectRejection()
             .activate();
@@ -295,12 +295,12 @@ public class ActivateAdHocSubProcessActivityTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active."
-                .formatted(faultyAdhocSubProcessInstanceKey));
+                .formatted(faultyAdHocSubProcessInstanceKey));
   }
 
   @Test
   public void
-      givenRunningAdhocSubProcessWhenAttemptingToActivateDuplicateElementsThenTheActivationIsRejected() {
+      givenRunningAdHocSubProcessWhenAttemptingToActivateDuplicateElementsThenTheActivationIsRejected() {
     final var rejection =
         ENGINE
             .adHocSubProcessActivity()

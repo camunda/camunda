@@ -18,33 +18,34 @@ package io.camunda.client.adhocsubprocess;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
-import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse.AdHocSubprocessActivity;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivityResult;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivityResult.TypeEnum;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivitySearchQuery;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivitySearchQueryResult;
+import io.camunda.client.api.search.enums.AdHocSubProcessActivityResultType;
+import io.camunda.client.api.search.response.AdHocSubProcessActivityResponse;
+import io.camunda.client.api.search.response.AdHocSubProcessActivityResponse.AdHocSubProcessActivity;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivityResult;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivityResult.TypeEnum;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivitySearchQuery;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivitySearchQueryResult;
 import io.camunda.client.util.ClientRestTest;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
-public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
+public class AdHocSubProcessActivitySearchTest extends ClientRestTest {
 
   private static final Long PROCESS_DEFINITION_KEY = 2251799813685281L;
-  private static final String PROCESS_DEFINITION_ID = "TestParentAdHocSubprocess";
-  private static final String AD_HOC_SUBPROCESS_ID = "TestAdHocSubprocess";
+  private static final String PROCESS_DEFINITION_ID = "TestParentAdHocSubProcess";
+  private static final String AD_HOC_SUBPROCESS_ID = "TestAdHocSubProcess";
 
   @Test
-  void shouldSearchAdHocSubprocessActivities() {
+  void shouldSearchAdHocSubProcessActivities() {
     // given
-    final AdHocSubprocessActivitySearchQueryResult searchQueryResult =
-        new AdHocSubprocessActivitySearchQueryResult();
+    final AdHocSubProcessActivitySearchQueryResult searchQueryResult =
+        new AdHocSubProcessActivitySearchQueryResult();
     searchQueryResult.addItemsItem(
-        adHocSubprocessActivityResult(
+        adHocSubProcessActivityResult(
             r -> {
               r.processDefinitionKey(String.valueOf(PROCESS_DEFINITION_KEY));
               r.processDefinitionId(PROCESS_DEFINITION_ID);
-              r.setAdHocSubprocessId(AD_HOC_SUBPROCESS_ID);
+              r.setAdHocSubProcessId(AD_HOC_SUBPROCESS_ID);
               r.setElementId("task1");
               r.setElementName("Task #1");
               r.setType(TypeEnum.SERVICE_TASK);
@@ -52,11 +53,11 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
               r.setTenantId("<default>");
             }));
     searchQueryResult.addItemsItem(
-        adHocSubprocessActivityResult(
+        adHocSubProcessActivityResult(
             r -> {
               r.processDefinitionKey(String.valueOf(PROCESS_DEFINITION_KEY));
               r.processDefinitionId(PROCESS_DEFINITION_ID);
-              r.setAdHocSubprocessId(AD_HOC_SUBPROCESS_ID);
+              r.setAdHocSubProcessId(AD_HOC_SUBPROCESS_ID);
               r.setElementId("task2");
               r.setElementName("Task #2");
               r.setType(TypeEnum.USER_TASK);
@@ -64,33 +65,33 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
               r.setTenantId("<default>");
             }));
 
-    gatewayService.onAdHocSubprocessActivitySearch(searchQueryResult);
+    gatewayService.onAdHocSubProcessActivitySearch(searchQueryResult);
 
     // when
-    final AdHocSubprocessActivityResponse response =
+    final AdHocSubProcessActivityResponse response =
         client
-            .newAdHocSubprocessActivitySearchRequest(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
+            .newAdHocSubProcessActivitySearchRequest(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
             .send()
             .join();
 
     // then
-    final AdHocSubprocessActivitySearchQuery request =
-        gatewayService.getLastRequest(AdHocSubprocessActivitySearchQuery.class);
+    final AdHocSubProcessActivitySearchQuery request =
+        gatewayService.getLastRequest(AdHocSubProcessActivitySearchQuery.class);
     assertThat(request.getFilter().getProcessDefinitionKey())
         .isEqualTo(PROCESS_DEFINITION_KEY.toString());
-    assertThat(request.getFilter().getAdHocSubprocessId()).isEqualTo(AD_HOC_SUBPROCESS_ID);
+    assertThat(request.getFilter().getAdHocSubProcessId()).isEqualTo(AD_HOC_SUBPROCESS_ID);
 
     assertThat(response.getItems())
         .hasSize(2)
         .extracting(
-            AdHocSubprocessActivity::getProcessDefinitionKey,
-            AdHocSubprocessActivity::getProcessDefinitionId,
-            AdHocSubprocessActivity::getAdHocSubprocessId,
-            AdHocSubprocessActivity::getElementId,
-            AdHocSubprocessActivity::getElementName,
-            AdHocSubprocessActivity::getType,
-            AdHocSubprocessActivity::getDocumentation,
-            AdHocSubprocessActivity::getTenantId)
+            AdHocSubProcessActivity::getProcessDefinitionKey,
+            AdHocSubProcessActivity::getProcessDefinitionId,
+            AdHocSubProcessActivity::getAdHocSubProcessId,
+            AdHocSubProcessActivity::getElementId,
+            AdHocSubProcessActivity::getElementName,
+            AdHocSubProcessActivity::getType,
+            AdHocSubProcessActivity::getDocumentation,
+            AdHocSubProcessActivity::getTenantId)
         .containsExactly(
             tuple(
                 PROCESS_DEFINITION_KEY,
@@ -98,7 +99,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 AD_HOC_SUBPROCESS_ID,
                 "task1",
                 "Task #1",
-                io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType.SERVICE_TASK,
+                AdHocSubProcessActivityResultType.SERVICE_TASK,
                 "The first task in the ad-hoc sub-process",
                 "<default>"),
             tuple(
@@ -107,7 +108,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 AD_HOC_SUBPROCESS_ID,
                 "task2",
                 "Task #2",
-                io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType.USER_TASK,
+                AdHocSubProcessActivityResultType.USER_TASK,
                 "The second task in the ad-hoc sub-process",
                 "<default>"));
   }
@@ -120,8 +121,8 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
             + "  \"items\": [\n"
             + "    {\n"
             + "      \"processDefinitionKey\": \"2251799813685281\",\n"
-            + "      \"processDefinitionId\": \"TestParentAdHocSubprocess\",\n"
-            + "      \"adHocSubprocessId\": \"TestAdHocSubprocess\",\n"
+            + "      \"processDefinitionId\": \"TestParentAdHocSubProcess\",\n"
+            + "      \"adHocSubProcessId\": \"TestAdHocSubProcess\",\n"
             + "      \"elementId\": \"unknownTask\",\n"
             + "      \"elementName\": \"Unknown Task\",\n"
             + "      \"type\": \"START_EVENT\",\n"
@@ -130,12 +131,12 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
             + "  ]\n"
             + "}";
 
-    gatewayService.onAdHocSubprocessActivitySearch(responseJson);
+    gatewayService.onAdHocSubProcessActivitySearch(responseJson);
 
     // when
-    final AdHocSubprocessActivityResponse response =
+    final AdHocSubProcessActivityResponse response =
         client
-            .newAdHocSubprocessActivitySearchRequest(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
+            .newAdHocSubProcessActivitySearchRequest(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
             .send()
             .join();
 
@@ -143,14 +144,14 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
     assertThat(response.getItems())
         .hasSize(1)
         .extracting(
-            AdHocSubprocessActivity::getProcessDefinitionKey,
-            AdHocSubprocessActivity::getProcessDefinitionId,
-            AdHocSubprocessActivity::getAdHocSubprocessId,
-            AdHocSubprocessActivity::getElementId,
-            AdHocSubprocessActivity::getElementName,
-            AdHocSubprocessActivity::getType,
-            AdHocSubprocessActivity::getDocumentation,
-            AdHocSubprocessActivity::getTenantId)
+            AdHocSubProcessActivity::getProcessDefinitionKey,
+            AdHocSubProcessActivity::getProcessDefinitionId,
+            AdHocSubProcessActivity::getAdHocSubProcessId,
+            AdHocSubProcessActivity::getElementId,
+            AdHocSubProcessActivity::getElementName,
+            AdHocSubProcessActivity::getType,
+            AdHocSubProcessActivity::getDocumentation,
+            AdHocSubProcessActivity::getTenantId)
         .containsExactly(
             tuple(
                 PROCESS_DEFINITION_KEY,
@@ -158,15 +159,14 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 AD_HOC_SUBPROCESS_ID,
                 "unknownTask",
                 "Unknown Task",
-                io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType
-                    .UNKNOWN_ENUM_VALUE,
+                AdHocSubProcessActivityResultType.UNKNOWN_ENUM_VALUE,
                 null,
                 "<default>"));
   }
 
-  private static AdHocSubprocessActivityResult adHocSubprocessActivityResult(
-      final Consumer<AdHocSubprocessActivityResult> consumer) {
-    final AdHocSubprocessActivityResult result = new AdHocSubprocessActivityResult();
+  private static AdHocSubProcessActivityResult adHocSubProcessActivityResult(
+      final Consumer<AdHocSubProcessActivityResult> consumer) {
+    final AdHocSubProcessActivityResult result = new AdHocSubProcessActivityResult();
     consumer.accept(result);
     return result;
   }
