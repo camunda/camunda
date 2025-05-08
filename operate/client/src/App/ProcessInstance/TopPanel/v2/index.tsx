@@ -58,6 +58,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -135,22 +136,9 @@ const TopPanel: React.FC = observer(() => {
     (flowNodeId) => businessObjects?.[flowNodeId],
   );
 
-  const subprocessOverlays: SubprocessOverlay[] = [];
-
-  selectableFlowNodesWithIncidents?.forEach((flowNode) => {
-    while (flowNode?.$parent) {
-      const parent = flowNode.$parent;
-      if (parent.$type === 'bpmn:SubProcess') {
-        subprocessOverlays.push({
-          payload: {flowNodeState: 'incidents'},
-          type: OVERLAY_TYPE_STATE,
-          flowNodeId: parent.id,
-          position: overlayPositions.subprocessWithIncidents,
-        });
-      }
-      flowNode = parent;
-    }
-  });
+  const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+    selectableFlowNodesWithIncidents,
+  );
 
   const allFlowNodeStateOverlays = [
     ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
