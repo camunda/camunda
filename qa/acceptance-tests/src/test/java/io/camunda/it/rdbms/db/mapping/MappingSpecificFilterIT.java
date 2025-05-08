@@ -115,7 +115,7 @@ public class MappingSpecificFilterIT {
     assertThat(mappings.total()).isEqualTo(1);
     assertThat(mappings.items())
         .hasSize(1)
-        .extracting(MappingEntity::mappingId)
+        .extracting(MappingEntity::mappingRuleId)
         .containsOnly(mappingId1);
   }
 
