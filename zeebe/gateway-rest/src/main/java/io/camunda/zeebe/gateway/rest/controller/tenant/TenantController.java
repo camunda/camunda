@@ -9,14 +9,18 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
+import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
@@ -47,14 +51,17 @@ public class TenantController {
   private final TenantServices tenantServices;
   private final UserServices userServices;
   private final MappingServices mappingServices;
+  private final GroupServices groupServices;
 
   public TenantController(
       final TenantServices tenantServices,
       final UserServices userServices,
-      final MappingServices mappingServices) {
+      final MappingServices mappingServices,
+      final GroupServices groupServices) {
     this.tenantServices = tenantServices;
     this.userServices = userServices;
     this.mappingServices = mappingServices;
+    this.groupServices = groupServices;
   }
 
   @CamundaPostMapping
@@ -193,6 +200,16 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
+  @CamundaPostMapping(path = "/{tenantId}/groups/search")
+  public ResponseEntity<GroupSearchQueryResult> searchGroupsInTenant(
+      @PathVariable final String tenantId,
+      @RequestBody(required = false) final GroupSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toGroupQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            groupQuery -> searchGroupsInTenant(tenantId, groupQuery));
+  }
+
   private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {
     return RequestMapper.executeServiceMethod(
         () ->
@@ -258,6 +275,20 @@ public class TenantController {
     }
   }
 
+  private ResponseEntity<GroupSearchQueryResult> searchGroupsInTenant(
+      final String tenantId, final GroupQuery groupQuery) {
+    try {
+      final var composedGroupQuery = buildGroupQuery(tenantId, groupQuery);
+      final var result =
+          groupServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(composedGroupQuery);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   private MappingQuery buildMappingQuery(final String tenantId, final MappingQuery mappingQuery) {
     return mappingQuery.toBuilder()
         .filter(mappingQuery.filter().toBuilder().tenantId(tenantId).build())
@@ -267,6 +298,12 @@ public class TenantController {
   private UserQuery buildUserQuery(final String tenantId, final UserQuery userQuery) {
     return userQuery.toBuilder()
         .filter(userQuery.filter().toBuilder().tenantId(tenantId).build())
+        .build();
+  }
+
+  private GroupQuery buildGroupQuery(final String tenantId, final GroupQuery groupQuery) {
+    return groupQuery.toBuilder()
+        .filter(groupQuery.filter().toBuilder().tenantId(tenantId).build())
         .build();
   }
 
