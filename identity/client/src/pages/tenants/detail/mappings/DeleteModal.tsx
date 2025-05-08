@@ -40,7 +40,7 @@ const DeleteModal: FC<RemoveTenantMappingModalProps> = ({
     if (tenant && mapping) {
       const { success } = await callUnassignMapping({
         tenantId: tenant,
-        mappingId: mapping.mappingId,
+        mappingRuleId: mapping.mappingRuleId,
       });
 
       if (success) {
@@ -66,9 +66,9 @@ const DeleteModal: FC<RemoveTenantMappingModalProps> = ({
       <p>
         <Translate
           i18nKey="removeMappingFromTenant"
-          values={{ mappingId: mapping.mappingId }}
+          values={{ mappingRuleId: mapping.mappingRuleId }}
         >
-          Are you sure you want to remove <strong>{mapping.mappingId}</strong>{" "}
+          Are you sure you want to remove <strong>{mapping.mappingRuleId}</strong>{" "}
           from this tenant?
         </Translate>
       </p>

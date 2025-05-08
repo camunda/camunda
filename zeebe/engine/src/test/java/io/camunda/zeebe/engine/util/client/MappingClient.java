@@ -22,16 +22,16 @@ public class MappingClient {
     this.writer = writer;
   }
 
-  public MappingCreateClient newMapping(final String mappingId) {
-    return new MappingCreateClient(writer, mappingId);
+  public MappingCreateClient newMapping(final String mappingRuleId) {
+    return new MappingCreateClient(writer, mappingRuleId);
   }
 
-  public MappingDeleteClient deleteMapping(final String mappingId) {
-    return new MappingDeleteClient(writer, mappingId);
+  public MappingDeleteClient deleteMapping(final String mappingRuleId) {
+    return new MappingDeleteClient(writer, mappingRuleId);
   }
 
-  public MappingUpdateClient updateMapping(final String mappingId) {
-    return new MappingUpdateClient(writer, mappingId);
+  public MappingUpdateClient updateMapping(final String mappingRuleId) {
+    return new MappingUpdateClient(writer, mappingRuleId);
   }
 
   public static class MappingCreateClient {
@@ -54,10 +54,10 @@ public class MappingClient {
     private final MappingRecord mappingRecord;
     private Function<Long, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public MappingCreateClient(final CommandWriter writer, final String mappingId) {
+    public MappingCreateClient(final CommandWriter writer, final String mappingRuleId) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
-      mappingRecord.setMappingId(mappingId);
+      mappingRecord.setMappingRuleId(mappingRuleId);
     }
 
     public MappingCreateClient withClaimName(final String claimName) {
@@ -111,10 +111,10 @@ public class MappingClient {
     private final MappingRecord mappingRecord;
     private Function<Long, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public MappingDeleteClient(final CommandWriter writer, final String mappingId) {
+    public MappingDeleteClient(final CommandWriter writer, final String mappingRuleId) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
-      mappingRecord.setMappingId(mappingId);
+      mappingRecord.setMappingRuleId(mappingRuleId);
     }
 
     public Record<MappingRecordValue> delete() {
@@ -136,7 +136,7 @@ public class MappingClient {
                 .withIntent(MappingIntent.UPDATED)
                 .filter(
                     mappingRecordValueRecord ->
-                        mappingRecordValueRecord.getValue().getMappingId().equals(position))
+                        mappingRecordValueRecord.getValue().getMappingRuleId().equals(position))
                 .getFirst();
 
     private static final Function<String, Record<MappingRecordValue>> REJECTION_SUPPLIER =
@@ -146,26 +146,26 @@ public class MappingClient {
                 .withIntent(MappingIntent.UPDATE)
                 .filter(
                     mappingRecordValueRecord ->
-                        mappingRecordValueRecord.getValue().getMappingId().equals(position))
+                        mappingRecordValueRecord.getValue().getMappingRuleId().equals(position))
                 .getFirst();
     private final CommandWriter writer;
     private final MappingRecord mappingRecord;
     private Function<String, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public MappingUpdateClient(final CommandWriter writer, final String mappingId) {
+    public MappingUpdateClient(final CommandWriter writer, final String mappingRuleId) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
-      mappingRecord.setMappingId(mappingId);
+      mappingRecord.setMappingRuleId(mappingRuleId);
     }
 
     public Record<MappingRecordValue> update() {
       writer.writeCommand(MappingIntent.UPDATE, mappingRecord);
-      return expectation.apply(mappingRecord.getMappingId());
+      return expectation.apply(mappingRecord.getMappingRuleId());
     }
 
     public Record<MappingRecordValue> update(final String username) {
       writer.writeCommand(MappingIntent.UPDATE, username, mappingRecord);
-      return expectation.apply(mappingRecord.getMappingId());
+      return expectation.apply(mappingRecord.getMappingRuleId());
     }
 
     public MappingUpdateClient withClaimName(final String claimName) {

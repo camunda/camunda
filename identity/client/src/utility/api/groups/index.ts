@@ -92,17 +92,17 @@ export const getMappingsByGroupId: ApiDefinition<
 > = ({ groupId }) =>
   apiPost(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/search`);
 
-type AssignGroupMappingParams = GetGroupMappingsParams & { mappingId: string };
+type AssignGroupMappingParams = GetGroupMappingsParams & { mappingRuleId: string };
 export const assignGroupMapping: ApiDefinition<
   undefined,
   AssignGroupMappingParams
-> = ({ groupId, mappingId }) => {
-  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingId}`);
+> = ({ groupId, mappingRuleId }) => {
+  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingRuleId}`);
 };
 
 type UnassignGroupMappingParams = AssignGroupMappingParams;
 export const unassignGroupMapping: ApiDefinition<
   undefined,
   UnassignGroupMappingParams
-> = ({ groupId, mappingId }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingId}`);
+> = ({ groupId, mappingRuleId }) =>
+  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingRuleId}`);

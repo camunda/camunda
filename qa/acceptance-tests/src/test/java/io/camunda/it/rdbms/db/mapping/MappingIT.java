@@ -40,7 +40,7 @@ public class MappingIT {
     createAndSaveMapping(rdbmsWriter, randomizedMapping);
 
     final var mapping =
-        rdbmsService.getMappingReader().findOne(randomizedMapping.mappingId()).orElse(null);
+        rdbmsService.getMappingReader().findOne(randomizedMapping.mappingRuleId()).orElse(null);
     assertThat(mapping).isNotNull();
     assertThat(mapping).usingRecursiveComparison().isEqualTo(randomizedMapping);
   }
@@ -55,18 +55,18 @@ public class MappingIT {
     createAndSaveMapping(rdbmsWriter, randomizedMapping);
 
     // Verify the mapping is saved
-    final var mappingId = randomizedMapping.mappingId();
-    final var mapping = rdbmsService.getMappingReader().findOne(mappingId).orElse(null);
+    final var mappingRuleId = randomizedMapping.mappingRuleId();
+    final var mapping = rdbmsService.getMappingReader().findOne(mappingRuleId).orElse(null);
     assertThat(mapping).isNotNull();
     assertThat(mapping).usingRecursiveComparison().isEqualTo(randomizedMapping);
 
     // Delete the mapping
     final RdbmsWriter writer = rdbmsService.createWriter(1L);
-    writer.getMappingWriter().delete(mappingId);
+    writer.getMappingWriter().delete(mappingRuleId);
     writer.flush();
 
     // Verify the mapping is deleted
-    final var deletedMappingResult = rdbmsService.getMappingReader().findOne(mappingId);
+    final var deletedMappingResult = rdbmsService.getMappingReader().findOne(mappingRuleId);
     assertThat(deletedMappingResult).isEmpty();
   }
 
@@ -164,8 +164,8 @@ public class MappingIT {
         mappingReader.search(
             new MappingQuery(
                 new MappingFilter.Builder()
-                    .mappingKey(randomizedMapping.mappingKey())
-                    .mappingId(randomizedMapping.mappingId())
+                    .mappingRuleKey(randomizedMapping.mappingRuleKey())
+                    .mappingRuleId(randomizedMapping.mappingRuleId())
                     .claimName(randomizedMapping.claimName())
                     .claimValue(randomizedMapping.claimValue())
                     .name(randomizedMapping.name())
@@ -175,7 +175,7 @@ public class MappingIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().mappingId())
-        .isEqualTo(randomizedMapping.mappingId());
+    assertThat(searchResult.items().getFirst().mappingRuleId())
+        .isEqualTo(randomizedMapping.mappingRuleId());
   }
 }

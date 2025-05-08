@@ -47,14 +47,14 @@ public class MappingCreateAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToCreateMappingWithDefaultUser() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
 
     // when
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .create(DEFAULT_USER.getUsername());
@@ -62,7 +62,7 @@ public class MappingCreateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.mappingRecords(MappingIntent.CREATED)
-                .withMappingId(mappingId)
+                .withMappingRuleId(mappingRuleId)
                 .withClaimName(claimName)
                 .withClaimValue(claimValue)
                 .exists())
@@ -72,7 +72,7 @@ public class MappingCreateAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToCreateMappingWithPermissions() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var user = createUser();
@@ -81,7 +81,7 @@ public class MappingCreateAuthorizationTest {
     // when
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .create(user.getUsername());
@@ -89,7 +89,7 @@ public class MappingCreateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.mappingRecords(MappingIntent.CREATED)
-                .withMappingId(mappingId)
+                .withMappingRuleId(mappingRuleId)
                 .withClaimName(claimName)
                 .withClaimValue(claimValue)
                 .exists())
@@ -99,7 +99,7 @@ public class MappingCreateAuthorizationTest {
   @Test
   public void shouldBeUnAuthorizedToCreateMappingWithoutPermissions() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var user = createUser();
@@ -108,7 +108,7 @@ public class MappingCreateAuthorizationTest {
     final var rejection =
         engine
             .mapping()
-            .newMapping(mappingId)
+            .newMapping(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .expectRejection()

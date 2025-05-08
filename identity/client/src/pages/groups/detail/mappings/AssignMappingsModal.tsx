@@ -43,9 +43,9 @@ const AssignMappingsModal: FC<
 
   const unassignedMappings =
     mappingSearchResults?.items.filter(
-      ({ mappingId }) =>
-        !assignedMappings.some((mapping) => mapping.mappingId === mappingId) &&
-        !selectedMappings.some((mapping) => mapping.mappingId === mappingId),
+      ({ mappingRuleId }) =>
+        !assignedMappings.some((mapping) => mapping.mappingRuleId === mappingRuleId) &&
+        !selectedMappings.some((mapping) => mapping.mappingRuleId === mappingRuleId),
     ) || [];
 
   const onSelectMapping = (mapping: Mapping) => {
@@ -53,10 +53,10 @@ const AssignMappingsModal: FC<
   };
 
   const onUnselectMapping =
-    ({ mappingId }: Mapping) =>
+    ({ mappingRuleId }: Mapping) =>
     () => {
       setSelectedMappings(
-        selectedMappings.filter((mapping) => mapping.mappingId !== mappingId),
+        selectedMappings.filter((mapping) => mapping.mappingRuleId !== mappingRuleId),
       );
     };
 
@@ -68,8 +68,8 @@ const AssignMappingsModal: FC<
     setLoadingAssignMapping(true);
 
     const results = await Promise.all(
-      selectedMappings.map(({ mappingId }) =>
-        callAssignMapping({ mappingId, groupId: group.id }),
+      selectedMappings.map(({ mappingRuleId }) =>
+        callAssignMapping({ mappingRuleId, groupId: group.id }),
       ),
     );
 
@@ -107,13 +107,13 @@ const AssignMappingsModal: FC<
         <SelectedMappings>
           {selectedMappings.map((mapping) => (
             <Tag
-              key={mapping.mappingId}
+              key={mapping.mappingRuleId}
               onClose={onUnselectMapping(mapping)}
               size="md"
               type="blue"
               filter
             >
-              {mapping.mappingId}
+              {mapping.mappingRuleId}
             </Tag>
           ))}
         </SelectedMappings>
@@ -121,9 +121,9 @@ const AssignMappingsModal: FC<
       <DropdownSearch
         autoFocus
         items={unassignedMappings}
-        itemTitle={({ mappingId }) => mappingId}
+        itemTitle={({ mappingRuleId }) => mappingRuleId}
         itemSubTitle={({ name }) => name}
-        placeholder={t("searchByMappingId")}
+        placeholder={t("searchByMappingRuleId")}
         onSelect={onSelectMapping}
       />
       {!loading && error && (

@@ -63,7 +63,8 @@ final class UserTenantsMigrationHandlerTest {
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord().setTenantId("tenantId")));
     when(mappingServices.createMapping(any()))
         .thenReturn(
-            CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
+            CompletableFuture.completedFuture(
+                new MappingRecord().setMappingRuleId("mappingRuleId")));
 
     this.managementIdentityClient = managementIdentityClient;
     this.tenantServices = tenantServices;
@@ -98,7 +99,8 @@ final class UserTenantsMigrationHandlerTest {
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord().setTenantId("tenantId")));
     when(mappingServices.createMapping(any()))
         .thenReturn(
-            CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
+            CompletableFuture.completedFuture(
+                new MappingRecord().setMappingRuleId("mappingRuleId")));
     when(tenantServices.addMember(any(TenantMemberRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord().setTenantId("tenantId")));
 

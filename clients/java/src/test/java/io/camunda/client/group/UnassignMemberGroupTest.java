@@ -30,7 +30,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
 
   public static final String GROUP_ID = "groupId";
   public static final String USERNAME = "username";
-  public static final String MAPPING_ID = "mappingId";
+  public static final String MAPPING_ID = "mappingRuleId";
 
   @Test
   void shouldUnassignUserFromGroup() {
@@ -84,7 +84,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldUnassignMappingFromGroup() {
     // when
-    client.newUnassignMappingFromGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join();
+    client.newUnassignMappingFromGroupCommand(GROUP_ID).mappingRuleId(MAPPING_ID).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -102,7 +102,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
             () ->
                 client
                     .newUnassignMappingFromGroupCommand(GROUP_ID)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -120,7 +120,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
             () ->
                 client
                     .newUnassignMappingFromGroupCommand(GROUP_ID)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -138,7 +138,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
             () ->
                 client
                     .newUnassignMappingFromGroupCommand(GROUP_ID)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
