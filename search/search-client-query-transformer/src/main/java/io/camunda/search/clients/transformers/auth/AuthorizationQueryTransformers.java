@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.auth;
 
 import static java.util.Map.entry;
 
+import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -29,6 +30,7 @@ public final class AuthorizationQueryTransformers {
   private static final Map<Class<? extends SearchQueryBase>, AuthorizationQueryTransformer>
       TRANSFORMERS =
           Map.ofEntries(
+              entry(BatchOperationQuery.class, new BatchOperationAuthorizationQueryTransformer()),
               entry(
                   DecisionDefinitionQuery.class,
                   new DecisionDefinitionAuthorizationQueryTransformer()),
