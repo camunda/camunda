@@ -7,7 +7,6 @@
  */
 package io.camunda.search.filter;
 
-import io.camunda.search.filter.GroupFilter.Builder;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
@@ -18,7 +17,8 @@ public record RoleFilter(
     String name,
     String description,
     Set<String> memberIds,
-    EntityType memberType)
+    EntityType memberType,
+    Set<String> roleIds)
     implements FilterBase {
   public Builder toBuilder() {
     return new Builder().roleKey(roleKey).roleId(roleId).name(name).memberIds(memberIds);
@@ -31,6 +31,7 @@ public record RoleFilter(
     private String description;
     private Set<String> memberIds;
     private EntityType memberType;
+    private Set<String> roleIds;
 
     public Builder roleKey(final Long value) {
       roleKey = value;
@@ -66,9 +67,14 @@ public record RoleFilter(
       return this;
     }
 
+    public Builder roleIds(final Set<String> value) {
+      roleIds = value == null ? Set.of() : value;
+      return this;
+    }
+
     @Override
     public RoleFilter build() {
-      return new RoleFilter(roleKey, roleId, name, description, memberIds, memberType);
+      return new RoleFilter(roleKey, roleId, name, description, memberIds, memberType, roleIds);
     }
   }
 }

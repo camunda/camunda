@@ -136,15 +136,21 @@ public class RoleQueryControllerTest extends RestControllerTest {
              "items": [
                {
                  "roleKey": "100",
-                 "name": "Role 1"
+                 "name": "Role 1",
+                 "roleId": "role1",
+                 "description": "description 1"
                },
                {
                  "roleKey": "200",
-                 "name": "Role 2"
+                 "name": "Role 2",
+                 "roleId": "role2",
+                 "description": "description 2"
                },
                {
                  "roleKey": "300",
-                 "name": "Role 12"
+                 "name": "Role 12",
+                 "roleId": "role12",
+                 "description": "description 12"
                }
              ],
              "page": {
