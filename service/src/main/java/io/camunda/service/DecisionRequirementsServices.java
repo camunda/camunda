@@ -8,13 +8,11 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.exception.ForbiddenException;
@@ -54,21 +52,7 @@ public final class DecisionRequirementsServices
                 authentication, Authorization.of(a -> a.decisionRequirementsDefinition().read())))
         .searchDecisionRequirements(
             decisionRequirementsSearchQuery(
-                q ->
-                    q.filter(query.filter())
-                        .sort(query.sort())
-                        .page(query.page())
-                        .resultConfig(
-                            ofNullable(query.resultConfig())
-                                .orElseGet(this::defaultSearchResultConfig))));
-  }
-
-  /**
-   * Default search result configuration excluding XML field to reduce the size of the response
-   * fetched from the database.
-   */
-  private DecisionRequirementsQueryResultConfig defaultSearchResultConfig() {
-    return DecisionRequirementsQueryResultConfig.of(r -> r);
+                q -> q.filter(query.filter()).sort(query.sort()).page(query.page())));
   }
 
   public DecisionRequirementsEntity getByKey(final Long key) {
