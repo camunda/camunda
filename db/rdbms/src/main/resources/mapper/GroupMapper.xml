@@ -13,6 +13,9 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}GROUPS g
+    <if test="filter.tenantId != null">
+      JOIN ${prefix}TENANT_MEMBER tm ON g.GROUP_ID = tm.ENTITY_ID AND tm.ENTITY_TYPE = 'GROUP'
+    </if>
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
   </select>
 
@@ -29,6 +32,9 @@
     gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
     FROM ${prefix}GROUPS g
     LEFT JOIN ${prefix}GROUP_MEMBER gm ON g.GROUP_ID = gm.GROUP_ID
+    <if test="filter.tenantId != null">
+      JOIN ${prefix}TENANT_MEMBER tm ON g.GROUP_ID = tm.ENTITY_ID AND tm.ENTITY_TYPE = 'GROUP'
+    </if>
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -41,6 +47,7 @@
     <if test="filter.groupKey != null">AND g.GROUP_KEY = #{filter.groupKey}</if>
     <if test="filter.groupId != null">AND g.GROUP_ID = #{filter.groupId}</if>
     <if test="filter.name != null">AND g.NAME = #{filter.name}</if>
+    <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
   </sql>
 
   <resultMap id="groupResultMap" type="io.camunda.db.rdbms.write.domain.GroupDbModel">

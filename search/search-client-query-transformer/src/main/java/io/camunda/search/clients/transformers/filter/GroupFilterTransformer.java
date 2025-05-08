@@ -51,6 +51,9 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
             ? term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType())
             : hasParentQuery(
                 IdentityJoinRelationshipType.GROUP.getType(),
-                term(GROUP_ID, filter.joinParentId())));
+                term(GROUP_ID, filter.joinParentId())),
+        filter.groupIds() == null
+            ? null
+            : filter.groupIds().isEmpty() ? matchNone() : stringTerms(GROUP_ID, filter.groupIds()));
   }
 }

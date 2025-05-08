@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
@@ -47,10 +48,9 @@ public class TenantControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
 
   @MockBean private TenantServices tenantServices;
-
   @MockBean private UserServices userServices;
-
   @MockBean private MappingServices mappingServices;
+  @MockBean private GroupServices groupServices;
 
   @BeforeEach
   void setup() {

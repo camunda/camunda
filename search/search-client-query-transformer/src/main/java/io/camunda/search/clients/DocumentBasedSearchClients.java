@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
@@ -321,7 +322,11 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery groupQuery) {
+    var query = groupQuery;
+    if (groupQuery.filter().tenantId() != null) {
+      query = expandTenantFilter(groupQuery);
+    }
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
   }
@@ -447,6 +452,14 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
     return userQuery.toBuilder()
         .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
+  }
+
+  private GroupQuery expandTenantFilter(final GroupQuery groupQuery) {
+    final var groupIds = getTenantMembers(groupQuery.filter().tenantId(), GROUP);
+
+    return groupQuery.toBuilder()
+        .filter(groupQuery.filter().toBuilder().groupIds(groupIds).build())
         .build();
   }
 
