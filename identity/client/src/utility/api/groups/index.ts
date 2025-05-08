@@ -92,7 +92,9 @@ export const getMappingsByGroupId: ApiDefinition<
 > = ({ groupId }) =>
   apiPost(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/search`);
 
-type AssignGroupMappingParams = GetGroupMappingsParams & { mappingRuleId: string };
+type AssignGroupMappingParams = GetGroupMappingsParams & {
+  mappingRuleId: string;
+};
 export const assignGroupMapping: ApiDefinition<
   undefined,
   AssignGroupMappingParams

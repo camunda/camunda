@@ -49,6 +49,7 @@ export const updateMapping: ApiDefinition<undefined, UpdateMappingParams> = ({
   });
 
 export type DeleteMappingParams = UpdateMappingParams;
-export const deleteMapping: ApiDefinition<undefined, { mappingRuleId: string }> = ({
-  mappingRuleId,
-}) => apiDelete(`${MAPPINGS_ENDPOINT}/${mappingRuleId}`);
+export const deleteMapping: ApiDefinition<
+  undefined,
+  { mappingRuleId: string }
+> = ({ mappingRuleId }) => apiDelete(`${MAPPINGS_ENDPOINT}/${mappingRuleId}`);

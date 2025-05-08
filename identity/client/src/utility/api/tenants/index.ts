@@ -133,7 +133,9 @@ export const assignTenantMapping: ApiDefinition<
   undefined,
   AssignTenantMappingParams
 > = ({ tenantId, mappingRuleId }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingRuleId}`);
+  return apiPut(
+    `${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingRuleId}`,
+  );
 };
 
 type UnassignTenantMappingParams = AssignTenantMappingParams;
