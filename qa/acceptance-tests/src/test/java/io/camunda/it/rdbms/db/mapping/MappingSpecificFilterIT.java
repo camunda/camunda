@@ -79,8 +79,10 @@ public class MappingSpecificFilterIT {
     assertThat(mappings.total()).isEqualTo(2);
   }
 
-  private void addMappingToGroup(final String groupId, final String mappingId) {
-    rdbmsWriter.getGroupWriter().addMember(new GroupMemberDbModel(groupId, mappingId, "MAPPING"));
+  private void addMappingToGroup(final String groupId, final String mappingRuleId) {
+    rdbmsWriter
+        .getGroupWriter()
+        .addMember(new GroupMemberDbModel(groupId, mappingRuleId, "MAPPING"));
     rdbmsWriter.flush();
   }
 }
