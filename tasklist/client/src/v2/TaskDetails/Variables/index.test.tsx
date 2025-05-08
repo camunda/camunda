@@ -1202,7 +1202,6 @@ describe('<Variables />', () => {
       value: '"1112"',
       name: 'myVar1',
       isTruncated: false,
-      fullValue: '"1112"',
       tenantId: DEFAULT_TENANT_ID,
       scopeKey: '1-myVar',
       processInstanceKey: '1-myVar',
