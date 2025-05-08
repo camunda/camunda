@@ -15,10 +15,14 @@
  */
 package io.camunda.client.role;
 
+import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -35,5 +39,26 @@ public class SearchRoleTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/roles/" + ROLE_ID);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  void shouldRaiseExceptionOnRequestError() {
+    // given
+    gatewayService.errorOnRequest(
+        REST_API_PATH + "/roles/" + ROLE_ID,
+        () -> new ProblemDetail().title("Not Found").status(404));
+
+    // when / then
+    assertThatThrownBy(() -> client.newRoleGetRequest(ROLE_ID).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullRoleId() {
+    // when / then
+    assertThatThrownBy(() -> client.newRoleGetRequest(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be null");
   }
 }

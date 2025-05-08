@@ -19,6 +19,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
@@ -47,6 +48,7 @@ public class RoleGetRequestImpl implements RoleGetRequest {
 
   @Override
   public CamundaFuture<Role> send() {
+    ArgumentUtil.ensureNotNull("roleId", roleId);
     final HttpCamundaFuture<Role> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/roles/%s", roleId),
