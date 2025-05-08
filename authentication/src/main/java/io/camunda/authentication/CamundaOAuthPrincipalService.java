@@ -68,7 +68,7 @@ public class CamundaOAuthPrincipalService {
       throws OAuth2AuthenticationException {
     final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
     final Set<String> mappingIds =
-        mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
+        mappings.stream().map(MappingEntity::mappingRuleId).collect(Collectors.toSet());
     if (mappingIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
