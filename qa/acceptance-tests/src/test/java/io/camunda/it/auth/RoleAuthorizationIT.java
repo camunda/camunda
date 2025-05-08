@@ -202,6 +202,7 @@ class RoleAuthorizationIT {
             });
   }
 
+  // TODO replace with role search when implemented in Camunda Client #31716
   private static RoleSearchResponse searchRoles(final String restAddress, final String username)
       throws URISyntaxException, IOException, InterruptedException {
     final var encodedCredentials =
