@@ -62,6 +62,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
