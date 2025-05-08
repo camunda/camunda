@@ -68,8 +68,8 @@ const DeleteModal: FC<RemoveTenantMappingModalProps> = ({
           i18nKey="removeMappingFromTenant"
           values={{ mappingRuleId: mapping.mappingRuleId }}
         >
-          Are you sure you want to remove <strong>{mapping.mappingRuleId}</strong>{" "}
-          from this tenant?
+          Are you sure you want to remove{" "}
+          <strong>{mapping.mappingRuleId}</strong> from this tenant?
         </Translate>
       </p>
     </Modal>
