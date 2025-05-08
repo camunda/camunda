@@ -64,6 +64,7 @@ public class GroupController {
     this.groupServices = groupServices;
     this.userServices = userServices;
     this.mappingServices = mappingServices;
+    this.roleServices = roleServices;
   }
 
   @CamundaPostMapping
