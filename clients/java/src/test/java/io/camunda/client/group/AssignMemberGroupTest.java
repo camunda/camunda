@@ -100,7 +100,11 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToGroupCommand(GROUP_ID).mappingRuleId(MAPPING_ID).send().join())
+                client
+                    .newAssignMappingToGroupCommand(GROUP_ID)
+                    .mappingRuleId(MAPPING_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -114,7 +118,11 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToGroupCommand(GROUP_ID).mappingRuleId(MAPPING_ID).send().join())
+                client
+                    .newAssignMappingToGroupCommand(GROUP_ID)
+                    .mappingRuleId(MAPPING_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
@@ -128,7 +136,11 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToGroupCommand(GROUP_ID).mappingRuleId(MAPPING_ID).send().join())
+                client
+                    .newAssignMappingToGroupCommand(GROUP_ID)
+                    .mappingRuleId(MAPPING_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
