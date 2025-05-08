@@ -44,6 +44,7 @@ import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
+import io.camunda.client.api.command.DeleteRoleCommandStep1;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
@@ -1148,6 +1149,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a role
    */
   RoleGetRequest newRoleGetRequest(String roleId);
+
+  /**
+   * Command to delete a role by role ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newDeleteRoleCommand("123")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  DeleteRoleCommandStep1 newDeleteRoleCommand(String roleId);
 
   /**
    * Command to create a group.
