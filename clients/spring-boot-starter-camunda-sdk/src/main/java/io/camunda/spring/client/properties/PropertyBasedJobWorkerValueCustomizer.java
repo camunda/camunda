@@ -130,7 +130,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     final CamundaClientJobWorkerProperties defaults =
         camundaClientProperties.getWorker().getDefaults();
     if (defaults != null) {
-      copyProperties(defaults, editedJobWorkerValue, OverrideSource.global);
+      copyProperties(defaults, editedJobWorkerValue, OverrideSource.defaults);
     }
     final String workerType = editedJobWorkerValue.getType();
     findWorkerOverride(workerType)
@@ -248,7 +248,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private enum OverrideSource {
-    global,
+    defaults,
     worker
   }
 }
