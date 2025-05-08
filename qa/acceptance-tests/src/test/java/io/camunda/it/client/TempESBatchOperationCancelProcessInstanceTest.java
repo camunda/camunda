@@ -89,7 +89,7 @@ public class TempESBatchOperationCancelProcessInstanceTest {
   }
 
   @Test
-  void shouldStartProcessInstancesWithBatch() throws InterruptedException {
+  void shouldCancelProcessInstancesWithBatch() throws InterruptedException {
     // when
     final var result =
         camundaClient
@@ -117,8 +117,8 @@ public class TempESBatchOperationCancelProcessInstanceTest {
               assertThat(batch.getBatchOperationId()).isEqualTo(String.valueOf(batchOperationKey));
               assertThat(batch.getStartDate()).isNotNull();
               assertThat(batch.getType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
-              assertThat(batch.getStatus()).isEqualTo(BatchOperationState.ACTIVE);
-              assertThat(batch.getEndDate()).isNull();
+              assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batch.getEndDate()).isNotNull();
             });
 
     final var activeKeys =
