@@ -178,19 +178,6 @@
     </profile>
 
     <profile>
-      <id>operateCoreFeaturesUnitTests</id>
-      <activation>
-        <property>
-          <name>runCoreFeaturesUTs</name>
-        </property>
-      </activation>
-      <properties>
-        <includeUnitTestNames>*.java</includeUnitTestNames>
-        <excludeUnitTestNames>*IT.java,**/identity/**/*.java,**/elasticsearch/**/*.java,**/opensearch/**/*.java,**/zeebeimport/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java</excludeUnitTestNames>
-      </properties>
-    </profile>
-
-    <profile>
       <id>skipOperateCoreFeaturesUnitTests</id>
       <activation>
         <property>
@@ -199,18 +186,6 @@
       </activation>
       <properties>
         <excludeUnitTestNames>*IT.java,**/connect/**/*.java,**/util/**/*.java,**/entities/**/*.java,**/schema/**/*.java,**/rest/**/*.java,**/webapp/**/*.java</excludeUnitTestNames>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>operateDataLayerUnitTests</id>
-      <activation>
-        <property>
-          <name>runDataLayerUTs</name>
-        </property>
-      </activation>
-      <properties>
-        <includeUnitTestNames>**/elasticsearch/**/*.java,,**/opensearch/**/*.java,**/zeebeimport/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java</includeUnitTestNames>
       </properties>
     </profile>
 
@@ -227,18 +202,6 @@
     </profile>
 
     <profile>
-      <id>operateIdentityUnitTests</id>
-      <activation>
-        <property>
-          <name>runIdentityUTs</name>
-        </property>
-      </activation>
-      <properties>
-        <includeUnitTestNames>**/identity/**/*.java</includeUnitTestNames>
-      </properties>
-    </profile>
-
-    <profile>
       <id>skipOperateIdentityUnitTests</id>
       <activation>
         <property>
@@ -249,7 +212,6 @@
         <excludeUnitTestNames>**/identity/**/*.java</excludeUnitTestNames>
       </properties>
     </profile>
-
 
     <!--
       The QA module is enabled per default, but having it in a profile allows us to exclude it easily.
