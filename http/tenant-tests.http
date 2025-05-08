@@ -116,7 +116,7 @@ Accept: application/json
 
 #### Assign Mapping Rule to Tenant
 # @name assign-mapping-rule
-PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mappings/{{MAPPING_KEY}}
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_KEY}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
@@ -132,7 +132,7 @@ Accept: application/json
   import {wait} from "js/wait";
   wait(2);
 %}
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mappings/search
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/search
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
@@ -152,7 +152,7 @@ Accept: application/json
 
 #### Remove Mapping Rule from Tenant
 # @name remove-mapping-rule
-DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mappings/{{MAPPING_KEY}}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_KEY}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
