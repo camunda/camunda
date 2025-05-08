@@ -38,7 +38,7 @@
     SELECT COUNT(*)
     FROM ${prefix}MAPPINGS m
     <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID AND gm.ENTITY_TYPE = 'MAPPING'
     </if>
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
   </select>
@@ -54,7 +54,7 @@
     NAME
     FROM ${prefix}MAPPINGS m
     <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID AND gm.ENTITY_TYPE = 'MAPPING'
     </if>
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
     ) t
