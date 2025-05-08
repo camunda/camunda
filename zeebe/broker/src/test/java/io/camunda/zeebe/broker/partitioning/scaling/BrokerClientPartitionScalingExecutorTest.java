@@ -37,9 +37,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class BrokerClientPartitionScalingExecutorTest {
 
-  static final List<Set<Integer>> incompletePartitionList = List.of(Set.of(1, 2, 3, 4), Set.of(4));
+  static final List<Set<Integer>> INCOMPLETE_PARTITION_LIST =
+      List.of(Set.of(1, 2, 3, 4), Set.of(4));
 
-  static final List<Set<Integer>> completePartitionList =
+  static final List<Set<Integer>> COMPLETE_PARTITION_LIST =
       List.of(Set.of(1, 2, 3, 4, 5), Set.of(4, 5));
 
   TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
@@ -62,7 +63,7 @@ public class BrokerClientPartitionScalingExecutorTest {
   }
 
   @ParameterizedTest
-  @FieldSource("incompletePartitionList")
+  @FieldSource("INCOMPLETE_PARTITION_LIST")
   public void shouldFailFutureResponseWhenNotAllPartitionsAreReady(final Set<Integer> partitions) {
     final var scaleRecord =
         new ScaleRecord().setDesiredPartitionCount(5).setRedistributedPartitions(partitions);
@@ -76,7 +77,7 @@ public class BrokerClientPartitionScalingExecutorTest {
   }
 
   @ParameterizedTest
-  @FieldSource("completePartitionList")
+  @FieldSource("COMPLETE_PARTITION_LIST")
   public void shouldCompleteResponseWhenAllPartitionsAreReady(final Set<Integer> partitions) {
     final var scaleRecord =
         new ScaleRecord().setDesiredPartitionCount(5).setRedistributedPartitions(partitions);

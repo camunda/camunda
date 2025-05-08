@@ -25,7 +25,7 @@ public enum ScaleIntent implements Intent {
   STATUS_RESPONSE((short) 5, true);
 
   // A static field is needed as values() would allocate at every call
-  private static final ScaleIntent[] intents = values();
+  private static final ScaleIntent[] INTENTS = values();
   private final short value;
   private final boolean isEvent;
 
@@ -46,7 +46,7 @@ public enum ScaleIntent implements Intent {
 
   public static Intent from(final short intent) {
     try {
-      return intents[intent - 1];
+      return INTENTS[intent - 1];
     } catch (final ArrayIndexOutOfBoundsException e) {
       return Intent.UNKNOWN;
     }
