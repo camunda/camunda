@@ -18,6 +18,7 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
+import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
@@ -34,6 +35,7 @@ import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.impl.search.response.BatchOperationItemsImpl.BatchOperationItemImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.*;
 import java.util.Arrays;
@@ -203,6 +205,22 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Mapping> instances =
         toSearchResponseInstances(response.getItems(), SearchResponseMapper::toMappingResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<BatchOperation> toBatchOperationsResponse(
+      final BatchOperationSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<BatchOperation> instances =
+        toSearchResponseInstances(response.getItems(), BatchOperationImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<BatchOperationItem> toBatchOperationItemsResponse(
+      final BatchOperationItemSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<BatchOperationItem> instances =
+        toSearchResponseInstances(response.getItems(), BatchOperationItemImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
 
