@@ -401,7 +401,10 @@ public class CommandDistributionIdempotencyTest {
                 MappingIntent.UPDATE,
                 () -> {
                   final var mapping = createMapping();
-                  return ENGINE.mapping().updateMapping(mapping.getValue().getMappingRuleId()).update();
+                  return ENGINE
+                      .mapping()
+                      .updateMapping(mapping.getValue().getMappingRuleId())
+                      .update();
                 }),
             MappingUpdateProcessor.class
           },
@@ -412,7 +415,10 @@ public class CommandDistributionIdempotencyTest {
                 MappingIntent.DELETE,
                 () -> {
                   final var mapping = createMapping();
-                  return ENGINE.mapping().deleteMapping(mapping.getValue().getMappingRuleId()).delete();
+                  return ENGINE
+                      .mapping()
+                      .deleteMapping(mapping.getValue().getMappingRuleId())
+                      .delete();
                 }),
             MappingDeleteProcessor.class
           },
