@@ -36,7 +36,10 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingDbQuery"
     resultType="long">
     SELECT COUNT(*)
-    FROM ${prefix}MAPPINGS
+    FROM ${prefix}MAPPINGS m
+    <if test="filter.groupId != null">
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID AND gm.ENTITY_TYPE = 'MAPPING'
+    </if>
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
   </select>
 
@@ -49,7 +52,10 @@
     CLAIM_NAME,
     CLAIM_VALUE,
     NAME
-    FROM ${prefix}MAPPINGS
+    FROM ${prefix}MAPPINGS m
+    <if test="filter.groupId != null">
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID AND gm.ENTITY_TYPE = 'MAPPING'
+    </if>
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -74,6 +80,7 @@
     <if test="filter.name != null">
       AND NAME = #{filter.name}
     </if>
+    <if test="filter.groupId != null">AND gm.GROUP_ID = #{filter.groupId}</if>
   </sql>
 
 </mapper>
