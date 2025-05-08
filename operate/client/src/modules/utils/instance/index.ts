@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+
 /**
  * @returns a boolean showing if the current instance has an incident
  * @param {*} instance object with full instance data
@@ -31,6 +33,10 @@ const getProcessName = (instance: ProcessInstanceEntity | null) => {
   return processName || bpmnProcessId || '';
 };
 
+const getProcessDefinitionName = (instance: ProcessInstance) => {
+  return instance.processDefinitionName ?? instance.processDefinitionId;
+};
+
 const createOperation = (
   operationType: OperationEntityType,
 ): InstanceOperationEntity => {
@@ -42,4 +48,10 @@ const createOperation = (
   };
 };
 
-export {hasIncident, isRunning, getProcessName, createOperation};
+export {
+  hasIncident,
+  isRunning,
+  getProcessDefinitionName,
+  getProcessName,
+  createOperation,
+};

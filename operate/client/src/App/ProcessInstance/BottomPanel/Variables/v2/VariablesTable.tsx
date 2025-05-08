@@ -15,7 +15,6 @@ import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {useMemo, useRef} from 'react';
 import {Restricted} from 'modules/components/Restricted';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Button, Loading} from '@carbon/react';
 import {useForm, useFormState} from 'react-final-form';
 import {Operations} from '../Operations';
@@ -26,10 +25,12 @@ import {EditButtons} from '../EditButtons';
 import {ExistingVariableValue} from '../ExistingVariableValue';
 import {Name} from '../NewVariableModification/Name';
 import {Value} from '../NewVariableModification/Value';
+import {Operation as OperationV2} from '../NewVariableModification/v2/Operation';
 import {ViewFullVariableButton} from '../ViewFullVariableButton';
 import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 import {notificationsStore} from 'modules/stores/notifications';
-import {Operation} from '../NewVariableModification/v2/Operation';
+import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
+import {usePermissions} from 'modules/queries/permissions/usePermissions';
 
 type Props = {
   scopeId: string | null;
@@ -42,6 +43,8 @@ const VariablesTable: React.FC<Props> = observer(
       state: {items, loadingItemId},
     } = variablesStore;
     const {isModificationModeEnabled} = modificationsStore;
+    const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+    const {data: permissions} = usePermissions();
 
     const addVariableModifications = useMemo(
       () => modificationsStore.getAddVariableModifications(scopeId),
@@ -76,8 +79,7 @@ const VariablesTable: React.FC<Props> = observer(
     }
 
     const isEditMode = (variableName: string) =>
-      (initialValues?.name === variableName &&
-        processInstanceDetailsStore.isRunning) ||
+      (initialValues?.name === variableName && isProcessInstanceRunning) ||
       (isModificationModeEnabled && isVariableModificationAllowed);
 
     const form = useForm<VariableFormValues>();
@@ -157,7 +159,7 @@ const VariablesTable: React.FC<Props> = observer(
                             },
                             {
                               cellContent: (
-                                <Operation
+                                <OperationV2
                                   variableName={variableName}
                                   onRemove={() => {
                                     fields.remove(index);
@@ -256,7 +258,7 @@ const VariablesTable: React.FC<Props> = observer(
                         return null;
                       }
 
-                      if (!processInstanceDetailsStore.isRunning) {
+                      if (!isProcessInstanceRunning) {
                         if (isPreview) {
                           return (
                             <ViewFullVariableButton
@@ -292,8 +294,7 @@ const VariablesTable: React.FC<Props> = observer(
                           <Restricted
                             resourceBasedRestrictions={{
                               scopes: ['UPDATE_PROCESS_INSTANCE'],
-                              permissions:
-                                processInstanceDetailsStore.getPermissions(),
+                              permissions: permissions,
                             }}
                             fallback={
                               isPreview ? (

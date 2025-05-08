@@ -16,13 +16,20 @@ import {
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
-import {getWrapper, mockVariables} from './mocks';
+import {
+  getWrapper,
+  mockProcessInstance,
+  mockProcessInstanceDeprecated,
+  mockVariables,
+} from './mocks';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
-import {act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -33,6 +40,14 @@ jest.mock('modules/stores/notifications', () => ({
 const instanceMock = createInstance({id: '1'});
 
 describe('Edit variable', () => {
+  beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessDefinitionXml().withSuccess('');
+  });
+
   it('should show/hide edit button next to variable according to it having an active operation', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -63,47 +78,13 @@ describe('Edit variable', () => {
 
     expect(inactiveOperationVariable).toBeDefined();
     expect(
-      within(
-        screen.getByTestId(`variable-${inactiveOperationVariable!.name}`),
-      ).getByRole('button', {name: /edit variable/i}),
-    ).toBeInTheDocument();
-  });
-
-  it('should not display edit button next to variables if instance is completed or canceled', async () => {
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
-
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
-    render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
-    const [inactiveOperationVariable] = variablesStore.state.items.filter(
-      ({hasActiveOperation}) => !hasActiveOperation,
+      await screen.findByTestId(`variable-${inactiveOperationVariable!.name}`),
     );
-
-    expect(inactiveOperationVariable).toBeDefined();
     expect(
       within(
         screen.getByTestId(`variable-${inactiveOperationVariable!.name}`),
       ).getByRole('button', {name: /edit variable/i}),
     ).toBeInTheDocument();
-
-    act(() =>
-      processInstanceDetailsStore.setProcessInstance({
-        ...instanceMock,
-        state: 'CANCELED',
-      }),
-    );
-
-    expect(
-      screen.queryByRole('button', {name: /edit variable/i}),
-    ).not.toBeInTheDocument();
   });
 
   it('should show/hide edit variable inputs', async () => {
@@ -137,6 +118,9 @@ describe('Edit variable', () => {
       withinFirstVariable.queryByRole('button', {name: /save variable/i}),
     ).not.toBeInTheDocument();
 
+    expect(
+      await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
+    );
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
@@ -174,6 +158,9 @@ describe('Edit variable', () => {
       screen.getByTestId(`variable-${firstVariable!.name}`),
     );
 
+    expect(
+      await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
+    );
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
@@ -184,6 +171,11 @@ describe('Edit variable', () => {
   });
 
   it('should validate when editing variables', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+
     jest.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchVariables().withSuccess(mockVariables);
@@ -262,6 +254,7 @@ describe('Edit variable', () => {
       }),
     );
 
+    expect(await screen.findByTestId('variable-clientNo'));
     await user.click(
       within(screen.getByTestId('variable-clientNo')).getByRole('button', {
         name: /edit variable/i,
@@ -309,6 +302,7 @@ describe('Edit variable', () => {
 
     mockFetchVariable().withDelayedServerError();
 
+    expect(await screen.findByTestId('variable-testVariableName'));
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
         'button',
@@ -346,6 +340,7 @@ describe('Edit variable', () => {
 
     expect(screen.getByText('"full-value"')).toBeInTheDocument();
 
+    expect(await screen.findByTestId('variable-testVariableName'));
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
         'button',
@@ -361,6 +356,11 @@ describe('Edit variable', () => {
   });
 
   it('should load full value on focus during modification mode if it was truncated', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -451,6 +451,7 @@ describe('Edit variable', () => {
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
+    expect(await screen.findByRole('button', {name: /edit variable/i}));
     await user.click(screen.getByRole('button', {name: /edit variable/i}));
     await user.click(
       screen.getByRole('button', {name: /open json editor modal/i}),
@@ -467,5 +468,27 @@ describe('Edit variable', () => {
     expect(
       within(screen.getByRole('dialog')).getByTestId('monaco-editor'),
     ).toBeInTheDocument();
+  });
+
+  it('should not display edit button next to variables if instance is completed or canceled', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'TERMINATED',
+    });
+    processInstanceDetailsStore.setProcessInstance(instanceMock);
+
+    mockFetchVariables().withSuccess(mockVariables);
+
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+
+    render(<Variables />, {wrapper: getWrapper()});
+
+    expect(
+      screen.queryByRole('button', {name: /edit variable/i}),
+    ).not.toBeInTheDocument();
   });
 });

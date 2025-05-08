@@ -9,7 +9,9 @@
 import {mockGetRequest} from '../../mockRequest';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 
-const mockFetchProcessInstance = () =>
-  mockGetRequest<ProcessInstance>('/v2/process-instances/:processInstanceKey');
+const mockFetchProcessInstance = (contextPath = '') =>
+  mockGetRequest<ProcessInstance>(
+    `${contextPath}/v2/process-instances/:processInstanceKey`,
+  );
 
 export {mockFetchProcessInstance};

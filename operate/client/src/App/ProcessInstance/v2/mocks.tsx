@@ -7,12 +7,11 @@
  */
 
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockIncidents} from 'modules/mocks/incidents';
 import {testData} from '../index.setup';
-import {mockSequenceFlowsV2} from '../TopPanel/index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
   createVariable,
@@ -34,6 +33,7 @@ import {useEffect} from 'react';
 import {waitFor} from '@testing-library/react';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
@@ -46,13 +46,65 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {
+  ProcessInstance,
+  SequenceFlow,
+} from '@vzeta/camunda-api-zod-schemas/operate';
+import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: '4294980768',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: true,
+};
+const mockSequenceFlowsV2: SequenceFlow[] = [
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowKey: 'SequenceFlow_0drux68',
+    processDefinitionId: '123',
+    processDefinitionKey: 123,
+  },
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowKey: 'SequenceFlow_0j6tsnn',
+    processDefinitionId: '123',
+    processDefinitionKey: 123,
+  },
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowKey: 'SequenceFlow_1dwqvrt',
+    processDefinitionId: '123',
+    processDefinitionKey: 123,
+  },
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowKey: 'SequenceFlow_1fgekwd',
+    processDefinitionId: '123',
+    processDefinitionKey: 123,
+  },
+];
 
 const mockRequests = (contextPath: string = '') => {
-  mockFetchProcessInstance(contextPath).withSuccess(
+  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
+  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+    testData.fetch.onPageLoad.processInstanceWithIncident,
+  );
+  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+    testData.fetch.onPageLoad.processInstanceWithIncident,
+  );
+  mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
+  mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
+  mockFetchCallHierarchy(contextPath).withSuccess({items: []});
   mockFetchProcessXML(contextPath).withSuccess('');
   mockFetchProcessDefinitionXml({contextPath}).withSuccess('');
   mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
@@ -144,11 +196,12 @@ const waitForPollingsToBeComplete = async () => {
   await waitFor(() => {
     expect(variablesStore.isPollRequestRunning).toBe(false);
     expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
+    expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
     expect(incidentsStore.isPollRequestRunning).toBe(false);
     expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
   });
 };
 
-export {getWrapper, testData, waitForPollingsToBeComplete};
+export {getWrapper, testData, waitForPollingsToBeComplete, mockProcessInstance};
 
 export {mockRequests};

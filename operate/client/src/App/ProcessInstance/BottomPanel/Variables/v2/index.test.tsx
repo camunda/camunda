@@ -19,7 +19,8 @@ import {mockVariables} from '../index.setup';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {getWrapper} from './mocks';
+import {getWrapper, mockProcessInstance} from './mocks';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -95,6 +96,10 @@ describe('Variables', () => {
     });
 
     it('should have a button to see full variable value', async () => {
+      mockFetchProcessInstance().withSuccess({
+        ...mockProcessInstance,
+        state: 'COMPLETED',
+      });
       processInstanceDetailsStore.setProcessInstance({
         ...instanceMock,
         state: 'COMPLETED',
