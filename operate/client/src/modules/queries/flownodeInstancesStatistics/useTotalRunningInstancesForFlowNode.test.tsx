@@ -138,7 +138,7 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toBe(7); // filteredActive + incidents
+    expect(result.current.data).toBe(7); // active + incidents
   });
 
   it('should fetch total visible running instances for multiple flow nodes', async () => {
@@ -177,7 +177,7 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
     expect(result.current.data).toStrictEqual({
       Activity_0qtp1k6: 4,
       StartEvent_1: 7,
-    }); // [filteredActive + incidents for node1, node2]
+    }); // [active + incidents for node1, node2]
   });
 
   it('should handle empty data', async () => {
