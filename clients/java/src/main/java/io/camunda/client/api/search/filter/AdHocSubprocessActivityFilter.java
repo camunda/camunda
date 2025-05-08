@@ -20,17 +20,17 @@ import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilt
 public interface AdHocSubprocessActivityFilter extends SearchRequestFilter {
 
   /**
-   * Filters ad-hoc subprocess activities by process definition key.
+   * Filters ad-hoc sub-process activities by process definition key.
    *
-   * @param processDefinitionKey the process definition key of the ad-hoc subprocess
+   * @param processDefinitionKey the process definition key of the ad-hoc sub-process
    * @return the updated filter
    */
   AdHocSubprocessActivityFilter processDefinitionKey(final long processDefinitionKey);
 
   /**
-   * Filters element instances by ad-hoc subprocess id.
+   * Filters element instances by ad-hoc sub-process id.
    *
-   * @param adHocSubprocessId the id of the ad-hoc subprocess
+   * @param adHocSubprocessId the id of the ad-hoc sub-process
    * @return the updated filter
    */
   AdHocSubprocessActivityFilter adHocSubprocessId(final String adHocSubprocessId);

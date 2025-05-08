@@ -116,7 +116,7 @@ public class ActivateAdHocSubProcessActivityTest {
   public void
       givenRunningAdhocSubprocessInstanceWhenActivatingElementsThenAdhocSubprocessIsOnlyCompletedWhenCompletionConditionIsMet() {
     // prepare the test case by setting the completion condition variable to false which ensures
-    // that the adhoc subprocess doesn't complete before we want it to.
+    // that the ad-hoc sub-process doesn't complete before we want it to.
     ENGINE
         .variables()
         .withDocument(Map.of(COMPLETION_CONDITION_VAR, false))
@@ -138,7 +138,7 @@ public class ActivateAdHocSubProcessActivityTest {
         .doesNotContainAnyElementsOf(
             List.of(tuple("ad-hoc", ProcessInstanceIntent.ELEMENT_COMPLETED)));
 
-    // set the completion condition variable to `true` to ensure that the adhoc subprocess
+    // set the completion condition variable to `true` to ensure that the ad-hoc sub-process
     // completes.
     ENGINE
         .variables()
@@ -217,7 +217,7 @@ public class ActivateAdHocSubProcessActivityTest {
         .describedAs("Expected rejection because given activities do not exist.")
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to activate activities for ad-hoc subprocess with key '%s', but the given elements %s do not exist."
+            "Expected to activate activities for ad-hoc sub-process with key '%s', but the given elements %s do not exist."
                 .formatted(adHocSubProcessInstanceKey, nonExistingActivities));
 
     assertThat(
@@ -242,10 +242,10 @@ public class ActivateAdHocSubProcessActivityTest {
             .activate();
 
     RecordAssert.assertThat(rejection)
-        .describedAs("Expected rejection because adhoc subprocess does not exist.")
+        .describedAs("Expected rejection because ad-hoc sub-process does not exist.")
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to activate activities for ad-hoc subprocess but no ad-hoc subprocess instance found with key '%s'."
+            "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'."
                 .formatted(nonExistingAdhocSubProcessInstanceKey));
 
     assertThat(
@@ -254,7 +254,7 @@ public class ActivateAdHocSubProcessActivityTest {
                 .onlyCommandRejections()
                 .limit(1))
         .describedAs(
-            "Expected activation to be rejected because the adhoc subprocess instance does not exist.")
+            "Expected activation to be rejected because the ad-hoc sub-process instance does not exist.")
         .isNotEmpty();
   }
 
@@ -267,8 +267,8 @@ public class ActivateAdHocSubProcessActivityTest {
           adHocSubProcess.task("A");
           adHocSubProcess.task("B");
           adHocSubProcess.task("C");
-          // add invalid expression to ensure that processing ends without completing the adhoc
-          // subprocess
+          // add invalid expression to ensure that processing ends without completing the ad-hoc
+          // sub-process
           adHocSubProcess.zeebeOutputExpression("assert(x, x != null)", "y");
         });
 
@@ -291,10 +291,10 @@ public class ActivateAdHocSubProcessActivityTest {
             .activate();
 
     RecordAssert.assertThat(rejection)
-        .describedAs("Expected rejection because adhoc subprocess is not active.")
+        .describedAs("Expected rejection because ad-hoc sub-process is not active.")
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to activate activities for ad-hoc subprocess with key '%s', but it is not active."
+            "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active."
                 .formatted(faultyAdhocSubProcessInstanceKey));
   }
 
@@ -315,7 +315,7 @@ public class ActivateAdHocSubProcessActivityTest {
             "Expected activation to be rejected because duplicate flow nodes are provided.")
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            "Expected to activate activities for ad-hoc subprocess with key '%s', but duplicate activities were given."
+            "Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given."
                 .formatted(adHocSubProcessInstanceKey));
 
     assertThat(

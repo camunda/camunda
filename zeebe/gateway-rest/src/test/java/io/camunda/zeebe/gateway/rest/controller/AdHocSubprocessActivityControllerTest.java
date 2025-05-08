@@ -77,7 +77,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                               "task1",
                               "Task #1",
                               ActivityType.SERVICE_TASK,
-                              "The first task in the ad-hoc subprocess",
+                              "The first task in the ad-hoc sub-process",
                               null),
                           new AdHocSubprocessActivityEntity(
                               PROCESS_DEFINITION_KEY,
@@ -86,7 +86,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                               "task2",
                               "Task #2",
                               ActivityType.USER_TASK,
-                              "The second task in the ad-hoc subprocess",
+                              "The second task in the ad-hoc sub-process",
                               null)))
                   .build());
 
@@ -131,7 +131,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                             "task1",
                             "Task #1",
                             TypeEnum.SERVICE_TASK,
-                            "The first task in the ad-hoc subprocess",
+                            "The first task in the ad-hoc sub-process",
                             null),
                         tuple(
                             PROCESS_DEFINITION_KEY.toString(),
@@ -140,7 +140,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                             "task2",
                             "Task #2",
                             TypeEnum.USER_TASK,
-                            "The second task in the ad-hoc subprocess",
+                            "The second task in the ad-hoc sub-process",
                             null));
               });
 

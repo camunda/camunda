@@ -778,7 +778,7 @@ public class CompactRecordLogger {
         .append(String.format("ACTIVATE elements %s", value.getElements()))
         .append(
             String.format(
-                " in adhoc subprocess [%s]",
+                " in ad-hoc sub-process [%s]",
                 shortenKey(Long.parseLong(value.getAdHocSubProcessInstanceKey()))));
     return builder.toString();
   }

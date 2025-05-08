@@ -24,7 +24,7 @@ servers:
         description: The schema of the Camunda 8 REST API server.
 
 tags:
-  - name: Ad-hoc subprocess
+  - name: Ad-hoc sub-process
   - name: Authentication
   - name: Authorization
   - name: Batch operation
@@ -4552,14 +4552,14 @@ paths:
   /element-instances/ad-hoc-activities/search:
     post:
       tags:
-        - Ad-hoc subprocess
+        - Ad-hoc sub-process
       operationId: searchAdHocSubprocessActivities
       summary: Search activatable activities (alpha)
       description: |
-        Search for activatable activities within ad-hoc subprocesses based on given criteria.
+        Search for activatable activities within ad-hoc sub-processes based on given criteria.
 
         Note that this API currently requires filters for both process definition key and ad-hoc
-        subprocess ID and does not support paging or sorting.
+        sub-process ID and does not support paging or sorting.
 
         This endpoint is an alpha feature and may be subject to change
         in future releases.
@@ -4572,14 +4572,14 @@ paths:
       responses:
         "200":
           description: >
-            The ad-hoc subprocess activities search result.
+            The ad-hoc sub-process activities search result.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdHocSubprocessActivitySearchQueryResult"
         "400":
           description: >
-            The ad-hoc subprocess activities search query failed.
+            The ad-hoc sub-process activities search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -4595,18 +4595,18 @@ paths:
   /element-instances/ad-hoc-activities/{adHocSubprocessInstanceKey}/activation:
     post:
       tags:
-        - Ad-hoc subprocess
+        - Ad-hoc sub-process
       operationId: activateAdHocSubprocessActivities
-      summary: Activate activities within an ad-hoc subprocess
+      summary: Activate activities within an ad-hoc sub-process
       description: |
-        Activates selected activities within an ad-hoc subprocess identified by element ID.
-        The provided element IDs must exist within the ad-hoc subprocess instance identified by the
+        Activates selected activities within an ad-hoc sub-process identified by element ID.
+        The provided element IDs must exist within the ad-hoc sub-process instance identified by the
         provided adHocSubprocessInstanceKey.
       parameters:
         - name: adHocSubprocessInstanceKey
           in: path
           required: true
-          description: The key of the ad-hoc subprocess instance that contains the activities.
+          description: The key of the ad-hoc sub-process instance that contains the activities.
           schema:
             type: string
       requestBody:
@@ -4617,7 +4617,7 @@ paths:
               $ref: "#/components/schemas/AdHocSubprocessActivateActivitiesInstruction"
       responses:
         "204":
-          description: The ad-hoc subprocess instance is modified.
+          description: The ad-hoc sub-process instance is modified.
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -4626,8 +4626,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           description: |
-            The ad-hoc subprocess instance is not found or the provided key does not identify an
-            ad-hoc subprocess.
+            The ad-hoc sub-process instance is not found or the provided key does not identify an
+            ad-hoc sub-process.
           content:
             application/problem+json:
               schema:
@@ -6256,13 +6256,13 @@ components:
           description: Incident key associated with this element instance.
           type: string
     AdHocSubprocessActivitySearchQuery:
-      description: Ad-hoc subprocess activities search request.
+      description: Ad-hoc sub-process activities search request.
       type: object
       required:
         - filter
       properties:
         filter:
-          description: The ad-hoc subprocess activity search filters.
+          description: The ad-hoc sub-process activity search filters.
           allOf:
             - $ref: "#/components/schemas/AdHocSubprocessActivityFilter"
     AdHocSubprocessActivityFilter:
@@ -6276,13 +6276,13 @@ components:
           description: The process definition key.
           type: string
         adHocSubprocessId:
-          description: The ad-hoc subprocess element ID.
+          description: The ad-hoc sub-process element ID.
           type: string
     AdHocSubprocessActivitySearchQueryResult:
       type: object
       properties:
         items:
-          description: The matching ad-hoc subprocess activities.
+          description: The matching ad-hoc sub-process activities.
           type: array
           items:
             $ref: "#/components/schemas/AdHocSubprocessActivityResult"
@@ -6296,7 +6296,7 @@ components:
           description: The process definition ID associated to this activity.
           type: string
         adHocSubprocessId:
-          description: The ad-hoc subprocess element ID.
+          description: The ad-hoc sub-process element ID.
           type: string
         elementId:
           description: The element ID for this activity.

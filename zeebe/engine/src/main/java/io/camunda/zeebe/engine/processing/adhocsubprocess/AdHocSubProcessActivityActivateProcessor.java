@@ -38,15 +38,15 @@ public class AdHocSubProcessActivityActivateProcessor
     implements TypedRecordProcessor<AdHocSubProcessActivityActivationRecord> {
 
   private static final String ERROR_MSG_ADHOC_SUBPROCESS_NOT_FOUND =
-      "Expected to activate activities for ad-hoc subprocess but no ad-hoc subprocess instance found with key '%s'.";
+      "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'.";
   private static final String ERROR_MSG_DUPLICATE_ACTIVITIES =
-      "Expected to activate activities for ad-hoc subprocess with key '%s', but duplicate activities were given.";
+      "Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given.";
   private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_NO_ACTIVE =
-      "Expected to activate activities for ad-hoc subprocess with key '%s', but it is not active.";
+      "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
   private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_NOT_ACTIVE =
-      "Expected to activate activities for ad-hoc subprocess with key '%s', but it is not active.";
+      "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
   private static final String ERROR_MSG_ELEMENTS_NOT_FOUND =
-      "Expected to activate activities for ad-hoc subprocess with key '%s', but the given elements %s do not exist.";
+      "Expected to activate activities for ad-hoc sub-process with key '%s', but the given elements %s do not exist.";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -146,7 +146,7 @@ public class AdHocSubProcessActivityActivateProcessor
     final var adHocActivitiesById =
         ((ExecutableAdHocSubProcess) adHocSubprocessElement).getAdHocActivitiesById();
 
-    // check that the given elements exist within the ad-hoc subprocess
+    // check that the given elements exist within the ad-hoc sub-process
     final var elementsNotInAdHocSubProcess =
         command.getValue().elements().stream()
             .map(AdHocSubProcessActivityActivationElement::getElementId)

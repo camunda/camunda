@@ -72,7 +72,7 @@ public class ActivateAdHocSubprocessActivityTest {
 
     assertThat(recordsUpToSignal("setup_signal"))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
-        .describedAs("Expect ad-hoc subprocess to be activated")
+        .describedAs("Expect ad-hoc sub-process to be activated")
         .contains(tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED))
         .describedAs("Expect no activities to be activated")
         .doesNotContain(
@@ -198,7 +198,7 @@ public class ActivateAdHocSubprocessActivityTest {
 
     assertThat(recordsUpToSignal("setup_signal"))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
-        .describedAs("Expect ad-hoc subprocess to be activated")
+        .describedAs("Expect ad-hoc sub-process to be activated")
         .contains(tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED))
         .describedAs("Expect no activities to be activated")
         .doesNotContain(
@@ -272,7 +272,7 @@ public class ActivateAdHocSubprocessActivityTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining(
-            "Command 'ACTIVATE' rejected with code 'INVALID_ARGUMENT': Expected to activate activities for ad-hoc subprocess with key '%s', but duplicate activities were given."
+            "Command 'ACTIVATE' rejected with code 'INVALID_ARGUMENT': Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given."
                 .formatted(activatedAdHocSubprocess.getKey()));
   }
 

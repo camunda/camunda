@@ -898,10 +898,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ElementInstanceGetRequest newElementInstanceGetRequest(long elementInstanceKey);
 
   /**
-   * Executes a search request to query activities within ad-hoc subprocesses.
+   * Executes a search request to query activities within ad-hoc sub-processes.
    *
    * <p>Note that this API currently requires filters for both process definition key and ad-hoc
-   * subprocess ID and does not support paging or sorting.
+   * sub-process ID and does not support paging or sorting.
    *
    * <pre>
    * long processDefinitionKey = ...;
@@ -916,16 +916,16 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity search request
+   * @return a builder for the ad-hoc sub-process activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
   AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest();
 
   /**
-   * Executes a search request to query activities within ad-hoc subprocesses.
+   * Executes a search request to query activities within ad-hoc sub-processes.
    *
    * <p>Note that this API currently requires filters for both process definition key and ad-hoc
-   * subprocess ID and does not support paging or sorting.
+   * sub-process ID and does not support paging or sorting.
    *
    * <pre>
    * long processDefinitionKey = ...;
@@ -939,14 +939,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity search request
+   * @return a builder for the ad-hoc sub-process activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
   AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest(
       long processDefinitionKey, String adHocSubprocessId);
 
   /**
-   * Command to activate activities within an activated ad-hoc subprocess.
+   * Command to activate activities within an activated ad-hoc sub-process.
    *
    * <pre>
    *   camundaClient
@@ -957,7 +957,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *    .send();
    * </pre>
    *
-   * @param adHocSubprocessInstanceKey the key which identifies the corresponding ad-hoc subprocess
+   * @param adHocSubprocessInstanceKey the key which identifies the corresponding ad-hoc sub-process
    *     instance
    * @return a builder for the command
    */

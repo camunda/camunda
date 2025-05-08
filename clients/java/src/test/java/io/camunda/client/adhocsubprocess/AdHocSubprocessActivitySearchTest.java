@@ -48,7 +48,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
               r.setElementId("task1");
               r.setElementName("Task #1");
               r.setType(TypeEnum.SERVICE_TASK);
-              r.setDocumentation("The first task in the ad-hoc subprocess");
+              r.setDocumentation("The first task in the ad-hoc sub-process");
               r.setTenantId("<default>");
             }));
     searchQueryResult.addItemsItem(
@@ -60,7 +60,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
               r.setElementId("task2");
               r.setElementName("Task #2");
               r.setType(TypeEnum.USER_TASK);
-              r.setDocumentation("The second task in the ad-hoc subprocess");
+              r.setDocumentation("The second task in the ad-hoc sub-process");
               r.setTenantId("<default>");
             }));
 
@@ -99,7 +99,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 "task1",
                 "Task #1",
                 io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType.SERVICE_TASK,
-                "The first task in the ad-hoc subprocess",
+                "The first task in the ad-hoc sub-process",
                 "<default>"),
             tuple(
                 PROCESS_DEFINITION_KEY,
@@ -108,7 +108,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 "task2",
                 "Task #2",
                 io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType.USER_TASK,
-                "The second task in the ad-hoc subprocess",
+                "The second task in the ad-hoc sub-process",
                 "<default>"));
   }
 
