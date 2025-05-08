@@ -8,12 +8,17 @@
 package io.camunda.it.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Role;
+import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
@@ -29,6 +34,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -87,9 +93,113 @@ class RoleAuthorizationIT {
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     createRole(adminClient, ROLE_ID_1, ROLE_NAME_1);
     createRole(adminClient, ROLE_ID_2, ROLE_NAME_2);
-    final int expectedCount = 3; // Admin, role1, role2
     waitForRolesToBeCreated(
-        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
+        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, ROLE_ID_1, ROLE_ID_2);
+  }
+
+  @Test
+  void shouldCreateRoleAndGetRoleByIdIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient)
+      throws URISyntaxException, IOException, InterruptedException {
+    final String roleId = "roleId";
+    final String name = "name";
+    final String description = "description";
+
+    final CreateRoleResponse createdRole =
+        adminClient
+            .newCreateRoleCommand()
+            .roleId(roleId)
+            .name(name)
+            .description(description)
+            .send()
+            .join();
+
+    assertThat(createdRole.getRoleId()).isEqualTo(roleId);
+    assertThat(createdRole.getName()).isEqualTo(name);
+    assertThat(createdRole.getDescription()).isEqualTo(description);
+
+    waitForRolesToBeCreated(
+        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, roleId);
+
+    final Role role = adminClient.newRoleGetRequest(roleId).send().join();
+
+    assertThat(role.getRoleId()).isEqualTo(roleId);
+    assertThat(role.getName()).isEqualTo(name);
+    assertThat(role.getDescription()).isEqualTo(description);
+
+    // TODO: introduce clean up using role delete in #31710
+  }
+
+  @Test
+  void createRoleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () -> camundaClient.newCreateRoleCommand().roleId("roleId").name("name").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void getRoleByIdShouldReturnRoleIfAuthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    final var role = camundaClient.newRoleGetRequest(ROLE_ID_1).send().join();
+
+    assertThat(role.getRoleId()).isEqualTo(ROLE_ID_1);
+  }
+
+  @Test
+  void getRoleByIdShouldReturnNotFoundIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(() -> camundaClient.newRoleGetRequest(ROLE_ID_1).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("404: 'Not Found'");
+  }
+
+  @Test
+  void getRoleByIdShouldReturnNotFoundForNonExistentRoleIdIfAuthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(() -> camundaClient.newRoleGetRequest("Non-existing id").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("404: 'Not Found'");
+  }
+
+  @Test
+  void searchShouldReturnAuthorizedRoles(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) throws Exception {
+    final var roleSearchResponse =
+        searchRoles(
+            camundaClient.getConfiguration().getRestAddress().toString(), RESTRICTED_WITH_READ);
+
+    assertThat(roleSearchResponse.items())
+        .map(RoleResult::getName)
+        .containsAll(List.of("Admin", ROLE_NAME_1, ROLE_NAME_2));
+  }
+
+  @Test
+  void searchShouldReturnEmptyListWhenUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) throws Exception {
+    final var roleSearchResponse =
+        searchRoles(camundaClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
+
+    assertThat(roleSearchResponse.items()).hasSize(0).map(RoleResult::getName).isEmpty();
+  }
+
+  private static void createRole(
+      final CamundaClient adminClient, final String roleId, final String roleName) {
+    adminClient.newCreateRoleCommand().roleId(roleId).name(roleName).send().join();
+  }
+
+  private static void waitForRolesToBeCreated(
+      final String restAddress, final String name, final String... roleIds) {
+    Awaitility.await("should create roles and import in ES")
+        .atMost(AWAIT_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var roleSearchResponse = searchRoles(restAddress, name);
+              assertThat(roleSearchResponse.items().stream().map(RoleResult::getRoleId).toList())
+                  .containsAll(Arrays.asList(roleIds));
+            });
   }
 
   private static RoleSearchResponse searchRoles(final String restAddress, final String username)
@@ -110,46 +220,5 @@ class RoleAuthorizationIT {
     return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
   }
 
-  @Test
-  void searchShouldReturnAuthorizedRoles(
-      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) throws Exception {
-    final var roleSearchResponse =
-        searchRoles(
-            camundaClient.getConfiguration().getRestAddress().toString(), RESTRICTED_WITH_READ);
-
-    assertThat(roleSearchResponse.items())
-        .hasSize(3)
-        .map(RoleResponse::name)
-        .containsExactlyInAnyOrder("Admin", ROLE_NAME_1, ROLE_NAME_2);
-  }
-
-  @Test
-  void searchShouldReturnEmptyListWhenUnauthorized(
-      @Authenticated(RESTRICTED) final CamundaClient camundaClient) throws Exception {
-    final var roleSearchResponse =
-        searchRoles(camundaClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
-
-    assertThat(roleSearchResponse.items()).hasSize(0).map(RoleResponse::name).isEmpty();
-  }
-
-  private static void createRole(
-      final CamundaClient adminClient, final String roleId, final String roleName) {
-    adminClient.newCreateRoleCommand().roleId(roleId).name(roleName).send().join();
-  }
-
-  private static void waitForRolesToBeCreated(
-      final String restAddress, final String name, final int expectedCount) {
-    Awaitility.await("should create roles and import in ES")
-        .atMost(AWAIT_TIMEOUT)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var roleSearchResponse = searchRoles(restAddress, name);
-              assertThat(roleSearchResponse.items()).hasSize(expectedCount);
-            });
-  }
-
-  private record RoleSearchResponse(List<RoleResponse> items) {}
-
-  private record RoleResponse(String name) {}
+  private record RoleSearchResponse(List<RoleResult> items) {}
 }
