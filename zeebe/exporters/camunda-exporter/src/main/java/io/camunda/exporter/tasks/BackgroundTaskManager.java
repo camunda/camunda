@@ -12,9 +12,11 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.WillCloseWhenClosed;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
@@ -26,7 +28,8 @@ public final class BackgroundTaskManager implements CloseableSilently {
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
   private final Logger logger;
   private final ScheduledThreadPoolExecutor executor;
-  private final List<Runnable> tasks;
+  private final List<RunnableTask> tasks;
+  private final Duration closeTimeout;
 
   private int submittedTasks = 0;
 
@@ -38,7 +41,8 @@ public final class BackgroundTaskManager implements CloseableSilently {
       final @WillCloseWhenClosed BatchOperationUpdateRepository batchOperationUpdateRepository,
       final Logger logger,
       final @WillCloseWhenClosed ScheduledThreadPoolExecutor executor,
-      final List<Runnable> tasks) {
+      final List<RunnableTask> tasks,
+      final Duration closeTimeout) {
     this.partitionId = partitionId;
     this.archiverRepository =
         Objects.requireNonNull(archiverRepository, "must specify an archiver repository");
@@ -50,18 +54,24 @@ public final class BackgroundTaskManager implements CloseableSilently {
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     this.executor = Objects.requireNonNull(executor, "must specify an executor");
     this.tasks = Objects.requireNonNull(tasks, "must specify tasks");
+    this.closeTimeout = closeTimeout;
   }
 
   @Override
   public void close() {
-    // Close executor first before anything else; this will ensure any callbacks are not triggered
-    // in case we close any underlying resource (e.g. repository) and would want to perform
-    // unnecessary error handling in any of these callbacks
-    //
-    // avoid calling executor.close, which will await 1d (!) until termination
-    // we also don't need to wait for the jobs to fully finish, as we should be able to handle
-    // partial jobs (e.g. node crash/restart)
-    executor.shutdownNow();
+    // Stop all running tasks gracefully, so they don't reschedule themselves, but they can still
+    // finish the current run
+    CloseHelper.closeAll(tasks);
+    executor.shutdown();
+    try {
+      executor.awaitTermination(closeTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    } catch (final InterruptedException ignored) {
+      // interrupted, will close the executor later
+    }
+    if (!executor.isTerminated()) {
+      executor.shutdownNow();
+    }
+
     CloseHelper.closeAll(
         error -> logger.warn("Failed to close resource for partition {}", partitionId, error),
         archiverRepository,

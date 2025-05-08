@@ -9,11 +9,11 @@ package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Copied from the old post-importer */
 public record AdditionalData(
@@ -27,14 +27,14 @@ public record AdditionalData(
     Map<String, Set<String>> fniIdsWithIncidentIds) {
   public AdditionalData() {
     this(
-        new HashMap<>(),
-        new HashMap<>(),
-        new HashMap<>(),
-        new HashMap<>(),
-        new HashMap<>(),
-        new HashMap<>(),
-        new HashMap<>(),
-        new HashMap<>());
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>(),
+        new ConcurrentHashMap<>());
   }
 
   public boolean addPiIdsWithIncidentIds(final String piId, final String incidentId) {

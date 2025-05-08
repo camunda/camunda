@@ -23,9 +23,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -35,7 +37,6 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -165,18 +166,33 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Boolean> wasProcessInstanceDeleted(final long processInstanceKey) {
-    final var query = createProcessInstanceDeletedQuery(processInstanceKey);
+  public CompletionStage<Set<Long>> deletedProcessInstances(final Set<Long> processInstanceKeys) {
+    final var query = createProcessInstanceDeletedQuery(processInstanceKeys);
     final var request =
-        new CountRequest.Builder()
+        new SearchRequest.Builder()
             .index(operationAlias)
             .query(query)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
+            .size(processInstanceKeys.size())
+            .source(s -> s.filter(f -> f.includes(OperationTemplate.PROCESS_INSTANCE_KEY)))
             .build();
 
     try {
-      return client.count(request).thenApplyAsync(r -> r.count() > 0, executor);
+      return client
+          .search(request, Map.class)
+          .thenApplyAsync(
+              r -> {
+                if (r.hits().hits().isEmpty()) {
+                  return Set.of();
+                }
+
+                return r.hits().hits().stream()
+                    .map(h -> h.source().get(OperationTemplate.PROCESS_INSTANCE_KEY))
+                    .map(v -> ((Number) v).longValue())
+                    .collect(Collectors.toSet());
+              },
+              executor);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);
     }
@@ -255,11 +271,16 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
         request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
   }
 
-  private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {
+  private Query createProcessInstanceDeletedQuery(final Set<Long> processInstanceKeys) {
     final var piKeyQ =
-        QueryBuilders.term()
+        QueryBuilders.terms()
             .field(OperationTemplate.PROCESS_INSTANCE_KEY)
-            .value(v -> v.longValue(processInstanceKey))
+            .terms(
+                t ->
+                    t.value(
+                        processInstanceKeys.stream()
+                            .map(FieldValue::of)
+                            .collect(Collectors.toList())))
             .build()
             .toQuery();
     final var typeQ =
