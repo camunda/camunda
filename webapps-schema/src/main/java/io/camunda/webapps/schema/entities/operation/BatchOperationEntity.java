@@ -23,6 +23,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
 
   private Integer instancesCount = 0;
   private Integer operationsTotalCount = 0;
+  // Legacy - Contains all operations (completed + failed)
   private Integer operationsFinishedCount = 0;
 
   // new fields for batch operation in zeebe engine

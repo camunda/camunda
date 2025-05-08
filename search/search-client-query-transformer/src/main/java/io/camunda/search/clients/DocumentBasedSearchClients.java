@@ -480,7 +480,8 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
-    throw new UnsupportedOperationException("Not implemented yet");
+    return getSearchExecutor()
+        .search(query, io.camunda.webapps.schema.entities.operation.BatchOperationEntity.class);
   }
 
   @Override
