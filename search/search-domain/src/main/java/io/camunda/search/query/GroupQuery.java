@@ -23,6 +23,10 @@ public record GroupQuery(GroupFilter filter, GroupSort sort, SearchQueryPage pag
     return fn.apply(new GroupQuery.Builder()).build();
   }
 
+  public Builder toBuilder() {
+    return new Builder().filter(filter).sort(sort).page(page);
+  }
+
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<GroupQuery.Builder>
       implements TypedSearchQueryBuilder<GroupQuery, GroupQuery.Builder, GroupFilter, GroupSort> {
     private static final GroupFilter EMPTY_FILTER = FilterBuilders.group().build();

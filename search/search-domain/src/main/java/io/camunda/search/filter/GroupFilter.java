@@ -18,8 +18,23 @@ public record GroupFilter(
     String description,
     String joinParentId,
     Set<String> memberIds,
-    EntityType memberType)
+    EntityType memberType,
+    String tenantId,
+    Set<String> groupIds)
     implements FilterBase {
+
+  public Builder toBuilder() {
+    return new Builder()
+        .groupKey(groupKey)
+        .groupId(groupId)
+        .name(name)
+        .description(description)
+        .joinParentId(joinParentId)
+        .memberIds(memberIds)
+        .memberType(memberType)
+        .tenantId(tenantId)
+        .groupIds(groupIds);
+  }
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
     private Long groupKey;
@@ -29,6 +44,8 @@ public record GroupFilter(
     private String joinParentId;
     private Set<String> memberIds;
     private EntityType memberType;
+    private String tenantId;
+    private Set<String> groupIds;
 
     public Builder groupKey(final Long value) {
       groupKey = value;
@@ -69,10 +86,28 @@ public record GroupFilter(
       return this;
     }
 
+    public Builder tenantId(final String value) {
+      tenantId = value;
+      return this;
+    }
+
+    public Builder groupIds(final Set<String> value) {
+      groupIds = value;
+      return this;
+    }
+
     @Override
     public GroupFilter build() {
       return new GroupFilter(
-          groupKey, groupId, name, description, joinParentId, memberIds, memberType);
+          groupKey,
+          groupId,
+          name,
+          description,
+          joinParentId,
+          memberIds,
+          memberType,
+          tenantId,
+          groupIds);
     }
   }
 }
