@@ -4553,7 +4553,7 @@ paths:
     post:
       tags:
         - Ad-hoc sub-process
-      operationId: searchAdHocSubprocessActivities
+      operationId: searchAdHocSubProcessActivities
       summary: Search activatable activities (alpha)
       description: |
         Search for activatable activities within ad-hoc sub-processes based on given criteria.
@@ -4568,7 +4568,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AdHocSubprocessActivitySearchQuery"
+              $ref: "#/components/schemas/AdHocSubProcessActivitySearchQuery"
       responses:
         "200":
           description: >
@@ -4576,7 +4576,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdHocSubprocessActivitySearchQueryResult"
+                $ref: "#/components/schemas/AdHocSubProcessActivitySearchQueryResult"
         "400":
           description: >
             The ad-hoc sub-process activities search query failed.
@@ -4592,18 +4592,18 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /element-instances/ad-hoc-activities/{adHocSubprocessInstanceKey}/activation:
+  /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     post:
       tags:
         - Ad-hoc sub-process
-      operationId: activateAdHocSubprocessActivities
+      operationId: activateAdHocSubProcessActivities
       summary: Activate activities within an ad-hoc sub-process
       description: |
         Activates selected activities within an ad-hoc sub-process identified by element ID.
         The provided element IDs must exist within the ad-hoc sub-process instance identified by the
-        provided adHocSubprocessInstanceKey.
+        provided adHocSubProcessInstanceKey.
       parameters:
-        - name: adHocSubprocessInstanceKey
+        - name: adHocSubProcessInstanceKey
           in: path
           required: true
           description: The key of the ad-hoc sub-process instance that contains the activities.
@@ -4614,7 +4614,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AdHocSubprocessActivateActivitiesInstruction"
+              $ref: "#/components/schemas/AdHocSubProcessActivateActivitiesInstruction"
       responses:
         "204":
           description: The ad-hoc sub-process instance is modified.
@@ -6255,7 +6255,7 @@ components:
         incidentKey:
           description: Incident key associated with this element instance.
           type: string
-    AdHocSubprocessActivitySearchQuery:
+    AdHocSubProcessActivitySearchQuery:
       description: Ad-hoc sub-process activities search request.
       type: object
       required:
@@ -6264,29 +6264,29 @@ components:
         filter:
           description: The ad-hoc sub-process activity search filters.
           allOf:
-            - $ref: "#/components/schemas/AdHocSubprocessActivityFilter"
-    AdHocSubprocessActivityFilter:
+            - $ref: "#/components/schemas/AdHocSubProcessActivityFilter"
+    AdHocSubProcessActivityFilter:
       description: Element instance filter.
       type: object
       required:
         - processDefinitionKey
-        - adHocSubprocessId
+        - adHocSubProcessId
       properties:
         processDefinitionKey:
           description: The process definition key.
           type: string
-        adHocSubprocessId:
+        adHocSubProcessId:
           description: The ad-hoc sub-process element ID.
           type: string
-    AdHocSubprocessActivitySearchQueryResult:
+    AdHocSubProcessActivitySearchQueryResult:
       type: object
       properties:
         items:
           description: The matching ad-hoc sub-process activities.
           type: array
           items:
-            $ref: "#/components/schemas/AdHocSubprocessActivityResult"
-    AdHocSubprocessActivityResult:
+            $ref: "#/components/schemas/AdHocSubProcessActivityResult"
+    AdHocSubProcessActivityResult:
       type: object
       properties:
         processDefinitionKey:
@@ -6295,7 +6295,7 @@ components:
         processDefinitionId:
           description: The process definition ID associated to this activity.
           type: string
-        adHocSubprocessId:
+        adHocSubProcessId:
           description: The ad-hoc sub-process element ID.
           type: string
         elementId:
@@ -6332,17 +6332,17 @@ components:
         tenantId:
           description: The tenant ID for this activity.
           type: string
-    AdHocSubprocessActivateActivitiesInstruction:
+    AdHocSubProcessActivateActivitiesInstruction:
       type: object
       properties:
         elements:
           description: Activities to activate.
           type: array
           items:
-            $ref: "#/components/schemas/AdHocSubprocessActivateActivityReference"
+            $ref: "#/components/schemas/AdHocSubProcessActivateActivityReference"
       required:
         - elements
-    AdHocSubprocessActivateActivityReference:
+    AdHocSubProcessActivateActivityReference:
       type: object
       properties:
         elementId:
