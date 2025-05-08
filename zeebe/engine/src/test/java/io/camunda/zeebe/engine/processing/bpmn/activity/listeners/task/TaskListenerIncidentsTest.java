@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -40,6 +42,7 @@ import org.junit.rules.TestWatcher;
 
 /** Tests verifying that a task listener may raise resolvable incidents. */
 public class TaskListenerIncidentsTest {
+
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   private final TaskListenerTestHelper helper = new TaskListenerTestHelper(ENGINE);
@@ -444,7 +447,6 @@ public class TaskListenerIncidentsTest {
 
   @Test
   public void shouldRetryCancelingListenerJobAfterExtractValueErrorDuringUserTaskInterruption() {
-
     // given
     final long processInstanceKey =
         helper.createProcessInstance(
@@ -513,5 +515,132 @@ public class TaskListenerIncidentsTest {
         processInstanceKey,
         UserTaskIntent.CANCELED,
         userTask -> assertThat(userTask.getAction()).isEmpty());
+  }
+
+  @Test
+  public void retriedAssigningListenerJobShouldHaveCorrectHeadersFromAssignCommand() {
+    testRetriedListenerJobHasExpectedHeaders(
+        ZeebeTaskListenerEventType.assigning,
+        pik ->
+            ENGINE
+                .userTask()
+                .ofInstance(pik)
+                .withAssignee("bryan")
+                .withAction("custom_assignment")
+                .assign(),
+        Map.of(
+            Protocol.USER_TASK_ASSIGNEE_HEADER_NAME,
+            "bryan",
+            Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+            "[\"assignee\"]",
+            Protocol.USER_TASK_ACTION_HEADER_NAME,
+            "custom_assignment"));
+  }
+
+  @Test
+  public void retriedAssigningListenerJobShouldHaveCorrectHeadersFromClaimCommand() {
+    testRetriedListenerJobHasExpectedHeaders(
+        ZeebeTaskListenerEventType.assigning,
+        pik ->
+            ENGINE
+                .userTask()
+                .ofInstance(pik)
+                .withAssignee("jesse")
+                .withAction("custom_claiming")
+                .claim(),
+        Map.of(
+            Protocol.USER_TASK_ASSIGNEE_HEADER_NAME,
+            "jesse",
+            Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+            "[\"assignee\"]",
+            Protocol.USER_TASK_ACTION_HEADER_NAME,
+            "custom_claiming"));
+  }
+
+  @Test
+  public void retriedUpdatingListenerJobShouldHaveCorrectHeadersFromUpdateCommand() {
+    testRetriedListenerJobHasExpectedHeaders(
+        ZeebeTaskListenerEventType.updating,
+        pik ->
+            ENGINE
+                .userTask()
+                .ofInstance(pik)
+                .withCandidateUsers("bob", "alice")
+                .withDueDate("new_due_date")
+                .withPriority(88)
+                .withAction("custom_update")
+                .update(),
+        Map.of(
+            Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME,
+            "[\"bob\",\"alice\"]",
+            Protocol.USER_TASK_DUE_DATE_HEADER_NAME,
+            "new_due_date",
+            Protocol.USER_TASK_PRIORITY_HEADER_NAME,
+            "88",
+            Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+            "[\"candidateUsersList\",\"dueDate\",\"priority\"]",
+            Protocol.USER_TASK_ACTION_HEADER_NAME,
+            "custom_update"));
+  }
+
+  /**
+   * Verifies that retried listener job has access to the original command's changed attributes by
+   * asserting the presence of expected custom headers on retried, and subsequent listener job.
+   */
+  private void testRetriedListenerJobHasExpectedHeaders(
+      final ZeebeTaskListenerEventType eventType,
+      final Consumer<Long> transitionTrigger,
+      final Map<String, String> expectedHeaders) {
+
+    // given: process with two listener jobs of the same type (first with a failing expression)
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
+                task ->
+                    task.zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
+                        .zeebeTaskListener(
+                            l -> l.eventType(eventType).typeExpression("missing_var_name"))));
+
+    // when: trigger transition that causes listener jobs to be created
+    transitionTrigger.accept(processInstanceKey);
+
+    // then: assert first listener job uses expected headers and complete it
+    final Consumer<JobRecordValue> assertHeaders =
+        job ->
+            assertThat(job.getCustomHeaders())
+                .describedAs(
+                    "Listener job should contain headers changed by the original user task command")
+                .containsAllEntriesOf(expectedHeaders);
+
+    helper.assertActivatedJob(processInstanceKey, listenerType, assertHeaders);
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
+
+    // then: assert incident due to missing variable in listener property expression
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+                Expected result of the expression 'missing_var_name' to be 'STRING', but was 'NULL'. \
+                The evaluation reported the following warnings:
+                [NO_VARIABLE_FOUND] No variable found with name 'missing_var_name'""");
+
+    // when: fix missing variable and resolve the incident
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("missing_var_name", listenerType + "_2"))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then: retried and remaining listener jobs should receive the same headers
+    helper.assertActivatedJob(processInstanceKey, listenerType, assertHeaders);
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.assertActivatedJob(processInstanceKey, listenerType + "_2", assertHeaders);
   }
 }
