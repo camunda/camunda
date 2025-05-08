@@ -409,16 +409,16 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   private MappingQuery expandGroupFilter(final MappingQuery mappingQuery) {
-    final var mappingIds = getGroupMembers(mappingQuery.filter().groupId(), MAPPING);
+    final var mappingRuleIds = getGroupMembers(mappingQuery.filter().groupId(), MAPPING);
     return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingIds).build())
+        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 
   private MappingQuery expandTenantFilter(final MappingQuery mappingQuery) {
-    final var mappingIds = getTenantMembers(mappingQuery.filter().tenantId(), MAPPING);
+    final var mappingRuleIds = getTenantMembers(mappingQuery.filter().tenantId(), MAPPING);
     return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingIds).build())
+        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 
