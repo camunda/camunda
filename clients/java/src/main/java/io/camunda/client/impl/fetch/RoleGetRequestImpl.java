@@ -48,7 +48,7 @@ public class RoleGetRequestImpl implements RoleGetRequest {
 
   @Override
   public CamundaFuture<Role> send() {
-    ArgumentUtil.ensureNotNull("roleId", roleId);
+    ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     final HttpCamundaFuture<Role> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/roles/%s", roleId),

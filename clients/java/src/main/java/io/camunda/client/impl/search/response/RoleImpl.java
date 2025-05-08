@@ -16,7 +16,6 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.Role;
-import java.util.Set;
 
 public class RoleImpl implements Role {
 
@@ -24,19 +23,13 @@ public class RoleImpl implements Role {
   private final String roleId;
   private final String name;
   private final String description;
-  private final Set<String> assignedMemberIds;
 
   public RoleImpl(
-      final long roleKey,
-      final String roleId,
-      final String name,
-      final String description,
-      final Set<String> assignedMemberIds) {
+      final long roleKey, final String roleId, final String name, final String description) {
     this.roleKey = roleKey;
     this.roleId = roleId;
     this.name = name;
     this.description = description;
-    this.assignedMemberIds = assignedMemberIds;
   }
 
   @Override
@@ -57,10 +50,5 @@ public class RoleImpl implements Role {
   @Override
   public String getDescription() {
     return description;
-  }
-
-  @Override
-  public Set<String> getAssignedMemberIds() {
-    return assignedMemberIds;
   }
 }

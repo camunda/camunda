@@ -15,8 +15,6 @@
  */
 package io.camunda.client.api.search.response;
 
-import java.util.Set;
-
 public interface Role {
 
   Long getRoleKey();
@@ -26,6 +24,4 @@ public interface Role {
   String getName();
 
   String getDescription();
-
-  Set<String> getAssignedMemberIds();
 }

@@ -69,8 +69,8 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1, Crea
 
   @Override
   public CamundaFuture<CreateRoleResponse> send() {
-    ArgumentUtil.ensureNotNull("roleId", request.getRoleId());
-    ArgumentUtil.ensureNotNull("name", request.getName());
+    ArgumentUtil.ensureNotNullNorEmpty("roleId", request.getRoleId());
+    ArgumentUtil.ensureNotNullNorEmpty("name", request.getName());
     final HttpCamundaFuture<CreateRoleResponse> result = new HttpCamundaFuture<>();
     final CreateRoleResponseImpl response = new CreateRoleResponseImpl();
     httpClient.post(
