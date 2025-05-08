@@ -13,14 +13,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
@@ -51,6 +54,11 @@ public class TenantQueryControllerTest extends RestControllerTest {
       List.of(
           new MappingEntity("mapping-id-1", 1L, "claim1", "value1", "cv1"),
           new MappingEntity("mapping-id-2", 2L, "claim2", "value2", "cv2"));
+
+  private static final List<GroupEntity> GROUP_ENTITIES =
+      List.of(
+          new GroupEntity(1L, "group-id-1", "Group 1", "Description 1"),
+          new GroupEntity(2L, "group-id-2", "Group 2", "Description 2"));
 
   private static final String RESPONSE =
       """
@@ -135,15 +143,54 @@ public class TenantQueryControllerTest extends RestControllerTest {
           MAPPING_ENTITIES.get(1).mappingId(),
           MAPPING_ENTITIES.size());
 
+  private static final String GROUP_RESPONSE =
+      """
+      {
+         "items": [
+           {
+             "groupKey": %s,
+             "name": "%s",
+             "description": "%s",
+             "groupId": "%s"
+           },
+           {
+             "groupKey": %s,
+             "name": "%s",
+             "description": "%s",
+             "groupId": "%s"
+           }
+         ],
+         "page": {
+           "totalItems": %s,
+           "firstSortValues": ["f"],
+           "lastSortValues": ["v"]
+         }
+       }
+      """;
+
+  private static final String EXPECTED_GROUP_RESPONSE =
+      GROUP_RESPONSE.formatted(
+          "\"%s\"".formatted(GROUP_ENTITIES.get(0).groupKey()),
+          GROUP_ENTITIES.get(0).name(),
+          GROUP_ENTITIES.get(0).description(),
+          GROUP_ENTITIES.get(0).groupId(),
+          "\"%s\"".formatted(GROUP_ENTITIES.get(1).groupKey()),
+          GROUP_ENTITIES.get(1).name(),
+          GROUP_ENTITIES.get(1).description(),
+          GROUP_ENTITIES.get(1).groupId(),
+          GROUP_ENTITIES.size());
+
   @MockBean private TenantServices tenantServices;
   @MockBean private UserServices userServices;
   @MockBean private MappingServices mappingServices;
+  @MockBean private GroupServices groupServices;
 
   @BeforeEach
   void setup() {
     when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
     when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
+    when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
   }
 
   @Test
@@ -345,6 +392,71 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_MAPPING_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchTenantGroupsWithSorting() {
+    // given
+    when(groupServices.search(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(GROUP_ENTITIES.size())
+                .items(GROUP_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/groups/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "groupId", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_GROUP_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchTenantGroupsWithEmptyQuery() {
+    // given
+    when(groupServices.search(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(GROUP_ENTITIES.size())
+                .items(GROUP_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/groups/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_GROUP_RESPONSE);
   }
 
   @ParameterizedTest
