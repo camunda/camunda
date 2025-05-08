@@ -483,7 +483,7 @@
 
   <changeSet id="create_batch_operation_table" author="pwunderlich">
     <createTable tableName="${prefix}BATCH_OPERATION">
-      <column name="BATCH_OPERATION_KEY" type="BIGINT">
+      <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
         <constraints primaryKey="true" nullable="false"/>
       </column>
       <column name="STATE" type="VARCHAR(255)"/>
@@ -496,7 +496,7 @@
     </createTable>
 
     <createTable tableName="${prefix}BATCH_OPERATION_ITEM">
-      <column name="BATCH_OPERATION_KEY" type="BIGINT">
+      <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
         <constraints
           foreignKeyName="${prefix}FK_BATCH_OPERATION_ITEM_BATCH_OPERATION"
           referencedTableName="${prefix}BATCH_OPERATION"

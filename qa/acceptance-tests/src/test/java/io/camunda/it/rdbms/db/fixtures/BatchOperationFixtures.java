@@ -29,7 +29,7 @@ public final class BatchOperationFixtures {
 
   public static BatchOperationDbModel createRandomized(
       final Function<Builder, Builder> builderFunction) {
-    final var key = CommonFixtures.nextKey();
+    final var key = CommonFixtures.nextStringKey();
     final var builder =
         new Builder()
             .batchOperationKey(key)
@@ -55,7 +55,7 @@ public final class BatchOperationFixtures {
   }
 
   public static List<Long> createAndSaveRandomBatchOperationItems(
-      final RdbmsWriter rdbmsWriter, final Long batchOperationKey, final int count) {
+      final RdbmsWriter rdbmsWriter, final String batchOperationKey, final int count) {
     final Set<Long> itemKeys =
         IntStream.range(0, count)
             .mapToObj(i -> CommonFixtures.nextKey())
@@ -80,7 +80,7 @@ public final class BatchOperationFixtures {
   }
 
   public static void insertBatchOperationsItems(
-      final RdbmsWriter rdbmsWriter, final Long batchOperationKey, final Set<Long> items) {
+      final RdbmsWriter rdbmsWriter, final String batchOperationKey, final Set<Long> items) {
     rdbmsWriter
         .getBatchOperationWriter()
         .updateBatchAndInsertItems(

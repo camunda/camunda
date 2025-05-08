@@ -26,8 +26,8 @@ public record BatchOperationSort(List<FieldSorting> orderings) implements SortOp
   public static final class Builder extends AbstractBuilder<BatchOperationSort.Builder>
       implements ObjectBuilder<BatchOperationSort> {
 
-    public Builder batchOperationKey() {
-      currentOrdering = new FieldSorting("batchOperationKey", null);
+    public Builder batchOperationId() {
+      currentOrdering = new FieldSorting("batchOperationId", null);
       return this;
     }
 

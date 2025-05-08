@@ -18,15 +18,10 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import java.util.Collection;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Exports a batch operation chunk record, which contains all the item keys, to the database. */
 public class BatchOperationChunkExportHandler
     implements RdbmsExportHandler<BatchOperationChunkRecordValue> {
-
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationChunkExportHandler.class);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -44,7 +39,7 @@ public class BatchOperationChunkExportHandler
   public void export(final Record<BatchOperationChunkRecordValue> record) {
     final var value = record.getValue();
     batchOperationWriter.updateBatchAndInsertItems(
-        value.getBatchOperationKey(), mapItems(value.getItems()));
+        String.valueOf(value.getBatchOperationKey()), mapItems(value.getItems()));
   }
 
   private List<BatchOperationItemDbModel> mapItems(

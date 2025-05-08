@@ -20,7 +20,10 @@ import io.camunda.client.api.search.enums.BatchOperationType;
 
 public interface BatchOperation {
 
-  Long getBatchOperationKey();
+  // To be backwards compatible with legacy batch operations from Operate, we need a String ID
+  // Operate BatchOperation ID is a UUID
+  // Engine BatchOperation ID is a Long
+  String getBatchOperationId();
 
   BatchOperationState getStatus();
 

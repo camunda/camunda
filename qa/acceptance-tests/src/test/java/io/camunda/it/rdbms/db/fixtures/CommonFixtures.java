@@ -25,6 +25,10 @@ public class CommonFixtures {
     return ID_COUNTER.incrementAndGet();
   }
 
+  public static String nextStringKey() {
+    return nextKey().toString();
+  }
+
   public static String nextStringId() {
     return UUID.randomUUID().toString();
   }

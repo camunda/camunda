@@ -72,7 +72,7 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public List<BatchOperationItemEntity> getBatchOperationItems(final Long batchOperationKey) {
+  public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
     return List.of();
   }
 

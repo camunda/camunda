@@ -37,31 +37,31 @@ public class BatchOperationController {
     this.batchOperationServices = batchOperationServices;
   }
 
-  @CamundaGetMapping(path = "/{batchOperationKey}")
-  public ResponseEntity<BatchOperationResponse> getByKey(
-      @PathVariable("batchOperationKey") final Long batchOperationKey) {
+  @CamundaGetMapping(path = "/{batchOperationId}")
+  public ResponseEntity<BatchOperationResponse> getById(
+      @PathVariable("batchOperationId") final String batchOperationId) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toBatchOperation(
                   batchOperationServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .getByKey(batchOperationKey)));
+                      .getById(batchOperationId)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
   }
 
-  @CamundaGetMapping(path = "/{batchOperationKey}/items")
-  public ResponseEntity<BatchOperationItemSearchQueryResult> getItemsByKey(
-      @PathVariable("batchOperationKey") final Long batchOperationKey) {
+  @CamundaGetMapping(path = "/{batchOperationId}/items")
+  public ResponseEntity<BatchOperationItemSearchQueryResult> getItemsById(
+      @PathVariable("batchOperationId") final String batchOperationId) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toBatchOperationItemSearchQueryResult(
                   batchOperationServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .getItemsByKey(batchOperationKey)));
+                      .getItemsById(batchOperationId)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -74,33 +74,33 @@ public class BatchOperationController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaPutMapping(path = "/{key}/cancel")
-  public ResponseEntity<Object> cancelBatchOperation(@PathVariable final long key) {
+  @CamundaPutMapping(path = "/{batchOperationId}/cancel")
+  public ResponseEntity<Object> cancelBatchOperation(@PathVariable final String batchOperationId) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
             () ->
                 batchOperationServices
                     .withAuthentication(RequestMapper.getAuthentication())
-                    .cancel(key))
+                    .cancel(batchOperationId))
         .join();
   }
 
-  @CamundaPutMapping(path = "/{key}/pause")
-  public ResponseEntity<Object> pauseBatchOperation(@PathVariable final long key) {
+  @CamundaPutMapping(path = "/{batchOperationId}/pause")
+  public ResponseEntity<Object> pauseBatchOperation(@PathVariable final String batchOperationId) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
             () ->
                 batchOperationServices
                     .withAuthentication(RequestMapper.getAuthentication())
-                    .pause(key))
+                    .pause(batchOperationId))
         .join();
   }
 
-  @CamundaPutMapping(path = "/{key}/resume")
-  public ResponseEntity<Object> resumeBatchOperation(@PathVariable final long key) {
+  @CamundaPutMapping(path = "/{batchOperationId}/resume")
+  public ResponseEntity<Object> resumeBatchOperation(@PathVariable final String batchOperationId) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
             () ->
                 batchOperationServices
                     .withAuthentication(RequestMapper.getAuthentication())
-                    .resume(key))
+                    .resume(batchOperationId))
         .join();
   }
 

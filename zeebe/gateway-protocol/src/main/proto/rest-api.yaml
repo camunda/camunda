@@ -4576,7 +4576,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationKey}:
+  /batch-operations/{batchOperationId}:
     get:
       tags:
         - Batch operation
@@ -4584,11 +4584,11 @@ paths:
       summary: Get batch operation
       description: Get batch operation by key.
       parameters:
-        - name: batchOperationKey
+        - name: batchOperationId
           in: path
           required: true
           description: |
-            The key of the batch operation.
+            The key (or operate legacy ID) of the batch operation.
           schema:
             type: string
       responses:
@@ -4613,7 +4613,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationKey}/items:
+  /batch-operations/{batchOperationId}/items:
     get:
       tags:
         - Batch operation
@@ -4621,11 +4621,11 @@ paths:
       summary: Get batch operation items
       description: Get items for a batch operation.
       parameters:
-        - name: batchOperationKey
+        - name: batchOperationId
           in: path
           required: true
           description: |
-            The key of the batch operation.
+            The key (or operate legacy ID) of the batch operation.
           schema:
             type: string
       responses:
@@ -4679,7 +4679,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationKey}/cancel:
+  /batch-operations/{batchOperationId}/cancel:
     put:
       tags:
         - Batch operation
@@ -4687,11 +4687,11 @@ paths:
       summary: Cancel Batch operation
       description: Cancels a running batch operation.
       parameters:
-        - name: batchOperationKey
+        - name: batchOperationId
           in: path
           required: true
           description: |
-            The key of the batch operation.
+            The key (or operate legacy ID) of the batch operation.
           schema:
             type: string
       requestBody:
@@ -4718,7 +4718,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationKey}/pause:
+  /batch-operations/{batchOperationId}/pause:
     put:
       tags:
         - Batch operation
@@ -4726,11 +4726,11 @@ paths:
       summary: Pause Batch operation
       description: Pauses a running batch operation.
       parameters:
-        - name: batchOperationKey
+        - name: batchOperationId
           in: path
           required: true
           description: |
-            The key of the batch operation.
+            The key (or operate legacy ID) of the batch operation.
           schema:
             type: string
       requestBody:
@@ -4757,7 +4757,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationKey}/resume:
+  /batch-operations/{batchOperationId}/resume:
     put:
       tags:
         - Batch operation
@@ -4765,11 +4765,11 @@ paths:
       summary: Resume Batch operation
       description: Resumes a paused batch operation.
       parameters:
-        - name: batchOperationKey
+        - name: batchOperationId
           in: path
           required: true
           description: |
-            The key of the batch operation.
+            The key (or operate legacy ID) of the batch operation.
           schema:
             type: string
       requestBody:
@@ -8904,7 +8904,6 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - batchOperationKey
             - operationType
             - state
             - startDate
@@ -8932,8 +8931,8 @@ components:
       description: Batch operation filter request.
       type: object
       properties:
-        batchOperationKey:
-          description: The batch operation key.
+        batchOperationId:
+          description: The key (or operate legacy ID) of the batch operation.
           type: string
         operationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"
@@ -8961,8 +8960,8 @@ components:
     BatchOperationResponse:
       type: object
       properties:
-        batchOperationKey:
-          description: Key of the batch operation.
+        batchOperationId:
+          description: Key or (Operate Legacy ID = UUID) of the batch operation.
           type: string
         state:
           description: The state of the batch operation.
@@ -9010,8 +9009,8 @@ components:
     BatchOperationItemResponse:
       type: object
       properties:
-        batchOperationKey:
-          description: Key of the batch operation.
+        batchOperationId:
+          description: The key (or operate legacy ID) of the batch operation.
           type: string
         itemKey:
           description: Key of the item, e.g. a process instance key.
