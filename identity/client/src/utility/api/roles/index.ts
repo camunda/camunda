@@ -56,7 +56,9 @@ export const getMappingsByRoleId: ApiDefinition<
   GetRoleMappingsParams
 > = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`);
 
-type AssignRoleMappingParams = GetRoleMappingsParams & { mappingRuleId: string };
+type AssignRoleMappingParams = GetRoleMappingsParams & {
+  mappingRuleId: string;
+};
 export const assignRoleMapping: ApiDefinition<
   undefined,
   AssignRoleMappingParams

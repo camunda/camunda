@@ -44,8 +44,12 @@ const AssignMappingsModal: FC<
   const unassignedMappings =
     mappingSearchResults?.items.filter(
       ({ mappingRuleId }) =>
-        !assignedMappings.some((mapping) => mapping.mappingRuleId === mappingRuleId) &&
-        !selectedMappings.some((mapping) => mapping.mappingRuleId === mappingRuleId),
+        !assignedMappings.some(
+          (mapping) => mapping.mappingRuleId === mappingRuleId,
+        ) &&
+        !selectedMappings.some(
+          (mapping) => mapping.mappingRuleId === mappingRuleId,
+        ),
     ) || [];
 
   const onSelectMapping = (mapping: Mapping) => {
@@ -56,7 +60,9 @@ const AssignMappingsModal: FC<
     ({ mappingRuleId }: Mapping) =>
     () => {
       setSelectedMappings(
-        selectedMappings.filter((mapping) => mapping.mappingRuleId !== mappingRuleId),
+        selectedMappings.filter(
+          (mapping) => mapping.mappingRuleId !== mappingRuleId,
+        ),
       );
     };
 

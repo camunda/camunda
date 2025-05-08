@@ -68,8 +68,8 @@ const DeleteModal: FC<RemoveRoleMappingModalProps> = ({
           i18nKey="removeMappingFromRole"
           values={{ mappingRuleId: mapping.mappingRuleId }}
         >
-          Are you sure you want to remove <strong>{mapping.mappingRuleId}</strong>{" "}
-          from this role?
+          Are you sure you want to remove{" "}
+          <strong>{mapping.mappingRuleId}</strong> from this role?
         </Translate>
       </p>
     </Modal>
