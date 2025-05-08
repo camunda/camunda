@@ -73,8 +73,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.auth.signer.Aws4Signer;
 import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.Region;
 
@@ -547,7 +547,7 @@ public class OpenSearchConnector {
       final org.apache.http.impl.nio.client.HttpAsyncClientBuilder builder) {
     final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
     credentialsProvider.resolveCredentials();
-    final Aws4Signer signer = Aws4Signer.create();
+    final AwsV4HttpSigner signer = AwsV4HttpSigner.create();
     final HttpRequestInterceptor signInterceptor =
         new AwsRequestSigningApacheInterceptor(
             AWS_OPENSEARCH_SERVICE_NAME,
