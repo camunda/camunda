@@ -31,11 +31,7 @@ type Props = {
   isVariableModificationAllowed?: boolean;
 };
 
-type FooterVariant =
-  | 'initial'
-  | 'disabled'
-  | 'add-variable'
-  | 'pending-variable';
+type FooterVariant = React.ComponentProps<typeof Footer>['variant'];
 
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {

@@ -33,8 +33,8 @@ const getProcessName = (instance: ProcessInstanceEntity | null) => {
   return processName || bpmnProcessId || '';
 };
 
-const getProcessDefinitionName = (instance?: ProcessInstance) => {
-  return instance?.processDefinitionName || instance?.processDefinitionId || '';
+const getProcessDefinitionName = (instance: ProcessInstance) => {
+  return instance.processDefinitionName ?? instance.processDefinitionId;
 };
 
 const createOperation = (
