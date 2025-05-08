@@ -168,31 +168,29 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var commandProcessor = commandProcessors.getCommandProcessor(intent);
 
     if (isRetriedCommand(command)) {
-      // Skip validation for retried command, as it was already validated
-      // during the original execution
-      handleCommandProcessing(commandProcessor, command, command.getValue(), intent);
+      // Skip `validateCommand` and `onCommand` invocations for retried command,
+      // as it was already validated during the original execution
+      finalizeCommandOrCreateTaskListenerJob(commandProcessor, command, command.getValue(), intent);
     } else {
       commandProcessor
           .validateCommand(command)
+          // Create a modifiable copy of the persisted user task record, as `onCommand` may
+          // apply the changed attributes from the command on top of persisted instance.
+          .map(UserTaskRecord::copy)
+          .thenDo(persistedRecord -> commandProcessor.onCommand(command, persistedRecord))
           .ifRightOrLeft(
               persistedRecord ->
-                  handleCommandProcessing(
-                      commandProcessor, command, persistedRecord.copy(), intent),
+                  finalizeCommandOrCreateTaskListenerJob(
+                      commandProcessor, command, persistedRecord, intent),
               rejection -> handleCommandRejection(command, rejection));
     }
   }
 
-  private void handleCommandProcessing(
+  private void finalizeCommandOrCreateTaskListenerJob(
       final UserTaskCommandProcessor processor,
       final TypedRecord<UserTaskRecord> command,
       final UserTaskRecord persistedRecord,
       final UserTaskIntent intent) {
-
-    // For retried commands (reconstructed after an incident), we skip `onCommand()`
-    // since it was already executed during the original command handling before the failure.
-    if (!isRetriedCommand(command)) {
-      processor.onCommand(command, persistedRecord);
-    }
 
     final var userTaskElement = getUserTaskElement(persistedRecord);
     final var eventType = mapIntentToEventType(intent);
