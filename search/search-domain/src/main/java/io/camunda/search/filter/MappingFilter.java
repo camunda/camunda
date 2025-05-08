@@ -15,38 +15,38 @@ import java.util.List;
 import java.util.Set;
 
 public record MappingFilter(
-    String mappingId,
-    Long mappingKey,
+    String mappingRuleId,
+    Long mappingRuleKey,
     String claimName,
     List<String> claimNames,
     String claimValue,
     String name,
     List<Claim> claims,
     String tenantId,
-    Set<String> mappingIds,
+    Set<String> mappingRuleIds,
     String groupId,
     String roleId)
     implements FilterBase {
 
   public MappingFilter.Builder toBuilder() {
     return new Builder()
-        .mappingId(mappingId)
-        .mappingKey(mappingKey)
+        .mappingRuleId(mappingRuleId)
+        .mappingRuleKey(mappingRuleKey)
         .claimName(claimName)
         .claimNames(claimNames)
         .claimValue(claimValue)
         .name(name)
         .claims(claims)
         .tenantId(tenantId)
-        .mappingIds(mappingIds)
+        .mappingRuleIds(mappingRuleIds)
         .groupId(groupId)
         .roleId(roleId);
   }
 
   public static final class Builder implements ObjectBuilder<MappingFilter> {
-    private String mappingId;
-    private Set<String> mappingIds;
-    private Long mappingKey;
+    private String mappingRuleId;
+    private Set<String> mappingRuleIds;
+    private Long mappingRuleKey;
     private String claimName;
     private List<String> claimNames;
     private String claimValue;
@@ -56,13 +56,13 @@ public record MappingFilter(
     private String groupId;
     private String roleId;
 
-    public Builder mappingId(final String value) {
-      mappingId = value;
+    public Builder mappingRuleId(final String value) {
+      mappingRuleId = value;
       return this;
     }
 
-    public Builder mappingKey(final Long value) {
-      mappingKey = value;
+    public Builder mappingRuleKey(final Long value) {
+      mappingRuleKey = value;
       return this;
     }
 
@@ -96,8 +96,8 @@ public record MappingFilter(
       return this;
     }
 
-    public Builder mappingIds(final Set<String> mappingIds) {
-      this.mappingIds = mappingIds;
+    public Builder mappingRuleIds(final Set<String> mappingRuleIds) {
+      this.mappingRuleIds = mappingRuleIds;
       return this;
     }
 
@@ -114,15 +114,15 @@ public record MappingFilter(
     @Override
     public MappingFilter build() {
       return new MappingFilter(
-          mappingId,
-          mappingKey,
+          mappingRuleId,
+          mappingRuleKey,
           claimName,
           claimNames,
           claimValue,
           name,
           claims,
           tenantId,
-          mappingIds,
+          mappingRuleIds,
           groupId,
           roleId);
     }
