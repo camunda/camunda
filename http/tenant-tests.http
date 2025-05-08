@@ -115,28 +115,52 @@ Accept: application/json
 ###Uncomment when available
 
 #### Assign Mapping Rule to Tenant
-## @name assign-mapping-rule
-#PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_KEY}}
-#Authorization: Basic {{BASIC_AUTH_TOKEN}}
-#Accept: application/json
-#
-#> {%
-#  client.test("Mapping rule assignment should be successful", function () {
-#    client.assert(response.status === 204, "Response status is not 204");
-#  });
-#%}
-#
+# @name assign-mapping-rule
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mappings/{{MAPPING_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Mapping rule assignment should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Search Mappings for Tenant
+# @name search-mappings-for-tenant
+< {%
+  import {wait} from "js/wait";
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mappings/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "mappingRuleId": "{{MAPPING_ID}}"
+  }
+}
+
+> {%
+  client.test("User search should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.items[0].username === "demo", "Username was not found");
+  });
+%}
+
 #### Remove Mapping Rule from Tenant
-## @name remove-mapping-rule
-#DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_KEY}}
-#Authorization: Basic {{BASIC_AUTH_TOKEN}}
-#Accept: application/json
-#
-#> {%
-#  client.test("Mapping rule removal should be successful", function () {
-#    client.assert(response.status === 204, "Response status is not 204");
-#  });
-#%}
+# @name remove-mapping-rule
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mappings/{{MAPPING_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Mapping rule removal should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
 
 #### Create Group
 ## @name create-group

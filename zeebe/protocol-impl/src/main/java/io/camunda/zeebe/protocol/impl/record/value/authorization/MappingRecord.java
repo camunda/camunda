@@ -15,28 +15,28 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class MappingRecord extends UnifiedRecordValue implements MappingRecordValue {
 
-  private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
-  private final StringProperty mappingIdProp = new StringProperty("mappingId");
+  private final LongProperty mappingRuleKeyProp = new LongProperty("mappingRuleKey", -1L);
+  private final StringProperty mappingRuleIdProp = new StringProperty("mappingRuleId");
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
 
   public MappingRecord() {
     super(5);
-    declareProperty(mappingKeyProp)
-        .declareProperty(mappingIdProp)
+    declareProperty(mappingRuleKeyProp)
+        .declareProperty(mappingRuleIdProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp);
   }
 
   @Override
-  public long getMappingKey() {
-    return mappingKeyProp.getValue();
+  public long getMappingRuleKey() {
+    return mappingRuleKeyProp.getValue();
   }
 
-  public MappingRecord setMappingKey(final long mappingKey) {
-    mappingKeyProp.setValue(mappingKey);
+  public MappingRecord setMappingRuleKey(final long mappingRuleKey) {
+    mappingRuleKeyProp.setValue(mappingRuleKey);
     return this;
   }
 
@@ -71,12 +71,12 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
   }
 
   @Override
-  public String getMappingId() {
-    return BufferUtil.bufferAsString(mappingIdProp.getValue());
+  public String getMappingRuleId() {
+    return BufferUtil.bufferAsString(mappingRuleIdProp.getValue());
   }
 
-  public MappingRecord setMappingId(final String mappingId) {
-    mappingIdProp.setValue(mappingId);
+  public MappingRecord setMappingRuleId(final String mappingRuleId) {
+    mappingRuleIdProp.setValue(mappingRuleId);
     return this;
   }
 }

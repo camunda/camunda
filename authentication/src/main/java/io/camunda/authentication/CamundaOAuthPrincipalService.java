@@ -66,13 +66,13 @@ public class CamundaOAuthPrincipalService {
   public OAuthContext loadOAuthContext(final Map<String, Object> claims)
       throws OAuth2AuthenticationException {
     final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
-    final Set<String> mappingIds =
-        mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
-    if (mappingIds.isEmpty()) {
+    final Set<String> mappingRuleIds =
+        mappings.stream().map(MappingEntity::mappingRuleId).collect(Collectors.toSet());
+    if (mappingRuleIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
-    final var assignedRoles = roleServices.getRolesByMemberIds(mappingIds);
+    final var assignedRoles = roleServices.getRolesByMemberIds(mappingRuleIds);
 
     final var authContextBuilder =
         new AuthenticationContextBuilder()
@@ -80,14 +80,14 @@ public class CamundaOAuthPrincipalService {
                 authorizationServices.getAuthorizedApplications(
                     Stream.concat(
                             assignedRoles.stream().map(r -> r.roleKey().toString()),
-                            mappingIds.stream())
+                            mappingRuleIds.stream())
                         .collect(Collectors.toSet())))
             .withTenants(
-                tenantServices.getTenantsByMemberIds(mappingIds).stream()
+                tenantServices.getTenantsByMemberIds(mappingRuleIds).stream()
                     .map(TenantDTO::fromEntity)
                     .toList())
             .withGroups(
-                groupServices.getGroupsByMemberKeys(mappingIds).stream()
+                groupServices.getGroupsByMemberKeys(mappingRuleIds).stream()
                     .map(GroupEntity::name)
                     .toList())
             .withRoles(assignedRoles);
@@ -108,7 +108,7 @@ public class CamundaOAuthPrincipalService {
       authContextBuilder.withApplicationId(getApplicationIdFromClaims(claims));
     }
 
-    return new OAuthContext(mappingIds, authContextBuilder.build());
+    return new OAuthContext(mappingRuleIds, authContextBuilder.build());
   }
 
   private String getUsernameFromClaims(final Map<String, Object> claims) {

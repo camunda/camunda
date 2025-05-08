@@ -204,7 +204,7 @@ public final class AuthorizationCheckBehavior {
     for (final var mapping : persistedMappings) {
       final var hasTenant =
           membershipState.hasRelation(
-              EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT, tenantId);
+              EntityType.MAPPING, mapping.getMappingRuleId(), RelationType.TENANT, tenantId);
       if (hasTenant) {
         return true;
       }
@@ -213,9 +213,10 @@ public final class AuthorizationCheckBehavior {
     // Search for transitive tenant membership in a separate loop to optimize for the common case of
     // a direct membership.
     for (final var mapping : persistedMappings) {
-      if (hasTenantIdThroughGroups(EntityType.MAPPING, mapping.getMappingId(), tenantId)) {
+      if (hasTenantIdThroughGroups(EntityType.MAPPING, mapping.getMappingRuleId(), tenantId)) {
         return true;
-      } else if (hasTenantIdThroughRoles(EntityType.MAPPING, mapping.getMappingId(), tenantId)) {
+      } else if (hasTenantIdThroughRoles(
+          EntityType.MAPPING, mapping.getMappingRuleId(), tenantId)) {
         return true;
       }
     }
@@ -367,20 +368,20 @@ public final class AuthorizationCheckBehavior {
             (mapping, stream) -> {
               getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.MAPPING,
-                      List.of(mapping.getMappingId()),
+                      List.of(mapping.getMappingRuleId()),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
               getGroupsAuthorizedResourceIdentifiers(
                       EntityType.MAPPING,
-                      mapping.getMappingId(),
+                      mapping.getMappingRuleId(),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
               getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.ROLE,
                       membershipState.getMemberships(
-                          EntityType.MAPPING, mapping.getMappingId(), RelationType.ROLE),
+                          EntityType.MAPPING, mapping.getMappingRuleId(), RelationType.ROLE),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
@@ -478,16 +479,16 @@ public final class AuthorizationCheckBehavior {
                   final var tenantIds =
                       new HashSet<>(
                           membershipState.getMemberships(
-                              EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT));
+                              EntityType.MAPPING, mapping.getMappingRuleId(), RelationType.TENANT));
 
                   final var groupIds =
                       membershipState.getMemberships(
-                          EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP);
+                          EntityType.MAPPING, mapping.getMappingRuleId(), RelationType.GROUP);
                   tenantIds.addAll(getTenantIdsForGroups(groupIds));
 
                   final var roleIds =
                       membershipState.getMemberships(
-                          EntityType.MAPPING, mapping.getMappingId(), RelationType.ROLE);
+                          EntityType.MAPPING, mapping.getMappingRuleId(), RelationType.ROLE);
                   tenantIds.addAll(getTenantIdsForRoles(roleIds));
 
                   return tenantIds.stream();

@@ -499,14 +499,14 @@ public class GroupControllerTest extends RestControllerTest {
   void shouldAssignMemberToGroupAndReturnAccepted() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING);
     when(groupServices.assignMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
         .put()
-        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -520,8 +520,8 @@ public class GroupControllerTest extends RestControllerTest {
   void shouldReturnErrorForAddingMissingMappingToGroup() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING);
     when(groupServices.assignMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -535,7 +535,7 @@ public class GroupControllerTest extends RestControllerTest {
     // when
     webClient
         .put()
-        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId))
         .accept(MediaType.APPLICATION_PROBLEM_JSON)
         .exchange()
         .expectStatus()
@@ -549,8 +549,8 @@ public class GroupControllerTest extends RestControllerTest {
   void shouldReturnErrorForAddingMappingToMissingGroup() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING);
     when(groupServices.assignMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -564,7 +564,7 @@ public class GroupControllerTest extends RestControllerTest {
     // when
     webClient
         .put()
-        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId))
         .accept(MediaType.APPLICATION_PROBLEM_JSON)
         .exchange()
         .expectStatus()
@@ -575,11 +575,11 @@ public class GroupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToGroup() {
+  void shouldReturnErrorForProvidingInvalidMappingRuleIdWhenAddingToGroup() {
     // given
     final String groupId = Strings.newRandomValidIdentityId();
-    final String mappingId = "mappingId!";
-    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
+    final String mappingRuleId = "mappingRuleId!";
+    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId);
 
     // when
     webClient
@@ -597,7 +597,7 @@ public class GroupControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "status": 400,
                 "title": "INVALID_ARGUMENT",
-                "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
                 .formatted(IdentifierPatterns.ID_PATTERN, path));
@@ -608,8 +608,8 @@ public class GroupControllerTest extends RestControllerTest {
   void shouldReturnErrorForProvidingInvalidGroupIdWhenAddingToGroup() {
     // given
     final String groupId = "groupId!";
-    final String mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
+    final String mappingRuleId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId);
 
     // when
     webClient
@@ -716,14 +716,14 @@ public class GroupControllerTest extends RestControllerTest {
   void shouldUnassignMemberFromGroupAndReturnAccepted() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING);
     when(groupServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
         .delete()
-        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -737,8 +737,8 @@ public class GroupControllerTest extends RestControllerTest {
   void shouldReturnErrorForRemovingMissingMappingFromGroup() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING);
     when(groupServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -752,7 +752,7 @@ public class GroupControllerTest extends RestControllerTest {
     // when
     webClient
         .delete()
-        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId))
         .accept(MediaType.APPLICATION_PROBLEM_JSON)
         .exchange()
         .expectStatus()
@@ -766,8 +766,8 @@ public class GroupControllerTest extends RestControllerTest {
   void shouldReturnErrorForRemovingMappingFromMissingGroup() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING);
     when(groupServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -781,7 +781,7 @@ public class GroupControllerTest extends RestControllerTest {
     // when
     webClient
         .delete()
-        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId))
         .accept(MediaType.APPLICATION_PROBLEM_JSON)
         .exchange()
         .expectStatus()
@@ -792,11 +792,11 @@ public class GroupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorForProvidingInvalidMappingIdWhenRemovingFromGroup() {
+  void shouldReturnErrorForProvidingInvalidMappingRuleIdWhenRemovingFromGroup() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var mappingId = "mappingId!";
-    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
+    final var mappingRuleId = "mappingRuleId!";
+    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId);
 
     // when
     webClient
@@ -813,7 +813,7 @@ public class GroupControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "status": 400,
                   "title": "INVALID_ARGUMENT",
-                  "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                  "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
                 .formatted(IdentifierPatterns.ID_PATTERN, path));
@@ -824,8 +824,8 @@ public class GroupControllerTest extends RestControllerTest {
   void shouldReturnErrorForProvidingInvalidGroupIdWhenRemovingFromGroup() {
     // given
     final String groupId = "groupId!";
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingRuleId);
 
     // when
     webClient

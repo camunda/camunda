@@ -28,7 +28,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 public final class AssignMappingToTenantCommandImpl implements AssignMappingToTenantCommandStep1 {
 
   private final String tenantId;
-  private String mappingId;
+  private String mappingRuleId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
@@ -39,8 +39,8 @@ public final class AssignMappingToTenantCommandImpl implements AssignMappingToTe
   }
 
   @Override
-  public AssignMappingToTenantCommandStep1 mappingId(final String mappingId) {
-    this.mappingId = mappingId;
+  public AssignMappingToTenantCommandStep1 mappingRuleId(final String mappingRuleId) {
+    this.mappingRuleId = mappingRuleId;
     return this;
   }
 
@@ -54,7 +54,7 @@ public final class AssignMappingToTenantCommandImpl implements AssignMappingToTe
   @Override
   public CamundaFuture<AssignMappingToTenantResponse> send() {
     final HttpCamundaFuture<AssignMappingToTenantResponse> result = new HttpCamundaFuture<>();
-    final String endpoint = String.format("/tenants/%s/mappings/%s", tenantId, mappingId);
+    final String endpoint = String.format("/tenants/%s/mappings/%s", tenantId, mappingRuleId);
     httpClient.put(endpoint, null, httpRequestConfig.build(), result);
     return result;
   }

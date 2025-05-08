@@ -40,12 +40,12 @@ public class CreateMappingMultiPartitionTest {
   @Test
   public void shouldDistributeMappingCreateCommand() {
     // when
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .create();
@@ -92,12 +92,12 @@ public class CreateMappingMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .create();
@@ -119,12 +119,12 @@ public class CreateMappingMultiPartitionTest {
     }
     final var roleName = UUID.randomUUID().toString();
     engine.role().newRole(roleName).create();
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .create();

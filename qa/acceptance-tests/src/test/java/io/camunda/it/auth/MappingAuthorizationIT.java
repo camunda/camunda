@@ -108,13 +108,13 @@ class MappingAuthorizationIT {
       final CamundaClient adminClient,
       final String name,
       final String value,
-      final String mappingId) {
+      final String mappingRuleId) {
     adminClient
         .newCreateMappingCommand()
         .claimName(name)
         .claimValue(value)
-        .mappingId(mappingId)
-        .name(mappingId)
+        .mappingRuleId(mappingRuleId)
+        .name(mappingRuleId)
         .send()
         .join();
   }

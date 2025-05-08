@@ -407,11 +407,11 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                         f -> f.joinParentId(mappingQuery.filter().tenantId()).memberType(MAPPING))
                     .build(),
                 io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
-    final var mappingIds =
+    final var mappingRuleIds =
         tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
 
     return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 
