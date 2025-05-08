@@ -132,7 +132,7 @@ public class AuthorizationChecker {
     if (authentication.authenticationApplicationId() != null) {
       ownerIds.add(authentication.authenticationApplicationId());
     }
-    ownerIds.addAll(authentication.authenticatedMappingIds());
+    ownerIds.addAll(authentication.authenticatedMappingRuleIds());
     ownerIds.addAll(
         // TODO remove this mapping when refactoring Groups to IDs
         authentication.authenticatedGroupKeys().stream()
