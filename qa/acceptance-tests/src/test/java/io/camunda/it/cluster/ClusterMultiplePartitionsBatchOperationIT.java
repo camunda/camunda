@@ -14,6 +14,7 @@ import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
@@ -24,6 +25,7 @@ import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationI
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
@@ -74,6 +76,17 @@ public class ClusterMultiplePartitionsBatchOperationIT {
             i ->
                 ACTIVE_PROCESS_INSTANCES.add(
                     startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"bar\"}")));
+
+    // given we really have processes on more than one partitions
+    final long countPartitionsDeployedTo =
+        ACTIVE_PROCESS_INSTANCES.stream()
+            .map(ProcessInstanceEvent::getProcessInstanceKey)
+            .map(Protocol::decodePartitionId)
+            .distinct()
+            .count();
+    assumeTrue(
+        countPartitionsDeployedTo > 1,
+        "Test requires process instances to be deployed to multiple partitions.");
 
     // Wait for process instances to start
     waitForProcessInstancesToStart(camundaClient, ACTIVE_PROCESS_INSTANCES.size());
