@@ -319,6 +319,7 @@ public class WebSecurityConfig {
       }
       if (configuration.getSaas().isConfigured()) {
         validators.add(new OrganizationValidator(configuration.getSaas().getOrganizationId()));
+        validators.add(new ClusterValidator(configuration.getSaas().getClusterId()));
       }
 
       if (!validators.isEmpty()) {
