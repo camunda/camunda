@@ -185,7 +185,7 @@
         </property>
       </activation>
       <properties>
-        <excludeUnitTestNames>*IT.java,**/connect/**/*.java,**/util/**/*.java,**/entities/**/*.java,**/schema/**/*.java,**/rest/**/*.java,**/webapp/**/*.java</excludeUnitTestNames>
+        <excludeUnitTestNames>**/connect/**/*.java,**/util/**/*.java,**/entities/**/*.java,**/schema/**/*.java,**/rest/**/*.java,**/webapp/**/*.java</excludeUnitTestNames>
       </properties>
     </profile>
 
