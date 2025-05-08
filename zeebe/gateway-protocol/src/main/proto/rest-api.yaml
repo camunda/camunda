@@ -659,7 +659,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /tenants/{tenantId}/mappings/{mappingId}:
+  /tenants/{tenantId}/mapping-rules/{mappingRuleId}:
     put:
       tags:
         - Tenant
@@ -673,7 +673,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The unique identifier of the mapping rule.
@@ -708,7 +708,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The unique identifier of the mapping rule.
@@ -729,7 +729,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /tenants/{tenantId}/mappings/search:
+  /tenants/{tenantId}/mapping-rules/search:
     post:
       tags:
         - Tenant
@@ -3010,7 +3010,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /roles/{roleId}/mappings/{mappingId}:
+  /roles/{roleId}/mapping-rules/{mappingRuleId}:
     put:
       tags:
         - Role
@@ -3027,7 +3027,7 @@ paths:
           description: The role ID.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The mapping ID.
@@ -3071,7 +3071,7 @@ paths:
           description: The role ID.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The mapping ID.
@@ -3534,7 +3534,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /groups/{groupId}/mapping-rules/{mappingId}:
+  /groups/{groupId}/mapping-rules/{mappingRuleId}:
     put:
       tags:
         - Group
@@ -3552,7 +3552,7 @@ paths:
           description: The group ID.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The mapping rule ID.
@@ -3596,7 +3596,7 @@ paths:
           description: The group ID.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The mapping rule ID.
@@ -3692,7 +3692,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /mapping-rules/{mappingId}:
+  /mapping-rules/{mappingRuleId}:
     put:
       tags:
         - Mapping rule
@@ -3701,7 +3701,7 @@ paths:
       description: |
         Update a mapping rule.
       parameters:
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to update.
@@ -3748,7 +3748,7 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to delete.
@@ -3760,7 +3760,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The mapping rule with the mappingId was not found.
+          description: The mapping rule with the mappingRuleId was not found.
           content:
             application/problem+json:
               schema:
@@ -3778,7 +3778,7 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes till
         its release with an upcoming minor release.
       parameters:
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to get.
@@ -3790,7 +3790,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The mapping rule with the mappingId was not found.
+          description: The mapping rule with the mappingRuleId was not found.
           content:
             application/problem+json:
               schema:
@@ -6907,7 +6907,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - mappingId
+            - mappingRuleId
             - claimName
             - claimValue
             - name
@@ -6955,7 +6955,7 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        mappingId:
+        mappingRuleId:
           type: string
           description: The ID of the mapping.
     CamundaUserResult:
@@ -7313,11 +7313,11 @@ components:
       allOf:
         - $ref: "#/components/schemas/MappingRuleCreateUpdateRequest"
       properties:
-        mappingId:
+        mappingRuleId:
           type: string
           description: The unique ID of the mapping.
       required:
-        - mappingId
+        - mappingRuleId
     MappingRuleUpdateRequest:
       type: object
       allOf:
@@ -7334,7 +7334,7 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        mappingId:
+        mappingRuleId:
           type: string
           description: The unique ID of the mapping.
     MappingRuleCreateResult:
@@ -7367,7 +7367,7 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        mappingId:
+        mappingRuleId:
           type: string
           description: The ID of the mapping.
 

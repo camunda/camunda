@@ -40,7 +40,7 @@ const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
     if (groupId && mapping) {
       const { success } = await callUnassignMapping({
         groupId,
-        mappingId: mapping.mappingId,
+        mappingRuleId: mapping.mappingRuleId,
       });
 
       if (success) {
@@ -66,9 +66,9 @@ const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
       <p>
         <Translate
           i18nKey="removeMappingConfirmation"
-          values={{ mappingId: mapping.mappingId }}
+          values={{ mappingRuleId: mapping.mappingRuleId }}
         >
-          Are you sure you want to remove <strong>{mapping.mappingId}</strong>{" "}
+          Are you sure you want to remove <strong>{mapping.mappingRuleId}</strong>{" "}
           from this group?
         </Translate>
       </p>

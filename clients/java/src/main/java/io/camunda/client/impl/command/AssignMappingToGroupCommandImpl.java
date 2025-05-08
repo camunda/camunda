@@ -30,7 +30,7 @@ public class AssignMappingToGroupCommandImpl implements AssignMappingToGroupStep
   private final String groupId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private String mappingId;
+  private String mappingRuleId;
 
   public AssignMappingToGroupCommandImpl(final HttpClient httpClient, final String groupId) {
     this.groupId = groupId;
@@ -39,8 +39,8 @@ public class AssignMappingToGroupCommandImpl implements AssignMappingToGroupStep
   }
 
   @Override
-  public AssignMappingToGroupStep1 mappingId(final String mappingId) {
-    this.mappingId = mappingId;
+  public AssignMappingToGroupStep1 mappingRuleId(final String mappingRuleId) {
+    this.mappingRuleId = mappingRuleId;
     return this;
   }
 
@@ -54,10 +54,10 @@ public class AssignMappingToGroupCommandImpl implements AssignMappingToGroupStep
   @Override
   public CamundaFuture<AssignMappingToGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    ArgumentUtil.ensureNotNullNorEmpty("mappingId", mappingId);
+    ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingRuleId);
     final HttpCamundaFuture<AssignMappingToGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
-        "/groups/" + groupId + "/mapping-rules/" + mappingId,
+        "/groups/" + groupId + "/mapping-rules/" + mappingRuleId,
         null,
         httpRequestConfig.build(),
         result);

@@ -79,17 +79,17 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
       return;
     }
 
-    final var persistedMappingWithSameId = mappingState.get(record.getMappingId());
+    final var persistedMappingWithSameId = mappingState.get(record.getMappingRuleId());
     if (persistedMappingWithSameId.isPresent()) {
       final var errorMessage =
-          MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getMappingId());
+          MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getMappingRuleId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 
     final long key = keyGenerator.nextKey();
-    record.setMappingKey(key);
+    record.setMappingRuleKey(key);
 
     stateWriter.appendFollowUpEvent(key, MappingIntent.CREATED, record);
     responseWriter.writeEventOnCommand(key, MappingIntent.CREATED, record, command);
@@ -104,12 +104,12 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
   public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
     mappingState
-        .get(record.getMappingId())
+        .get(record.getMappingRuleId())
         .ifPresentOrElse(
             existingMapping -> {
               final var errorMessage =
                   MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
-                      existingMapping.getMappingId());
+                      existingMapping.getMappingRuleId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
             () -> stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.CREATED, record));

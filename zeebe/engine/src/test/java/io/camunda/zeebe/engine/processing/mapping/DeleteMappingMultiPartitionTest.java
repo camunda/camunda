@@ -41,14 +41,14 @@ public class DeleteMappingMultiPartitionTest {
     // when
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = UUID.randomUUID().toString();
+    final var mappingRuleId = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
         .create();
-    engine.mapping().deleteMapping(mappingId).delete();
+    engine.mapping().deleteMapping(mappingRuleId).delete();
 
     // then
     assertThat(
@@ -96,14 +96,14 @@ public class DeleteMappingMultiPartitionTest {
     // when
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = UUID.randomUUID().toString();
+    final var mappingRuleId = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
         .create();
-    engine.mapping().deleteMapping(mappingId).delete();
+    engine.mapping().deleteMapping(mappingRuleId).delete();
 
     // then
     assertThat(
@@ -122,15 +122,15 @@ public class DeleteMappingMultiPartitionTest {
     }
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = UUID.randomUUID().toString();
+    final var mappingRuleId = UUID.randomUUID().toString();
 
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
         .create();
-    engine.mapping().deleteMapping(mappingId).delete();
+    engine.mapping().deleteMapping(mappingRuleId).delete();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

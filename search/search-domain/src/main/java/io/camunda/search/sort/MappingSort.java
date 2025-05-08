@@ -25,8 +25,8 @@ public record MappingSort(List<FieldSorting> orderings) implements SortOption {
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<MappingSort> {
 
-    public Builder mappingKey() {
-      currentOrdering = new FieldSorting("mappingKey", null);
+    public Builder mappingRuleKey() {
+      currentOrdering = new FieldSorting("mappingRuleKey", null);
       return this;
     }
 
@@ -45,8 +45,8 @@ public record MappingSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder mappingId() {
-      currentOrdering = new FieldSorting("mappingId", null);
+    public Builder mappingRuleId() {
+      currentOrdering = new FieldSorting("mappingRuleId", null);
       return this;
     }
 

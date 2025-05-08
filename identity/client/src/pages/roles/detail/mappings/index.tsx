@@ -84,16 +84,16 @@ const Mappings: FC<MappingsProps> = ({ roleId }) => {
       <EntityList
         data={mappings?.items}
         headers={[
-          { header: t("mappingId"), key: "mappingId" },
+          { header: t("mappingRuleId"), key: "mappingRuleId" },
           { header: t("mappingName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
         ]}
-        sortProperty="mappingId"
+        sortProperty="mappingRuleId"
         loading={loading}
         addEntityLabel={t("assignMapping")}
         onAddEntity={openAssignModal}
-        searchPlaceholder={t("searchByMappingId")}
+        searchPlaceholder={t("searchByMappingRuleId")}
         menuItems={[
           {
             label: t("remove"),

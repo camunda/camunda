@@ -34,7 +34,7 @@ public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilt
         filter.claimName() == null ? null : term(CLAIM_NAME, filter.claimName()),
         filter.claimValue() == null ? null : term(CLAIM_VALUE, filter.claimValue()),
         filter.name() == null ? null : term(NAME, filter.name()),
-        filter.mappingId() == null ? null : term(MAPPING_ID, filter.mappingId()),
+        filter.mappingRuleId() == null ? null : term(MAPPING_ID, filter.mappingRuleId()),
         filter.claims() == null
             ? null
             : or(
@@ -43,10 +43,10 @@ public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilt
                         claim ->
                             and(term(CLAIM_NAME, claim.name()), term(CLAIM_VALUE, claim.value())))
                     .toList()),
-        filter.mappingIds() == null
+        filter.mappingRuleIds() == null
             ? null
-            : filter.mappingIds().isEmpty()
+            : filter.mappingRuleIds().isEmpty()
                 ? matchNone()
-                : stringTerms(MAPPING_ID, filter.mappingIds().stream().sorted().toList()));
+                : stringTerms(MAPPING_ID, filter.mappingRuleIds().stream().sorted().toList()));
   }
 }

@@ -49,18 +49,18 @@ public class MappingTest {
         .hasClaimName(claimName)
         .hasClaimValue(claimValue)
         .hasName(name)
-        .hasMappingId(id);
+        .hasMappingRuleId(id);
   }
 
   @Test
   public void shouldNotDuplicateWithSameClaim() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .create();
@@ -69,7 +69,7 @@ public class MappingTest {
     final var duplicatedMappingRecord =
         engine
             .mapping()
-            .newMapping(mappingId)
+            .newMapping(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .expectRejection()
@@ -139,7 +139,7 @@ public class MappingTest {
     // then
     assertThat(updatedMapping)
         .isNotNull()
-        .hasMappingId(id)
+        .hasMappingRuleId(id)
         .hasName(name + "New")
         .hasClaimName(claimName + "New")
         .hasClaimValue(claimValue + "New");
@@ -175,12 +175,12 @@ public class MappingTest {
   @Test
   public void shouldNotUpdateToExistingClaim() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var existingClaimName = UUID.randomUUID().toString();
     final var existingClaimValue = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(existingClaimName)
         .withClaimValue(existingClaimValue)
         .create();
@@ -222,11 +222,11 @@ public class MappingTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var mappingId = UUID.randomUUID().toString();
+    final var mappingRuleId = UUID.randomUUID().toString();
 
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -234,21 +234,21 @@ public class MappingTest {
         .getValue();
 
     // when
-    final var deletedMapping = engine.mapping().deleteMapping(mappingId).delete().getValue();
+    final var deletedMapping = engine.mapping().deleteMapping(mappingRuleId).delete().getValue();
 
     // then
-    assertThat(deletedMapping).isNotNull().hasMappingId(mappingId);
+    assertThat(deletedMapping).isNotNull().hasMappingRuleId(mappingRuleId);
   }
 
   @Test
   public void shouldCleanupGroupAndRoleMembership() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var mappingRecord =
         engine
             .mapping()
-            .newMapping(mappingId)
+            .newMapping(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .create();
@@ -259,31 +259,31 @@ public class MappingTest {
     engine
         .group()
         .addEntity(groupId)
-        .withEntityId(mappingId)
+        .withEntityId(mappingRuleId)
         .withEntityType(EntityType.MAPPING)
         .add();
     engine
         .role()
         .addEntity(roleId)
-        .withEntityId(mappingId)
+        .withEntityId(mappingRuleId)
         .withEntityType(EntityType.MAPPING)
         .add();
 
     // when
-    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingId()).delete();
+    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingRuleId()).delete();
 
     // then
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupId(groupId)
-                .withEntityId(mappingId)
+                .withEntityId(mappingRuleId)
                 .withEntityType(EntityType.MAPPING)
                 .exists())
         .isTrue();
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleId(roleId)
-                .withEntityId(mappingId)
+                .withEntityId(mappingRuleId)
                 .withEntityType(EntityType.MAPPING)
                 .exists())
         .isTrue();

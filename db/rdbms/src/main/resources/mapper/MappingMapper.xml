@@ -24,13 +24,13 @@
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingDbModel">
     INSERT INTO ${prefix}MAPPINGS (MAPPING_ID, MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
-    VALUES (#{mappingId}, #{mappingKey}, #{claimName}, #{claimValue}, #{name})
+    VALUES (#{mappingRuleId}, #{mappingRuleKey}, #{claimName}, #{claimValue}, #{name})
   </insert>
 
   <delete id="delete" parameterType="string">
     DELETE
     FROM ${prefix}MAPPINGS
-    WHERE MAPPING_ID = #{mappingId}
+    WHERE MAPPING_ID = #{mappingRuleId}
   </delete>
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingDbQuery"
@@ -65,11 +65,11 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
-    <if test="filter.mappingId != null">
-      AND MAPPING_ID = #{filter.mappingId}
+    <if test="filter.mappingRuleId != null">
+      AND MAPPING_ID = #{filter.mappingRuleId}
     </if>
-    <if test="filter.mappingKey != null">
-      AND MAPPING_KEY = #{filter.mappingKey}
+    <if test="filter.mappingRuleKey != null">
+      AND MAPPING_KEY = #{filter.mappingRuleKey}
     </if>
     <if test="filter.claimName != null">
       AND CLAIM_NAME = #{filter.claimName}
