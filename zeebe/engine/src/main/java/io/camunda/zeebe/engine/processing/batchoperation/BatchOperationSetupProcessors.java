@@ -109,6 +109,7 @@ public final class BatchOperationSetupProcessors {
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
                 new BatchOperationItemProvider(searchClientsProxy),
-                engineConfiguration));
+                engineConfiguration,
+                partitionId));
   }
 }

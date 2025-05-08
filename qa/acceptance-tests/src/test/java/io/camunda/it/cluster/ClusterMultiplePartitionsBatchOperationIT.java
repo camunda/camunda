@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.client;
+package io.camunda.it.cluster;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
@@ -13,9 +13,8 @@ import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
-import static io.camunda.it.util.TestHelper.waitUntilElementInstanceHasIncidents;
-import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
@@ -25,12 +24,17 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -39,56 +43,64 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "es")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "os")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class BatchOperationCancelProcessInstanceTest {
-
-  static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-  static final List<ProcessInstanceEvent> ACTIVE_PROCESS_INSTANCES = new ArrayList<>();
+public class ClusterMultiplePartitionsBatchOperationIT {
 
   private static CamundaClient camundaClient;
+
+  @MultiDbTestApplication
+  private static final TestStandaloneApplication<?> APPLICATION =
+      new TestStandaloneBroker()
+          .withUnauthenticatedAccess()
+          .withBrokerConfig(
+              b -> {
+                final var cluster = b.getCluster();
+                cluster.setPartitionsCount(3);
+                b.setCluster(cluster);
+              });
+
+  private static Process deployedProcess;
+  private static final List<ProcessInstanceEvent> ACTIVE_PROCESS_INSTANCES = new ArrayList<>();
 
   @BeforeAll
   public static void beforeAll() {
     Objects.requireNonNull(camundaClient);
-    final List<String> processes =
-        List.of(
-            "service_tasks_v1.bpmn",
-            "service_tasks_v2.bpmn",
-            "incident_process_v1.bpmn",
-            "manual_process.bpmn",
-            "parent_process_v1.bpmn",
-            "child_process_v1.bpmn");
-    processes.forEach(
-        process ->
-            DEPLOYED_PROCESSES.addAll(
-                deployResource(camundaClient, String.format("process/%s", process))
-                    .getProcesses()));
 
-    waitForProcessesToBeDeployed(camundaClient, DEPLOYED_PROCESSES.size());
+    // Deploy process definitions
+    deployedProcess =
+        deployResource(camundaClient, "process/service_tasks_v1.bpmn").getProcesses().getFirst();
+    waitForProcessesToBeDeployed(camundaClient, 1);
 
-    // Does two will not be active when we cancel, since they just have manual steps
-    startProcessInstance(camundaClient, "manual_process");
-    startProcessInstance(camundaClient, "parent_process_v1");
+    // Start process instances
+    IntStream.range(0, 10)
+        .forEach(
+            i ->
+                ACTIVE_PROCESS_INSTANCES.add(
+                    startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"bar\"}")));
 
-    ACTIVE_PROCESS_INSTANCES.add(
-        startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"bar\"}"));
-    ACTIVE_PROCESS_INSTANCES.add(
-        startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}"));
-    ACTIVE_PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "incident_process_v1"));
+    // given we really have processes on more than one partitions
+    final long countPartitionsDeployedTo =
+        ACTIVE_PROCESS_INSTANCES.stream()
+            .map(ProcessInstanceEvent::getProcessInstanceKey)
+            .map(Protocol::decodePartitionId)
+            .distinct()
+            .count();
+    assumeTrue(
+        countPartitionsDeployedTo > 1,
+        "Test requires process instances to be deployed to multiple partitions.");
 
-    waitForProcessInstancesToStart(camundaClient, 6);
-    waitForElementInstances(camundaClient, 20);
-    waitUntilElementInstanceHasIncidents(camundaClient, 1);
-    waitUntilProcessInstanceHasIncidents(camundaClient, 1);
+    // Wait for process instances to start
+    waitForProcessInstancesToStart(camundaClient, ACTIVE_PROCESS_INSTANCES.size());
+    waitForElementInstances(camundaClient, ACTIVE_PROCESS_INSTANCES.size() * 2);
   }
 
-  @AfterAll
-  static void afterAll() {
-    DEPLOYED_PROCESSES.clear();
+  @AfterEach
+  void afterAll() {
+    deployedProcess = null;
     ACTIVE_PROCESS_INSTANCES.clear();
   }
 
   @Test
-  void shouldCancelProcessInstancesWithBatch() throws InterruptedException {
+  void shouldCancelProcessInstancesOnSeveralPartitionsWithBatch() {
     // when
     final var result =
         camundaClient
@@ -115,27 +127,26 @@ public class BatchOperationCancelProcessInstanceTest {
               assertThat(batch).isNotNull();
               assertThat(batch.getEndDate()).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batch.getOperationsTotalCount())
+                  .isEqualTo(ACTIVE_PROCESS_INSTANCES.size());
+              assertThat(batch.getOperationsCompletedCount())
+                  .isEqualTo(ACTIVE_PROCESS_INSTANCES.size());
+              assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
             });
 
+    // Now wait until all process instances are terminated
     final var activeKeys =
         ACTIVE_PROCESS_INSTANCES.stream().map(ProcessInstanceEvent::getProcessInstanceKey).toList();
     for (final Long key : activeKeys) {
       waitForProcessInstanceToBeTerminated(camundaClient, key);
     }
 
-    final var batch = camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
-    assertThat(batch).isNotNull();
-    assertThat(batch.getEndDate()).isNotNull();
-    assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
-    assertThat(batch.getOperationsCompletedCount()).isEqualTo(3);
-    assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
-
     // and
     final var itemsObj =
         camundaClient.newBatchOperationItemsGetRequest(batchOperationKey).send().join();
     final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();
 
-    assertThat(itemsObj.items()).hasSize(3);
+    assertThat(itemsObj.items()).hasSize(ACTIVE_PROCESS_INSTANCES.size());
     assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
         .containsExactly(BatchOperationItemState.COMPLETED);
     assertThat(itemKeys).containsExactlyInAnyOrder(activeKeys.toArray(Long[]::new));

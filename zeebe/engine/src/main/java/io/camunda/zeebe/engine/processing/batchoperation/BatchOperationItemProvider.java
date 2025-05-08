@@ -50,17 +50,21 @@ public class BatchOperationItemProvider {
   }
 
   /**
-   * Fetches the process instance items based on the provided filter. The items are fetched
-   * sequentially in pages. Depending on the overall size of the result this can cause multiple
-   * queries to the secondary database.
+   * Fetches the process instance items for the given partitionId based on the provided filter. The
+   * items are fetched sequentially in pages. Depending on the overall size of the result, this can
+   * cause multiple queries to the secondary database.
    *
    * @param filter the filter to use
    * @param shouldAbort if the process should be aborted
    * @return a set of all found process instance items
    */
   public Set<Item> fetchProcessInstanceItems(
-      final ProcessInstanceFilter filter, final Supplier<Boolean> shouldAbort) {
-    return fetchEntityItems(new ProcessInstancePageFetcher(), filter, shouldAbort);
+      final int partitionId,
+      final ProcessInstanceFilter filter,
+      final Supplier<Boolean> shouldAbort) {
+    final var processInstanceFilter = filter.toBuilder().partitionId(partitionId).build();
+
+    return fetchEntityItems(new ProcessInstancePageFetcher(), processInstanceFilter, shouldAbort);
   }
 
   /**
@@ -78,20 +82,22 @@ public class BatchOperationItemProvider {
   }
 
   /**
-   * Fetches the incident items based on the provided process instance filter. This will return
-   * <b>ALL</b> incidents of the matching processInstances. The items are fetched sequentially in
-   * pages. Depending on the overall size of the result this can cause multiple queries to the
-   * secondary database.
+   * Fetches the incident items based on the provided process instance filter for the given
+   * partitonId. This will return <b>ALL</b> incidents of the matching processInstances. The items
+   * are fetched sequentially in pages. Depending on the overall size of the result, this can cause
+   * multiple queries to the secondary database.
    *
    * @param filter the filter to use
    * @param shouldAbort if the process should be aborted
    * @return a set of all found incident items
    */
   public Set<Item> fetchIncidentItems(
-      final ProcessInstanceFilter filter, final Supplier<Boolean> shouldAbort) {
+      final int partitionId,
+      final ProcessInstanceFilter filter,
+      final Supplier<Boolean> shouldAbort) {
     // first fetch all matching processInstances
     final var processInstanceKeys =
-        fetchProcessInstanceItems(filter, shouldAbort).stream()
+        fetchProcessInstanceItems(partitionId, filter, shouldAbort).stream()
             .map(Item::processInstanceKey)
             .toList();
 
