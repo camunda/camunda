@@ -20,15 +20,6 @@ const completedOrderProcessInstance: InstanceMock = {
     processVersion: 1,
   },
   xml: open('orderProcess.bpmn'),
-  statistics: [
-    {
-      activityId: 'EndEvent_042s0oc',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-  ],
   statisticsV2: {
     items: [
       {

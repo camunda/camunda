@@ -120,6 +120,15 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     left?: number;
   };
 
+  export type SubprocessOverlay = {
+    payload: {
+      flowNodeState: string;
+    };
+    type: string;
+    flowNodeId: string;
+    position: OverlayPosition;
+  };
+
   declare class NavigatedViewer {
     constructor({
       container,

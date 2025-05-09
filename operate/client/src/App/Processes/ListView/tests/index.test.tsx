@@ -17,7 +17,6 @@ import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
 import {ListView} from '../index';
 import {
   groupedProcessesMock,
-  mockProcessStatistics,
   mockProcessXML,
   mockProcessInstances,
   mockProcessInstancesWithOperation,
@@ -29,12 +28,10 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {notificationsStore} from 'modules/stores/notifications';
-import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -47,18 +44,12 @@ jest.mock('modules/stores/notifications', () => ({
   },
 }));
 
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED: false,
-}));
-
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
         processInstancesSelectionStore.reset();
         processInstancesStore.reset();
-        processStatisticsStore.reset();
         processesStore.reset();
       };
     }, []);
@@ -88,7 +79,6 @@ describe('Instances', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchBatchOperations().withSuccess([]);
   });
@@ -213,30 +203,6 @@ describe('Instances', () => {
     expect(
       withinRow.getByRole('checkbox', {name: /select row/i}),
     ).toBeChecked();
-  });
-
-  it('should fetch diagram and diagram statistics', async () => {
-    const firstProcessStatisticsResponse = [
-      {...mockProcessStatistics[0]!, completed: 10},
-    ];
-
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    mockFetchProcessInstancesStatistics().withSuccess(
-      firstProcessStatisticsResponse,
-    );
-
-    render(<ListView />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?process=bigVarProcess&version=1`,
-      ),
-    });
-
-    await waitFor(() =>
-      expect(processStatisticsStore.state.statistics).toEqual(
-        firstProcessStatisticsResponse,
-      ),
-    );
   });
 
   it('should refetch data when navigated from header', async () => {

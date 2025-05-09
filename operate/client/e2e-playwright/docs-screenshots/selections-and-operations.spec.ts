@@ -11,7 +11,6 @@ import {test} from '../test-fixtures';
 import {
   mockBatchOperations,
   mockGroupedProcesses,
-  mockStatistics,
   mockResponses as mockProcessesResponses,
   mockOrderProcessInstances,
   mockStatisticsV2,
@@ -37,7 +36,6 @@ test.describe('selections and operations', () => {
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
-        statistics: mockStatistics,
         statisticsV2: mockStatisticsV2,
         processXml: open('orderProcess.bpmn'),
       }),
@@ -87,7 +85,6 @@ test.describe('selections and operations', () => {
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
-        statistics: mockStatistics,
         statisticsV2: mockStatisticsV2,
         processXml: open('orderProcess.bpmn'),
       }),

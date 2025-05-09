@@ -17,7 +17,6 @@ import {
 } from 'modules/testUtils';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
-import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
@@ -35,7 +34,6 @@ describe('<ListView /> - operations', () => {
       totalCount: 0,
     });
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessInstancesStatistics().withSuccess([]);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchBatchOperations().withSuccess(operations);
   });

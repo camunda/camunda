@@ -11,7 +11,7 @@ import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
-import {ProcessInstancesStatisticsDto} from 'modules/api/processInstances/fetchProcessInstancesStatistics';
+import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
 
@@ -152,7 +152,7 @@ test.describe('Process Instance Batch Modification', () => {
       .poll(
         async () => {
           const response = await request.post(
-            `${config.endpoint}/api/process-instances/statistics`,
+            `${config.endpoint}/v2/process-instances/statistics/element-instances`,
             {
               data: {
                 active: true,
@@ -163,11 +163,13 @@ test.describe('Process Instance Batch Modification', () => {
               },
             },
           );
-          const statistics: ProcessInstancesStatisticsDto[] =
+          const statistics: GetProcessInstanceStatisticsResponseBody =
             await response.json();
-          const targetFlowNodeStatistics = statistics.find(({activityId}) => {
-            return activityId === 'shipArticles';
-          });
+          const targetFlowNodeStatistics = statistics.items.find(
+            ({elementId}) => {
+              return elementId === 'shipArticles';
+            },
+          );
           return targetFlowNodeStatistics?.active;
         },
         {timeout: SETUP_WAITING_TIME},

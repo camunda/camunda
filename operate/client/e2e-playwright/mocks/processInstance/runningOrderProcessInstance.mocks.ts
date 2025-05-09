@@ -19,15 +19,6 @@ const runningOrderProcessInstance: InstanceMock = {
     bpmnProcessId: 'orderProcess',
   },
   xml: open('orderProcess.bpmn'),
-  statistics: [
-    {
-      activityId: 'checkPayment',
-      active: 1,
-      canceled: 0,
-      incidents: 0,
-      completed: 0,
-    },
-  ],
   statisticsV2: {
     items: [
       {
