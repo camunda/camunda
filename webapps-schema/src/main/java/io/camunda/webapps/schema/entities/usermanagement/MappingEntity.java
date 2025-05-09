@@ -13,7 +13,7 @@ public class MappingEntity extends AbstractExporterEntity<MappingEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private Long key;
-  private String mappingId;
+  private String mappingRuleId;
   private String claimName;
   private String claimValue;
   private String name;
@@ -24,17 +24,17 @@ public class MappingEntity extends AbstractExporterEntity<MappingEntity> {
     return key;
   }
 
-  public MappingEntity setKey(final Long mappingKey) {
-    key = mappingKey;
+  public MappingEntity setKey(final Long mappingRuleKey) {
+    key = mappingRuleKey;
     return this;
   }
 
-  public String getMappingId() {
-    return mappingId;
+  public String getMappingRuleId() {
+    return mappingRuleId;
   }
 
-  public MappingEntity setMappingId(final String mappingId) {
-    this.mappingId = mappingId;
+  public MappingEntity setMappingRuleId(final String mappingRuleId) {
+    this.mappingRuleId = mappingRuleId;
     return this;
   }
 

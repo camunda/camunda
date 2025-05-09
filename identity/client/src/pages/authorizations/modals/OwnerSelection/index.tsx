@@ -47,8 +47,8 @@ const Selection: FC<SelectionProps> = ({ type, onChange }) => {
           id="mappingSelection"
           onChange={onChange}
           searchFn={searchMapping}
-          getId={(mapping) => mapping.mappingId}
-          itemToString={(mapping) => mapping.name || mapping.mappingId}
+          getId={(mapping) => mapping.mappingRuleId}
+          itemToString={(mapping) => mapping.name || mapping.mappingRuleId}
         />
       );
     case OwnerType.ROLE:

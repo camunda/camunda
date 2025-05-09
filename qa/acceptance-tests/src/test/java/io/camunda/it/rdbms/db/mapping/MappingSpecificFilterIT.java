@@ -72,9 +72,9 @@ public class MappingSpecificFilterIT {
     createAndSaveGroup(rdbmsWriter, group);
     createAndSaveGroup(rdbmsWriter, anotherGroup);
 
-    addMappingToGroup(group.groupId(), mapping1.mappingId());
-    addMappingToGroup(group.groupId(), mapping2.mappingId());
-    addMappingToGroup(anotherGroup.groupId(), mapping3.mappingId());
+    addMappingToGroup(group.groupId(), mapping1.mappingRuleId());
+    addMappingToGroup(group.groupId(), mapping2.mappingRuleId());
+    addMappingToGroup(anotherGroup.groupId(), mapping3.mappingRuleId());
 
     final var mappings =
         mappingReader.search(
@@ -115,7 +115,7 @@ public class MappingSpecificFilterIT {
     assertThat(mappings.total()).isEqualTo(1);
     assertThat(mappings.items())
         .hasSize(1)
-        .extracting(MappingEntity::mappingId)
+        .extracting(MappingEntity::mappingRuleId)
         .containsOnly(mappingId1);
   }
 

@@ -581,7 +581,7 @@ public final class ResponseMapper {
         new MappingRuleCreateResult()
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
-            .mappingId(record.getMappingId())
+            .mappingRuleId(record.getMappingRuleId())
             .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
@@ -591,7 +591,7 @@ public final class ResponseMapper {
         new MappingRuleUpdateResult()
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
-            .mappingId(record.getMappingId())
+            .mappingRuleId(record.getMappingRuleId())
             .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }

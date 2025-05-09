@@ -82,17 +82,17 @@ public class TenantAppliersTest {
   @Test
   void shouldAddEntityToTenantWithTypeMapping() {
     // given
-    final var mappingId = "mappingId";
+    final var mappingRuleId = "mappingRuleId";
     mappingState.create(
         new MappingRecord()
-            .setMappingId(mappingId)
+            .setMappingRuleId(mappingRuleId)
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final String tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
     tenantState.createTenant(tenantRecord);
-    tenantRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
+    tenantRecord.setEntityId(mappingRuleId).setEntityType(EntityType.MAPPING);
 
     // when
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
@@ -100,7 +100,7 @@ public class TenantAppliersTest {
     // then
     assertThat(
             membershipState.hasRelation(
-                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+                EntityType.MAPPING, mappingRuleId, RelationType.TENANT, tenantId))
         .isTrue();
   }
 
@@ -184,23 +184,23 @@ public class TenantAppliersTest {
   @Test
   void shouldRemoveEntityFromTenantWithTypeMapping() {
     // given
-    final var mappingId = "mappingId";
+    final var mappingRuleId = "mappingRuleId";
     mappingState.create(
         new MappingRecord()
-            .setMappingId(mappingId)
+            .setMappingRuleId(mappingRuleId)
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final String tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
     tenantState.createTenant(tenantRecord);
-    tenantRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
+    tenantRecord.setEntityId(mappingRuleId).setEntityType(EntityType.MAPPING);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // Ensure the mapping is associated with the tenant before removal
     assertThat(
             membershipState.hasRelation(
-                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+                EntityType.MAPPING, mappingRuleId, RelationType.TENANT, tenantId))
         .isTrue();
 
     // when
@@ -209,7 +209,7 @@ public class TenantAppliersTest {
     // then
     assertThat(
             membershipState.hasRelation(
-                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+                EntityType.MAPPING, mappingRuleId, RelationType.TENANT, tenantId))
         .isFalse();
   }
 

@@ -3027,17 +3027,17 @@ final class JsonSerializableToJsonTest {
         (Supplier<MappingRecord>)
             () ->
                 new MappingRecord()
-                    .setMappingKey(1L)
+                    .setMappingRuleKey(1L)
                     .setClaimName("claimName")
                     .setClaimValue("claimValue")
-                    .setMappingId("id1")
+                    .setMappingRuleId("id1")
                     .setName("name"),
         """
       {
-        "mappingKey": 1,
+        "mappingRuleKey": 1,
         "claimName": "claimName",
         "claimValue": "claimValue",
-        "mappingId": "id1",
+        "mappingRuleId": "id1",
         "name": "name"
       }
       """
@@ -3047,11 +3047,11 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty MappingRecord",
-        (Supplier<MappingRecord>) () -> new MappingRecord().setMappingId("mappingId"),
+        (Supplier<MappingRecord>) () -> new MappingRecord().setMappingRuleId("mappingRuleId"),
         """
       {
-        "mappingKey": -1,
-        "mappingId": "mappingId",
+        "mappingRuleKey": -1,
+        "mappingRuleId": "mappingRuleId",
         "claimName": "",
         "claimValue": "",
         "name": ""
@@ -3092,15 +3092,15 @@ final class JsonSerializableToJsonTest {
                         new TenantRecord().setTenantKey(5).setTenantId("id").setName("name"))
                     .addMapping(
                         new MappingRecord()
-                            .setMappingKey(6)
-                            .setMappingId("id1")
+                            .setMappingRuleKey(6)
+                            .setMappingRuleId("id1")
                             .setClaimName("claim1")
                             .setClaimValue("value1")
                             .setName("Claim 1"))
                     .addMapping(
                         new MappingRecord()
-                            .setMappingKey(7)
-                            .setMappingId("id2")
+                            .setMappingRuleKey(7)
+                            .setMappingRuleId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
                             .setName("Claim 2")),
@@ -3140,15 +3140,15 @@ final class JsonSerializableToJsonTest {
         },
         "mappings": [
           {
-            "mappingKey": 6,
-            "mappingId": "id1",
+            "mappingRuleKey": 6,
+            "mappingRuleId": "id1",
             "claimName": "claim1",
             "claimValue": "value1",
             "name": "Claim 1"
           },
           {
-            "mappingKey": 7,
-            "mappingId": "id2",
+            "mappingRuleKey": 7,
+            "mappingRuleId": "id2",
             "claimName": "claim2",
             "claimValue": "value2",
             "name": "Claim 2"

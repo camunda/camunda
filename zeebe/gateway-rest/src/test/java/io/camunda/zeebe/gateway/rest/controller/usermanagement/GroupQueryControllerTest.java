@@ -181,13 +181,13 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "items":[
           {
             "name":"name",
-            "mappingId":"%s",
+            "mappingRuleId":"%s",
             "claimName":"claimName1",
             "claimValue":"claimValue1"
           },
           {
             "name":"name",
-            "mappingId":"%s",
+            "mappingRuleId":"%s",
             "claimName":"claimName2",
             "claimValue":"claimValue2"
           }
@@ -202,7 +202,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
 
   private static final String EXPECTED_MAPPING_RESPONSE =
       MAPPING_RESPONSE.formatted(
-          MAPPNING_ENTITIES.get(0).mappingId(), MAPPNING_ENTITIES.get(1).mappingId());
+          MAPPNING_ENTITIES.get(0).mappingRuleId(), MAPPNING_ENTITIES.get(1).mappingRuleId());
 
   @MockBean private GroupServices groupServices;
   @MockBean private UserServices userServices;
@@ -511,7 +511,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort": [{"field": "mappingId", "order": "ASC"}]
+              "sort": [{"field": "mappingRuleId", "order": "ASC"}]
             }
             """)
         .exchange()

@@ -60,14 +60,14 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
               tenantMappingRule.getClaimValue(),
               tenantMappingRule.getName(),
               tenantMappingRule.getName());
-      final var mappingId =
+      final var mappingRuleId =
           mappingServices
               .findMapping(request)
-              .map(MappingEntity::mappingId)
-              .orElseGet(() -> mappingServices.createMapping(request).join().getMappingId());
+              .map(MappingEntity::mappingRuleId)
+              .orElseGet(() -> mappingServices.createMapping(request).join().getMappingRuleId());
       for (final Tenant mappingTenant : tenantMappingRule.getAppliedTenants()) {
         final var tenant = tenantServices.getById(mappingTenant.tenantId());
-        assignMappingToTenant(tenant.tenantId(), mappingId);
+        assignMappingToTenant(tenant.tenantId(), mappingRuleId);
       }
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, null);
     } catch (final Exception e) {
@@ -76,9 +76,9 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
     }
   }
 
-  private void assignMappingToTenant(final String tenantId, final String mappingId) {
+  private void assignMappingToTenant(final String tenantId, final String mappingRuleId) {
     try {
-      final var request = new TenantMemberRequest(tenantId, mappingId, EntityType.MAPPING);
+      final var request = new TenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING);
       tenantServices.addMember(request).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {

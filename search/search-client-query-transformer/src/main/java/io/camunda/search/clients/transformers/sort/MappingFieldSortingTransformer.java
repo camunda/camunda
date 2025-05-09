@@ -18,8 +18,8 @@ public class MappingFieldSortingTransformer implements FieldSortingTransformer {
   @Override
   public String apply(final String domainField) {
     return switch (domainField) {
-      case "mappingKey" -> MAPPING_KEY;
-      case "mappingId" -> MAPPING_ID;
+      case "mappingRuleKey" -> MAPPING_KEY;
+      case "mappingRuleId" -> MAPPING_ID;
       case "claimName" -> CLAIM_NAME;
       case "claimValue" -> CLAIM_VALUE;
       case "name" -> NAME;

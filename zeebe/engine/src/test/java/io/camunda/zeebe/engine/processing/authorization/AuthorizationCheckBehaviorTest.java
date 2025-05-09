@@ -293,7 +293,7 @@ final class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getMappingId(),
+        mapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
@@ -314,8 +314,8 @@ final class AuthorizationCheckBehaviorTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = createMapping(claimName, claimValue).getMappingId();
-    final var group = createGroupAndAssignEntity(mappingId, EntityType.MAPPING);
+    final var mappingRuleId = createMapping(claimName, claimValue).getMappingRuleId();
+    final var group = createGroupAndAssignEntity(mappingRuleId, EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -338,7 +338,7 @@ final class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    final var role = createRoleAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var role = createRoleAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -389,13 +389,13 @@ final class AuthorizationCheckBehaviorTest {
     final var firstResourceId = UUID.randomUUID().toString();
     final var secondResourceId = UUID.randomUUID().toString();
     addPermission(
-        String.valueOf(firstMapping.getMappingId()),
+        String.valueOf(firstMapping.getMappingRuleId()),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
         firstResourceId);
     addPermission(
-        String.valueOf(secondMapping.getMappingId()),
+        String.valueOf(secondMapping.getMappingRuleId()),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
@@ -439,13 +439,13 @@ final class AuthorizationCheckBehaviorTest {
     final var firstResourceId = UUID.randomUUID().toString();
     final var secondResourceId = UUID.randomUUID().toString();
     addPermission(
-        firstMapping.getMappingId(),
+        firstMapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
         firstResourceId);
     addPermission(
-        secondMapping.getMappingId(),
+        secondMapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
@@ -482,7 +482,7 @@ final class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getMappingId(),
+        mapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
@@ -505,7 +505,7 @@ final class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    final var role = createRoleAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var role = createRoleAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -529,7 +529,7 @@ final class AuthorizationCheckBehaviorTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    final var group = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var group = createGroupAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
@@ -602,7 +602,7 @@ final class AuthorizationCheckBehaviorTest {
   void shouldBeAuthorizedForMappingWithAssignedGroupWithAssignedRole() {
     // given
     final var mapping = createMapping(UUID.randomUUID().toString(), UUID.randomUUID().toString());
-    final var group = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var group = createGroupAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING);
     final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -625,7 +625,7 @@ final class AuthorizationCheckBehaviorTest {
   void shouldGetAuthorizationsForMappingWithAssignedGroupWithAssignedRole() {
     // given
     final var mapping = createMapping(UUID.randomUUID().toString(), UUID.randomUUID().toString());
-    final var group = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var group = createGroupAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING);
     final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
@@ -642,7 +642,10 @@ final class AuthorizationCheckBehaviorTest {
         authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
     final var directAuthorizedResourceIdentifiers =
         authorizationCheckBehavior.getDirectAuthorizedResourceIdentifiers(
-            AuthorizationOwnerType.MAPPING, mapping.getMappingId(), resourceType, permissionType);
+            AuthorizationOwnerType.MAPPING,
+            mapping.getMappingRuleId(),
+            resourceType,
+            permissionType);
 
     // then
     assertThat(allAuthorizedResourceIdentifiers).containsExactly(resourceId);
@@ -786,7 +789,7 @@ final class AuthorizationCheckBehaviorTest {
   private MappingRecordValue createMapping(final String claimName, final String claimValue) {
     final var mapping =
         new MappingRecord()
-            .setMappingId(UUID.randomUUID().toString())
+            .setMappingRuleId(UUID.randomUUID().toString())
             .setName(Strings.newRandomValidUsername())
             .setClaimName(claimName)
             .setClaimValue(claimValue);

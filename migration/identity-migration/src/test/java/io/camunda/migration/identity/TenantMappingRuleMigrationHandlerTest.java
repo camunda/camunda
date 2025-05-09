@@ -91,7 +91,8 @@ final class TenantMappingRuleMigrationHandlerTest {
     when(mappingServices.createMapping(any()))
         .thenAnswer(
             invocation ->
-                CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
+                CompletableFuture.completedFuture(
+                    new MappingRecord().setMappingRuleId("mappingRuleId")));
     when(tenantServices.addMember(any(TenantMemberRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     // when
@@ -135,7 +136,8 @@ final class TenantMappingRuleMigrationHandlerTest {
     when(mappingServices.createMapping(any()))
         .thenAnswer(
             invocation ->
-                CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
+                CompletableFuture.completedFuture(
+                    new MappingRecord().setMappingRuleId("mappingRuleId")));
 
     // when
     migrationHandler.migrate();
@@ -162,7 +164,8 @@ final class TenantMappingRuleMigrationHandlerTest {
     when(mappingServices.createMapping(any()))
         .thenAnswer(
             invocation ->
-                CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
+                CompletableFuture.completedFuture(
+                    new MappingRecord().setMappingRuleId("mappingRuleId")));
     when(tenantServices.addMember(any(TenantMemberRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(

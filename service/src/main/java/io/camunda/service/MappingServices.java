@@ -74,7 +74,7 @@ public class MappingServices
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setMappingId(request.mappingId()));
+            .setMappingRuleId(request.mappingRuleId()));
   }
 
   public CompletableFuture<MappingRecord> updateMapping(final MappingDTO request) {
@@ -83,21 +83,23 @@ public class MappingServices
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setMappingId(request.mappingId()));
+            .setMappingRuleId(request.mappingRuleId()));
   }
 
-  public MappingEntity getMapping(final String mappingId) {
-    return findMapping(mappingId)
+  public MappingEntity getMapping(final String mappingRuleId) {
+    return findMapping(mappingRuleId)
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_ID.formatted(mappingId),
+                    ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_ID.formatted(mappingRuleId),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
-  public Optional<MappingEntity> findMapping(final String mappingId) {
+  public Optional<MappingEntity> findMapping(final String mappingRuleId) {
     return search(
-            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingId(mappingId)).build())
+            SearchQueryBuilders.mappingSearchQuery()
+                .filter(f -> f.mappingRuleId(mappingRuleId))
+                .build())
         .items()
         .stream()
         .findFirst();
@@ -114,8 +116,8 @@ public class MappingServices
         .findFirst();
   }
 
-  public CompletableFuture<MappingRecord> deleteMapping(final String mappingId) {
-    return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingId(mappingId));
+  public CompletableFuture<MappingRecord> deleteMapping(final String mappingRuleId) {
+    return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingRuleId(mappingRuleId));
   }
 
   public List<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
@@ -139,5 +141,6 @@ public class MappingServices
     return Stream.of(String.valueOf(value));
   }
 
-  public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}
+  public record MappingDTO(
+      String claimName, String claimValue, String name, String mappingRuleId) {}
 }

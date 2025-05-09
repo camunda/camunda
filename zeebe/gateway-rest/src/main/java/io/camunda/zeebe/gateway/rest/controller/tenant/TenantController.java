@@ -124,10 +124,10 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
-  @CamundaPutMapping(path = "/{tenantId}/mappings/{mappingId}")
+  @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
-      @PathVariable final String tenantId, @PathVariable final String mappingId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING)
+      @PathVariable final String tenantId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -169,7 +169,7 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
-  @CamundaPostMapping(path = "/{tenantId}/mappings/search")
+  @CamundaPostMapping(path = "/{tenantId}/mapping-rules/search")
   public ResponseEntity<MappingSearchQueryResult> searchMappingsInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final MappingSearchQueryRequest query) {
@@ -179,10 +179,10 @@ public class TenantController {
             mappingQuery -> searchMappingsInTenant(tenantId, mappingQuery));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantId}/mappings/{mappingId}")
+  @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
-      @PathVariable final String tenantId, @PathVariable final String mappingId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING)
+      @PathVariable final String tenantId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
