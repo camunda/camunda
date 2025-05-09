@@ -497,6 +497,13 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
         .build();
   }
 
+  private MappingQuery expandRoleFilter(final MappingQuery mappingQuery) {
+    final var mappingIds = getRoleMemberIds(mappingQuery.filter().roleId(), MAPPING);
+    return mappingQuery.toBuilder()
+        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .build();
+  }
+
   public Set<String> getRoleMemberIds(final String roleId, final EntityType memberType) {
     final List<RoleMemberEntity> roleMembers =
         getSearchExecutor()

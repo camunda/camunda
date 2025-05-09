@@ -24,7 +24,8 @@ public record MappingFilter(
     List<Claim> claims,
     String tenantId,
     Set<String> mappingIds,
-    String groupId)
+    String groupId,
+    String roleId)
     implements FilterBase {
 
   public MappingFilter.Builder toBuilder() {
@@ -38,7 +39,8 @@ public record MappingFilter(
         .claims(claims)
         .tenantId(tenantId)
         .mappingIds(mappingIds)
-        .groupId(groupId);
+        .groupId(groupId)
+        .roleId(roleId);
   }
 
   public static final class Builder implements ObjectBuilder<MappingFilter> {
@@ -52,6 +54,7 @@ public record MappingFilter(
     private List<Claim> claims;
     private String tenantId;
     private String groupId;
+    private String roleId;
 
     public Builder mappingId(final String value) {
       mappingId = value;
@@ -103,6 +106,11 @@ public record MappingFilter(
       return this;
     }
 
+    public Builder roleId(final String roleId) {
+      this.roleId = roleId;
+      return this;
+    }
+
     @Override
     public MappingFilter build() {
       return new MappingFilter(
@@ -115,7 +123,8 @@ public record MappingFilter(
           claims,
           tenantId,
           mappingIds,
-          groupId);
+          groupId,
+          roleId);
     }
   }
 
