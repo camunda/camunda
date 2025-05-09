@@ -677,8 +677,8 @@ public final class FileBasedSnapshotStoreImpl {
         Files.move(source, targetFilePath, ATOMIC_MOVE);
       } catch (final AtomicMoveNotSupportedException e) {
         Files.move(source, targetFilePath);
+        FileUtil.flush(targetFilePath);
       }
-      FileUtil.flush(targetFilePath);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
