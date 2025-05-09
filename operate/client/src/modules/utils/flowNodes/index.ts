@@ -6,10 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {
+  BusinessObject,
+  BusinessObjects,
+  SubprocessOverlay,
+} from 'bpmn-js/lib/NavigatedViewer';
 import {DiagramModel} from 'bpmn-moddle';
 import {SUBPROCESS_WITH_INCIDENTS} from 'modules/bpmn-js/badgePositions';
-import {SubprocessOverlay} from 'modules/stores/processStatistics/processStatistics.base';
 
 export function isFlowNode(businessObject: BusinessObject) {
   return businessObject.$instanceOf?.('bpmn:FlowNode') ?? false;
