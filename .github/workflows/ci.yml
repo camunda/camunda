@@ -303,9 +303,9 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[Consolidated UT] ${{ matrix.componentPrettyPrint }} - ${{ matrix.suiteName }}"
     needs: [ detect-changes ]
-    timeout-minutes: 15
+    timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-16-default
+    runs-on: gcp-perf-core-8-default
     strategy:
       fail-fast: false
       matrix:
