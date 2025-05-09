@@ -456,5 +456,5 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 }
 
 export const flowNodeInstanceStore = new FlowNodeInstance();
-export {MAX_INSTANCES_STORED};
+export {MAX_INSTANCES_STORED, MAX_INSTANCES_PER_REQUEST};
 export type {FlowNodeInstanceType as FlowNodeInstance, FlowNodeInstances};

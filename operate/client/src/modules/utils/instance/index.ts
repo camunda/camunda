@@ -24,6 +24,10 @@ const isRunning = (instance: Pick<ProcessInstanceEntity, 'state'>) => {
   return instance.state === 'ACTIVE' || instance.state === 'INCIDENT';
 };
 
+const isInstanceRunning = (processInstance: ProcessInstance): boolean => {
+  return processInstance.state === 'ACTIVE' || processInstance.hasIncident;
+};
+
 const getProcessName = (instance: ProcessInstanceEntity | null) => {
   if (instance === null) {
     return '';
@@ -50,8 +54,9 @@ const createOperation = (
 
 export {
   hasIncident,
-  isRunning,
   getProcessDefinitionName,
+  isInstanceRunning,
+  isRunning,
   getProcessName,
   createOperation,
 };
