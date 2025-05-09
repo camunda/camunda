@@ -10,7 +10,6 @@ import {createRef} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {open} from 'modules/mocks/diagrams';
 import {
   Wrapper,
@@ -19,19 +18,13 @@ import {
 } from './mocks';
 import {FlowNodeInstancesTree} from '..';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('FlowNodeInstancesTree - Ad Hoc Sub Process', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(adHocSubProcessesInstance);
-    mockFetchProcessXML().withSuccess(open('AdHocProcess.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(open('AdHocProcess.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      adHocSubProcessesInstance.bpmnProcessId,
-    );
 
     processInstanceDetailsStore.init({id: adHocSubProcessesInstance.id});
     flowNodeInstanceStore.init();

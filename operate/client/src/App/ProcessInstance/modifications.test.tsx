@@ -28,7 +28,6 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
@@ -160,8 +159,6 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
-    mockFetchProcessXML().withSuccess('');
-
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
     });
@@ -322,7 +319,6 @@ describe('ProcessInstance - modification mode', () => {
     mockModify().withSuccess(
       createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
     );
-    mockFetchProcessXML().withSuccess('');
 
     jest.useFakeTimers();
 

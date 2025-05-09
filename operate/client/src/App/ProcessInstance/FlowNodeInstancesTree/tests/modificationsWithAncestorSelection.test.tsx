@@ -11,7 +11,6 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {createInstance} from 'modules/testUtils';
 import {FlowNodeInstancesTree} from '..';
 import {
@@ -20,9 +19,7 @@ import {
   mockRunningNodeInstance,
   Wrapper,
 } from './mocks';
-import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 
@@ -37,12 +34,6 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
 
     mockFetchFlowNodeInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.firstLevel,
-    );
-
-    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'nested_sub_process',
     );
 
     processInstanceDetailsStore.init({id: processInstanceId});

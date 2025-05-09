@@ -14,8 +14,7 @@ import {MemoryRouter} from 'react-router-dom';
 
 import {MigrationDetails} from '.';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {groupedProcessesMock} from 'modules/testUtils';
 
 function createWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -61,8 +60,6 @@ describe('MigrationDetails', () => {
       processesStore.setSelectedTargetProcess('{bigVarProcess}-{<default>}');
       processesStore.setSelectedTargetVersion(1);
     });
-
-    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     expect(
       screen.getByText(
