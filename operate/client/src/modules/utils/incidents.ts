@@ -8,7 +8,7 @@
 
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {autorun} from 'mobx';
-import {incidentsStore} from 'modules/stores/incidents';
+import {Incident, incidentsStore} from 'modules/stores/incidents';
 import {isInstanceRunning} from './instance';
 
 const init = (processInstance?: ProcessInstance) => {
@@ -49,4 +49,43 @@ const startPolling = async (
   }, 5000);
 };
 
-export {init, startPolling};
+const isSingleIncidentSelected = (
+  incidents: Incident[],
+  flowNodeInstanceId: string,
+) => {
+  const selectedInstances = incidents.filter((incident) => incident.isSelected);
+
+  return (
+    selectedInstances.length === 1 &&
+    selectedInstances[0]?.flowNodeInstanceId === flowNodeInstanceId
+  );
+};
+
+const getFilteredIncidents = (incidents: Incident[]) => {
+  const {selectedFlowNodes, selectedErrorTypes} = incidentsStore.state;
+
+  const hasSelectedFlowNodes = selectedFlowNodes.length > 0;
+  const hasSelectedErrorTypes = selectedErrorTypes.length > 0;
+
+  if (!hasSelectedFlowNodes && !hasSelectedErrorTypes) {
+    return incidents;
+  }
+
+  return incidents.filter((incident) => {
+    if (hasSelectedErrorTypes && hasSelectedFlowNodes) {
+      return (
+        selectedErrorTypes.includes(incident.errorType.id) &&
+        selectedFlowNodes.includes(incident.flowNodeId)
+      );
+    }
+    if (hasSelectedErrorTypes) {
+      return selectedErrorTypes.includes(incident.errorType.id);
+    }
+    if (hasSelectedFlowNodes) {
+      return selectedFlowNodes.includes(incident.flowNodeId);
+    }
+    return [];
+  });
+};
+
+export {init, startPolling, isSingleIncidentSelected, getFilteredIncidents};
