@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -34,10 +35,12 @@ public class PermissionsBehavior {
 
   private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final MappingState mappingState;
 
   public PermissionsBehavior(
       final ProcessingState processingState, final AuthorizationCheckBehavior authCheckBehavior) {
     authorizationState = processingState.getAuthorizationState();
+    mappingState = processingState.getMappingState();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -107,7 +110,7 @@ public class PermissionsBehavior {
       return Either.right(record);
     }
 
-    if (!authCheckBehavior.mappingExists(record.getOwnerId())) {
+    if (mappingState.get(record.getOwnerId()).isEmpty()) {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,

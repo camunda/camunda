@@ -408,10 +408,6 @@ public final class AuthorizationCheckBehavior {
         .mapMulti(Optional::ifPresent);
   }
 
-  public boolean mappingExists(final String mappingId) {
-    return mappingState.get(mappingId).isPresent();
-  }
-
   public static final class AuthorizationRequest {
     private final TypedRecord<?> command;
     private final AuthorizationResourceType resourceType;
