@@ -90,6 +90,11 @@ public interface CamundaClientConfiguration {
   Duration getDefaultRequestTimeout();
 
   /**
+   * @see CamundaClientBuilder#defaultRequestTimeoutOffset(Duration)
+   */
+  Duration getDefaultRequestTimeoutOffset();
+
+  /**
    * @see CamundaClientBuilder#usePlaintext()
    */
   boolean isPlaintextConnectionEnabled();

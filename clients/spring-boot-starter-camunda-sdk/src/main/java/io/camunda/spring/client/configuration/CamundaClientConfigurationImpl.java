@@ -146,6 +146,13 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
   }
 
   @Override
+  public Duration getDefaultRequestTimeoutOffset() {
+    return propertyOrDefault(
+        camundaClientProperties.getRequestTimeoutOffset(),
+        DEFAULT.getDefaultRequestTimeoutOffset());
+  }
+
+  @Override
   public boolean isPlaintextConnectionEnabled() {
     return plaintext;
   }
