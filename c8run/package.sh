@@ -1,4 +1,4 @@
 #!/bin/bash
 
-go build
-./c8run package
+go build -o packager ./cmd/packager/main.go
+./packager package
