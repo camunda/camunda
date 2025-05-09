@@ -11,6 +11,8 @@ import {observer} from 'mobx-react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {createPortal} from 'react-dom';
 import {Diagram} from './index';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const OVERLAY_TYPE = 'myType';
 
@@ -20,13 +22,21 @@ const Overlay: React.FC<{container: HTMLElement; data: any}> = observer(
   },
 );
 
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  return (
+    <QueryClientProvider client={getMockQueryClient()}>
+      {children}
+    </QueryClientProvider>
+  );
+};
+
 describe('<Diagram />', () => {
   afterEach(() => {
     diagramOverlaysStore.reset();
   });
 
   it('should render diagram controls', async () => {
-    render(<Diagram xml={'<bpmn:definitions/>'} />);
+    render(<Diagram xml={'<bpmn:definitions/>'} />, {wrapper: Wrapper});
 
     expect(await screen.findByText('Diagram mock')).toBeInTheDocument();
 
@@ -62,7 +72,7 @@ describe('<Diagram />', () => {
       </Diagram>
     );
 
-    const {rerender} = render(<DiagramComponent />);
+    const {rerender} = render(<DiagramComponent />, {wrapper: Wrapper});
 
     await waitFor(() => diagramOverlaysStore.state.overlays.length > 0);
 

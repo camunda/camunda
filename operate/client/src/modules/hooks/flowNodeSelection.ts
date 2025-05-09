@@ -89,6 +89,6 @@ const useIsPlaceholderSelected = () => {
 export {
   useHasPendingCancelOrMoveModification,
   useHasRunningOrFinishedTokens,
-  useNewTokenCountForSelectedNode,
   useIsPlaceholderSelected,
+  useNewTokenCountForSelectedNode,
 };

@@ -8,9 +8,6 @@
 
 import {makeAutoObservable} from 'mobx';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
-import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {
   modify,
   ModificationPayload,
@@ -18,7 +15,6 @@ import {
 } from 'modules/api/processInstances/modify';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
-import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
 import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
@@ -323,121 +319,6 @@ class Modifications {
 
     return lastModification;
   }
-
-  get modificationsByFlowNode() {
-    return this.flowNodeModifications.reduce<{
-      [key: string]: {
-        newTokens: number;
-        cancelledTokens: number;
-        cancelledChildTokens: number;
-        visibleCancelledTokens: number;
-        areAllTokensCanceled: boolean;
-      };
-    }>((modificationsByFlowNode, payload) => {
-      const {
-        flowNode,
-        operation,
-        affectedTokenCount,
-        visibleAffectedTokenCount,
-      } = payload;
-
-      const sourceFlowNode = modificationsByFlowNode[flowNode.id] ?? {
-        ...EMPTY_MODIFICATION,
-      };
-
-      const totalRunningInstancesCount =
-        processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-          flowNode.id,
-        );
-
-      if (operation === 'ADD_TOKEN') {
-        sourceFlowNode.newTokens += affectedTokenCount;
-        modificationsByFlowNode[flowNode.id] = sourceFlowNode;
-        return modificationsByFlowNode;
-      }
-
-      if (sourceFlowNode.areAllTokensCanceled) {
-        return modificationsByFlowNode;
-      }
-
-      if (payload.flowNodeInstanceKey === undefined) {
-        sourceFlowNode.cancelledTokens = affectedTokenCount;
-        sourceFlowNode.visibleCancelledTokens = visibleAffectedTokenCount;
-      } else {
-        sourceFlowNode.cancelledTokens += affectedTokenCount;
-        sourceFlowNode.visibleCancelledTokens += visibleAffectedTokenCount;
-      }
-
-      sourceFlowNode.areAllTokensCanceled =
-        sourceFlowNode.cancelledTokens === totalRunningInstancesCount;
-
-      if (operation === 'MOVE_TOKEN') {
-        const targetFlowNode = modificationsByFlowNode[
-          payload.targetFlowNode.id
-        ] ?? {
-          ...EMPTY_MODIFICATION,
-        };
-
-        targetFlowNode.newTokens += isMultiInstance(
-          processInstanceDetailsDiagramStore.businessObjects[flowNode.id],
-        )
-          ? 1
-          : affectedTokenCount;
-
-        modificationsByFlowNode[payload.targetFlowNode.id] = targetFlowNode;
-      }
-
-      if (operation === 'CANCEL_TOKEN') {
-        if (sourceFlowNode.areAllTokensCanceled) {
-          // set cancel token counts for child elements if flow node has any
-          const elementIds = getFlowElementIds(
-            processInstanceDetailsDiagramStore.businessObjects[flowNode.id],
-          );
-
-          let affectedChildTokenCount = 0;
-          elementIds.forEach((elementId) => {
-            const childFlowNode = modificationsByFlowNode[elementId] ?? {
-              ...EMPTY_MODIFICATION,
-            };
-
-            childFlowNode.cancelledTokens =
-              processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-                elementId,
-              );
-            childFlowNode.visibleCancelledTokens =
-              processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
-                elementId,
-              );
-            childFlowNode.areAllTokensCanceled = true;
-
-            affectedChildTokenCount += childFlowNode.visibleCancelledTokens;
-
-            modificationsByFlowNode[elementId] = childFlowNode;
-          });
-
-          sourceFlowNode.cancelledChildTokens = affectedChildTokenCount;
-        }
-      }
-
-      modificationsByFlowNode[flowNode.id] = sourceFlowNode;
-      return modificationsByFlowNode;
-    }, {});
-  }
-
-  hasPendingCancelOrMoveModification = (
-    flowNodeId: string,
-    flowNodeInstanceKey?: string,
-  ) => {
-    if (flowNodeInstanceKey !== undefined) {
-      return this.flowNodeModifications.some(
-        (modification) =>
-          modification.operation !== 'ADD_TOKEN' &&
-          modification.flowNodeInstanceKey === flowNodeInstanceKey,
-      );
-    }
-
-    return (this.modificationsByFlowNode[flowNodeId]?.cancelledTokens ?? 0) > 0;
-  };
 
   get variableModifications() {
     function isVariableModification(
@@ -782,43 +663,6 @@ class Modifications {
         ),
       },
     });
-  };
-
-  getNewScopeIdForFlowNode = (flowNodeId?: string) => {
-    if (
-      flowNodeId === undefined ||
-      (this.modificationsByFlowNode[flowNodeId]?.newTokens ?? 0) !== 1
-    ) {
-      return null;
-    }
-
-    const addTokenModification = this.flowNodeModifications.find(
-      (modification) =>
-        modification.operation === 'ADD_TOKEN' &&
-        modification.flowNode.id === flowNodeId,
-    );
-
-    if (
-      addTokenModification !== undefined &&
-      'scopeId' in addTokenModification
-    ) {
-      return addTokenModification.scopeId;
-    }
-
-    const moveTokenModification = this.flowNodeModifications.find(
-      (modification) =>
-        modification.operation === 'MOVE_TOKEN' &&
-        modification.targetFlowNode.id === flowNodeId,
-    );
-
-    if (
-      moveTokenModification !== undefined &&
-      'scopeIds' in moveTokenModification
-    ) {
-      return moveTokenModification.scopeIds[0] ?? null;
-    }
-
-    return null;
   };
 
   reset = () => {

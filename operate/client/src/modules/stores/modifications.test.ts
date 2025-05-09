@@ -14,8 +14,6 @@ import {
   createAddVariableModification,
   createEditVariableModification,
 } from 'modules/mocks/modifications';
-import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
 import {processInstanceDetailsStore} from './processInstanceDetails';
@@ -33,107 +31,9 @@ type AddModificationPayload = Extract<
 >;
 
 describe('stores/modifications', () => {
-  beforeEach(() => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'StartEvent_1',
-        active: 2,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-1',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-2',
-        active: 2,
-        incidents: 1,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-3',
-        active: 3,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-4',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-5',
-        active: 2,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-6',
-        active: 2,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-7',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-
-      {
-        activityId: 'multi-instance-subprocess',
-        active: 0,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'subprocess-start-1',
-        active: 0,
-        incidents: 0,
-        completed: 0,
-        canceled: 1,
-      },
-      {
-        activityId: 'subprocess-service-task',
-        active: 2,
-        incidents: 1,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'multi-instance-service-task',
-        active: 2,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'message-boundary',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
-  });
-
   afterEach(() => {
     modificationsStore.reset();
     processInstanceDetailsDiagramStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
     processInstanceDetailsStore.reset();
   });
 
@@ -155,8 +55,6 @@ describe('stores/modifications', () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId',
     );
-
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
 
     const uniqueID = generateUniqueID();
     const uniqueIDForMove = generateUniqueID();
@@ -383,8 +281,6 @@ describe('stores/modifications', () => {
       'processInstanceId',
     );
 
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
-
     const uniqueID = generateUniqueID();
 
     modificationsStore.addModification({
@@ -430,211 +326,6 @@ describe('stores/modifications', () => {
     expect(modificationsStore.lastModification).toEqual(undefined);
   });
 
-  it('should get modifications by flow node', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'service-task-1', name: 'service-task-1'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: {},
-      },
-    });
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'service-task-1', name: 'service-task-1'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: {},
-      },
-    });
-
-    cancelAllTokens('service-task-2', 3, 3, {});
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'MOVE_TOKEN',
-        flowNode: {id: 'service-task-3', name: 'service-task-3'},
-        targetFlowNode: {id: 'service-task-4', name: 'service-task-4'},
-        affectedTokenCount: 3,
-        visibleAffectedTokenCount: 3,
-        scopeIds: ['1', '2', '3'],
-        parentScopeIds: {},
-      },
-    });
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'service-task-5', name: 'service-task-5'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: {},
-      },
-    });
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'MOVE_TOKEN',
-        flowNode: {id: 'service-task-5', name: 'service-task-5'},
-        targetFlowNode: {id: 'service-task-6', name: 'service-task-6'},
-        affectedTokenCount: 2,
-        visibleAffectedTokenCount: 2,
-        scopeIds: ['4', '5'],
-        parentScopeIds: {},
-      },
-    });
-
-    cancelAllTokens('multi-instance-subprocess', 0, 0, {});
-
-    expect(modificationsStore.modificationsByFlowNode).toEqual({
-      'service-task-1': {
-        areAllTokensCanceled: false,
-        cancelledTokens: 0,
-        newTokens: 2,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
-      },
-      'service-task-2': {
-        areAllTokensCanceled: true,
-        cancelledTokens: 3,
-        newTokens: 0,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 3,
-      },
-      'service-task-3': {
-        areAllTokensCanceled: true,
-        cancelledTokens: 3,
-        newTokens: 0,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 3,
-      },
-      'service-task-4': {
-        areAllTokensCanceled: false,
-        cancelledTokens: 0,
-        newTokens: 3,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
-      },
-      'service-task-5': {
-        areAllTokensCanceled: true,
-        cancelledTokens: 2,
-        newTokens: 1,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 2,
-      },
-      'service-task-6': {
-        areAllTokensCanceled: false,
-        cancelledTokens: 0,
-        newTokens: 2,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
-      },
-      'multi-instance-subprocess': {
-        areAllTokensCanceled: true,
-        cancelledChildTokens: 3,
-        cancelledTokens: 0,
-        newTokens: 0,
-        visibleCancelledTokens: 0,
-      },
-      'subprocess-end-task': {
-        areAllTokensCanceled: true,
-        cancelledChildTokens: 0,
-        cancelledTokens: 0,
-        newTokens: 0,
-        visibleCancelledTokens: 0,
-      },
-      'subprocess-service-task': {
-        areAllTokensCanceled: true,
-        cancelledChildTokens: 0,
-        cancelledTokens: 3,
-        newTokens: 0,
-        visibleCancelledTokens: 3,
-      },
-      'subprocess-start-1': {
-        areAllTokensCanceled: true,
-        cancelledChildTokens: 0,
-        cancelledTokens: 0,
-        newTokens: 0,
-        visibleCancelledTokens: 0,
-      },
-    });
-  });
-
-  it('should check if tokens on a flow node is cancelled', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: generateUniqueID(),
-        flowNode: {id: 'service-task-1', name: 'service-task-1'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: {},
-      },
-    });
-
-    expect(
-      modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
-    ).toBe(false);
-
-    cancelAllTokens('service-task-1', 1, 1, {});
-
-    expect(
-      modificationsStore.hasPendingCancelOrMoveModification('service-task-1'),
-    ).toBe(true);
-
-    expect(
-      modificationsStore.hasPendingCancelOrMoveModification(
-        'non-existing-flownode',
-      ),
-    ).toBe(false);
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'MOVE_TOKEN',
-        flowNode: {id: 'service-task-2', name: 'service-task-2'},
-        targetFlowNode: {id: 'service-task-3', name: 'service-task-3'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        scopeIds: ['1'],
-        parentScopeIds: {},
-      },
-    });
-    expect(
-      modificationsStore.hasPendingCancelOrMoveModification('service-task-2'),
-    ).toBe(true);
-    expect(
-      modificationsStore.hasPendingCancelOrMoveModification('service-task-3'),
-    ).toBe(false);
-  });
-
   it('should move tokens', async () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
@@ -642,9 +333,6 @@ describe('stores/modifications', () => {
       'processInstanceId',
     );
 
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
-
-    expect(modificationsStore.modificationsByFlowNode).toEqual({});
     expect(
       modificationsStore.state.sourceFlowNodeIdForMoveOperation,
     ).toBeNull();
@@ -656,55 +344,10 @@ describe('stores/modifications', () => {
 
     finishMovingToken(2, 2, {}, 'end-event');
 
-    expect(modificationsStore.modificationsByFlowNode).toEqual({
-      StartEvent_1: {
-        areAllTokensCanceled: true,
-        cancelledTokens: 2,
-        newTokens: 0,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 2,
-      },
-      'end-event': {
-        areAllTokensCanceled: false,
-        cancelledTokens: 0,
-        newTokens: 2,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
-      },
-    });
-
     expect(
       modificationsStore.state.sourceFlowNodeIdForMoveOperation,
     ).toBeNull();
     expect(modificationsStore.state.status).toBe('enabled');
-  });
-
-  it('should move tokens from multi instance process', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
-    modificationsStore.startMovingToken('multi-instance-service-task');
-    finishMovingToken(2, 2, {}, 'service-task-7');
-
-    expect(modificationsStore.modificationsByFlowNode).toEqual({
-      'multi-instance-service-task': {
-        areAllTokensCanceled: true,
-        cancelledTokens: 2,
-        newTokens: 0,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 2,
-      },
-      'service-task-7': {
-        areAllTokensCanceled: false,
-        cancelledTokens: 0,
-        newTokens: 1,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
-      },
-    });
   });
 
   it('should retrieve variable modifications', () => {
@@ -1379,118 +1022,13 @@ describe('stores/modifications', () => {
     ]);
   });
 
-  it('should get new scope id for a flow node', async () => {
-    expect(modificationsStore.getNewScopeIdForFlowNode()).toBe(null);
-    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      null,
-    );
-
-    const uniqueID = generateUniqueID();
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: uniqueID,
-        flowNode: {id: 'test-flownode', name: 'test flow node'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: {},
-      },
-    });
-
-    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      uniqueID,
-    );
-
-    const uniqueID_2 = generateUniqueID();
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'ADD_TOKEN',
-        scopeId: uniqueID_2,
-        flowNode: {id: 'test-flownode', name: 'test flow node'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: {},
-      },
-    });
-
-    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      null,
-    );
-    modificationsStore.removeLastModification();
-    modificationsStore.removeLastModification();
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'MOVE_TOKEN',
-        scopeIds: [uniqueID, uniqueID_2],
-        flowNode: {id: 'test-flownode', name: 'test flow node'},
-        targetFlowNode: {id: 'test-flownode2', name: 'test flow node 2'},
-        affectedTokenCount: 2,
-        visibleAffectedTokenCount: 2,
-        parentScopeIds: {},
-      },
-    });
-    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      null,
-    );
-    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode2')).toBe(
-      null,
-    );
-
-    modificationsStore.removeLastModification();
-
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'MOVE_TOKEN',
-        scopeIds: [uniqueID],
-        flowNode: {id: 'test-flownode', name: 'test flow node'},
-        targetFlowNode: {id: 'test-flownode2', name: 'test flow node 2'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-        parentScopeIds: {},
-      },
-    });
-
-    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
-      null,
-    );
-    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode2')).toBe(
-      uniqueID,
-    );
-  });
-
   it('should add tokens to flow nodes that has multiple running scopes', async () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'multi-instance-subprocess',
-        active: 2,
-        incidents: 1,
-        completed: 0,
-        canceled: 0,
-      },
-
-      {
-        activityId: 'subprocess-service-task',
-        active: 2,
-        incidents: 1,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId',
     );
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
 
-    expect(modificationsStore.modificationsByFlowNode).toEqual({});
     expect(modificationsStore.state.sourceFlowNodeIdForAddOperation).toBeNull();
 
     modificationsStore.startAddingToken('subprocess-service-task');
@@ -1503,16 +1041,6 @@ describe('stores/modifications', () => {
       'multi-instance-subprocess',
       'some-instance-key',
     );
-
-    expect(modificationsStore.modificationsByFlowNode).toEqual({
-      'subprocess-service-task': {
-        areAllTokensCanceled: false,
-        cancelledTokens: 0,
-        newTokens: 1,
-        cancelledChildTokens: 0,
-        visibleCancelledTokens: 0,
-      },
-    });
 
     expect(
       modificationsStore.state.sourceFlowNodeIdForMoveOperation,

@@ -17,7 +17,6 @@ import {
 } from 'modules/mocks/modifications';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {open} from 'modules/mocks/diagrams';
 import {act} from 'react';
 import {cancelAllTokens} from 'modules/utils/modifications';
@@ -40,44 +39,6 @@ describe('LastModification', () => {
   });
 
   it('should display/remove last added modification', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'service-task-1',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-2',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-3',
-        active: 1,
-        incidents: 1,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-4',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-5',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
-
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(

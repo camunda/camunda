@@ -20,7 +20,6 @@ import {
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
 import {useEffect} from 'react';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {TreeView} from '@carbon/react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -801,7 +800,6 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
       processInstanceDetailsDiagramStore.reset();
       flowNodeInstanceStore.reset();
       modificationsStore.reset();
-      processInstanceDetailsStatisticsStore.reset();
       instanceHistoryModificationStore.reset();
     };
   }, []);
