@@ -10,29 +10,23 @@ import {createRef} from 'react';
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {multiInstanceProcess} from 'modules/testUtils';
 import {FlowNodeInstancesTree} from '..';
 import {
   multiInstanceProcessInstance,
   flowNodeInstances,
   mockFlowNodeInstance,
-  processId,
   processInstanceId,
   Wrapper,
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
-    mockFetchProcessXML().withSuccess(multiInstanceProcess);
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
   });
 
   it('should load the instance history', async () => {

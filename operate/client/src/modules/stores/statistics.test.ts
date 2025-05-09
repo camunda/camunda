@@ -10,16 +10,11 @@ import {statisticsStore} from './statistics';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {waitFor} from 'modules/testing-library';
 import {processInstancesStore} from './processInstances';
-import {
-  mockProcessXML,
-  groupedProcessesMock,
-  createInstance,
-} from 'modules/testUtils';
+import {groupedProcessesMock, createInstance} from 'modules/testUtils';
 import {statistics} from 'modules/mocks/statistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
 import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
@@ -126,7 +121,6 @@ describe('stores/statistics', () => {
     jest.useFakeTimers();
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     // mock for refresh all instances
     mockFetchProcessInstances().withSuccess({

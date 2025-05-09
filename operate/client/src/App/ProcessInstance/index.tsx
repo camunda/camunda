@@ -21,7 +21,6 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {Locations} from 'modules/Routes';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
@@ -131,7 +130,6 @@ const ProcessInstance: React.FC = observer(() => {
         },
       });
       flowNodeInstanceStore.init();
-      processInstanceDetailsDiagramStore.init();
       flowNodeSelectionStore.init();
     }
   }, [processInstanceId, navigate, location]);
@@ -141,7 +139,6 @@ const ProcessInstance: React.FC = observer(() => {
       instanceHistoryModificationStore.reset();
       processInstanceDetailsStore.reset();
       flowNodeInstanceStore.reset();
-      processInstanceDetailsDiagramStore.reset();
       flowNodeTimeStampStore.reset();
       flowNodeSelectionStore.reset();
       modificationsStore.reset();

@@ -12,7 +12,6 @@ import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
 import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
@@ -63,9 +62,6 @@ const mockProcessInstances = {
 describe('stores/processInstances', () => {
   mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-  beforeEach(async () => {
-    mockFetchProcessXML().withSuccess('');
-  });
   afterEach(() => {
     processInstancesStore.reset();
   });
