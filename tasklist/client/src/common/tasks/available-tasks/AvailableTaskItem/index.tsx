@@ -121,7 +121,7 @@ const AvailableTaskItem = React.forwardRef<HTMLDivElement, Props>(
             className={styles.fullWidthAndHeight}
             data-testid={`task-${taskId}`}
             gap={3}
-            ref={ref as React.Ref<React.ReactNode>}
+            ref={ref}
           >
             <div className={cn(styles.flex, styles.flexColumn)}>
               <span className={styles.name}>{displayName}</span>

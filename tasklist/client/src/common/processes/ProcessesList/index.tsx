@@ -60,7 +60,7 @@ interface Props<Process extends MultiModeProcess> {
   searchValue: string;
   isLoading: boolean;
   isFiltered: boolean;
-  onSearch: (event: {target: HTMLInputElement; type: 'change'}) => void;
+  onSearch: React.ComponentProps<typeof Search>['onChange'];
   initialTenant: React.ComponentProps<
     typeof MultitenancyDropdown
   >['initialSelectedItem'];
