@@ -11,7 +11,6 @@ import {flowNodeSelectionStore} from './flowNodeSelection';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
 import {waitFor} from 'modules/testing-library';
 import {modificationsStore} from './modifications';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
 import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
@@ -116,16 +115,6 @@ describe('stores/flowNodeMetaData', () => {
   });
 
   it('should not fetch metadata in modification mode if flow node does not have any running/finished instances', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'ServiceTask_1',
-        active: 1,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-    ]);
-
     modificationsStore.enableModificationMode();
 
     init([]);

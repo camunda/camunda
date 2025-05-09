@@ -12,7 +12,6 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {multiInstanceProcess} from 'modules/testUtils';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {FlowNodeInstancesTree} from '.';
@@ -31,7 +30,6 @@ import {
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -57,30 +55,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       bpmnProcessId: 'nested_sub_process',
     });
 
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'parent_sub_process',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 2,
-      },
-      {
-        activityId: 'inner_sub_process',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 2,
-      },
-      {
-        activityId: 'user_task',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 2,
-      },
-    ]);
-
     mockFetchFlowNodeInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.firstLevel,
     );
@@ -97,10 +71,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
       expect(processInstanceDetailsStore.state.status).toBe('fetched');
     });
-
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId,
-    );
 
     const {user} = render(
       <FlowNodeInstancesTree
@@ -346,20 +316,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
   });
 
   it.skip('should show and remove one cancel modification flow nodes', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'peterJoin',
-        active: 2,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-    ]);
-
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId,
-    );
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
@@ -416,30 +373,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       bpmnProcessId: 'nested_sub_process',
     });
 
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'parent_sub_process',
-        active: 1,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'inner_sub_process',
-        active: 1,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'user_task',
-        active: 1,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-    ]);
-
     mockFetchFlowNodeInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.firstLevel,
     );
@@ -456,9 +389,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
       expect(processInstanceDetailsStore.state.status).toBe('fetched');
     });
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      processInstanceId,
-    );
 
     const {user} = render(
       <FlowNodeInstancesTree

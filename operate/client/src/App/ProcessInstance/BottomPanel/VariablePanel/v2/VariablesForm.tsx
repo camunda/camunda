@@ -29,6 +29,7 @@ const VariablesForm: React.FC<
   const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
   const hasPendingCancelOrMoveModification =
     useHasPendingCancelOrMoveModification();
+  const isPlaceholderSelected = useIsPlaceholderSelected();
   const hasEmptyNewVariable = (values: VariableFormValues) =>
     values.newVariables?.some(
       (variable) =>
@@ -36,7 +37,6 @@ const VariablesForm: React.FC<
         variable.name === undefined ||
         variable.value === undefined,
     );
-  const isPlaceholderSelected = useIsPlaceholderSelected();
 
   const {isModificationModeEnabled} = modificationsStore;
 

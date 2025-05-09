@@ -22,7 +22,6 @@ import {
 } from './mocks';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
@@ -35,30 +34,6 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
         bpmnProcessId: 'nested_sub_process',
       }),
     });
-
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'parent_sub_process',
-        active: 2,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-      {
-        activityId: 'inner_sub_process',
-        active: 2,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-      {
-        activityId: 'user_task',
-        active: 2,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-    ]);
 
     mockFetchFlowNodeInstances().withSuccess(
       multipleSubprocessesWithTwoRunningScopesMock.firstLevel,

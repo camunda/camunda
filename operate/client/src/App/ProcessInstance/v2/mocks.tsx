@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
@@ -111,15 +110,6 @@ const mockRequests = (contextPath: string = '') => {
   mockFetchFlowNodeInstances(contextPath).withSuccess(
     processInstancesMock.level1,
   );
-  mockFetchProcessInstanceDetailStatistics(contextPath).withSuccess([
-    {
-      activityId: 'taskD',
-      active: 1,
-      incidents: 1,
-      completed: 0,
-      canceled: 0,
-    },
-  ]);
   mockFetchVariables(contextPath).withSuccess([createVariable()]);
   mockFetchProcessInstanceIncidents(contextPath).withSuccess({
     ...mockIncidents,
