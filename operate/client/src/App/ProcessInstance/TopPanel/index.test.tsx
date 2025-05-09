@@ -151,6 +151,7 @@ describe('TopPanel', () => {
 
   it('should show an error when a server error occurs', async () => {
     mockFetchProcessDefinitionXml().withServerError();
+    mockFetchProcessDefinitionXml().withServerError();
 
     render(<TopPanel />, {
       wrapper: getWrapper(),

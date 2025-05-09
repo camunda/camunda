@@ -21,9 +21,7 @@ import {
   IncidentDto,
 } from 'modules/api/processInstances/fetchProcessInstanceIncidents';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {tracking} from 'modules/tracking';
-import {flowNodeSelectionStore} from './flowNodeSelection';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type Incident = IncidentDto & {isSelected: boolean; flowNodeName: string};
@@ -62,9 +60,6 @@ class Incidents extends NetworkReconnectionHandler {
       state: observable,
       setIncidents: action,
       reset: override,
-      incidents: computed,
-      filteredIncidents: computed,
-      flowNodes: computed,
       errorTypes: computed,
       incidentsCount: computed,
       toggleFlowNodeSelection: action,
@@ -159,14 +154,6 @@ class Incidents extends NetworkReconnectionHandler {
     this.disposer?.();
   }
 
-  getIncidentType = (flowNodeInstanceId: string) => {
-    const incident = this.incidents.find(
-      (incident) => incident.flowNodeInstanceId === flowNodeInstanceId,
-    );
-
-    return incident?.errorType;
-  };
-
   toggleFlowNodeSelection = (flowNodeId: string) => {
     const {selectedFlowNodes} = this.state;
     if (selectedFlowNodes.includes(flowNodeId)) {
@@ -209,72 +196,6 @@ class Incidents extends NetworkReconnectionHandler {
       });
     }
   };
-
-  get filteredIncidents() {
-    const {selectedFlowNodes, selectedErrorTypes} = incidentsStore.state;
-
-    const hasSelectedFlowNodes = selectedFlowNodes.length > 0;
-    const hasSelectedErrorTypes = selectedErrorTypes.length > 0;
-
-    if (!hasSelectedFlowNodes && !hasSelectedErrorTypes) {
-      return this.incidents;
-    }
-
-    return this.incidents.filter((incident) => {
-      if (hasSelectedErrorTypes && hasSelectedFlowNodes) {
-        return (
-          selectedErrorTypes.includes(incident.errorType.id) &&
-          selectedFlowNodes.includes(incident.flowNodeId)
-        );
-      }
-      if (hasSelectedErrorTypes) {
-        return selectedErrorTypes.includes(incident.errorType.id);
-      }
-      if (hasSelectedFlowNodes) {
-        return selectedFlowNodes.includes(incident.flowNodeId);
-      }
-      return [];
-    });
-  }
-
-  get incidents() {
-    if (this.state.response === null) {
-      return [];
-    }
-    return this.state.response.incidents.map((incident) => ({
-      ...incident,
-      flowNodeName: processInstanceDetailsDiagramStore.getFlowNodeName(
-        incident.flowNodeId,
-      ),
-      isSelected: flowNodeSelectionStore.isSelected({
-        flowNodeId: incident.flowNodeId,
-        flowNodeInstanceId: incident.flowNodeInstanceId,
-        isMultiInstance: false,
-      }),
-    }));
-  }
-
-  isSingleIncidentSelected(flowNodeInstanceId: string) {
-    const selectedInstances = this.incidents.filter(
-      (incident) => incident.isSelected,
-    );
-
-    return (
-      selectedInstances.length === 1 &&
-      selectedInstances[0]?.flowNodeInstanceId === flowNodeInstanceId
-    );
-  }
-
-  get flowNodes() {
-    if (this.state.response === null) {
-      return [];
-    }
-
-    return this.state.response.flowNodes.map((flowNode) => ({
-      ...flowNode,
-      name: processInstanceDetailsDiagramStore.getFlowNodeName(flowNode.id),
-    }));
-  }
 
   get errorTypes() {
     return this.state.response?.errorTypes || [];

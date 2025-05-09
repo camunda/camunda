@@ -14,7 +14,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {FlexContainer, ErrorMessageCell} from './styled';
-import {Incident, incidentsStore} from 'modules/stores/incidents';
+import {Incident} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {useLocation} from 'react-router-dom';
@@ -24,6 +24,11 @@ import {Button} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
+import {
+  getFilteredIncidents,
+  isSingleIncidentSelected,
+} from 'modules/utils/incidents';
+import {useIncidents} from 'modules/hooks/incidents';
 
 const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -31,13 +36,14 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [modalTitle, setModalTitle] = useState<string>('');
 
   const {processInstanceId = ''} = useProcessInstancePageParams();
+  const incidents = useIncidents();
   const location = useLocation();
   const {sortBy, sortOrder} = getSortParams(location.search) || {
     sortBy: 'creationTime',
     sortOrder: 'desc',
   };
 
-  const {filteredIncidents} = incidentsStore;
+  const filteredIncidents = getFilteredIncidents(incidents);
 
   const handleModalClose = () => {
     setIsModalVisible(false);
@@ -81,7 +87,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
             return;
           }
 
-          incidentsStore.isSingleIncidentSelected(incident.flowNodeInstanceId)
+          isSingleIncidentSelected(incidents, incident.flowNodeInstanceId)
             ? flowNodeSelectionStore.clearSelection()
             : flowNodeSelectionStore.selectFlowNode({
                 flowNodeId: incident.flowNodeId,

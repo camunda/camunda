@@ -102,47 +102,6 @@ describe('stores/incidents', () => {
     expect(incidentsStore.state.isLoaded).toBe(false);
   });
 
-  it('should get incidents', async () => {
-    expect(incidentsStore.incidents).toEqual([]);
-    incidentsStore.setIncidents(mockIncidents);
-
-    expect(incidentsStore.incidents).toEqual([
-      {
-        creationTime: '2020-10-08T09:18:58.258+0000',
-        errorMessage: 'Cannot connect to server delivery05',
-        errorType: {
-          id: '1',
-          name: 'No more retries left',
-        },
-        flowNodeId: 'Task_162x79i',
-        flowNodeInstanceId: '2251799813699889',
-        flowNodeName: 'Task_162x79i',
-        hasActiveOperation: false,
-        id: '2251799813700301',
-        jobId: '2251799813699901',
-        lastOperation: null,
-        isSelected: false,
-        rootCauseInstance: {
-          instanceId: '2251799813695335',
-          processDefinitionId: '2251799813687515',
-          processDefinitionName: 'Event based gateway with timer start',
-        },
-      },
-    ]);
-  });
-
-  it('should get flowNodes', async () => {
-    incidentsStore.setIncidents(mockIncidents);
-
-    expect(incidentsStore.flowNodes).toEqual([
-      {
-        id: 'Task_162x79i',
-        name: 'Task_162x79i',
-        count: 1,
-      },
-    ]);
-  });
-
   it('should get errorTypes', async () => {
     incidentsStore.setIncidents(mockIncidents);
 
