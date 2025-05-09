@@ -35,6 +35,11 @@ const COMPLETED_END_EVENT_BADGE = {
   left: 17,
 };
 
+const SUBPROCESS_WITH_INCIDENTS = {
+  bottom: -5,
+  right: -12,
+};
+
 export {
   MODIFICATIONS,
   FLOW_NODE_STATE,
@@ -44,4 +49,5 @@ export {
   CANCELED_BADGE,
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
+  SUBPROCESS_WITH_INCIDENTS,
 };

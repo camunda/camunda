@@ -26,6 +26,7 @@ import {
   INCIDENTS_BADGE,
   COMPLETED_BADGE,
   COMPLETED_END_EVENT_BADGE,
+  SUBPROCESS_WITH_INCIDENTS,
 } from 'modules/bpmn-js/badgePositions';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -40,6 +41,7 @@ import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
+import {SubprocessOverlay} from 'modules/stores/processStatistics/processStatistics.base';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
