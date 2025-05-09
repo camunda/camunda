@@ -6,9 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {observer} from 'mobx-react-lite';
 import {pages} from 'common/routing';
-import {newProcessInstance} from 'v1/newProcessInstance';
 import type {Task} from 'v1/api/types';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {tracking} from 'common/tracking';
@@ -18,17 +16,23 @@ import {api} from 'v1/api';
 
 type NewTasksResponse = Task[];
 
-const NewProcessInstanceTasksPolling: React.FC = observer(() => {
-  const {instance} = newProcessInstance;
+type Props = {
+  newInstance: {
+    id: string;
+    removeCallback: () => void;
+  } | null;
+};
+
+const NewProcessInstanceTasksPolling: React.FC<Props> = ({newInstance}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
   useQuery<NewTasksResponse, RequestError | Error>({
-    queryKey: ['newTasks', instance?.id],
-    enabled: instance !== null,
+    queryKey: ['newTasks', newInstance?.id],
+    enabled: newInstance !== null,
     refetchInterval: 1000,
     queryFn: async () => {
-      const id = instance?.id;
+      const id = newInstance?.id;
       if (id === undefined) {
         throw new Error('Process instance id is undefined');
       }
@@ -48,7 +52,7 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
           return null;
         }
 
-        newProcessInstance.removeInstance();
+        newInstance!.removeCallback();
 
         if (
           data.length === 1 &&
@@ -80,6 +84,6 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
   });
 
   return null;
-});
+};
 
 export {NewProcessInstanceTasksPolling};

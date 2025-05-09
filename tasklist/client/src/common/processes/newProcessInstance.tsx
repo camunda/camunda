@@ -7,9 +7,9 @@
  */
 
 import {action, makeObservable, observable} from 'mobx';
-import type {ProcessInstance} from 'v1/api/types';
 
-type NewProcessInstanceType = ProcessInstance & {
+type NewProcessInstanceType = {
+  id: string;
   removeCallback: () => void;
 };
 
@@ -49,3 +49,4 @@ class NewProcessInstance {
 const newProcessInstance = new NewProcessInstance();
 
 export {newProcessInstance};
+export type {NewProcessInstance};

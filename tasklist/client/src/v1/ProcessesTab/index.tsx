@@ -27,7 +27,7 @@ import {
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
-import {newProcessInstance} from 'v1/newProcessInstance';
+import {newProcessInstance} from 'common/processes/newProcessInstance';
 import {FirstTimeModal} from 'common/processes/FirstTimeModal';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {logger} from 'common/utils/logger';
@@ -299,7 +299,7 @@ const ProcessesTab: React.FC = observer(() => {
 
   return (
     <main className={cn('cds--content', styles.splitPane)}>
-      <NewProcessInstanceTasksPolling />
+      <NewProcessInstanceTasksPolling newInstance={instance} />
 
       <div className={styles.container}>
         <Stack className={styles.content} gap={2}>
