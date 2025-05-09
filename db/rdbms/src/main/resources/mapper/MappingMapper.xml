@@ -38,7 +38,12 @@
     SELECT COUNT(*)
     FROM ${prefix}MAPPINGS m
     <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID AND gm.ENTITY_TYPE = 'MAPPING'
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID
+      AND gm.ENTITY_TYPE = 'MAPPING'
+    </if>
+    <if test="filter.roleId != null">
+      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_ID = rm.ENTITY_ID
+      AND rm.ENTITY_TYPE = 'MAPPING'
     </if>
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
   </select>
@@ -54,7 +59,12 @@
     NAME
     FROM ${prefix}MAPPINGS m
     <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID AND gm.ENTITY_TYPE = 'MAPPING'
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID
+      AND gm.ENTITY_TYPE = 'MAPPING'
+    </if>
+    <if test="filter.roleId != null">
+      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_ID = rm.ENTITY_ID
+      AND rm.ENTITY_TYPE = 'MAPPING'
     </if>
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
     ) t
@@ -80,7 +90,12 @@
     <if test="filter.name != null">
       AND NAME = #{filter.name}
     </if>
-    <if test="filter.groupId != null">AND gm.GROUP_ID = #{filter.groupId}</if>
+    <if test="filter.roleId != null">
+        AND rm.ROLE_ID = #{filter.roleId}
+    </if>
+    <if test="filter.groupId != null">
+      AND gm.GROUP_ID = #{filter.groupId}
+    </if>
   </sql>
 
 </mapper>
