@@ -19,7 +19,8 @@ public record RoleFilter(
     String joinParentId,
     Set<String> memberIds,
     EntityType memberType,
-    Set<String> roleIds)
+    Set<String> roleIds,
+    String tenantId)
     implements FilterBase {
   public Builder toBuilder() {
     return new Builder().roleKey(roleKey).roleId(roleId).name(name).memberIds(memberIds);
@@ -34,6 +35,7 @@ public record RoleFilter(
     private Set<String> memberIds;
     private EntityType memberType;
     private Set<String> roleIds;
+    private String tenantId;
 
     public Builder roleKey(final Long value) {
       roleKey = value;
@@ -79,13 +81,26 @@ public record RoleFilter(
       return this;
     }
 
+    public Builder tenantId(final String value) {
+      tenantId = value;
+      return this;
+    }
+
     @Override
     public RoleFilter build() {
       if (memberIds != null && memberType == null) {
         throw new IllegalArgumentException("If memberIds is set, memberType must be set too");
       }
       return new RoleFilter(
-          roleKey, roleId, name, description, joinParentId, memberIds, memberType, roleIds);
+          roleKey,
+          roleId,
+          name,
+          description,
+          joinParentId,
+          memberIds,
+          memberType,
+          roleIds,
+          tenantId);
     }
   }
 }

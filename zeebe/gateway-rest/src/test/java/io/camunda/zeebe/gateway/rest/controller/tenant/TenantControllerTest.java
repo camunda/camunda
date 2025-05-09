@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
+import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
@@ -51,6 +52,7 @@ public class TenantControllerTest extends RestControllerTest {
   @MockBean private UserServices userServices;
   @MockBean private MappingServices mappingServices;
   @MockBean private GroupServices groupServices;
+  @MockBean private RoleServices roleServices;
 
   @BeforeEach
   void setup() {
