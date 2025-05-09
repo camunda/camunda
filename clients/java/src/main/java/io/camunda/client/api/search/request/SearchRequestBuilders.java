@@ -16,6 +16,8 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
+import io.camunda.client.api.search.filter.BatchOperationFilter;
+import io.camunda.client.api.search.filter.BatchOperationItemFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
@@ -29,6 +31,8 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.VariableValueFilter;
+import io.camunda.client.api.search.sort.BatchOperationItemSort;
+import io.camunda.client.api.search.sort.BatchOperationSort;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
@@ -42,6 +46,8 @@ import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.impl.search.filter.AdHocSubprocessActivityFilterImpl;
+import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
+import io.camunda.client.impl.search.filter.BatchOperationItemFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
@@ -56,6 +62,8 @@ import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
+import io.camunda.client.impl.search.sort.BatchOperationItemSortImpl;
+import io.camunda.client.impl.search.sort.BatchOperationSortImpl;
 import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
@@ -244,6 +252,32 @@ public final class SearchRequestBuilders {
 
   public static UserSort userSort(final Consumer<UserSort> fn) {
     final UserSort sort = new UserSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static BatchOperationFilter batchOperationFilter(final Consumer<BatchOperationFilter> fn) {
+    final BatchOperationFilter filter = new BatchOperationFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static BatchOperationSort batchOperationSort(final Consumer<BatchOperationSort> fn) {
+    final BatchOperationSort sort = new BatchOperationSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static BatchOperationItemFilter batchOperationItemFilter(
+      final Consumer<BatchOperationItemFilter> fn) {
+    final BatchOperationItemFilter filter = new BatchOperationItemFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static BatchOperationItemSort batchOperationItemSort(
+      final Consumer<BatchOperationItemSort> fn) {
+    final BatchOperationItemSort sort = new BatchOperationItemSortImpl();
     fn.accept(sort);
     return sort;
   }

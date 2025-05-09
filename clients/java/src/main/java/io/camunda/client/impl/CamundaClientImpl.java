@@ -101,6 +101,8 @@ import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
+import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -188,6 +190,8 @@ import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
 import io.camunda.client.impl.search.request.AdHocSubprocessActivitySearchRequestImpl;
+import io.camunda.client.impl.search.request.BatchOperationItemSearchRequestImpl;
+import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
@@ -984,9 +988,19 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public BatchOperationSearchRequest newBatchOperationSearchRequest() {
+    return new BatchOperationSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
   public BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(
       final Long batchOperationKey) {
     return new BatchOperationItemsGetRequestImpl(httpClient, batchOperationKey);
+  }
+
+  @Override
+  public BatchOperationItemSearchRequest newBatchOperationItemsSearchRequest() {
+    return new BatchOperationItemSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

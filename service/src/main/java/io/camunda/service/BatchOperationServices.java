@@ -13,6 +13,7 @@ import static io.camunda.search.query.SearchQueryBuilders.batchOperationQuery;
 import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -59,6 +60,15 @@ public final class BatchOperationServices
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(Builder::read)))
         .searchBatchOperations(query);
+  }
+
+  public SearchQueryResult<BatchOperationItemEntity> searchItems(
+      final BatchOperationItemQuery query) {
+    return batchOperationSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(Builder::read)))
+        .searchBatchOperationItems(query);
   }
 
   public BatchOperationEntity getById(final String batchOperationId) {

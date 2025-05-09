@@ -90,6 +90,8 @@ import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
+import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -1800,6 +1802,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   BatchOperationGetRequest newBatchOperationGetRequest(Long batchOperationKey);
 
   /**
+   * Executes a search request to query batch operations.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newBatchOperationSearchRequest()
+   *  .filter((f) -> f.state(state))
+   *  .sort((s) -> s.startDate().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the groups search request
+   */
+  BatchOperationSearchRequest newBatchOperationSearchRequest();
+
+  /**
    * Request to get all items for a batch operation by batch operation key. This request is will
    * return <b>ALL</b> items of the batch operation. Depending on the number of elements, this may
    * be a large set of items.
@@ -1814,6 +1833,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request
    */
   BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(Long batchOperationKey);
+
+  /**
+   * Executes a search request to query batch operation items.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newBatchOperationItemSearchRequest()
+   *  .filter((f) -> f.state(state))
+   *  .sort((s) -> s.itemKey().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the groups search request
+   */
+  BatchOperationItemSearchRequest newBatchOperationItemsSearchRequest();
 
   /**
    * Command to assign a mapping rule to a group.
