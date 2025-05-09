@@ -28,7 +28,11 @@ import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesSt
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
 import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
-import {getFlowNode} from 'modules/utils/flowNodes';
+import {
+  getFlowNode,
+  getSubprocessOverlayFromIncidentFlowNodes,
+} from 'modules/utils/flowNodes';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -90,7 +94,12 @@ const DiagramPanel: React.FC = observer(() => {
       `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
   });
 
-  const {data: overlayData} = useProcessInstancesOverlayData({}, processId);
+  const {data: businessObjects} = useBusinessObjects();
+
+  const {data: processInstanceOverlayData} = useProcessInstancesOverlayData(
+    {},
+    processId,
+  );
 
   const {data: batchOverlayData} = useBatchModificationOverlayData(
     {},
@@ -100,6 +109,19 @@ const DiagramPanel: React.FC = observer(() => {
     },
     processId,
     batchModificationStore.state.isEnabled,
+  );
+
+  const flowNodeIdsWithIncidents = processInstanceOverlayData
+    ?.filter(({type}) => type === 'statistics-incidents')
+    ?.map((overlay) => overlay.flowNodeId);
+
+  const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
+    (flowNodeId) => businessObjects?.[flowNodeId],
+  );
+
+  const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+    selectableFlowNodesWithIncidents,
+    'statistics-incidents',
   );
 
   const isDiagramLoading =
@@ -163,7 +185,7 @@ const DiagramPanel: React.FC = observer(() => {
                     );
                   },
                   overlaysData: [
-                    ...(overlayData ?? []),
+                    ...(processInstanceOverlayData ?? []),
                     ...(batchOverlayData ?? []),
                   ],
                   // All flow nodes that can be a move modification target,
@@ -193,7 +215,10 @@ const DiagramPanel: React.FC = observer(() => {
                       );
                     }
                   },
-                  overlaysData: overlayData,
+                  overlaysData: [
+                    ...(processInstanceOverlayData ?? []),
+                    ...(subprocessOverlays ?? []),
+                  ],
                   selectableFlowNodes: selectableIds,
                 })}
           >
