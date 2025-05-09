@@ -34,10 +34,10 @@ enum FilterLabelMapping {
 }
 
 type FilterLabelMappingType = typeof FilterLabelMapping;
-type FilterLabelMappingRuleKeys = keyof FilterLabelMappingType;
+type FilterLabelMappingKeys = keyof FilterLabelMappingType;
 
 type SelectedItem = {
-  selectedItem: FilterLabelMappingRuleKeys;
+  selectedItem: FilterLabelMappingKeys;
 };
 
 const ROW_HEIGHT = 46;
@@ -56,7 +56,7 @@ const Listeners: React.FC = observer(() => {
   const isUserTask = metaData?.instanceMetadata?.flowNodeType === 'USER_TASK';
 
   const [selectedOption, setSelectedOption] =
-    useState<FilterLabelMappingRuleKeys>('All listeners');
+    useState<FilterLabelMappingKeys>('All listeners');
 
   const handleEmptyMessages = () => {
     if (isUserTask) {
