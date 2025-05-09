@@ -10,7 +10,6 @@ import {IncidentOperation} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
 import {sortIncidents} from '../service';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {FlexContainer, ErrorMessageCell} from '../styled';
@@ -24,11 +23,14 @@ import {SortableTable} from 'modules/components/SortableTable';
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {useHasPermissions} from 'modules/queries/permissions/useHasPermissions';
+import {clearSelection, selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
 
 const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState<string>('');
   const [modalTitle, setModalTitle] = useState<string>('');
+  const rootNode = useRootNode();
 
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: hasPermissionForRetryOperation} = useHasPermissions([
@@ -83,8 +85,8 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
           }
 
           incidentsStore.isSingleIncidentSelected(incident.flowNodeInstanceId)
-            ? flowNodeSelectionStore.clearSelection()
-            : flowNodeSelectionStore.selectFlowNode({
+            ? clearSelection(rootNode)
+            : selectFlowNode(rootNode, {
                 flowNodeId: incident.flowNodeId,
                 flowNodeInstanceId: incident.flowNodeInstanceId,
                 isMultiInstance: false,

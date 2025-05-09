@@ -13,6 +13,8 @@ import {Diagram as StyledDiagram, DiagramCanvas} from '../styled';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {clearSelection} from 'modules/utils/flowNodeSelection';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -51,6 +53,7 @@ const Diagram: React.FC<Props> = observer(
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
     const {isModificationModeEnabled} = modificationsStore;
     const {selectedRunningInstanceCount} = flowNodeSelectionStore;
+    const rootNode = useRootNode();
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -111,11 +114,11 @@ const Diagram: React.FC<Props> = observer(
           );
 
           if (rootElementId !== currentSelectionRootId) {
-            flowNodeSelectionStore.clearSelection();
+            clearSelection(rootNode);
           }
         };
       }
-    }, [viewer, onFlowNodeSelection]);
+    }, [viewer, onFlowNodeSelection, rootNode]);
 
     useEffect(() => {
       return () => {

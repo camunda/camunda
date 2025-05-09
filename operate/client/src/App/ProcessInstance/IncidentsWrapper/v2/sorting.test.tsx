@@ -11,6 +11,7 @@ import {IncidentsWrapper} from './index';
 import {Wrapper, mockIncidents} from '../tests/mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
+import {mockProcessInstance} from 'App/ProcessInstance/v2/mocks';
 
 jest.unmock('modules/utils/date/formatDate');
 
@@ -23,9 +24,15 @@ describe('Sorting', () => {
   });
 
   it('should sort by incident type', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={jest.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     let [, firstRow, secondRow] = screen.getAllByRole('row');
     expect(firstRow).toHaveTextContent(/Condition errortype/);
@@ -61,9 +68,15 @@ describe('Sorting', () => {
   });
 
   it('should sort by flow node', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={jest.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     let [, firstRow, secondRow] = screen.getAllByRole('row');
     expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
@@ -99,9 +112,15 @@ describe('Sorting', () => {
   });
 
   it('should sort by creation time', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={jest.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     let [, firstRow, secondRow] = screen.getAllByRole('row');
     expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);

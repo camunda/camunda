@@ -24,10 +24,8 @@ const init = (processInstance?: ProcessInstance) => {
     () => processInstance?.processInstanceKey !== undefined,
     () => {
       const instanceId = processInstance?.processInstanceKey;
-      if (instanceId !== undefined) {
-        flowNodeInstanceStore.fetchInstanceExecutionHistory(instanceId);
-        startPolling(processInstance);
-      }
+      fetchInstanceExecutionHistory(processInstance)(instanceId);
+      startPolling(processInstance);
     },
   );
 
@@ -298,6 +296,7 @@ const getFlowNodeInstances = async ({
 
 export {
   init,
+  pollInstances,
   startPolling,
   fetchNext,
   fetchPrevious,

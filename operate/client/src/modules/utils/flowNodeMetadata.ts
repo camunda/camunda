@@ -10,7 +10,6 @@ import {fetchFlowNodeMetaData} from 'modules/api/processInstances/fetchFlowNodeM
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {formatDate} from './date';
 import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas/operate';
 import {reaction} from 'mobx';
@@ -19,13 +18,16 @@ import {
   Selection,
 } from 'modules/stores/flowNodeSelection';
 
-const init = (statistics: ProcessDefinitionStatistic[]) => {
+const init = (
+  processInstanceId: string,
+  statistics: ProcessDefinitionStatistic[],
+) => {
   flowNodeMetaDataStore.selectionDisposer = reaction(
     () => flowNodeSelectionStore.state.selection,
     (selection: Selection | null) => {
       flowNodeMetaDataStore.setMetaData(null);
       if (selection !== null) {
-        fetchMetaData(statistics, selection);
+        fetchMetaData(statistics, processInstanceId, selection);
       }
     },
   );
@@ -34,6 +36,7 @@ const init = (statistics: ProcessDefinitionStatistic[]) => {
 const fetchMetaData = flowNodeMetaDataStore.retryOnConnectionLost(
   async (
     statistics: ProcessDefinitionStatistic[],
+    processInstanceId: string,
     {
       flowNodeId,
       flowNodeInstanceId,
@@ -46,9 +49,6 @@ const fetchMetaData = flowNodeMetaDataStore.retryOnConnectionLost(
       isPlaceholder?: boolean;
     },
   ) => {
-    const processInstanceId =
-      processInstanceDetailsStore.state.processInstance?.id;
-
     if (
       isPlaceholder ||
       processInstanceId === undefined ||

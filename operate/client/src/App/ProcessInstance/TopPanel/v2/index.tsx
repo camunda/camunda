@@ -16,7 +16,7 @@ import {IncidentsBanner} from '../IncidentsBanner';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from '../styled';
-import {IncidentsWrapper} from '../../IncidentsWrapper';
+import {IncidentsWrapper} from '../../IncidentsWrapper/v2';
 import {
   CANCELED_BADGE,
   MODIFICATIONS,
@@ -29,7 +29,7 @@ import {
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
 import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
-import {Diagram} from 'modules/components/Diagram';
+import {Diagram} from 'modules/components/Diagram/v2';
 import {MetadataPopover} from '../MetadataPopover/v2';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
 import {ModificationInfoBanner} from '../ModificationInfoBanner';
@@ -41,7 +41,11 @@ import {useSelectableFlowNodes} from 'modules/queries/flownodeInstancesStatistic
 import {useExecutedFlowNodes} from 'modules/queries/flownodeInstancesStatistics/useExecutedFlowNodes';
 import {useModificationsByFlowNode} from 'modules/hooks/modifications';
 import {useModifiableFlowNodes} from 'modules/hooks/processInstanceDetailsDiagram';
-import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
+import {
+  clearSelection,
+  getSelectedRunningInstanceCount,
+  selectFlowNode,
+} from 'modules/utils/flowNodeSelection';
 import {
   useTotalRunningInstancesForFlowNode,
   useTotalRunningInstancesVisibleForFlowNode,
@@ -59,6 +63,7 @@ import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAss
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {SubprocessOverlay} from 'modules/stores/processStatistics/processStatistics.base';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -107,6 +112,7 @@ const TopPanel: React.FC = observer(() => {
   const {data: processedSequenceFlows} =
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
+  const rootNode = useRootNode();
 
   const {
     data: processDefinitionData,
@@ -117,8 +123,11 @@ const TopPanel: React.FC = observer(() => {
   });
 
   useEffect(() => {
-    if (flowNodeInstancesStatistics?.items) {
-      init(flowNodeInstancesStatistics.items);
+    if (flowNodeInstancesStatistics?.items && processInstance) {
+      init(
+        processInstance.processInstanceKey,
+        flowNodeInstancesStatistics.items,
+      );
     }
   });
 
@@ -318,7 +327,7 @@ const TopPanel: React.FC = observer(() => {
                 }
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
-                    flowNodeSelectionStore.clearSelection();
+                    clearSelection(rootNode);
                     finishMovingToken(
                       affectedTokenCount,
                       visibleAffectedTokenCount,
@@ -327,7 +336,7 @@ const TopPanel: React.FC = observer(() => {
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {
-                      flowNodeSelectionStore.selectFlowNode({
+                      selectFlowNode(rootNode, {
                         flowNodeId,
                         isMultiInstance,
                       });
@@ -398,7 +407,10 @@ const TopPanel: React.FC = observer(() => {
             )}
         </DiagramShell>
         {processInstance?.hasIncident && (
-          <IncidentsWrapper setIsInTransition={setIsInTransition} />
+          <IncidentsWrapper
+            setIsInTransition={setIsInTransition}
+            processInstance={processInstance}
+          />
         )}
       </DiagramPanel>
     </Container>

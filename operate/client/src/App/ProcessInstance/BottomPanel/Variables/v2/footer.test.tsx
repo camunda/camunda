@@ -85,7 +85,7 @@ describe('Footer', () => {
     );
   });
 
-  it.skip('should hide/disable add variable button if add/edit variable button is clicked', async () => {
+  it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockProcessInstanceDeprecated().withSuccess(instanceMock);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -149,7 +149,7 @@ describe('Footer', () => {
     );
     mockFetchVariables().withSuccess([]);
 
-    init([]);
+    init('process-instance', []);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     variablesStore.fetchVariables({
       fetchType: 'initial',

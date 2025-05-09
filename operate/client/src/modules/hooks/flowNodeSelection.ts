@@ -98,6 +98,15 @@ const useIsPlaceholderSelected = () => {
   );
 };
 
+const useRootNode = () => {
+  const {data: processInstance} = useProcessInstance();
+
+  return {
+    flowNodeInstanceId: processInstance?.processInstanceKey,
+    isMultiInstance: false,
+  };
+};
+
 const useSelectedFlowNodeName = () => {
   const {data: processInstance} = useProcessInstance();
   const {data: businessObjects} = useBusinessObjects();
@@ -129,5 +138,6 @@ export {
   useIsPlaceholderSelected,
   useIsRootNodeSelected,
   useNewTokenCountForSelectedNode,
+  useRootNode,
   useSelectedFlowNodeName,
 };
