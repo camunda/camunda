@@ -62,7 +62,7 @@ test.describe[IS_ROLES_BASE_PAGE_INTEGRATED ? "serial" : "skip"](
         name: NEW_Role.name,
       });
 
-      await waitForItemInList(page, item, false);
+      await waitForItemInList(page, item, { shouldBeVisible: false });
     });
   },
 );
