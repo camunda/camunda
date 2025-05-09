@@ -104,9 +104,13 @@ const generateParentScopeIds = (
   );
 };
 
-const hasPendingCancelOrMoveModification = (
-  flowNodeId: string,
-  flowNodeInstanceKey?: string,
+const hasPendingCancelOrMoveModification = ({
+  flowNodeId,
+  flowNodeInstanceKey,
+  modificationsByFlowNode,
+}: {
+  flowNodeId: string;
+  flowNodeInstanceKey?: string;
   modificationsByFlowNode?: {
     [key: string]: {
       newTokens: number;
@@ -115,8 +119,8 @@ const hasPendingCancelOrMoveModification = (
       visibleCancelledTokens: number;
       areAllTokensCanceled: boolean;
     };
-  },
-) => {
+  };
+}) => {
   if (flowNodeInstanceKey !== undefined) {
     return modificationsStore.flowNodeModifications.some(
       (modification) =>

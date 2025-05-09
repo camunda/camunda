@@ -40,11 +40,11 @@ const useHasPendingCancelOrMoveModification = () => {
 
   return (
     flowNodeInstanceId !== undefined &&
-    hasPendingCancelOrMoveModification(
+    hasPendingCancelOrMoveModification({
       flowNodeId,
-      flowNodeInstanceId,
+      flowNodeInstanceKey: flowNodeInstanceId,
       modificationsByFlowNode,
-    )
+    })
   );
 };
 

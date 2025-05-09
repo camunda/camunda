@@ -10,7 +10,6 @@ import {IReactionDisposer, makeAutoObservable, when, reaction} from 'mobx';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from './modifications';
-import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
 
 type Selection = {
@@ -138,36 +137,6 @@ class FlowNodeSelection {
     );
   }
 
-  /*
-   * DEPRECATED: The `flowNodeSelectionStore.selectedRunningInstanceCount` is being deprecated and replaced with
-   * utility functions and hooks in `flowNodeSelection.ts` as part of the Operate v2 migration.
-   *
-   * Please avoid using / adding new functionality to this, and migrate existing logic
-   * to the new utils and hooks where possible.
-   */
-  get selectedRunningInstanceCount() {
-    const currentSelection = this.state.selection;
-    if (currentSelection === null) {
-      return 0;
-    }
-
-    if (
-      currentSelection.isPlaceholder ||
-      this.isRootNodeSelected ||
-      currentSelection.flowNodeId === undefined
-    ) {
-      return 0;
-    }
-
-    if (currentSelection.flowNodeInstanceId !== undefined) {
-      return flowNodeMetaDataStore.isSelectedInstanceRunning ? 1 : 0;
-    }
-
-    return processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-      currentSelection.flowNodeId,
-    );
-  }
-
   get selectedFlowNodeId() {
     return this.state.selection?.flowNodeId;
   }
@@ -176,17 +145,6 @@ class FlowNodeSelection {
     return (
       this.state.selection?.flowNodeInstanceId ??
       flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId
-    );
-  }
-
-  get hasRunningOrFinishedTokens() {
-    const currentFlowNodeSelection = this.state.selection;
-
-    return (
-      currentFlowNodeSelection?.flowNodeId !== undefined &&
-      processInstanceDetailsStatisticsStore.state.statistics.some(
-        ({activityId}) => activityId === currentFlowNodeSelection.flowNodeId,
-      )
     );
   }
 

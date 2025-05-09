@@ -368,11 +368,11 @@ const TopPanel: React.FC = observer(() => {
                       state={payload.flowNodeState}
                       count={payload.count}
                       container={overlay.container}
-                      isFaded={hasPendingCancelOrMoveModification(
-                        overlay.flowNodeId,
-                        undefined,
+                      isFaded={hasPendingCancelOrMoveModification({
+                        flowNodeId: overlay.flowNodeId,
+                        flowNodeInstanceKey: undefined,
                         modificationsByFlowNode,
-                      )}
+                      })}
                       title={
                         payload.flowNodeState === 'completed'
                           ? 'Execution Count'

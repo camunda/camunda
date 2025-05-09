@@ -21,13 +21,9 @@ import {parseDiagramXML} from 'modules/utils/bpmn';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {isFlowNode} from 'modules/utils/flowNodes';
-import {modificationsStore} from '../modifications';
-import {processInstanceDetailsStatisticsStore} from '../processInstanceDetailsStatistics';
-import {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
-import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 
 type State = {
   diagramModel: DiagramModel | null;
@@ -53,12 +49,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       state: observable,
       startFetch: action,
       handleFetchSuccess: action,
-      flowNodes: computed,
       businessObjects: computed,
-      cancellableFlowNodes: computed,
-      appendableFlowNodes: computed,
-      modifiableFlowNodes: computed,
-      nonModifiableFlowNodes: computed,
       handleFetchFailure: action,
       reset: override,
     });
@@ -126,83 +117,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
   getFlowNodeName = (flowNodeId: string) => {
     return this.businessObjects[flowNodeId]?.name || flowNodeId;
   };
-
-  hasMultipleScopes = (parentFlowNode?: BusinessObject): boolean => {
-    if (parentFlowNode === undefined) {
-      return false;
-    }
-
-    const scopeCount =
-      processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-        parentFlowNode.id,
-      );
-
-    if (scopeCount > 1) {
-      return true;
-    }
-
-    if (parentFlowNode.$parent?.$type !== 'bpmn:SubProcess') {
-      return false;
-    }
-
-    return this.hasMultipleScopes(parentFlowNode.$parent);
-  };
-
-  get flowNodes() {
-    return Object.values(this.businessObjects).map((flowNode) => {
-      const flowNodeState =
-        processInstanceDetailsStatisticsStore.state.statistics.find(
-          ({activityId}) => activityId === flowNode.id,
-        );
-
-      return {
-        id: flowNode.id,
-        isCancellable:
-          flowNodeState !== undefined &&
-          (flowNodeState.active > 0 || flowNodeState.incidents > 0),
-        isMoveModificationTarget: isMoveModificationTarget(flowNode),
-        hasMultipleScopes: this.hasMultipleScopes(flowNode.$parent),
-      };
-    });
-  }
-
-  get appendableFlowNodes() {
-    return this.flowNodes
-      .filter(
-        (flowNode) =>
-          flowNode.isMoveModificationTarget &&
-          ((IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED &&
-            modificationsStore.state.status !== 'moving-token') ||
-            !flowNode.hasMultipleScopes),
-      )
-      .map(({id}) => id);
-  }
-
-  get cancellableFlowNodes() {
-    return this.flowNodes
-      .filter((flowNode) => flowNode.isCancellable)
-      .map(({id}) => id);
-  }
-
-  get modifiableFlowNodes() {
-    if (modificationsStore.state.status === 'moving-token') {
-      return this.appendableFlowNodes.filter(
-        (flowNodeId) =>
-          flowNodeId !==
-          modificationsStore.state.sourceFlowNodeIdForMoveOperation,
-      );
-    } else {
-      return Array.from(
-        new Set([...this.appendableFlowNodes, ...this.cancellableFlowNodes]),
-      );
-    }
-  }
-
-  get nonModifiableFlowNodes() {
-    return this.flowNodes
-      .filter((flowNode) => !this.modifiableFlowNodes.includes(flowNode.id))
-      .map(({id}) => id);
-  }
 
   isSubProcess = (flowNodeId: string) => {
     const businessObject = this.businessObjects[flowNodeId];

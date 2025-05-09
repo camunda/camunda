@@ -12,16 +12,9 @@ import {modificationsStore} from './modifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
-import {
-  incidentFlowNodeMetaData,
-  singleInstanceMetadata,
-} from 'modules/mocks/metadata';
-import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
-import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {open} from 'modules/mocks/diagrams';
 import {cancelAllTokens} from 'modules/utils/modifications';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
@@ -51,7 +44,6 @@ describe('stores/flowNodeSelection', () => {
     flowNodeSelectionStore.reset();
     modificationsStore.reset();
     processInstanceDetailsDiagramStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
     flowNodeMetaDataStore.reset();
   });
 
@@ -517,79 +509,8 @@ describe('stores/flowNodeSelection', () => {
     expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
   });
 
-  it('should get selected running instance count', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'StartEvent_1',
-        active: 2,
-        incidents: 1,
-        completed: 1,
-        canceled: 0,
-      },
-    ]);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml('some-process-id');
-    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
-      'instance_id',
-    );
-
-    // empty selection
-    flowNodeSelectionStore.setSelection(null);
-    expect(flowNodeSelectionStore.selectedRunningInstanceCount).toBe(0);
-    flowNodeSelectionStore.setSelection({});
-    expect(flowNodeSelectionStore.selectedRunningInstanceCount).toBe(0);
-
-    // select root node
-    flowNodeSelectionStore.clearSelection();
-    expect(flowNodeSelectionStore.selectedRunningInstanceCount).toBe(0);
-
-    // select placeholder
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'some-flownode-id',
-      flowNodeInstanceId: 'some-instance-id',
-      isPlaceholder: true,
-    });
-
-    expect(flowNodeSelectionStore.selectedRunningInstanceCount).toBe(0);
-
-    // select single running flow node instance id
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'StartEvent_1',
-      flowNodeInstanceId: 'some-running-instance-id',
-    });
-
-    flowNodeMetaDataStore.setMetaData(incidentFlowNodeMetaData);
-    expect(flowNodeSelectionStore.selectedRunningInstanceCount).toBe(1);
-
-    // select single completed flow node instance id
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'StartEvent_1',
-      flowNodeInstanceId: 'some-completed-instance-id',
-    });
-
-    flowNodeMetaDataStore.setMetaData(singleInstanceMetadata);
-    expect(flowNodeSelectionStore.selectedRunningInstanceCount).toBe(0);
-
-    // select flow node
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'StartEvent_1',
-    });
-
-    expect(flowNodeSelectionStore.selectedRunningInstanceCount).toBe(3);
-  });
-
   it('should get has pending cancel modification', async () => {
     mockFetchProcessXML().withSuccess(mockProcessXml);
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'userTask',
-        active: 2,
-        incidents: 1,
-        completed: 1,
-        canceled: 0,
-      },
-    ]);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml('some-process-id');
 
@@ -656,15 +577,6 @@ describe('stores/flowNodeSelection', () => {
 
   it('should get has pending move modification', async () => {
     mockFetchProcessXML().withSuccess(mockProcessXml);
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'userTask',
-        active: 2,
-        incidents: 1,
-        completed: 1,
-        canceled: 0,
-      },
-    ]);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml('some-process-id');
 

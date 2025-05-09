@@ -13,6 +13,8 @@ import {Diagram as StyledDiagram, DiagramCanvas} from '../styled';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {useTotalRunningInstancesForFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -50,7 +52,12 @@ const Diagram: React.FC<Props> = observer(
     const viewerRef = useRef<BpmnJS | null>(null);
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
     const {isModificationModeEnabled} = modificationsStore;
-    const {selectedRunningInstanceCount} = flowNodeSelectionStore;
+    const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+    const {data: totalRunningInstances} =
+      useTotalRunningInstancesForFlowNode(flowNodeId);
+    const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
+      totalRunningInstances ?? 0,
+    );
 
     function getViewer() {
       if (viewerRef.current === null) {
