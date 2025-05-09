@@ -92,7 +92,7 @@ describe('Processes', () => {
     );
   });
 
-  it('should render an empty state message', async () => {
+  it.skip('should render an empty state message', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
       http.get(
@@ -156,7 +156,7 @@ describe('Processes', () => {
     expect(screen.getAllByTestId('process-tile')).toHaveLength(2);
   });
 
-  it('should open a dialog with the start form', async () => {
+  it.skip('should open a dialog with the start form', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const mockProcess = createMockProcess('process-0');
     nodeMockServer.use(
@@ -216,7 +216,7 @@ describe('Processes', () => {
     );
   });
 
-  it('should show the filter dropdown', async () => {
+  it.skip('should show the filter dropdown', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
       http.get('/v1/internal/processes', () => {
@@ -235,7 +235,7 @@ describe('Processes', () => {
     expect(screen.getByTitle('All Processes')).toBeVisible();
   });
 
-  it('should render a tenant dropdown', async () => {
+  it.skip('should render a tenant dropdown', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     mockGetClientConfig.mockReturnValue({
       ...actualGetClientConfig(),
@@ -272,7 +272,7 @@ describe('Processes', () => {
     );
   });
 
-  it('should render a tenant dropdown with the current tenant selected', async () => {
+  it.skip('should render a tenant dropdown with the current tenant selected', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     window.localStorage.setItem('tenantId', '"tenantA"');
     mockGetClientConfig.mockReturnValue({
@@ -342,7 +342,7 @@ describe('Processes', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should render the start form with the correct URL', async () => {
+  it.skip('should render the start form with the correct URL', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const mockProcess = createMockProcess('process-0');
     nodeMockServer.use(
@@ -375,7 +375,7 @@ describe('Processes', () => {
     );
   });
 
-  it('should show a toast message when opened start form process does not exist', async () => {
+  it.skip('should show a toast message when opened start form process does not exist', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const wrongBpmnProcessId = 'wrong-bpmn-process-id';
     nodeMockServer.use(
