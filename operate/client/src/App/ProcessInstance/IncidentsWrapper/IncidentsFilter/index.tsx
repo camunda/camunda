@@ -11,16 +11,18 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
 import {Button, MultiSelect} from '@carbon/react';
+import {useIncidentsElements} from 'modules/hooks/incidents';
 
 const IncidentsFilter: React.FC = observer(() => {
   const {
-    flowNodes,
     errorTypes,
     setFlowNodeSelection,
     setErrorTypeSelection,
     clearSelection,
     state: {selectedErrorTypes, selectedFlowNodes},
   } = incidentsStore;
+
+  const flowNodes = useIncidentsElements();
 
   return (
     <Layer>
