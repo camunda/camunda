@@ -11,6 +11,7 @@ import static io.camunda.it.rdbms.db.fixtures.MappingFixtures.createAndSaveRando
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.MappingFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -28,12 +29,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class MappingSortIT {
 
+  public static final long PARTITION_ID = 0L;
+
   @TestTemplate
   public void shouldSortMappingsByClaimNameAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsService, b -> b.claimName(claimName));
+    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -52,9 +56,10 @@ public class MappingSortIT {
   @TestTemplate
   public void shouldSortMappingsByClaimNameDesc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsService, b -> b.claimName(claimName));
+    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -73,9 +78,10 @@ public class MappingSortIT {
   @TestTemplate
   public void shouldSortMappingsByClaimValueAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsService, b -> b.claimName(claimName));
+    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -95,9 +101,10 @@ public class MappingSortIT {
   public void shouldSortMappingsByClaimValueDesc(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsService, b -> b.claimName(claimName));
+    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -116,9 +123,10 @@ public class MappingSortIT {
   @TestTemplate
   public void shouldSortMappingsByNameValueDesc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String name = "name-" + MappingFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsService, b -> b.name(name));
+    createAndSaveRandomMappings(rdbmsWriter, b -> b.name(name));
 
     final var searchResult =
         rdbmsService
