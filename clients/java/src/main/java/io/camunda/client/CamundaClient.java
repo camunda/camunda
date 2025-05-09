@@ -78,6 +78,7 @@ import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
+import io.camunda.client.api.fetch.MappingsByGroupSearchRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
@@ -1933,4 +1934,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   ProcessInstanceGetCallHierarchyRequest newProcessInstanceGetCallHierarchyRequest(
       Long processInstanceKey);
+
+  /**
+   * Executes a search request to query mappings by group.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newMappingsByGroupSearchRequest(groupId)
+   *    .filter((f) -> f.mappingId(mappingId))
+   *    .sort((s) -> s.mappingId().asc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   * </pre>
+   *
+   * @param groupId the ID of the group
+   * @return a builder for the mappings by group search request
+   */
+  MappingsByGroupSearchRequest newMappingsByGroupSearchRequest(String groupId);
 }
