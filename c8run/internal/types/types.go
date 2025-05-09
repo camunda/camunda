@@ -5,9 +5,41 @@ import (
 	"os/exec"
 )
 
+type Processes struct {
+	Camunda       Process
+	Connectors    Process
+	Elasticsearch Process
+}
+
+type Process struct {
+	Version string
+	Pid     string
+}
+
+type C8RunProcess interface {
+	Kill() error
+	Pid() int
+}
+
+type osProcess struct {
+	*os.Process
+}
+
+func (p osProcess) Kill() error {
+	return p.Process.Kill()
+}
+
+func (p osProcess) Pid() int {
+	return p.Process.Pid
+}
+
+func Wrap(p *os.Process) C8RunProcess {
+	return osProcess{p}
+}
+
 type C8Run interface {
 	OpenBrowser(protocol string, port int) error
-	ProcessTree(commandPid int) []*os.Process
+	ProcessTree(commandPid int) []C8RunProcess
 	VersionCmd(javaBinaryPath string) *exec.Cmd
 	ElasticsearchCmd(elasticsearchVersion string, parentDir string) *exec.Cmd
 	ConnectorsCmd(javaBinary string, parentDir string, camundaVersion string) *exec.Cmd
@@ -31,4 +63,3 @@ type C8RunSettings struct {
 func (c C8RunSettings) HasKeyStore() bool {
 	return c.Keystore != "" && c.KeystorePassword != ""
 }
-

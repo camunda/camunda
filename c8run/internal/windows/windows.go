@@ -10,6 +10,8 @@ import (
 	"runtime/debug"
 	"strconv"
 	"syscall"
+
+	"github.com/camunda/camunda/c8run/internal/types"
 )
 
 func (w *WindowsC8Run) OpenBrowser(protocol string, port int) error {
@@ -26,8 +28,15 @@ func (w *WindowsC8Run) OpenBrowser(protocol string, port int) error {
 	return nil
 }
 
-func (w *WindowsC8Run) ProcessTree(commandPid int) []*os.Process {
-	return process_tree(int(commandPid))
+func (w *WindowsC8Run) ProcessTree(commandPid int) []types.C8RunProcess {
+	tree := process_tree(int(commandPid))
+
+	returnedProcesses := make([]types.C8RunProcess, len(tree))
+
+	for i, process := range tree {
+		returnedProcesses[i] = types.Wrap(process)
+	}
+	return returnedProcesses
 }
 
 func (w *WindowsC8Run) VersionCmd(javaBinaryPath string) *exec.Cmd {
