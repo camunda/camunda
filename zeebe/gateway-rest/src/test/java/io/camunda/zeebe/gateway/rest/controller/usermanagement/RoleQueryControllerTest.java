@@ -12,15 +12,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -39,11 +42,14 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
   @MockBean private RoleServices roleServices;
   @MockBean private UserServices userServices;
+  @MockBean private MappingServices mappingsServices;
 
   @BeforeEach
   void setup() {
     when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+    when(mappingsServices.withAuthentication(any(Authentication.class)))
+        .thenReturn(mappingsServices);
   }
 
   @Test
@@ -271,5 +277,68 @@ public class RoleQueryControllerTest extends RestControllerTest {
             new UserQuery.Builder()
                 .filter(f -> f.roleId(roleId).usernames(Collections.emptySet()))
                 .build());
+  }
+
+  @Test
+  void shouldSearchMappingsByRole() {
+    // given
+    final var roleId = "roleId";
+    when(mappingsServices.search(any(MappingQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new MappingEntity("mapping1", 1L, "claim1", "value1", "Mapping 1"),
+                        new MappingEntity("mapping2", 2L, "claim2", "value2", "Mapping 2"),
+                        new MappingEntity("mapping3", 3L, "claim3", "value3", "Mapping 3")))
+                .build());
+
+    // when /then
+    webClient
+        .post()
+        .uri("%s/%s/mapping-rules/search".formatted(ROLE_BASE_URL, roleId))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "mappingId": "mapping1",
+                 "claimName": "claim1",
+                 "claimValue": "value1",
+                 "name": "Mapping 1"
+               },
+                {
+                  "mappingId": "mapping2",
+                  "claimName": "claim2",
+                  "claimValue": "value2",
+                  "name": "Mapping 2"
+                },
+                {
+                  "mappingId": "mapping3",
+                  "claimName": "claim3",
+                  "claimValue": "value3",
+                  "name": "Mapping 3"
+                }
+             ],
+             "page": {
+               "totalItems": 3,
+               "firstSortValues": [],
+               "lastSortValues": []
+             }
+           }""");
+
+    verify(mappingsServices)
+        .search(
+            new MappingQuery.Builder().filter(f -> f.roleId(roleId).claimNames(List.of())).build());
   }
 }

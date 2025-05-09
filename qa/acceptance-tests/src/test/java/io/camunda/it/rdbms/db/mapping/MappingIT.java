@@ -29,13 +29,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class MappingIT {
+  private static final long PARTITION_ID = 0L;
 
   @TestTemplate
   public void shouldSaveAndFindMappingByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final MappingDbModel randomizedMapping = MappingFixtures.createRandomized();
-    createAndSaveMapping(rdbmsService, randomizedMapping);
+    createAndSaveMapping(rdbmsWriter, randomizedMapping);
 
     final var mapping =
         rdbmsService.getMappingReader().findOne(randomizedMapping.mappingId()).orElse(null);
@@ -46,10 +48,11 @@ public class MappingIT {
   @TestTemplate
   public void shouldDeleteMapping(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     // Create and save a mapping
     final MappingDbModel randomizedMapping = MappingFixtures.createRandomized();
-    createAndSaveMapping(rdbmsService, randomizedMapping);
+    createAndSaveMapping(rdbmsWriter, randomizedMapping);
 
     // Verify the mapping is saved
     final var mappingId = randomizedMapping.mappingId();
@@ -70,10 +73,11 @@ public class MappingIT {
   @TestTemplate
   public void shouldFindMappingByClaimName(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     // Create and save a mapping
     final MappingDbModel randomizedMapping = MappingFixtures.createRandomized();
-    createAndSaveMapping(rdbmsService, randomizedMapping);
+    createAndSaveMapping(rdbmsWriter, randomizedMapping);
 
     // Search for the mapping by claimName
     final var searchResult =
@@ -97,10 +101,11 @@ public class MappingIT {
   @TestTemplate
   public void shouldFindMappingByClaimValue(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     // Create and save a mapping
     final MappingDbModel randomizedMapping = MappingFixtures.createRandomized();
-    createAndSaveMapping(rdbmsService, randomizedMapping);
+    createAndSaveMapping(rdbmsWriter, randomizedMapping);
 
     // Search for the mapping by claimValue
     final var searchResult =
@@ -124,9 +129,10 @@ public class MappingIT {
   @TestTemplate
   public void shouldFindAllMappingsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
     final String claimName = "claimName-" + MappingFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsService, b -> b.claimName(claimName));
+    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
 
     final var searchResult =
         rdbmsService
@@ -145,13 +151,14 @@ public class MappingIT {
   @TestTemplate
   public void shouldFindMappingWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final MappingReader mappingReader = rdbmsService.getMappingReader();
 
     final String claimName = "claimName-" + MappingFixtures.nextStringId();
-    createAndSaveRandomMappings(rdbmsService, b -> b.claimName(claimName));
+    createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));
     final MappingDbModel randomizedMapping =
         MappingFixtures.createRandomized(b -> b.claimName(claimName));
-    createAndSaveMapping(rdbmsService, randomizedMapping);
+    createAndSaveMapping(rdbmsWriter, randomizedMapping);
 
     final var searchResult =
         mappingReader.search(

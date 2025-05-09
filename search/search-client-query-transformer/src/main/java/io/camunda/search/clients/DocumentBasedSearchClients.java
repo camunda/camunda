@@ -412,6 +412,9 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     if (mappingQuery.filter().groupId() != null) {
       return expandGroupFilter(mappingQuery);
     }
+    if (mappingQuery.filter().roleId() != null) {
+      return expandRoleFilter(mappingQuery);
+    }
     return mappingQuery;
   }
 
@@ -488,19 +491,28 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   private UserQuery expandRoleFilter(final UserQuery userQuery) {
+    final var usernames = getRoleMemberIds(userQuery.filter().roleId(), EntityType.USER);
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
+  }
+
+  private MappingQuery expandRoleFilter(final MappingQuery mappingQuery) {
+    final var mappingIds = getRoleMemberIds(mappingQuery.filter().roleId(), MAPPING);
+    return mappingQuery.toBuilder()
+        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .build();
+  }
+
+  public Set<String> getRoleMemberIds(final String roleId, final EntityType memberType) {
     final List<RoleMemberEntity> roleMembers =
         getSearchExecutor()
             .findAll(
                 new RoleQuery.Builder()
-                    .filter(f -> f.joinParentId(userQuery.filter().roleId()).memberType(USER))
+                    .filter(f -> f.joinParentId(roleId).memberType(memberType))
                     .build(),
                 io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity.class);
-    final var usernames =
-        roleMembers.stream().map(RoleMemberEntity::id).collect(Collectors.toSet());
-
-    return userQuery.toBuilder()
-        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
-        .build();
+    return roleMembers.stream().map(RoleMemberEntity::id).collect(Collectors.toSet());
   }
 
   @Override
