@@ -16,9 +16,9 @@
 package io.camunda.client;
 
 import static io.camunda.client.ClientProperties.CLOUD_REGION;
-import static io.camunda.client.ClientProperties.DEFAULT_ACTIVATE_JOBS_RESPONSE_TIMEOUT_OFFSET;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
+import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET;
 import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.client.ClientProperties.GRPC_ADDRESS;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
@@ -106,8 +106,7 @@ public final class CamundaClientTest {
       assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
       assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
-      assertThat(configuration.getDefaultActivateJobsResponseTimeoutOffset())
-          .isEqualTo(Duration.ofSeconds(1));
+      assertThat(configuration.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofSeconds(1));
       assertThat(configuration.getMaxMessageSize()).isEqualTo(5 * 1024 * 1024);
       assertThat(configuration.getMaxMetadataSize()).isEqualTo(16 * 1024);
       assertThat(configuration.getOverrideAuthority()).isNull();
@@ -1182,8 +1181,8 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {DEFAULT_ACTIVATE_JOBS_RESPONSE_TIMEOUT_OFFSET})
-  public void shouldSetActivateJobsResponseTimeoutOffset(final String propertyName) {
+  @ValueSource(strings = {DEFAULT_REQUEST_TIMEOUT_OFFSET})
+  public void shouldSetRequestTimeoutOffset(final String propertyName) {
     // given
     final Properties properties = new Properties();
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -1194,7 +1193,6 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getDefaultActivateJobsResponseTimeoutOffset())
-        .isEqualTo(Duration.ofMillis(100));
+    assertThat(builder.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofMillis(100));
   }
 }

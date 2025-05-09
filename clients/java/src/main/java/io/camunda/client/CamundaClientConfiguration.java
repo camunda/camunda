@@ -90,9 +90,9 @@ public interface CamundaClientConfiguration {
   Duration getDefaultRequestTimeout();
 
   /**
-   * @see CamundaClientBuilder#defaultActivateJobsResponseTimeoutOffset(Duration)
+   * @see CamundaClientBuilder#defaultRequestTimeoutOffset(Duration)
    */
-  Duration getDefaultActivateJobsResponseTimeoutOffset();
+  Duration getDefaultRequestTimeoutOffset();
 
   /**
    * @see CamundaClientBuilder#usePlaintext()

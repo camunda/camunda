@@ -145,7 +145,7 @@ public final class ActivateJobsCommandImpl
     httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
     this.requestTimeout = requestTimeout;
     // increment response timeout so client doesn't time out before the server
-    final long offsetMillis = config.getDefaultActivateJobsResponseTimeoutOffset().toMillis();
+    final long offsetMillis = config.getDefaultRequestTimeoutOffset().toMillis();
     httpRequestConfig.setResponseTimeout(
         requestTimeout.toMillis() + offsetMillis, TimeUnit.MILLISECONDS);
     return this;
