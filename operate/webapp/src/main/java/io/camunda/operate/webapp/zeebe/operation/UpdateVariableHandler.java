@@ -12,6 +12,7 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_
 
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
@@ -21,17 +22,12 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
 
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
-    final String updateVariableJson =
-        mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
-    final var setVariablesCommand =
-        withOperationReference(
-            camundaClient
-                .newSetVariablesCommand(operation.getScopeKey())
-                .variables(updateVariableJson)
-                .local(true),
-            operation.getId());
-    final var response = setVariablesCommand.send().join();
-    markAsSent(operation, response.getKey());
+    final Map<String, Object> updateVariableJson =
+        mapVariableJson(operation.getVariableName(), operation.getVariableValue());
+    final var key =
+        operationServicesAdapter.setVariables(
+            operation.getScopeKey(), updateVariableJson, true, operation.getId());
+    markAsSent(operation, key);
   }
 
   @Override
@@ -39,7 +35,8 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
     return Set.of(UPDATE_VARIABLE, ADD_VARIABLE);
   }
 
-  private String mergeVariableJson(final String variableName, final String variableValue) {
-    return String.format("{\"%s\":%s}", variableName, variableValue);
+  private Map<String, Object> mapVariableJson(
+      final String variableName, final String variableValue) {
+    return Map.of(variableName, variableValue);
   }
 }

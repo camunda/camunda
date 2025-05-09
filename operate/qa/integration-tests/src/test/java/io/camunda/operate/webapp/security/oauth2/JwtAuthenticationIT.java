@@ -40,6 +40,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".cloud.clusterId=wrong-scope",
+      OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       // OAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI +
       // "=https://weblogin.cloud.ultrawombat.com/"
       OAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI

@@ -82,12 +82,6 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
                         new MigrationPlanBuilderImpl.MappingInstruction(
                             mapping.getSourceElementId(), mapping.getTargetElementId())));
 
-    final var migrateProcessInstanceCommand =
-        withOperationReference(
-            camundaClient
-                .newMigrateProcessInstanceCommand(processInstanceKey)
-                .migrationPlan(migrationPlan),
-            operationId);
-    migrateProcessInstanceCommand.send().join();
+    operationServicesAdapter.migrateProcessInstance(processInstanceKey, migrationPlan, operationId);
   }
 }
