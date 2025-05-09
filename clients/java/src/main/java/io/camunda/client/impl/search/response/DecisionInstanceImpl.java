@@ -51,6 +51,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final String tenantId;
   private final List<EvaluatedDecisionInput> evaluatedInputs;
   private final List<MatchedDecisionRule> matchedRules;
+  private final String result;
 
   public DecisionInstanceImpl(final DecisionInstanceResult item, final JsonMapper jsonMapper) {
     this(
@@ -69,7 +70,8 @@ public class DecisionInstanceImpl implements DecisionInstance {
         toDecisionDefinitionType(item.getDecisionDefinitionType()),
         item.getTenantId(),
         null,
-        null);
+        null,
+        item.getResult());
   }
 
   public DecisionInstanceImpl(
@@ -94,7 +96,8 @@ public class DecisionInstanceImpl implements DecisionInstance {
             .collect(Collectors.toList()),
         item.getMatchedRules().stream()
             .map(rule -> new MatchedDecisionRuleImpl(rule, jsonMapper))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList()),
+        item.getResult());
   }
 
   public DecisionInstanceImpl(
@@ -113,7 +116,8 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final DecisionDefinitionType decisionDefinitionType,
       final String tenantId,
       final List<EvaluatedDecisionInput> evaluatedInputs,
-      final List<MatchedDecisionRule> matchedRules) {
+      final List<MatchedDecisionRule> matchedRules,
+      final String result) {
     this.jsonMapper = jsonMapper;
     this.decisionInstanceKey = decisionInstanceKey;
     this.decisionInstanceId = decisionInstanceId;
@@ -130,6 +134,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this.tenantId = tenantId;
     this.evaluatedInputs = evaluatedInputs;
     this.matchedRules = matchedRules;
+    this.result = result;
   }
 
   private static DecisionDefinitionType toDecisionDefinitionType(
@@ -249,6 +254,11 @@ public class DecisionInstanceImpl implements DecisionInstance {
   @Override
   public List<MatchedDecisionRule> getMatchedRules() {
     return matchedRules;
+  }
+
+  @Override
+  public String getResult() {
+    return result;
   }
 
   @Override

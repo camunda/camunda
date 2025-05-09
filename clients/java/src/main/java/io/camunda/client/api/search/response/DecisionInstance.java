@@ -97,6 +97,11 @@ public interface DecisionInstance {
   List<MatchedDecisionRule> getMatchedRules();
 
   /**
+   * @return the evaluation result
+   */
+  String getResult();
+
+  /**
    * @return the entity encoded as JSON
    */
   String toJson();
