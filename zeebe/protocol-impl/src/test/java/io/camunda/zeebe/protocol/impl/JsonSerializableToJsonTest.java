@@ -56,6 +56,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -90,6 +91,8 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -111,6 +114,10 @@ final class JsonSerializableToJsonTest {
   private static final String VARIABLES_JSON = "{'foo':'bar'}";
   private static final DirectBuffer VARIABLES_MSGPACK =
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(VARIABLES_JSON));
+
+  private static final String USAGE_METRICS_JSON = "{'tenant1': 5}";
+  private static final DirectBuffer USAGE_METRICS_MSGPACK =
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_JSON));
 
   private static final RuntimeException RUNTIME_EXCEPTION = new RuntimeException("test");
 
@@ -3409,6 +3416,45 @@ final class JsonSerializableToJsonTest {
     "batchOperationKey": 12345
   }
   """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// UsageMetricRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UsageMetricRecord",
+        (Supplier<UsageMetricRecord>)
+            () ->
+                new UsageMetricRecord()
+                    .setIntervalType(IntervalType.ACTIVE)
+                    .setEventType(EventType.RPI)
+                    .setStartTime(123L)
+                    .setEndTime(124L)
+                    .setValues(USAGE_METRICS_MSGPACK),
+        """
+      {
+        "intervalType": "ACTIVE",
+        "eventType": "RPI",
+        "startTime": 123,
+        "endTime": 124,
+        "values": {"tenant1":5}
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty UsageMetricRecord ///////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty UsageMetricRecord",
+        (Supplier<UsageMetricRecord>) UsageMetricRecord::new,
+        """
+      {
+        "intervalType": "ACTIVE",
+        "eventType": "NONE",
+        "startTime": -1,
+        "endTime": -1,
+        "values": {}
+      }
+      """
       },
     };
   }
