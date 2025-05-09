@@ -51,19 +51,16 @@ public class GroupQueryControllerTest extends RestControllerTest {
       {
         "items":[
           {
-            "groupKey":"111",
             "groupId":"%s",
             "name":"Group 1",
             "description":"Description 1"
           },
           {
-            "groupKey":"222",
             "groupId":"%s",
             "name":"Group 2",
             "description":"Description 2"
           },
           {
-            "groupKey":"333",
             "groupId":"%s",
             "name":"Group 3",
             "description":"Description 3"
@@ -239,12 +236,11 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "groupKey": "%s",
               "groupId": "%s",
               "name": "%s",
               "description": "%s"
             }"""
-                .formatted(groupKey, groupId, groupName, groupDescription));
+                .formatted(groupId, groupName, groupDescription));
 
     // then
     verify(groupServices, times(1)).getGroup(group.groupId());
@@ -329,19 +325,16 @@ public class GroupQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "groupKey": "%d",
                  "groupId": "%s",
                  "name": "%s",
                  "description": "%s"
                },
                {
-                 "groupKey": "%d",
                  "groupId": "%s",
                  "name": "%s",
                  "description": "%s"
                },
                {
-                 "groupKey": "%d",
                  "groupId": "%s",
                  "name": "%s",
                  "description": "%s"
@@ -354,15 +347,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
              }
            }"""
                 .formatted(
-                    groupKey1,
                     groupId1,
                     groupName1,
                     description1,
-                    groupKey2,
                     groupId2,
                     groupName2,
                     description2,
-                    groupKey3,
                     groupId3,
                     groupName3,
                     description3));
@@ -654,7 +644,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "field": "groupKey",
+                            "field": "groupId",
                             "order": "dsc"
                         }
                     ]
@@ -686,7 +676,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [groupKey, name, groupId]",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [name, groupId]",
                       "instance": "%s"
                     }""",
                 endpoint)),

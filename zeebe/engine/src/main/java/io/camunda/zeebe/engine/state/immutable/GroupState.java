@@ -12,9 +12,5 @@ import java.util.Optional;
 
 public interface GroupState {
 
-  // TODO: remove this method once every entity is switched to IDs
-  // this method is used in AuthorizationCheckBehavior to retrieve groups by key from mapping
-  Optional<PersistedGroup> get(long groupKey);
-
   Optional<PersistedGroup> get(String groupId);
 }

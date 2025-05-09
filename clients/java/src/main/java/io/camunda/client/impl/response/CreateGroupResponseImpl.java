@@ -20,15 +20,9 @@ import io.camunda.client.protocol.rest.GroupCreateResult;
 
 public class CreateGroupResponseImpl implements CreateGroupResponse {
 
-  private long groupKey;
   private String groupId;
   private String name;
   private String description;
-
-  @Override
-  public long getGroupKey() {
-    return groupKey;
-  }
 
   @Override
   public String getGroupId() {
@@ -46,7 +40,6 @@ public class CreateGroupResponseImpl implements CreateGroupResponse {
   }
 
   public CreateGroupResponseImpl setResponse(final GroupCreateResult response) {
-    groupKey = Long.parseLong(response.getGroupKey());
     groupId = response.getGroupId();
     name = response.getName();
     description = response.getDescription();

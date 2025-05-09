@@ -17,8 +17,6 @@ package io.camunda.client.api.search.response;
 
 public interface Group {
 
-  Long getGroupKey();
-
   String getGroupId();
 
   String getName();
