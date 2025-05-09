@@ -126,7 +126,7 @@ public final class ExporterMetrics {
     final var meterDoc = ExporterMetricsDoc.EXPORTER_EVENTS;
     return Counter.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
-        .tag(LABEL_NAME_ACTION, action.name())
+        .tag(LABEL_NAME_ACTION, action.asString())
         .tag(LABEL_NAME_VALUE_TYPE, valueType.name())
         .register(meterRegistry);
   }
