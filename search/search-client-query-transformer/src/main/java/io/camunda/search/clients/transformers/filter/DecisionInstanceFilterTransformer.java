@@ -11,6 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
@@ -20,6 +21,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
@@ -88,7 +90,9 @@ public final class DecisionInstanceFilterTransformer
   }
 
   private SearchQuery getEvaluationFailuresQuery(final List<String> evaluationFailures) {
-    return stringTerms(EVALUATION_FAILURE, evaluationFailures);
+    return or(
+        stringTerms(EVALUATION_FAILURE_MESSAGE, evaluationFailures),
+        stringTerms(EVALUATION_FAILURE, evaluationFailures));
   }
 
   private SearchQuery getProcessDefinitionKeysQuery(final List<Long> processDefinitionKeys) {

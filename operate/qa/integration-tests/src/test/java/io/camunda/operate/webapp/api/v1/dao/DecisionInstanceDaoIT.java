@@ -33,8 +33,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
   private static final Long FAKE_PROCESS_DEFINITION_KEY = 2251799813685253L;
   private static final Long FAKE_PROCESS_INSTANCE_KEY = 2251799813685255L;
+  private static final Long DUMMY_LONG = 2251799813685252L;
   private final String firstDecisionEvaluationDate = "2024-02-15T22:40:10.834+0000";
   private final String secondDecisionEvaluationDate = "2024-02-15T22:41:10.834+0000";
+  private final String evaluationFailureMessage = "evaluation failure message";
+
   @Autowired private DecisionInstanceDao dao;
   @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
   @Autowired private OperateDateTimeFormatter dateTimeFormatter;
@@ -76,6 +79,36 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
             .setResult("\"day-to-day expense\"")
             .setTenantId(DEFAULT_TENANT_ID));
 
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        indexName,
+        new DecisionInstanceEntity()
+            .setId("2251799813685262-3")
+            .setKey(2251799813685262L)
+            .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.FAILED)
+            .setProcessDefinitionKey(DUMMY_LONG)
+            .setProcessInstanceKey(DUMMY_LONG)
+            .setDecisionId("test")
+            .setDecisionDefinitionId("2251799813685251")
+            .setDecisionVersion(2)
+            .setDecisionType(DecisionType.DECISION_TABLE)
+            .setEvaluationFailureMessage(evaluationFailureMessage)
+            .setTenantId(DEFAULT_TENANT_ID));
+
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        indexName,
+        new DecisionInstanceEntity()
+            .setId("2251799813685262-4")
+            .setKey(2251799813685262L)
+            .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.FAILED)
+            .setProcessDefinitionKey(DUMMY_LONG)
+            .setProcessInstanceKey(DUMMY_LONG)
+            .setDecisionId("test")
+            .setDecisionDefinitionId("2251799813685251")
+            .setDecisionVersion(2)
+            .setDecisionType(DecisionType.DECISION_TABLE)
+            .setEvaluationFailure(evaluationFailureMessage)
+            .setTenantId(DEFAULT_TENANT_ID));
+
     searchContainerManager.refreshIndices("*operate-decision*");
   }
 
@@ -83,7 +116,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
   public void shouldReturnDecisionInstances() {
     final Results<DecisionInstance> decisionInstanceResults = dao.search(new Query<>());
 
-    assertThat(decisionInstanceResults.getTotal()).isEqualTo(2);
+    assertThat(decisionInstanceResults.getTotal()).isEqualTo(4);
 
     DecisionInstance checkDecisionInstance =
         decisionInstanceResults.getItems().stream()
@@ -137,10 +170,10 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
             new Query<DecisionInstance>()
                 .setSort(Query.Sort.listOf(DECISION_ID, Query.Sort.Order.DESC)));
 
-    assertThat(decisionInstanceResults.getTotal()).isEqualTo(2);
+    assertThat(decisionInstanceResults.getTotal()).isEqualTo(4);
     assertThat(decisionInstanceResults.getItems())
         .extracting(DECISION_ID)
-        .containsExactly("invoiceClassification", "invoiceAssignApprover");
+        .containsExactly("test", "test", "invoiceClassification", "invoiceAssignApprover");
   }
 
   @Test
@@ -150,10 +183,10 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
             new Query<DecisionInstance>()
                 .setSort(Query.Sort.listOf(DECISION_ID, Query.Sort.Order.ASC)));
 
-    assertThat(decisionInstanceResults.getTotal()).isEqualTo(2);
+    assertThat(decisionInstanceResults.getTotal()).isEqualTo(4);
     assertThat(decisionInstanceResults.getItems())
         .extracting(DECISION_ID)
-        .containsExactly("invoiceAssignApprover", "invoiceClassification");
+        .containsExactly("invoiceAssignApprover", "invoiceClassification", "test", "test");
   }
 
   @Test
@@ -161,28 +194,28 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
     Results<DecisionInstance> decisionInstanceResults =
         dao.search(
             new Query<DecisionInstance>()
-                .setSort(Query.Sort.listOf(DECISION_ID, Query.Sort.Order.DESC))
+                .setSort(Query.Sort.listOf(DECISION_ID, Query.Sort.Order.ASC))
                 .setSize(1));
 
-    assertThat(decisionInstanceResults.getTotal()).isEqualTo(2);
+    assertThat(decisionInstanceResults.getTotal()).isEqualTo(4);
     assertThat(decisionInstanceResults.getItems()).hasSize(1);
 
     assertThat(decisionInstanceResults.getItems().get(0).getDecisionId())
-        .isEqualTo("invoiceClassification");
+        .isEqualTo("invoiceAssignApprover");
 
     final Object[] searchAfter = decisionInstanceResults.getSortValues();
     decisionInstanceResults =
         dao.search(
             new Query<DecisionInstance>()
-                .setSort(Query.Sort.listOf(DECISION_ID, Query.Sort.Order.DESC))
+                .setSort(Query.Sort.listOf(DECISION_ID, Query.Sort.Order.ASC))
                 .setSize(1)
                 .setSearchAfter(searchAfter));
 
-    assertThat(decisionInstanceResults.getTotal()).isEqualTo(2);
+    assertThat(decisionInstanceResults.getTotal()).isEqualTo(4);
     assertThat(decisionInstanceResults.getItems()).hasSize(1);
 
     assertThat(decisionInstanceResults.getItems().get(0).getDecisionId())
-        .isEqualTo("invoiceAssignApprover");
+        .isEqualTo("invoiceClassification");
   }
 
   @Test
@@ -226,6 +259,18 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
     assertThat(decisionInstanceResults.getItems().get(0).getEvaluationDate())
         .isEqualTo(firstDecisionEvaluationDate);
     assertThat(decisionInstanceResults.getItems().get(0).getId()).isEqualTo("2251799813685262-1");
+  }
+
+  @Test
+  public void shouldReturnBothInstancesWithEvaluationFailureMessage() {
+    final Results<DecisionInstance> evaluationFailureMessageFilteredByEvaluationFailure =
+        dao.search(
+            new Query<DecisionInstance>()
+                .setFilter(new DecisionInstance().setEvaluationFailure(evaluationFailureMessage)));
+    assertThat(evaluationFailureMessageFilteredByEvaluationFailure.getTotal()).isEqualTo(2L);
+    assertThat(evaluationFailureMessageFilteredByEvaluationFailure.getItems())
+        .extracting(DecisionInstance::getEvaluationFailure)
+        .containsExactly(evaluationFailureMessage, evaluationFailureMessage);
   }
 
   @Test
