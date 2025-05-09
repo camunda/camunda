@@ -34,7 +34,7 @@ import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
-import {ModificationDropdown} from './ModificationDropdown/v2';
+import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {useFlownodeStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeStatistics';

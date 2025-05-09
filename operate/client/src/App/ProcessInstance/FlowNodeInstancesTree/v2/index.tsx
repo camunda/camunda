@@ -8,7 +8,6 @@
 
 import React, {useRef} from 'react';
 import {observer} from 'mobx-react';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   flowNodeInstanceStore,
@@ -31,6 +30,8 @@ import {
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
 import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useLatestMigrationDate} from 'modules/queries/operations/useLatestMigrationDate';
 
 const TREE_NODE_HEIGHT = 32;
 
@@ -104,10 +105,11 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
   ({flowNodeInstance, scrollableContainerRef, isRoot = false, ...rest}) => {
     const {fetchSubTree, removeSubTree, getVisibleChildNodes} =
       flowNodeInstanceStore;
+    const {data: processInstance} = useProcessInstance();
+    const {data: latestMigrationDate} = useLatestMigrationDate();
 
     const isProcessInstance =
-      flowNodeInstance.id ===
-      processInstanceDetailsStore.state.processInstance?.id;
+      flowNodeInstance.id === processInstance?.processInstanceKey;
 
     const visibleChildNodes = getVisibleChildNodes(flowNodeInstance);
     const processDefinitionKey = useProcessDefinitionKeyContext();
@@ -126,8 +128,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     const hasVisibleChildPlaceholders = visibleChildPlaceholders.length > 0;
     const hasVisibleChildNodes = visibleChildNodes.length > 0;
 
-    const bpmnProcessId =
-      processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
+    const bpmnProcessId = processInstance?.processDefinitionId;
 
     const businessObject = isProcessInstance
       ? bpmnProcessId
@@ -273,9 +274,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               !modificationsStore.isModificationModeEnabled
             }
             isRoot={isRoot}
-            latestMigrationDate={
-              processInstanceDetailsStore.latestMigrationDate ?? undefined
-            }
+            latestMigrationDate={latestMigrationDate}
             ref={rowRef}
           />
         }
