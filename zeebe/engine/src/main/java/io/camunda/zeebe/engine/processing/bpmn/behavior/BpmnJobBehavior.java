@@ -491,7 +491,7 @@ public final class BpmnJobBehavior {
     if (changedAttributes != null && !changedAttributes.isEmpty()) {
       headers.put(
           Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
-          ExpressionTransformer.asListLiteral(changedAttributes));
+          ExpressionTransformer.asListLiteral(changedAttributes.stream().sorted().toList()));
     }
 
     if (userTaskRecord.getPriority() > 0) {

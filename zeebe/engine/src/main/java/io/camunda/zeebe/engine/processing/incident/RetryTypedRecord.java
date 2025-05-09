@@ -18,18 +18,24 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Map;
 
 /**
- * A wrapper class for records that facilitates retrying commands after an incident is resolved.
+ * A minimal implementation of {@link TypedRecord} used to reprocess a command, typically after an
+ * incident has been resolved.
  *
  * <p>This class is designed to handle different types of records and their corresponding intents,
  * allowing seamless recovery by re-processing the failed command.
+ *
+ * <p>Consumers can use the type of this class to identify and handle retried commands differently,
+ * if special logic is needed during reprocessing.
+ *
+ * @param <T> the type of the record value being retried
  */
-final class IncidentRecordWrapper<T extends UnifiedRecordValue> implements TypedRecord<T> {
+public final class RetryTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
 
   private final long key;
   private final Intent intent;
   private final T record;
 
-  IncidentRecordWrapper(final long key, final Intent intent, final T record) {
+  RetryTypedRecord(final long key, final Intent intent, final T record) {
     this.key = key;
     this.intent = intent;
     this.record = record;
@@ -67,7 +73,7 @@ final class IncidentRecordWrapper<T extends UnifiedRecordValue> implements Typed
 
   @Override
   public RecordType getRecordType() {
-    return null;
+    return RecordType.COMMAND;
   }
 
   @Override
