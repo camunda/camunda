@@ -79,13 +79,6 @@ public class GroupWriter {
             groupId,
             "io.camunda.db.rdbms.sql.GroupMapper.delete",
             groupId));
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.GROUP,
-            WriteStatementType.DELETE,
-            groupId,
-            "io.camunda.db.rdbms.sql.GroupMapper.deleteAllMembers",
-            groupId));
   }
 
   private boolean mergeToQueue(

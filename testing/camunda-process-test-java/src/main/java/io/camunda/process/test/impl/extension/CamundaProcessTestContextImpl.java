@@ -32,6 +32,9 @@ import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.mock.JobWorkerMockImpl;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -44,6 +47,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.bpm.model.dmn.instance.Decision;
+import org.camunda.bpm.model.dmn.instance.Definitions;
+import org.camunda.bpm.model.dmn.instance.LiteralExpression;
+import org.camunda.bpm.model.dmn.instance.Text;
 
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
@@ -139,6 +148,67 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void mockChildProcess(final String childProcessId, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final BpmnModelInstance processModel =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .endEvent(
+                "child-end",
+                e ->
+                    variables.forEach(
+                        (k, v) ->
+                            e.zeebeOutput(
+                                "=" + client.getConfiguration().getJsonMapper().toJson(v), k)))
+            .done();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(processModel, "test-process.bpmn")
+        .send()
+        .join();
+  }
+
+  @Override
+  public void mockChildProcess(final String childProcessId) {
+    mockChildProcess(childProcessId, new HashMap<>());
+  }
+
+  @Override
+  public void mockDmnDecision(final String decisionId, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final String jsonVariables = client.getConfiguration().getJsonMapper().toJson(variables);
+
+    // Create an empty DMN model
+    final DmnModelInstance modelInstance = Dmn.createEmptyModel();
+
+    // Create and configure the definitions element
+    final Definitions definitions = modelInstance.newInstance(Definitions.class);
+    definitions.setName(decisionId + "-name");
+    definitions.setNamespace("http://camunda.org/schema/1.0/dmn");
+    modelInstance.setDefinitions(definitions);
+
+    // Create the decision element
+    final Decision decision = modelInstance.newInstance(Decision.class);
+    decision.setId(decisionId);
+    decision.setName(decisionId + "-decision-name");
+    definitions.addChildElement(decision);
+
+    final LiteralExpression literalExpression = modelInstance.newInstance(LiteralExpression.class);
+    final Text text = modelInstance.newInstance(Text.class);
+    text.setTextContent(jsonVariables);
+    literalExpression.setText(text);
+    decision.addChildElement(literalExpression);
+
+    client
+        .newDeployResourceCommand()
+        .addResourceStream(
+            new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()),
+            decisionId + ".dmn")
+        .send()
+        .join();
+  }
+
+  @Override
   public void completeJob(final String jobType) {
     completeJob(jobType, new HashMap<>());
   }
@@ -161,27 +231,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final CamundaClient client = createClient();
     final ActivatedJob job = getActivatedJob(jobType);
     client.newThrowErrorCommand(job).errorCode(errorCode).variables(variables).send().join();
-  }
-
-  private ActivatedJob getActivatedJob(final String jobType) {
-    final CamundaClient client = createClient();
-    final AtomicReference<ActivatedJob> activatedJob = new AtomicReference<>();
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(
-            () -> {
-              final List<ActivatedJob> jobs =
-                  client
-                      .newActivateJobsCommand()
-                      .jobType(jobType)
-                      .maxJobsToActivate(1)
-                      .send()
-                      .join()
-                      .getJobs();
-              assertThat(jobs).isNotEmpty();
-              activatedJob.set(jobs.get(0));
-            });
-    return activatedJob.get();
   }
 
   @Override
@@ -227,5 +276,26 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
 
     client.newUserTaskCompleteCommand(userTaskKey.get()).variables(variables).send().join();
+  }
+
+  private ActivatedJob getActivatedJob(final String jobType) {
+    final CamundaClient client = createClient();
+    final AtomicReference<ActivatedJob> activatedJob = new AtomicReference<>();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () -> {
+              final List<ActivatedJob> jobs =
+                  client
+                      .newActivateJobsCommand()
+                      .jobType(jobType)
+                      .maxJobsToActivate(1)
+                      .send()
+                      .join()
+                      .getJobs();
+              assertThat(jobs).isNotEmpty();
+              activatedJob.set(jobs.get(0));
+            });
+    return activatedJob.get();
   }
 }

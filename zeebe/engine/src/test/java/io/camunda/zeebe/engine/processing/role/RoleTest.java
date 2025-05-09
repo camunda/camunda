@@ -16,7 +16,6 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -39,7 +38,6 @@ public class RoleTest {
   }
 
   @Test
-  @Ignore("Re-enable in https://github.com/camunda/camunda/issues/30109")
   public void shouldNotDuplicate() {
     // given
     final var id = UUID.randomUUID().toString();
@@ -59,42 +57,70 @@ public class RoleTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30113")
   public void shouldUpdateRole() {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var createdRecord = engine.role().newRole(name).create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var createdRecord =
+        engine
+            .role()
+            .newRole(roleId)
+            .withName(UUID.randomUUID().toString())
+            .withDescription(UUID.randomUUID().toString())
+            .create();
 
     // when
-    final var newName = UUID.randomUUID().toString();
-    final var updatedRoleRecord =
-        engine.role().updateRole(createdRecord.getValue().getRoleKey()).withName(newName).update();
+    final var updatedName = UUID.randomUUID().toString();
+    final var updatedDescription = UUID.randomUUID().toString();
+    final var updatedRole =
+        engine
+            .role()
+            .updateRole(roleId)
+            .withName(updatedName)
+            .withDescription(updatedDescription)
+            .update()
+            .getValue();
 
-    final var updatedRole = updatedRoleRecord.getValue();
-    Assertions.assertThat(updatedRole).isNotNull().hasFieldOrPropertyWithValue("name", newName);
+    assertThat(updatedRole)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasName(updatedName)
+        .hasDescription(updatedDescription);
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30113")
-  public void shouldRejectIfRoleIsNotPresent() {
+  public void shouldNotUpdateRoleKey() {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var roleRecord = engine.role().newRole(name).create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var createdRecord = engine.role().newRole(roleId).create();
 
     // when
-    final var notPresentRoleKey = 1L;
+    final var updatedKey = 111L;
+    final var updatedRole =
+        engine.role().updateRole(roleId).withRoleKey(updatedKey).update().getValue();
+
+    assertThat(updatedRole).isNotNull().hasRoleId(roleId).hasRoleKey(createdRecord.getKey());
+  }
+
+  @Test
+  public void shouldRejectIfRoleIsNotPresent() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = engine.role().newRole(roleId).create();
+
+    // when
+    final var notPresentRoleId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
-        engine.role().updateRole(notPresentRoleKey).expectRejection().update();
+        engine.role().updateRole(notPresentRoleId).expectRejection().update();
 
     final var createdRole = roleRecord.getValue();
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    assertThat(createdRole).isNotNull().hasRoleId(roleId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update role with key '"
-                + notPresentRoleKey
-                + "', but a role with this key does not exist.");
+            "Expected to update role with ID '"
+                + notPresentRoleId
+                + "', but a role with this ID does not exist.");
   }
 
   @Test
@@ -146,7 +172,7 @@ public class RoleTest {
   }
 
   @Test
-  public void shouldRejectIfEntityIsNotPresent() {
+  public void shouldRejectIfMappingIsNotPresent() {
     // given
     final var roleId = UUID.randomUUID().toString();
     final var roleRecord = engine.role().newRole(roleId).create();
@@ -159,7 +185,7 @@ public class RoleTest {
             .role()
             .addEntity(roleId)
             .withEntityId(entityId)
-            .withEntityType(EntityType.USER)
+            .withEntityType(EntityType.MAPPING)
             .expectRejection()
             .add();
 
@@ -167,7 +193,28 @@ public class RoleTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to add an entity with ID '%s' and type '%s' to role with ID '%s', but the entity doesn't exist."
-                .formatted(entityId, EntityType.USER, roleId));
+                .formatted(entityId, EntityType.MAPPING, roleId));
+  }
+
+  @Test
+  public void shouldNotRejectIfUserIsNotPresent() {
+    // given
+    final var roleId = UUID.randomUUID().toString();
+    final var roleRecord = engine.role().newRole(roleId).create();
+
+    // when
+    roleRecord.getValue();
+    final var entityId = "non-existing-entity";
+    final var updatedRecord =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(entityId)
+            .withEntityType(EntityType.USER)
+            .add()
+            .getValue();
+
+    assertThat(updatedRecord).hasEntityId(entityId);
   }
 
   @Test
@@ -206,110 +253,217 @@ public class RoleTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
-  public void shouldRemoveEntityFromRole() {
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+  public void shouldRemoveUserFromRole() {
+    final var username = Strings.newRandomValidUsername();
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create();
+    engine.role().addEntity(roleId).withEntityId(username).withEntityType(EntityType.USER).add();
     final var removedEntity =
         engine
             .role()
-            .removeEntity(roleKey)
-            .withEntityKey(userKey)
+            .removeEntity(roleId)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .remove()
             .getValue();
 
-    Assertions.assertThat(removedEntity)
+    assertThat(removedEntity)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("roleKey", roleKey)
-        .hasFieldOrPropertyWithValue("entityKey", userKey)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+        .hasRoleId(roleId)
+        .hasEntityId(username)
+        .hasEntityType(EntityType.USER);
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
+  public void shouldRemoveMappingFromRole() {
+    final var mappingId = Strings.newRandomValidIdentityId();
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withClaimName("claimName")
+        .withClaimValue("claimValue")
+        .create();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create();
+    engine
+        .role()
+        .addEntity(roleId)
+        .withEntityId(mappingId)
+        .withEntityType(EntityType.MAPPING)
+        .add();
+    final var removedEntity =
+        engine
+            .role()
+            .removeEntity(roleId)
+            .withEntityId(mappingId)
+            .withEntityType(EntityType.MAPPING)
+            .remove()
+            .getValue();
+
+    assertThat(removedEntity)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(mappingId)
+        .hasEntityType(EntityType.MAPPING);
+  }
+
+  @Test
+  public void shouldRemoveGroupFromRole() {
+    final var groupId = Strings.newRandomValidUsername();
+    engine.group().newGroup(groupId).create();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create();
+    engine.role().addEntity(roleId).withEntityId(groupId).withEntityType(EntityType.GROUP).add();
+    final var removedEntity =
+        engine
+            .role()
+            .removeEntity(roleId)
+            .withEntityId(groupId)
+            .withEntityType(EntityType.GROUP)
+            .remove()
+            .getValue();
+
+    assertThat(removedEntity)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
+  }
+
+  @Test
   public void shouldRejectIfRoleIsNotPresentEntityRemoval() {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var roleRecord = engine.role().newRole(name).create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = engine.role().newRole(roleId).create();
 
     // when
-    final var notPresentRoleKey = 1L;
+    final var notPresentRoleId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
-        engine.role().addEntity(notPresentRoleKey).expectRejection().add();
+        engine.role().addEntity(notPresentRoleId).expectRejection().add();
 
     final var createdRole = roleRecord.getValue();
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    assertThat(createdRole).isNotNull().hasRoleId(roleId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update role with key '"
-                + notPresentRoleKey
-                + "', but a role with this key does not exist.");
+            "Expected to update role with ID '"
+                + notPresentRoleId
+                + "', but a role with this ID does not exist.");
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldRejectIfEntityIsNotPresentEntityRemoval() {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var roleRecord = engine.role().newRole(name).create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = engine.role().newRole(roleId).create().getValue();
 
     // when
-    final var createdRole = roleRecord.getValue();
-    final var roleKey = createdRole.getRoleKey();
+    final var entityId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
         engine
             .role()
-            .removeEntity(roleKey)
-            .withEntityKey(1L)
-            .withEntityType(EntityType.USER)
+            .removeEntity(roleId)
+            .withEntityId(entityId)
+            .withEntityType(EntityType.MAPPING)
             .expectRejection()
             .remove();
 
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    assertThat(roleRecord).isNotNull().hasRoleId(roleId);
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove an entity with key '%s' and type '%s' from role with key '%s', but the entity doesn't exist."
-                .formatted(1L, EntityType.USER, roleKey));
+            "Expected to remove an entity with ID '%s' and type '%s' from role with ID '%s', but the entity doesn't exist."
+                .formatted(entityId, EntityType.MAPPING, roleId));
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30114")
   public void shouldDeleteRole() {
     // given
+    final var roleId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    // when
-    final var deletedRole = engine.role().deleteRole(roleKey).delete().getValue();
+    engine.role().newRole(roleId).withName(name).create();
 
-    Assertions.assertThat(deletedRole).isNotNull().hasFieldOrPropertyWithValue("roleKey", roleKey);
+    // when
+    final var deletedRole = engine.role().deleteRole(roleId).delete().getValue();
+    assertThat(deletedRole).hasRoleId(roleId);
   }
 
   @Test
   public void shouldRejectIfRoleIsNotPresentOnDeletion() {
     // when
-    final var notPresentRoleKey = 1L;
+    final var notPresentRoleId = Strings.newRandomValidIdentityId();
     final var notPresentUpdateRecord =
-        engine.role().deleteRole(notPresentRoleKey).expectRejection().delete();
+        engine.role().deleteRole(notPresentRoleId).expectRejection().delete();
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete role with key '%s', but a role with this key doesn't exist."
-                .formatted(notPresentRoleKey));
+            "Expected to delete role with ID '%s', but a role with this ID doesn't exist."
+                .formatted(notPresentRoleId));
+  }
+
+  @Test
+  public void shouldAddApplicationEntityToRole() {
+    // given
+    final var applicationId = "application-" + UUID.randomUUID();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create().getValue().getRoleKey();
+
+    // when
+    final var updatedRole =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(applicationId)
+            .withEntityType(EntityType.APPLICATION)
+            .add()
+            .getValue();
+
+    // then
+    assertThat(updatedRole)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(applicationId)
+        .hasEntityType(EntityType.APPLICATION);
+  }
+
+  @Test
+  public void shouldRejectIfApplicationEntityIsAlreadyAssigned() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    final var applicationId = "application-" + UUID.randomUUID().toString();
+    engine
+        .role()
+        .addEntity(roleId)
+        .withEntityId(applicationId)
+        .withEntityType(EntityType.APPLICATION)
+        .add();
+
+    // when
+    final var notPresentUpdateRecord =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(applicationId)
+            .withEntityType(EntityType.APPLICATION)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add entity with ID '%s' to role with ID '%s', but the entity is already assigned to this role."
+                .formatted(applicationId, roleId));
   }
 }

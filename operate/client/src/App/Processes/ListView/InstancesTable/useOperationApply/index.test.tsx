@@ -16,14 +16,12 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockData} from './index.setup';
 import {
   groupedProcessesMock,
-  mockProcessStatistics,
   mockProcessInstances,
   createBatchOperation,
 } from 'modules/testUtils';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
 import * as operationsApi from 'modules/api/processInstances/operations';
@@ -51,7 +49,6 @@ describe('useOperationApply', () => {
   beforeEach(async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess('');
     mockApplyBatchOperation().withSuccess(createBatchOperation());
   });

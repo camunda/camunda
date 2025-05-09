@@ -13,7 +13,7 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {mockSequenceFlows, mockIncidents} from '../index.setup';
+import {mockSequenceFlowsV2, mockIncidents} from '../index.setup';
 import {TopPanel} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -25,9 +25,9 @@ import {
 } from 'modules/mocks/metadata';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenceFlows';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
@@ -37,7 +37,8 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -57,6 +58,18 @@ jest.mock('react-transition-group', () => {
     }),
   };
 });
+
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: 'instance_id',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: true,
+};
 
 const getWrapper = (
   initialEntries: React.ComponentProps<
@@ -95,11 +108,12 @@ describe('TopPanel', () => {
       open('diagramForModifications.bpmn'),
     );
 
-    mockFetchProcessInstance().withSuccess(
+    mockFetchProcessInstanceDeprecated().withSuccess(
       createInstance({id: 'instance_id', state: 'INCIDENT'}),
     );
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
-    mockFetchSequenceFlows().withSuccess(mockSequenceFlows);
+    mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -118,6 +132,7 @@ describe('TopPanel', () => {
         },
       ],
     });
+    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
   });
 
   afterEach(() => {
@@ -128,7 +143,10 @@ describe('TopPanel', () => {
   });
 
   it('should render spinner while loading', async () => {
-    mockFetchProcessInstance().withSuccess(createInstance({id: 'instance_id'}));
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      hasIncident: false,
+    });
 
     render(<TopPanel />, {
       wrapper: getWrapper(),
@@ -141,6 +159,8 @@ describe('TopPanel', () => {
   });
 
   it('should render incident bar', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+
     render(<TopPanel />, {
       wrapper: getWrapper(),
     });
@@ -352,8 +372,7 @@ describe('TopPanel', () => {
       screen.queryByText(/select the target flow node in the diagram/i),
     ).not.toBeInTheDocument();
 
-    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
-    await user.click(screen.getByRole('button', {name: /move/i}));
+    await user.click(await screen.findByRole('button', {name: /move/i}));
 
     expect(
       await screen.findByText(/select the target flow node in the diagram/i),

@@ -314,7 +314,7 @@ public class CamundaMultiDBExtension
     final var application = applicationUnderTest.application;
     closeables.add(application);
     application.start();
-    application.awaitCompleteTopology();
+    application.awaitCompleteTopology(application.brokerConfig());
 
     Awaitility.await("Await exporter readiness")
         .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)

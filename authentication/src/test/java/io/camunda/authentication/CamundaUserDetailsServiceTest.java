@@ -21,8 +21,10 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -58,10 +60,12 @@ public class CamundaUserDetailsServiceTest {
                 null,
                 null));
 
-    when(authorizationServices.getAuthorizedApplications(any()))
+    final var roleId = "admin";
+    when(authorizationServices.getAuthorizedApplications(Set.of(roleId, TEST_USER_ID)))
         .thenReturn(List.of("operate", "identity"));
-    final RoleEntity adminRole = new RoleEntity(2L, "ADMIN");
-    when(roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId("100")))))
+    final RoleEntity adminRole = new RoleEntity(2L, roleId, "ADMIN", "description");
+    when(roleServices.findAll(
+            RoleQuery.of(q -> q.filter(f -> f.memberId(TEST_USER_ID).memberType(EntityType.USER)))))
         .thenReturn(List.of(adminRole));
 
     // when

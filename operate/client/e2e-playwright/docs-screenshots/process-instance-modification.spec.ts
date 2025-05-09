@@ -31,7 +31,6 @@ test.describe('process instance modification', () => {
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
-        statistics: eventBasedGatewayProcessInstance.statistics,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
         variables: [],
@@ -133,7 +132,6 @@ test.describe('process instance modification', () => {
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
-        statistics: eventBasedGatewayProcessInstance.statistics,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
         variables: [],
@@ -251,7 +249,6 @@ test.describe('process instance modification', () => {
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
-        statistics: eventBasedGatewayProcessInstance.statistics,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
         variables: [
@@ -393,7 +390,6 @@ test.describe('process instance modification', () => {
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
-        statistics: eventBasedGatewayProcessInstance.statistics,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
         variables: [],

@@ -133,7 +133,12 @@ test.describe('process page', () => {
       'USD - United States Dollar',
       'EUR - Euro',
     );
-    await page.getByRole('textbox', {name: 'Invoice Number'}).fill('123');
+    await expect(async () => {
+      await page.getByRole('textbox', {name: 'Invoice Number'}).fill('123');
+      await expect(
+        page.getByRole('textbox', {name: 'Invoice Number'}),
+      ).toHaveValue('123');
+    }).toPass();
     await page.getByRole('button', {name: /add new/i}).click();
     await taskFormView.forEachDynamicListItem(
       page.getByLabel('Item Name*'),

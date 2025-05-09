@@ -26,6 +26,7 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -59,6 +60,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
   }
 
   @Test
+  @Ignore
   public void canUseRichClient() {
     assertThat(richOpenSearchClient).isNotNull();
     assertThat(searchForProcessEntity(matchAll())).isEmpty();

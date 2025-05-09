@@ -21,7 +21,7 @@ import java.util.List;
 import org.immutables.value.Value;
 
 /**
- * Represents a command to activate activities in a given ad-hoc subprocess.
+ * Represents a command to activate activities in a given ad-hoc sub-process.
  *
  * <p>See {@link io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent}
  * for intents.
@@ -31,7 +31,7 @@ import org.immutables.value.Value;
 public interface AdHocSubProcessActivityActivationRecordValue extends RecordValue, TenantOwned {
 
   /**
-   * @return the instance key of the ad-hoc subprocess that will have its activities activated.
+   * @return the instance key of the ad-hoc sub-process that will have its activities activated.
    */
   String getAdHocSubProcessInstanceKey();
 

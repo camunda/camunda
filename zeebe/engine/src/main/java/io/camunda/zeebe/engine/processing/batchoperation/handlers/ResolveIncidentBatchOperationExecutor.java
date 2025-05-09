@@ -34,13 +34,13 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
   public void execute(final long itemKey, final PersistedBatchOperation batchOperation) {
     final var incident = incidentState.getIncidentRecord(itemKey);
     if (incidentState.isJobIncident(incident)) {
-      LOGGER.info("Increasing retries for job with key '{}'", incident.getJobKey());
+      LOGGER.trace("Increasing retries for job with key '{}'", incident.getJobKey());
       final var jobRecord = new JobRecord().setRetries(1);
       commandWriter.appendFollowUpCommand(
           incident.getJobKey(), JobIntent.UPDATE_RETRIES, jobRecord);
     }
 
-    LOGGER.info("Resolving incident with key '{}'", itemKey);
+    LOGGER.trace("Resolving incident with key '{}'", itemKey);
     final var command = new IncidentRecord();
     commandWriter.appendFollowUpCommand(
         itemKey, IncidentIntent.RESOLVE, command, batchOperation.getKey());

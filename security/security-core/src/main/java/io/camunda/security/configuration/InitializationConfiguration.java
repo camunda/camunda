@@ -15,7 +15,7 @@ public class InitializationConfiguration {
   public static final String DEFAULT_USER_USERNAME = "demo";
   public static final String DEFAULT_USER_PASSWORD = "demo";
   public static final String DEFAULT_USER_NAME = "Demo";
-  public static final String DEFAULT_USER_EMAIL = "demo@demo.com";
+  public static final String DEFAULT_USER_EMAIL = "demo@example.com";
 
   private List<ConfiguredUser> users = new ArrayList<>();
   private List<ConfiguredMapping> mappings = new ArrayList<>();

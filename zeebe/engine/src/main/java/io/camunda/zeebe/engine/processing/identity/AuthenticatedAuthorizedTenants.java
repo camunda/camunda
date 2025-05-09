@@ -8,20 +8,22 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public final class AuthenticatedAuthorizedTenants implements AuthorizedTenants {
 
-  private final List<String> authorizedTenantIds;
+  private final Collection<String> authorizedTenantIds;
 
   public AuthenticatedAuthorizedTenants(final String authorizedTenantId) {
-    this(List.of(authorizedTenantId));
+    this(Set.of(authorizedTenantId));
   }
 
-  public AuthenticatedAuthorizedTenants(final List<String> authorizedTenantIds) {
-    this.authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+  public AuthenticatedAuthorizedTenants(final Collection<String> authorizedTenantIds) {
+    this.authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, Set.of());
   }
 
   @Override

@@ -40,13 +40,14 @@ public class CredentialsProviderConfiguration {
   @ConditionalOnMissingBean
   public CredentialsProvider camundaClientCredentialsProvider(
       final CamundaClientProperties camundaClientProperties) {
-    final var clientMode = camundaClientProperties.getMode();
+    final var authMethod = camundaClientProperties.getAuth().getMethod();
 
-    return clientMode == null
+    return authMethod == null
         ? new NoopCredentialsProvider()
-        : switch (clientMode) {
+        : switch (authMethod) {
           case basic -> buildBasicAuthCredentialsProvider(camundaClientProperties);
-          case saas, selfManaged -> buildOAuthCredentialsProvider(camundaClientProperties);
+          case oidc -> buildOAuthCredentialsProvider(camundaClientProperties);
+          case none -> new NoopCredentialsProvider();
         };
   }
 
@@ -64,7 +65,12 @@ public class CredentialsProviderConfiguration {
     try {
       return builder.build();
     } catch (final Exception e) {
-      LOG.warn("Failed to configure credential provider", e);
+      LOG.warn(
+          "Failed to configure basic credential provider, falling back to use no authentication, cause: {}",
+          e.getMessage());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(e.getMessage(), e);
+      }
       return new NoopCredentialsProvider();
     }
   }
@@ -90,7 +96,12 @@ public class CredentialsProviderConfiguration {
     try {
       return credBuilder.build();
     } catch (final Exception e) {
-      LOG.warn("Failed to configure credential provider", e);
+      LOG.warn(
+          "Failed to configure oidc credential provider, falling back to use no authentication, cause: {}",
+          e.getMessage());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(e.getMessage(), e);
+      }
       return new NoopCredentialsProvider();
     }
   }

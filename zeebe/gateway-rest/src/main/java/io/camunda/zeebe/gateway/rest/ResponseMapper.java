@@ -579,7 +579,6 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toMappingCreateResponse(final MappingRecord record) {
     final var response =
         new MappingRuleCreateResult()
-            .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
             .mappingId(record.getMappingId())
@@ -590,7 +589,6 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toMappingUpdateResponse(final MappingRecord record) {
     final var response =
         new MappingRuleUpdateResult()
-            .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
             .mappingId(record.getMappingId())

@@ -37,7 +37,7 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.auth.signer.Aws4Signer;
+import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner;
 
 class AwsRequestSigningApacheInterceptorTest {
   private static final String AWS_SERVICE_NAME = "servicename";
@@ -55,7 +55,7 @@ class AwsRequestSigningApacheInterceptorTest {
     when(mockAwsCredentials.accessKeyId()).thenReturn(AWS_ACCESS_KEY_ID);
     when(mockAwsCredentials.secretAccessKey()).thenReturn(AWS_SECRET_ACCESS_KEY);
     StaticCredentialsProvider.create(AnonymousCredentialsProvider.create().resolveCredentials());
-    final var signer = Aws4Signer.create();
+    final var signer = AwsV4HttpSigner.create();
     interceptor =
         new AwsRequestSigningApacheInterceptor(
             AWS_SERVICE_NAME, signer, mockCredentialsProvider, AWS_REGION);

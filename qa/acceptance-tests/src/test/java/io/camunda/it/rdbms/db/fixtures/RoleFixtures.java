@@ -18,8 +18,14 @@ public final class RoleFixtures extends CommonFixtures {
   private RoleFixtures() {}
 
   public static RoleDbModel createRandomized(final Function<Builder, Builder> builderFunction) {
-    final var userKey = nextKey();
-    final var builder = new Builder().roleKey(userKey).name("Role " + userKey);
+    final var roleKey = nextKey();
+    final var roleId = nextStringId();
+    final var builder =
+        new Builder()
+            .roleKey(roleKey)
+            .roleId(roleId)
+            .name("Role " + roleId)
+            .description("Description " + roleId);
 
     return builderFunction.apply(builder).build();
   }
@@ -40,6 +46,21 @@ public final class RoleFixtures extends CommonFixtures {
       final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     for (int i = 0; i < 20; i++) {
       rdbmsWriter.getRoleWriter().create(RoleFixtures.createRandomized(builderFunction));
+    }
+
+    rdbmsWriter.flush();
+  }
+
+  public static void createAndSaveRandomRolesWithMembers(final RdbmsWriter rdbmsWriter) {
+    createAndSaveRandomRolesWithMembers(rdbmsWriter, b -> b);
+  }
+
+  public static void createAndSaveRandomRolesWithMembers(
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+    for (int i = 0; i < 20; i++) {
+      final var role = RoleFixtures.createRandomized(builderFunction);
+      rdbmsWriter.getRoleWriter().create(role);
+      RoleMemberFixtures.createAndSaveRandomRoleMembers(rdbmsWriter, b -> b.roleId(role.roleId()));
     }
 
     rdbmsWriter.flush();

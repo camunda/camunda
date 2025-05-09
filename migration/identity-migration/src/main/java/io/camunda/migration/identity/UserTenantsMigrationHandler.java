@@ -16,6 +16,7 @@ import io.camunda.search.entities.MappingEntity;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -75,7 +76,8 @@ public class UserTenantsMigrationHandler extends MigrationHandler<UserTenants> {
 
   private void assignMemberToTenant(final String tenantId, final String mappingId) {
     try {
-      tenantServices.addMember(tenantId, EntityType.MAPPING, mappingId).join();
+      final var request = new TenantMemberRequest(tenantId, mappingId, EntityType.MAPPING);
+      tenantServices.addMember(request).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         throw e;

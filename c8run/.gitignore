@@ -1,3 +1,7 @@
 # build artifacts
 camunda-platform-8*
 pax_global_header
+docker-compose-8*
+camunda.process
+camunda8-run-8*
+connectors.process

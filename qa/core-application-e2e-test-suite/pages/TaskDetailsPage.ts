@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 function cardinalToOrdinal(numberValue: number): string {
   const realOrderIndex = numberValue.toString();
@@ -57,8 +58,10 @@ class TaskDetailsPage {
   readonly selectDropdown: Locator;
   readonly tagList: Locator;
   readonly detailsInfo: Locator;
-  readonly textInput: Locator;
   readonly taskCompletedBanner: Locator;
+  readonly addDynamicListRowButton: Locator;
+  readonly processTab: Locator;
+  readonly bpmnDiagram: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -77,7 +80,7 @@ class TaskDetailsPage {
       name: 'Pick a task to work on',
     });
     this.emptyTaskMessage = page.getByRole('heading', {
-      name: /task has no variables/i,
+      name: 'task has no variables',
     });
     this.nameInput = page.getByLabel('Name*');
     this.addressInput = page.getByLabel('Address*');
@@ -99,8 +102,12 @@ class TaskDetailsPage {
     this.selectDropdown = this.form.getByText('Select').last();
     this.tagList = page.getByPlaceholder('Search');
     this.detailsInfo = page.getByTestId('details-info');
-    this.textInput = page.locator('[class="fjs-input"]');
     this.taskCompletedBanner = this.page.getByText('Task completed');
+    this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
+    this.processTab = page.getByRole('link', {
+      name: 'show associated bpmn process',
+    });
+    this.bpmnDiagram = page.getByTestId('diagram');
   }
 
   async clickAssignToMeButton() {
@@ -153,16 +160,20 @@ class TaskDetailsPage {
   }
 
   async clickIncrementButton(): Promise<void> {
-    await this.incrementButton.click();
+    await this.incrementButton.click({timeout: 60000});
   }
 
   async clickDecrementButton(): Promise<void> {
-    await this.decrementButton.click();
+    await this.decrementButton.click({timeout: 60000});
   }
 
-  async fillDatetimeField(name: string, value: string) {
-    await this.page.getByRole('textbox', {name}).fill(value);
-    await this.page.getByRole('textbox', {name}).press('Enter');
+  async fillDatetimeField(label: string, value: string) {
+    const input = this.page.getByRole('textbox', {name: label});
+    await expect(input).toBeVisible();
+    await input.click();
+    await input.fill(value);
+    await this.page.keyboard.press('Enter');
+    await expect(input).toHaveValue(value);
   }
 
   async checkCheckbox(): Promise<void> {
@@ -179,8 +190,8 @@ class TaskDetailsPage {
     await this.page.getByText(value).click();
   }
 
-  async clickRadioButton(radioBtnLabel: string): Promise<void> {
-    await this.page.getByText(radioBtnLabel).click();
+  async clickRadioButton(label: string): Promise<void> {
+    await this.page.getByText(label).click();
   }
 
   async checkChecklistBox(label: string): Promise<void> {
@@ -193,13 +204,13 @@ class TaskDetailsPage {
     await this.page.getByText(value2, {exact: true}).click();
   }
 
-  async clickTextInput(): Promise<void> {
-    await this.textInput.click({timeout: 60000});
+  async fillTextInput(label: string, value: string): Promise<void> {
+    const input = this.page.getByLabel(label, {exact: true});
+    await input.click({timeout: 60000});
+    await input.fill(value);
+    await expect(input).toHaveValue(value, {timeout: 5000});
   }
 
-  async fillTextInput(value: string): Promise<void> {
-    await this.textInput.fill(value);
-  }
   async priorityAssertion(priority: string): Promise<void> {
     let retryCount = 0;
     const maxRetries = 2;
@@ -246,19 +257,66 @@ class TaskDetailsPage {
       variableValue,
     );
   }
-  async forEachDynamicListItem(
-    locator: Locator,
-    fn: (value: Locator, index: number, array: Locator[]) => Promise<void>,
-  ) {
+
+  async fillDynamicList(label: string, value: string) {
+    const locator = this.page.getByLabel(label);
     const elements = await locator.all();
     if (elements.length === 0) {
       throw new Error(
-        'No elements found for provided locator in the dynamic list',
+        `No elements found for label "${label}" in the dynamic list`,
       );
     }
-    for (const element of elements) {
-      await fn(element, elements.indexOf(element), elements);
+
+    for (const [index, element] of elements.entries()) {
+      const expectedValue = `${value}${index + 1}`;
+      await element.fill(expectedValue);
+
+      // Assert that the value was added correctly
+      await expect(element).toHaveValue(expectedValue);
     }
   }
+
+  async getDynamicListValues(label: string): Promise<string[]> {
+    const locator = this.page.getByLabel(label);
+    const elements = await locator.all();
+    if (elements.length === 0) {
+      throw new Error(`No elements found for label "${label}"`);
+    }
+
+    return Promise.all(elements.map((element) => element.inputValue()));
+  }
+
+  async addDynamicListRow(): Promise<void> {
+    await this.addDynamicListRowButton.click();
+  }
+
+  async assertFieldValue(label: string, expectedValue: string): Promise<void> {
+    const input = this.page.getByLabel(label, {exact: true});
+    await waitForAssertion({
+      assertion: async () => {
+        const actualValue = input;
+        await expect(actualValue).toHaveValue(expectedValue);
+      },
+      onFailure: async () => {
+        console.log(`Retrying assertion for field "${label}"...`);
+      },
+    });
+  }
+
+  async assertItemChecked(label: string): Promise<void> {
+    await expect(this.page.getByLabel(label)).toBeChecked();
+  }
+
+  async selectTaglistValues(values: string[]) {
+    await this.tagList.click();
+    for (const value of values) {
+      await this.page.getByText(value, {exact: true}).click();
+    }
+  }
+
+  async clickProcessTab(): Promise<void> {
+    await this.processTab.click();
+  }
 }
+
 export {TaskDetailsPage};

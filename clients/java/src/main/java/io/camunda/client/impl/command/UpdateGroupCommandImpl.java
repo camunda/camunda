@@ -18,7 +18,6 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.GroupChangeset;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.response.UpdateGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -32,15 +31,15 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
 
-  private final long groupKey;
+  private final String groupId;
   private final GroupUpdateRequest request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public UpdateGroupCommandImpl(
-      final long groupKey, final HttpClient httpClient, final JsonMapper jsonMapper) {
-    this.groupKey = groupKey;
+      final String groupId, final HttpClient httpClient, final JsonMapper jsonMapper) {
+    this.groupId = groupId;
     request = new GroupUpdateRequest();
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
@@ -48,15 +47,14 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
   }
 
   @Override
-  public UpdateGroupCommandStep1 update(final GroupChangeset groupChangeset) {
-    // TODO: refactor with https://github.com/camunda/camunda/issues/30015
-    //    request.setChangeset(RequestMapper.toProtocolObject(groupChangeset));
+  public UpdateGroupCommandStep1 name(final String name) {
+    request.setName(name);
     return this;
   }
 
   @Override
-  public UpdateGroupCommandStep1 updateName(final String name) {
-    request.setName(name);
+  public UpdateGroupCommandStep1 description(final String description) {
+    request.setDescription(description);
     return this;
   }
 
@@ -68,11 +66,13 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
 
   @Override
   public CamundaFuture<UpdateGroupResponse> send() {
+    ArgumentUtil.ensureNotNull("name", request.getName());
+    ArgumentUtil.ensureNotNull("description", request.getDescription());
     final HttpCamundaFuture<UpdateGroupResponse> result = new HttpCamundaFuture<>();
     final UpdateGroupResponseImpl response = new UpdateGroupResponseImpl();
 
     httpClient.put(
-        "/groups/" + groupKey,
+        "/groups/" + groupId,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         GroupUpdateResult.class,

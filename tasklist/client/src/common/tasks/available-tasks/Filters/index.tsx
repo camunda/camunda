@@ -81,6 +81,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
         iconDescription={t('taskFiltersSortButton')}
         renderIcon={SortAscending}
         size="md"
+        // @ts-expect-error the carbon type are wrong here
         disabled={disabled}
         align="bottom"
         menuOptionsClass={styles.overflowMenu}

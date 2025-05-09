@@ -58,7 +58,8 @@ public interface PublishMessageCommandStep1
 
   interface PublishMessageCommandStep3
       extends CommandWithTenantStep<PublishMessageCommandStep3>,
-          FinalCommandStep<PublishMessageResponse> {
+          FinalCommandStep<PublishMessageResponse>,
+          CommandWithVariables<PublishMessageCommandStep3> {
     /**
      * Set the id of the message. The message is rejected if another message is already published
      * with the same id, name and correlation-key.
@@ -87,29 +88,12 @@ public interface PublishMessageCommandStep1
     /**
      * Set the variables of the message.
      *
-     * @param variables the variables (JSON) as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    PublishMessageCommandStep3 variables(InputStream variables);
-
-    /**
-     * Set the variables of the message.
-     *
      * @param variables the variables (JSON) as String
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     PublishMessageCommandStep3 variables(String variables);
-
-    /**
-     * Set the variables of the message.
-     *
-     * @param variables the variables as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    PublishMessageCommandStep3 variables(Map<String, Object> variables);
 
     /**
      * Set the variables of the message.
@@ -118,7 +102,28 @@ public interface PublishMessageCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     PublishMessageCommandStep3 variables(Object variables);
+
+    /**
+     * Set the variables of the message.
+     *
+     * @param variables the variables (JSON) as stream
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    PublishMessageCommandStep3 variables(InputStream variables);
+
+    /**
+     * Set the variables of the message.
+     *
+     * @param variables the variables as map
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    PublishMessageCommandStep3 variables(Map<String, Object> variables);
 
     /**
      * Set a single variable of the message.
@@ -128,6 +133,7 @@ public interface PublishMessageCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     PublishMessageCommandStep3 variable(String key, Object value);
   }
 }

@@ -143,4 +143,24 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * @param <U> the type of the new future
    */
   <U> ActorFuture<U> thenApply(Function<V, U> next, Executor executor);
+
+  /**
+   * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
+   * result of this future, allowing you to change types on the fly.
+   *
+   * <p>Implementations may be somewhat inefficient and create intermediate futures, schedule
+   * completion callbacks on the provided executor etc. As such, it should normally be used for
+   * orchestrating futures in a non-performance critical context, for example for startup and
+   * shutdown sequence.
+   *
+   * <p>If the caller is not an actor, {@link ActorFuture#thenApply(Function, Executor)} must be
+   * used to avoid blocking the actor execution context.
+   *
+   * @param next function to apply to the result of this future.
+   * @return a new future that completes with the result of applying the function to the result of
+   *     this future or exceptionally if this future completes exceptionally. This future can be
+   *     used for further chaining.
+   * @param <U> the type of the new future
+   */
+  <U> ActorFuture<U> thenApply(final Function<V, U> next);
 }

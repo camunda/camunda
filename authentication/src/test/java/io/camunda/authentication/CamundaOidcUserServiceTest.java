@@ -17,7 +17,6 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,19 +58,18 @@ public class CamundaOidcUserServiceTest {
             "role", "R1",
             "group", "G1");
 
-    final var roleR1 = new RoleEntity(8L, "Role R1");
+    final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
 
     when(camundaOAuthPrincipalService.loadOAuthContext(claims))
         .thenReturn(
             new OAuthContext(
-                Set.of(5L, 7L),
                 Set.of("test-id", "test-id-2"),
-                new AuthenticationContext(
-                    null,
-                    List.of(roleR1),
-                    List.of("*"),
-                    List.of(new TenantDTO(1L, "tenant-1", "Tenant One", "desc")),
-                    new ArrayList<>())));
+                new AuthenticationContext.AuthenticationContextBuilder()
+                    .withUsername("test")
+                    .withRoles(List.of(roleR1))
+                    .withAuthorizedApplications(List.of("*"))
+                    .withTenants(List.of(new TenantDTO(1L, "tenant-1", "Tenant One", "desc")))
+                    .build()));
 
     // when
     final OidcUser oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
@@ -81,7 +79,6 @@ public class CamundaOidcUserServiceTest {
     assertThat(oidcUser).isInstanceOf(CamundaOidcUser.class);
     final var camundaUser = (CamundaOidcUser) oidcUser;
     assertThat(camundaUser.getEmail()).isEqualTo("foo@camunda.test");
-    assertThat(camundaUser.getMappingKeys()).isEqualTo(Set.of(5L, 7L));
     assertThat(camundaUser.getMappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
@@ -90,6 +87,27 @@ public class CamundaOidcUserServiceTest {
     assertThat(authenticationContext.tenants().get(0).tenantId()).isEqualTo("tenant-1");
 
     assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
+  }
+
+  @Test
+  public void applicationIdIsSetInAuthContext() {
+    // given
+    final Map<String, Object> claims = Map.of("sub", "test|foo@camunda.test", "client_id", "blah");
+
+    when(camundaOAuthPrincipalService.loadOAuthContext(claims))
+        .thenReturn(
+            new OAuthContext(
+                Set.of("test-id", "test-id-2"),
+                new AuthenticationContext.AuthenticationContextBuilder()
+                    .withApplicationId("blah")
+                    .build()));
+
+    final var oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
+    final var camundaUser = (CamundaOidcUser) oidcUser;
+    final var authenticationContext = camundaUser.getAuthenticationContext();
+
+    assertThat(authenticationContext.applicationId()).isEqualTo("blah");
+    assertThat(authenticationContext.username()).isNull();
   }
 
   private static OidcUserRequest createOidcUserRequest(final Map<String, Object> claims) {

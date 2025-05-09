@@ -23,8 +23,8 @@ public class MappingRecordStream
     return new MappingRecordStream(wrappedStream);
   }
 
-  public MappingRecordStream withKey(final long mappingKey) {
-    return valueFilter(v -> v.getMappingKey() == mappingKey);
+  public MappingRecordStream withMappingId(final String mappingId) {
+    return valueFilter(v -> v.getMappingId().equals(mappingId));
   }
 
   public MappingRecordStream withClaimName(final String claimName) {

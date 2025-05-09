@@ -39,15 +39,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(AuthorizationController.class)
 public class AuthorizationControllerTest extends RestControllerTest {
 
-  @MockBean private AuthorizationServices authorizationServices;
+  @MockitoBean private AuthorizationServices authorizationServices;
 
   @BeforeEach
   void setup() {

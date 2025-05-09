@@ -8,7 +8,6 @@
 package io.camunda.authentication.entity;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -20,7 +19,7 @@ public class CamundaJwtUser implements CamundaOAuthPrincipal, Serializable {
   public CamundaJwtUser(
       final Jwt jwt, final Set<String> mappingIds, final AuthenticationContext authentication) {
     this.jwt = jwt;
-    oauthContext = new OAuthContext(new HashSet<>(), mappingIds, authentication);
+    oauthContext = new OAuthContext(mappingIds, authentication);
   }
 
   public CamundaJwtUser(final Jwt jwt, final OAuthContext oauthContext) {

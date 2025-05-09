@@ -128,7 +128,7 @@ public class CompensationEventCompatibilityTest {
                   b.manualTask()
                       .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2]").sequential())),
           Scenario.of(
-              "ad-hoc subprocess",
+              "ad-hoc sub-process",
               BpmnElementType.AD_HOC_SUB_PROCESS,
               b ->
                   b.adHocSubProcess(

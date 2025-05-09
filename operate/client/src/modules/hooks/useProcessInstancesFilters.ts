@@ -107,14 +107,20 @@ function mapFiltersToRequest(
   if (completed) state.push(ProcessInstanceState.COMPLETED);
   if (canceled) state.push(ProcessInstanceState.TERMINATED);
 
-  if (state.length > 0 && incidents) {
-    request.filter.$or = [{state: {$in: state}}, {hasIncident: true}];
-  } else if (state.length > 0) {
+  if (incidents) {
+    if (active) {
+      request.filter.$or = [
+        {state: {$eq: ProcessInstanceState.ACTIVE}},
+        {hasIncident: true},
+      ];
+    } else {
+      request.filter.hasIncident = true;
+    }
+  }
+  if (state.length > 0) {
     request.filter.state = {
       $in: state,
     };
-  } else if (incidents) {
-    request.filter.hasIncident = true;
   }
 
   if (variableName && variableValues) {

@@ -217,6 +217,12 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder defaultRequestTimeoutOffset(final Duration requestTimeoutOffset) {
+    innerBuilder.defaultRequestTimeoutOffset(requestTimeoutOffset);
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder usePlaintext() {
     innerBuilder.usePlaintext();
     return this;

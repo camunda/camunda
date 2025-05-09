@@ -20,6 +20,9 @@
       "memberId": {
         "type": "keyword"
       },
+      "memberType": {
+        "type": "keyword"
+      },
       "join": {
         "type": "join",
         "eager_global_ordinals": true,

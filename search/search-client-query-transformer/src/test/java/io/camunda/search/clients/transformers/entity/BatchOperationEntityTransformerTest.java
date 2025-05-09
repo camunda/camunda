@@ -1,0 +1,66 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.clients.transformers.entity;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class BatchOperationEntityTransformerTest {
+
+  private final BatchOperationEntityTransformer transformer = new BatchOperationEntityTransformer();
+
+  @Test
+  void shouldTransformEntityToSearchEntity() {
+    // given
+    final BatchOperationEntity entity = new BatchOperationEntity();
+    entity.setId("1");
+    entity.setType(OperationType.CANCEL_PROCESS_INSTANCE);
+    entity.setState(BatchOperationState.ACTIVE);
+    entity.setOperationsTotalCount(42);
+    entity.setOperationsFailedCount(1);
+    entity.setOperationsCompletedCount(41);
+
+    // when
+    final var searchEntity = transformer.apply(entity);
+    assertThat(searchEntity).isNotNull();
+    assertThat(searchEntity.batchOperationId()).isEqualTo("1");
+    assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.ACTIVE.name());
+    assertThat(searchEntity.operationType())
+        .isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE.name());
+    assertThat(searchEntity.operationsTotalCount()).isEqualTo(42);
+    assertThat(searchEntity.operationsFailedCount()).isEqualTo(1);
+    assertThat(searchEntity.operationsCompletedCount()).isEqualTo(41);
+  }
+
+  @Test
+  void shouldTransformLegacyEntityToSearchEntity() {
+    // given
+    final BatchOperationEntity entity = new BatchOperationEntity();
+    final String uuid = UUID.randomUUID().toString();
+    entity.setId(uuid);
+    entity.setType(OperationType.CANCEL_PROCESS_INSTANCE);
+    entity.setOperationsTotalCount(42);
+    entity.setOperationsFinishedCount(41);
+
+    // when
+    final var searchEntity = transformer.apply(entity);
+    assertThat(searchEntity).isNotNull();
+    assertThat(searchEntity.batchOperationId()).isEqualTo(uuid);
+    assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.INCOMPLETED.name());
+    assertThat(searchEntity.operationType())
+        .isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE.name());
+    assertThat(searchEntity.operationsTotalCount()).isEqualTo(42);
+    assertThat(searchEntity.operationsFailedCount()).isEqualTo(0);
+    assertThat(searchEntity.operationsCompletedCount()).isEqualTo(41);
+  }
+}

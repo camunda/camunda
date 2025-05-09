@@ -349,7 +349,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                 Expected to migrate a job for process instance with key '%d', \
                 but could not find job with key '%d'. \
                 Please report this as a bug""",
-                processInstanceKey, elementInstance.getUserTaskKey()));
+                processInstanceKey, elementInstance.getJobKey()));
       }
       stateWriter.appendFollowUpEvent(
           elementInstance.getJobKey(),

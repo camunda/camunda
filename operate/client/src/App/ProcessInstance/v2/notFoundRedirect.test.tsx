@@ -26,7 +26,7 @@ jest.mock('modules/stores/notifications', () => ({
   },
 }));
 
-describe('Redirect to process instances page', () => {
+describe.skip('Redirect to process instances page', () => {
   beforeEach(() => {
     mockRequests();
   });

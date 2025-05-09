@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, RoleEntity> {
 
@@ -53,18 +52,9 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .searchRoles(query);
   }
 
-  public SearchQueryResult<RoleEntity> getMemberRoles(final long memberKey, final RoleQuery query) {
-    // todo use memberId (String) in https://github.com/camunda/camunda/issues/30111
-    return search(
-        query.toBuilder()
-            .filter(query.filter().toBuilder().memberId(String.valueOf(memberKey)).build())
-            .build());
-  }
-
-  public List<RoleEntity> getRolesByMemberKeys(final Set<Long> memberKeys) {
-    // todo use memberIds (String) in https://github.com/camunda/camunda/issues/30111
-    final var memberIds = memberKeys.stream().map(String::valueOf).collect(Collectors.toSet());
-    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberIds))));
+  public List<RoleEntity> getRolesByMemberIds(
+      final Set<String> memberIds, final EntityType entityType) {
+    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberIds).memberType(entityType))));
   }
 
   public List<RoleEntity> findAll(final RoleQuery query) {
@@ -96,24 +86,17 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             .setDescription(updateRoleRequest.description()));
   }
 
-  public RoleEntity getRole(final Long roleKey) {
-    return findRole(roleKey)
+  public RoleEntity getRole(final String roleId) {
+    return findRole(roleId)
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_ROLE_BY_KEY.formatted(roleKey),
+                    ErrorMessages.ERROR_NOT_FOUND_ROLE_BY_ID.formatted(roleId),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
-  public Optional<RoleEntity> findRole(final Long roleKey) {
-    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleKey(roleKey)).build())
-        .items()
-        .stream()
-        .findFirst();
-  }
-
-  public Optional<RoleEntity> findRole(final String name) {
-    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.name(name)).build())
+  public Optional<RoleEntity> findRole(final String roleId) {
+    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleId(roleId)).build())
         .items()
         .stream()
         .findFirst();

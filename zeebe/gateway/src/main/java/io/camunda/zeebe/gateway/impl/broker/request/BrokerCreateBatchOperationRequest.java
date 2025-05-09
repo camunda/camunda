@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -53,6 +54,12 @@ public class BrokerCreateBatchOperationRequest
   public BrokerCreateBatchOperationRequest setMigrationPlan(
       final BatchOperationProcessInstanceMigrationPlan migrationPlan) {
     requestDto.setMigrationPlan(migrationPlan);
+    return this;
+  }
+
+  public BrokerCreateBatchOperationRequest setModificationPlan(
+      final BatchOperationProcessInstanceModificationPlan modificationPlan) {
+    requestDto.setModificationPlan(modificationPlan);
     return this;
   }
 }

@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.function.Function;
 
@@ -47,11 +48,17 @@ public final class IdentitySetupClient {
 
     private final CommandWriter writer;
     private final IdentitySetupRecord record;
+    private final RoleRecord defaultRole =
+        new RoleRecord().setRoleId(Strings.newRandomValidIdentityId());
+    private final TenantRecord defaultTenant =
+        new TenantRecord().setTenantId(Strings.newRandomValidIdentityId());
     private Function<Long, Record<IdentitySetupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
     public IdentitySetupInitializeClient(final CommandWriter writer) {
       this.writer = writer;
       record = new IdentitySetupRecord();
+      record.setDefaultRole(defaultRole);
+      record.setDefaultTenant(defaultTenant);
     }
 
     public IdentitySetupInitializeClient withRole(final RoleRecord role) {

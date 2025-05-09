@@ -36,7 +36,7 @@ public class RoleIT {
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
-  public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSaveAndFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final RoleReader roleReader = rdbmsService.getRoleReader();
@@ -44,7 +44,7 @@ public class RoleIT {
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
 
-    final var instance = roleReader.findOne(role.roleKey()).orElse(null);
+    final var instance = roleReader.findOne(role.roleId()).orElse(null);
 
     compareRoles(instance, role);
   }
@@ -58,11 +58,12 @@ public class RoleIT {
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
 
-    final var roleUpdate = RoleFixtures.createRandomized(b -> b.roleKey(role.roleKey()));
+    final var roleUpdate =
+        RoleFixtures.createRandomized(b -> b.roleId(role.roleId()).roleKey(role.roleKey()));
     rdbmsWriter.getRoleWriter().update(roleUpdate);
     rdbmsWriter.flush();
 
-    final var instance = roleReader.findOne(role.roleKey()).orElse(null);
+    final var instance = roleReader.findOne(role.roleId()).orElse(null);
 
     compareRoles(instance, roleUpdate);
   }
@@ -75,13 +76,13 @@ public class RoleIT {
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
-    final var instance = roleReader.findOne(role.roleKey()).orElse(null);
+    final var instance = roleReader.findOne(role.roleId()).orElse(null);
     compareRoles(instance, role);
 
-    rdbmsWriter.getRoleWriter().delete(role.roleKey());
+    rdbmsWriter.getRoleWriter().delete(role.roleId());
     rdbmsWriter.flush();
 
-    final var deletedInstance = roleReader.findOne(role.roleKey()).orElse(null);
+    final var deletedInstance = roleReader.findOne(role.roleId()).orElse(null);
     assertThat(deletedInstance).isNull();
   }
 
@@ -179,7 +180,9 @@ public class RoleIT {
                                 p.size(5)
                                     .searchAfter(
                                         new Object[] {
-                                          instanceAfter.name(), instanceAfter.roleKey()
+                                          instanceAfter.name(),
+                                          instanceAfter.roleId(),
+                                          instanceAfter.roleKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

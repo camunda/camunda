@@ -16,6 +16,10 @@
 # C8Run by Distro team
 .github/workflows/c8run* @camunda/distribution
 
+# Camunda Ex Team Clients, SDK and CPT
+/clients/*        @camunda/camundaex
+/testing/*        @camunda/camundaex
+
 # General Automation, Unified CI and release helpers by Monorepo DevOps team
 /.github/workflows/add-to-projects.yml                   @camunda/monorepo-devops-team
 /.github/workflows/backport.yml                          @camunda/monorepo-devops-team

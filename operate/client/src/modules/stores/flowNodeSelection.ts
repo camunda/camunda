@@ -10,8 +10,6 @@ import {IReactionDisposer, makeAutoObservable, when, reaction} from 'mobx';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from './modifications';
-import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
 
 type Selection = {
@@ -20,6 +18,7 @@ type Selection = {
   flowNodeType?: string;
   isMultiInstance?: boolean;
   isPlaceholder?: boolean;
+  processInstanceId?: string;
 };
 
 type State = {
@@ -138,44 +137,6 @@ class FlowNodeSelection {
     );
   }
 
-  get isPlaceholderSelected() {
-    return (
-      this.state.selection?.isPlaceholder ||
-      (!this.hasRunningOrFinishedTokens &&
-        this.newTokenCountForSelectedNode === 1)
-    );
-  }
-
-  /*
-   * DEPRECATED: The `flowNodeSelectionStore.selectedRunningInstanceCount` is being deprecated and replaced with
-   * utility functions and hooks in `flowNodeSelection.ts` as part of the Operate v2 migration.
-   *
-   * Please avoid using / adding new functionality to this, and migrate existing logic
-   * to the new utils and hooks where possible.
-   */
-  get selectedRunningInstanceCount() {
-    const currentSelection = this.state.selection;
-    if (currentSelection === null) {
-      return 0;
-    }
-
-    if (
-      currentSelection.isPlaceholder ||
-      this.isRootNodeSelected ||
-      currentSelection.flowNodeId === undefined
-    ) {
-      return 0;
-    }
-
-    if (currentSelection.flowNodeInstanceId !== undefined) {
-      return flowNodeMetaDataStore.isSelectedInstanceRunning ? 1 : 0;
-    }
-
-    return processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-      currentSelection.flowNodeId,
-    );
-  }
-
   get selectedFlowNodeId() {
     return this.state.selection?.flowNodeId;
   }
@@ -184,56 +145,6 @@ class FlowNodeSelection {
     return (
       this.state.selection?.flowNodeInstanceId ??
       flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId
-    );
-  }
-
-  get selectedFlowNodeName() {
-    if (
-      processInstanceDetailsStore.state.processInstance === null ||
-      this.state.selection === null
-    ) {
-      return '';
-    }
-
-    if (this.isRootNodeSelected) {
-      return processInstanceDetailsStore.state.processInstance.processName;
-    }
-
-    if (this.state.selection.flowNodeId === undefined) {
-      return '';
-    }
-
-    return processInstanceDetailsDiagramStore.getFlowNodeName(
-      this.state.selection.flowNodeId,
-    );
-  }
-
-  get hasRunningOrFinishedTokens() {
-    const currentFlowNodeSelection = this.state.selection;
-
-    return (
-      currentFlowNodeSelection?.flowNodeId !== undefined &&
-      processInstanceDetailsStatisticsStore.state.statistics.some(
-        ({activityId}) => activityId === currentFlowNodeSelection.flowNodeId,
-      )
-    );
-  }
-
-  get newTokenCountForSelectedNode() {
-    const currentFlowNodeSelection = this.state.selection;
-
-    const flowNodeId = currentFlowNodeSelection?.flowNodeId;
-    if (flowNodeId === undefined) {
-      return 0;
-    }
-
-    return (
-      (modificationsStore.modificationsByFlowNode[flowNodeId]?.newTokens ?? 0) +
-      modificationsStore.flowNodeModifications.filter(
-        (modification) =>
-          modification.operation !== 'CANCEL_TOKEN' &&
-          Object.keys(modification.parentScopeIds).includes(flowNodeId),
-      ).length
     );
   }
 

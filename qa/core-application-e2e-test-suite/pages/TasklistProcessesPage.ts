@@ -16,17 +16,19 @@ class TasklistProcessesPage {
   readonly docsLink: Locator;
   readonly searchProcessesInput: Locator;
   readonly processTile: Locator;
-  readonly tasksTab: Locator;
+  readonly startProcessSubButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.continueButton = page.getByRole('button', {name: 'Continue'});
     this.cancelButton = page.getByRole('button', {name: 'Cancel'});
     this.startProcessButton = page.getByRole('button', {name: 'Start process'});
+    this.startProcessSubButton = page
+      .getByRole('button', {name: 'Start process'})
+      .last();
     this.docsLink = page.getByRole('link', {name: 'here'});
     this.searchProcessesInput = page.getByPlaceholder('Search processes');
     this.processTile = page.getByTestId('process-tile');
-    this.tasksTab = page.getByRole('link', {name: 'Tasks'});
   }
 
   async goto() {
@@ -47,8 +49,16 @@ class TasklistProcessesPage {
       .getByRole('button', {name: 'Start process'});
   }
 
-  async clickStartProcessButton(processName: string): Promise<void> {
-    await (await this.getModalStartProcessButton(processName)).click();
+  async clickStartProcessButton(name: string): Promise<void> {
+    await this.processTile
+      .filter({hasText: name})
+      .nth(0)
+      .getByRole('button', {name: 'Start process'})
+      .click({timeout: 60000});
+  }
+
+  async clickStartProcessSubButton(): Promise<void> {
+    await this.startProcessSubButton.click();
   }
 }
 

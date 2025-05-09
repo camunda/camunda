@@ -9,7 +9,6 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {createInstances, deploy} from '@/utils/zeebeClient';
-import {waitForAssertion} from '@/utils/waitForAssertion';
 import {sleep} from '@/utils/sleep';
 
 test.afterAll(async ({resetData}) => {
@@ -193,16 +192,11 @@ test.describe('task details page', () => {
 
     await tasksPage.openTask('JobWorker_user_task');
 
-    // this is necessary because sometimes the importer takes some time to receive the variables
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(page.getByText('jobWorkerVar')).toBeVisible();
-        await expect(page.getByText('zeebeVar')).toBeVisible();
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
+    await expect(async () => {
+      await page.reload();
+      await expect(page.getByText('jobWorkerVar')).toBeVisible();
+      await expect(page.getByText('zeebeVar')).toBeVisible();
+    }).toPass();
     await expect(tasksPage.assignToMeButton).not.toBeVisible();
     await expect(tasksPage.unassignButton).not.toBeVisible();
     await expect(tasksPage.completeTaskButton).not.toBeVisible();
@@ -439,14 +433,18 @@ test.describe('task details page', () => {
 
     await taskFormView.fillDatetimeField('Date', '1/1/3000');
     await taskFormView.fillDatetimeField('Time', '12:00 PM');
-    await tasksPage.completeTaskButton.click();
+    await tasksPage.completeTaskButton.click({
+      delay: 1000,
+    });
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
     await tasksPage.openTask('Date and Time Task');
 
-    await expect(taskFormView.dateInput).toHaveValue('1/1/3000');
-    await expect(taskFormView.timeInput).toHaveValue('12:00 PM');
+    await expect(async () => {
+      await expect(taskFormView.dateInput).toHaveValue('1/1/3000');
+      await expect(taskFormView.timeInput).toHaveValue('12:00 PM');
+    }).toPass();
   });
 
   test('task completion with checkbox form', async ({

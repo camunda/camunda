@@ -14,10 +14,12 @@ import {
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
-import {getWrapper} from './mocks';
+import {getWrapper, mockProcessInstance} from './mocks';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -55,6 +57,12 @@ describe('Restricted user with resource based permissions', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess({
+      ...instanceMock,
+      permissions: ['UPDATE_PROCESS_INSTANCE'],
+    });
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -66,11 +74,9 @@ describe('Restricted user with resource based permissions', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(
-      screen.getByRole('button', {name: /edit variable/i}),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
+    expect(await screen.findByRole('button', {name: /edit variable/i}));
   });
 
   it('should not display add/edit variable buttons when update process instance permission is not available', async () => {

@@ -22,5 +22,6 @@ public enum BatchOperationState {
   COMPLETED,
   COMPLETED_WITH_ERRORS,
   CANCELED,
+  INCOMPLETED,
   UNKNOWN_ENUM_VALUE;
 }

@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.search.entities.AdHocSubprocessActivityEntity;
+import io.camunda.search.entities.AdHocSubProcessActivityEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -37,7 +37,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
@@ -73,6 +73,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatistics
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCallHierarchyEntry;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
@@ -90,6 +91,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -352,7 +354,7 @@ public final class SearchQueryResponseMapper {
 
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
     return new BatchOperationResponse()
-        .batchOperationKey(entity.batchOperationKey().toString())
+        .batchOperationId(entity.batchOperationId())
         .state(BatchOperationResponse.StateEnum.fromValue(entity.state().name()))
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType()))
         .startDate(formatDate(entity.startDate()))
@@ -372,8 +374,11 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationItemResponse toBatchOperationItem(
       final BatchOperationItemEntity entity) {
     return new BatchOperationItemResponse()
-        .batchOperationKey(entity.batchOperationKey().toString())
+        .batchOperationId(entity.batchOperationId())
         .itemKey(entity.itemKey().toString())
+        .processInstanceKey(entity.processInstanceKey().toString())
+        .processedDate(formatDate(entity.processedDate()))
+        .errorMessage(entity.errorMessage())
         .state(BatchOperationItemResponse.StateEnum.fromValue(entity.state().name()));
   }
 
@@ -384,6 +389,8 @@ public final class SearchQueryResponseMapper {
   public static RoleResult toRole(final RoleEntity roleEntity) {
     return new RoleResult()
         .roleKey(KeyUtil.keyToString(roleEntity.roleKey()))
+        .roleId(roleEntity.roleId())
+        .description(roleEntity.description())
         .name(roleEntity.name());
   }
 
@@ -396,8 +403,7 @@ public final class SearchQueryResponseMapper {
         .groupKey(KeyUtil.keyToString(groupEntity.groupKey()))
         .groupId(groupEntity.groupId())
         .name(groupEntity.name())
-        .description(groupEntity.description())
-        .assignedMemberIds(groupEntity.assignedMemberIds().stream().toList());
+        .description(groupEntity.description());
   }
 
   private static List<TenantResult> toTenants(final List<TenantEntity> tenants) {
@@ -418,7 +424,6 @@ public final class SearchQueryResponseMapper {
 
   public static MappingResult toMapping(final MappingEntity mappingEntity) {
     return new MappingResult()
-        .mappingKey(KeyUtil.keyToString(mappingEntity.mappingKey()))
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
         .mappingId(mappingEntity.mappingId())
@@ -468,15 +473,15 @@ public final class SearchQueryResponseMapper {
         .tenantId(instance.tenantId());
   }
 
-  public static AdHocSubprocessActivityResult toAdHocSubprocessActivity(
-      final AdHocSubprocessActivityEntity entity) {
-    return new AdHocSubprocessActivityResult()
+  public static AdHocSubProcessActivityResult toAdHocSubProcessActivity(
+      final AdHocSubProcessActivityEntity entity) {
+    return new AdHocSubProcessActivityResult()
         .processDefinitionKey(entity.processDefinitionKey().toString())
         .processDefinitionId(entity.processDefinitionId())
-        .adHocSubprocessId(entity.adHocSubprocessId())
+        .adHocSubProcessId(entity.adHocSubProcessId())
         .elementId(entity.elementId())
         .elementName(entity.elementName())
-        .type(AdHocSubprocessActivityResult.TypeEnum.fromValue(entity.type().name()))
+        .type(AdHocSubProcessActivityResult.TypeEnum.fromValue(entity.type().name()))
         .documentation(entity.documentation())
         .tenantId(entity.tenantId());
   }
@@ -706,19 +711,29 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  private static List<VariableResult> toVariables(final List<VariableEntity> variableEntities) {
+  private static List<VariableSearchResult> toVariables(
+      final List<VariableEntity> variableEntities) {
     return variableEntities.stream().map(SearchQueryResponseMapper::toVariable).toList();
   }
 
-  public static VariableResult toVariable(final VariableEntity variableEntity) {
-    return new VariableResult()
+  private static VariableSearchResult toVariable(final VariableEntity variableEntity) {
+    return new VariableSearchResult()
         .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
         .name(variableEntity.name())
         .value(variableEntity.value())
-        .fullValue(variableEntity.fullValue())
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
         .tenantId(variableEntity.tenantId())
         .isTruncated(variableEntity.isPreview())
+        .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
+  }
+
+  public static VariableResult toVariableItem(final VariableEntity variableEntity) {
+    return new VariableResult()
+        .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
+        .name(variableEntity.name())
+        .value(variableEntity.isPreview() ? variableEntity.fullValue() : variableEntity.value())
+        .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
+        .tenantId(variableEntity.tenantId())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
   }
 
@@ -760,6 +775,24 @@ public final class SearchQueryResponseMapper {
       return ProcessInstanceStateEnum.TERMINATED;
     }
     return ProcessInstanceStateEnum.fromValue(value.name());
+  }
+
+  public static List<ProcessInstanceCallHierarchyEntry> toProcessInstanceCallHierarchyEntries(
+      final List<ProcessInstanceEntity> processInstanceEntities) {
+    return processInstanceEntities.stream()
+        .map(SearchQueryResponseMapper::toProcessInstanceCallHierarchyEntry)
+        .toList();
+  }
+
+  public static ProcessInstanceCallHierarchyEntry toProcessInstanceCallHierarchyEntry(
+      final ProcessInstanceEntity processInstanceEntity) {
+    return new ProcessInstanceCallHierarchyEntry()
+        .processInstanceKey(KeyUtil.keyToString(processInstanceEntity.processInstanceKey()))
+        .processDefinitionKey(KeyUtil.keyToString(processInstanceEntity.processDefinitionKey()))
+        .processDefinitionName(
+            processInstanceEntity.processDefinitionName().isBlank()
+                ? processInstanceEntity.processDefinitionId()
+                : processInstanceEntity.processDefinitionName());
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

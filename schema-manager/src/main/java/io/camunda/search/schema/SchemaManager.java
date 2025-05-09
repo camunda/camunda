@@ -355,9 +355,10 @@ public class SchemaManager {
   }
 
   private Set<String> existingIndexNames() {
-    return allIndexNames().isBlank()
+    final String allIndexNames = allIndexNames();
+    return allIndexNames.isBlank()
         ? Set.of()
-        : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+        : searchEngineClient.getMappings(allIndexNames, MappingSource.INDEX).keySet();
   }
 
   private String allIndexNames() {

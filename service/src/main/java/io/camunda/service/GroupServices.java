@@ -99,13 +99,6 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
-  public List<GroupEntity> getGroupsByUserKey(final String username) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberId(username)).build())
-        .items()
-        .stream()
-        .toList();
-  }
-
   public List<GroupEntity> getGroupsByMemberKeys(final Set<String> memberKeys) {
     return findAll(
         SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberIds(memberKeys)).build());
@@ -128,23 +121,21 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     return sendBrokerRequest(new BrokerGroupDeleteRequest(groupId));
   }
 
-  public CompletableFuture<GroupRecord> assignMember(
-      final String groupId, final String entityId, final EntityType memberType) {
+  public CompletableFuture<GroupRecord> assignMember(final GroupMemberDTO groupMemberDTO) {
     return sendBrokerRequest(
-        BrokerGroupMemberRequest.createAddRequest(groupId)
-            .setMemberId(entityId)
-            .setMemberType(memberType));
+        BrokerGroupMemberRequest.createAddRequest(groupMemberDTO.groupId)
+            .setMemberId(groupMemberDTO.memberId)
+            .setMemberType(groupMemberDTO.memberType));
   }
 
-  public CompletableFuture<GroupRecord> removeMember(
-      final String groupId, final String entityId, final EntityType memberType) {
+  public CompletableFuture<GroupRecord> removeMember(final GroupMemberDTO groupMemberDTO) {
     return sendBrokerRequest(
-        BrokerGroupMemberRequest.createRemoveRequest(groupId)
-            .setMemberId(entityId)
-            .setMemberType(memberType));
+        BrokerGroupMemberRequest.createRemoveRequest(groupMemberDTO.groupId)
+            .setMemberId(groupMemberDTO.memberId)
+            .setMemberType(groupMemberDTO.memberType));
   }
 
   public record GroupDTO(String groupId, String name, String description) {}
 
-  public record GroupMemberRequest(String groupId, String entityId, EntityType entityType) {}
+  public record GroupMemberDTO(String groupId, String memberId, EntityType memberType) {}
 }

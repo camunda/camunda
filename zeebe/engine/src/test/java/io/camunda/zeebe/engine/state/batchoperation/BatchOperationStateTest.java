@@ -20,6 +20,8 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.ArrayList;
@@ -110,6 +112,46 @@ public class BatchOperationStateTest {
     assertThat(batchOperation.getBatchOperationType()).isEqualTo(type);
     assertThat(recordFilter).isEqualTo(filter);
     assertThat(batchOperation.getMigrationPlan()).isEqualTo(migrationPlan);
+    assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
+  }
+
+  @Test
+  void shouldCreateBatchOperationForModification() throws JsonProcessingException {
+    // given
+    final var batchOperationKey = 1L;
+    final var type = BatchOperationType.MODIFY_PROCESS_INSTANCE;
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .processDefinitionIds("process")
+            .processDefinitionVersions(1)
+            .build();
+
+    final var modificationPlan = new BatchOperationProcessInstanceModificationPlan();
+    final var mappingInstruction =
+        new BatchOperationProcessInstanceModificationMoveInstruction()
+            .setSourceElementId("source")
+            .setTargetElementId("target");
+    modificationPlan.addMoveInstruction(mappingInstruction);
+
+    final var record =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(type)
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setModificationPlan(modificationPlan);
+
+    // when
+    state.create(batchOperationKey, record);
+
+    // then
+    final var batchOperation = state.get(batchOperationKey).get();
+    final var recordFilter =
+        new ObjectMapper().readValue(batchOperation.getEntityFilter(), ProcessInstanceFilter.class);
+
+    assertThat(batchOperation.getKey()).isEqualTo(batchOperationKey);
+    assertThat(batchOperation.getBatchOperationType()).isEqualTo(type);
+    assertThat(recordFilter).isEqualTo(filter);
+    assertThat(batchOperation.getModificationPlan()).isEqualTo(modificationPlan);
     assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
   }
 

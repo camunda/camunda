@@ -65,6 +65,11 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationCompletedHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationStartedHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
@@ -86,6 +91,7 @@ import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -271,7 +277,18 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
             new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
             new MigratedVariableHandler(
-                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()));
+                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()),
+            // Batch Operation Handler
+            new BatchOperationCreatedHandler(
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+            new BatchOperationStartedHandler(
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+            new BatchOperationCompletedHandler(
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+            new BatchOperationLifecycleManagementHandler(
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+            new BatchOperationChunkCreatedItemHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));
 
     indicesWithCustomErrorHandlers =
         Map.of(

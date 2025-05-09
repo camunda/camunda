@@ -19,11 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.spring.client.annotation.processor.AbstractCamundaAnnotationProcessor;
-import io.camunda.spring.client.annotation.processor.CamundaAnnotationProcessorRegistry;
+import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
+import io.camunda.spring.client.event.CamundaClientCreatedEvent;
+import io.camunda.spring.client.event.CamundaClientEventListener;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,16 +42,16 @@ public class AnnotationProcessorConfigurationTest {
   // required to auto-wire with the job worker annotation processor configuration
   @MockitoBean JobWorkerManager jobWorkerManager;
   @MockitoBean CamundaClient camundaClient;
-  @Autowired CamundaAnnotationProcessorRegistry registry;
   @Autowired MockedBean mockedBean;
+  @Autowired CamundaClientEventListener camundaClientEventListener;
+  @Autowired Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet;
 
   @Test
   void shouldRun() {
     // when - we mock the creation of the camunda client
-    registry.startAll(camundaClient);
+    camundaClientEventListener.handleStart(new CamundaClientCreatedEvent(this, camundaClient));
     // then
-    final List<AbstractCamundaAnnotationProcessor> processors = registry.getProcessors();
-    assertThat(processors)
+    assertThat(camundaClientLifecycleAwareSet)
         .anySatisfy(p -> assertThat(p).isInstanceOf(MockCamundaAnnotationProcessor.class));
     assertThat(mockedBean.isConfigured()).isTrue();
     assertThat(mockedBean.isStarted()).isTrue();

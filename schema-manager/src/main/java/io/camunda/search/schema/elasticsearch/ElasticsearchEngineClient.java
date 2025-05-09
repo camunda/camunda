@@ -177,8 +177,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException | ElasticsearchException e) {
       throw new SearchEngineException(
           String.format(
-              "Failed retrieving mappings from index/index templates with pattern [%s]",
-              namePattern),
+              "Failed retrieving mappings from index/index templates with pattern [%s]: %s",
+              namePattern, e.getMessage()),
           e);
     }
   }
@@ -258,8 +258,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException | ElasticsearchException e) {
       throw new SearchEngineException(
           String.format(
-              "Expected to update index template settings '%s' with '%s', but failed ",
-              indexTemplateDescriptor.getTemplateName(), updateIndexTemplateSettingsRequest),
+              "Expected to update index template settings '%s' with '%s', but failed: %s",
+              indexTemplateDescriptor.getTemplateName(),
+              updateIndexTemplateSettingsRequest,
+              e.getMessage()),
           e);
     }
   }

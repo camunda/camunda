@@ -114,58 +114,6 @@ const compensationProcessInstance: InstanceMock = {
       running: null,
     },
   },
-  statistics: [
-    {
-      activityId: 'CompensationBoundaryEvent_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'CompensationEvent_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'CompensationTask_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'EndEvent_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'Gateway_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'Gateway_2',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'StartEvent_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {activityId: 'Task_1', active: 0, canceled: 0, incidents: 0, completed: 1},
-  ],
   statisticsV2: {
     items: [
       {

@@ -21,6 +21,8 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.util.ReflectUtil;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
@@ -101,6 +103,11 @@ public final class ClusterTopologyDomain extends DomainContextBase {
             ReflectUtil.implementationsOfSealedInterface(ClusterConfigurationChangeOperation.class)
                 .toList())
         .flatMap(Arbitraries::forType);
+  }
+
+  @Provide
+  Arbitrary<SortedSet<Integer>> sortedIntegerSets() {
+    return Arbitraries.integers().list().map(TreeSet::new);
   }
 
   @Provide

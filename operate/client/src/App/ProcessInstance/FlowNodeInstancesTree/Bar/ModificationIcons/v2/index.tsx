@@ -8,7 +8,6 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
-import {modificationsStore} from 'modules/stores/modifications';
 import {Container, AddIcon, CancelIcon, WarningIcon} from '../styled';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {Stack} from '@carbon/react';
@@ -27,14 +26,14 @@ const ModificationIcons: React.FC<Props> = observer(({flowNodeInstance}) => {
   const instanceKeyHierarchy = flowNodeInstance.treePath.split('/');
 
   const hasCancelModification =
-    modificationsStore.modificationsByFlowNode[flowNodeInstance.flowNodeId]
+    modificationsByFlowNode[flowNodeInstance.flowNodeId]
       ?.areAllTokensCanceled ||
-    instanceKeyHierarchy.some((instanceKey) =>
-      hasPendingCancelOrMoveModification(
-        flowNodeInstance.flowNodeId,
-        instanceKey,
+    instanceKeyHierarchy.some((flowNodeInstanceKey) =>
+      hasPendingCancelOrMoveModification({
+        flowNodeId: flowNodeInstance.flowNodeId,
+        flowNodeInstanceKey,
         modificationsByFlowNode,
-      ),
+      }),
     );
 
   return (

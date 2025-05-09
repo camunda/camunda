@@ -21,7 +21,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -50,7 +49,6 @@ public class DeleteUserTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldCleanupMembership() {
     final var username = UUID.randomUUID().toString();
     final var tenantId = "tenant";
@@ -63,17 +61,13 @@ public class DeleteUserTest {
             .withEmail("foo@bar.com")
             .withPassword("password")
             .create();
-    final var group = ENGINE.group().newGroup(groupId).withName("group").create();
-    final var role = ENGINE.role().newRole("role").create();
-    final var tenant = ENGINE.tenant().newTenant().withTenantId(tenantId).create();
+    ENGINE.group().newGroup(groupId).withName("group").create();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var role = ENGINE.role().newRole(roleId).create();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
 
     ENGINE.group().addEntity(groupId).withEntityId(username).withEntityType(EntityType.USER).add();
-    ENGINE
-        .role()
-        .addEntity(role.getKey())
-        .withEntityKey(userRecord.getKey())
-        .withEntityType(EntityType.USER)
-        .add();
+    ENGINE.role().addEntity(roleId).withEntityId(username).withEntityType(EntityType.USER).add();
     ENGINE
         .tenant()
         .addEntity(tenantId)
@@ -94,7 +88,8 @@ public class DeleteUserTest {
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleKey(role.getKey())
-                .withEntityKey(userRecord.getKey())
+                .withRoleId(roleId)
+                .withEntityId(username)
                 .exists())
         .isTrue();
     Assertions.assertThat(

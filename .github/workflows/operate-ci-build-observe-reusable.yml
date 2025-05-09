@@ -1,3 +1,8 @@
+# This workflow is a reuseable job that builds operate and reports the status
+# called by: operate-ci-core-features.yml, preview-env-build-and-deploy.yml
+# test location: operate
+# owner:
+---
 name: Operate CI Build Observability Reusable
 
 on:

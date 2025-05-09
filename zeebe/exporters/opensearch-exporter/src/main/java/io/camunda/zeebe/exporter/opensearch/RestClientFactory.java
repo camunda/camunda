@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.auth.signer.Aws4Signer;
+import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner;
 
 final class RestClientFactory {
   private static final RestClientFactory INSTANCE = new RestClientFactory();
@@ -141,7 +141,7 @@ final class RestClientFactory {
       final HttpAsyncClientBuilder builder, final AwsConfiguration awsConfiguration) {
     final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
     credentialsProvider.resolveCredentials();
-    final Aws4Signer signer = Aws4Signer.create();
+    final AwsV4HttpSigner signer = AwsV4HttpSigner.create();
 
     final HttpRequestInterceptor signInterceptor =
         new AwsRequestSigningApacheInterceptor(

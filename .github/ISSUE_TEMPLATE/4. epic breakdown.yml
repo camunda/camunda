@@ -1,0 +1,98 @@
+name: Epic breakdown
+description: Template for breaking down PDP epics for engineering
+labels: ["kind/epic"]
+type: epic
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: <!-- Component -->
+      multiple: true
+      description: What component(s) are affected by this epic?
+      # The components should be kept in alphabetical order.
+      options:
+        - <!-- C8-API- -->
+        - <!-- C8Run- -->
+        - <!-- Feel- -->
+        - <!-- Identity- -->
+        - <!-- Operate- -->
+        - <!-- Optimize- -->
+        - <!-- Tasklist- -->
+        - <!-- Zeebe- -->
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the epic to be worked at
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: PDP Epic link
+      description: Add the PDP epic link here.
+    validations:
+      required: false
+  - type: textarea
+    id: breakdown
+    attributes:
+      label: Breakdown
+      description:
+    validations:
+      required: false
+  - type: textarea
+    id: backend
+    attributes:
+      label: Backend
+      description: Add all related backend issues here.
+      value: |
+        - [ ] #<issue-number>
+        - [ ] ...
+    validations:
+      required: false
+  - type: textarea
+    id: frontend
+    attributes:
+      label: Frontend
+      description: Add all related frontend issues here.
+      value: |
+        - [ ] #<issue-number>
+        - [ ] ...
+    validations:
+      required: false
+  - type: textarea
+    id: documentation
+    attributes:
+      label: Documentation
+      description: Tasks that require writing / modifying documentation
+    validations:
+      required: false
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional information
+      description: Add possible additional information (e.g. dependency, affected components, targeted release, etc.)
+    validations:
+      required: false
+  - type: textarea
+    id: dor
+    attributes:
+      label: Definition of Ready
+      description: Assignee can add more / modify the Definition of Ready items.
+      value: |
+        - [ ] The epic is broken down into backend and frontend tasks / features - if applicable
+        - [ ] Edge cases and limitations are clear
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Assignee can add additional Acceptance Criteria
+      value: |
+        - [ ] Backend / Frontend items are completed
+    validations:
+      required: false

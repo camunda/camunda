@@ -8,7 +8,7 @@
   <resultMap id="BatchOperationResultMap"
     type="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
     <constructor>
-      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
       <arg column="STATE"
         javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
       <arg column="OPERATION_TYPE" javaType="java.lang.String"/>
@@ -23,10 +23,13 @@
   <resultMap id="BatchOperationItemResultMap"
     type="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemEntity">
     <constructor>
-      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
       <arg column="ITEM_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="STATE"
         javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"/>
+      <arg column="PROCESSED_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
@@ -51,10 +54,10 @@
 
   <insert id="insertItems"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto">
-    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY)
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY)
     VALUES
-    <foreach collection="items" item="itemKey" separator=",">
-      (#{batchOperationKey}, #{itemKey})
+    <foreach collection="items" item="item" separator=",">
+      (#{batchOperationKey}, #{item.itemKey}, #{item.processInstanceKey})
     </foreach>
   </insert>
 
@@ -69,13 +72,15 @@
   <update id="updateItem"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
     UPDATE ${prefix}BATCH_OPERATION_ITEM
-    SET STATE = #{state}
+    SET STATE = #{state},
+        PROCESSED_DATE = #{processedDate},
+        ERROR_MESSAGE = #{errorMessage}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
       AND ITEM_KEY = #{itemKey}
   </update>
 
   <update id="updateItemsWithState"
-    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemStatusUpdateDto">
     UPDATE ${prefix}BATCH_OPERATION_ITEM
     SET STATE = #{newState}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
@@ -89,7 +94,8 @@
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </update>
 
-  <update id="incrementFailedOperationsCount" parameterType="java.lang.Long">
+  <update id="incrementFailedOperationsCount"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateCountsDto">
     UPDATE ${prefix}BATCH_OPERATION t
     SET OPERATIONS_FAILED_COUNT = OPERATIONS_FAILED_COUNT + 1
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
@@ -101,7 +107,8 @@
     )
   </update>
 
-  <update id="incrementCompletedOperationsCount" parameterType="java.lang.Long">
+  <update id="incrementCompletedOperationsCount"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateCountsDto">
     UPDATE ${prefix}BATCH_OPERATION t
     SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + 1
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
@@ -114,9 +121,9 @@
   </update>
 
   <select id="getItems"
-    parameterType="java.lang.Long"
+    parameterType="java.lang.String"
     resultMap="BatchOperationItemResultMap">
-    SELECT BATCH_OPERATION_KEY, ITEM_KEY, STATE
+    SELECT BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE, PROCESSED_DATE, ERROR_MESSAGE
     FROM ${prefix}BATCH_OPERATION_ITEM
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </select>
@@ -153,9 +160,9 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <!-- basic filters -->
-    <if test="filter.batchOperationKeys != null and !filter.batchOperationKeys.isEmpty()">
+    <if test="filter.batchOperationIds != null and !filter.batchOperationIds.isEmpty()">
       AND BATCH_OPERATION_KEY IN
-      <foreach collection="filter.batchOperationKeys" item="value" open="(" separator=", "
+      <foreach collection="filter.batchOperationIds" item="value" open="(" separator=", "
         close=")">#{value}
       </foreach>
     </if>

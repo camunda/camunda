@@ -37,9 +37,11 @@ public final class BrokerRoleEntityRequest extends BrokerExecuteCommand<RoleReco
   }
 
   public BrokerRoleEntityRequest setEntity(final EntityType entityType, final String entityId) {
-    if (entityType != EntityType.USER && entityType != EntityType.MAPPING) {
+    if (entityType != EntityType.USER
+        && entityType != EntityType.MAPPING
+        && entityType != EntityType.GROUP) {
       throw new IllegalArgumentException(
-          "For now, roles can only be granted to users and mappings");
+          "For now, roles can only be granted to users, mappings and groups");
     }
     roleDto.setEntityType(entityType);
     roleDto.setEntityId(entityId);

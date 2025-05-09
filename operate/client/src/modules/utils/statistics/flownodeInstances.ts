@@ -12,7 +12,6 @@ import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import {modificationsStore} from 'modules/stores/modifications';
 
 type Statistic = ProcessDefinitionStatistic & {
-  filteredActive: number;
   completedEndEvents: number;
 };
 
@@ -31,7 +30,6 @@ const getStatisticsByFlowNode = (
 
     statistics[id] = {
       active,
-      filteredActive: businessObject?.$type !== 'bpmn:SubProcess' ? active : 0,
       incidents,
       completed: !isProcessEndEvent(businessObject) ? completed : 0,
       completedEndEvents: isProcessEndEvent(businessObject) ? completed : 0,

@@ -9,10 +9,24 @@
 import { Paths } from "src/components/global/routePaths";
 import { getBaseUrl } from "src/configuration";
 
+let loggedIn = false;
+
 export const LOGIN_PATH = `${getBaseUrl()}${Paths.login()}`;
 
 export function getLoginPath(next?: string) {
   return next ? `${LOGIN_PATH}?next=${next}` : LOGIN_PATH;
+}
+
+export function activateSession() {
+  loggedIn = true;
+}
+
+export function disableSession() {
+  loggedIn = false;
+}
+
+export function isLoggedIn() {
+  return loggedIn;
 }
 
 export function login(

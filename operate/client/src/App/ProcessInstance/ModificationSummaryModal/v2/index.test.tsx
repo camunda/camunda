@@ -24,12 +24,27 @@ import {Paths} from 'modules/Routes';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {cancelAllTokens} from 'modules/utils/modifications';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
   },
 }));
+
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: '1',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: true,
+};
 
 const getWrapper = (
   initialEntries: React.ComponentProps<
@@ -61,6 +76,7 @@ const getWrapper = (
 
 describe('Modification Summary Modal', () => {
   beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     processInstanceDetailsStore.setProcessInstance(createInstance({id: '1'}));
   });
 
@@ -70,7 +86,7 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      screen.getByText(/Planned modifications for Process Instance/),
+      await screen.findByText(/Planned modifications for Process Instance/),
     ).toBeInTheDocument();
     expect(screen.getByText(/"someProcessName - 1"/)).toBeInTheDocument();
     expect(screen.getByText(/Click "Apply" to proceed/)).toBeInTheDocument();
@@ -82,7 +98,7 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      screen.getByText('No planned flow node modifications'),
+      await screen.findByText('No planned flow node modifications'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('No planned variable modifications'),
@@ -397,6 +413,9 @@ describe('Modification Summary Modal', () => {
       },
     );
 
+    expect(
+      await screen.findByRole('button', {name: /close/i}),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: /cancel/i}));
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -559,6 +578,9 @@ describe('Modification Summary Modal', () => {
       },
     );
 
+    expect(
+      await screen.findByRole('button', {name: 'Apply'}),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     await waitFor(() =>
@@ -597,6 +619,9 @@ describe('Modification Summary Modal', () => {
       },
     );
 
+    expect(
+      await screen.findByRole('button', {name: 'Apply'}),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     await waitFor(() =>
@@ -630,13 +655,26 @@ describe('Modification Summary Modal', () => {
     });
 
     const {user} = render(
-      <QueryClientProvider client={getMockQueryClient()}>
-        <ModificationSummaryModal open setOpen={mockOnClose} />
-      </QueryClientProvider>,
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <ModificationSummaryModal open setOpen={mockOnClose} />
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>,
     );
 
+    expect(
+      await screen.findByRole('button', {name: 'Apply'}),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: 'Apply'}));
-
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
         isDismissable: true,
@@ -734,16 +772,16 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should display error message and diable apply button if all modifications are about to be canceled and process has a parent', async () => {
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: '1',
-        parentInstanceId: '2',
-        callHierarchy: [
-          {instanceId: '3', processDefinitionName: 'some root process'},
-          {instanceId: '2', processDefinitionName: 'some parent process'},
-        ],
-      }),
-    );
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      parentProcessInstanceKey: '2',
+    });
+    mockFetchCallHierarchy().withSuccess({
+      items: [
+        {processInstanceKey: '3', processDefinitionName: 'some root process'},
+        {processInstanceKey: '2', processDefinitionName: 'some parent process'},
+      ],
+    });
 
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
@@ -787,7 +825,8 @@ describe('Modification Summary Modal', () => {
     expect(
       screen.queryByText(/needs to be canceled./i),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
+
+    expect(await screen.findByRole('button', {name: 'Apply'})).toBeDisabled();
 
     act(() => {
       cancelAllTokens('taskA', 0, 0, {});

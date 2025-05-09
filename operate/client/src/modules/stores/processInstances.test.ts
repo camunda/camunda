@@ -7,12 +7,11 @@
  */
 
 import {processInstancesStore} from './processInstances';
-import {groupedProcessesMock, mockProcessStatistics} from 'modules/testUtils';
+import {groupedProcessesMock} from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockServer} from 'modules/mock-server/node';
 import {rest} from 'msw';
@@ -63,7 +62,6 @@ const mockProcessInstances = {
 
 describe('stores/processInstances', () => {
   mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-  mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
   beforeEach(async () => {
     mockFetchProcessXML().withSuccess('');

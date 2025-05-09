@@ -21,9 +21,10 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
@@ -66,6 +67,7 @@ import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
@@ -84,17 +86,22 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GroupGetRequest;
+import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
+import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
+import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -109,8 +116,9 @@ import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisti
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.client.impl.command.ActivateAdHocSubprocessActivitiesCommandImpl;
+import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
+import io.camunda.client.impl.command.AssignMappingToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.client.impl.command.AssignUserToGroupCommandImpl;
@@ -152,6 +160,7 @@ import io.camunda.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
+import io.camunda.client.impl.command.UnassignMappingFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
@@ -167,26 +176,31 @@ import io.camunda.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.GroupGetRequestImpl;
 import io.camunda.client.impl.fetch.IncidentGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetFormRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
+import io.camunda.client.impl.fetch.ProcessInstanceGetCallHierarchyRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.RoleGetRequestImpl;
 import io.camunda.client.impl.fetch.UserTaskGetFormRequestImpl;
 import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
-import io.camunda.client.impl.search.request.AdHocSubprocessActivitySearchRequestImpl;
+import io.camunda.client.impl.search.request.AdHocSubProcessActivitySearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
 import io.camunda.client.impl.search.request.ElementInstanceSearchRequestImpl;
+import io.camunda.client.impl.search.request.GroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
+import io.camunda.client.impl.search.request.UsersByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
@@ -701,26 +715,26 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest() {
-    return new AdHocSubprocessActivitySearchRequestImpl(httpClient, jsonMapper);
+  public AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest() {
+    return new AdHocSubProcessActivitySearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest(
-      final long processDefinitionKey, final String adHocSubprocessId) {
-    return newAdHocSubprocessActivitySearchRequest()
+  public AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest(
+      final long processDefinitionKey, final String adHocSubProcessId) {
+    return newAdHocSubProcessActivitySearchRequest()
         .filter(
             filter ->
                 filter
                     .processDefinitionKey(processDefinitionKey)
-                    .adHocSubprocessId(adHocSubprocessId));
+                    .adHocSubProcessId(adHocSubProcessId));
   }
 
   @Override
-  public ActivateAdHocSubprocessActivitiesCommandStep1 newActivateAdHocSubprocessActivitiesCommand(
-      final String adHocSubprocessInstanceKey) {
-    return new ActivateAdHocSubprocessActivitiesCommandImpl(
-        httpClient, jsonMapper, adHocSubprocessInstanceKey);
+  public ActivateAdHocSubProcessActivitiesCommandStep1 newActivateAdHocSubProcessActivitiesCommand(
+      final String adHocSubProcessInstanceKey) {
+    return new ActivateAdHocSubProcessActivitiesCommandImpl(
+        httpClient, jsonMapper, adHocSubProcessInstanceKey);
   }
 
   @Override
@@ -776,28 +790,33 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public RoleGetRequest newRoleGetRequest(final String roleId) {
+    return new RoleGetRequestImpl(httpClient, roleId);
+  }
+
+  @Override
   public CreateGroupCommandStep1 newCreateGroupCommand() {
     return new CreateGroupCommandImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public UpdateGroupCommandStep1 newUpdateGroupCommand(final long groupKey) {
-    return new UpdateGroupCommandImpl(groupKey, httpClient, jsonMapper);
+  public UpdateGroupCommandStep1 newUpdateGroupCommand(final String groupId) {
+    return new UpdateGroupCommandImpl(groupId, httpClient, jsonMapper);
   }
 
   @Override
-  public DeleteGroupCommandStep1 newDeleteGroupCommand(final long groupKey) {
-    return new DeleteGroupCommandImpl(groupKey, httpClient);
+  public DeleteGroupCommandStep1 newDeleteGroupCommand(final String groupId) {
+    return new DeleteGroupCommandImpl(groupId, httpClient);
   }
 
   @Override
-  public AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(final long groupKey) {
-    return new AssignUserToGroupCommandImpl(groupKey, httpClient);
+  public AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(final String groupId) {
+    return new AssignUserToGroupCommandImpl(groupId, httpClient);
   }
 
   @Override
-  public UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(final long groupKey) {
-    return new UnassignUserFromGroupCommandImpl(groupKey, httpClient);
+  public UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(final String groupId) {
+    return new UnassignUserFromGroupCommandImpl(groupId, httpClient);
   }
 
   @Override
@@ -975,6 +994,37 @@ public final class CamundaClientImpl implements CamundaClient {
   public BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(
       final Long batchOperationKey) {
     return new BatchOperationItemsGetRequestImpl(httpClient, batchOperationKey);
+  }
+
+  @Override
+  public AssignMappingToGroupStep1 newAssignMappingToGroupCommand(final String groupId) {
+    return new AssignMappingToGroupCommandImpl(httpClient, groupId);
+  }
+
+  @Override
+  public UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(final String groupId) {
+    return new UnassignMappingFromGroupCommandImpl(httpClient, groupId);
+  }
+
+  @Override
+  public GroupGetRequest newGroupGetRequest(final String groupId) {
+    return new GroupGetRequestImpl(httpClient, groupId);
+  }
+
+  @Override
+  public GroupsSearchRequest newGroupsSearchRequest() {
+    return new GroupSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public UsersByGroupSearchRequest newUsersByGroupSearchRequest(final String groupId) {
+    return new UsersByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
+  }
+
+  @Override
+  public ProcessInstanceGetCallHierarchyRequest newProcessInstanceGetCallHierarchyRequest(
+      final Long processInstanceKey) {
+    return new ProcessInstanceGetCallHierarchyRequestImpl(httpClient, processInstanceKey);
   }
 
   private JobClient newJobClient() {

@@ -9,6 +9,8 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
+import java.util.Set;
 
 /**
  * An executor that supports partition scaling and monitoring progress of redistribution and
@@ -23,9 +25,20 @@ public interface PartitionScalingChangeExecutor {
    */
   ActorFuture<Void> initiateScaleUp(int desiredPartitionCount);
 
+  ActorFuture<Void> awaitRedistributionCompletion(
+      int desiredPartitionCount, Set<Integer> redistributedPartitions, Duration timeout);
+
   final class NoopPartitionScalingChangeExecutor implements PartitionScalingChangeExecutor {
     @Override
     public ActorFuture<Void> initiateScaleUp(final int desiredPartitionCount) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> awaitRedistributionCompletion(
+        final int desiredPartitionCount,
+        final Set<Integer> redistributedPartitions,
+        final Duration timeout) {
       return CompletableActorFuture.completed(null);
     }
   }

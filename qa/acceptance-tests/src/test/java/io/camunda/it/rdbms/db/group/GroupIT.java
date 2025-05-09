@@ -9,20 +9,27 @@ package io.camunda.it.rdbms.db.group;
 
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveRandomGroups;
+import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.GroupReader;
+import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
+import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
+import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.UserFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.GroupSort;
+import io.camunda.search.sort.UserSort;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -202,6 +209,61 @@ public class GroupIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+  }
+
+  @TestTemplate
+  public void shouldAddMemberToGroup(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final UserReader userReader = rdbmsService.getUserReader();
+    final var group = GroupFixtures.createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriter, group);
+    final var user = UserFixtures.createRandomized(b -> b);
+    createAndSaveUser(rdbmsWriter, user);
+
+    // when
+    rdbmsWriter
+        .getGroupWriter()
+        .addMember(new GroupMemberDbModel(group.groupId(), user.username(), "USER"));
+    rdbmsWriter.flush();
+
+    final var users =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder().groupId(group.groupId()).build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+    assertThat(users.total()).isEqualTo(1);
+  }
+
+  @TestTemplate
+  public void shouldRemoveMemberFromGroup(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final UserReader userReader = rdbmsService.getUserReader();
+    final var group = GroupFixtures.createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriter, group);
+    final var user = UserFixtures.createRandomized(b -> b);
+    createAndSaveUser(rdbmsWriter, user);
+    rdbmsWriter
+        .getGroupWriter()
+        .addMember(new GroupMemberDbModel(group.groupId(), user.username(), "USER"));
+
+    // when
+    rdbmsWriter
+        .getGroupWriter()
+        .removeMember(new GroupMemberDbModel(group.groupId(), user.username(), "USER"));
+    rdbmsWriter.flush();
+
+    final var users =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder().groupId(group.groupId()).build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+    assertThat(users.total()).isEqualTo(0);
   }
 
   private static void compareGroups(final GroupEntity instance, final GroupDbModel group) {

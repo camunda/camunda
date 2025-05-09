@@ -26,7 +26,7 @@ public class CancelProcessInstanceBatchOperationExecutor implements BatchOperati
 
   @Override
   public void execute(final long itemKey, final PersistedBatchOperation batchOperation) {
-    LOGGER.info("Cancelling process instance with key '{}'", itemKey);
+    LOGGER.trace("Cancelling process instance with key '{}'", itemKey);
 
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(itemKey);

@@ -13,6 +13,7 @@ import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -21,6 +22,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.service.util.TreePathParser;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
@@ -31,6 +33,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstance
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -43,14 +47,14 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
-
-  public static final long NO_PARENT_EXISTS_KEY = -1L;
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
 
@@ -89,6 +93,35 @@ public final class ProcessInstanceServices
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .processInstanceFlowNodeStatistics(processInstanceKey);
+  }
+
+  public List<ProcessInstanceEntity> callHierarchy(final long processInstanceKey) {
+    final var rootInstance = getByKey(processInstanceKey);
+
+    final var treePath = rootInstance.treePath();
+    if (treePath == null || treePath.isBlank()) {
+      return List.of();
+    }
+
+    final List<Long> orderedKeys =
+        TreePathParser.extractProcessInstanceKeys(rootInstance.treePath()).stream().toList();
+
+    if (orderedKeys.size() == 1
+        && orderedKeys.getFirst().equals(rootInstance.processInstanceKey())) {
+      return List.of();
+    }
+
+    final var resultsByKey =
+        processInstanceSearchClient
+            .searchProcessInstances(
+                processInstanceSearchQuery(
+                    q -> q.filter(f -> f.processInstanceKeyOperations(Operation.in(orderedKeys)))))
+            .items()
+            .stream()
+            .collect(
+                Collectors.toMap(ProcessInstanceEntity::processInstanceKey, Function.identity()));
+
+    return orderedKeys.stream().map(resultsByKey::get).filter(Objects::nonNull).toList();
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
@@ -161,7 +194,7 @@ public final class ProcessInstanceServices
         filter.toBuilder()
             // It is only possible to cancel root processes in zeebe,
             // whereby zeebe then automatically cancels the sub-processes.
-            .parentProcessInstanceKeys(NO_PARENT_EXISTS_KEY)
+            .parentProcessInstanceKeyOperations(Operation.exists(false))
             .states(ProcessInstanceState.ACTIVE.name())
             .build();
 
@@ -226,6 +259,25 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<BatchOperationCreationRecord> modifyProcessInstancesBatchOperation(
+      final ProcessInstanceModifyBatchOperationRequest request) {
+    final var rootInstanceFilter =
+        request.filter.toBuilder()
+            // It is only possible to modify active processes in zeebe
+            .states(ProcessInstanceState.ACTIVE.name())
+            .build();
+    final var modificationPlan = new BatchOperationProcessInstanceModificationPlan();
+    request.moveInstructions().forEach(modificationPlan::addMoveInstruction);
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setModificationPlan(modificationPlan)
+            .setFilter(rootInstanceFilter)
+            .setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public record ProcessInstanceCreateRequest(
       Long processDefinitionKey,
       String bpmnProcessId,
@@ -256,4 +308,8 @@ public final class ProcessInstanceServices
       ProcessInstanceFilter filter,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions) {}
+
+  public record ProcessInstanceModifyBatchOperationRequest(
+      ProcessInstanceFilter filter,
+      List<BatchOperationProcessInstanceModificationMoveInstruction> moveInstructions) {}
 }

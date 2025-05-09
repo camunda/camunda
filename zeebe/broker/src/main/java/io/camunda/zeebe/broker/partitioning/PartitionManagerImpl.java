@@ -17,9 +17,9 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.scaling.BrokerClientPartitionScalingExecutor;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
@@ -34,9 +34,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -45,6 +43,7 @@ import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,7 +59,6 @@ public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   public static final String GROUP_NAME = "raft-partition";
-
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
   private final ConcurrencyControl concurrencyControl;
 
@@ -76,6 +74,7 @@ public final class PartitionManagerImpl
   private final RaftPartitionFactory raftPartitionFactory;
   private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
+  private final PartitionScalingChangeExecutor scalingExecutor;
 
   public PartitionManagerImpl(
       final ConcurrencyControl concurrencyControl,
@@ -102,6 +101,7 @@ public final class PartitionManagerImpl
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.brokerClient = brokerClient;
+    scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
     brokerMeterRegistry = meterRegistry;
@@ -525,23 +525,15 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> initiateScaleUp(final int desiredPartitionCount) {
-    final var result = concurrencyControl.<Void>createFuture();
+    return scalingExecutor.initiateScaleUp(desiredPartitionCount);
+  }
 
-    brokerClient.sendRequestWithRetry(
-        new BrokerPartitionScaleUpRequest(desiredPartitionCount),
-        (key, response) -> {
-          result.complete(null);
-        },
-        error -> {
-          if (error instanceof final BrokerRejectionException rejection
-              && rejection.getRejection().type() == RejectionType.ALREADY_EXISTS) {
-            LOGGER.debug("Scale up request already succeeded before", rejection);
-            result.complete(null);
-          } else {
-            result.completeExceptionally(error);
-          }
-        });
-
-    return result;
+  @Override
+  public ActorFuture<Void> awaitRedistributionCompletion(
+      final int desiredPartitionCount,
+      final Set<Integer> redistributedPartitions,
+      final Duration timeout) {
+    return scalingExecutor.awaitRedistributionCompletion(
+        desiredPartitionCount, redistributedPartitions, timeout);
   }
 }

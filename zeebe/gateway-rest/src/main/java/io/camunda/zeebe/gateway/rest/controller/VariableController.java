@@ -56,7 +56,7 @@ public class VariableController {
       // Success case: Return the left side with the VariableItem wrapped in ResponseEntity
       return ResponseEntity.ok()
           .body(
-              SearchQueryResponseMapper.toVariable(
+              SearchQueryResponseMapper.toVariableItem(
                   variableServices
                       .withAuthentication(RequestMapper.getAuthentication())
                       .getByKey(variableKey)));

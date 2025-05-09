@@ -375,36 +375,6 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       activityId: 'SequenceFlow_0lplwad',
     },
   ],
-  statistics: [
-    {
-      activityId: 'eventBasedGateway',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'messageTask',
-      active: 0,
-      canceled: 0,
-      incidents: 1,
-      completed: 0,
-    },
-    {
-      activityId: 'timerEvent',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'timerStartEvent',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-  ],
   statisticsV2: {
     items: [
       {

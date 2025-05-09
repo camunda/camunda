@@ -7,7 +7,6 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
-import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingDbModel;
 import io.camunda.db.rdbms.write.domain.MappingDbModel.MappingDbModelBuilder;
@@ -38,9 +37,8 @@ public final class MappingFixtures extends CommonFixtures {
   }
 
   public static void createAndSaveRandomMappings(
-      final RdbmsService rdbmsService,
+      final RdbmsWriter rdbmsWriter,
       final Function<MappingDbModelBuilder, MappingDbModelBuilder> builderFunction) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(1L);
     for (int i = 0; i < 20; i++) {
       rdbmsWriter.getMappingWriter().create(MappingFixtures.createRandomized(builderFunction));
     }
@@ -48,13 +46,12 @@ public final class MappingFixtures extends CommonFixtures {
   }
 
   public static void createAndSaveMapping(
-      final RdbmsService rdbmsService, final MappingDbModel mapping) {
-    createAndSaveMappings(rdbmsService, List.of(mapping));
+      final RdbmsWriter rdbmsWriter, final MappingDbModel mapping) {
+    createAndSaveMappings(rdbmsWriter, List.of(mapping));
   }
 
   public static void createAndSaveMappings(
-      final RdbmsService rdbmsService, final List<MappingDbModel> mappingList) {
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(1L);
+      final RdbmsWriter rdbmsWriter, final List<MappingDbModel> mappingList) {
     for (final MappingDbModel mapping : mappingList) {
       rdbmsWriter.getMappingWriter().create(mapping);
     }

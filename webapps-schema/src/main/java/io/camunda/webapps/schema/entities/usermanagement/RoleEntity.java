@@ -12,9 +12,10 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
 
   private Long key;
+  private String roleId;
   private String name;
-  private String memberId;
-  private EntityJoinRelation<Long> join;
+  private String description;
+  private EntityJoinRelation<String> join;
 
   public Long getKey() {
     return key;
@@ -34,25 +35,34 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public String getMemberId() {
-    return memberId;
+  public String getRoleId() {
+    return roleId;
   }
 
-  public RoleEntity setMemberKey(final String memberId) {
-    this.memberId = memberId;
+  public RoleEntity setRoleId(final String roleId) {
+    this.roleId = roleId;
     return this;
   }
 
-  public EntityJoinRelation<Long> getJoin() {
+  public String getDescription() {
+    return description;
+  }
+
+  public RoleEntity setDescription(final String description) {
+    this.description = description;
+    return this;
+  }
+
+  public EntityJoinRelation<String> getJoin() {
     return join;
   }
 
-  public RoleEntity setJoin(final EntityJoinRelation<Long> join) {
+  public RoleEntity setJoin(final EntityJoinRelation<String> join) {
     this.join = join;
     return this;
   }
 
-  public static String getChildKey(final long roleKey, final long memberKey) {
-    return "%d-%d".formatted(roleKey, memberKey);
+  public static String getChildKey(final String roleId, final String memberId) {
+    return "%s-%s".formatted(roleId, memberId);
   }
 }

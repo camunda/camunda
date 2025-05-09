@@ -59,12 +59,14 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
               label={`${instanceExecutionHistory!.flowNodeId} instance history`}
               hideLabel
             >
-              <FlowNodeInstancesTree
-                rowRef={flowNodeInstanceRowRef}
-                scrollableContainerRef={instanceHistoryRef}
-                flowNodeInstance={instanceExecutionHistory!}
-                isRoot
-              />
+              {
+                <FlowNodeInstancesTree
+                  rowRef={flowNodeInstanceRowRef}
+                  scrollableContainerRef={instanceHistoryRef}
+                  flowNodeInstance={instanceExecutionHistory!}
+                  isRoot
+                />
+              }
             </TreeView>
           </NodeContainer>
         </InstanceHistory>

@@ -7,15 +7,25 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
+import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.UserQuery;
+import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
+import io.camunda.service.UserServices;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -37,9 +47,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/roles")
 public class RoleController {
   private final RoleServices roleServices;
+  private final UserServices userServices;
+  private final MappingServices mappingServices;
 
-  public RoleController(final RoleServices roleServices) {
+  public RoleController(
+      final RoleServices roleServices,
+      final UserServices userServices,
+      final MappingServices mappingServices) {
     this.roleServices = roleServices;
+    this.userServices = userServices;
+    this.mappingServices = mappingServices;
   }
 
   @CamundaPostMapping
@@ -83,15 +100,15 @@ public class RoleController {
             roleServices.withAuthentication(RequestMapper.getAuthentication()).deleteRole(roleId));
   }
 
-  @CamundaGetMapping(path = "/{roleKey}")
-  public ResponseEntity<Object> getRole(@PathVariable final long roleKey) {
+  @CamundaGetMapping(path = "/{roleId}")
+  public ResponseEntity<Object> getRole(@PathVariable final String roleId) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toRole(
                   roleServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .getRole(roleKey)));
+                      .getRole(roleId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -114,12 +131,90 @@ public class RoleController {
     }
   }
 
+  @CamundaPostMapping(path = "/{roleId}/users/search")
+  public ResponseEntity<UserSearchResult> searchUsersByRole(
+      @PathVariable final String roleId,
+      @RequestBody(required = false) final UserSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toUserQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            userQuery -> searchUsersInRole(roleId, userQuery));
+  }
+
+  private ResponseEntity<UserSearchResult> searchUsersInRole(
+      final String roleId, final UserQuery userQuery) {
+    try {
+      final var composedUserQuery = buildUserQuery(roleId, userQuery);
+      final var result =
+          userServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(composedUserQuery);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private UserQuery buildUserQuery(final String roleId, final UserQuery userQuery) {
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().roleId(roleId).build())
+        .build();
+  }
+
+  @CamundaPostMapping(path = "/{roleId}/mapping-rules/search")
+  public ResponseEntity<MappingSearchQueryResult> searchMappingRulesByRole(
+      @PathVariable final String roleId,
+      @RequestBody(required = false) final MappingSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toMappingQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            mappingQuery -> searchMappingRulesInRole(roleId, mappingQuery));
+  }
+
+  private ResponseEntity<MappingSearchQueryResult> searchMappingRulesInRole(
+      final String roleId, final MappingQuery mappingQuery) {
+    try {
+      final var composedMappingQuery = buildMappingQuery(roleId, mappingQuery);
+      final var result =
+          mappingServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(composedMappingQuery);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private MappingQuery buildMappingQuery(final String roleId, final MappingQuery mappingQuery) {
+    return mappingQuery.toBuilder()
+        .filter(mappingQuery.filter().toBuilder().roleId(roleId).build())
+        .build();
+  }
+
   @CamundaPutMapping(
       path = "/{roleId}/users/{username}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> addUserToRole(
       @PathVariable final String roleId, @PathVariable final String username) {
     return RequestMapper.toRoleMemberRequest(roleId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+  }
+
+  @CamundaPutMapping(
+      path = "/{roleId}/applications/{applicationId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> addApplicationToRole(
+      @PathVariable final String roleId, @PathVariable final String applicationId) {
+    return RequestMapper.toRoleMemberRequest(roleId, applicationId, EntityType.APPLICATION)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+  }
+
+  @CamundaPutMapping(
+      path = "/{roleId}/groups/{groupId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> addGroupToRole(
+      @PathVariable final String roleId, @PathVariable final String groupId) {
+    return RequestMapper.toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
@@ -130,10 +225,40 @@ public class RoleController {
             roleServices.withAuthentication(RequestMapper.getAuthentication()).addMember(request));
   }
 
+  @CamundaPutMapping(
+      path = "/{roleId}/mappings/{mappingId}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> assignMappingToRole(
+      @PathVariable final String roleId, @PathVariable final String mappingId) {
+    return RequestMapper.toRoleMemberRequest(roleId, mappingId, EntityType.MAPPING)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
+  }
+
+  @CamundaDeleteMapping(path = "/{roleId}/mappings/{mappingId}")
+  public CompletableFuture<ResponseEntity<Object>> removeMappingFromRole(
+      @PathVariable final String roleId, @PathVariable final String mappingId) {
+    return RequestMapper.toRoleMemberRequest(roleId, mappingId, EntityType.MAPPING)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+  }
+
   @CamundaDeleteMapping(path = "/{roleId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> removeUserFromRole(
       @PathVariable final String roleId, @PathVariable final String username) {
     return RequestMapper.toRoleMemberRequest(roleId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+  }
+
+  @CamundaDeleteMapping(path = "/{roleId}/applications/{applicationId}")
+  public CompletableFuture<ResponseEntity<Object>> removeApplicationFromRole(
+      @PathVariable final String roleId, @PathVariable final String applicationId) {
+    return RequestMapper.toRoleMemberRequest(roleId, applicationId, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+  }
+
+  @CamundaDeleteMapping(path = "/{roleId}/groups/{groupId}")
+  public CompletableFuture<ResponseEntity<Object>> removeGroupFromRole(
+      @PathVariable final String roleId, @PathVariable final String groupId) {
+    return RequestMapper.toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 

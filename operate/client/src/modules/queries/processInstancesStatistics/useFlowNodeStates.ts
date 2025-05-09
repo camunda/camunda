@@ -13,6 +13,9 @@ import {
   GetProcessDefinitionStatisticsResponseBody,
   ProcessDefinitionStatistic,
 } from '@vzeta/camunda-api-zod-schemas/operate';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {isProcessOrSubProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
+import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
 type FlowNodeState =
   | 'active'
@@ -27,48 +30,54 @@ type FlowNodeData = {
   flowNodeState: FlowNodeState;
 };
 
-const flowNodeStatesParser = (
-  data: GetProcessDefinitionStatisticsResponseBody,
-) => {
-  return data.items.flatMap((statistics) => {
-    const types: FlowNodeState[] = [
-      'active',
-      'incidents',
-      'canceled',
-      'completed',
-    ];
-    return types.reduce<FlowNodeData[]>((states, flowNodeState) => {
-      const count = Number(
-        statistics[flowNodeState as keyof ProcessDefinitionStatistic],
-      );
-      if (count > 0) {
-        return [
-          ...states,
-          {
-            flowNodeId: statistics.elementId,
-            count,
-            flowNodeState:
-              flowNodeState === 'completed'
-                ? 'completedEndEvents'
-                : flowNodeState,
-          },
-        ];
-      } else {
-        return states;
-      }
-    }, []);
-  });
-};
+const flowNodeStatesParser =
+  (businessObjects?: BusinessObjects) =>
+  (data: GetProcessDefinitionStatisticsResponseBody) => {
+    return data.items.flatMap((statistics) => {
+      const types: FlowNodeState[] = [
+        'active',
+        'incidents',
+        'canceled',
+        'completed',
+      ];
+      return types.reduce<FlowNodeData[]>((states, flowNodeState) => {
+        const count = Number(
+          statistics[flowNodeState as keyof ProcessDefinitionStatistic],
+        );
+        if (count > 0) {
+          const businessObject = businessObjects?.[statistics.elementId];
+
+          return [
+            ...states,
+            {
+              flowNodeId: statistics.elementId,
+              count,
+              flowNodeState:
+                flowNodeState === 'completed' &&
+                businessObject &&
+                isProcessOrSubProcessEndEvent(businessObject)
+                  ? 'completedEndEvents'
+                  : flowNodeState,
+            },
+          ];
+        } else {
+          return states;
+        }
+      }, []);
+    });
+  };
 
 function useProcessInstancesFlowNodeStates(
   payload: GetProcessDefinitionStatisticsRequestBody,
   processDefinitionKey?: string,
   enabled?: boolean,
 ) {
+  const {data: businessObjects} = useBusinessObjects();
+
   return useQuery(
     useProcessInstancesStatisticsOptions<FlowNodeData[]>(
       payload,
-      flowNodeStatesParser,
+      flowNodeStatesParser(businessObjects),
       processDefinitionKey,
       enabled,
     ),

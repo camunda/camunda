@@ -55,16 +55,8 @@ public interface CorrelateMessageCommandStep1 {
 
   interface CorrelateMessageCommandStep3
       extends CommandWithTenantStep<CorrelateMessageCommandStep3>,
-          FinalCommandStep<CorrelateMessageResponse> {
-
-    /**
-     * Set the variables of the message.
-     *
-     * @param variables the variables (JSON) as stream
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    CorrelateMessageCommandStep3 variables(InputStream variables);
+          FinalCommandStep<CorrelateMessageResponse>,
+          CommandWithVariables<CorrelateMessageCommandStep3> {
 
     /**
      * Set the variables of the message.
@@ -73,16 +65,8 @@ public interface CorrelateMessageCommandStep1 {
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     CorrelateMessageCommandStep3 variables(String variables);
-
-    /**
-     * Set the variables of the message.
-     *
-     * @param variables the variables as map
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    CorrelateMessageCommandStep3 variables(Map<String, Object> variables);
 
     /**
      * Set the variables of the message.
@@ -91,7 +75,28 @@ public interface CorrelateMessageCommandStep1 {
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     CorrelateMessageCommandStep3 variables(Object variables);
+
+    /**
+     * Set the variables of the message.
+     *
+     * @param variables the variables (JSON) as stream
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    CorrelateMessageCommandStep3 variables(InputStream variables);
+
+    /**
+     * Set the variables of the message.
+     *
+     * @param variables the variables as map
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    CorrelateMessageCommandStep3 variables(Map<String, Object> variables);
 
     /**
      * Set a single variable of the message.
@@ -101,6 +106,7 @@ public interface CorrelateMessageCommandStep1 {
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
+    @Override
     CorrelateMessageCommandStep3 variable(String key, Object value);
   }
 }

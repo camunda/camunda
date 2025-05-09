@@ -11,6 +11,10 @@
 
   <name>Operate Importer Common</name>
 
+  <properties>
+    <excludeITNames>none</excludeITNames>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -137,4 +141,30 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>${excludeITNames}</excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>skipITs</id>
+      <activation>
+        <property>
+          <name>skipITs</name>
+        </property>
+      </activation>
+      <properties>
+        <excludeITNames>**/**/*IT.java</excludeITNames>
+      </properties>
+    </profile>
+  </profiles>
 </project>

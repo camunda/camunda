@@ -7,12 +7,16 @@
  */
 package io.camunda.exporter.tasks;
 
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.concurrent.CompletionStage;
 
-public interface BackgroundTask {
+public interface BackgroundTask extends CloseableSilently {
   CompletionStage<Integer> execute();
 
   default String getCaption() {
     return getClass().getSimpleName();
   }
+
+  @Override
+  default void close() {}
 }

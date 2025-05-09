@@ -14,17 +14,25 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.MappingServices;
+import io.camunda.service.RoleServices;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,22 +54,19 @@ public class GroupQueryControllerTest extends RestControllerTest {
             "groupKey":"111",
             "groupId":"%s",
             "name":"Group 1",
-            "description":"Description 1",
-            "assignedMemberIds":[]
+            "description":"Description 1"
           },
           {
             "groupKey":"222",
             "groupId":"%s",
             "name":"Group 2",
-            "description":"Description 2",
-            "assignedMemberIds":[]
+            "description":"Description 2"
           },
           {
             "groupKey":"333",
             "groupId":"%s",
             "name":"Group 3",
-            "description":"Description 3",
-            "assignedMemberIds":[]
+            "description":"Description 3"
           }
         ],
         "page":{
@@ -74,11 +79,142 @@ public class GroupQueryControllerTest extends RestControllerTest {
   private static final String GROUP_BASE_URL = "/v2/groups";
   private static final String GROUP_SEARCH_URL = GROUP_BASE_URL + "/search";
 
+  private static final List<UserEntity> USER_ENTITIES =
+      List.of(
+          new UserEntity(
+              1L, Strings.newRandomValidIdentityId(), "user1", "user1@email.com", "password"),
+          new UserEntity(
+              2L, Strings.newRandomValidIdentityId(), "user2", "user2@email.com", "password"),
+          new UserEntity(
+              3L, Strings.newRandomValidIdentityId(), "user3", "user3@email.com", "password"));
+
+  private static final String USER_RESPONSE =
+      """
+      {
+        "items":[
+          {
+            "userKey":"1",
+            "username":"%s",
+            "name":"user1",
+            "email":"user1@email.com"
+          },
+          {
+            "userKey":"2",
+            "username":"%s",
+            "name":"user2",
+            "email":"user2@email.com"
+          },
+          {
+            "userKey":"3",
+            "username":"%s",
+            "name":"user3",
+            "email":"user3@email.com"
+          }
+        ],
+        "page":{
+          "totalItems":3,
+          "firstSortValues":["f"],
+          "lastSortValues":["v"]
+        }
+      }
+      """;
+
+  private static final List<RoleEntity> ROLE_ENTITIES =
+      List.of(
+          new RoleEntity(1L, Strings.newRandomValidIdentityId(), "role1", "role1 description"),
+          new RoleEntity(2L, Strings.newRandomValidIdentityId(), "role2", "role2 description"),
+          new RoleEntity(3L, Strings.newRandomValidIdentityId(), "role3", "role3 description"));
+
+  private static final String ROLE_RESPONSE =
+      """
+      {
+        "items":[
+          {
+            "roleKey":"1",
+            "roleId":"%s",
+            "name":"role1",
+            "description":"role1 description"
+          },
+          {
+            "roleKey":"2",
+            "roleId":"%s",
+            "name":"role2",
+            "description":"role2 description"
+          },
+          {
+            "roleKey":"3",
+            "roleId":"%s",
+            "name":"role3",
+            "description":"role3 description"
+          }
+        ],
+        "page":{
+          "totalItems":3,
+          "firstSortValues":["f"],
+          "lastSortValues":["v"]
+        }
+      }
+      """;
+
+  private static final String EXPECTED_ROLE_RESPONSE =
+      ROLE_RESPONSE.formatted(
+          ROLE_ENTITIES.get(0).roleId(),
+          ROLE_ENTITIES.get(1).roleId(),
+          ROLE_ENTITIES.get(2).roleId());
+
+  private static final String EXPECTED_USER_RESPONSE =
+      USER_RESPONSE.formatted(
+          USER_ENTITIES.get(0).username(),
+          USER_ENTITIES.get(1).username(),
+          USER_ENTITIES.get(2).username());
+
+  private static final List<MappingEntity> MAPPNING_ENTITIES =
+      List.of(
+          new MappingEntity(
+              Strings.newRandomValidIdentityId(), 1L, "claimName1", "claimValue1", "name"),
+          new MappingEntity(
+              Strings.newRandomValidIdentityId(), 2L, "claimName2", "claimValue2", "name"));
+
+  private static final String MAPPING_RESPONSE =
+      """
+      {
+        "items":[
+          {
+            "name":"name",
+            "mappingId":"%s",
+            "claimName":"claimName1",
+            "claimValue":"claimValue1"
+          },
+          {
+            "name":"name",
+            "mappingId":"%s",
+            "claimName":"claimName2",
+            "claimValue":"claimValue2"
+          }
+        ],
+        "page":{
+          "totalItems":2,
+          "firstSortValues":["f"],
+          "lastSortValues":["v"]
+        }
+      }
+      """;
+
+  private static final String EXPECTED_MAPPING_RESPONSE =
+      MAPPING_RESPONSE.formatted(
+          MAPPNING_ENTITIES.get(0).mappingId(), MAPPNING_ENTITIES.get(1).mappingId());
+
   @MockBean private GroupServices groupServices;
+  @MockBean private UserServices userServices;
+  @MockBean private MappingServices mappingServices;
+  @MockBean private RoleServices roleServices;
 
   @BeforeEach
   void setup() {
     when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+    when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
+    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
   }
 
   @Test
@@ -88,7 +224,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var groupId = Strings.newRandomValidIdentityId();
     final var groupName = "groupName";
     final var groupDescription = "groupDescription";
-    final var group = new GroupEntity(groupKey, groupId, groupName, groupDescription, Set.of());
+    final var group = new GroupEntity(groupKey, groupId, groupName, groupDescription);
     when(groupServices.getGroup(group.groupId())).thenReturn(group);
 
     // when
@@ -103,11 +239,10 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "groupKey": "%d",
+              "groupKey": "%s",
               "groupId": "%s",
               "name": "%s",
-              "description": "%s",
-              "assignedMemberIds": []
+              "description": "%s"
             }"""
                 .formatted(groupKey, groupId, groupName, groupDescription));
 
@@ -171,9 +306,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
-                        new GroupEntity(groupKey1, groupId1, groupName1, description1, Set.of()),
-                        new GroupEntity(groupKey2, groupId2, groupName2, description2, Set.of()),
-                        new GroupEntity(groupKey3, groupId3, groupName3, description3, Set.of())))
+                        new GroupEntity(groupKey1, groupId1, groupName1, description1),
+                        new GroupEntity(groupKey2, groupId2, groupName2, description2),
+                        new GroupEntity(groupKey3, groupId3, groupName3, description3)))
                 .build());
 
     // when / then
@@ -197,22 +332,19 @@ public class GroupQueryControllerTest extends RestControllerTest {
                  "groupKey": "%d",
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s",
-                 "assignedMemberIds": []
+                 "description": "%s"
                },
                {
                  "groupKey": "%d",
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s",
-                 "assignedMemberIds": []
+                 "description": "%s"
                },
                {
                  "groupKey": "%d",
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s",
-                 "assignedMemberIds": []
+                 "description": "%s"
                }
              ],
              "page": {
@@ -259,9 +391,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new GroupEntity(groupKey1, groupId1, groupName1, description1, Set.of()),
-                        new GroupEntity(groupKey2, groupId2, groupName2, description2, Set.of()),
-                        new GroupEntity(groupKey3, groupId3, groupName3, description3, Set.of())))
+                        new GroupEntity(groupKey1, groupId1, groupName1, description1),
+                        new GroupEntity(groupKey2, groupId2, groupName2, description2),
+                        new GroupEntity(groupKey3, groupId3, groupName3, description3)))
                 .firstSortValues(new Object[] {"f"})
                 .lastSortValues(new Object[] {"v"})
                 .build());
@@ -291,6 +423,201 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .sort(GroupSort.of(builder -> builder.name().asc()))
                 .page(SearchQueryPage.of(builder -> builder.from(20).size(2)))
                 .build());
+  }
+
+  @Test
+  void shouldSearchGroupUsersWithSorting() {
+    // given
+    when(userServices.search(any(UserQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<UserEntity>()
+                .total(USER_ENTITIES.size())
+                .items(USER_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/users/search".formatted(GROUP_BASE_URL, "groupId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "username", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_USER_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupUsersWithEmptyQuery() {
+    // given
+    when(userServices.search(any(UserQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<UserEntity>()
+                .total(USER_ENTITIES.size())
+                .items(USER_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/users/search".formatted(GROUP_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_USER_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupMappingsWithSorting() {
+    // given
+    when(mappingServices.search(any(MappingQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingEntity>()
+                .total(MAPPNING_ENTITIES.size())
+                .items(MAPPNING_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/mapping-rules/search".formatted(GROUP_BASE_URL, "groupId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "mappingId", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_MAPPING_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupMappingsWithEmptyQuery() {
+    // given
+    when(mappingServices.search(any(MappingQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingEntity>()
+                .total(MAPPNING_ENTITIES.size())
+                .items(MAPPNING_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/mapping-rules/search".formatted(GROUP_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_MAPPING_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupRolesWithSorting() {
+    // given
+    when(roleServices.search(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(ROLE_ENTITIES.size())
+                .items(ROLE_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/roles/search".formatted(GROUP_BASE_URL, "groupId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "name", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_ROLE_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupRolesWithEmptyQuery() {
+    // given
+    when(roleServices.search(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(ROLE_ENTITIES.size())
+                .items(ROLE_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/roles/search".formatted(GROUP_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_ROLE_RESPONSE);
   }
 
   @ParameterizedTest

@@ -104,6 +104,7 @@ const Header: React.FC = observer(() => {
     displayName: null,
     salesPlanType: null,
   };
+  const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 
   const {t} = useTranslation();
 
@@ -115,10 +116,11 @@ const Header: React.FC = observer(() => {
 
   return (
     <C3Navigation
+      toggleAppbar={(isAppBarOpen) => setIsAppBarOpen(isAppBarOpen)}
       notificationSideBar={IS_SAAS ? {} : undefined}
       appBar={{
         ariaLabel: t('headerAppBarLabel'),
-        isOpen: false,
+        isOpen: isAppBarOpen,
         elementClicked: (app: string) => {
           tracking.track({
             eventName: 'app-switcher-item-clicked',

@@ -12,7 +12,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 
 public record BatchOperationDbModel(
-    Long batchOperationKey,
+    String batchOperationKey,
     BatchOperationState state,
     String operationType,
     OffsetDateTime startDate,
@@ -24,7 +24,7 @@ public record BatchOperationDbModel(
   // Builder class
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
 
-    private Long batchOperationKey;
+    private String batchOperationKey;
     private BatchOperationState state;
     private String operationType;
     private OffsetDateTime startDate;
@@ -35,7 +35,7 @@ public record BatchOperationDbModel(
 
     public Builder() {}
 
-    public Builder batchOperationKey(final Long batchOperationKey) {
+    public Builder batchOperationKey(final String batchOperationKey) {
       this.batchOperationKey = batchOperationKey;
       return this;
     }

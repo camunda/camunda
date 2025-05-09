@@ -39,7 +39,7 @@ public class LegacyJobWorkerValueCustomizerBeanDefinitionRegistryPostProcessor
       final BeanDefinition beanDefinition = registry.getBeanDefinition(beanDefinitionName);
       if (beanDefinition.getResolvableType().isAssignableFrom(ZeebeWorkerValueCustomizer.class)) {
         LOG.warn(
-            "Bean '{}' is implementing ZeebeWorkerValueCustomizer, please migrate to JobWorkerValueCustomizer",
+            "Bean '{}' is implementing deprecated interface ZeebeWorkerValueCustomizer, please migrate to JobWorkerValueCustomizer",
             beanDefinitionName);
         final BeanDefinitionBuilder beanDefinitionBuilder =
             BeanDefinitionBuilder.genericBeanDefinition(JobWorkerValueCustomizerCompat.class)

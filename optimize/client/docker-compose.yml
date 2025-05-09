@@ -168,7 +168,7 @@ services:
       KEYCLOAK_USERS_5_ROLES_0: 'Optimize'
       KEYCLOAK_USERS_6_USERNAME: 'demo'
       KEYCLOAK_USERS_6_PASSWORD: 'demo'
-      KEYCLOAK_USERS_6_EMAIL: 'demo@demo.com'
+      KEYCLOAK_USERS_6_EMAIL: 'demo@example.com'
       KEYCLOAK_USERS_6_FIRST_NAME: 'demo'
       KEYCLOAK_USERS_6_ROLES_0: 'Optimize'
       KEYCLOAK_USERS_6_ROLES_1: 'Identity'

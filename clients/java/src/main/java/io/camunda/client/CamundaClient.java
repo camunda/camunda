@@ -16,8 +16,9 @@
 package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
-import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
@@ -55,6 +56,7 @@ import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
@@ -73,17 +75,22 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GroupGetRequest;
+import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
+import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
+import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -892,71 +899,71 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ElementInstanceGetRequest newElementInstanceGetRequest(long elementInstanceKey);
 
   /**
-   * Executes a search request to query activities within ad-hoc subprocesses.
+   * Executes a search request to query activities within ad-hoc sub-processes.
    *
    * <p>Note that this API currently requires filters for both process definition key and ad-hoc
-   * subprocess ID and does not support paging or sorting.
+   * sub-process ID and does not support paging or sorting.
    *
    * <pre>
    * long processDefinitionKey = ...;
-   * String adHocSubprocessId = ...;
+   * String adHocSubProcessId = ...;
    *
    * camundaClient
-   *  .newAdHocSubprocessActivitySearchRequest()
+   *  .newAdHocSubProcessActivitySearchRequest()
    *  .filter((f) -> f
    *     .processDefinitionKey(processDefinitionKey)
-   *     .adHocSubprocessId(adHocSubprocessId)
+   *     .adHocSubProcessId(adHocSubProcessId)
    *  )
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity search request
+   * @return a builder for the ad-hoc sub-process activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest();
+  AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest();
 
   /**
-   * Executes a search request to query activities within ad-hoc subprocesses.
+   * Executes a search request to query activities within ad-hoc sub-processes.
    *
    * <p>Note that this API currently requires filters for both process definition key and ad-hoc
-   * subprocess ID and does not support paging or sorting.
+   * sub-process ID and does not support paging or sorting.
    *
    * <pre>
    * long processDefinitionKey = ...;
-   * String adHocSubprocessId = ...;
+   * String adHocSubProcessId = ...;
    *
    * camundaClient
-   *  .newAdHocSubprocessActivitySearchRequest(
+   *  .newAdHocSubProcessActivitySearchRequest(
    *    processDefinitionKey,
-   *    adHocSubprocessId
+   *    adHocSubProcessId
    *  )
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity search request
+   * @return a builder for the ad-hoc sub-process activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest(
-      long processDefinitionKey, String adHocSubprocessId);
+  AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest(
+      long processDefinitionKey, String adHocSubProcessId);
 
   /**
-   * Command to activate activities within an activated ad-hoc subprocess.
+   * Command to activate activities within an activated ad-hoc sub-process.
    *
    * <pre>
    *   camundaClient
-   *    .newActivateAdHocSubprocessActivitiesCommand(adHocSubprocessInstanceKey)
+   *    .newActivateAdHocSubProcessActivitiesCommand(adHocSubProcessInstanceKey)
    *    .activateElement("A")
    *    .activateElements("B", "C")
    *    .activateElements(Arrays.asList("D", "E"))
    *    .send();
    * </pre>
    *
-   * @param adHocSubprocessInstanceKey the key which identifies the corresponding ad-hoc subprocess
+   * @param adHocSubProcessInstanceKey the key which identifies the corresponding ad-hoc sub-process
    *     instance
    * @return a builder for the command
    */
-  ActivateAdHocSubprocessActivitiesCommandStep1 newActivateAdHocSubprocessActivitiesCommand(
-      String adHocSubprocessInstanceKey);
+  ActivateAdHocSubProcessActivitiesCommandStep1 newActivateAdHocSubProcessActivitiesCommand(
+      String adHocSubProcessInstanceKey);
 
   /**
    * Executes a search request to query user tasks.
@@ -1127,6 +1134,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CreateRoleCommandStep1 newCreateRoleCommand();
 
   /**
+   * Request to get a role by role ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newRoleGetRequest(roleId)
+   *  .send();
+   * </pre>
+   *
+   * @param roleId the ID of the role
+   * @return a builder for the request to get a role
+   */
+  RoleGetRequest newRoleGetRequest(String roleId);
+
+  /**
    * Command to create a group.
    *
    * <pre>
@@ -1151,7 +1173,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUpdateGroupCommand(123L)
+   *  .newUpdateGroupCommand("123")
    *  .name(name)
    *  .send();
    * </pre>
@@ -1160,7 +1182,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UpdateGroupCommandStep1 newUpdateGroupCommand(long groupKey);
+  UpdateGroupCommandStep1 newUpdateGroupCommand(String groupId);
 
   /**
    * Command to delete a group.
@@ -1169,7 +1191,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newDeleteGroupCommand(123L)
+   *  .newDeleteGroupCommand("123")
    *  .send();
    * </pre>
    *
@@ -1177,7 +1199,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  DeleteGroupCommandStep1 newDeleteGroupCommand(long groupKey);
+  DeleteGroupCommandStep1 newDeleteGroupCommand(String groupId);
 
   /**
    * Command to assign a user to a group.
@@ -1186,8 +1208,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newAssignUserToGroupCommand(123L)
-   *  .userKey(456L)
+   *  .newAssignUserToGroupCommand("groupId")
+   *  .username("username")
    *  .send();
    * </pre>
    *
@@ -1195,7 +1217,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(long groupKey);
+  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(String groupId);
 
   /**
    * Command to unassign a user from a group.
@@ -1204,8 +1226,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUnassignUserFromGroupCommand(123L)
-   *  .userKey(456L)
+   *  .newUnassignUserFromGroupCommand("groupId")
+   *  .username("username")
    *  .send();
    * </pre>
    *
@@ -1213,7 +1235,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(long groupKey);
+  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(String groupId);
 
   /**
    * Command to create a user.
@@ -1620,7 +1642,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *   .newAssignMappingToTenantCommand(tenantId)
-   *   .mappingKey(mappingKey)
+   *   .mappingId(mappingId)
    *   .send();
    * </pre>
    *
@@ -1679,7 +1701,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *   .newAssignGroupToTenantCommand(tenantId)
-   *   .groupKey(groupKey)
+   *   .groupId(groupId)
    *   .send();
    * </pre>
    *
@@ -1696,7 +1718,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *   .newUnassignGroupFromTenantCommand(tenantId)
-   *   .groupKey(groupKey)
+   *   .groupId(groupId)
    *   .send();
    * </pre>
    *
@@ -1808,4 +1830,107 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request
    */
   BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(Long batchOperationKey);
+
+  /**
+   * Command to assign a mapping rule to a group.
+   *
+   * <pre>
+   *
+   *
+   * camundaClient
+   *  .newAssignMappingToGroupCommand(groupId)
+   *  .mappingId(mappingId)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  AssignMappingToGroupStep1 newAssignMappingToGroupCommand(String groupId);
+
+  /**
+   * Command to unassign a mapping rule from a group.
+   *
+   * <pre>
+   *
+   *
+   * camundaClient
+   *  .newUnassignMappingFromGroupCommand(groupId)
+   *  .mappingId(mappingId)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(String groupId);
+
+  /**
+   * Request to get a group by group ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newGroupGetRequest(groupId)
+   *  .send();
+   * </pre>
+   *
+   * @param groupId the ID of the group
+   * @return a builder for the request to get a group
+   */
+  GroupGetRequest newGroupGetRequest(String groupId);
+
+  /**
+   * Executes a search request to query groups.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newGroupsSearchRequest()
+   *  .filter((f) -> f.name(name))
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the groups search request
+   */
+  GroupsSearchRequest newGroupsSearchRequest();
+
+  /**
+   * Executes a search request to query users by group.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newUsersByGroupSearchRequest(groupId)
+   *  .filter((f) -> f.username(username))
+   *  .sort((s) -> s.username().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the users by group search request
+   */
+  UsersByGroupSearchRequest newUsersByGroupSearchRequest(String groupId);
+
+  /**
+   * Retrieves the call hierarchy for a given process instance by its key.
+   *
+   * <pre>
+   * camundaClient
+   *   .newProcessInstanceGetCallHierarchyRequest(processInstanceKey)
+   *   .send();
+   * </pre>
+   *
+   * <p>The returned hierarchical structure represents the relationship of the given process
+   * instance to its parent and child process instances, if any.
+   *
+   * @param processInstanceKey the key of the process instance
+   * @return a builder for the request
+   */
+  ProcessInstanceGetCallHierarchyRequest newProcessInstanceGetCallHierarchyRequest(
+      Long processInstanceKey);
 }

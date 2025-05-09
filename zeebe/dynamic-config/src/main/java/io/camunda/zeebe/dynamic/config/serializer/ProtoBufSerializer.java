@@ -50,7 +50,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.StartPartitionScaleUpOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
@@ -66,6 +66,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class ProtoBufSerializer
@@ -429,12 +430,22 @@ public class ProtoBufSerializer
           builder.setPartitionBootstrap(encodePartitionBootstrapOperation(bootstrapOperation));
       case final DeleteHistoryOperation deleteHistoryOperation ->
           builder.setDeleteHistory(Topology.DeleteHistoryOperation.newBuilder().build());
-      case StartPartitionScaleUpOperation(
-              final var ignoredMemberId,
-              final var desiredPartitionCount) ->
+      case StartPartitionScaleUp(final var ignoredMemberId, final var desiredPartitionCount) ->
           builder.setInitiateScaleUpPartitions(
               Topology.StartPartitionScaleUpOperation.newBuilder()
                   .setDesiredPartitionCount(desiredPartitionCount)
+                  .build());
+      case final AwaitRedistributionCompletion msg ->
+          builder.setAwaitRedistributionCompletion(
+              Topology.AwaitRedistributionCompletion.newBuilder()
+                  .setDesiredPartitionCount(msg.desiredPartitionCount())
+                  .addAllPartitionsToRedistribute(msg.partitionsToRedistribute())
+                  .build());
+      case final AwaitRelocationCompletion msg ->
+          builder.setAwaitRelocationCompletion(
+              Topology.AwaitRelocationCompletion.newBuilder()
+                  .setDesiredPartitionCount(msg.desiredPartitionCount())
+                  .addAllPartitionsToRelocate(msg.partitionsToRelocate())
                   .build());
     }
     return builder.build();
@@ -584,39 +595,39 @@ public class ProtoBufSerializer
 
   private ClusterConfigurationChangeOperation decodeOperation(
       final Topology.TopologyChangeOperation topologyChangeOperation) {
+    final var memberId = MemberId.from(topologyChangeOperation.getMemberId());
     if (topologyChangeOperation.hasPartitionJoin()) {
       return new PartitionJoinOperation(
-          MemberId.from(topologyChangeOperation.getMemberId()),
+          memberId,
           topologyChangeOperation.getPartitionJoin().getPartitionId(),
           topologyChangeOperation.getPartitionJoin().getPriority());
     } else if (topologyChangeOperation.hasPartitionLeave()) {
       return new PartitionLeaveOperation(
-          MemberId.from(topologyChangeOperation.getMemberId()),
+          memberId,
           topologyChangeOperation.getPartitionLeave().getPartitionId(),
           topologyChangeOperation.getPartitionLeave().getMinimumAllowedReplicas());
     } else if (topologyChangeOperation.hasMemberJoin()) {
-      return new MemberJoinOperation(MemberId.from(topologyChangeOperation.getMemberId()));
+      return new MemberJoinOperation(memberId);
     } else if (topologyChangeOperation.hasMemberLeave()) {
-      return new MemberLeaveOperation(MemberId.from(topologyChangeOperation.getMemberId()));
+      return new MemberLeaveOperation(memberId);
     } else if (topologyChangeOperation.hasPartitionReconfigurePriority()) {
       return new PartitionReconfigurePriorityOperation(
-          MemberId.from(topologyChangeOperation.getMemberId()),
+          memberId,
           topologyChangeOperation.getPartitionReconfigurePriority().getPartitionId(),
           topologyChangeOperation.getPartitionReconfigurePriority().getPriority());
     } else if (topologyChangeOperation.hasPartitionForceReconfigure()) {
       return new PartitionForceReconfigureOperation(
-          MemberId.from(topologyChangeOperation.getMemberId()),
+          memberId,
           topologyChangeOperation.getPartitionForceReconfigure().getPartitionId(),
           topologyChangeOperation.getPartitionForceReconfigure().getMembersList().stream()
               .map(MemberId::from)
               .toList());
     } else if (topologyChangeOperation.hasMemberRemove()) {
       return new MemberRemoveOperation(
-          MemberId.from(topologyChangeOperation.getMemberId()),
-          MemberId.from(topologyChangeOperation.getMemberRemove().getMemberToRemove()));
+          memberId, MemberId.from(topologyChangeOperation.getMemberRemove().getMemberToRemove()));
     } else if (topologyChangeOperation.hasPartitionDisableExporter()) {
       return new PartitionDisableExporterOperation(
-          MemberId.from(topologyChangeOperation.getMemberId()),
+          memberId,
           topologyChangeOperation.getPartitionDisableExporter().getPartitionId(),
           topologyChangeOperation.getPartitionDisableExporter().getExporterId());
     } else if (topologyChangeOperation.hasPartitionEnableExporter()) {
@@ -626,7 +637,7 @@ public class ProtoBufSerializer
               ? Optional.of(enableExporterOperation.getInitializeFrom())
               : Optional.empty();
       return new PartitionEnableExporterOperation(
-          MemberId.from(topologyChangeOperation.getMemberId()),
+          memberId,
           enableExporterOperation.getPartitionId(),
           enableExporterOperation.getExporterId(),
           initializeFrom);
@@ -637,16 +648,28 @@ public class ProtoBufSerializer
               ? Optional.of(decodePartitionConfig(bootstrapOperation.getConfig()))
               : Optional.empty();
       return new PartitionBootstrapOperation(
-          MemberId.from(topologyChangeOperation.getMemberId()),
+          memberId,
           bootstrapOperation.getPartitionId(),
           bootstrapOperation.getPriority(),
           partitionConfig);
     } else if (topologyChangeOperation.hasInitiateScaleUpPartitions()) {
-      return new StartPartitionScaleUpOperation(
-          MemberId.from(topologyChangeOperation.getMemberId()),
+      return new StartPartitionScaleUp(
+          memberId,
           topologyChangeOperation.getInitiateScaleUpPartitions().getDesiredPartitionCount());
     } else if (topologyChangeOperation.hasDeleteHistory()) {
-      return new DeleteHistoryOperation(MemberId.from(topologyChangeOperation.getMemberId()));
+      return new DeleteHistoryOperation(memberId);
+    } else if (topologyChangeOperation.hasAwaitRedistributionCompletion()) {
+      final var redistribution = topologyChangeOperation.getAwaitRedistributionCompletion();
+      return new AwaitRedistributionCompletion(
+          memberId,
+          redistribution.getDesiredPartitionCount(),
+          new TreeSet<>(redistribution.getPartitionsToRedistributeList()));
+    } else if (topologyChangeOperation.hasAwaitRelocationCompletion()) {
+      final var relocation = topologyChangeOperation.getAwaitRelocationCompletion();
+      return new AwaitRelocationCompletion(
+          memberId,
+          relocation.getDesiredPartitionCount(),
+          new TreeSet<>(relocation.getPartitionsToRelocateList()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

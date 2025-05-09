@@ -48,15 +48,6 @@ test.describe('process instance migration', () => {
         ],
         batchOperation: mockMigrationOperation,
         processInstances: mockOrderProcessInstancesWithFailedOperations,
-        statistics: [
-          {
-            activityId: 'checkPayment',
-            active: 3,
-            canceled: 0,
-            incidents: 0,
-            completed: 0,
-          },
-        ],
         statisticsV2: {
           items: [
             {

@@ -315,22 +315,6 @@ const instanceWithIncident: InstanceMock = {
       activityId: 'SequenceFlow_0j6tsnn',
     },
   ],
-  statistics: [
-    {
-      activityId: 'StartEvent_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'Task_1b1r7ow',
-      active: 0,
-      canceled: 0,
-      incidents: 1,
-      completed: 0,
-    },
-  ],
   statisticsV2: {
     items: [
       {

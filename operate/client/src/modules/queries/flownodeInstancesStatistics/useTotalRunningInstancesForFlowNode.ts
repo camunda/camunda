@@ -60,7 +60,7 @@ const totalRunningInstancesVisibleForFlowNodeParser =
     const statistics = getStatisticsByFlowNode(response.items, businessObjects)[
       flowNodeId
     ];
-    return (statistics?.filteredActive ?? 0) + (statistics?.incidents ?? 0);
+    return (statistics?.active ?? 0) + (statistics?.incidents ?? 0);
   };
 
 const totalRunningInstancesVisibleForFlowNodesParser =
@@ -69,7 +69,7 @@ const totalRunningInstancesVisibleForFlowNodesParser =
     const statistics = getStatisticsByFlowNode(response.items, businessObjects);
 
     return flowNodeIds.reduce<Record<string, number>>((acc, flowNodeId) => {
-      const active = statistics[flowNodeId]?.filteredActive ?? 0;
+      const active = statistics[flowNodeId]?.active ?? 0;
       const incidents = statistics[flowNodeId]?.incidents ?? 0;
       acc[flowNodeId] = active + incidents;
       return acc;

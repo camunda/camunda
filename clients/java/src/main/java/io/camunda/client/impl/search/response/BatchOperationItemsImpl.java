@@ -42,26 +42,45 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
 
   public static class BatchOperationItemImpl implements BatchOperationItem {
 
-    private final Long batchOperationKey;
-
+    private final String batchOperationId;
     private final Long itemKey;
-
+    private final Long processInstanceKey;
     private final BatchOperationItemState status;
+    private final String processedDate;
+    private final String errorMessage;
 
     public BatchOperationItemImpl(final BatchOperationItemResponse item) {
-      batchOperationKey = ParseUtil.parseLongOrNull(item.getBatchOperationKey());
+      batchOperationId = item.getBatchOperationId();
       itemKey = ParseUtil.parseLongOrNull(item.getItemKey());
+      processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
       status = EnumUtil.convert(item.getState(), BatchOperationItemState.class);
+      processedDate = item.getProcessedDate();
+      errorMessage = item.getErrorMessage();
     }
 
     @Override
-    public Long getBatchOperationKey() {
-      return batchOperationKey;
+    public String getBatchOperationId() {
+      return batchOperationId;
     }
 
     @Override
-    public Long getKey() {
+    public Long getItemKey() {
       return itemKey;
+    }
+
+    @Override
+    public Long getProcessInstanceKey() {
+      return processInstanceKey;
+    }
+
+    @Override
+    public String getProcessedDate() {
+      return processedDate;
+    }
+
+    @Override
+    public String getErrorMessage() {
+      return errorMessage;
     }
 
     @Override

@@ -19,7 +19,8 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.StartPartitionScaleUpOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
 
 public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppliers {
 
@@ -97,10 +98,20 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               partitionChangeExecutor);
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new DeleteHistoryApplier(deleteHistoryOperation.memberId(), clusterChangeExecutor);
-      case StartPartitionScaleUpOperation(
-              final var ignoredMemberId,
-              final var desiredPartitionCount) ->
-          new StartPartitionScaleUpApplier(partitionScalingChangeExecutor, desiredPartitionCount);
+      case final ScaleUpOperation scaleUpOperation ->
+          switch (scaleUpOperation) {
+            case StartPartitionScaleUp(
+                    final var ignoredMemberId,
+                    final var desiredPartitionCount) ->
+                new StartPartitionScaleUpApplier(
+                    partitionScalingChangeExecutor, desiredPartitionCount);
+            case final AwaitRedistributionCompletion awaitRedistributionCompletion ->
+                new AwaitRedistributionCompletionApplier(
+                    partitionScalingChangeExecutor, awaitRedistributionCompletion);
+            case final AwaitRelocationCompletion ignored ->
+                // TODO IMPLEMENT
+                throw new UnsupportedOperationException("Not implemented yet");
+          };
     };
   }
 }

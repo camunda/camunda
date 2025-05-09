@@ -113,22 +113,6 @@ const runningInstance: InstanceMock = {
       activityId: 'Flow_0s222mp',
     },
   ],
-  statistics: [
-    {
-      activityId: 'Activity_0dex012',
-      active: 1,
-      canceled: 0,
-      incidents: 0,
-      completed: 0,
-    },
-    {
-      activityId: 'StartEvent_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-  ],
   statisticsV2: {
     items: [
       {

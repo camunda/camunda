@@ -12,7 +12,6 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 import {Paths} from 'modules/Routes';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
@@ -22,7 +21,6 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
       return () => {
         processInstancesSelectionStore.reset();
         processInstancesStore.reset();
-        processStatisticsStore.reset();
         operationsStore.reset();
         processesStore.reset();
       };

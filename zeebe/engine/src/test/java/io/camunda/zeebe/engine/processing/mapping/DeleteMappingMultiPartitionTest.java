@@ -44,9 +44,9 @@ public class DeleteMappingMultiPartitionTest {
     final var mappingId = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(mappingId)
         .withClaimValue(claimValue)
-        .withMappingId(mappingId)
+        .withClaimName(claimName)
         .create();
     engine.mapping().deleteMapping(mappingId).delete();
 
@@ -99,9 +99,9 @@ public class DeleteMappingMultiPartitionTest {
     final var mappingId = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(mappingId)
         .withClaimValue(claimValue)
-        .withMappingId(mappingId)
+        .withClaimName(claimName)
         .create();
     engine.mapping().deleteMapping(mappingId).delete();
 
@@ -126,9 +126,9 @@ public class DeleteMappingMultiPartitionTest {
 
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(mappingId)
         .withClaimValue(claimValue)
-        .withMappingId(mappingId)
+        .withClaimName(claimName)
         .create();
     engine.mapping().deleteMapping(mappingId).delete();
 

@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -85,13 +84,11 @@ public class RoleAppliersTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/30114")
   void shouldDeleteRole() {
     // given
-    final long roleKey = 11L;
-    final String roleId = String.valueOf(roleKey);
+    final String roleId = Strings.newRandomValidIdentityId();
     final String roleName = "foo";
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    final var roleRecord = new RoleRecord().setRoleId(roleId).setName(roleName);
     roleState.create(roleRecord);
     authorizationState.create(
         1L,
@@ -113,14 +110,13 @@ public class RoleAppliersTest {
             .setOwnerId(roleId));
 
     // when
-    roleDeletedApplier.applyState(roleKey, roleRecord);
+    roleDeletedApplier.applyState(1L, roleRecord);
 
     // then
-    assertThat(roleState.getRole(roleKey)).isEmpty();
+    assertThat(roleState.getRole(roleId)).isEmpty();
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/30117")
   void shouldRemoveEntityFromRoleWithTypeUser() {
     // given
     final var username = "foo";
@@ -133,19 +129,17 @@ public class RoleAppliersTest {
             .setEmail("foo@bar.com")
             .setPassword("password"));
     final long roleKey = 11L;
-    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleRecord = new RoleRecord().setRoleId(roleId).setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
+    roleRecord.setRoleId(roleId).setEntityId(username).setEntityType(EntityType.USER);
     roleEntityAddedApplier.applyState(roleKey, roleRecord);
 
     // when
     roleEntityRemovedApplier.applyState(roleKey, roleRecord);
 
     // then
-    assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    assertThat(
-            membershipState.getMemberships(
-                EntityType.USER, Long.toString(userKey), RelationType.ROLE))
+    assertThat(membershipState.getMemberships(EntityType.USER, username, RelationType.ROLE))
         .isEmpty();
   }
 }

@@ -13,11 +13,9 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {
   mockCalledProcessInstances,
   mockProcessInstances,
-  mockProcessStatistics,
 } from 'modules/testUtils';
 import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {tracking} from 'modules/tracking';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -281,7 +279,6 @@ describe('<MigrateAction />', () => {
     });
     await user.click(screen.getByRole('button', {name: /migrate/i}));
 
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     await user.click(screen.getByRole('button', {name: /continue/i}));
 
     expect(processInstanceMigrationStore.state.currentStep).toBe(
@@ -321,7 +318,6 @@ describe('<MigrateAction />', () => {
       eventName: 'process-instance-migration-button-clicked',
     });
 
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     await user.click(screen.getByRole('button', {name: /continue/i}));
 
     expect(trackSpy).toHaveBeenCalledWith({

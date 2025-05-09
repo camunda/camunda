@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication;
 
-import io.camunda.authentication.entity.AuthenticationContext;
+import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
@@ -19,6 +19,7 @@ import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +34,8 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class CamundaOAuthPrincipalService {
+  static final String CLAIM_NOT_STRING =
+      "Configured claim for %s (%s) is not a string. Please check your OIDC configuration.";
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalService.class);
 
@@ -42,6 +45,7 @@ public class CamundaOAuthPrincipalService {
   private final GroupServices groupServices;
   private final AuthorizationServices authorizationServices;
   private final String usernameClaim;
+  private final String applicationIdClaim;
 
   public CamundaOAuthPrincipalService(
       final MappingServices mappingServices,
@@ -56,47 +60,84 @@ public class CamundaOAuthPrincipalService {
     this.groupServices = groupServices;
     this.authorizationServices = authorizationServices;
     usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
+    applicationIdClaim =
+        securityConfiguration.getAuthentication().getOidc().getApplicationIdClaim();
   }
 
   public OAuthContext loadOAuthContext(final Map<String, Object> claims)
       throws OAuth2AuthenticationException {
     final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
-    final Set<Long> mappingKeys =
-        mappings.stream().map(MappingEntity::mappingKey).collect(Collectors.toSet());
     final Set<String> mappingIds =
         mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
-    if (mappingKeys.isEmpty() && mappingIds.isEmpty()) {
+    if (mappingIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
-    final var assignedRoles = roleServices.getRolesByMemberKeys(mappingKeys);
+    final var assignedRoles = roleServices.getRolesByMemberIds(mappingIds, EntityType.MAPPING);
 
-    return new OAuthContext(
-        mappingKeys,
-        mappingIds,
-        new AuthenticationContext(
-            getUsernameFromClaims(claims),
-            assignedRoles,
-            authorizationServices.getAuthorizedApplications(
-                Stream.concat(
-                        assignedRoles.stream().map(r -> r.roleKey().toString()),
-                        mappingIds.stream())
-                    .collect(Collectors.toSet())),
-            tenantServices.getTenantsByMemberIds(mappingIds).stream()
-                .map(TenantDTO::fromEntity)
-                .toList(),
-            groupServices.getGroupsByMemberKeys(mappingIds).stream()
-                .map(GroupEntity::name)
-                .toList()));
+    final var authContextBuilder =
+        new AuthenticationContextBuilder()
+            .withAuthorizedApplications(
+                authorizationServices.getAuthorizedApplications(
+                    Stream.concat(
+                            assignedRoles.stream().map(r -> r.roleKey().toString()),
+                            mappingIds.stream())
+                        .collect(Collectors.toSet())))
+            .withTenants(
+                tenantServices.getTenantsByMemberIds(mappingIds).stream()
+                    .map(TenantDTO::fromEntity)
+                    .toList())
+            .withGroups(
+                groupServices.getGroupsByMemberKeys(mappingIds).stream()
+                    .map(GroupEntity::name)
+                    .toList())
+            .withRoles(assignedRoles);
+
+    final var username = getUsernameFromClaims(claims);
+    final var applicationId = getApplicationIdFromClaims(claims);
+
+    if (username == null && applicationId == null) {
+      throw new IllegalArgumentException(
+          "Neither username claim (%s) nor applicationId claim (%s) could be found in the claims. Please check your OIDC configuration."
+              .formatted(usernameClaim, applicationIdClaim));
+    }
+    if (username != null) {
+      authContextBuilder.withUsername(getUsernameFromClaims(claims));
+    }
+
+    if (applicationId != null) {
+      authContextBuilder.withApplicationId(getApplicationIdFromClaims(claims));
+    }
+
+    return new OAuthContext(mappingIds, authContextBuilder.build());
   }
 
   private String getUsernameFromClaims(final Map<String, Object> claims) {
-    return Optional.ofNullable(claims.get(usernameClaim))
-        .map(Object::toString)
-        .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    "Configured username claim %s not found in claims. Please check your OIDC configuration."
-                        .formatted(usernameClaim)));
+    final var maybeUsername = Optional.ofNullable(claims.get(usernameClaim));
+
+    if (maybeUsername.isEmpty()) {
+      return null;
+    }
+
+    if (maybeUsername.get() instanceof final String username) {
+      return username;
+    } else {
+      throw new IllegalArgumentException(CLAIM_NOT_STRING.formatted("username", usernameClaim));
+    }
+  }
+
+  private String getApplicationIdFromClaims(final Map<String, Object> claims) {
+    final var maybeApplicationId = Optional.ofNullable(claims.get(applicationIdClaim));
+
+    if (maybeApplicationId.isEmpty()) {
+      return null;
+    }
+
+    if (maybeApplicationId.get() instanceof final String applicationId) {
+      return applicationId;
+    } else {
+      throw new IllegalArgumentException(
+          CLAIM_NOT_STRING.formatted("application", applicationIdClaim));
+    }
   }
 }

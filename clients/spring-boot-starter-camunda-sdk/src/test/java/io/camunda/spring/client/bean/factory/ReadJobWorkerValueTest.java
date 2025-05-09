@@ -23,6 +23,8 @@ import io.camunda.spring.client.annotation.AnnotationUtil;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.bean.ClassInfoTest;
+import io.camunda.spring.client.bean.ClassInfoTest.WithJobWorker;
+import io.camunda.spring.client.bean.ClassInfoTest.WithJobWorkerAllValues;
 import io.camunda.spring.client.bean.MethodInfo;
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -34,25 +36,25 @@ import org.junit.jupiter.api.Test;
 public class ReadJobWorkerValueTest {
 
   @Test
-  public void applyOnWithZeebeWorker() {
+  public void applyOnWithJobWorker() {
     // given
-    final MethodInfo methodInfo = extract(ClassInfoTest.WithZeebeWorker.class);
+    final MethodInfo methodInfo = extract(WithJobWorker.class);
 
     // when
-    final Optional<JobWorkerValue> zeebeWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+    final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
 
     // then
-    assertTrue(zeebeWorkerValue.isPresent());
-    assertEquals("bar", zeebeWorkerValue.get().getType());
-    assertEquals("kermit", zeebeWorkerValue.get().getName());
-    assertEquals(Duration.ofMillis(100), zeebeWorkerValue.get().getTimeout());
-    assertEquals(-1, zeebeWorkerValue.get().getMaxJobsActive());
-    assertEquals(Duration.ofSeconds(-1), zeebeWorkerValue.get().getRequestTimeout());
-    assertEquals(Duration.ofMillis(-1), zeebeWorkerValue.get().getPollInterval());
-    assertEquals(false, zeebeWorkerValue.get().getAutoComplete());
-    assertEquals(List.of(), zeebeWorkerValue.get().getFetchVariables());
-    assertEquals(methodInfo, zeebeWorkerValue.get().getMethodInfo());
-    assertEquals(Duration.ofHours(1), zeebeWorkerValue.get().getStreamTimeout());
+    assertTrue(jobWorkerValue.isPresent());
+    assertEquals("bar", jobWorkerValue.get().getType());
+    assertEquals("kermit", jobWorkerValue.get().getName());
+    assertEquals(Duration.ofMillis(100), jobWorkerValue.get().getTimeout());
+    assertEquals(-1, jobWorkerValue.get().getMaxJobsActive());
+    assertEquals(Duration.ofSeconds(-1), jobWorkerValue.get().getRequestTimeout());
+    assertEquals(Duration.ofMillis(-1), jobWorkerValue.get().getPollInterval());
+    assertEquals(false, jobWorkerValue.get().getAutoComplete());
+    assertEquals(List.of(), jobWorkerValue.get().getFetchVariables());
+    assertEquals(methodInfo, jobWorkerValue.get().getMethodInfo());
+    assertEquals(Duration.ofHours(1), jobWorkerValue.get().getStreamTimeout());
   }
 
   @Test
@@ -61,32 +63,32 @@ public class ReadJobWorkerValueTest {
     final MethodInfo methodInfo = extract(ClassInfoTest.TenantBound.class);
 
     // when
-    final Optional<JobWorkerValue> zeebeWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+    final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
 
     // then
-    assertTrue(zeebeWorkerValue.isPresent());
-    assertThat(zeebeWorkerValue.get().getTenantIds()).containsOnly("tenant-1");
+    assertTrue(jobWorkerValue.isPresent());
+    assertThat(jobWorkerValue.get().getTenantIds()).containsOnly("tenant-1");
   }
 
   @Test
-  public void applyOnWithZeebeWorkerAllValues() {
+  public void applyOnWithJobWorkerAllValues() {
     // given
-    final MethodInfo methodInfo = extract(ClassInfoTest.WithZeebeWorkerAllValues.class);
+    final MethodInfo methodInfo = extract(WithJobWorkerAllValues.class);
 
     // when
-    final Optional<JobWorkerValue> zeebeWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+    final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
 
     // then
-    assertTrue(zeebeWorkerValue.isPresent());
-    assertEquals("bar", zeebeWorkerValue.get().getType());
-    assertEquals("kermit", zeebeWorkerValue.get().getName());
-    assertEquals(Duration.ofMillis(100L), zeebeWorkerValue.get().getTimeout());
-    assertEquals(3, zeebeWorkerValue.get().getMaxJobsActive());
-    assertEquals(Duration.ofSeconds(500L), zeebeWorkerValue.get().getRequestTimeout());
-    assertEquals(Duration.ofSeconds(1L), zeebeWorkerValue.get().getPollInterval());
-    assertEquals(true, zeebeWorkerValue.get().getAutoComplete());
-    assertEquals(List.of("foo"), zeebeWorkerValue.get().getFetchVariables());
-    assertEquals(methodInfo, zeebeWorkerValue.get().getMethodInfo());
+    assertTrue(jobWorkerValue.isPresent());
+    assertEquals("bar", jobWorkerValue.get().getType());
+    assertEquals("kermit", jobWorkerValue.get().getName());
+    assertEquals(Duration.ofMillis(100L), jobWorkerValue.get().getTimeout());
+    assertEquals(3, jobWorkerValue.get().getMaxJobsActive());
+    assertEquals(Duration.ofSeconds(500L), jobWorkerValue.get().getRequestTimeout());
+    assertEquals(Duration.ofSeconds(1L), jobWorkerValue.get().getPollInterval());
+    assertEquals(true, jobWorkerValue.get().getAutoComplete());
+    assertEquals(List.of("foo"), jobWorkerValue.get().getFetchVariables());
+    assertEquals(methodInfo, jobWorkerValue.get().getMethodInfo());
   }
 
   private MethodInfo extract(final Class<?> clazz) {

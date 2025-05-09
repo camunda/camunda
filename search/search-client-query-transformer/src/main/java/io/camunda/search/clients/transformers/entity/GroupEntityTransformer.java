@@ -9,7 +9,6 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.GroupEntity;
-import java.util.Set;
 
 public class GroupEntityTransformer
     implements ServiceTransformer<
@@ -18,9 +17,7 @@ public class GroupEntityTransformer
   @Override
   public GroupEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.GroupEntity value) {
-    final Set<String> memberSet =
-        value.getMemberId() == null ? Set.of() : Set.of(value.getMemberId());
     return new GroupEntity(
-        value.getKey(), value.getGroupId(), value.getName(), value.getDescription(), memberSet);
+        value.getKey(), value.getGroupId(), value.getName(), value.getDescription());
   }
 }

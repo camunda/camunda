@@ -14,7 +14,9 @@ import java.util.function.Function;
 public class RoleDbModel implements DbModel<RoleDbModel> {
 
   private Long roleKey;
+  private String roleId;
   private String name;
+  private String description;
   private List<RoleMemberDbModel> members;
 
   public Long roleKey() {
@@ -25,12 +27,28 @@ public class RoleDbModel implements DbModel<RoleDbModel> {
     this.roleKey = roleKey;
   }
 
+  public String roleId() {
+    return roleId;
+  }
+
+  public void roleId(final String roleId) {
+    this.roleId = roleId;
+  }
+
   public String name() {
     return name;
   }
 
   public void name(final String name) {
     this.name = name;
+  }
+
+  public String description() {
+    return description;
+  }
+
+  public void description(final String description) {
+    this.description = description;
   }
 
   public List<RoleMemberDbModel> members() {
@@ -52,8 +70,12 @@ public class RoleDbModel implements DbModel<RoleDbModel> {
     return "RoleDbModel{"
         + "roleKey="
         + roleKey
+        + ", roleId='"
+        + roleId
         + ", name='"
         + name
+        + ", description='"
+        + description
         + '\''
         + ", members="
         + members
@@ -63,7 +85,9 @@ public class RoleDbModel implements DbModel<RoleDbModel> {
   public static class Builder implements ObjectBuilder<RoleDbModel> {
 
     private Long roleKey;
+    private String roleId;
     private String name;
+    private String description;
     private List<RoleMemberDbModel> members;
 
     public Builder() {}
@@ -73,8 +97,18 @@ public class RoleDbModel implements DbModel<RoleDbModel> {
       return this;
     }
 
+    public Builder roleId(final String roleId) {
+      this.roleId = roleId;
+      return this;
+    }
+
     public Builder name(final String name) {
       this.name = name;
+      return this;
+    }
+
+    public Builder description(final String description) {
+      this.description = description;
       return this;
     }
 
@@ -87,7 +121,9 @@ public class RoleDbModel implements DbModel<RoleDbModel> {
     public RoleDbModel build() {
       final RoleDbModel model = new RoleDbModel();
       model.roleKey(roleKey);
+      model.roleId(roleId);
       model.name(name);
+      model.description(description);
       model.members(members);
       return model;
     }

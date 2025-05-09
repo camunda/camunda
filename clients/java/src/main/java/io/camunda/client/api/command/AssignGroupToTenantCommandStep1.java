@@ -21,11 +21,11 @@ public interface AssignGroupToTenantCommandStep1
     extends FinalCommandStep<AssignGroupToTenantResponse> {
 
   /**
-   * Sets the group key for the assignment.
+   * Sets the group ID for the assignment.
    *
-   * @param groupKey the key of the group
+   * @param groupId the ID of the group
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  AssignGroupToTenantCommandStep1 groupKey(long groupKey);
+  AssignGroupToTenantCommandStep1 groupId(String groupId);
 }

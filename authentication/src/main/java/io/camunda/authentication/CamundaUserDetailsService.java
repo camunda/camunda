@@ -9,6 +9,7 @@ package io.camunda.authentication;
 
 import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aCamundaUser;
 
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.service.AuthorizationServices;
@@ -16,6 +17,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,15 +56,13 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
     final Long userKey = storedUser.userKey();
 
-    // todo use username as memberId in https://github.com/camunda/camunda/issues/30111
     final var roles =
-        roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(String.valueOf(userKey)))));
+        roleServices.findAll(
+            RoleQuery.of(q -> q.filter(f -> f.memberId(username).memberType(EntityType.USER))));
 
     final var authorizedApplications =
         authorizationServices.getAuthorizedApplications(
-            Stream.concat(
-                    roles.stream().map(r -> r.roleKey().toString()),
-                    Stream.of(storedUser.username()))
+            Stream.concat(roles.stream().map(RoleEntity::roleId), Stream.of(storedUser.username()))
                 .collect(Collectors.toSet()));
 
     final var tenants =

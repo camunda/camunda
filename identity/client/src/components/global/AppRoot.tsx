@@ -17,6 +17,7 @@ import { getAuthentication } from "src/utility/api/authentication";
 import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
 import LateLoading from "src/components/layout/LateLoading";
 import { addHandler, removeHandler } from "src/utility/api/request";
+import { activateSession } from "src/utility/auth";
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -83,6 +84,12 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
       removeHandler(handleResponse);
     };
   }, [navigate]);
+
+  useEffect(() => {
+    if (camundaUser) {
+      activateSession();
+    }
+  }, [camundaUser]);
 
   if (loading) {
     return <LateLoading />;

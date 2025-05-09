@@ -26,6 +26,12 @@ import {Bar} from './Bar';
 import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {
+  appendExpandedFlowNodeInstanceIds,
+  getVisibleChildPlaceholders,
+  hasChildPlaceholders,
+} from 'modules/utils/instanceHistoryModification';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 const TREE_NODE_HEIGHT = 32;
 
@@ -36,15 +42,18 @@ type Props = {
   scrollableContainerRef: React.RefObject<HTMLElement>;
 };
 
-const getVisibleChildPlaceholders = ({
+const getFilteredVisibleChildPlaceholders = ({
   isModificationModeEnabled,
   flowNodeInstance,
+  businessObjects,
 }: {
   isModificationModeEnabled: boolean;
   flowNodeInstance: FlowNodeInstance;
+  businessObjects?: BusinessObjects;
 }) => {
   const {state, isPlaceholder, flowNodeId, id} = flowNodeInstance;
   if (
+    businessObjects === undefined ||
     !isModificationModeEnabled ||
     (!isPlaceholder &&
       (state === undefined || !['ACTIVE', 'INCIDENT'].includes(state)))
@@ -52,9 +61,10 @@ const getVisibleChildPlaceholders = ({
     return [];
   }
 
-  return instanceHistoryModificationStore.getVisibleChildPlaceholders(
+  return getVisibleChildPlaceholders(
     id,
     flowNodeId,
+    businessObjects,
     isPlaceholder,
   );
 };
@@ -103,21 +113,22 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
 
     const visibleChildNodes = getVisibleChildNodes(flowNodeInstance);
 
+    const processDefinitionKey = useProcessDefinitionKeyContext();
+    const {data: processInstanceXmlData} = useProcessInstanceXml({
+      processDefinitionKey,
+    });
+
     const visibleChildPlaceholders: FlowNodeInstance[] =
-      getVisibleChildPlaceholders({
+      getFilteredVisibleChildPlaceholders({
         isModificationModeEnabled: modificationsStore.isModificationModeEnabled,
         flowNodeInstance,
+        businessObjects: processInstanceXmlData?.businessObjects,
       });
 
     const visibleChildren = [...visibleChildNodes, ...visibleChildPlaceholders];
 
     const hasVisibleChildPlaceholders = visibleChildPlaceholders.length > 0;
     const hasVisibleChildNodes = visibleChildNodes.length > 0;
-
-    const processDefinitionKey = useProcessDefinitionKeyContext();
-    const {data: processInstanceXmlData} = useProcessInstanceXml({
-      processDefinitionKey,
-    });
 
     const bpmnProcessId =
       processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
@@ -138,8 +149,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
 
     const hasChildren = flowNodeInstance.isPlaceholder
       ? isFoldable &&
-        instanceHistoryModificationStore.hasChildPlaceholders(
+        processInstanceXmlData?.businessObjects &&
+        hasChildPlaceholders(
           flowNodeInstance.id,
+          processInstanceXmlData.businessObjects,
         )
       : isFoldable;
 
@@ -154,9 +167,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     const expandSubtree = (flowNodeInstance: FlowNodeInstance) => {
       if (!flowNodeInstance.isPlaceholder) {
         fetchSubTree({treePath: flowNodeInstance.treePath});
-      } else {
-        instanceHistoryModificationStore.appendExpandedFlowNodeInstanceIds(
+      } else if (processInstanceXmlData?.businessObjects) {
+        appendExpandedFlowNodeInstanceIds(
           flowNodeInstance.id,
+          processInstanceXmlData.businessObjects,
         );
       }
     };

@@ -53,10 +53,10 @@ public class MappingUpdateAuthorizationTest {
     final var id = UUID.randomUUID().toString();
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(id)
+        .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withMappingId(id)
         .create(DEFAULT_USER.getUsername());
 
     // when
@@ -71,6 +71,7 @@ public class MappingUpdateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.mappingRecords(MappingIntent.UPDATED)
+                .withMappingId(id)
                 .withClaimName(claimName)
                 .withClaimValue(claimValueNew)
                 .exists())
@@ -91,10 +92,10 @@ public class MappingUpdateAuthorizationTest {
 
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(mappingId)
+        .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withMappingId(mappingId)
         .create(DEFAULT_USER.getUsername());
 
     // when
@@ -110,6 +111,7 @@ public class MappingUpdateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.mappingRecords(MappingIntent.UPDATED)
+                .withMappingId(mappingId)
                 .withClaimName(claimName)
                 .withClaimValue(claimValueNew)
                 .exists())
@@ -127,10 +129,10 @@ public class MappingUpdateAuthorizationTest {
     final var user = createUser();
     engine
         .mapping()
-        .newMapping(claimName)
+        .newMapping(id)
+        .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withMappingId(id)
         .create(DEFAULT_USER.getUsername());
 
     // when

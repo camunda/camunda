@@ -91,6 +91,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -122,7 +123,9 @@ public class CommandDistributionIdempotencyTest {
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.multiplePartition(2).withSearchClientsProxy(new NoopSearchClientsProxy());
+      EngineRule.multiplePartition(2)
+          .withEngineConfig(c -> c.setBatchOperationSchedulerInterval(Duration.ofDays(1)))
+          .withSearchClientsProxy(new NoopSearchClientsProxy());
 
   private static final Set<Class<?>> DISTRIBUTING_PROCESSORS =
       new HashSet<>(
@@ -155,12 +158,6 @@ public class CommandDistributionIdempotencyTest {
 
   @AfterClass
   public static void assertAllProcessorsTested() {
-    // TODO remove with https://github.com/camunda/camunda/issues/30114
-    DISTRIBUTING_PROCESSORS.remove(RoleDeleteProcessor.class);
-    // TODO remove with https://github.com/camunda/camunda/issues/30117
-    DISTRIBUTING_PROCESSORS.remove(RoleRemoveEntityProcessor.class);
-    // TODO remove with https://github.com/camunda/camunda/issues/30113
-    DISTRIBUTING_PROCESSORS.remove(RoleUpdateProcessor.class);
     if (!DISTRIBUTING_PROCESSORS.isEmpty()) {
       fail("No test scenario found for processors: '%s'".formatted(DISTRIBUTING_PROCESSORS));
     }
@@ -444,34 +441,32 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.ROLE, RoleIntent.CREATE, CommandDistributionIdempotencyTest::createRole),
             RoleCreateProcessor.class
           },
-          // TODO fix test in https://github.com/camunda/camunda/issues/30114
-          //          {
-          //            "Role.DELETE is idempotent",
-          //            new Scenario(
-          //                ValueType.ROLE,
-          //                RoleIntent.DELETE,
-          //                () -> {
-          //                  final var group = createRole();
-          //                  return ENGINE.role().deleteRole(group.getKey()).delete();
-          //                }),
-          //            RoleDeleteProcessor.class
-          //          },
-          // TODO fix test in https://github.com/camunda/camunda/issues/30113
-          //          {
-          //            "Role.UPDATE is idempotent",
-          //            new Scenario(
-          //                ValueType.ROLE,
-          //                RoleIntent.UPDATE,
-          //                () -> {
-          //                  final var role = createRole();
-          //                  return ENGINE
-          //                      .role()
-          //                      .updateRole(role.getKey())
-          //                      .withName(UUID.randomUUID().toString())
-          //                      .update();
-          //                }),
-          //            RoleUpdateProcessor.class
-          //          },
+          {
+            "Role.DELETE is idempotent",
+            new Scenario(
+                ValueType.ROLE,
+                RoleIntent.DELETE,
+                () -> {
+                  final Record<RoleRecordValue> role = createRole();
+                  return ENGINE.role().deleteRole(role.getValue().getRoleId()).delete();
+                }),
+            RoleDeleteProcessor.class
+          },
+          {
+            "Role.UPDATE is idempotent",
+            new Scenario(
+                ValueType.ROLE,
+                RoleIntent.UPDATE,
+                () -> {
+                  final var role = createRole();
+                  return ENGINE
+                      .role()
+                      .updateRole(role.getValue().getRoleId())
+                      .withName(UUID.randomUUID().toString())
+                      .update();
+                }),
+            RoleUpdateProcessor.class
+          },
           {
             "Role.ADD_ENTITY is idempotent",
             new Scenario(
@@ -489,30 +484,29 @@ public class CommandDistributionIdempotencyTest {
                 }),
             RoleAddEntityProcessor.class
           },
-          // TODO fix test in https://github.com/camunda/camunda/issues/30117
-          //          {
-          //            "Role.REMOVE_ENTITY is idempotent",
-          //            new Scenario(
-          //                ValueType.ROLE,
-          //                RoleIntent.REMOVE_ENTITY,
-          //                () -> {
-          //                  final var role = createRole();
-          //                  final var user = createUser();
-          //                  ENGINE
-          //                      .role()
-          //                      .addEntity(role.getKey())
-          //                      .withEntityKey(user.getKey())
-          //                      .withEntityType(EntityType.USER)
-          //                      .add();
-          //                  return ENGINE
-          //                      .role()
-          //                      .removeEntity(role.getKey())
-          //                      .withEntityKey(user.getKey())
-          //                      .withEntityType(EntityType.USER)
-          //                      .remove();
-          //                }),
-          //            RoleRemoveEntityProcessor.class
-          //          },
+          {
+            "Role.REMOVE_ENTITY is idempotent",
+            new Scenario(
+                ValueType.ROLE,
+                RoleIntent.REMOVE_ENTITY,
+                () -> {
+                  final var role = createRole().getValue();
+                  final var user = createUser().getValue();
+                  ENGINE
+                      .role()
+                      .addEntity(role.getRoleId())
+                      .withEntityId(user.getUsername())
+                      .withEntityType(EntityType.USER)
+                      .add();
+                  return ENGINE
+                      .role()
+                      .removeEntity(role.getRoleId())
+                      .withEntityId(user.getUsername())
+                      .withEntityType(EntityType.USER)
+                      .remove();
+                }),
+            RoleRemoveEntityProcessor.class
+          },
           {
             "Signal.BROADCAST is idempotent",
             new Scenario(
@@ -773,8 +767,8 @@ public class CommandDistributionIdempotencyTest {
     return ENGINE
         .mapping()
         .newMapping(UUID.randomUUID().toString())
+        .withClaimName(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())
-        .withMappingId(UUID.randomUUID().toString())
         .create();
   }
 

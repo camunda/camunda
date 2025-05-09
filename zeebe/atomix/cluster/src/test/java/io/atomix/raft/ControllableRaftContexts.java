@@ -289,10 +289,6 @@ public final class ControllableRaftContexts {
     serverIds.forEach(memberId -> getServerProtocol(memberId).receiveAll());
   }
 
-  public void processAllMessage(final MemberId memberId) {
-    getServerProtocol(memberId).receiveAll();
-  }
-
   // Submit the next message from the incoming queue to the scheduler of memberId.
   public void processNextMessage(final MemberId memberId) {
     getServerProtocol(memberId).receiveNextMessage();
@@ -386,6 +382,7 @@ public final class ControllableRaftContexts {
     {
       final var raftcontext = raftServers.get(memberId);
       raftcontext.getThreadContext().execute(raftcontext::close);
+      runUntilDone(memberId);
     }
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
@@ -405,6 +402,7 @@ public final class ControllableRaftContexts {
     {
       final var raftContext = raftServers.get(memberId);
       raftContext.getThreadContext().execute(raftContext::close);
+      runUntilDone(memberId);
     }
     deterministicExecutors.remove(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));
@@ -427,8 +425,6 @@ public final class ControllableRaftContexts {
     try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
       newContext.getCluster().bootstrap(raftServers.keySet());
     }
-
-    raftServers.put(memberId, newContext);
 
     // Wait until member has recovered lost data and have caught up with the leader
     waitUntilMembersIsReadyIn(newContext, 100);

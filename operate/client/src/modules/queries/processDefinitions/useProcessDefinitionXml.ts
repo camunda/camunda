@@ -16,6 +16,8 @@ import {getFlowNodes} from 'modules/utils/flowNodes';
 import {DiagramModel} from 'bpmn-moddle';
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
+const PROCESS_DEFINITION_XML_QUERY_KEY = 'processDefinitionXml';
+
 type ParsedXmlData = {
   xml: string;
   diagramModel: DiagramModel;
@@ -23,7 +25,7 @@ type ParsedXmlData = {
 };
 
 function getQueryKey(processDefinitionKey?: ProcessDefinitionKey) {
-  return ['processDefinitionXml', processDefinitionKey];
+  return [PROCESS_DEFINITION_XML_QUERY_KEY, processDefinitionKey];
 }
 
 async function processDefinitionParser(data: string): Promise<ParsedXmlData> {
@@ -64,5 +66,5 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
   });
 }
 
-export {useProcessDefinitionXml};
+export {PROCESS_DEFINITION_XML_QUERY_KEY, useProcessDefinitionXml};
 export type {ParsedXmlData};

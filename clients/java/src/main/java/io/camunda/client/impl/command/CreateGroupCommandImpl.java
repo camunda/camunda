@@ -18,6 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
+import io.camunda.client.api.command.CreateGroupCommandStep1.CreateGroupCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -29,7 +30,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class CreateGroupCommandImpl implements CreateGroupCommandStep1 {
+public class CreateGroupCommandImpl implements CreateGroupCommandStep1, CreateGroupCommandStep2 {
 
   private final GroupCreateRequest request;
   private final JsonMapper jsonMapper;
@@ -44,8 +45,20 @@ public class CreateGroupCommandImpl implements CreateGroupCommandStep1 {
   }
 
   @Override
-  public CreateGroupCommandStep1 name(final String name) {
+  public CreateGroupCommandStep2 groupId(final String groupId) {
+    request.setGroupId(groupId);
+    return this;
+  }
+
+  @Override
+  public CreateGroupCommandStep2 name(final String name) {
     request.name(name);
+    return this;
+  }
+
+  @Override
+  public CreateGroupCommandStep2 description(final String description) {
+    request.description(description);
     return this;
   }
 
@@ -57,6 +70,7 @@ public class CreateGroupCommandImpl implements CreateGroupCommandStep1 {
 
   @Override
   public CamundaFuture<CreateGroupResponse> send() {
+    ArgumentUtil.ensureNotNull("groupId", request.getGroupId());
     ArgumentUtil.ensureNotNull("name", request.getName());
     final HttpCamundaFuture<CreateGroupResponse> result = new HttpCamundaFuture<>();
     final CreateGroupResponseImpl response = new CreateGroupResponseImpl();

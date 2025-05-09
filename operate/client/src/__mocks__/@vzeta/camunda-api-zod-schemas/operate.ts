@@ -32,4 +32,19 @@ export const endpoints = {
     }) =>
       `/v2/process-instances/${processInstanceKey}/statistics/${statisticName}`,
   },
+  getProcessSequenceFlows: {
+    method: 'GET',
+    getUrl: ({processInstanceKey}: {processInstanceKey: string}) =>
+      `/v2/process-instances/${processInstanceKey}/sequence-flows`,
+  },
+  getProcessInstance: {
+    method: 'GET',
+    getUrl: ({processInstanceKey}: {processInstanceKey: string}) =>
+      `/v2/process-instances/${processInstanceKey}`,
+  },
+  getProcessInstanceCallHierarchy: {
+    method: 'GET',
+    getUrl: ({processInstanceKey}: {processInstanceKey: string}) =>
+      `/v2/process-instances/${processInstanceKey}/call-hierarchy`,
+  },
 };

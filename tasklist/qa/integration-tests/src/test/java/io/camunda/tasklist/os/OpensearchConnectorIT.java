@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.os;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -14,6 +16,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TestPlugin;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -57,6 +60,7 @@ public class OpensearchConnectorIT {
 
   @BeforeAll
   static void beforeAll() {
+    assumeTrue(TestUtil.isOpenSearch());
     OPENSEARCH_CONTAINER.start();
     WIRE_MOCK_SERVER.start();
   }

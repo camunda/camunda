@@ -19,10 +19,13 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import java.util.List;
 import java.util.function.Consumer;
@@ -54,9 +57,13 @@ public class CamundaDataSource {
   }
 
   public List<Variable> findVariablesByProcessInstanceKey(final long processInstanceKey) {
+    return findVariables(filter -> filter.processInstanceKey(processInstanceKey));
+  }
+
+  public List<Variable> findVariables(final Consumer<VariableFilter> filter) {
     return client
         .newVariableSearchRequest()
-        .filter(filter -> filter.processInstanceKey(processInstanceKey))
+        .filter(filter)
         .page(DEFAULT_PAGE_REQUEST)
         .send()
         .join()
@@ -83,6 +90,17 @@ public class CamundaDataSource {
         .newIncidentSearchRequest()
         .filter(filter)
         .sort(sort -> sort.creationTime().asc())
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
+  }
+
+  public List<UserTask> findUserTasks(final Consumer<UserTaskFilter> filter) {
+    return client
+        .newUserTaskSearchRequest()
+        .filter(filter)
+        .sort(sort -> sort.creationDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()
         .join()

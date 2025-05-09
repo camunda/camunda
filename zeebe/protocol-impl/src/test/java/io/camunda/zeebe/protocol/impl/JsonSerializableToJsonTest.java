@@ -2700,20 +2700,14 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "UserRecord",
-        (Supplier<UserRecord>)
-            () ->
-                new UserRecord()
-                    .setUsername("foobar")
-                    .setName("Foo Bar")
-                    .setEmail("foo@bar")
-                    .setPassword("f00b4r"),
+        (Supplier<UserRecord>) () -> new UserRecord().setUsername("foobar"),
         """
         {
           "userKey": -1,
           "username": "foobar",
-          "name": "Foo Bar",
-          "email": "foo@bar",
-          "password": "f00b4r"
+          "name": "",
+          "email": "",
+          "password": ""
         }
         """
       },
@@ -2836,7 +2830,6 @@ final class JsonSerializableToJsonTest {
                     .setRoleId("id")
                     .setName("role")
                     .setDescription("description")
-                    .setEntityKey(2L)
                     .setEntityId("entityId")
                     .setEntityType(EntityType.USER),
         """
@@ -2845,7 +2838,6 @@ final class JsonSerializableToJsonTest {
           "roleId": "id",
           "name": "role",
           "description": "description",
-          "entityKey": 2,
           "entityId": "entityId",
           "entityType": "USER"
         }
@@ -2856,14 +2848,13 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty RoleRecord",
-        (Supplier<RoleRecord>) RoleRecord::new,
+        (Supplier<RoleRecord>) () -> new RoleRecord().setRoleId("roleId"),
         """
         {
           "roleKey": -1,
-          "roleId": "",
+          "roleId": "roleId",
           "name": "",
           "description": "",
-          "entityKey": -1,
           "entityId": "",
           "entityType": "UNSPECIFIED"
         }
@@ -2900,11 +2891,11 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty TenantRecord",
-        (Supplier<UnifiedRecordValue>) TenantRecord::new,
+        (Supplier<UnifiedRecordValue>) () -> new TenantRecord().setTenantId("tenantId"),
         """
           {
             "tenantKey": -1,
-            "tenantId": "",
+            "tenantId": "tenantId",
             "name": "",
             "description": "",
             "entityId": "",
@@ -2921,7 +2912,9 @@ final class JsonSerializableToJsonTest {
         (Supplier<ScaleRecord>) ScaleRecord::new,
         """
         {
-          "desiredPartitionCount": -1
+          "desiredPartitionCount": -1,
+          "redistributedPartitions": [],
+          "relocatedPartitions": []
         }
         """
       },
@@ -2930,7 +2923,25 @@ final class JsonSerializableToJsonTest {
         (Supplier<ScaleRecord>) () -> new ScaleRecord().setDesiredPartitionCount(5),
         """
         {
-         "desiredPartitionCount": 5
+         "desiredPartitionCount": 5,
+          "redistributedPartitions": [],
+          "relocatedPartitions": []
+        }
+        """
+      },
+      {
+        "ScaleRecord w/ redistributedPartitions & relocatedPartitions",
+        (Supplier<ScaleRecord>)
+            () ->
+                new ScaleRecord()
+                    .setDesiredPartitionCount(5)
+                    .setRelocatedPartitions(List.of(4, 5))
+                    .setRedistributedPartitions(List.of(4, 5)),
+        """
+        {
+         "desiredPartitionCount": 5,
+          "redistributedPartitions": [4,5],
+          "relocatedPartitions": [4,5]
         }
         """
       },
@@ -3036,13 +3047,13 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty MappingRecord",
-        (Supplier<MappingRecord>) MappingRecord::new,
+        (Supplier<MappingRecord>) () -> new MappingRecord().setMappingId("mappingId"),
         """
       {
         "mappingKey": -1,
+        "mappingId": "mappingId",
         "claimName": "",
         "claimValue": "",
-        "mappingId": "",
         "name": ""
       }
       """
@@ -3061,7 +3072,6 @@ final class JsonSerializableToJsonTest {
                             .setRoleId("id")
                             .setName("roleName")
                             .setDescription("description")
-                            .setEntityKey(2)
                             .setEntityId("entityId")
                             .setEntityType(EntityType.USER))
                     .addUser(
@@ -3101,7 +3111,6 @@ final class JsonSerializableToJsonTest {
           "roleId": "id",
           "name": "roleName",
           "description": "description",
-          "entityKey": 2,
           "entityId": "entityId",
           "entityType": "USER"
         },
@@ -3153,22 +3162,25 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty IdentitySetupRecord",
-        (Supplier<IdentitySetupRecord>) IdentitySetupRecord::new,
+        (Supplier<IdentitySetupRecord>)
+            () ->
+                new IdentitySetupRecord()
+                    .setDefaultRole(new RoleRecord().setRoleId("roleId"))
+                    .setDefaultTenant(new TenantRecord().setTenantId("tenantId")),
         """
       {
           "defaultRole": {
               "roleKey": -1,
-              "roleId": "",
+              "roleId": "roleId",
               "name": "",
               "description": "",
-              "entityKey": -1,
               "entityId": "",
               "entityType": "UNSPECIFIED"
           },
           "users": [],
           "defaultTenant": {
               "tenantKey": -1,
-              "tenantId": "",
+              "tenantId": "tenantId",
               "name": "",
               "description": "",
               "entityId": "",

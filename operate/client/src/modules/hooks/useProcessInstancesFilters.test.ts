@@ -69,15 +69,18 @@ describe('useProcessInstanceFilters', () => {
         $or: [
           {
             state: {
-              $in: [
-                ProcessInstanceState.ACTIVE,
-                ProcessInstanceState.COMPLETED,
-                ProcessInstanceState.TERMINATED,
-              ],
+              $eq: ProcessInstanceState.ACTIVE,
             },
           },
           {hasIncident: true},
         ],
+        state: {
+          $in: [
+            ProcessInstanceState.ACTIVE,
+            ProcessInstanceState.COMPLETED,
+            ProcessInstanceState.TERMINATED,
+          ],
+        },
         parentProcessInstanceKey: {
           $eq: 'parent1',
         },

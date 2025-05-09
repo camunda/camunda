@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.group.PersistedGroup;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -53,7 +54,6 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
     final var groupId = record.getGroupId();
-    final var groupKey = record.getGroupKey();
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
@@ -76,8 +76,8 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
-    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(groupKey, GroupIntent.UPDATED, record, command);
+    updateExistingGroup(persistedRecord.get(), record);
+    updateState(command, persistedRecord.get());
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -90,6 +90,34 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
     stateWriter.appendFollowUpEvent(
         command.getValue().getGroupKey(), GroupIntent.UPDATED, command.getValue());
+    commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void updateExistingGroup(
+      final PersistedGroup persistedGroup, final GroupRecord updateRecord) {
+    final var updatedName = updateRecord.getName();
+    if (!updatedName.isEmpty()) {
+      persistedGroup.setName(updatedName);
+    }
+    final var updatedDescription = updateRecord.getDescription();
+    if (!updatedDescription.isEmpty()) {
+      persistedGroup.setDescription(updatedDescription);
+    }
+  }
+
+  private void updateState(
+      final TypedRecord<GroupRecord> command, final PersistedGroup persistedGroup) {
+    final var updatedRecord =
+        new GroupRecord()
+            .setGroupKey(persistedGroup.getGroupKey())
+            .setGroupId(persistedGroup.getGroupId())
+            .setName(persistedGroup.getName())
+            .setDescription(persistedGroup.getDescription());
+
+    stateWriter.appendFollowUpEvent(
+        persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord);
+    responseWriter.writeEventOnCommand(
+        persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord, command);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }

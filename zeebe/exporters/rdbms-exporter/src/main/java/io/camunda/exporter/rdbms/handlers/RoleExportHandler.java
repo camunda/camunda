@@ -49,31 +49,31 @@ public class RoleExportHandler implements RdbmsExportHandler<RoleRecordValue> {
     switch (record.getIntent()) {
       case RoleIntent.CREATED -> roleWriter.create(map(value));
       case RoleIntent.UPDATED -> roleWriter.update(map(value));
-      case RoleIntent.DELETED -> roleWriter.delete(value.getRoleKey());
+      case RoleIntent.DELETED -> roleWriter.delete(value.getRoleId());
       case RoleIntent.ENTITY_ADDED ->
           roleWriter.addMember(
               new RoleMemberDbModel.Builder()
-                  .roleKey(value.getRoleKey())
-                  // todo,remove parse in https://github.com/camunda/camunda/issues/30111
-                  .entityId(String.valueOf(value.getEntityKey()))
+                  .roleId(value.getRoleId())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       case RoleIntent.ENTITY_REMOVED ->
           roleWriter.removeMember(
               new RoleMemberDbModel.Builder()
-                  .roleKey(value.getRoleKey())
-                  // todo,remove parse in https://github.com/camunda/camunda/issues/30111
-                  .entityId(String.valueOf(value.getEntityKey()))
+                  .roleId(value.getRoleId())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       default -> LOG.warn("Unexpected intent {} for role record", record.getIntent());
     }
   }
 
-  private RoleDbModel map(final RoleRecordValue decision) {
+  private RoleDbModel map(final RoleRecordValue role) {
     return new RoleDbModel.Builder()
-        .roleKey(decision.getRoleKey())
-        .name(decision.getName())
+        .roleKey(role.getRoleKey())
+        .roleId(role.getRoleId())
+        .name(role.getName())
+        .description(role.getDescription())
         .build();
   }
 }

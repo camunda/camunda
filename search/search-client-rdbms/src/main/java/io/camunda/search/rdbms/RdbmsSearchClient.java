@@ -294,11 +294,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
-  public List<BatchOperationItemEntity> getBatchOperationItems(final Long batchOperationKey) {
+  public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
     LOG.debug(
-        "[RDBMS Search Client] Search for batch operation items by batchOperationKey: {}",
-        batchOperationKey);
+        "[RDBMS Search Client] Search for batch operation items by batchOperationId: {}",
+        batchOperationId);
 
-    return rdbmsService.getBatchOperationReader().getItems(batchOperationKey);
+    return rdbmsService.getBatchOperationReader().getItems(batchOperationId);
   }
 }

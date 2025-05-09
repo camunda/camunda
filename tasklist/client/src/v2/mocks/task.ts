@@ -24,10 +24,10 @@ const unassignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   processName: 'Nice Process',
   name: 'My Task',
   elementId: 'element-1',
-  elementInstanceKey: 1,
-  formKey: 1,
-  processInstanceKey: 0,
-  processDefinitionKey: 0,
+  elementInstanceKey: '1',
+  formKey: '1',
+  processInstanceKey: '0',
+  processDefinitionKey: '0',
   ...customFields,
 });
 
@@ -45,10 +45,10 @@ const assignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   processName: 'Nice Process',
   elementId: 'element-1',
   name: 'My Task',
-  elementInstanceKey: 1,
-  processDefinitionKey: 0,
-  processInstanceKey: 0,
-  formKey: 1,
+  elementInstanceKey: '1',
+  processDefinitionKey: '0',
+  processInstanceKey: '0',
+  formKey: '1',
   ...customFields,
 });
 

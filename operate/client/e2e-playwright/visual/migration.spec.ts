@@ -13,7 +13,6 @@ import {
   mockGroupedProcesses,
   mockProcessInstances,
   mockResponses,
-  mockStatistics,
   mockStatisticsV2,
 } from '../mocks/processes.mocks';
 import {open} from 'modules/mocks/diagrams';
@@ -56,7 +55,6 @@ test.describe('migration view', () => {
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,
           processInstances: mockProcessInstances,
-          statistics: mockStatistics,
           statisticsV2: mockStatisticsV2,
           processXml: open('LotsOfTasks.bpmn'),
         }),

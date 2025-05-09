@@ -11,12 +11,10 @@ import io.camunda.db.rdbms.read.domain.RoleDbQuery;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.columns.RoleSearchColumn;
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
-import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +29,13 @@ public class RoleReader extends AbstractEntityReader<RoleEntity> {
     this.roleMapper = roleMapper;
   }
 
-  public Optional<RoleEntity> findOne(final long roleKey) {
-    final var result = search(RoleQuery.of(b -> b.filter(f -> f.roleKey(roleKey))));
+  public Optional<RoleEntity> findOne(final String roleId) {
+    final var result = search(RoleQuery.of(b -> b.filter(f -> f.roleId(roleId))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
   public SearchQueryResult<RoleEntity> search(final RoleQuery query) {
-    final var dbSort = convertSort(query.sort(), RoleSearchColumn.ROLE_KEY);
+    final var dbSort = convertSort(query.sort(), RoleSearchColumn.ROLE_ID);
     final var dbQuery =
         RoleDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
@@ -49,9 +47,6 @@ public class RoleReader extends AbstractEntityReader<RoleEntity> {
   }
 
   private RoleEntity map(final RoleDbModel model) {
-    return new RoleEntity(
-        model.roleKey(),
-        model.name(),
-        model.members().stream().map(RoleMemberDbModel::entityId).collect(Collectors.toSet()));
+    return new RoleEntity(model.roleKey(), model.roleId(), model.name(), model.description());
   }
 }

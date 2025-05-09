@@ -225,36 +225,6 @@ const orderProcessInstance: {
         running: null,
       },
     },
-    statistics: [
-      {
-        activityId: 'Activity_0c23arx',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'Event_0kuuclk',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'Gateway_1qlqb7o',
-        active: 0,
-        canceled: 0,
-        incidents: 1,
-        completed: 0,
-      },
-      {
-        activityId: 'order-placed',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-    ],
     statisticsV2: {
       items: [
         {
@@ -454,43 +424,6 @@ const orderProcessInstance: {
         running: null,
       },
     },
-    statistics: [
-      {
-        activityId: 'Activity_089u4uu',
-        active: 1,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-      {
-        activityId: 'Activity_0c23arx',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'Event_0kuuclk',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'Gateway_1qlqb7o',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'order-placed',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-    ],
     statisticsV2: {
       items: [
         {
@@ -683,57 +616,6 @@ const orderProcessInstance: {
         running: null,
       },
     },
-    statistics: [
-      {
-        activityId: 'Activity_089u4uu',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'Activity_0c23arx',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'Event_0kuuclk',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'Gateway_0jji7r4',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'Gateway_1qlqb7o',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'order-delivered',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'order-placed',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-    ],
     statisticsV2: {
       items: [
         {

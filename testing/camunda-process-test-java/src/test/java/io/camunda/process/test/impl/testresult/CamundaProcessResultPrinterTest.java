@@ -93,7 +93,7 @@ public class CamundaProcessResultPrinterTest {
                 + "Variables:\n"
                 + "<None>\n"
                 + "\n"
-                + "Open incidents:\n"
+                + "Active incidents:\n"
                 + "<None>\n"
                 + "---------------------\n"
                 + "\n"
@@ -105,7 +105,7 @@ public class CamundaProcessResultPrinterTest {
                 + "Variables:\n"
                 + "<None>\n"
                 + "\n"
-                + "Open incidents:\n"
+                + "Active incidents:\n"
                 + "<None>\n"
                 + "=====================\n");
   }
@@ -147,12 +147,12 @@ public class CamundaProcessResultPrinterTest {
   }
 
   @Test
-  void shouldPrintOpenIncidents() {
+  void shouldPrintActiveIncidents() {
     // given
     final ProcessTestResult processTestResult = new ProcessTestResult();
 
     final ProcessInstanceResult processInstance1 = newProcessInstance(1L, "process-a");
-    processInstance1.setOpenIncidents(
+    processInstance1.setActiveIncidents(
         Arrays.asList(
             IncidentBuilder.newActiveIncident(IncidentErrorType.JOB_NO_RETRIES, "No retries left.")
                 .setElementId("task-a")
@@ -163,7 +163,7 @@ public class CamundaProcessResultPrinterTest {
                 .build()));
 
     final ProcessInstanceResult processInstance2 = newProcessInstance(2L, "process-b");
-    processInstance2.setOpenIncidents(
+    processInstance2.setActiveIncidents(
         Collections.singletonList(
             IncidentBuilder.newActiveIncident(
                     IncidentErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.")
@@ -184,11 +184,11 @@ public class CamundaProcessResultPrinterTest {
     assertThat(outputBuilder.toString())
         .containsSubsequence(
             "Process instance: 1 [process-id: 'process-a', state: active]\n",
-            "Open incidents:\n",
+            "Active incidents:\n",
             "- 'task-a' [type: JOB_NO_RETRIES] \"No retries left.\"\n",
             "- 'task-b' [type: EXTRACT_VALUE_ERROR] \"Failed to evaluate expression.\"\n",
             "Process instance: 2 [process-id: 'process-b', state: active]\n",
-            "Open incidents:\n",
+            "Active incidents:\n",
             "- 'task-c' [type: UNHANDLED_ERROR_EVENT] \"No error catch event found.\"\n");
   }
 
@@ -266,7 +266,7 @@ public class CamundaProcessResultPrinterTest {
 
     final String bigIncidentMessage = StringUtils.repeat("x", 1000);
 
-    processInstance.setOpenIncidents(
+    processInstance.setActiveIncidents(
         Collections.singletonList(
             IncidentBuilder.newActiveIncident(IncidentErrorType.JOB_NO_RETRIES, bigIncidentMessage)
                 .setElementId("task-a")));
@@ -283,7 +283,8 @@ public class CamundaProcessResultPrinterTest {
     final String expectedIncidentMessage = StringUtils.abbreviate(bigIncidentMessage, 500);
     assertThat(outputBuilder.toString())
         .containsSequence(
-            "Open incidents:\n", "- 'task-a' [type: JOB_NO_RETRIES] \"" + expectedIncidentMessage);
+            "Active incidents:\n",
+            "- 'task-a' [type: JOB_NO_RETRIES] \"" + expectedIncidentMessage);
   }
 
   private static ProcessInstanceResult newProcessInstance(

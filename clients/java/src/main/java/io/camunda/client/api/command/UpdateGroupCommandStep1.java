@@ -20,21 +20,20 @@ import io.camunda.client.api.response.UpdateGroupResponse;
 public interface UpdateGroupCommandStep1 extends FinalCommandStep<UpdateGroupResponse> {
 
   /**
-   * Updates the name of this group.
-   *
-   * @param groupChangeset the changeset of this group, if a field is not provided (equals to null)
-   *     it will be not updated
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  UpdateGroupCommandStep1 update(GroupChangeset groupChangeset);
-
-  /**
    * Sets the name for the group to be updated.
    *
    * @param name the group name to be updated
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  UpdateGroupCommandStep1 updateName(String name);
+  UpdateGroupCommandStep1 name(String name);
+
+  /**
+   * Sets the description for the group to be updated.
+   *
+   * @param description the group description to be updated
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdateGroupCommandStep1 description(String description);
 }

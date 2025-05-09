@@ -14,9 +14,14 @@ import {
 } from './modifications';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {TOKEN_OPERATIONS} from 'modules/constants';
+import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 const useHasPendingCancelOrMoveModification = () => {
   const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
+  const modificationsByFlowNode = useModificationsByFlowNode();
   const currentSelection = flowNodeSelectionStore.state.selection;
 
   if (currentSelection === null) {
@@ -29,18 +34,17 @@ const useHasPendingCancelOrMoveModification = () => {
     return willAllFlowNodesBeCanceled;
   }
 
-  if (
-    modificationsStore.modificationsByFlowNode[flowNodeId]?.areAllTokensCanceled
-  ) {
+  if (modificationsByFlowNode[flowNodeId]?.areAllTokensCanceled) {
     return true;
   }
 
   return (
     flowNodeInstanceId !== undefined &&
-    modificationsStore.hasPendingCancelOrMoveModification(
+    hasPendingCancelOrMoveModification({
       flowNodeId,
-      flowNodeInstanceId,
-    )
+      flowNodeInstanceKey: flowNodeInstanceId,
+      modificationsByFlowNode,
+    })
   );
 };
 
@@ -53,6 +57,15 @@ const useHasRunningOrFinishedTokens = () => {
     statistics?.items.some(
       ({elementId}) => elementId === currentFlowNodeSelection.flowNodeId,
     )
+  );
+};
+
+const useIsRootNodeSelected = () => {
+  const {data: processInstance} = useProcessInstance();
+
+  return (
+    flowNodeSelectionStore.state.selection?.flowNodeInstanceId ===
+    processInstance?.processInstanceKey
   );
 };
 
@@ -75,8 +88,46 @@ const useNewTokenCountForSelectedNode = () => {
   );
 };
 
+const useIsPlaceholderSelected = () => {
+  const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
+  const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
+
+  return (
+    flowNodeSelectionStore.state.selection?.isPlaceholder ||
+    (!hasRunningOrFinishedTokens && newTokenCountForSelectedNode === 1)
+  );
+};
+
+const useSelectedFlowNodeName = () => {
+  const {data: processInstance} = useProcessInstance();
+  const {data: businessObjects} = useBusinessObjects();
+
+  if (
+    processInstance === null ||
+    flowNodeSelectionStore.state.selection === null
+  ) {
+    return '';
+  }
+
+  if (flowNodeSelectionStore.isRootNodeSelected) {
+    return processInstance?.processDefinitionName;
+  }
+
+  if (flowNodeSelectionStore.state.selection.flowNodeId === undefined) {
+    return '';
+  }
+
+  return getFlowNodeName({
+    businessObjects,
+    flowNodeId: flowNodeSelectionStore.state.selection.flowNodeId,
+  });
+};
+
 export {
   useHasPendingCancelOrMoveModification,
   useHasRunningOrFinishedTokens,
+  useIsPlaceholderSelected,
+  useIsRootNodeSelected,
   useNewTokenCountForSelectedNode,
+  useSelectedFlowNodeName,
 };

@@ -22,4 +22,25 @@ public interface CreateGroupResponse {
    * @return the key of the created group.
    */
   long getGroupKey();
+
+  /**
+   * Returns the ID of the created group.
+   *
+   * @return the ID of the created group.
+   */
+  String getGroupId();
+
+  /**
+   * Returns the name of the created group.
+   *
+   * @return the name of the created group.
+   */
+  String getName();
+
+  /**
+   * Returns the description of the created group.
+   *
+   * @return the description of the created group.
+   */
+  String getDescription();
 }

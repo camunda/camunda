@@ -9,14 +9,20 @@
 import {expect} from '@playwright/test';
 import {test} from 'fixtures';
 import {navigateToApp} from '@pages/UtilitiesPage';
-
-test.beforeEach(async ({page, taskListLoginPage}) => {
-  await navigateToApp(page, 'tasklist');
-  await taskListLoginPage.login('demo', 'demo');
-  await expect(page).toHaveURL('/tasklist');
-});
+import {captureFailureVideo, captureScreenshot} from '@setup';
 
 test.describe('settings', () => {
+  test.beforeEach(async ({page, taskListLoginPage}) => {
+    await navigateToApp(page, 'tasklist');
+    await taskListLoginPage.login('demo', 'demo');
+    await expect(page).toHaveURL('/tasklist');
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
   test('change language', async ({page, tasklistHeader}) => {
     await tasklistHeader.changeLanguage('Français');
     await expect(

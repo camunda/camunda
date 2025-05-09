@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {modificationsStore} from 'modules/stores/modifications';
+import {getSelectedFlowNodeName} from 'modules/utils/flowNodeSelection';
 
 const createModification = ({
   scopeId,
@@ -15,12 +16,14 @@ const createModification = ({
   id,
   name,
   value,
+  businessObjects,
 }: {
   scopeId: string | null;
   areFormFieldsValid: boolean;
   id: string;
   name: string;
   value: string;
+  businessObjects?: BusinessObjects;
 }) => {
   if (scopeId === null || !areFormFieldsValid || name === '' || value === '') {
     return;
@@ -43,7 +46,7 @@ const createModification = ({
         operation: 'ADD_VARIABLE',
         scopeId,
         id,
-        flowNodeName: flowNodeSelectionStore.selectedFlowNodeName,
+        flowNodeName: getSelectedFlowNodeName(businessObjects),
         name,
         newValue: value,
       },

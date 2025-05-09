@@ -19,6 +19,20 @@ import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {createInstance} from 'modules/testUtils';
+
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: '1',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: false,
+};
 
 const getWrapper = (
   initialEntries: React.ComponentProps<
@@ -101,4 +115,12 @@ const mockMetaData: MetaDataDto = {
   incidentCount: 0,
 };
 
-export {getWrapper, mockVariables, mockMetaData};
+const mockProcessInstanceDeprecated = createInstance();
+
+export {
+  getWrapper,
+  mockVariables,
+  mockMetaData,
+  mockProcessInstance,
+  mockProcessInstanceDeprecated,
+};

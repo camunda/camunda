@@ -16,18 +16,18 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public class MappingRecord extends UnifiedRecordValue implements MappingRecordValue {
 
   private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
+  private final StringProperty mappingIdProp = new StringProperty("mappingId");
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty mappingIdProp = new StringProperty("mappingId", "");
 
   public MappingRecord() {
     super(5);
     declareProperty(mappingKeyProp)
+        .declareProperty(mappingIdProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
-        .declareProperty(nameProp)
-        .declareProperty(mappingIdProp);
+        .declareProperty(nameProp);
   }
 
   @Override

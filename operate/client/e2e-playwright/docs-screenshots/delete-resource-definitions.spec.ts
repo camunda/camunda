@@ -42,7 +42,6 @@ test.describe('delete resource definitions', () => {
           totalCount: 0,
           processInstances: [],
         },
-        statistics: [],
         statisticsV2: {
           items: [],
         },

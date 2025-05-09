@@ -11,11 +11,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public enum ListenerEventType {
+  // Execution Listener event types
   START,
   END,
-  COMPLETING,
+
+  // User Task Listener event types
+  CREATING,
   ASSIGNING,
   UPDATING,
+  COMPLETING,
+  CANCELING,
+
+  // Fallback event types
   UNKNOWN,
   UNSPECIFIED;
 

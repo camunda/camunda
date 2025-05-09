@@ -245,6 +245,53 @@ public class TenantAppliersTest {
         .isFalse();
   }
 
+  @Test
+  void shouldAddEntityToTenantWithTypeApplication() {
+    // given
+    final var applicationId = "application-" + UUID.randomUUID();
+    final var tenantId = "tenantId";
+    final long tenantKey = 11L;
+    final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
+    tenantState.createTenant(tenantRecord);
+    tenantRecord.setEntityId(applicationId).setEntityType(EntityType.APPLICATION);
+
+    // when
+    tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
+
+    // then
+    assertThat(
+            membershipState.hasRelation(
+                EntityType.APPLICATION, applicationId, RelationType.TENANT, tenantId))
+        .isTrue();
+  }
+
+  @Test
+  void shouldRemoveEntityFromTenantWithTypeApplication() {
+    // given
+    final var applicationId = "application-" + UUID.randomUUID();
+    final var tenantId = "tenantId";
+    final long tenantKey = 11L;
+    final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
+    tenantState.createTenant(tenantRecord);
+    tenantRecord.setEntityId(applicationId).setEntityType(EntityType.APPLICATION);
+    tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
+
+    // Ensure the application is associated with the tenant before removal
+    assertThat(
+            membershipState.hasRelation(
+                EntityType.APPLICATION, applicationId, RelationType.TENANT, tenantId))
+        .isTrue();
+
+    // when
+    tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
+
+    // then
+    assertThat(
+            membershipState.hasRelation(
+                EntityType.APPLICATION, applicationId, RelationType.TENANT, tenantId))
+        .isFalse();
+  }
+
   private TenantRecord createTenant(final long tenantKey, final String tenantId) {
     final var tenantRecord =
         new TenantRecord()

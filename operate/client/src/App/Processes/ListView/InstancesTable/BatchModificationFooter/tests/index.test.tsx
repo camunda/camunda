@@ -25,7 +25,7 @@ jest.mock('modules/hooks/useCallbackPrompt', () => {
   };
 });
 
-jest.mock('../BatchModificationSummaryModal', () => ({
+jest.mock('../BatchModificationSummaryModal/v2', () => ({
   BatchModificationSummaryModal: () => (
     <div>MockedBatchModificationSummaryModal</div>
   ),

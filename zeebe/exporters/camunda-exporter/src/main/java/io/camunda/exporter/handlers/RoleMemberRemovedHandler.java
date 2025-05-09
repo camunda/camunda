@@ -11,13 +11,14 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
+import io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 
-public class RoleMemberRemovedHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
+public class RoleMemberRemovedHandler implements ExportHandler<RoleMemberEntity, RoleRecordValue> {
   private final String indexName;
 
   public RoleMemberRemovedHandler(final String indexName) {
@@ -30,8 +31,8 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleEntity, RoleR
   }
 
   @Override
-  public Class<RoleEntity> getEntityType() {
-    return RoleEntity.class;
+  public Class<RoleMemberEntity> getEntityType() {
+    return RoleMemberEntity.class;
   }
 
   @Override
@@ -43,26 +44,26 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleEntity, RoleR
   @Override
   public List<String> generateIds(final Record<RoleRecordValue> record) {
     final RoleRecordValue value = record.getValue();
-    return List.of(RoleEntity.getChildKey(value.getRoleKey(), value.getEntityKey()));
+    return List.of(RoleEntity.getChildKey(value.getRoleId(), value.getEntityId()));
   }
 
   @Override
-  public RoleEntity createNewEntity(final String id) {
-    return new RoleEntity().setId(id);
+  public RoleMemberEntity createNewEntity(final String id) {
+    return new RoleMemberEntity().setId(id);
   }
 
   @Override
-  public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
+  public void updateEntity(final Record<RoleRecordValue> record, final RoleMemberEntity entity) {
+    final RoleRecordValue value = record.getValue();
     entity
-        // todo remove parsing in https://github.com/camunda/camunda/issues/30111
-        .setMemberKey(String.valueOf(record.getValue().getEntityKey()))
-        .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createChild(record.getValue().getRoleKey()));
+        .setMemberId(value.getEntityId())
+        .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createChild(value.getRoleId()));
   }
 
   @Override
-  public void flush(final RoleEntity entity, final BatchRequest batchRequest)
+  public void flush(final RoleMemberEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.deleteWithRouting(indexName, entity.getId(), entity.getJoin().parent().toString());
+    batchRequest.deleteWithRouting(indexName, entity.getId(), entity.getJoin().parent());
   }
 
   @Override

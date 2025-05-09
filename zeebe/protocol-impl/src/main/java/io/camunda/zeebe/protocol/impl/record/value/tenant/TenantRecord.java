@@ -21,7 +21,7 @@ import org.agrona.DirectBuffer;
 public final class TenantRecord extends UnifiedRecordValue implements TenantRecordValue {
   private static final long DEFAULT_KEY = -1;
   private final LongProperty tenantKeyProp = new LongProperty("tenantKey", DEFAULT_KEY);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty descriptionProp = new StringProperty("description", "");
   private final StringProperty entityIdProp = new StringProperty("entityId", "");

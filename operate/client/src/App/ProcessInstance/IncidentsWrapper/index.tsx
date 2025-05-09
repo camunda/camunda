@@ -14,7 +14,9 @@ import {observer} from 'mobx-react';
 import {Transition} from './styled';
 import {IncidentsFilter} from './IncidentsFilter';
 import {IncidentsTable} from './IncidentsTable';
+import {IncidentsTable as IncidentsTableV2} from './IncidentsTable/v2';
 import {PanelHeader} from 'modules/components/PanelHeader';
+import {IS_PROCESS_INSTANCE_V2_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   setIsInTransition: (isTransitionActive: boolean) => void;
@@ -53,7 +55,11 @@ const IncidentsWrapper: React.FC<Props> = observer(({setIsInTransition}) => {
           >
             <IncidentsFilter />
           </PanelHeader>
-          <IncidentsTable />
+          {IS_PROCESS_INSTANCE_V2_ENABLED ? (
+            <IncidentsTableV2 />
+          ) : (
+            <IncidentsTable />
+          )}
         </IncidentsOverlay>
       </Transition>
     </>

@@ -34,6 +34,10 @@ public final class ScalingProcessors {
         ScaleIntent.SCALE_UP,
         new ScaleUpProcessor(keyGenerator, writers, processingState));
     typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.STATUS,
+        new ScaleUpStatusProcessor(keyGenerator, writers, processingState.getRoutingState()));
+    typedRecordProcessors.onCommand(
         ValueType.REDISTRIBUTION,
         RedistributionIntent.START,
         new RedistributionStartProcessor(redistributionBehavior));

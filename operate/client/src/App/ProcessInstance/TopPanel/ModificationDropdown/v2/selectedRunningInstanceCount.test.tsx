@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {act, screen, waitFor} from 'modules/testing-library';
+import {act, screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -72,7 +70,6 @@ describe('selectedRunningInstanceCount', () => {
       ],
     });
 
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
     );
@@ -86,12 +83,6 @@ describe('selectedRunningInstanceCount', () => {
     modificationsStore.enableModificationMode();
 
     renderPopover();
-
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
-    );
 
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
@@ -113,10 +104,8 @@ describe('selectedRunningInstanceCount', () => {
 
     renderPopover();
 
-    await waitFor(() =>
-      expect(
-        processInstanceDetailsDiagramStore.state.diagramModel,
-      ).not.toBeNull(),
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
     );
 
     act(() => {

@@ -37,16 +37,16 @@ import io.camunda.zeebe.util.Either;
 public class AdHocSubProcessActivityActivateProcessor
     implements TypedRecordProcessor<AdHocSubProcessActivityActivationRecord> {
 
-  private static final String ERROR_MSG_ADHOC_SUBPROCESS_NOT_FOUND =
-      "Expected to activate activities for ad-hoc subprocess but no ad-hoc subprocess instance found with key '%s'.";
+  private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND =
+      "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'.";
   private static final String ERROR_MSG_DUPLICATE_ACTIVITIES =
-      "Expected to activate activities for ad-hoc subprocess with key '%s', but duplicate activities were given.";
-  private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_NO_ACTIVE =
-      "Expected to activate activities for ad-hoc subprocess with key '%s', but it is not active.";
-  private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_NOT_ACTIVE =
-      "Expected to activate activities for ad-hoc subprocess with key '%s', but it is not active.";
+      "Expected to activate activities for ad-hoc sub-process with key '%s', but duplicate activities were given.";
+  private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE =
+      "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
+  private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE =
+      "Expected to activate activities for ad-hoc sub-process with key '%s', but it is not active.";
   private static final String ERROR_MSG_ELEMENTS_NOT_FOUND =
-      "Expected to activate activities for ad-hoc subprocess with key '%s', but the given elements %s do not exist.";
+      "Expected to activate activities for ad-hoc sub-process with key '%s', but the given elements %s do not exist.";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -74,37 +74,37 @@ public class AdHocSubProcessActivityActivateProcessor
 
   @Override
   public void processRecord(final TypedRecord<AdHocSubProcessActivityActivationRecord> command) {
-    final var adHocSubprocessElementInstance =
+    final var adHocSubProcessElementInstance =
         elementInstanceState.getInstance(
             Long.parseLong(command.getValue().getAdHocSubProcessInstanceKey()));
-    if (adHocSubprocessElementInstance == null) {
+    if (adHocSubProcessElementInstance == null) {
       writeRejectionError(
           command,
           RejectionType.NOT_FOUND,
           String.format(
-              ERROR_MSG_ADHOC_SUBPROCESS_NOT_FOUND,
+              ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND,
               command.getValue().getAdHocSubProcessInstanceKey()));
 
       return;
     }
 
-    if (!adHocSubprocessElementInstance.isActive()) {
+    if (!adHocSubProcessElementInstance.isActive()) {
       writeRejectionError(
           command,
           RejectionType.INVALID_STATE,
           String.format(
-              ERROR_MSG_ADHOC_SUBPROCESS_IS_NO_ACTIVE,
+              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NO_ACTIVE,
               command.getValue().getAdHocSubProcessInstanceKey()));
 
       return;
     }
 
-    final var authResult = authorize(command, adHocSubprocessElementInstance);
+    final var authResult = authorize(command, adHocSubProcessElementInstance);
     if (authResult.isLeft()) {
       final var rejection = authResult.getLeft();
       final String errorMessage =
           RejectionType.NOT_FOUND.equals(rejection.type())
-              ? ERROR_MSG_ADHOC_SUBPROCESS_NOT_FOUND.formatted(
+              ? ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND.formatted(
                   command.getValue().getAdHocSubProcessInstanceKey())
               : rejection.reason();
       writeRejectionError(command, rejection.type(), errorMessage);
@@ -122,31 +122,31 @@ public class AdHocSubProcessActivityActivateProcessor
       return;
     }
 
-    if (!adHocSubprocessElementInstance.isActive()) {
+    if (!adHocSubProcessElementInstance.isActive()) {
       writeRejectionError(
           command,
           RejectionType.INVALID_STATE,
           String.format(
-              ERROR_MSG_ADHOC_SUBPROCESS_IS_NOT_ACTIVE,
+              ERROR_MSG_AD_HOC_SUB_PROCESS_IS_NOT_ACTIVE,
               command.getValue().getAdHocSubProcessInstanceKey()));
 
       return;
     }
 
-    final var adHocSubprocessDefinition =
+    final var adHocSubProcessDefinition =
         processState
             .getProcessByKeyAndTenant(
-                adHocSubprocessElementInstance.getValue().getProcessDefinitionKey(),
-                adHocSubprocessElementInstance.getValue().getTenantId())
+                adHocSubProcessElementInstance.getValue().getProcessDefinitionKey(),
+                adHocSubProcessElementInstance.getValue().getTenantId())
             .getProcess();
 
-    final var adHocSubprocessElement =
-        adHocSubprocessDefinition.getElementById(
-            adHocSubprocessElementInstance.getValue().getElementId());
+    final var adHocSubProcessElement =
+        adHocSubProcessDefinition.getElementById(
+            adHocSubProcessElementInstance.getValue().getElementId());
     final var adHocActivitiesById =
-        ((ExecutableAdHocSubProcess) adHocSubprocessElement).getAdHocActivitiesById();
+        ((ExecutableAdHocSubProcess) adHocSubProcessElement).getAdHocActivitiesById();
 
-    // check that the given elements exist within the ad-hoc subprocess
+    // check that the given elements exist within the ad-hoc sub-process
     final var elementsNotInAdHocSubProcess =
         command.getValue().elements().stream()
             .map(AdHocSubProcessActivityActivationElement::getElementId)
@@ -167,11 +167,11 @@ public class AdHocSubProcessActivityActivateProcessor
     // activate the elements
     for (final var elementValue : command.getValue().getElements()) {
       final var elementToActivate =
-          adHocSubprocessDefinition.getElementById(elementValue.getElementId());
+          adHocSubProcessDefinition.getElementById(elementValue.getElementId());
       final var elementProcessInstanceRecord = new ProcessInstanceRecord();
-      elementProcessInstanceRecord.wrap(adHocSubprocessElementInstance.getValue());
+      elementProcessInstanceRecord.wrap(adHocSubProcessElementInstance.getValue());
       elementProcessInstanceRecord
-          .setFlowScopeKey(adHocSubprocessElementInstance.getKey())
+          .setFlowScopeKey(adHocSubProcessElementInstance.getKey())
           .setElementId(elementToActivate.getId())
           .setBpmnElementType(elementToActivate.getElementType())
           .setBpmnEventType(elementToActivate.getEventType());
@@ -212,14 +212,14 @@ public class AdHocSubProcessActivityActivateProcessor
 
   private Either<Rejection, Void> authorize(
       final TypedRecord<AdHocSubProcessActivityActivationRecord> command,
-      final ElementInstance adHocSubprocessElementInstance) {
+      final ElementInstance adHocSubProcessElementInstance) {
     final var authRequest =
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE,
-                adHocSubprocessElementInstance.getValue().getTenantId())
-            .addResourceId(adHocSubprocessElementInstance.getValue().getBpmnProcessId());
+                adHocSubProcessElementInstance.getValue().getTenantId())
+            .addResourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId());
 
     return authCheckBehavior.isAuthorized(authRequest);
   }

@@ -109,20 +109,20 @@ public class RoleServicesTest {
     when(client.searchRoles(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findRole(1L);
+    final var searchQueryResult = services.findRole(entity.roleId());
 
     // then
     assertThat(searchQueryResult).contains(entity);
   }
 
   @Test
-  public void shouldThrownExceptionIfNotFoundByKey() {
+  public void shouldThrownExceptionIfNotFoundById() {
     // given
-    final var key = 100L;
+    final var roleId = "roleId";
     when(client.searchRoles(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
-    assertThat(services.findRole(key)).isEmpty();
+    assertThat(services.findRole(roleId)).isEmpty();
   }
 
   @Test
@@ -187,15 +187,17 @@ public class RoleServicesTest {
   @Test
   public void shouldGetAllRolesByMemberId() {
     // given
-    final var memberKey = 100L;
-    // todo use memberIds (String) in https://github.com/camunda/camunda/issues/30111
-    final var memberId = String.valueOf(memberKey);
+    final var memberId = "memberId";
+    final var memberType = EntityType.USER;
     final var roleEntity = mock(RoleEntity.class);
-    when(client.findAllRoles(RoleQuery.of(q -> q.filter(f -> f.memberId(memberId)))))
+    when(client.findAllRoles(
+            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).memberType(memberType)))))
         .thenReturn(List.of(roleEntity));
 
     // when
-    final var result = services.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(memberId))));
+    final var result =
+        services.findAll(
+            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).memberType(memberType))));
 
     // then
     assertThat(result).isEqualTo(List.of(roleEntity));

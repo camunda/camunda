@@ -45,7 +45,7 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.click(Alert.newAlertButton);
 
   await t.typeText(Alert.inputWithLabel('Alert name'), 'Test Alert', {replace: true});
-  await t.typeText(Alert.inputWithLabel('Send email to'), 'demo@demo.com', {
+  await t.typeText(Alert.inputWithLabel('Send email to'), 'demo@example.com', {
     replace: true,
   });
 
@@ -61,7 +61,7 @@ test('create, edit, copy and remove an alert', async (t) => {
 
   await t.expect(Alert.list.textContent).contains('Test Alert');
   await t.expect(Alert.list.textContent).contains('Number Report');
-  await t.expect(Alert.list.textContent).contains('demo@demo.com');
+  await t.expect(Alert.list.textContent).contains('demo@example.com');
 
   await t
     .resizeWindow(1200, 500)

@@ -6,14 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getSelectedRunningInstanceCount} from './flowNodeSelection';
+import {
+  getSelectedFlowNodeName,
+  getSelectedRunningInstanceCount,
+} from './flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {createInstance} from 'modules/testUtils';
 
 describe('getSelectedRunningInstanceCount', () => {
   beforeEach(() => {
     flowNodeSelectionStore.reset();
     flowNodeMetaDataStore.reset();
+  });
+
+  afterEach(() => {
+    processInstanceDetailsStore.reset();
   });
 
   it('should return 0 if no selection is made', () => {
@@ -58,5 +67,29 @@ describe('getSelectedRunningInstanceCount', () => {
     flowNodeSelectionStore.setSelection({});
     const result = getSelectedRunningInstanceCount(10);
     expect(result).toBe(0);
+  });
+
+  it('should retrieve selected flow node name from business object', () => {
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: 'instance_id',
+        state: 'ACTIVE',
+      }),
+    );
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'startEvent',
+      flowNodeInstanceId: '2251799813689409',
+    });
+
+    const result = getSelectedFlowNodeName({
+      startEvent: {
+        id: 'startEvent',
+        name: 'Start Event',
+        $type: 'bpmn:StartEvent',
+      },
+    });
+
+    expect(result).toBe('Start Event');
   });
 });

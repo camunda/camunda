@@ -18,9 +18,11 @@ import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationTyp
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
@@ -46,6 +48,8 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
       "Expected to delete mapping with id '%s', but a mapping with this id does not exist.";
   private final MappingState mappingState;
   private final TenantState tenantState;
+  private final RoleState roleState;
+  private final GroupState groupState;
   private final AuthorizationState authorizationState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -63,6 +67,8 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
       final CommandDistributionBehavior commandDistributionBehavior) {
     mappingState = processingState.getMappingState();
     tenantState = processingState.getTenantState();
+    roleState = processingState.getRoleState();
+    groupState = processingState.getGroupState();
     authorizationState = processingState.getAuthorizationState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
@@ -137,28 +143,28 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
               .setEntityId(mapping.getMappingId())
               .setEntityType(EntityType.MAPPING));
     }
-    for (final var roleKey :
-        membershipState.getMemberships(
-            EntityType.MAPPING, mapping.getMappingId(), RelationType.ROLE)) {
+    for (final var roleId :
+        membershipState.getMemberships(EntityType.MAPPING, mappingId, RelationType.ROLE)) {
+      final var role = roleState.getRole(roleId).orElseThrow();
       stateWriter.appendFollowUpEvent(
-          // TODO: Use the role id instead of the key.
-          Long.parseLong(roleKey),
+          role.getRoleKey(),
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
-              // TODO: Use the role id instead of the key.
-              .setRoleId(roleKey)
-              .setRoleKey(Long.parseLong(roleKey))
+              .setRoleKey(role.getRoleKey())
+              .setRoleId(roleId)
               .setEntityId(mappingId)
               .setEntityType(EntityType.MAPPING));
     }
-    for (final var groupKey :
+    for (final var groupId :
         membershipState.getMemberships(
             EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP)) {
+      final var group = groupState.get(groupId).orElseThrow();
       stateWriter.appendFollowUpEvent(
-          Long.parseLong(groupKey),
+          group.getGroupKey(),
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
-              .setGroupKey(Long.parseLong(groupKey))
+              .setGroupKey(group.getGroupKey())
+              .setGroupId(groupId)
               .setEntityId(mapping.getMappingId())
               .setEntityType(EntityType.MAPPING));
     }

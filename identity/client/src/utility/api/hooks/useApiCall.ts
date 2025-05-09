@@ -11,6 +11,7 @@ import { ApiCall, ApiDefinition, ErrorResponse } from "../request";
 import useTranslate from "../../localization";
 import { useNotifications } from "src/components/notifications";
 import { getApiBaseUrl } from "src/configuration";
+import { isLoggedIn } from "src/utility/auth";
 
 type ResetApiCall = () => void;
 
@@ -79,11 +80,13 @@ const useApiCall: UseApiCall = <R, P>(
       if (apiStatus >= 400 && !options.suppressErrorNotification) {
         switch (apiStatus) {
           case 401:
-            enqueueNotification({
-              kind: "error",
-              title: t("unauthorized"),
-              subtitle: t("sessionExpired"),
-            });
+            if (isLoggedIn()) {
+              enqueueNotification({
+                kind: "error",
+                title: t("unauthorized"),
+                subtitle: t("sessionExpired"),
+              });
+            }
             break;
           case 403:
             enqueueNotification({

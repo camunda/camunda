@@ -35,7 +35,10 @@ public final class ConfigSanitizingFunction implements SanitizingFunction {
     }
 
     for (final var keyword : properties.keywords()) {
-      if (key.contains(keyword)) {
+      // at times the cases are changed by Spring, e.g. when it tries to sanitize the input via a
+      // qualified key; it might be upper case, lower case, etc., so anything with camel case, for
+      // example, would not be matched. instead, we match all cases.
+      if (key.toLowerCase().contains(keyword.toLowerCase())) {
         return data.withSanitizedValue();
       }
     }

@@ -44,15 +44,6 @@ test.describe('process instance migration', () => {
         }),
         batchOperations: [],
         processInstances: mockOrderProcessInstances,
-        statistics: [
-          {
-            activityId: 'checkPayment',
-            active: 20,
-            canceled: 0,
-            incidents: 0,
-            completed: 0,
-          },
-        ],
         statisticsV2: {
           items: [
             {
@@ -127,15 +118,6 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        statistics: [
-          {
-            activityId: 'checkPayment',
-            active: 3,
-            canceled: 0,
-            incidents: 0,
-            completed: 0,
-          },
-        ],
         statisticsV2: {
           items: [
             {
@@ -240,15 +222,6 @@ test.describe('process instance migration', () => {
         ],
         batchOperation: mockMigrationOperation,
         processInstances: mockOrderProcessV2Instances,
-        statistics: [
-          {
-            activityId: 'checkPayment',
-            active: 3,
-            canceled: 0,
-            incidents: 0,
-            completed: 0,
-          },
-        ],
         statisticsV2: {
           items: [
             {

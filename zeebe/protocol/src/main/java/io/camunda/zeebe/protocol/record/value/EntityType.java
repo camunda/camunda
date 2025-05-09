@@ -18,6 +18,8 @@ package io.camunda.zeebe.protocol.record.value;
 public enum EntityType {
   UNSPECIFIED,
   USER,
+  APPLICATION,
   MAPPING,
-  GROUP
+  GROUP,
+  ROLE
 }

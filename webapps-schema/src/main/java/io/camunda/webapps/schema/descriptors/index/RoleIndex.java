@@ -18,11 +18,14 @@ public class RoleIndex extends AbstractIndexDescriptor implements Prio5Backup {
   public static final String INDEX_VERSION = "8.8.0";
 
   public static final String KEY = "key";
+  public static final String ROLE_ID = "roleId";
   public static final String NAME = "name";
+  public static final String DESCRIPTION = "description";
   public static final String MEMBER_ID = "memberId";
+  public static final String MEMBER_TYPE = "memberType";
   public static final String JOIN = "join";
 
-  public static final EntityJoinRelationFactory<Long> JOIN_RELATION_FACTORY =
+  public static final EntityJoinRelationFactory<String> JOIN_RELATION_FACTORY =
       new EntityJoinRelationFactory<>(
           IdentityJoinRelationshipType.ROLE, IdentityJoinRelationshipType.MEMBER);
 

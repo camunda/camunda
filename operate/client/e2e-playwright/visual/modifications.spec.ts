@@ -42,7 +42,6 @@ test.describe('modifications', () => {
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
-          statistics: runningInstance.statistics,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
           variables: runningInstance.variables,
@@ -78,7 +77,6 @@ test.describe('modifications', () => {
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
-          statistics: runningInstance.statistics,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
           variables: runningInstance.variables,
@@ -122,7 +120,6 @@ test.describe('modifications', () => {
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,
-          statistics: instanceWithIncident.statistics,
           statisticsV2: instanceWithIncident.statisticsV2,
           sequenceFlows: instanceWithIncident.sequenceFlows,
           variables: instanceWithIncident.variables,
@@ -190,7 +187,6 @@ test.describe('modifications', () => {
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,
-          statistics: instanceWithIncident.statistics,
           statisticsV2: instanceWithIncident.statisticsV2,
           sequenceFlows: instanceWithIncident.sequenceFlows,
           variables: instanceWithIncident.variables,

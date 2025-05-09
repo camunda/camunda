@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.util.KeyUtil.tryParseLong;
-import static io.camunda.zeebe.gateway.rest.validator.AdHocSubprocessActivityRequestValidator.validateAdHocSubprocessActivationRequest;
-import static io.camunda.zeebe.gateway.rest.validator.AdHocSubprocessActivityRequestValidator.validateAdHocSubprocessSearchActivitiesRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessActivationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessSearchActivitiesRequest;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -28,6 +28,7 @@ import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.vali
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
@@ -42,19 +43,19 @@ import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.filter.AdHocSubprocessActivityFilter;
-import io.camunda.search.query.AdHocSubprocessActivityQuery;
+import io.camunda.search.filter.AdHocSubProcessActivityFilter;
+import io.camunda.search.query.AdHocSubProcessActivityQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
-import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest;
-import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest.AdHocSubprocessActivateActivityReference;
+import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
+import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.GroupServices.GroupDTO;
-import io.camunda.service.GroupServices.GroupMemberRequest;
+import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MappingServices.MappingDTO;
@@ -64,6 +65,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
@@ -71,11 +73,12 @@ import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivateActivitiesInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
@@ -99,6 +102,7 @@ import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
@@ -117,6 +121,7 @@ import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -355,11 +360,11 @@ public class RequestMapper {
                 groupId, groupUpdateRequest.getName(), groupUpdateRequest.getDescription()));
   }
 
-  public static Either<ProblemDetail, GroupMemberRequest> toGroupMemberRequest(
+  public static Either<ProblemDetail, GroupMemberDTO> toGroupMemberRequest(
       final String groupId, final String memberId, final EntityType entityType) {
     return getResult(
         GroupRequestValidator.validateMemberRequest(groupId, memberId, entityType),
-        () -> new GroupMemberRequest(groupId, memberId, entityType));
+        () -> new GroupMemberDTO(groupId, memberId, entityType));
   }
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
@@ -605,11 +610,8 @@ public class RequestMapper {
   }
 
   public static Authentication getAuthentication() {
-    String authenticatedUsername = null;
     final Map<String, Object> claims = new HashMap<>();
-    final List<Long> authenticatedRoleKeys = new ArrayList<>();
-    final List<String> authenticatedTenantIds = new ArrayList<>();
-    final List<String> authenticatedMappingIds = new ArrayList<>();
+    final var authenticationBuilder = new Builder();
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
     if (requestAuthentication != null) {
@@ -617,33 +619,34 @@ public class RequestMapper {
           instanceof final CamundaPrincipal authenticatedPrincipal) {
         final var authenticationContext = authenticatedPrincipal.getAuthenticationContext();
 
-        authenticatedRoleKeys.addAll(
-            authenticationContext.roles().stream().map(RoleEntity::roleKey).toList());
+        authenticationBuilder.roleIds(
+            authenticationContext.roles().stream().map(RoleEntity::roleId).toList());
 
-        authenticatedTenantIds.addAll(
+        authenticationBuilder.tenants(
             authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
 
-        authenticatedUsername = authenticationContext.username();
-        claims.put(Authorization.AUTHORIZED_USERNAME, authenticationContext.username());
+        if (authenticationContext.username() != null) {
+          final var authenticatedUsername = authenticationContext.username();
+          claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
+          authenticationBuilder.user(authenticatedUsername);
+        } else {
+          final var authenticatedApplicationId = authenticationContext.applicationId();
+          claims.put(Authorization.AUTHORIZED_APPLICATION_ID, authenticatedApplicationId);
+          authenticationBuilder.applicationId(authenticatedApplicationId);
+        }
 
         if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
-          authenticatedMappingIds.addAll(principal.getOAuthContext().mappingIds());
-          authenticatedMappingIds.addAll(
-              principal.getOAuthContext().mappingKeys().stream().map(Object::toString).toList());
           principal
               .getClaims()
               .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
+          authenticationBuilder.mapping(principal.getOAuthContext().mappingIds().stream().toList());
         }
+
+        authenticationBuilder.claims(claims);
       }
     }
 
-    return new Builder()
-        .claims(claims)
-        .user(authenticatedUsername)
-        .roleKeys(authenticatedRoleKeys)
-        .tenants(authenticatedTenantIds)
-        .mapping(authenticatedMappingIds)
-        .build();
+    return authenticationBuilder.build();
   }
 
   public static Authentication getAnonymousAuthentication() {
@@ -835,6 +838,23 @@ public class RequestMapper {
                 request.getOperationReference()));
   }
 
+  public static Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest>
+      toProcessInstanceModifyBatchOperationRequest(
+          final ProcessInstanceModificationBatchOperationInstruction request) {
+    // First validate filter and return early
+    final var filter = SearchQueryRequestMapper.toProcessInstanceFilter(request.getFilter());
+    if (filter.isLeft()) {
+      return Either.left(createProblemDetail(filter.getLeft()).get());
+    }
+
+    return getResult(
+        validateModifyProcessInstanceBatchRequest(request),
+        () ->
+            new ProcessInstanceModifyBatchOperationRequest(
+                filter.get(),
+                mapProcessInstanceModificationMoveInstruction(request.getMoveInstructions())));
+  }
+
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
       final DecisionEvaluationInstruction request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
@@ -878,8 +898,15 @@ public class RequestMapper {
                 tenantUpdateRequest.getDescription()));
   }
 
-  public static Either<ProblemDetail, AdHocSubprocessActivityQuery> toAdHocSubprocessActivityQuery(
-      final AdHocSubprocessActivitySearchQuery request) {
+  public static Either<ProblemDetail, TenantMemberRequest> toTenantMemberRequest(
+      final String tenantId, final String memberId, final EntityType entityType) {
+    return getResult(
+        TenantRequestValidator.validateMemberRequest(tenantId, memberId, entityType),
+        () -> new TenantMemberRequest(tenantId, memberId, entityType));
+  }
+
+  public static Either<ProblemDetail, AdHocSubProcessActivityQuery> toAdHocSubProcessActivityQuery(
+      final AdHocSubProcessActivitySearchQuery request) {
     final var filter = request.getFilter();
     if (filter == null) {
       return Either.left(
@@ -889,30 +916,30 @@ public class RequestMapper {
     final var processDefinitionKey = tryParseLong(filter.getProcessDefinitionKey()).orElse(null);
 
     return getResult(
-        validateAdHocSubprocessSearchActivitiesRequest(filter, processDefinitionKey),
+        validateAdHocSubProcessSearchActivitiesRequest(filter, processDefinitionKey),
         () ->
-            AdHocSubprocessActivityQuery.builder()
+            AdHocSubProcessActivityQuery.builder()
                 .filter(
-                    AdHocSubprocessActivityFilter.builder()
+                    AdHocSubProcessActivityFilter.builder()
                         .processDefinitionKey(processDefinitionKey)
-                        .adHocSubprocessId(filter.getAdHocSubprocessId())
+                        .adHocSubProcessId(filter.getAdHocSubProcessId())
                         .build())
                 .build());
   }
 
-  public static Either<ProblemDetail, AdHocSubprocessActivateActivitiesRequest>
-      toAdHocSubprocessActivateActivitiesRequest(
-          final String adHocSubprocessInstanceKey,
-          final AdHocSubprocessActivateActivitiesInstruction request) {
+  public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>
+      toAdHocSubProcessActivateActivitiesRequest(
+          final String adHocSubProcessInstanceKey,
+          final AdHocSubProcessActivateActivitiesInstruction request) {
     return getResult(
-        validateAdHocSubprocessActivationRequest(request),
+        validateAdHocSubProcessActivationRequest(request),
         () ->
-            new AdHocSubprocessActivateActivitiesRequest(
-                adHocSubprocessInstanceKey,
+            new AdHocSubProcessActivateActivitiesRequest(
+                adHocSubProcessInstanceKey,
                 request.getElements().stream()
                     .map(
                         element ->
-                            new AdHocSubprocessActivateActivityReference(element.getElementId()))
+                            new AdHocSubProcessActivateActivityReference(element.getElementId()))
                     .toList()));
   }
 
@@ -939,6 +966,25 @@ public class RequestMapper {
                                   new UnsafeBuffer(
                                       MsgPackConverter.convertToMsgPack(variable.getVariables()))))
                   .forEach(mappedInstruction::addVariableInstruction);
+              return mappedInstruction;
+            })
+        .toList();
+  }
+
+  private static List<BatchOperationProcessInstanceModificationMoveInstruction>
+      mapProcessInstanceModificationMoveInstruction(
+          final List<
+                  io.camunda.zeebe.gateway.protocol.rest
+                      .ProcessInstanceModificationMoveBatchOperationInstruction>
+              instructions) {
+    return instructions.stream()
+        .map(
+            instruction -> {
+              final var mappedInstruction =
+                  new BatchOperationProcessInstanceModificationMoveInstruction();
+              mappedInstruction
+                  .setSourceElementId(instruction.getSourceElementId())
+                  .setTargetElementId(instruction.getTargetElementId());
               return mappedInstruction;
             })
         .toList();

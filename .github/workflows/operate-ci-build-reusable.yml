@@ -9,7 +9,11 @@
 # Environment variables are used to define the image tags used for Docker builds.
 # This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
 # and enables detailed reporting of test results.
-
+# description: Automates the build process for operate workflows
+# called by: operate-ci-core-features.yml, preview-env-build-and-deploy.yml
+# test location:
+# owner:
+---
 name: Operate CI Reusable
 
 on:

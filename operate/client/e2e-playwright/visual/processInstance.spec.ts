@@ -69,7 +69,6 @@ test.describe('process instance page', () => {
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
-          statistics: runningInstance.statistics,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
           variables: runningInstance.variables,
@@ -99,7 +98,6 @@ test.describe('process instance page', () => {
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
-          statistics: runningInstance.statistics,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
           variables: runningInstance.variables,
@@ -130,7 +128,6 @@ test.describe('process instance page', () => {
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
-          statistics: runningInstance.statistics,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
           variables: runningInstance.variables,
@@ -166,7 +163,6 @@ test.describe('process instance page', () => {
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,
-          statistics: instanceWithIncident.statistics,
           statisticsV2: instanceWithIncident.statisticsV2,
           sequenceFlows: instanceWithIncident.sequenceFlows,
           variables: instanceWithIncident.variables,
@@ -203,7 +199,6 @@ test.describe('process instance page', () => {
         mockResponses({
           processInstanceDetail: completedInstance.detail,
           flowNodeInstances: completedInstance.flowNodeInstances,
-          statistics: completedInstance.statistics,
           statisticsV2: completedInstance.statisticsV2,
           sequenceFlows: completedInstance.sequenceFlows,
           variables: completedInstance.variables,
@@ -238,7 +233,6 @@ test.describe('process instance page', () => {
         mockResponses({
           processInstanceDetail: compensationProcessInstance.detail,
           flowNodeInstances: compensationProcessInstance.flowNodeInstances,
-          statistics: compensationProcessInstance.statistics,
           statisticsV2: compensationProcessInstance.statisticsV2,
           sequenceFlows: compensationProcessInstance.sequenceFlows,
           variables: compensationProcessInstance.variables,

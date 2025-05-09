@@ -27,8 +27,8 @@ public class RoleClient {
     return new RoleCreateClient(writer, id);
   }
 
-  public RoleUpdateClient updateRole(final long roleKey) {
-    return new RoleUpdateClient(writer, roleKey);
+  public RoleUpdateClient updateRole(final String roleId) {
+    return new RoleUpdateClient(writer, roleId);
   }
 
   // TODO remove this method and use the one with role Id
@@ -40,12 +40,12 @@ public class RoleClient {
     return new RoleAddEntityClient(writer, roleId);
   }
 
-  public RoleRemoveEntityClient removeEntity(final long key) {
-    return new RoleRemoveEntityClient(writer, key);
+  public RoleRemoveEntityClient removeEntity(final String roleId) {
+    return new RoleRemoveEntityClient(writer, roleId);
   }
 
-  public RoleDeleteClient deleteRole(final long key) {
-    return new RoleDeleteClient(writer, key);
+  public RoleDeleteClient deleteRole(final String roleId) {
+    return new RoleDeleteClient(writer, roleId);
   }
 
   public static class RoleCreateClient {
@@ -120,14 +120,24 @@ public class RoleClient {
     private final RoleRecord roleRecord;
     private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public RoleUpdateClient(final CommandWriter writer, final long roleKey) {
+    public RoleUpdateClient(final CommandWriter writer, final String roleId) {
       this.writer = writer;
       roleRecord = new RoleRecord();
+      roleRecord.setRoleId(roleId);
+    }
+
+    public RoleUpdateClient withRoleKey(final long roleKey) {
       roleRecord.setRoleKey(roleKey);
+      return this;
     }
 
     public RoleUpdateClient withName(final String name) {
       roleRecord.setName(name);
+      return this;
+    }
+
+    public RoleUpdateClient withDescription(final String description) {
+      roleRecord.setDescription(description);
       return this;
     }
 
@@ -166,12 +176,6 @@ public class RoleClient {
       this.writer = writer;
       roleRecord = new RoleRecord();
       roleRecord.setRoleId(id);
-    }
-
-    // TODO remove this method, use id instead
-    public RoleAddEntityClient withEntityKey(final long entityKey) {
-      roleRecord.setEntityKey(entityKey);
-      return this;
     }
 
     public RoleAddEntityClient withEntityId(final String entityId) {
@@ -216,13 +220,17 @@ public class RoleClient {
     private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
     public RoleRemoveEntityClient(final CommandWriter writer, final long key) {
-      this.writer = writer;
-      roleRecord = new RoleRecord();
-      roleRecord.setRoleKey(key);
+      this(writer, String.valueOf(key));
     }
 
-    public RoleRemoveEntityClient withEntityKey(final long entityKey) {
-      roleRecord.setEntityKey(entityKey);
+    public RoleRemoveEntityClient(final CommandWriter writer, final String id) {
+      this.writer = writer;
+      roleRecord = new RoleRecord();
+      roleRecord.setRoleId(id);
+    }
+
+    public RoleRemoveEntityClient withEntityId(final String entityId) {
+      roleRecord.setEntityId(entityId);
       return this;
     }
 
@@ -262,10 +270,10 @@ public class RoleClient {
     private final RoleRecord roleRecord;
     private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public RoleDeleteClient(final CommandWriter writer, final long key) {
+    public RoleDeleteClient(final CommandWriter writer, final String roleId) {
       this.writer = writer;
       roleRecord = new RoleRecord();
-      roleRecord.setRoleKey(key);
+      roleRecord.setRoleId(roleId);
     }
 
     public Record<RoleRecordValue> delete() {

@@ -55,7 +55,7 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.args.createSchema=true"
 		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.className=io.camunda.exporter.CamundaExporter"
 		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].name=Demo"
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].email=demo@demo.com"
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].email=demo@example.com"
 	}
 	if settings.Username != "" {
 		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].username=" + settings.Username

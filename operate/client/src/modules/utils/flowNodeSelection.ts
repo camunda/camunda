@@ -8,6 +8,9 @@
 
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {getFlowNodeName} from './flowNodes';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 const getSelectedRunningInstanceCount = (
   totalRunningInstancesForFlowNode: number,
@@ -33,4 +36,26 @@ const getSelectedRunningInstanceCount = (
   return totalRunningInstancesForFlowNode;
 };
 
-export {getSelectedRunningInstanceCount};
+const getSelectedFlowNodeName = (businessObjects?: BusinessObjects) => {
+  if (
+    processInstanceDetailsStore.state.processInstance === null ||
+    flowNodeSelectionStore.state.selection === null
+  ) {
+    return '';
+  }
+
+  if (flowNodeSelectionStore.isRootNodeSelected) {
+    return processInstanceDetailsStore.state.processInstance.processName;
+  }
+
+  if (flowNodeSelectionStore.state.selection.flowNodeId === undefined) {
+    return '';
+  }
+
+  return getFlowNodeName({
+    businessObjects,
+    flowNodeId: flowNodeSelectionStore.state.selection.flowNodeId,
+  });
+};
+
+export {getSelectedRunningInstanceCount, getSelectedFlowNodeName};

@@ -25,9 +25,6 @@ public interface Variable {
   /* The value of the variable */
   String getValue();
 
-  /* The full value of the variable */
-  String getFullValue();
-
   /* The scope key of the variable */
   Long getScopeKey();
 

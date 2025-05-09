@@ -15,7 +15,6 @@ import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInst
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {UserEvent} from '@testing-library/user-event';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -53,7 +52,6 @@ function getWrapper(initialPath: string = Paths.processes()) {
           processInstancesSelectionStore.reset();
           processInstancesStore.reset();
           processInstanceMigrationStore.reset();
-          processStatisticsStore.reset();
           batchModificationStore.reset();
         };
       }, []);

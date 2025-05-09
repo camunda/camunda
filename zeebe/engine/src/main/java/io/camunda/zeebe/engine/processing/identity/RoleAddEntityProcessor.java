@@ -16,11 +16,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -39,9 +39,9 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
       "Expected to add entity with ID '%s' to role with ID '%s', but the entity is already assigned to this role.";
   private final RoleState roleState;
-  private final UserState userState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
+  private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -56,9 +56,9 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
-    userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
+    groupState = processingState.getGroupState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -134,21 +134,17 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   }
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
-    if (EntityType.USER == entityType) {
-      return userState.getUser(entityId).isPresent();
-    }
-    if (EntityType.MAPPING == entityType) {
-      return mappingState.get(entityId).isPresent();
-    }
-    return false;
+    return switch (entityType) {
+      case USER, APPLICATION ->
+          true; // With simple mappings, any username and application id can be assigned
+      case MAPPING -> mappingState.get(entityId).isPresent();
+      case GROUP -> groupState.get(entityId).isPresent();
+      default -> false;
+    };
   }
 
   private boolean isEntityAssigned(final RoleRecord record) {
-    return switch (record.getEntityType()) {
-      case USER, MAPPING ->
-          membershipState.hasRelation(
-              record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
-      default -> roleState.getEntityType(record.getRoleId(), record.getEntityId()).isPresent();
-    };
+    return membershipState.hasRelation(
+        record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
   }
 }

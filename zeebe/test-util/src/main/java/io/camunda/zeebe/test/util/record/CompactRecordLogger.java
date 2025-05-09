@@ -778,7 +778,7 @@ public class CompactRecordLogger {
         .append(String.format("ACTIVATE elements %s", value.getElements()))
         .append(
             String.format(
-                " in adhoc subprocess [%s]",
+                " in ad-hoc sub-process [%s]",
                 shortenKey(Long.parseLong(value.getAdHocSubProcessInstanceKey()))));
     return builder.toString();
   }
@@ -1016,8 +1016,10 @@ public class CompactRecordLogger {
         .append(formatId(value.getRoleId()))
         .append(", Name=")
         .append(formatId(value.getName()))
-        .append(", EntityKey=")
-        .append(shortenKey(value.getEntityKey()))
+        .append(", Description=")
+        .append(value.getDescription())
+        .append(", EntityId=")
+        .append(formatId(value.getEntityId()))
         .append("]");
 
     return builder.toString();
@@ -1068,6 +1070,8 @@ public class CompactRecordLogger {
     builder
         .append("Key=")
         .append(shortenKey(value.getMappingKey()))
+        .append(", mappingId=")
+        .append(formatId(value.getMappingId()))
         .append(", claimName=")
         .append(value.getClaimName())
         .append(", claimValue=")

@@ -434,11 +434,11 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertGroupDeleted(
-      final long groupKey, final Consumer<GroupRecordValue> consumer) {
+      final String groupId, final Consumer<GroupRecordValue> consumer) {
     final GroupRecordValue groupRecordValue =
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.DELETED)
-            .withGroupKey(groupKey)
+            .withGroupId(groupId)
             .getFirst()
             .getValue();
 
@@ -447,13 +447,12 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertEntityAssignedToGroup(
-      final long groupKey, final long userKey, final Consumer<GroupRecordValue> consumer) {
+      final String groupId, final String entityId, final Consumer<GroupRecordValue> consumer) {
     final GroupRecordValue groupRecordValue =
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.ENTITY_ADDED)
-            .withGroupKey(groupKey)
-            // TODO: revisit
-            .withEntityId(String.valueOf(userKey))
+            .withGroupId(groupId)
+            .withEntityId(entityId)
             .getFirst()
             .getValue();
 
@@ -462,13 +461,12 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertEntityUnassignedFromGroup(
-      final long groupKey, final long userKey, final Consumer<GroupRecordValue> consumer) {
+      final String groupId, final String entityId, final Consumer<GroupRecordValue> consumer) {
     final GroupRecordValue groupRecordValue =
         RecordingExporter.groupRecords()
             .withIntent(GroupIntent.ENTITY_REMOVED)
-            .withGroupKey(groupKey)
-            // TODO: revisit
-            .withEntityId(String.valueOf(userKey))
+            .withGroupId(groupId)
+            .withEntityId(entityId)
             .getFirst()
             .getValue();
 
@@ -561,12 +559,14 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertMappingCreated(
+      final String mappingId,
       final String claimName,
       final String claimValue,
       final Consumer<MappingRecordValue> consumer) {
     final MappingRecordValue mapping =
         RecordingExporter.mappingRecords()
             .withIntent(MappingIntent.CREATED)
+            .withMappingId(mappingId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .getFirst()

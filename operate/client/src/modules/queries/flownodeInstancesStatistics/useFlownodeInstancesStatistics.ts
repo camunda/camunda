@@ -14,8 +14,10 @@ import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstan
 import {isEmpty} from 'lodash';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
+const FLOWNODE_INSTANCES_STATISTICS_QUERY_KEY = 'flownodeInstancesStatistics';
+
 function getQueryKey(processInstanceKey?: string) {
-  return ['flownodeInstancesStatistics', processInstanceKey];
+  return [FLOWNODE_INSTANCES_STATISTICS_QUERY_KEY, processInstanceKey];
 }
 
 const useFlownodeInstancesStatistics = <
@@ -46,4 +48,7 @@ const useFlownodeInstancesStatistics = <
   });
 };
 
-export {useFlownodeInstancesStatistics};
+export {
+  FLOWNODE_INSTANCES_STATISTICS_QUERY_KEY,
+  useFlownodeInstancesStatistics,
+};

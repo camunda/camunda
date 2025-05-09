@@ -6,32 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator, expect} from '@playwright/test';
+import {Page, Locator} from '@playwright/test';
+import {waitForAssertion} from 'utils/waitForAssertion';
+import {expect} from '@playwright/test';
 
 class TaskPanelPage {
-  readonly assignmentTag: Locator;
-  readonly assignToMeButton: Locator;
   readonly availableTasks: Locator;
-  readonly completeTaskButton: Locator;
   readonly collapseSidePanelButton: Locator;
-  readonly emptyTaskMessage: Locator;
   readonly expandSidePanelButton: Locator;
   private page: Page;
   readonly taskListPageBanner: Locator;
   readonly collapseFilter: Locator;
+  readonly completedHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.assignmentTag = page.locator(' header > div').nth(2);
-    this.assignToMeButton = page.getByRole('button', {name: 'Assign to me'});
     this.availableTasks = page.getByTitle('Available tasks');
-    this.completeTaskButton = page.getByRole('button', {name: 'Complete Task'});
     this.collapseSidePanelButton = page.locator(
       'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
     );
-    this.emptyTaskMessage = this.emptyTaskMessage = page.getByRole('heading', {
-      name: /Task has no variables/i,
-    });
     this.expandSidePanelButton = page
       .locator('[aria-label="Filter controls"] li')
       .filter({hasText: 'Expand to show filters'});
@@ -41,23 +34,9 @@ class TaskPanelPage {
     this.collapseFilter = page.locator(
       'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
     );
-  }
-
-  async assertAssignmentStatus(status: string): Promise<void> {
-    await expect(this.assignmentTag).toContainText(status);
-  }
-
-  async assignTaskToMe(): Promise<void> {
-    await this.filterBy('Unassigned');
-    await this.openTask('usertask_to_be_assigned');
-    await this.assignToMeButton.click();
-  }
-
-  async completeATask(): Promise<void> {
-    await this.filterBy('Unassigned');
-    await this.openTask('usertask_to_be_assigned');
-    await this.assignToMeButton.click();
-    await this.completeTaskButton.click();
+    this.completedHeading = page.getByRole('heading', {
+      name: 'completed',
+    });
   }
 
   async openTask(name: string) {
@@ -65,10 +44,6 @@ class TaskPanelPage {
       .getByText(name, {exact: true})
       .nth(0)
       .click({timeout: 20000});
-  }
-
-  async asssertUnnassignedTaskEmptyMessage(): Promise<void> {
-    await expect(this.emptyTaskMessage).toBeVisible();
   }
 
   async filterBy(
@@ -86,6 +61,18 @@ class TaskPanelPage {
 
   async clickCollapseFilter(): Promise<void> {
     await this.collapseFilter.click({timeout: 45000});
+  }
+
+  async assertCompletedHeadingVisible() {
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.completedHeading).toBeVisible();
+      },
+      onFailure: async () => {
+        console.log('Filter not applied, retrying...');
+        await this.filterBy('Completed'); // Reapply the filter if necessary
+      },
+    });
   }
 }
 

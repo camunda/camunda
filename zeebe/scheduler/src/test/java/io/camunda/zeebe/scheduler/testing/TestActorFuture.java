@@ -159,6 +159,11 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
     return nextFuture;
   }
 
+  @Override
+  public <U> ActorFuture<U> thenApply(final Function<V, U> next) {
+    return thenApply(next, Runnable::run);
+  }
+
   private void triggerOnCompleteListeners() {
     onCompleteCallbacks.forEach(this::triggerOnCompleteListener);
   }

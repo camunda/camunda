@@ -74,11 +74,11 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
   @Override
   protected <T extends FlowNode> T createTarget(final Class<T> typeClass, final String identifier) {
     if (isDone) {
-      // add the element after the ad-hoc subprocess
+      // add the element after the ad-hoc sub-process
       return super.createTarget(typeClass, identifier);
 
     } else {
-      // add the element inside the ad-hoc subprocess
+      // add the element inside the ad-hoc sub-process
       return createChildInsideAdHocSubProcess(typeClass, identifier);
     }
   }

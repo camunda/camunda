@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -30,6 +29,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
@@ -87,10 +87,12 @@ final class TenantMappingRuleMigrationHandlerTest {
   void stopWhenNoMoreRecords() {
     // given
     givenMappingRules();
-    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "tenantId", "", null));
     when(mappingServices.createMapping(any()))
-        .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
-    when(tenantServices.addMember(anyString(), any(), anyString()))
+        .thenAnswer(
+            invocation ->
+                CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     // when
     migrationHandler.migrate();
@@ -98,7 +100,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
     verify(tenantServices, times(4)).getById(any());
-    verify(tenantServices, times(4)).addMember(anyString(), any(), anyString());
+    verify(tenantServices, times(4)).addMember(any(TenantMemberRequest.class));
     verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
   }
 
@@ -131,7 +133,9 @@ final class TenantMappingRuleMigrationHandlerTest {
     givenMappingRules();
     when(tenantServices.getById(any())).thenThrow(new RuntimeException());
     when(mappingServices.createMapping(any()))
-        .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
+        .thenAnswer(
+            invocation ->
+                CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
 
     // when
     migrationHandler.migrate();
@@ -154,10 +158,12 @@ final class TenantMappingRuleMigrationHandlerTest {
   void ignoreWhenMappingAlreadyAssigned() {
     // given
     givenMappingRules();
-    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
+    when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "tenantId", "", null));
     when(mappingServices.createMapping(any()))
-        .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
-    when(tenantServices.addMember(anyString(), any(), anyString()))
+        .thenAnswer(
+            invocation ->
+                CompletableFuture.completedFuture(new MappingRecord().setMappingId("mappingId")));
+    when(tenantServices.addMember(any(TenantMemberRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new BrokerRejectionException(
@@ -173,7 +179,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
     verify(tenantServices, times(4)).getById(any());
-    verify(tenantServices, times(4)).addMember(anyString(), any(), anyString());
+    verify(tenantServices, times(4)).addMember(any(TenantMemberRequest.class));
     verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
     verify(managementIdentityClient, times(2))
         .updateMigrationStatus(

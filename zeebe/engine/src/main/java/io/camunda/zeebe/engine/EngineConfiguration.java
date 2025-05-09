@@ -30,6 +30,8 @@ public final class EngineConfiguration {
 
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
 
+  public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
+
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
@@ -45,6 +47,8 @@ public final class EngineConfiguration {
   private boolean enableAuthorization = DEFAULT_ENABLE_AUTHORIZATION_CHECKS;
 
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
+
+  private Duration batchOperationSchedulerInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -146,6 +150,16 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setMaxProcessDepth(final int maxProcessDepth) {
     this.maxProcessDepth = maxProcessDepth;
+    return this;
+  }
+
+  public Duration getBatchOperationSchedulerInterval() {
+    return batchOperationSchedulerInterval;
+  }
+
+  public EngineConfiguration setBatchOperationSchedulerInterval(
+      final Duration batchOperationSchedulerInterval) {
+    this.batchOperationSchedulerInterval = batchOperationSchedulerInterval;
     return this;
   }
 }

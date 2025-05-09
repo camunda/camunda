@@ -13,7 +13,6 @@ import {
   FlowNodeInstancesDto,
 } from 'modules/api/fetchFlowNodeInstances';
 import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
-import {ProcessInstanceDetailStatisticsDto} from 'modules/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {ProcessInstanceIncidentsDto} from 'modules/api/processInstances/fetchProcessInstanceIncidents';
 import {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
 
@@ -21,7 +20,6 @@ type InstanceMock = {
   xml: string;
   detail: ProcessInstanceEntity;
   flowNodeInstances: FlowNodeInstancesDto<FlowNodeInstanceDto>;
-  statistics: ProcessInstanceDetailStatisticsDto[];
   statisticsV2: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows: SequenceFlowsDto;
   variables: VariableEntity[];
@@ -32,7 +30,6 @@ type InstanceMock = {
 function mockResponses({
   processInstanceDetail,
   flowNodeInstances,
-  statistics,
   statisticsV2,
   sequenceFlows,
   variables,
@@ -42,7 +39,6 @@ function mockResponses({
 }: {
   processInstanceDetail?: ProcessInstanceEntity;
   flowNodeInstances?: FlowNodeInstancesDto<FlowNodeInstanceDto>;
-  statistics?: ProcessInstanceDetailStatisticsDto[];
   statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows?: SequenceFlowsDto;
   variables?: VariableEntity[];
@@ -83,16 +79,6 @@ function mockResponses({
       return route.fulfill({
         status: statisticsV2 === undefined ? 400 : 200,
         body: JSON.stringify(statisticsV2),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('statistics')) {
-      return route.fulfill({
-        status: statistics === undefined ? 400 : 200,
-        body: JSON.stringify(statistics),
         headers: {
           'content-type': 'application/json',
         },

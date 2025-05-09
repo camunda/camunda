@@ -14,6 +14,7 @@ class TasklistHeader {
   readonly languageSelector: Locator;
   readonly processesTab: Locator;
   readonly logoutButton: Locator;
+  readonly tasksTab: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -21,6 +22,7 @@ class TasklistHeader {
     this.languageSelector = page.getByRole('combobox', {name: 'Language'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.tasksTab = page.getByRole('link', {name: 'Tasks'});
   }
 
   async logout() {
@@ -33,6 +35,14 @@ class TasklistHeader {
     await expect(this.languageSelector).toBeVisible();
     await this.languageSelector.click();
     await this.page.getByRole('option', {name: option, exact: true}).click();
+  }
+
+  async clickTasksTab() {
+    await this.tasksTab.click();
+  }
+
+  async clickProcessesTab() {
+    await this.processesTab.click();
   }
 }
 

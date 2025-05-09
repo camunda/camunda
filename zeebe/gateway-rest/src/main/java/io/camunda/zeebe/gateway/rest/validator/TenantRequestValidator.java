@@ -17,6 +17,8 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
@@ -28,16 +30,8 @@ public final class TenantRequestValidator {
       final TenantCreateRequest request) {
     return validate(
         violations -> {
-          if (request.getTenantId() == null || request.getTenantId().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("tenantId"));
-          } else if (request.getTenantId().length() > MAX_LENGTH) {
-            violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("tenantId", MAX_LENGTH));
-          } else if (!ID_PATTERN.matcher(request.getTenantId()).matches()) {
-            violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("tenantId", ID_REGEX));
-          }
-          if (request.getName() == null || request.getName().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
-          }
+          validateTenantId(request.getTenantId(), violations);
+          validateTenantName(request.getName(), violations);
         });
   }
 
@@ -45,12 +39,68 @@ public final class TenantRequestValidator {
       final TenantUpdateRequest request) {
     return validate(
         violations -> {
-          if (request.getName() == null || request.getName().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
-          }
-          if (request.getDescription() == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
-          }
+          validateTenantName(request.getName(), violations);
+          validateTenantDescription(request.getDescription(), violations);
         });
+  }
+
+  public static Optional<ProblemDetail> validateMemberRequest(
+      final String tenantId, final String memberId, final EntityType memberType) {
+    return validate(
+        violations -> {
+          validateTenantId(tenantId, violations);
+          validateMemberId(memberId, memberType, violations);
+        });
+  }
+
+  private static void validateTenantId(final String id, final List<String> violations) {
+    validateId(id, "tenantId", violations);
+  }
+
+  private static void validateId(
+      final String id, final String propertyName, final List<String> violations) {
+    if (id == null || id.isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(propertyName));
+    } else if (id.length() > MAX_LENGTH) {
+      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(propertyName, MAX_LENGTH));
+    } else if (!ID_PATTERN.matcher(id).matches()) {
+      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(propertyName, ID_REGEX));
+    }
+  }
+
+  private static void validateTenantName(final String name, final List<String> violations) {
+    if (name == null || name.isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+    }
+  }
+
+  private static void validateTenantDescription(
+      final String description, final List<String> violations) {
+    if (description == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
+    }
+  }
+
+  public static void validateMemberId(
+      final String entityId, final EntityType entityType, final List<String> violations) {
+    switch (entityType) {
+      case USER:
+        validateId(entityId, "username", violations);
+        break;
+      case GROUP:
+        validateId(entityId, "groupId", violations);
+        break;
+      case MAPPING:
+        validateId(entityId, "mappingId", violations);
+        break;
+      case ROLE:
+        validateId(entityId, "roleId", violations);
+        break;
+      case APPLICATION:
+        validateId(entityId, "applicationId", violations);
+        break;
+      default:
+        validateId(entityId, "entityId", violations);
+    }
   }
 }

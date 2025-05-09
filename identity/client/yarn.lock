@@ -1929,13 +1929,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/cookie@npm:^0.6.0":
-  version: 0.6.0
-  resolution: "@types/cookie@npm:0.6.0"
-  checksum: 10c0/5b326bd0188120fb32c0be086b141b1481fec9941b76ad537f9110e10d61ee2636beac145463319c71e4be67a17e85b81ca9e13ceb6e3bb63b93d16824d6c149
-  languageName: node
-  linkType: hard
-
 "@types/debug@npm:^4.0.0":
   version: 4.1.12
   resolution: "@types/debug@npm:4.1.12"
@@ -3790,7 +3783,7 @@ __metadata:
     react-dom: "npm:18.3.1"
     react-i18next: "npm:15.4.0"
     react-router: "npm:7.5.2"
-    react-router-dom: "npm:7.3.0"
+    react-router-dom: "npm:7.5.2"
     react-transition-group: "npm:4.4.5"
     rollup: "npm:4.35.0"
     rollup-plugin-license: "npm:^3.5.3"
@@ -5348,33 +5341,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:7.3.0":
-  version: 7.3.0
-  resolution: "react-router-dom@npm:7.3.0"
+"react-router-dom@npm:7.5.2":
+  version: 7.5.2
+  resolution: "react-router-dom@npm:7.5.2"
   dependencies:
-    react-router: "npm:7.3.0"
+    react-router: "npm:7.5.2"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10c0/62360eb87d64081b413591a8c96dbf0f1f568df2e1b2748179a586f0ccd891df85acf25a52b6425fee8614266d53fd7ba9944b5c7ab6478966c46daa546307b8
-  languageName: node
-  linkType: hard
-
-"react-router@npm:7.3.0":
-  version: 7.3.0
-  resolution: "react-router@npm:7.3.0"
-  dependencies:
-    "@types/cookie": "npm:^0.6.0"
-    cookie: "npm:^1.0.1"
-    set-cookie-parser: "npm:^2.6.0"
-    turbo-stream: "npm:2.4.0"
-  peerDependencies:
-    react: ">=18"
-    react-dom: ">=18"
-  peerDependenciesMeta:
-    react-dom:
-      optional: true
-  checksum: 10c0/2965a8a7598afaeb5c4d10c3364452df924bed9b03f6b18d7049e4b93054e2412749d0621b2ff4cdd7791af9fb843148aefbea3db2ffc9f43ef68f9df0c0241d
+  checksum: 10c0/afebbcc58cf166916b8628e9a17a0760217fb4be35b9e323abd2061365e06bbff6312c66316407cb044297729bc3ee77c9ca99e19f5130f294c88b18471ea261
   languageName: node
   linkType: hard
 

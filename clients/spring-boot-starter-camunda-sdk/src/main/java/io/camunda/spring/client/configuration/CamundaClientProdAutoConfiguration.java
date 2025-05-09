@@ -21,6 +21,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
@@ -35,17 +36,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /*
  * All configurations that will only be used in production code - meaning NO TEST cases
  */
-@ConditionalOnProperty(
-    prefix = "camunda.client",
-    name = "enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnCamundaClientEnabled
 @ConditionalOnMissingBean(CamundaSpringProcessTestContext.class)
 @ImportAutoConfiguration({
   ExecutorServiceConfiguration.class,
@@ -54,6 +51,7 @@ import org.springframework.context.annotation.Bean;
   CredentialsProviderConfiguration.class
 })
 @AutoConfigureBefore(CamundaClientAllAutoConfiguration.class)
+@EnableConfigurationProperties(CamundaClientProperties.class)
 public class CamundaClientProdAutoConfiguration {
 
   private static final Logger LOG =

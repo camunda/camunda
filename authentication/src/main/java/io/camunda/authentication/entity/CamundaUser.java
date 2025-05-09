@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.entity;
 
+import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.ClusterMetadata;
 import io.camunda.service.TenantServices.TenantDTO;
@@ -188,7 +189,13 @@ public final class CamundaUser extends User implements CamundaPrincipal {
           password,
           email,
           authorities,
-          new AuthenticationContext(username, roles, authorizedApplications, tenants, groups),
+          new AuthenticationContextBuilder()
+              .withUsername(username)
+              .withRoles(roles)
+              .withAuthorizedApplications(authorizedApplications)
+              .withTenants(tenants)
+              .withGroups(groups)
+              .build(),
           salesPlanType,
           c8Links,
           canLogout);

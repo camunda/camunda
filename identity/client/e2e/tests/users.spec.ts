@@ -35,7 +35,7 @@ test.beforeEach(async ({ page, loginPage }) => {
 test.describe.serial("users CRUD", () => {
   test("creates a user", async ({ page, usersPage }) => {
     await expect(
-      usersPage.usersList.getByRole("cell", { name: "demo@demo.com" }),
+      usersPage.usersList.getByRole("cell", { name: "demo@example.com" }),
     ).toBeVisible();
     await expect(
       usersPage.usersList.getByRole("cell", { name: NEW_USER.email }),

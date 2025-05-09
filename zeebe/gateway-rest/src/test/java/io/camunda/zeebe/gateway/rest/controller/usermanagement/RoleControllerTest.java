@@ -14,10 +14,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
+import io.camunda.service.UserServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,10 +46,14 @@ public class RoleControllerTest extends RestControllerTest {
   private static final String ROLE_BASE_URL = "/v2/roles";
 
   @MockBean private RoleServices roleServices;
+  @MockBean private UserServices userServices;
+  @MockBean private MappingServices mappingServices;
 
   @BeforeEach
   void setup() {
     when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
   }
 
   @ParameterizedTest
@@ -59,7 +66,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.createRole(request))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new RoleRecord().setEntityKey(100L).setName(roleName)));
+                new RoleRecord().setRoleId(roleId).setName(roleName).setDescription(description)));
 
     // when
     webClient
@@ -418,6 +425,223 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldAssignMappingToRoleAndReturnAccepted() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingMissingMappingToRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.addMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Mapping not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingMappingToMissingRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.addMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = "mappingId!";
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingMappingToRole() {
+    // given
+    final String roleId = "roleId!";
+    final String mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldUnassignMappingFromRoleAndReturnAccepted() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingMissingMappingFromRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.removeMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.REMOVE_ENTITY,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Mapping not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingMappingFromMissingRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    when(roleServices.removeMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.REMOVE_ENTITY, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
   void shouldReturnErrorForAddingMissingUserToRole() {
     // given
     final var roleId = "roleId";
@@ -642,6 +866,279 @@ public class RoleControllerTest extends RestControllerTest {
     final String roleId = "roleId!";
     final String username = "username";
     final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
+                  "instance": "%s"
+                }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldAssignGroupToRoleAndReturnAccepted() {
+    // given
+    final var roleId = "roleId";
+    final var groupId = "groupId";
+
+    final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+    when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingMissingGroupToRole() {
+    // given
+    final var roleId = "roleId";
+    final var groupId = "groupId";
+    final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
+    final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+    when(roleServices.addMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Group not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingGroupToMissingRole() {
+    // given
+    final String roleId = "roleId";
+    final String groupId = "groupId";
+    final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
+    final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+    when(roleServices.addMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).addMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidGroupIdWhenAddingToRole() {
+    // given
+    final String roleId = "roleId";
+    final String groupId = "groupId!";
+    final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingGroupToRole() {
+    // given
+    final String roleId = "roleId!";
+    final String groupId = "groupId";
+    final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
+
+    // when
+    webClient
+        .put()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldUnassignGroupFromRoleAndReturnAccepted() {
+    // given
+    final var roleId = "roleId";
+    final var groupId = "groupId";
+
+    final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+    when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingMissingGroupFromRole() {
+    // given
+    final var roleId = "roleId";
+    final var groupId = "groupId";
+    final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
+    final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+    when(roleServices.removeMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_REMOVED,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Group not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingGroupFromMissingRole() {
+    // given
+    final String roleId = "roleId";
+    final String groupId = "groupId";
+    final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
+    final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+    when(roleServices.removeMember(request))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(roleServices, times(1)).removeMember(request);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidGroupIdWhenRemovingFromRole() {
+    // given
+    final String roleId = "roleId";
+    final String groupId = "groupId!";
+    final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "status": 400,
+                  "title": "INVALID_ARGUMENT",
+                  "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
+                  "instance": "%s"
+                }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, path));
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void shouldReturnErrorForProvidingInvalidRoleIdWhenRemovingGroupFromRole() {
+    // given
+    final String roleId = "roleId!";
+    final String groupId = "groupId";
+    final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
 
     // when
     webClient

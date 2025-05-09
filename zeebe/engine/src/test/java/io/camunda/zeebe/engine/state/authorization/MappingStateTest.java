@@ -50,6 +50,7 @@ public class MappingStateTest {
     // then
     final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getMappingId()).isEqualTo(mappingId);
+    assertThat(persistedMapping.getMappingKey()).isEqualTo(key);
     assertThat(persistedMapping.getName()).isEqualTo(name);
     assertThat(persistedMapping.getClaimName()).isEqualTo(claimName);
     assertThat(persistedMapping.getClaimValue()).isEqualTo(claimValue);
@@ -88,6 +89,7 @@ public class MappingStateTest {
     assertThat(retrievedMapping).isPresent();
     assertThat(retrievedMapping.get().getName()).isEqualTo(name);
     assertThat(retrievedMapping.get().getMappingId()).isEqualTo(mappingId);
+    assertThat(retrievedMapping.get().getMappingKey()).isEqualTo(key);
   }
 
   @Test

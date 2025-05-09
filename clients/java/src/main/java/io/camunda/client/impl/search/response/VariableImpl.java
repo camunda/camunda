@@ -18,27 +18,36 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.VariableResult;
+import io.camunda.client.protocol.rest.VariableSearchResult;
 
 public class VariableImpl implements Variable {
 
   private final Long variableKey;
   private final String name;
   private final String value;
-  private final String fullValue;
   private final Long scopeKey;
   private final Long processInstanceKey;
   private final String tenantId;
   private final Boolean isTruncated;
 
-  public VariableImpl(final VariableResult item) {
+  public VariableImpl(final VariableSearchResult item) {
     variableKey = ParseUtil.parseLongOrNull(item.getVariableKey());
     name = item.getName();
     value = item.getValue();
-    fullValue = item.getFullValue();
     scopeKey = ParseUtil.parseLongOrNull(item.getScopeKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = item.getIsTruncated();
+  }
+
+  public VariableImpl(final VariableResult item) {
+    variableKey = ParseUtil.parseLongOrNull(item.getVariableKey());
+    name = item.getName();
+    value = item.getValue();
+    scopeKey = ParseUtil.parseLongOrNull(item.getScopeKey());
+    processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    tenantId = item.getTenantId();
+    isTruncated = false;
   }
 
   @Override
@@ -54,11 +63,6 @@ public class VariableImpl implements Variable {
   @Override
   public String getValue() {
     return value;
-  }
-
-  @Override
-  public String getFullValue() {
-    return fullValue;
   }
 
   @Override

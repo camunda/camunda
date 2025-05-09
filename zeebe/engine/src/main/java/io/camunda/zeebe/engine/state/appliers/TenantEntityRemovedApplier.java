@@ -24,21 +24,7 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
 
   @Override
   public void applyState(final long tenantKey, final TenantRecord tenant) {
-    switch (tenant.getEntityType()) {
-      case USER, GROUP, MAPPING ->
-          membershipState.deleteRelation(
-              tenant.getEntityType(),
-              tenant.getEntityId(),
-              RelationType.TENANT,
-              tenant.getTenantId());
-      default ->
-          throw new UnsupportedOperationException(
-              String.format(
-                  "Expected to remove entity with id %s and type %s from tenant %s, but type %s is not supported.",
-                  tenant.getEntityId(),
-                  tenant.getEntityType(),
-                  tenant.getTenantId(),
-                  tenant.getEntityType()));
-    }
+    membershipState.deleteRelation(
+        tenant.getEntityType(), tenant.getEntityId(), RelationType.TENANT, tenant.getTenantId());
   }
 }

@@ -43,8 +43,9 @@ public class BatchOperationCreatedExportHandler
 
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {
     final var value = record.getValue();
+    final String batchOperationKey = String.valueOf(record.getKey());
     return new BatchOperationDbModel.Builder()
-        .batchOperationKey(record.getKey())
+        .batchOperationKey(batchOperationKey)
         .state(BatchOperationState.ACTIVE)
         .operationType(value.getBatchOperationType().name())
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))

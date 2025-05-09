@@ -34,9 +34,11 @@ import org.springframework.util.ReflectionUtils;
 /**
  * Always created by {@link AnnotationProcessorConfiguration}
  *
- * <p>Triggered by {@link CamundaAnnotationProcessorRegistry#postProcessAfterInitialization(Object,
- * String)} to add Handler subscriptions for {@link io.camunda.spring.client.annotation.JobWorker}
- * method-annotations.
+ * <p>Triggered by {@link AbstractCamundaAnnotationProcessor#onStart(CamundaClient)} to add Handler
+ * subscriptions for {@link io.camunda.spring.client.annotation.JobWorker} method-annotations.
+ *
+ * <p>Triggered by {@link AbstractCamundaAnnotationProcessor#onStop(CamundaClient)} to remove all
+ * Handler subscriptions.
  */
 public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProcessor {
 
@@ -81,13 +83,13 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   public void start(final CamundaClient client) {
     jobWorkerValues.stream()
         .peek(
-            zeebeWorkerValue ->
+            jobWorkerValue ->
                 jobWorkerValueCustomizers.forEach(
-                    customizer -> customizer.customize(zeebeWorkerValue)))
+                    customizer -> customizer.customize(jobWorkerValue)))
         .filter(JobWorkerValue::getEnabled)
         .forEach(
-            zeebeWorkerValue -> {
-              jobWorkerManager.openWorker(client, zeebeWorkerValue);
+            jobWorkerValue -> {
+              jobWorkerManager.openWorker(client, jobWorkerValue);
             });
   }
 

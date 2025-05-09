@@ -27,15 +27,6 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
     final var entityId = value.getEntityId();
     final var entityType = value.getEntityType();
     final var groupId = value.getGroupId();
-
-    switch (entityType) {
-      case USER, MAPPING ->
-          membershipState.deleteRelation(entityType, entityId, RelationType.GROUP, groupId);
-      default ->
-          throw new IllegalStateException(
-              String.format(
-                  "Expected to remove entity '%s' from group with ID '%s', but entities of type '%s' cannot be removed from groups.",
-                  entityId, groupId, entityType));
-    }
+    membershipState.deleteRelation(entityType, entityId, RelationType.GROUP, groupId);
   }
 }

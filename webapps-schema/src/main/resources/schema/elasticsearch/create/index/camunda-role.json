@@ -8,10 +8,19 @@
       "key": {
         "type": "long"
       },
+      "roleId": {
+        "type": "keyword"
+      },
       "name": {
         "type": "keyword"
       },
+      "description": {
+        "type": "text"
+      },
       "memberId": {
+        "type": "keyword"
+      },
+      "memberType": {
         "type": "keyword"
       },
       "join": {

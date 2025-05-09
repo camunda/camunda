@@ -63,29 +63,6 @@ const completedInstance: InstanceMock = {
       running: null,
     },
   },
-  statistics: [
-    {
-      activityId: 'EndEvent_02qhg5x',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'IntermediateCatchEvent_1l4zjh6',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      activityId: 'StartEvent_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-  ],
   statisticsV2: {
     items: [
       {

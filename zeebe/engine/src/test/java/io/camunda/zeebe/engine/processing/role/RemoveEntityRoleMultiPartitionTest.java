@@ -21,13 +21,13 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -39,25 +39,23 @@ public class RemoveEntityRoleMultiPartitionTest {
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldDistributeRoleRemoveEntityCommand() {
     // when
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    final var username = Strings.newRandomValidUsername();
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create().getValue();
+    engine.role().addEntity(roleId).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
         .role()
-        .removeEntity(roleKey)
-        .withEntityKey(userKey)
+        .removeEntity(roleId)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
 
@@ -108,25 +106,23 @@ public class RemoveEntityRoleMultiPartitionTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    final var username = Strings.newRandomValidUsername();
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create().getValue();
+    engine.role().addEntity(roleId).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
         .role()
-        .removeEntity(roleKey)
-        .withEntityKey(userKey)
+        .removeEntity(roleId)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
 
@@ -140,30 +136,27 @@ public class RemoveEntityRoleMultiPartitionTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-
+    final var username = Strings.newRandomValidUsername();
+    engine
+        .user()
+        .newUser(username)
+        .withEmail("foo@bar")
+        .withName("Foo Bar")
+        .withPassword("zabraboof")
+        .create();
     // when
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create().getValue();
+    engine.role().addEntity(roleId).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
         .role()
-        .removeEntity(roleKey)
-        .withEntityKey(userKey)
+        .removeEntity(roleId)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
 

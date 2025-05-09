@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.stream.Stream;
 
@@ -34,11 +35,11 @@ public class RoleRecordStream extends ExporterRecordStream<RoleRecordValue, Role
     return valueFilter(v -> v.getName().equals(name));
   }
 
-  public RoleRecordStream withEntityKey(final long entityKey) {
-    return valueFilter(v -> v.getEntityKey() == entityKey);
-  }
-
   public RoleRecordStream withEntityId(final String entityId) {
     return valueFilter(v -> v.getEntityId().equals(entityId));
+  }
+
+  public RoleRecordStream withEntityType(final EntityType entityType) {
+    return valueFilter(v -> v.getEntityType() == entityType);
   }
 }

@@ -9,13 +9,13 @@
 import {act, render, screen} from 'modules/testing-library';
 import {ModificationIcons} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
-import {open} from 'modules/mocks/diagrams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {cancelAllTokens} from 'modules/utils/modifications';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {open} from 'modules/mocks/diagrams';
 
 type Props = {
   children?: React.ReactNode;
@@ -61,7 +61,9 @@ describe('<ModificationIcons />', () => {
       ],
     });
 
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
+    );
   });
 
   it('should show correct icons for modifications planning to be added', () => {

@@ -5,9 +5,7 @@ import "google/protobuf/timestamp.proto";
 
 option java_package = "io.camunda.zeebe.dynamic.config.protocol";
 
-message GossipState {
-  ClusterTopology clusterTopology = 1;
-}
+message GossipState { ClusterTopology clusterTopology = 1; }
 
 message ClusterTopology {
   int64 version = 1;
@@ -18,7 +16,7 @@ message ClusterTopology {
 }
 
 message RoutingState {
-  int64  version = 1;
+  int64 version = 1;
   RequestHandling requestHandling = 2;
   MessageCorrelation messageCorrelation = 3;
 }
@@ -29,9 +27,7 @@ message RequestHandling {
     ActivePartitions activePartitions = 2;
   }
 
-  message AllPartitions {
-    sint32 partitionCount = 1;
-  }
+  message AllPartitions { sint32 partitionCount = 1; }
   message ActivePartitions {
     sint32 basePartitionCount = 1;
     repeated sint32 additionalActivePartitions = 2;
@@ -40,13 +36,9 @@ message RequestHandling {
 }
 
 message MessageCorrelation {
-  oneof correlation {
-    HashMod hashMod = 1;
-  }
+  oneof correlation { HashMod hashMod = 1; }
 
-  message HashMod {
-    sint32 partitionCount = 1;
-  }
+  message HashMod { sint32 partitionCount = 1; }
 }
 
 message MemberState {
@@ -62,13 +54,9 @@ message PartitionState {
   PartitionConfig config = 3;
 }
 
-message PartitionConfig {
-  ExportersConfig exporting = 1;
-}
+message PartitionConfig { ExportersConfig exporting = 1; }
 
-message ExportersConfig{
-  map<string, ExporterState> exporters = 1;
-}
+message ExportersConfig { map<string, ExporterState> exporters = 1; }
 
 message ExporterState {
   EnabledDisabledState state = 1;
@@ -107,6 +95,8 @@ message TopologyChangeOperation {
     PartitionBootstrapOperation partitionBootstrap = 11;
     StartPartitionScaleUpOperation initiateScaleUpPartitions = 12;
     DeleteHistoryOperation deleteHistory = 13;
+    AwaitRedistributionCompletion awaitRedistributionCompletion = 14;
+    AwaitRelocationCompletion awaitRelocationCompletion = 15;
   }
 }
 
@@ -152,21 +142,25 @@ message PartitionBootstrapOperation {
   optional PartitionConfig config = 3;
 }
 
-message StartPartitionScaleUpOperation {
-  int32 desiredPartitionCount = 2;
+message StartPartitionScaleUpOperation { int32 desiredPartitionCount = 2; }
+
+message AwaitRedistributionCompletion {
+  int32 desiredPartitionCount = 1;
+  repeated int32 partitionsToRedistribute = 2;
 }
 
-message DeleteHistoryOperation {
-  int32 memberId = 1;
+message AwaitRelocationCompletion {
+  int32 desiredPartitionCount = 1;
+  repeated int32 partitionsToRelocate = 2;
 }
+
+message DeleteHistoryOperation { int32 memberId = 1; }
 
 message MemberJoinOperation {}
 
 message MemberLeaveOperation {}
 
-message MemberRemoveOperation {
-  string memberToRemove = 1;
-}
+message MemberRemoveOperation { string memberToRemove = 1; }
 
 enum State {
   UNKNOWN = 0;
@@ -190,5 +184,3 @@ enum EnabledDisabledState {
   ENABLED = 1;
   DISABLED = 2;
 }
-
-

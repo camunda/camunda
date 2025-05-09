@@ -27,27 +27,27 @@ import org.junit.jupiter.api.Test;
 
 public class DeleteGroupTest extends ClientRestTest {
 
-  private static final long GROUP_KEY = 123L;
+  private static final String GROUP_ID = "groupId";
 
   @Test
   void shouldDeleteGroup() {
     // when
-    client.newDeleteGroupCommand(GROUP_KEY).send().join();
+    client.newDeleteGroupCommand(GROUP_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
-    assertThat(requestPath).isEqualTo(REST_API_PATH + "/groups/" + GROUP_KEY);
+    assertThat(requestPath).isEqualTo(REST_API_PATH + "/groups/" + GROUP_ID);
   }
 
   @Test
   void shouldRaiseExceptionOnNotFoundGroup() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/groups/" + GROUP_ID,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newDeleteGroupCommand(GROUP_KEY).send().join())
+    assertThatThrownBy(() -> client.newDeleteGroupCommand(GROUP_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -56,11 +56,11 @@ public class DeleteGroupTest extends ClientRestTest {
   void shouldHandleServerError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/groups/" + GROUP_ID,
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
-    assertThatThrownBy(() -> client.newDeleteGroupCommand(GROUP_KEY).send().join())
+    assertThatThrownBy(() -> client.newDeleteGroupCommand(GROUP_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -69,11 +69,11 @@ public class DeleteGroupTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/groups/" + GROUP_ID,
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
-    assertThatThrownBy(() -> client.newDeleteGroupCommand(GROUP_KEY).send().join())
+    assertThatThrownBy(() -> client.newDeleteGroupCommand(GROUP_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }

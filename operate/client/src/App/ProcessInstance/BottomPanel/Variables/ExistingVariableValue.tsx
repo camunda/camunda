@@ -16,10 +16,12 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {createVariableFieldName} from './createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {variablesStore} from 'modules/stores/variables';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Popup} from '@carbon/react/icons';
 import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
+import {getSelectedFlowNodeName} from 'modules/utils/flowNodeSelection';
+import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 type Props = {
   id?: string;
@@ -36,6 +38,7 @@ const createModification = ({
   name,
   oldValue,
   newValue,
+  businessObjects,
 }: {
   scopeId: string | null;
   isValid: boolean;
@@ -43,6 +46,7 @@ const createModification = ({
   name: string;
   oldValue: string;
   newValue: string;
+  businessObjects?: BusinessObjects;
 }) => {
   if (
     !modificationsStore.isModificationModeEnabled ||
@@ -71,7 +75,7 @@ const createModification = ({
         operation: 'EDIT_VARIABLE',
         id: name,
         scopeId,
-        flowNodeName: flowNodeSelectionStore.selectedFlowNodeName,
+        flowNodeName: getSelectedFlowNodeName(businessObjects),
         name,
         oldValue,
         newValue,
@@ -87,6 +91,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
     const formState = useFormState();
     const [isModalVisible, setIsModalVisible] = useState(false);
     const form = useForm();
+    const {data: businessObjects} = useBusinessObjects();
 
     const fieldName = isModificationModeEnabled
       ? createVariableFieldName(variableName)
@@ -158,6 +163,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                   newValue: input.value ?? '',
                   isDirty: variableValue !== input.value,
                   isValid: isValid ?? false,
+                  businessObjects,
                 });
 
                 input.onBlur(event);

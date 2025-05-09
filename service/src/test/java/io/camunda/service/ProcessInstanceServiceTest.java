@@ -7,7 +7,6 @@
  */
 package io.camunda.service;
 
-import static io.camunda.service.ProcessInstanceServices.NO_PARENT_EXISTS_KEY;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
@@ -27,6 +26,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -34,6 +34,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -171,9 +172,120 @@ public final class ProcessInstanceServiceTest {
     final var enhancedFilter =
         MsgPackConverter.convertToObject(filterBuffer, ProcessInstanceFilter.class);
     assertThat(enhancedFilter.parentProcessInstanceKeyOperations())
-        .containsExactly(Operation.eq(NO_PARENT_EXISTS_KEY));
+        .containsExactly(Operation.exists(false));
     assertThat(enhancedFilter.stateOperations())
         .containsExactly(Operation.eq(ProcessInstanceState.ACTIVE.name()));
+  }
+
+  @Test
+  public void shouldReturnOrderedProcessHierarchy() {
+    // given
+    final var childProcess = mock(ProcessInstanceEntity.class);
+    when(childProcess.processInstanceKey()).thenReturn(789L);
+    when(childProcess.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
+    when(childProcess.processDefinitionId()).thenReturn("child_process_id");
+    authorizeProcessReadInstance(true, "child_process_id");
+
+    final var parentProcess = mock(ProcessInstanceEntity.class);
+    when(parentProcess.processInstanceKey()).thenReturn(123L);
+    when(parentProcess.processDefinitionId()).thenReturn("parent_process_id");
+    authorizeProcessReadInstance(true, "parent_process_id");
+
+    when(client.searchProcessInstances(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(childProcess, parentProcess), null, null));
+
+    // when
+    final var result = services.callHierarchy(childProcess.processInstanceKey());
+
+    // then
+    assertThat(result).hasSize(2);
+    assertThat(result.get(0).processInstanceKey()).isEqualTo(123L); // Parent comes first
+    assertThat(result.get(1).processInstanceKey()).isEqualTo(789L); // Child comes next
+  }
+
+  @Test
+  public void shouldReturnEmptyListForBlankTreePath() {
+    // given
+    final var rootInstance = mock(ProcessInstanceEntity.class);
+    when(rootInstance.processInstanceKey()).thenReturn(123L);
+    when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
+    authorizeProcessReadInstance(true, "root_process_id");
+    when(rootInstance.treePath()).thenReturn(null); // No treePath
+
+    when(client.searchProcessInstances(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(rootInstance), null, null));
+
+    // when
+    final var result = services.callHierarchy(123L);
+
+    // then
+    assertThat(result).isEmpty(); // No hierarchy should return an empty list
+  }
+
+  @Test
+  public void shouldReturnEmptyListForRootTreePath() {
+    // given
+    final var rootInstance = mock(ProcessInstanceEntity.class);
+    when(rootInstance.processInstanceKey()).thenReturn(123L);
+    when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
+    authorizeProcessReadInstance(true, "root_process_id");
+    when(rootInstance.treePath()).thenReturn("PI_123"); // Root treePath
+
+    when(client.searchProcessInstances(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(rootInstance), null, null));
+
+    // when
+    final var result = services.callHierarchy(123L);
+
+    // then
+    assertThat(result).isEmpty(); // No hierarchy should return an empty list
+  }
+
+  @Test
+  void shouldModifyProcessInstanceBatchOperationWithResult() {
+    // given
+    final var filter =
+        FilterBuilders.processInstance(b -> b.processDefinitionIds("test-process-definition-id"));
+
+    final long batchOperationKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(authentication.claims()).thenReturn(emptyMap());
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    final var request =
+        new ProcessInstanceModifyBatchOperationRequest(
+            filter,
+            List.of(
+                new BatchOperationProcessInstanceModificationMoveInstruction()
+                    .setSourceElementId("source1")
+                    .setTargetElementId("target1")));
+
+    // when
+    final var result = services.modifyProcessInstancesBatchOperation(request).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    // and our filter got enriched
+    final var filterBuffer = captor.getValue().getRequestWriter().getEntityFilterBuffer();
+    final var enhancedFilter =
+        MsgPackConverter.convertToObject(filterBuffer, ProcessInstanceFilter.class);
+    assertThat(enhancedFilter.stateOperations())
+        .containsExactly(Operation.eq(ProcessInstanceState.ACTIVE.name()));
+
+    final var modificationPlan = captor.getValue().getRequestWriter().getModificationPlan();
+    assertThat(modificationPlan.getMoveInstructions()).hasSize(1);
+    assertThat(modificationPlan.getMoveInstructions().getFirst().getSourceElementId())
+        .isEqualTo("source1");
+    assertThat(modificationPlan.getMoveInstructions().getFirst().getTargetElementId())
+        .isEqualTo("target1");
   }
 
   private void authorizeProcessReadInstance(final boolean authorize, final String processId) {

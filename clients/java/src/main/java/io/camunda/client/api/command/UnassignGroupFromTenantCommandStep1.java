@@ -21,11 +21,11 @@ public interface UnassignGroupFromTenantCommandStep1
     extends FinalCommandStep<UnassignGroupFromTenantResponse> {
 
   /**
-   * Sets the group key for the unassignment.
+   * Sets the group ID for the unassignment.
    *
-   * @param groupKey the key of the group
+   * @param groupId the ID of the group
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  UnassignGroupFromTenantCommandStep1 groupKey(long groupKey);
+  UnassignGroupFromTenantCommandStep1 groupId(String groupId);
 }

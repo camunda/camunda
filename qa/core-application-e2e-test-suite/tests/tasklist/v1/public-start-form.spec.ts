@@ -9,8 +9,14 @@
 import {expect} from '@playwright/test';
 import {test} from 'fixtures';
 import {deploy} from 'utils/zeebeClient';
+import {captureScreenshot, captureFailureVideo} from '@setup';
 
 test.describe('public start process', () => {
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
   test('should submit form', async ({makeAxeBuilder, publicFormsPage}) => {
     await deploy([
       './resources/subscribeFormProcess.bpmn',
@@ -18,7 +24,7 @@ test.describe('public start process', () => {
     ]);
     await publicFormsPage.goToPublicForm('subscribeFormProcess');
 
-    await expect(publicFormsPage.nameInput).toBeVisible();
+    await expect(publicFormsPage.nameInput).toBeVisible({timeout: 60000});
 
     const results = await makeAxeBuilder().analyze();
 

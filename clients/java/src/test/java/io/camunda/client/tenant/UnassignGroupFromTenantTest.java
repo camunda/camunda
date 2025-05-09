@@ -23,42 +23,35 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled(
-    "Disabled while groups are not fully supported yet: https://github.com/camunda/camunda/issues/26961 ")
 public class UnassignGroupFromTenantTest extends ClientRestTest {
 
   private static final String TENANT_ID = "tenantId";
-  private static final long GROUP_KEY = 456L;
+  private static final String GROUP_ID = "groupId";
 
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(TENANT_ID).groupKey(GROUP_KEY).send().join();
+    client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath)
-        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY);
+        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_ID);
   }
 
   @Test
   void shouldRaiseExceptionOnNotFoundTenant() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_ID,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
-                client
-                    .newUnassignGroupFromTenantCommand(TENANT_ID)
-                    .groupKey(GROUP_KEY)
-                    .send()
-                    .join())
+                client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -67,17 +60,13 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFoundGroup() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_ID,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
-                client
-                    .newUnassignGroupFromTenantCommand(TENANT_ID)
-                    .groupKey(GROUP_KEY)
-                    .send()
-                    .join())
+                client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -86,17 +75,13 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
   void shouldHandleServerError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_ID,
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
     assertThatThrownBy(
             () ->
-                client
-                    .newUnassignGroupFromTenantCommand(TENANT_ID)
-                    .groupKey(GROUP_KEY)
-                    .send()
-                    .join())
+                client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -105,17 +90,13 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_ID,
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
     assertThatThrownBy(
             () ->
-                client
-                    .newUnassignGroupFromTenantCommand(TENANT_ID)
-                    .groupKey(GROUP_KEY)
-                    .send()
-                    .join())
+                client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }

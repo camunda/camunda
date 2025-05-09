@@ -13,6 +13,7 @@ import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createAndSa
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.insertBatchOperationsItems;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringKey;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class BatchOperationIT {
+  public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
   public void shouldReturnTrueForExists(final CamundaRdbmsTestApplication testApplication) {
@@ -63,7 +65,7 @@ public class BatchOperationIT {
 
     createAndSaveRandomBatchOperations(rdbmsService.createWriter(0), b -> b);
 
-    final var searchResult = rdbmsService.getBatchOperationReader().exists(nextKey());
+    final var searchResult = rdbmsService.getBatchOperationReader().exists(nextStringKey());
 
     assertThat(searchResult).isFalse();
   }
@@ -126,7 +128,9 @@ public class BatchOperationIT {
         .updateItem(
             batchOperation.batchOperationKey(),
             items.getFirst(),
-            BatchOperationItemState.COMPLETED);
+            BatchOperationItemState.COMPLETED,
+            NOW,
+            null);
     writer.flush();
 
     // then
@@ -150,6 +154,9 @@ public class BatchOperationIT {
             .findFirst()
             .get();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+    assertThat(firstItem.processedDate())
+        .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(firstItem.errorMessage()).isNull();
 
     final var lastItem =
         updatedItems.stream()
@@ -181,7 +188,11 @@ public class BatchOperationIT {
     writer
         .getBatchOperationWriter()
         .updateItem(
-            batchOperation.batchOperationKey(), items.getFirst(), BatchOperationItemState.FAILED);
+            batchOperation.batchOperationKey(),
+            items.getFirst(),
+            BatchOperationItemState.FAILED,
+            NOW,
+            "error");
     writer.flush();
 
     // then
@@ -205,6 +216,9 @@ public class BatchOperationIT {
             .findFirst()
             .get();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.FAILED);
+    assertThat(firstItem.processedDate())
+        .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(firstItem.errorMessage()).isEqualTo("error");
 
     final var lastItem =
         updatedItems.stream()
@@ -232,7 +246,9 @@ public class BatchOperationIT {
         .updateItem(
             batchOperation.batchOperationKey(),
             items.getFirst(),
-            BatchOperationItemState.COMPLETED);
+            BatchOperationItemState.COMPLETED,
+            NOW,
+            null);
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
@@ -340,7 +356,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
-                        .batchOperationKeys(batchOperation.batchOperationKey())
+                        .batchOperationIds(batchOperation.batchOperationKey())
                         .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -434,8 +450,9 @@ public class BatchOperationIT {
     assertThat(instance).isNotNull();
     assertThat(instance)
         .usingRecursiveComparison()
-        .ignoringFields("startDate", "endDate")
+        .ignoringFields("batchOperationId", "startDate", "endDate")
         .isEqualTo(batchOperation);
+    assertThat(instance.batchOperationId()).isEqualTo(batchOperation.batchOperationKey());
     assertThat(instance.startDate())
         .isCloseTo(batchOperation.startDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.endDate())
@@ -449,7 +466,7 @@ public class BatchOperationIT {
         .search(
             new BatchOperationQuery(
                 new BatchOperationFilter.Builder()
-                    .batchOperationKeys(batchOperation.batchOperationKey())
+                    .batchOperationIds(batchOperation.batchOperationKey())
                     .build(),
                 BatchOperationSort.of(b -> b),
                 SearchQueryPage.of(b -> b)));

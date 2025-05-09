@@ -23,8 +23,8 @@ public class GroupClient {
     this.writer = writer;
   }
 
-  public GroupCreateClient newGroup(final String name) {
-    return new GroupCreateClient(writer, name);
+  public GroupCreateClient newGroup(final String groupId) {
+    return new GroupCreateClient(writer, groupId);
   }
 
   public GroupUpdateClient updateGroup(final String groupId) {

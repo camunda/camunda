@@ -18,7 +18,6 @@ import {createBatchOperation, createVariable} from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
@@ -27,13 +26,19 @@ import {Paths} from 'modules/Routes';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
-import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
+import {
+  getWrapper,
+  mockProcessInstance,
+  mockRequests,
+  waitForPollingsToBeComplete,
+} from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
-  sequenceFlowsStore.isPollRequestRunning = false;
   processInstanceDetailsStore.isPollRequestRunning = false;
   incidentsStore.isPollRequestRunning = false;
   flowNodeInstanceStore.isPollRequestRunning = false;
@@ -56,9 +61,6 @@ describe('ProcessInstance - modification mode', () => {
 
   it('should display the modifications header and footer when modification mode is enabled', async () => {
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     expect(
       screen.queryByText('Process Instance Modification Mode'),
@@ -71,6 +73,12 @@ describe('ProcessInstance - modification mode', () => {
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
+
+    expect(
+      await screen.findByRole('button', {
+        name: /modify instance/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
@@ -106,13 +114,15 @@ describe('ProcessInstance - modification mode', () => {
 
   it('should display confirmation modal when discard all is clicked during the modification mode', async () => {
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
+    expect(
+      await screen.findByRole('button', {
+        name: /modify instance/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
@@ -146,13 +156,15 @@ describe('ProcessInstance - modification mode', () => {
 
   it('should disable apply modifications button if there are no modifications pending', async () => {
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
+    expect(
+      await screen.findByRole('button', {
+        name: /modify instance/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
@@ -167,14 +179,16 @@ describe('ProcessInstance - modification mode', () => {
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
     });
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
+    expect(
+      await screen.findByRole('button', {
+        name: /modify instance/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
@@ -225,10 +239,6 @@ describe('ProcessInstance - modification mode', () => {
       variablesStore,
       'handlePolling',
     );
-    const handlePollingSequenceFlowsSpy = jest.spyOn(
-      sequenceFlowsStore,
-      'handlePolling',
-    );
 
     const handlePollingInstanceDetailsSpy = jest.spyOn(
       processInstanceDetailsStore,
@@ -246,9 +256,6 @@ describe('ProcessInstance - modification mode', () => {
     );
 
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
@@ -256,7 +263,6 @@ describe('ProcessInstance - modification mode', () => {
 
     mockRequests();
 
-    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
@@ -264,9 +270,12 @@ describe('ProcessInstance - modification mode', () => {
 
     clearPollingStates();
     jest.runOnlyPendingTimers();
-    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() =>
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
+    );
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
@@ -276,6 +285,11 @@ describe('ProcessInstance - modification mode', () => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
 
+    expect(
+      await screen.findByRole('button', {
+        name: /modify instance/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
@@ -287,7 +301,6 @@ describe('ProcessInstance - modification mode', () => {
 
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
@@ -298,7 +311,6 @@ describe('ProcessInstance - modification mode', () => {
 
     jest.runOnlyPendingTimers();
 
-    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
@@ -316,7 +328,6 @@ describe('ProcessInstance - modification mode', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(3);
       expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(3);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(3);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3);
@@ -340,13 +351,15 @@ describe('ProcessInstance - modification mode', () => {
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
     });
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
+    expect(
+      await screen.findByRole('button', {
+        name: /modify instance/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
@@ -392,14 +405,16 @@ describe('ProcessInstance - modification mode', () => {
 
   it('should block navigation when modification mode is enabled', async () => {
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
 
+    expect(
+      await screen.findByRole('button', {
+        name: /modify instance/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
@@ -458,14 +473,16 @@ describe('ProcessInstance - modification mode', () => {
         contextPath: baseName,
       }),
     });
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
 
+    expect(
+      await screen.findByRole('button', {
+        name: /modify instance/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,
@@ -530,14 +547,21 @@ describe('ProcessInstance - modification mode', () => {
         }),
       },
     );
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
+
+    mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
+    mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
+    mockFetchCallHierarchy(contextPath).withSuccess({items: []});
+    mockFetchCallHierarchy(contextPath).withSuccess({items: []});
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
 
+    expect(
+      await screen.findByRole('button', {
+        name: /modify instance/i,
+      }),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: /modify instance/i,

@@ -24,18 +24,7 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
 
   @Override
   public void applyState(final long tenantKey, final TenantRecord tenant) {
-    switch (tenant.getEntityType()) {
-      case USER, GROUP, MAPPING ->
-          membershipState.insertRelation(
-              tenant.getEntityType(),
-              tenant.getEntityId(),
-              RelationType.TENANT,
-              tenant.getTenantId());
-      default ->
-          throw new IllegalStateException(
-              String.format(
-                  "Expected to add entity '%s' to tenant '%s', but entities of type '%s' cannot be added to tenants",
-                  tenant.getEntityId(), tenant.getTenantId(), tenant.getEntityType()));
-    }
+    membershipState.insertRelation(
+        tenant.getEntityType(), tenant.getEntityId(), RelationType.TENANT, tenant.getTenantId());
   }
 }

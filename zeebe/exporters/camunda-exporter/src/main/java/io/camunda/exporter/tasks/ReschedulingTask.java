@@ -9,12 +9,13 @@ package io.camunda.exporter.tasks;
 
 import io.camunda.exporter.tasks.util.ReschedulingTaskLogger;
 import io.camunda.zeebe.util.ExponentialBackoff;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
-public final class ReschedulingTask implements Runnable {
+public final class ReschedulingTask implements RunnableTask {
   private final BackgroundTask task;
   private final int minimumWorkCount;
   private final ScheduledExecutorService executor;
@@ -22,8 +23,10 @@ public final class ReschedulingTask implements Runnable {
   private final ReschedulingTaskLogger periodicLogger;
   private final ExponentialBackoff idleStrategy;
   private final ExponentialBackoff errorStrategy;
+  private long executionCounter;
   private long delayMs;
   private long errorDelayMs;
+  private volatile boolean closed = false;
 
   public ReschedulingTask(
       final BackgroundTask task,
@@ -57,7 +60,18 @@ public final class ReschedulingTask implements Runnable {
     result
         .thenApplyAsync(this::onWorkPerformed, executor)
         .exceptionallyAsync(this::onError, executor)
-        .thenAcceptAsync(this::reschedule, executor);
+        .thenAcceptAsync(this::reschedule, executor)
+        .thenAccept(unused -> executionCounter++);
+  }
+
+  @Override
+  public void close() {
+    closed = true;
+  }
+
+  @VisibleForTesting
+  public long executionCount() {
+    return executionCounter;
   }
 
   private long onWorkPerformed(final int count) {
@@ -88,7 +102,11 @@ public final class ReschedulingTask implements Runnable {
   }
 
   private void reschedule(final long delay) {
-    logger.trace("Rescheduling task {} in {}ms", task, delay);
-    executor.schedule(this, delay, TimeUnit.MILLISECONDS);
+    if (!closed) {
+      logger.trace("Rescheduling task {} in {}ms", task, delay);
+      executor.schedule(this, delay, TimeUnit.MILLISECONDS);
+    } else {
+      logger.info("Task {} was closed, not rescheduling.", task.getClass().getSimpleName());
+    }
   }
 }

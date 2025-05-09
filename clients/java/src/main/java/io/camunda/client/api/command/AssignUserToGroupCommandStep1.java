@@ -20,11 +20,11 @@ import io.camunda.client.api.response.AssignUserToGroupResponse;
 public interface AssignUserToGroupCommandStep1 extends FinalCommandStep<AssignUserToGroupResponse> {
 
   /**
-   * Sets the user key for the assignment.
+   * Sets the username for the assignment.
    *
-   * @param userKey the key of the user
+   * @param username the username of the user
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  AssignUserToGroupCommandStep1 userKey(long userKey);
+  AssignUserToGroupCommandStep1 username(String username);
 }

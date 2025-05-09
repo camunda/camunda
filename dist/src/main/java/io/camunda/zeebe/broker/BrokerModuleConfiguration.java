@@ -141,7 +141,9 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   protected void stopBroker() {
     try {
-      broker.close();
+      if (broker != null) {
+        broker.close();
+      }
     } finally {
       cleanupWorkingDirectory();
     }

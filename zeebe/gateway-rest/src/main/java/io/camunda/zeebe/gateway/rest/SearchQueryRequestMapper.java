@@ -281,7 +281,8 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromGroupSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::group,
             SearchQueryRequestMapper::applyGroupSortField);
-    return buildSearchQuery(sort, page, SearchQueryBuilders::groupSearchQuery);
+    final var filter = toGroupFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
   public static Either<ProblemDetail, TenantQuery> toTenantQuery(
@@ -589,9 +590,7 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.batchOperation();
 
     if (filter != null) {
-      ofNullable(filter.getBatchOperationKey())
-          .map(KeyUtil::keyToLong)
-          .ifPresent(builder::batchOperationKeys);
+      ofNullable(filter.getBatchOperationId()).ifPresent(builder::batchOperationIds);
       ofNullable(filter.getState()).map(StateEnum::toString).ifPresent(builder::state);
       ofNullable(filter.getOperationType())
           .map(BatchOperationTypeEnum::toString)
@@ -609,7 +608,6 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case BATCH_OPERATION_KEY -> builder.batchOperationKey();
         case STATE -> builder.state();
         case OPERATION_TYPE -> builder.operationType();
         case START_DATE -> builder.startDate();
@@ -746,6 +744,15 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.tenant();
     if (filter != null) {
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+      ofNullable(filter.getName()).ifPresent(builder::name);
+    }
+    return builder.build();
+  }
+
+  private static GroupFilter toGroupFilter(final GroupFilterRequest filter) {
+    final var builder = FilterBuilders.group();
+    if (filter != null) {
+      ofNullable(filter.getGroupId()).ifPresent(builder::groupId);
       ofNullable(filter.getName()).ifPresent(builder::name);
     }
     return builder.build();
@@ -1052,7 +1059,6 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case MAPPING_KEY -> builder.mappingKey();
         case MAPPING_ID -> builder.mappingId();
         case CLAIM_NAME -> builder.claimName();
         case CLAIM_VALUE -> builder.claimValue();

@@ -7,7 +7,6 @@
  */
 package io.camunda.search.schema.opensearch;
 
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -183,8 +182,8 @@ public class OpensearchEngineClient implements SearchEngineClient {
     } catch (final IOException | OpenSearchException e) {
       throw new SearchEngineException(
           String.format(
-              "Failed retrieving mappings from index/index templates with pattern [%s]",
-              namePattern),
+              "Failed retrieving mappings from index/index templates with pattern [%s]: %s",
+              namePattern, e.getMessage()),
           e);
     }
   }
@@ -273,11 +272,13 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putIndexTemplate(updateIndexTemplateSettingsRequest);
-    } catch (final IOException | ElasticsearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new SearchEngineException(
           String.format(
-              "Expected to update index template settings '%s' with '%s', but failed ",
-              indexTemplateDescriptor.getTemplateName(), updateIndexTemplateSettingsRequest),
+              "Expected to update index template settings '%s' with '%s', but failed: %s",
+              indexTemplateDescriptor.getTemplateName(),
+              updateIndexTemplateSettingsRequest,
+              e.getMessage()),
           e);
     }
   }

@@ -8,16 +8,11 @@
 
 import {render, screen} from 'modules/testing-library';
 import {getWrapper} from './mocks';
-import {
-  groupedProcessesMock,
-  mockProcessStatistics,
-  mockProcessXML,
-} from 'modules/testUtils';
+import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.list';
 
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {ERRORS} from 'modules/validators';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
@@ -26,7 +21,6 @@ jest.unmock('modules/utils/date/formatDate');
 describe('Validations', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     processesStore.fetchProcesses();

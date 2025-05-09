@@ -442,7 +442,7 @@ test('version selection', async (t) => {
   await t.typeText(Alert.inputWithLabel('Alert name'), 'Test alert', {replace: true});
   await t.click(Common.comboBox);
   await t.click(Common.carbonOption('Number report'));
-  await t.typeText(Alert.inputWithLabel('Send email to'), 'demo@demo.com ');
+  await t.typeText(Alert.inputWithLabel('Send email to'), 'demo@example.com ');
   await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
 
@@ -665,4 +665,28 @@ test('copy dashboard tiles', async (t) => {
   await t.click(e.reportTile.nth(0).find('.CopyButton'));
   await t.click('.DashboardRenderer');
   await t.expect(e.reportTile.count).eql(10);
+});
+
+test('drag a report in a Dashboard', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Order process');
+  await u.selectView(t, 'Raw data');
+  await u.save(t);
+  await u.gotoOverview(t);
+  await u.createNewDashboard(t);
+  await u.addReportToDashboard(t, 'Blank report');
+
+  await t.dispatchEvent(e.gridItem, 'mousedown');
+  const leftOffset = await e.gridItem.getBoundingClientRectProperty('left');
+  const DRAG_AMOUNT = 500;
+  await t.expect(leftOffset).lt(DRAG_AMOUNT);
+  await t.drag(e.gridItem, DRAG_AMOUNT, 0);
+  const newLeftOffset = await e.gridItem.getBoundingClientRectProperty('left');
+
+  await t.expect(newLeftOffset).gt(DRAG_AMOUNT);
+
+  await u.save(t);
+
+  const offsetAfterSave = await e.gridItem.getBoundingClientRectProperty('left');
+  await t.expect(offsetAfterSave).gt(DRAG_AMOUNT);
 });

@@ -15,21 +15,14 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
 import io.camunda.client.api.response.SetVariablesResponse;
 import java.io.InputStream;
 import java.util.Map;
 
 public interface SetVariablesCommandStep1
-    extends CommandWithCommunicationApiStep<SetVariablesCommandStep1> {
-  /**
-   * Sets the variables document from a JSON stream.
-   *
-   * @param variables the variables JSON document as stream
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  SetVariablesCommandStep2 variables(InputStream variables);
-
+    extends CommandWithCommunicationApiStep<SetVariablesCommandStep1>,
+        CommandWithVariables<SetVariablesCommandStep2> {
   /**
    * Sets the variables document from a JSON string.
    *
@@ -37,16 +30,8 @@ public interface SetVariablesCommandStep1
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
+  @Override
   SetVariablesCommandStep2 variables(String variables);
-
-  /**
-   * Sets the variables document from a map.
-   *
-   * @param variables the variables document as map
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  SetVariablesCommandStep2 variables(Map<String, Object> variables);
 
   /**
    * Sets the variables document from an object, which will be serialized into a JSON document.
@@ -55,7 +40,39 @@ public interface SetVariablesCommandStep1
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
+  @Override
   SetVariablesCommandStep2 variables(Object variables);
+
+  /**
+   * Sets the variables document from a JSON stream.
+   *
+   * @param variables the variables JSON document as stream
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  @Override
+  SetVariablesCommandStep2 variables(InputStream variables);
+
+  /**
+   * Sets the variables document from a map.
+   *
+   * @param variables the variables document as map
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  @Override
+  SetVariablesCommandStep2 variables(Map<String, Object> variables);
+
+  /**
+   * Set a single variable.
+   *
+   * @param key the key of the variable as string
+   * @param value the value of the variable as object
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  @Override
+  SetVariablesCommandStep2 variable(String key, Object value);
 
   interface SetVariablesCommandStep2
       extends CommandWithOperationReferenceStep<SetVariablesCommandStep2>,

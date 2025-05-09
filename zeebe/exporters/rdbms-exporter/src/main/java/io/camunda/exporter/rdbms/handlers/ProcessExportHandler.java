@@ -7,9 +7,13 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.exporter.rdbms.utils.ProcessCacheUtil.sortedCallActivityIds;
+
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.exporter.rdbms.cache.CachedProcessEntity;
+import io.camunda.exporter.rdbms.cache.ExporterEntityCache;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -27,9 +31,13 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
   private static final Logger LOG = LoggerFactory.getLogger(ProcessExportHandler.class);
 
   private final ProcessDefinitionWriter processDefinitionWriter;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
-  public ProcessExportHandler(final ProcessDefinitionWriter processDefinitionWriter) {
+  public ProcessExportHandler(
+      final ProcessDefinitionWriter processDefinitionWriter,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.processDefinitionWriter = processDefinitionWriter;
+    this.processCache = processCache;
   }
 
   @Override
@@ -43,6 +51,17 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
   public void export(final Record<Process> record) {
     final Process value = record.getValue();
     processDefinitionWriter.create(map(value));
+    final String resourceName = value.getResourceName();
+    final var versionTag = value.getVersionTag();
+    final var processModelReader =
+        ProcessModelReader.of(value.getResource(), value.getBpmnProcessId());
+    processModelReader.ifPresent(
+        reader -> {
+          final var activities = sortedCallActivityIds(reader.extractCallActivities());
+          final var cachedProcessEntity =
+              new CachedProcessEntity(resourceName, versionTag, activities);
+          processCache.put(value.getProcessDefinitionKey(), cachedProcessEntity);
+        });
   }
 
   private ProcessDefinitionDbModel map(final Process value) {

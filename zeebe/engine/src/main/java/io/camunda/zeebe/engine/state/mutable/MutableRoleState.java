@@ -16,9 +16,5 @@ public interface MutableRoleState extends RoleState {
 
   void update(final RoleRecord roleRecord);
 
-  void addEntity(final RoleRecord roleRecord);
-
-  void removeEntity(final long roleKey, final long entityKey);
-
   void delete(final RoleRecord roleRecord);
 }

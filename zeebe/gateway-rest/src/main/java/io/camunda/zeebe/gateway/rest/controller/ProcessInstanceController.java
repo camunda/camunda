@@ -16,12 +16,14 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
@@ -107,6 +109,22 @@ public class ProcessInstanceController {
     }
   }
 
+  @CamundaGetMapping(path = "/{processInstanceKey}/call-hierarchy")
+  public ResponseEntity<Object> getCallHierarchy(
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntries(
+                  processInstanceServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .callHierarchy(processInstanceKey)));
+
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   @CamundaGetMapping(path = "/{processInstanceKey}/statistics/element-instances")
   public ResponseEntity<Object> elementStatistics(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
@@ -150,7 +168,14 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> migrateProcessInstancesBatchOperation(
       @RequestBody final ProcessInstanceMigrationBatchOperationInstruction request) {
     return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(request)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationMigrate);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
+  }
+
+  @CamundaPostMapping(path = "/batch-operations/modification")
+  public CompletableFuture<ResponseEntity<Object>> modifyProcessInstancesBatchOperation(
+      @RequestBody final ProcessInstanceModificationBatchOperationInstruction request) {
+    return RequestMapper.toProcessInstanceModifyBatchOperationRequest(request)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
   }
 
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
@@ -187,13 +212,23 @@ public class ProcessInstanceController {
         ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> batchOperationMigrate(
+  private CompletableFuture<ResponseEntity<Object>> batchOperationModify(
       final ProcessInstanceMigrationBatchOperationRequest request) {
     return RequestMapper.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .migrateProcessInstancesBatchOperation(request),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> batchOperationModify(
+      final ProcessInstanceModifyBatchOperationRequest request) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            processInstanceServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .modifyProcessInstancesBatchOperation(request),
         ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
 

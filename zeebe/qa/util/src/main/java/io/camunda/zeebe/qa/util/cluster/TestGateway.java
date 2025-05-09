@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -62,6 +63,11 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
     final var basePath = property("server.servlet.context-path", String.class, "");
     final var sslEnabled = property("server.ssl.enabled", Boolean.class, false);
     return uri(sslEnabled ? "https" : "http", TestZeebePort.REST, basePath);
+  }
+
+  default URI actuatorAddress(final String path) {
+    final var basePath = property("server.servlet.context-path", String.class, "");
+    return uri("http", TestZeebePort.MONITORING, basePath, "actuator", path);
   }
 
   /**
@@ -138,5 +144,19 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    */
   default T awaitCompleteTopology() {
     return awaitCompleteTopology(1, 1, 1, Duration.ofSeconds(30));
+  }
+
+  /**
+   * Method to await the complete topology of a cluster with the given configuration.
+   *
+   * @return itself for chaining
+   */
+  default T awaitCompleteTopology(BrokerBasedProperties brokerBasedProperties) {
+    final var clusterCfg = brokerBasedProperties.getCluster();
+    return awaitCompleteTopology(
+        clusterCfg.getClusterSize(),
+        clusterCfg.getPartitionsCount(),
+        clusterCfg.getReplicationFactor(),
+        Duration.ofSeconds(30));
   }
 }

@@ -57,7 +57,7 @@ public class RoleDeletedHandlerTest {
     final var idList = underTest.generateIds(roleRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(roleRecord.getKey()));
+    assertThat(idList).containsExactly(String.valueOf(roleRecord.getValue().getRoleId()));
   }
 
   @Test

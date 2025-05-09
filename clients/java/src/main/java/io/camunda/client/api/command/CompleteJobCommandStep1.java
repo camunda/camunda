@@ -23,16 +23,8 @@ import java.util.function.UnaryOperator;
 
 public interface CompleteJobCommandStep1
     extends CommandWithCommunicationApiStep<CompleteJobCommandStep1>,
-        FinalCommandStep<CompleteJobResponse> {
-
-  /**
-   * Set the variables to complete the job with.
-   *
-   * @param variables the variables (JSON) as stream
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  CompleteJobCommandStep1 variables(InputStream variables);
+        FinalCommandStep<CompleteJobResponse>,
+        CommandWithVariables<CompleteJobCommandStep1> {
 
   /**
    * Set the variables to complete the job with.
@@ -41,16 +33,8 @@ public interface CompleteJobCommandStep1
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
+  @Override
   CompleteJobCommandStep1 variables(String variables);
-
-  /**
-   * Set the variables to complete the job with.
-   *
-   * @param variables the variables as map
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  CompleteJobCommandStep1 variables(Map<String, Object> variables);
 
   /**
    * Set the variables to complete the job with.
@@ -59,7 +43,28 @@ public interface CompleteJobCommandStep1
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
+  @Override
   CompleteJobCommandStep1 variables(Object variables);
+
+  /**
+   * Set the variables to complete the job with.
+   *
+   * @param variables the variables (JSON) as stream
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  @Override
+  CompleteJobCommandStep1 variables(InputStream variables);
+
+  /**
+   * Set the variables to complete the job with.
+   *
+   * @param variables the variables as map
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  @Override
+  CompleteJobCommandStep1 variables(Map<String, Object> variables);
 
   /**
    * Set a single variable to complete the job with.
@@ -69,6 +74,7 @@ public interface CompleteJobCommandStep1
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
+  @Override
   CompleteJobCommandStep1 variable(String key, Object value);
 
   /**

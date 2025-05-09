@@ -30,7 +30,16 @@
 			},
 			"username": {
 				"type": "keyword"
-			}
-		}
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "operationsFailedCount": {
+        "type": "long"
+      },
+      "operationsCompletedCount": {
+        "type": "long"
+      }
+    }
 	}
 }

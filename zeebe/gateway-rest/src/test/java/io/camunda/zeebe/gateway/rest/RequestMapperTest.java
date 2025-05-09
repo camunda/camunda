@@ -14,18 +14,21 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.authentication.CamundaJwtAuthenticationToken;
-import io.camunda.authentication.entity.AuthenticationContext;
+import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -118,7 +121,7 @@ class RequestMapperTest {
             new TenantDTO(1L, "tenant-1", "Tenant One", "First"),
             new TenantDTO(2L, "tenant-2", "Tenant Two", "Second"));
     final var authenticationContext =
-        new AuthenticationContext(username, List.of(), List.of(), tenants, List.of());
+        new AuthenticationContextBuilder().withUsername(username).withTenants(tenants).build();
 
     final var principal =
         new CamundaOidcUser(
@@ -129,7 +132,6 @@ class RequestMapperTest {
                     Instant.now(),
                     Instant.now().plusSeconds(3600),
                     Map.of("sub", username))),
-            Collections.emptySet(),
             Collections.emptySet(),
             authenticationContext);
 
@@ -143,6 +145,66 @@ class RequestMapperTest {
     assertThat(authContext.authenticatedTenantIds())
         .containsExactlyInAnyOrder("tenant-1", "tenant-2");
     assertThat(authContext.authenticatedUsername()).isEqualTo(username);
+  }
+
+  @Test
+  void usernameIsSetInAuthenticationWhenOnAuthenticationContext() {
+    // given
+    final var username = "test-user";
+    final var authenticationContext =
+        new AuthenticationContextBuilder().withUsername(username).build();
+
+    final var principal =
+        new CamundaOidcUser(
+            new DefaultOidcUser(
+                Collections.emptyList(),
+                new OidcIdToken(
+                    "tokenValue",
+                    Instant.now(),
+                    Instant.now().plusSeconds(3600),
+                    Map.of("sub", username))),
+            Collections.emptySet(),
+            authenticationContext);
+
+    final var auth = new OAuth2AuthenticationToken(principal, List.of(), "oidc");
+    SecurityContextHolder.getContext().setAuthentication(auth);
+
+    // when
+    final var authentication = RequestMapper.getAuthentication();
+
+    // then
+    assertThat(authentication.authenticatedUsername()).isEqualTo(username);
+    assertThat(authentication.authenticationApplicationId()).isNull();
+  }
+
+  @Test
+  void applicationIdIsSetInAuthenticationWhenOnAuthenticationContext() {
+    // given
+    final var applicationId = "my-application";
+    final var authenticationContext =
+        new AuthenticationContextBuilder().withApplicationId(applicationId).build();
+
+    final var principal =
+        new CamundaOidcUser(
+            new DefaultOidcUser(
+                Collections.emptyList(),
+                new OidcIdToken(
+                    "tokenValue",
+                    Instant.now(),
+                    Instant.now().plusSeconds(3600),
+                    Map.of("sub", applicationId))),
+            Collections.emptySet(),
+            authenticationContext);
+
+    final var auth = new OAuth2AuthenticationToken(principal, List.of(), "oidc");
+    SecurityContextHolder.getContext().setAuthentication(auth);
+
+    // when
+    final var authContext = RequestMapper.getAuthentication();
+
+    // then
+    assertThat(authContext.authenticatedUsername()).isNull();
+    assertThat(authContext.authenticationApplicationId()).isEqualTo(applicationId);
   }
 
   @Test
@@ -204,6 +266,56 @@ class RequestMapperTest {
     assertThat(problemDetail.getDetail()).contains("are required");
   }
 
+  @Test
+  void shouldMapProcessInstanceModifyBatchOperationRequest() {
+    // given
+    final var moveInstruction =
+        new ProcessInstanceModificationMoveBatchOperationInstruction()
+            .sourceElementId("source1")
+            .targetElementId("target1");
+
+    final var modificationInstruction =
+        new ProcessInstanceModificationBatchOperationInstruction()
+            .addMoveInstructionsItem(moveInstruction);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationInstruction);
+
+    // then
+    assertTrue(result.isRight());
+    final var request = result.get();
+    assertThat(request.moveInstructions())
+        .hasSize(1)
+        .first()
+        .satisfies(
+            instruction -> {
+              assertThat(instruction.getSourceElementId()).isEqualTo("source1");
+              assertThat(instruction.getTargetElementId()).isEqualTo("target1");
+            });
+  }
+
+  @Test
+  void shouldNotMapProcessInstanceModifyBatchOperationRequestWhenInvalid() {
+    // given
+    final var moveInstruction =
+        new ProcessInstanceModificationMoveBatchOperationInstruction().sourceElementId("source1");
+
+    final var modificationInstruction =
+        new ProcessInstanceModificationBatchOperationInstruction()
+            .addMoveInstructionsItem(moveInstruction);
+
+    // when
+    final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationInstruction);
+
+    // then
+    assertTrue(result.isLeft());
+    final var problemDetail = result.getLeft();
+    assertThat(problemDetail.getStatus()).isEqualTo(400);
+    assertThat(problemDetail.getDetail()).isEqualTo("No targetElementId provided.");
+  }
+
   private void setJwtAuthenticationInContext(final String sub, final String aud) {
     final Jwt jwt =
         new Jwt(
@@ -224,9 +336,10 @@ class RequestMapperTest {
                 jwt,
                 new OAuthContext(
                     new HashSet<>(),
-                    new HashSet<>(),
-                    new AuthenticationContext(
-                        sub, List.of(), List.of(), List.of(), List.of("g1", "g2")))),
+                    new AuthenticationContextBuilder()
+                        .withUsername(sub)
+                        .withGroups(List.of("g1", "g2"))
+                        .build())),
             null,
             null);
     SecurityContextHolder.getContext().setAuthentication(token);
@@ -249,9 +362,7 @@ class RequestMapperTest {
                         tokenExpiresAt,
                         Map.of("aud", aud, usernameClaim, usernameValue))),
                 Collections.emptySet(),
-                Collections.emptySet(),
-                new AuthenticationContext(
-                    usernameValue, List.of(), List.of(), List.of(), List.of())),
+                new AuthenticationContextBuilder().withUsername(usernameValue).build()),
             List.of(),
             "oidc");
 

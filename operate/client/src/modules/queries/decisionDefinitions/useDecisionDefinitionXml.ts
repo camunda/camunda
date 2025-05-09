@@ -12,8 +12,10 @@ import {
 } from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinitionXml';
 import {genericQueryOptions} from '../genericQuery';
 
+const DECISION_DEFINITION_XML_QUERY_KEY = 'DecisionDefinitionXml';
+
 function getQueryKey(DecisionDefinitionKey: DecisionDefinitionKey) {
-  return ['DecisionDefinitionXml', DecisionDefinitionKey];
+  return [DECISION_DEFINITION_XML_QUERY_KEY, DecisionDefinitionKey];
 }
 
 function useDecisionDefinitionXmlOptions({
@@ -35,4 +37,4 @@ function useDecisionDefinitionXmlOptions({
   );
 }
 
-export {useDecisionDefinitionXmlOptions};
+export {DECISION_DEFINITION_XML_QUERY_KEY, useDecisionDefinitionXmlOptions};

@@ -36,10 +36,13 @@ vi.mock('modules/stores/autoSelectFirstTask', () => ({
 }));
 
 const FIRST_PAGE = Array.from({length: 50}).map((_, userTaskKey) =>
-  unassignedTask({userTaskKey, name: `TASK ${userTaskKey}`}),
+  unassignedTask({
+    userTaskKey: userTaskKey.toString(),
+    name: `TASK ${userTaskKey}`,
+  }),
 );
 const SECOND_PAGE = Array.from({length: 50}).map((_, index) => {
-  const userTaskKey = index + 50;
+  const userTaskKey = `${index + 50}`;
 
   return unassignedTask({
     userTaskKey: userTaskKey,
