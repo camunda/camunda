@@ -176,4 +176,13 @@ public final class SearchQueryBuilders {
       final Function<BatchOperationQuery.Builder, ObjectBuilder<BatchOperationQuery>> fn) {
     return fn.apply(batchOperationQuery()).build();
   }
+
+  public static BatchOperationItemQuery.Builder batchOperationItemQuery() {
+    return new BatchOperationItemQuery.Builder();
+  }
+
+  public static BatchOperationItemQuery batchOperationItemQuery(
+      final Function<BatchOperationItemQuery.Builder, ObjectBuilder<BatchOperationItemQuery>> fn) {
+    return fn.apply(batchOperationItemQuery()).build();
+  }
 }
