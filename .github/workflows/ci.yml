@@ -301,7 +301,7 @@ jobs:
 
   consolidated-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[Consolidated UT] ${{ matrix.component }} - ${{ matrix.suiteName }}"
+    name: "[Consolidated UT] ${{ matrix.componentPrettyPrint }} - ${{ matrix.suiteName }}"
     needs: [ detect-changes ]
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -309,7 +309,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [ Operate ]
+        component: [ operate ]
         suite: [ coreFeatures, dataLayer, identity ]
         include:
           - suite: coreFeatures
@@ -325,6 +325,7 @@ jobs:
             secondSkip: DskipCoreFeaturesUTs
             suiteName: Identity
           - component: operate
+            componentPrettyPrint: Operate
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
