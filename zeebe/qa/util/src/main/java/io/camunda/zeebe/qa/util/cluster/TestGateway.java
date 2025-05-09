@@ -65,6 +65,11 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
     return uri(sslEnabled ? "https" : "http", TestZeebePort.REST, basePath);
   }
 
+  default URI actuatorAddress(final String path) {
+    final var basePath = property("server.servlet.context-path", String.class, "");
+    return uri("http", TestZeebePort.MONITORING, basePath, "actuator", path);
+  }
+
   /**
    * Returns the health actuator for this gateway. You can use this to check for liveness,
    * readiness, and startup.
