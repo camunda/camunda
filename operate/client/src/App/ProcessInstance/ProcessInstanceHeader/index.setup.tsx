@@ -9,7 +9,6 @@
 import {authenticationStore} from 'modules/stores/authentication';
 import {operationsStore} from 'modules/stores/operations';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {variablesStore} from 'modules/stores/variables';
 import {createBatchOperation, createInstance} from 'modules/testUtils';
 import {useEffect} from 'react';
@@ -52,7 +51,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       operationsStore.reset();
       variablesStore.reset();
       processInstanceDetailsStore.reset();
-      processInstanceDetailsDiagramStore.reset();
       authenticationStore.reset();
     };
   }, []);

@@ -12,7 +12,6 @@ import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -24,7 +23,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       incidentsStore.reset();
       authenticationStore.reset();
       flowNodeSelectionStore.reset();
-      processInstanceDetailsDiagramStore.reset();
     };
   });
   return (

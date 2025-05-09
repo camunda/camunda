@@ -15,9 +15,6 @@ import {
   createAddVariableModification,
   createEditVariableModification,
 } from 'modules/mocks/modifications';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {open} from 'modules/mocks/diagrams';
 import {act} from 'react';
 import {cancelAllTokens} from 'modules/utils/modifications';
 
@@ -39,12 +36,6 @@ describe('LastModification', () => {
   });
 
   it('should display/remove last added modification', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     const {user} = render(<LastModification />, {wrapper: Wrapper});
 
     act(() => {

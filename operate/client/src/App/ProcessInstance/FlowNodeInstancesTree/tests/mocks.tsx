@@ -14,7 +14,6 @@ import {
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   createEventSubProcessFlowNodeInstances,
   createInstance,
@@ -760,7 +759,6 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
     return () => {
       processInstanceDetailsStore.reset();
-      processInstanceDetailsDiagramStore.reset();
       flowNodeInstanceStore.reset();
       modificationsStore.reset();
       instanceHistoryModificationStore.reset();
