@@ -565,9 +565,9 @@ public class TaskListenerIncidentsTest {
             ENGINE
                 .userTask()
                 .ofInstance(pik)
-                .withCandidateUsers("bob", "alice")
                 .withDueDate("new_due_date")
                 .withPriority(88)
+                .withCandidateUsers("bob", "alice")
                 .withAction("custom_update")
                 .update(),
         Map.of(
