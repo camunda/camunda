@@ -108,7 +108,13 @@ public class OpensearchDecisionInstanceDao
   protected void buildFiltering(
       final Query<DecisionInstance> query, final SearchRequest.Builder request) {
     final DecisionInstance filter = query.getFilter();
+
     if (filter != null) {
+      final String evaluationFailureMessage =
+          filter.getEvaluationFailure() == null
+              ? filter.getEvaluationFailureMessage()
+              : filter.getEvaluationFailure();
+
       final var queryTerms =
           Stream.of(
                   queryDSLWrapper.term(DecisionInstance.ID, filter.getId()),
@@ -120,8 +126,11 @@ public class OpensearchDecisionInstanceDao
                       DecisionInstance.EVALUATION_DATE,
                       filter.getEvaluationDate(),
                       dateTimeFormatter.getApiDateTimeFormatString()),
-                  queryDSLWrapper.term(
-                      DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure()),
+                  queryDSLWrapper.or(
+                      queryDSLWrapper.term(
+                          DecisionInstance.EVALUATION_FAILURE_MESSAGE, evaluationFailureMessage),
+                      queryDSLWrapper.term(
+                          DecisionInstance.EVALUATION_FAILURE, evaluationFailureMessage)),
                   queryDSLWrapper.term(
                       DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
                   queryDSLWrapper.term(
