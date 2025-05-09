@@ -22,6 +22,7 @@ import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.MappingFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserFilter;
@@ -35,6 +36,7 @@ import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.client.api.search.sort.ElementInstanceSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.IncidentSort;
+import io.camunda.client.api.search.sort.MappingSort;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.api.search.sort.UserSort;
@@ -48,6 +50,7 @@ import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.client.impl.search.filter.ElementInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.GroupFilterImpl;
 import io.camunda.client.impl.search.filter.IncidentFilterImpl;
+import io.camunda.client.impl.search.filter.MappingFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.UserFilterImpl;
@@ -62,6 +65,7 @@ import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
 import io.camunda.client.impl.search.sort.GroupSortImpl;
 import io.camunda.client.impl.search.sort.IncidentSortImpl;
+import io.camunda.client.impl.search.sort.MappingSortImpl;
 import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
 import io.camunda.client.impl.search.sort.UserSortImpl;
@@ -244,6 +248,18 @@ public final class SearchRequestBuilders {
 
   public static UserSort userSort(final Consumer<UserSort> fn) {
     final UserSort sort = new UserSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static MappingFilter mappingFilter(final Consumer<MappingFilter> fn) {
+    final MappingFilter filter = new MappingFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static MappingSort mappingSort(final Consumer<MappingSort> fn) {
+    final MappingSort sort = new MappingSortImpl();
     fn.accept(sort);
     return sort;
   }
