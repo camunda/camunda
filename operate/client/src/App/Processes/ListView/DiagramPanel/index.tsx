@@ -168,11 +168,13 @@ const DiagramPanel: React.FC = observer(() => {
                     );
                   },
                   overlaysData: [
-                    ...processStatisticsStore.overlaysData,
-                    ...processStatisticsBatchModificationStore.getOverlaysData({
-                      sourceFlowNodeId: flowNodeId,
-                      targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
-                    }),
+                    ...processStatisticsStore.getOverlaysData(),
+                    ...processStatisticsBatchModificationStore.getOverlaysDataBatchModification(
+                      {
+                        sourceFlowNodeId: flowNodeId,
+                        targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
+                      },
+                    ),
                   ],
                   // All flow nodes that can be a move modification target,
                   // except the source flow node
@@ -197,7 +199,7 @@ const DiagramPanel: React.FC = observer(() => {
                       );
                     }
                   },
-                  overlaysData: processStatisticsStore.overlaysData,
+                  overlaysData: processStatisticsStore.getOverlaysData(),
                   selectableFlowNodes: processXmlStore.selectableIds,
                 })}
           >

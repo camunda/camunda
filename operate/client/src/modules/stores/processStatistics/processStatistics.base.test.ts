@@ -79,10 +79,10 @@ describe('stores/processStatistics.base', () => {
 
     // wait for statistics to be fetched
     await waitFor(() =>
-      expect(processStatisticsStore.overlaysData).not.toEqual([]),
+      expect(processStatisticsStore.getOverlaysData()).not.toEqual([]),
     );
 
-    expect(processStatisticsStore.overlaysData).toEqual([
+    expect(processStatisticsStore.getOverlaysData()).toEqual([
       {
         flowNodeId: 'userTask',
         payload: {
