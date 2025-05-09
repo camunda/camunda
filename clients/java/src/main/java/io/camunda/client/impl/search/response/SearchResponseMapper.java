@@ -24,6 +24,7 @@ import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.Mapping;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
@@ -175,6 +176,14 @@ public final class SearchResponseMapper {
         response.getEmail());
   }
 
+  public static Mapping toMappingResponse(final MappingResult response) {
+    return new MappingImpl(
+        response.getMappingId(),
+        response.getClaimName(),
+        response.getClaimValue(),
+        response.getName());
+  }
+
   public static SearchResponse<Group> toGroupsResponse(final GroupSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Group> instances =
@@ -186,6 +195,14 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<User> instances =
         toSearchResponseInstances(response.getItems(), SearchResponseMapper::toUserResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<Mapping> toMappingsResponse(
+      final MappingSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Mapping> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toMappingResponse);
     return new SearchResponseImpl<>(instances, page);
   }
 
