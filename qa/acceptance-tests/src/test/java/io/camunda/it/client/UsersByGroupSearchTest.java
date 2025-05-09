@@ -18,11 +18,8 @@ import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class UsersByGroupSearchTest {
 
   private static CamundaClient camundaClient;
@@ -43,7 +40,7 @@ public class UsersByGroupSearchTest {
     assignUserToGroup(USER_USERNAME_1, GROUP_ID);
     assignUserToGroup(USER_USERNAME_2, GROUP_ID);
 
-    waitForGroupsToBeCreated();
+    waitForGroupsToBeUpdated();
   }
 
   @Test
@@ -104,15 +101,12 @@ public class UsersByGroupSearchTest {
     camundaClient.newAssignUserToGroupCommand(groupId).username(username).send().join();
   }
 
-  private static void waitForGroupsToBeCreated() {
+  private static void waitForGroupsToBeUpdated() {
     Awaitility.await("should receive data from ES")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newGroupsSearchRequest().send().join();
-              assertThat(result.items().size()).isEqualTo(1);
-
               final var users = camundaClient.newUsersByGroupSearchRequest(GROUP_ID).send().join();
               assertThat(users.items().size()).isEqualTo(2);
             });
