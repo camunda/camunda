@@ -67,7 +67,7 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
         modelInstance.getModelElementById(query.filter().adHocSubProcessId());
     if (!(processElement instanceof final AdHocSubProcess adHocSubProcess)) {
       throw new CamundaSearchException(
-          ErrorMessages.ERROR_NOT_FOUND_AD_HOC_SUBPROCESS.formatted(
+          ErrorMessages.ERROR_NOT_FOUND_AD_HOC_SUB_PROCESS.formatted(
               query.filter().adHocSubProcessId()),
           CamundaSearchException.Reason.NOT_FOUND);
     }

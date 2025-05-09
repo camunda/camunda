@@ -187,7 +187,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
       when(adHocSubProcessActivityServices.search(any()))
           .thenThrow(
               new CamundaSearchException(
-                  "Failed to find Ad-Hoc Subprocess with ID 'TestAdHocSubProcess'",
+                  "Failed to find ad-hoc sub-process with ID 'TestAdHocSubProcess'",
                   CamundaSearchException.Reason.NOT_FOUND));
 
       webClient
@@ -214,7 +214,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "title": "NOT_FOUND",
                 "status": 404,
-                "detail": "Failed to find Ad-Hoc Subprocess with ID 'TestAdHocSubProcess'",
+                "detail": "Failed to find ad-hoc sub-process with ID 'TestAdHocSubProcess'",
                 "instance": "/v2/element-instances/ad-hoc-activities/search"
             }
             """);

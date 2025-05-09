@@ -113,7 +113,7 @@ class AdHocSubProcessActivityServicesTest {
                   adHocSubProcessActivityServices.search(
                       defaultSearchQuery(filter -> filter.adHocSubProcessId("nonExistingId"))))
           .isInstanceOf(CamundaSearchException.class)
-          .hasMessage("Failed to find Ad-Hoc Subprocess with ID 'nonExistingId'")
+          .hasMessage("Failed to find ad-hoc sub-process with ID 'nonExistingId'")
           .extracting(e -> ((CamundaSearchException) e).getReason())
           .isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
     }
@@ -125,7 +125,7 @@ class AdHocSubProcessActivityServicesTest {
                   adHocSubProcessActivityServices.search(
                       defaultSearchQuery(filter -> filter.adHocSubProcessId("StartEvent_1"))))
           .isInstanceOf(CamundaSearchException.class)
-          .hasMessage("Failed to find Ad-Hoc Subprocess with ID 'StartEvent_1'")
+          .hasMessage("Failed to find ad-hoc sub-process with ID 'StartEvent_1'")
           .extracting(e -> ((CamundaSearchException) e).getReason())
           .isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
     }
