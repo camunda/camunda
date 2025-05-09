@@ -42,6 +42,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           123L,
           DecisionInstanceState.EVALUATED,
           OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
+          null,
           "failure",
           2251799813688736L,
           6755399441058457L,
@@ -61,7 +62,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           .setId("123-1")
           .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED)
           .setEvaluationDate(OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"))
-          .setEvaluationFailure("failure")
+          .setEvaluationFailureMessage("failure")
           .setProcessDefinitionKey(2251799813688736L)
           .setProcessInstanceKey(6755399441058457L)
           .setTenantId("tenantId")

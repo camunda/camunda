@@ -14,6 +14,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
@@ -31,6 +32,7 @@ public class DecisionInstanceFieldSortingTransformer implements FieldSortingTran
       case "state" -> STATE;
       case "evaluationDate" -> EVALUATION_DATE;
       case "evaluationFailure" -> EVALUATION_FAILURE;
+      case "evaluationFailureMessage" -> EVALUATION_FAILURE_MESSAGE;
       case "processDefinitionKey" -> PROCESS_DEFINITION_KEY;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
       case "decisionDefinitionKey" -> DECISION_DEFINITION_ID; // yes, this is correct

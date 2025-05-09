@@ -111,7 +111,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
               .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
               .setTenantId(tenantOrDefault(decisionEvaluation.getTenantId()));
       if (state.equals(DecisionInstanceState.FAILED)) {
-        entity.setEvaluationFailure(decisionEvaluation.getEvaluationFailureMessage());
+        entity.setEvaluationFailureMessage(decisionEvaluation.getEvaluationFailureMessage());
       }
       entities.add(entity);
     }

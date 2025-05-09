@@ -22,6 +22,7 @@ public class DecisionInstance {
       STATE = DecisionInstanceTemplate.STATE,
       EVALUATION_DATE = DecisionInstanceTemplate.EVALUATION_DATE,
       EVALUATION_FAILURE = DecisionInstanceTemplate.EVALUATION_FAILURE,
+      EVALUATION_FAILURE_MESSAGE = DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE,
       PROCESS_DEFINITION_KEY = DecisionInstanceTemplate.PROCESS_DEFINITION_KEY,
       PROCESS_INSTANCE_KEY = DecisionInstanceTemplate.PROCESS_INSTANCE_KEY,
       DECISION_ID = DecisionInstanceTemplate.DECISION_ID,
@@ -36,6 +37,7 @@ public class DecisionInstance {
   private DecisionInstanceState state;
   private String evaluationDate;
   private String evaluationFailure;
+  private String evaluationFailureMessage;
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private String decisionId;
@@ -90,6 +92,15 @@ public class DecisionInstance {
 
   public DecisionInstance setEvaluationFailure(final String evaluationFailure) {
     this.evaluationFailure = evaluationFailure;
+    return this;
+  }
+
+  public String getEvaluationFailureMessage() {
+    return evaluationFailureMessage;
+  }
+
+  public DecisionInstance setEvaluationFailureMessage(final String evaluationFailureMessage) {
+    this.evaluationFailureMessage = evaluationFailureMessage;
     return this;
   }
 
@@ -200,6 +211,7 @@ public class DecisionInstance {
         state,
         evaluationDate,
         evaluationFailure,
+        evaluationFailureMessage,
         processDefinitionKey,
         processInstanceKey,
         decisionId,
@@ -227,6 +239,7 @@ public class DecisionInstance {
         && state == that.state
         && Objects.equals(evaluationDate, that.evaluationDate)
         && Objects.equals(evaluationFailure, that.evaluationFailure)
+        && Objects.equals(evaluationFailureMessage, that.evaluationFailureMessage)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(decisionId, that.decisionId)
@@ -255,6 +268,9 @@ public class DecisionInstance {
         + '\''
         + ", evaluationFailure='"
         + evaluationFailure
+        + '\''
+        + ", evaluationFailureMessage='"
+        + evaluationFailureMessage
         + '\''
         + ", processDefinitionKey="
         + processDefinitionKey

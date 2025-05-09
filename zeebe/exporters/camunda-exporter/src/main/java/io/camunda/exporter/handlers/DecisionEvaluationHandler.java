@@ -111,7 +111,7 @@ public class DecisionEvaluationHandler
         .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
         .setTenantId(ExporterUtil.tenantOrDefault(decisionEvaluation.getTenantId()));
     if (state.equals(DecisionInstanceState.FAILED)) {
-      entity.setEvaluationFailure(decisionEvaluation.getEvaluationFailureMessage());
+      entity.setEvaluationFailureMessage(decisionEvaluation.getEvaluationFailureMessage());
     }
   }
 

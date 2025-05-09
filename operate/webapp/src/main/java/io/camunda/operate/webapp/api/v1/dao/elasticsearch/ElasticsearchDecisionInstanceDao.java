@@ -110,6 +110,12 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       final Query<DecisionInstance> query, final SearchSourceBuilder searchSourceBuilder) {
     final DecisionInstance filter = query.getFilter();
     if (filter != null) {
+
+      final String evaluationFailureMessage =
+          filter.getEvaluationFailure() == null
+              ? filter.getEvaluationFailureMessage()
+              : filter.getEvaluationFailure();
+
       final List<QueryBuilder> queryBuilders = new ArrayList<>();
       queryBuilders.add(buildTermQuery(DecisionInstance.ID, filter.getId()));
       queryBuilders.add(buildTermQuery(DecisionInstance.KEY, filter.getKey()));
@@ -119,7 +125,9 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       queryBuilders.add(
           buildMatchDateQuery(DecisionInstance.EVALUATION_DATE, filter.getEvaluationDate()));
       queryBuilders.add(
-          buildTermQuery(DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure()));
+          ElasticsearchUtil.joinWithOr(
+              buildTermQuery(DecisionInstance.EVALUATION_FAILURE_MESSAGE, evaluationFailureMessage),
+              buildTermQuery(DecisionInstance.EVALUATION_FAILURE, evaluationFailureMessage)));
       queryBuilders.add(
           buildTermQuery(
               DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
