@@ -163,6 +163,15 @@ outputs:
         github.event_name == 'push' &&
         steps.filter-special-branch.outputs.stable-branch == 'true'
       }}
+  rdbms-integration-tests:
+    description: Output whether RDBMS integrations tests should be run based on code changes
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'pull_request' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.rdbms-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -222,6 +231,14 @@ runs:
           - 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml'
           - 'zeebe/gateway-protocol/vacuum-ruleset.yaml'
           - 'zeebe/gateway-protocol/vacuum-ignores.yaml'
+
+        rdbms-change:
+        - 'db/rdbms/**'
+        - 'db/rdbms-schema/**'
+        - 'parent/**'
+        - 'qa/acceptance-tests/**'
+        - 'search/search-domain/**'
+        - 'zeebe/exporters/rdbms-exporter/**'
 
   - uses: dorny/paths-filter@v3
     id: filter-identity
