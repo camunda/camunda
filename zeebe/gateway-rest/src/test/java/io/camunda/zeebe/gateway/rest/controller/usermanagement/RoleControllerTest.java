@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
@@ -46,11 +47,13 @@ public class RoleControllerTest extends RestControllerTest {
 
   @MockBean private RoleServices roleServices;
   @MockBean private UserServices userServices;
+  @MockBean private MappingServices mappingServices;
 
   @BeforeEach
   void setup() {
     when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
   }
 
   @ParameterizedTest
