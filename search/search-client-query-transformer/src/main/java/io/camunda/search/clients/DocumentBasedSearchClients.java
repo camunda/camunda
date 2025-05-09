@@ -9,6 +9,7 @@ package io.camunda.search.clients;
 
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
+import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
@@ -300,7 +301,11 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery query) {
+  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery roleQuery) {
+    var query = roleQuery;
+    if (roleQuery.filter().tenantId() != null) {
+      query = expandTenantFilter(roleQuery);
+    }
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class);
   }
@@ -462,6 +467,13 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
     return groupQuery.toBuilder()
         .filter(groupQuery.filter().toBuilder().groupIds(groupIds).build())
+        .build();
+  }
+
+  private RoleQuery expandTenantFilter(final RoleQuery groupQuery) {
+    final var roleIds = getTenantMembers(groupQuery.filter().tenantId(), ROLE);
+    return groupQuery.toBuilder()
+        .filter(groupQuery.filter().toBuilder().roleIds(roleIds).build())
         .build();
   }
 
