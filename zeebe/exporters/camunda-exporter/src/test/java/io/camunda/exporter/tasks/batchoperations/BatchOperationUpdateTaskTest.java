@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -61,8 +62,8 @@ public class BatchOperationUpdateTaskTest {
     repository.batchOperationIds.add("1");
     repository.batchOperationIds.add("2");
     repository.batchOperationIds.add("3");
-    repository.finishedOperationsCount.add(new OperationsAggData("1", 5));
-    repository.finishedOperationsCount.add(new OperationsAggData("2", 6));
+    repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
+    repository.finishedOperationsCount.add(new OperationsAggData("2", Map.of("COMPLETED", 6L)));
     final var result = task.execute();
 
     // then
@@ -72,7 +73,7 @@ public class BatchOperationUpdateTaskTest {
         .isEqualTo(2);
     assertThat(repository.documentUpdates).hasSize(2);
     assertThat(repository.documentUpdates)
-        .contains(new DocumentUpdate("1", 5L), new DocumentUpdate("2", 6L));
+        .contains(new DocumentUpdate("1", 5L, 0L, 5L, 5L), new DocumentUpdate("2", 6L, 0L, 6L, 6L));
   }
 
   private static final class TestRepository implements BatchOperationUpdateRepository {
@@ -86,7 +87,7 @@ public class BatchOperationUpdateTaskTest {
     }
 
     @Override
-    public CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
+    public CompletionStage<List<OperationsAggData>> getOperationsCount(
         final Collection<String> batchOperationIds) {
       return CompletableFuture.completedFuture(finishedOperationsCount);
     }
