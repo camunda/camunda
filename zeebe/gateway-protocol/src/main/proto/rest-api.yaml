@@ -590,6 +590,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GroupSearchQueryResult"
+  /tenants/{tenantId}/roles/search:
+    post:
+      tags:
+        - Tenant
+      operationId: searchRolesForTenant
+      summary: Search roles for tenant
+      description: Retrieves a filtered and sorted list of roles for a specified tenant.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleSearchQueryRequest"
+      responses:
+        "200":
+          description: The search result of roles for the tenant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleSearchQueryResult"
   /tenants/{tenantId}/applications/{applicationId}:
     put:
       tags:
