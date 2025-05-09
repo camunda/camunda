@@ -9,7 +9,6 @@
 import {Divider, Popover, Content} from '../styled';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {flip, offset} from '@floating-ui/react-dom';
@@ -18,12 +17,14 @@ import {Stack} from '@carbon/react';
 import {Details} from '../Details';
 import {Incident} from '../Incident';
 import {MultiIncidents} from '../MultiIncidents';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
 };
 
 const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
+  const {data: processInstance} = useProcessInstance();
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
   const {metaData} = flowNodeMetaDataStore.state;
 
@@ -64,9 +65,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               <>
                 <Divider />
                 <Incident
-                  processInstanceId={
-                    processInstanceDetailsStore.state.processInstance?.id
-                  }
+                  processInstanceId={processInstance?.processInstanceKey}
                   incident={incident}
                   onButtonClick={() => {
                     incidentsStore.clearSelection();

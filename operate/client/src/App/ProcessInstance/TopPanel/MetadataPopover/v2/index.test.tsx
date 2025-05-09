@@ -30,6 +30,8 @@ import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstan
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {labels, renderPopover} from './mocks';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {init} from 'modules/utils/flowNodeMetadata';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
@@ -39,11 +41,25 @@ jest.mock('date-fns', () => ({
   formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
 }));
 
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: true,
+};
+
 describe('MetadataPopover', () => {
   beforeEach(() => {
     init([]);
     flowNodeSelectionStore.init();
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
   });
 
   it('should not show unrelated data', async () => {
@@ -288,7 +304,7 @@ describe('MetadataPopover', () => {
     expect(
       await screen.findByText(labels.rootCauseProcessInstance),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Current Instance/)).toBeInTheDocument();
+    expect(await screen.findByText(/Current Instance/)).toBeInTheDocument();
     expect(
       screen.queryByText(
         `${rootCauseInstance.processDefinitionName} - ${rootCauseInstance.instanceId}`,

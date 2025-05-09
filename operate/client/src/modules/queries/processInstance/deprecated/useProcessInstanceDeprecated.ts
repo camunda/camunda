@@ -11,8 +11,10 @@ import {RequestError} from 'modules/request';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchProcessInstanceDeprecated} from 'modules/api/processInstances/fetchProcessInstance';
 
+const PROCESS_INSTANCE_DEPRECATED_QUERY_KEY = 'processInstanceDeprecated';
+
 function getQueryKey(processInstanceKey?: string) {
-  return ['processInstanceDeprecated', processInstanceKey];
+  return [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY, processInstanceKey];
 }
 
 const useProcessInstanceDeprecated = <T = ProcessInstanceEntity>(
@@ -38,4 +40,4 @@ const useProcessInstanceDeprecated = <T = ProcessInstanceEntity>(
   });
 };
 
-export {useProcessInstanceDeprecated};
+export {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY, useProcessInstanceDeprecated};

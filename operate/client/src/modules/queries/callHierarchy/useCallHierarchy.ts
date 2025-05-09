@@ -12,8 +12,10 @@ import {GetProcessInstanceCallHierarchyResponseBody} from '@vzeta/camunda-api-zo
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchCallHierarchy} from 'modules/api/v2/processInstances/fetchCallHierarchy';
 
+const CALL_HIERARCHY_QUERY_KEY = 'callHierarchy';
+
 function getQueryKey(processInstanceKey?: string) {
-  return ['callHierarchy', processInstanceKey];
+  return [CALL_HIERARCHY_QUERY_KEY, processInstanceKey];
 }
 
 const useCallHierarchy = <T = GetProcessInstanceCallHierarchyResponseBody>(
@@ -38,4 +40,4 @@ const useCallHierarchy = <T = GetProcessInstanceCallHierarchyResponseBody>(
   });
 };
 
-export {useCallHierarchy};
+export {CALL_HIERARCHY_QUERY_KEY, useCallHierarchy};

@@ -31,7 +31,7 @@ import {getProcessName} from 'modules/utils/instance';
 import {Toolbar} from '../Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation} from 'react-router-dom';
-import {Operations} from 'modules/components/Operations/v2';
+import {Operations} from 'modules/components/Operations';
 import {BatchModificationFooter} from '../BatchModificationFooter';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 

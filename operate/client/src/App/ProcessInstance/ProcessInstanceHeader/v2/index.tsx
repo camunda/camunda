@@ -6,13 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
 import isNil from 'lodash/isNil';
 import {formatDate} from 'modules/utils/date';
-import {getProcessName} from 'modules/utils/instance';
 import {Operations} from 'modules/components/Operations/v2';
-import {observer} from 'mobx-react';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {getProcessDefinitionName} from 'modules/utils/instance';
 import {variablesStore} from 'modules/stores/variables';
 import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/Routes';
@@ -24,11 +21,15 @@ import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {authenticationStore} from 'modules/stores/authentication';
-import {processStore} from 'modules/stores/process';
 import {VersionTag} from '../styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {usePermissions} from 'modules/queries/permissions/usePermissions';
+import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
+import {useQueryClient} from '@tanstack/react-query';
+import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
 
 const headerColumns = [
   'Process Name',
@@ -76,61 +77,52 @@ const skeletonColumns: {
   },
 ] as const;
 
-const ProcessInstanceHeader: React.FC = observer(() => {
-  const {processInstance} = processInstanceDetailsStore.state;
+type Props = {
+  processInstance: ProcessInstance;
+};
+
+const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
+  const queryClient = useQueryClient();
+  const {data: permissions} = usePermissions();
+  const {data: hasActiveOperation} = useHasActiveOperations();
+
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
-  const processId = processInstance?.processId;
-  const {
-    state: {process, status},
-  } = processStore;
-
-  useEffect(() => {
-    if (processId !== undefined) {
-      processStore.fetchProcess(processId);
-    }
-  }, [processId]);
-
-  useEffect(() => {
-    return processStore.reset;
-  }, []);
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
   });
 
-  if (
-    processInstance === null ||
-    ['fetching', 'initial'].includes(status) ||
-    isPending
-  ) {
+  if (processInstance === null || isPending) {
     return <Skeleton headerColumns={skeletonColumns} />;
   }
 
   const {
-    id,
-    processVersion,
+    processInstanceKey,
+    processDefinitionVersion,
+    processDefinitionVersionTag,
     tenantId,
     startDate,
     endDate,
-    parentInstanceId,
+    parentProcessInstanceKey,
     state,
-    bpmnProcessId,
+    hasIncident,
+    processDefinitionId,
   } = processInstance;
 
-  const versionTag = process?.versionTag;
   const tenantName = authenticationStore.tenantsById?.[tenantId] ?? tenantId;
-  const versionColumnTitle = `View process "${getProcessName(
+  const versionColumnTitle = `View process "${getProcessDefinitionName(
     processInstance,
-  )} version ${processVersion}" instances${
+  )} version ${processDefinitionVersion}" instances${
     isMultiTenancyEnabled ? ` - ${tenantName}` : ''
   }`;
-  const hasVersionTag = !isNil(versionTag);
+  const hasVersionTag = !isNil(processDefinitionVersionTag);
+  const processInstanceState = hasIncident ? 'INCIDENT' : state;
 
   return (
     <InstanceHeader
-      state={state}
-      hideBottomBorder={state === 'INCIDENT'}
+      state={processInstanceState}
+      hideBottomBorder={hasIncident}
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;
@@ -142,17 +134,17 @@ const ProcessInstanceHeader: React.FC = observer(() => {
       })}
       bodyColumns={[
         {
-          title: getProcessName(processInstance),
-          content: getProcessName(processInstance),
+          title: getProcessDefinitionName(processInstance),
+          content: getProcessDefinitionName(processInstance),
         },
-        {title: id, content: id},
+        {title: processInstanceKey, content: processInstanceKey},
         {
           hideOverflowingContent: false,
           content: (
             <Link
               to={Locations.processes({
-                version: processVersion?.toString(),
-                process: bpmnProcessId,
+                version: processDefinitionVersion?.toString(),
+                process: processDefinitionId,
                 active: true,
                 incidents: true,
                 ...(isMultiTenancyEnabled
@@ -170,7 +162,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                 });
               }}
             >
-              {processVersion}
+              {processDefinitionVersion}
             </Link>
           ),
         },
@@ -180,7 +172,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                 title: 'User-defined label identifying a definition.',
                 content: (
                   <VersionTag size="sm" type="outline">
-                    {versionTag}
+                    {processDefinitionVersionTag}
                   </VersionTag>
                 ),
               },
@@ -200,20 +192,20 @@ const ProcessInstanceHeader: React.FC = observer(() => {
           dataTestId: 'start-date',
         },
         {
-          title: formatDate(endDate) ?? '--',
-          content: formatDate(endDate),
+          title: formatDate(endDate ?? null) ?? '--',
+          content: formatDate(endDate ?? null),
           dataTestId: 'end-date',
         },
         {
-          title: parentInstanceId ?? 'None',
+          title: parentProcessInstanceKey ?? 'None',
           hideOverflowingContent: false,
           content: (
             <>
-              {parentInstanceId !== null ? (
+              {parentProcessInstanceKey ? (
                 <Link
-                  to={Paths.processInstance(parentInstanceId)}
-                  title={`View parent instance ${parentInstanceId}`}
-                  aria-label={`View parent instance ${parentInstanceId}`}
+                  to={Paths.processInstance(parentProcessInstanceKey)}
+                  title={`View parent instance ${parentProcessInstanceKey}`}
+                  aria-label={`View parent instance ${parentProcessInstanceKey}`}
                   onClick={() => {
                     tracking.track({
                       eventName: 'navigation',
@@ -221,7 +213,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                     });
                   }}
                 >
-                  {parentInstanceId}
+                  {parentProcessInstanceKey}
                 </Link>
               ) : (
                 'None'
@@ -238,7 +230,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
               ) ? (
                 <Link
                   to={Locations.processes({
-                    parentInstanceId: id,
+                    parentInstanceId: processInstanceKey,
                     active: true,
                     incidents: true,
                     canceled: true,
@@ -267,17 +259,21 @@ const ProcessInstanceHeader: React.FC = observer(() => {
         <Restricted
           resourceBasedRestrictions={{
             scopes: ['UPDATE_PROCESS_INSTANCE', 'DELETE_PROCESS_INSTANCE'],
-            permissions: processInstanceDetailsStore.getPermissions(),
+            permissions: permissions,
           }}
         >
           <>
             <Operations
               instance={processInstance}
-              onOperation={(operationType: OperationEntityType) =>
-                processInstanceDetailsStore.activateOperation(operationType)
-              }
-              onError={({operationType, statusCode}) => {
-                processInstanceDetailsStore.deactivateOperation(operationType);
+              onOperation={() => {
+                queryClient.invalidateQueries({
+                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
+                });
+              }}
+              onError={({statusCode}) => {
+                queryClient.invalidateQueries({
+                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
+                });
 
                 notificationsStore.displayNotification({
                   kind: 'error',
@@ -290,6 +286,10 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                 });
               }}
               onSuccess={(operationType) => {
+                queryClient.invalidateQueries({
+                  queryKey: [PROCESS_INSTANCE_DEPRECATED_QUERY_KEY],
+                });
+
                 tracking.track({
                   eventName: 'single-operation',
                   operationType,
@@ -297,19 +297,18 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                 });
               }}
               forceSpinner={
-                variablesStore.hasActiveOperation ||
-                processInstance?.hasActiveOperation
+                variablesStore.hasActiveOperation || hasActiveOperation
               }
               isInstanceModificationVisible={
                 !modificationsStore.isModificationModeEnabled
               }
-              permissions={processInstanceDetailsStore.getPermissions()}
+              permissions={permissions}
             />
           </>
         </Restricted>
       }
     />
   );
-});
+};
 
 export {ProcessInstanceHeader};

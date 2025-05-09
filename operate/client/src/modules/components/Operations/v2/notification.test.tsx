@@ -10,7 +10,7 @@ import {render, screen, within} from 'modules/testing-library';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {createBatchOperation} from 'modules/testUtils';
 import {Operations} from '.';
-import {INSTANCE, Wrapper} from '../tests/mocks';
+import {INSTANCE, getWrapper} from './mocks';
 import {notificationsStore} from 'modules/stores/notifications';
 
 jest.mock('modules/stores/notifications', () => ({
@@ -30,11 +30,11 @@ describe('Operations - Notification', () => {
         onError={() => {}}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: getWrapper(),
       },
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent('processes/1');
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
 
@@ -53,6 +53,6 @@ describe('Operations - Notification', () => {
     ).not.toBeInTheDocument();
 
     expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent('processes/1');
   });
 });
