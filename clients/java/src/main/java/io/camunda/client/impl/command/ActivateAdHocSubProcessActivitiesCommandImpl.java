@@ -17,61 +17,61 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1;
-import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1.ActivateAdHocSubprocessActivitiesCommandStep2;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1.ActivateAdHocSubProcessActivitiesCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.response.ActivateAdHocSubprocessActivitiesResponse;
+import io.camunda.client.api.response.ActivateAdHocSubProcessActivitiesResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivateActivitiesInstruction;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivateActivityReference;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivityReference;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class ActivateAdHocSubprocessActivitiesCommandImpl
-    implements ActivateAdHocSubprocessActivitiesCommandStep1,
-        ActivateAdHocSubprocessActivitiesCommandStep2 {
+public final class ActivateAdHocSubProcessActivitiesCommandImpl
+    implements ActivateAdHocSubProcessActivitiesCommandStep1,
+        ActivateAdHocSubProcessActivitiesCommandStep2 {
 
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
 
-  private final String adHocSubprocessInstanceKey;
-  private final AdHocSubprocessActivateActivitiesInstruction httpRequestObject;
+  private final String adHocSubProcessInstanceKey;
+  private final AdHocSubProcessActivateActivitiesInstruction httpRequestObject;
 
-  public ActivateAdHocSubprocessActivitiesCommandImpl(
+  public ActivateAdHocSubProcessActivitiesCommandImpl(
       final HttpClient httpClient,
       final JsonMapper jsonMapper,
-      final String adHocSubprocessInstanceKey) {
+      final String adHocSubProcessInstanceKey) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
 
-    this.adHocSubprocessInstanceKey = adHocSubprocessInstanceKey;
-    httpRequestObject = new AdHocSubprocessActivateActivitiesInstruction();
+    this.adHocSubProcessInstanceKey = adHocSubProcessInstanceKey;
+    httpRequestObject = new AdHocSubProcessActivateActivitiesInstruction();
   }
 
   @Override
-  public ActivateAdHocSubprocessActivitiesCommandStep2 activateElement(final String elementId) {
+  public ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(final String elementId) {
     httpRequestObject.addElementsItem(
-        new AdHocSubprocessActivateActivityReference().elementId(elementId));
+        new AdHocSubProcessActivateActivityReference().elementId(elementId));
     return this;
   }
 
   @Override
-  public FinalCommandStep<ActivateAdHocSubprocessActivitiesResponse> requestTimeout(
+  public FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<ActivateAdHocSubprocessActivitiesResponse> send() {
-    final HttpCamundaFuture<ActivateAdHocSubprocessActivitiesResponse> result =
+  public CamundaFuture<ActivateAdHocSubProcessActivitiesResponse> send() {
+    final HttpCamundaFuture<ActivateAdHocSubProcessActivitiesResponse> result =
         new HttpCamundaFuture<>();
     httpClient.post(
-        "/element-instances/ad-hoc-activities/" + adHocSubprocessInstanceKey + "/activation",
+        "/element-instances/ad-hoc-activities/" + adHocSubProcessInstanceKey + "/activation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         result);

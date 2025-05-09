@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl.response;
 
-import io.camunda.client.api.response.ActivateAdHocSubprocessActivitiesResponse;
+import io.camunda.client.api.response.ActivateAdHocSubProcessActivitiesResponse;
 
-public class ActivateAdHocSubprocessActivitiesResponseImpl
-    implements ActivateAdHocSubprocessActivitiesResponse {}
+public class ActivateAdHocSubProcessActivitiesResponseImpl
+    implements ActivateAdHocSubProcessActivitiesResponse {}

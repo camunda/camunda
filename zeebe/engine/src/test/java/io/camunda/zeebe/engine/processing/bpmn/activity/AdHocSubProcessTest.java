@@ -321,7 +321,7 @@ public final class AdHocSubProcessTest {
                 Map.of("activateElements", List.of("A", "ServiceTask"), "condition", false))
             .create();
 
-    // helps to stop at a specific point after the ad-hoc subprocess is activated
+    // helps to stop at a specific point after the ad-hoc sub-process is activated
     ENGINE.signal().withSignalName("signal").broadcast();
 
     assertThat(
@@ -331,7 +331,7 @@ public final class AdHocSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .describedAs(
-            "Expect task A to complete while service task is activated and prevents subprocess completion")
+            "Expect task A to complete while service task is activated and prevents sub-process completion")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
@@ -357,7 +357,7 @@ public final class AdHocSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
-        .describedAs("Expect ad-hoc subprocess to complete after service task is completed")
+        .describedAs("Expect ad-hoc sub-process to complete after service task is completed")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -387,7 +387,7 @@ public final class AdHocSubProcessTest {
             .withVariables(Map.of("activateElements", List.of("A", "C"), "condition", false))
             .create();
 
-    // helps to stop at a specific point after the ad-hoc subprocess is activated
+    // helps to stop at a specific point after the ad-hoc sub-process is activated
     ENGINE.signal().withSignalName("signal").broadcast();
 
     // then
@@ -402,7 +402,7 @@ public final class AdHocSubProcessTest {
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED))
-        .describedAs("Expect ad-hoc subprocess to not complete when condition does not apply")
+        .describedAs("Expect ad-hoc sub-process to not complete when condition does not apply")
         .doesNotContain(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -440,7 +440,7 @@ public final class AdHocSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
-        .describedAs("Expect ad-hoc subprocess to complete and to terminate service task")
+        .describedAs("Expect ad-hoc sub-process to complete and to terminate service task")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
@@ -473,7 +473,7 @@ public final class AdHocSubProcessTest {
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
-    // create instance and wait until ad-hoc subprocess blocks on ServiceTask being completed
+    // create instance and wait until ad-hoc sub-process blocks on ServiceTask being completed
     final long processInstanceKey =
         ENGINE
             .processInstance()
@@ -482,7 +482,7 @@ public final class AdHocSubProcessTest {
                 Map.of("activateElements", List.of("A", "ServiceTask"), "condition", true))
             .create();
 
-    // helps to stop at a specific point after the ad-hoc subprocess is activated
+    // helps to stop at a specific point after the ad-hoc sub-process is activated
     ENGINE.signal().withSignalName("signal").broadcast();
 
     // expect process not to complete until service task is completed
@@ -492,7 +492,7 @@ public final class AdHocSubProcessTest {
                 .processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
-        .describedAs("Expect service task be activated and ad-hoc subprocess to not complete")
+        .describedAs("Expect service task be activated and ad-hoc sub-process to not complete")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
@@ -513,7 +513,7 @@ public final class AdHocSubProcessTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .describedAs(
-            "Expect ad-hoc subprocess to complete after service task is completed and condition applies")
+            "Expect ad-hoc sub-process to complete after service task is completed and condition applies")
         .containsSubsequence(
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),

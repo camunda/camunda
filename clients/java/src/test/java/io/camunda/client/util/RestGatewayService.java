@@ -20,7 +20,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivitySearchQueryResult;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivitySearchQueryResult;
 import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
@@ -88,16 +88,16 @@ public class RestGatewayService {
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
   }
 
-  public void onAdHocSubprocessActivitySearch(
-      final AdHocSubprocessActivitySearchQueryResult response) {
-    onAdHocSubprocessActivitySearch(JSON_MAPPER.toJson(response));
+  public void onAdHocSubProcessActivitySearch(
+      final AdHocSubProcessActivitySearchQueryResult response) {
+    onAdHocSubProcessActivitySearch(JSON_MAPPER.toJson(response));
   }
 
-  public void onAdHocSubprocessActivitySearch(final String jsonResponse) {
+  public void onAdHocSubProcessActivitySearch(final String jsonResponse) {
     mockInfo
         .getWireMock()
         .register(
-            WireMock.post(RestGatewayPaths.getAdHocSubprocessActivitiesSearchUrl())
+            WireMock.post(RestGatewayPaths.getAdHocSubProcessActivitiesSearchUrl())
                 .willReturn(WireMock.okJson(jsonResponse)));
   }
 

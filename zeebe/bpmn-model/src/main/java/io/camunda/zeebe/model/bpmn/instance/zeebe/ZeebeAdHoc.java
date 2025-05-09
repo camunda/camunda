@@ -17,17 +17,17 @@ package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
-/** A Zeebe extension for an ad-hoc subprocess. */
+/** A Zeebe extension for an ad-hoc sub-process. */
 public interface ZeebeAdHoc extends BpmnModelElementInstance {
 
   /**
    * @return the collection of elements that should be activated when entering the ad-hoc
-   *     subprocess.
+   *     sub-process.
    */
   String getActiveElementsCollection();
 
   /**
-   * Sets the collection of elements that should be activated when entering the ad-hoc subprocess.
+   * Sets the collection of elements that should be activated when entering the ad-hoc sub-process.
    *
    * @param activateElements the collection of element to be activated
    */

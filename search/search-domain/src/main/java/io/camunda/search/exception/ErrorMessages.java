@@ -17,8 +17,8 @@ public class ErrorMessages {
   public static final String ERROR_FAILED_SEARCH_QUERY = "Failed to execute search query";
   public static final String ERROR_FAILED_AGGREGATE_QUERY = "Failed to execute aggregate query";
 
-  public static final String ERROR_NOT_FOUND_AD_HOC_SUBPROCESS =
-      "Failed to find Ad-Hoc Subprocess with ID '%s'";
+  public static final String ERROR_NOT_FOUND_AD_HOC_SUB_PROCESS =
+      "Failed to find ad-hoc sub-process with ID '%s'";
   public static final String ERROR_NOT_FOUND_ENTITY_BY_KEY = "%s with key %s not found";
   public static final String ERROR_NOT_FOUND_FORM_BY_KEY = "Form with formKey %d not found";
   public static final String ERROR_NOT_FOUND_GROUP_BY_ID = "Group with ID %s not found";

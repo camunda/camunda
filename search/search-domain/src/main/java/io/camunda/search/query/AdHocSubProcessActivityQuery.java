@@ -7,27 +7,27 @@
  */
 package io.camunda.search.query;
 
-import io.camunda.search.filter.AdHocSubprocessActivityFilter;
+import io.camunda.search.filter.AdHocSubProcessActivityFilter;
 import io.camunda.util.ObjectBuilder;
 
-public record AdHocSubprocessActivityQuery(AdHocSubprocessActivityFilter filter) {
+public record AdHocSubProcessActivityQuery(AdHocSubProcessActivityFilter filter) {
 
   public static Builder builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ObjectBuilder<AdHocSubprocessActivityQuery> {
+  public static final class Builder implements ObjectBuilder<AdHocSubProcessActivityQuery> {
 
-    private AdHocSubprocessActivityFilter filter;
+    private AdHocSubProcessActivityFilter filter;
 
-    public Builder filter(final AdHocSubprocessActivityFilter filter) {
+    public Builder filter(final AdHocSubProcessActivityFilter filter) {
       this.filter = filter;
       return this;
     }
 
     @Override
-    public AdHocSubprocessActivityQuery build() {
-      return new AdHocSubprocessActivityQuery(filter);
+    public AdHocSubProcessActivityQuery build() {
+      return new AdHocSubProcessActivityQuery(filter);
     }
   }
 }

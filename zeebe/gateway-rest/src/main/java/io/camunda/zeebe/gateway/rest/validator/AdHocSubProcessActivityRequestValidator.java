@@ -11,16 +11,16 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivateActivitiesInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityFilter;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityFilter;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
 
-public class AdHocSubprocessActivityRequestValidator {
+public class AdHocSubProcessActivityRequestValidator {
 
-  public static Optional<ProblemDetail> validateAdHocSubprocessSearchActivitiesRequest(
-      final AdHocSubprocessActivityFilter filter, final Long processDefinitionKey) {
+  public static Optional<ProblemDetail> validateAdHocSubProcessSearchActivitiesRequest(
+      final AdHocSubProcessActivityFilter filter, final Long processDefinitionKey) {
     return validate(
         violations -> {
           if (processDefinitionKey == null || processDefinitionKey <= 0) {
@@ -31,14 +31,14 @@ public class AdHocSubprocessActivityRequestValidator {
                     "a non-negative numeric value"));
           }
 
-          if (StringUtils.isBlank(filter.getAdHocSubprocessId())) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter.adHocSubprocessId"));
+          if (StringUtils.isBlank(filter.getAdHocSubProcessId())) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter.adHocSubProcessId"));
           }
         });
   }
 
-  public static Optional<ProblemDetail> validateAdHocSubprocessActivationRequest(
-      final AdHocSubprocessActivateActivitiesInstruction request) {
+  public static Optional<ProblemDetail> validateAdHocSubProcessActivationRequest(
+      final AdHocSubProcessActivateActivitiesInstruction request) {
     return validate(
         violations -> {
           if (request.getElements() == null || request.getElements().isEmpty()) {

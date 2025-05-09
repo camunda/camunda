@@ -11,10 +11,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record AdHocSubprocessActivityEntity(
+public record AdHocSubProcessActivityEntity(
     Long processDefinitionKey,
     String processDefinitionId,
-    String adHocSubprocessId,
+    String adHocSubProcessId,
     String elementId,
     String elementName,
     ActivityType type,

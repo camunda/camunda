@@ -15,36 +15,36 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.response.ActivateAdHocSubprocessActivitiesResponse;
+import io.camunda.client.api.response.ActivateAdHocSubProcessActivitiesResponse;
 import java.util.Arrays;
 import java.util.Collection;
 
-public interface ActivateAdHocSubprocessActivitiesCommandStep1 {
+public interface ActivateAdHocSubProcessActivitiesCommandStep1 {
 
   /**
-   * Create an {@link io.camunda.client.protocol.rest.AdHocSubprocessActivateActivitiesInstruction}
+   * Create an {@link io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction}
    * for the given element id.
    *
    * @param elementId the id of the element to activate
    * @return the builder for this command
    */
-  ActivateAdHocSubprocessActivitiesCommandStep2 activateElement(final String elementId);
+  ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(final String elementId);
 
   /**
-   * Create an {@link io.camunda.client.protocol.rest.AdHocSubprocessActivateActivitiesInstruction}
+   * Create an {@link io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction}
    * for each of the given element ids.
    *
    * @param elementIds the ids of the elements to activate
    * @return the builder for this command
    * @throws IllegalArgumentException if elementIds is null or empty
    */
-  default ActivateAdHocSubprocessActivitiesCommandStep2 activateElements(
+  default ActivateAdHocSubProcessActivitiesCommandStep2 activateElements(
       final Collection<String> elementIds) {
     if (elementIds == null || elementIds.isEmpty()) {
       throw new IllegalArgumentException("elementIds must not be empty");
     }
 
-    ActivateAdHocSubprocessActivitiesCommandStep2 builder = null;
+    ActivateAdHocSubProcessActivitiesCommandStep2 builder = null;
     for (final String elementId : elementIds) {
       builder = activateElement(elementId);
     }
@@ -53,19 +53,19 @@ public interface ActivateAdHocSubprocessActivitiesCommandStep1 {
   }
 
   /**
-   * Create an {@link io.camunda.client.protocol.rest.AdHocSubprocessActivateActivitiesInstruction}
+   * Create an {@link io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction}
    * for each of the given element ids.
    *
    * @param elementIds the ids of the elements to activate
    * @return the builder for this command
    * @throws IllegalArgumentException if elementIds is null or empty
    */
-  default ActivateAdHocSubprocessActivitiesCommandStep2 activateElements(
+  default ActivateAdHocSubProcessActivitiesCommandStep2 activateElements(
       final String... elementIds) {
     return activateElements(Arrays.asList(elementIds));
   }
 
-  interface ActivateAdHocSubprocessActivitiesCommandStep2
-      extends ActivateAdHocSubprocessActivitiesCommandStep1,
-          FinalCommandStep<ActivateAdHocSubprocessActivitiesResponse> {}
+  interface ActivateAdHocSubProcessActivitiesCommandStep2
+      extends ActivateAdHocSubProcessActivitiesCommandStep1,
+          FinalCommandStep<ActivateAdHocSubProcessActivitiesResponse> {}
 }

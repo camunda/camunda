@@ -14,23 +14,23 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
-import io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType;
-import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse.AdHocSubprocessActivity;
+import io.camunda.client.api.search.enums.AdHocSubProcessActivityResultType;
+import io.camunda.client.api.search.response.AdHocSubProcessActivityResponse.AdHocSubProcessActivity;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class AdHocSubprocessActivitySearchTest {
+public class AdHocSubProcessActivitySearchTest {
 
   private static CamundaClient camundaClient;
 
   @Test
-  void findsAdHocSubprocessActivities() {
-    final var process = deployAdHocSubprocessProcess();
+  void findsAdHocSubProcessActivities() {
+    final var process = deployAdHocSubProcessProcess();
     final var response =
         camundaClient
-            .newAdHocSubprocessActivitySearchRequest(
-                process.getProcessDefinitionKey(), "TestAdHocSubprocess")
+            .newAdHocSubProcessActivitySearchRequest(
+                process.getProcessDefinitionKey(), "TestAdHocSubProcess")
             .send()
             .join();
 
@@ -39,36 +39,36 @@ public class AdHocSubprocessActivitySearchTest {
         // TestServiceTask is no root node (has incoming sequence flow)
         .noneMatch(activity -> activity.getElementId().equals("TestServiceTask"))
         .extracting(
-            AdHocSubprocessActivity::getProcessDefinitionKey,
-            AdHocSubprocessActivity::getProcessDefinitionId,
-            AdHocSubprocessActivity::getAdHocSubprocessId,
-            AdHocSubprocessActivity::getElementId,
-            AdHocSubprocessActivity::getElementName,
-            AdHocSubprocessActivity::getType,
-            AdHocSubprocessActivity::getDocumentation,
-            AdHocSubprocessActivity::getTenantId)
+            AdHocSubProcessActivity::getProcessDefinitionKey,
+            AdHocSubProcessActivity::getProcessDefinitionId,
+            AdHocSubProcessActivity::getAdHocSubProcessId,
+            AdHocSubProcessActivity::getElementId,
+            AdHocSubProcessActivity::getElementName,
+            AdHocSubProcessActivity::getType,
+            AdHocSubProcessActivity::getDocumentation,
+            AdHocSubProcessActivity::getTenantId)
         .containsExactlyInAnyOrder(
             tuple(
                 process.getProcessDefinitionKey(),
                 process.getBpmnProcessId(),
-                "TestAdHocSubprocess",
+                "TestAdHocSubProcess",
                 "TestScriptTask",
                 "test script task",
-                AdHocSubprocessActivityResultType.SCRIPT_TASK,
+                AdHocSubProcessActivityResultType.SCRIPT_TASK,
                 "This is a test script task",
                 "<default>"),
             tuple(
                 process.getProcessDefinitionKey(),
                 process.getBpmnProcessId(),
-                "TestAdHocSubprocess",
+                "TestAdHocSubProcess",
                 "TestUserTask",
                 "test user task",
-                AdHocSubprocessActivityResultType.USER_TASK,
+                AdHocSubProcessActivityResultType.USER_TASK,
                 null,
                 "<default>"));
   }
 
-  private Process deployAdHocSubprocessProcess() {
+  private Process deployAdHocSubProcessProcess() {
     final var deployedProcesses =
         deployResource(camundaClient, "process/ad_hoc_subprocess_activities.bpmn").getProcesses();
     assertThat(deployedProcesses).hasSize(1);

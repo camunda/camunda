@@ -15,50 +15,48 @@
  */
 package io.camunda.client.impl.search.response;
 
-import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
+import io.camunda.client.api.search.enums.AdHocSubProcessActivityResultType;
+import io.camunda.client.api.search.response.AdHocSubProcessActivityResponse;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivityResult;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivitySearchQueryResult;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivityResult;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivitySearchQueryResult;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActivityResponse {
+public class AdHocSubProcessActivityResponseImpl implements AdHocSubProcessActivityResponse {
 
-  private final List<AdHocSubprocessActivity> items;
+  private final List<AdHocSubProcessActivity> items;
 
-  public AdHocSubprocessActivityResponseImpl(
-      final AdHocSubprocessActivitySearchQueryResult response) {
+  public AdHocSubProcessActivityResponseImpl(
+      final AdHocSubProcessActivitySearchQueryResult response) {
     items =
         response.getItems().stream()
-            .map(AdHocSubprocessActivityImpl::new)
+            .map(AdHocSubProcessActivityImpl::new)
             .collect(Collectors.toList());
   }
 
   @Override
-  public List<AdHocSubprocessActivity> getItems() {
+  public List<AdHocSubProcessActivity> getItems() {
     return items;
   }
 
-  public static class AdHocSubprocessActivityImpl implements AdHocSubprocessActivity {
+  public static class AdHocSubProcessActivityImpl implements AdHocSubProcessActivity {
     private final Long processDefinitionKey;
     private final String processDefinitionId;
-    private final String adHocSubprocessId;
+    private final String adHocSubProcessId;
     private final String elementId;
     private final String elementName;
-    private final io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType type;
+    private final AdHocSubProcessActivityResultType type;
     private final String documentation;
     private final String tenantId;
 
-    public AdHocSubprocessActivityImpl(final AdHocSubprocessActivityResult result) {
+    public AdHocSubProcessActivityImpl(final AdHocSubProcessActivityResult result) {
       processDefinitionKey = Long.valueOf(result.getProcessDefinitionKey());
       processDefinitionId = result.getProcessDefinitionId();
-      adHocSubprocessId = result.getAdHocSubprocessId();
+      adHocSubProcessId = result.getAdHocSubProcessId();
       elementId = result.getElementId();
       elementName = result.getElementName();
-      type =
-          EnumUtil.convert(
-              result.getType(),
-              io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType.class);
+      type = EnumUtil.convert(result.getType(), AdHocSubProcessActivityResultType.class);
 
       documentation = result.getDocumentation();
       tenantId = result.getTenantId();
@@ -75,8 +73,8 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
     }
 
     @Override
-    public String getAdHocSubprocessId() {
-      return adHocSubprocessId;
+    public String getAdHocSubProcessId() {
+      return adHocSubProcessId;
     }
 
     @Override
@@ -90,7 +88,7 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
     }
 
     @Override
-    public io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType getType() {
+    public AdHocSubProcessActivityResultType getType() {
       return type;
     }
 

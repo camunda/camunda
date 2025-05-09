@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.enums;
 
-public enum AdHocSubprocessActivityResultType {
+public enum AdHocSubProcessActivityResultType {
   UNSPECIFIED,
   PROCESS,
   SUB_PROCESS,

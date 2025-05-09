@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 
-class AdhocSubprocessValidatorTest {
+class AdHocSubProcessValidatorTest {
 
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
 

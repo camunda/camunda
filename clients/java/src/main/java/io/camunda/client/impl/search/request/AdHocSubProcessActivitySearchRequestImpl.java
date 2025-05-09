@@ -15,69 +15,69 @@
  */
 package io.camunda.client.impl.search.request;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.adHocSubprocessActivityFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.adHocSubProcessActivityFilter;
 import static io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider.provideSearchRequestProperty;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
-import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
-import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
+import io.camunda.client.api.search.filter.AdHocSubProcessActivityFilter;
+import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
+import io.camunda.client.api.search.response.AdHocSubProcessActivityResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.response.AdHocSubprocessActivityResponseImpl;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivitySearchQuery;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivitySearchQueryResult;
+import io.camunda.client.impl.search.response.AdHocSubProcessActivityResponseImpl;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivitySearchQuery;
+import io.camunda.client.protocol.rest.AdHocSubProcessActivitySearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class AdHocSubprocessActivitySearchRequestImpl
-    implements AdHocSubprocessActivitySearchRequest {
+public class AdHocSubProcessActivitySearchRequestImpl
+    implements AdHocSubProcessActivitySearchRequest {
 
-  private final AdHocSubprocessActivitySearchQuery request;
+  private final AdHocSubProcessActivitySearchQuery request;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public AdHocSubprocessActivitySearchRequestImpl(
+  public AdHocSubProcessActivitySearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new AdHocSubprocessActivitySearchQuery();
+    request = new AdHocSubProcessActivitySearchQuery();
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AdHocSubprocessActivitySearchRequest filter(final AdHocSubprocessActivityFilter filter) {
+  public AdHocSubProcessActivitySearchRequest filter(final AdHocSubProcessActivityFilter filter) {
     request.setFilter(provideSearchRequestProperty(filter));
     return this;
   }
 
   @Override
-  public AdHocSubprocessActivitySearchRequest filter(
-      final Consumer<AdHocSubprocessActivityFilter> fn) {
-    return filter(adHocSubprocessActivityFilter(fn));
+  public AdHocSubProcessActivitySearchRequest filter(
+      final Consumer<AdHocSubProcessActivityFilter> fn) {
+    return filter(adHocSubProcessActivityFilter(fn));
   }
 
   @Override
-  public FinalCommandStep<AdHocSubprocessActivityResponse> requestTimeout(
+  public FinalCommandStep<AdHocSubProcessActivityResponse> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<AdHocSubprocessActivityResponse> send() {
-    final HttpCamundaFuture<AdHocSubprocessActivityResponse> result = new HttpCamundaFuture<>();
+  public CamundaFuture<AdHocSubProcessActivityResponse> send() {
+    final HttpCamundaFuture<AdHocSubProcessActivityResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/element-instances/ad-hoc-activities/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        AdHocSubprocessActivitySearchQueryResult.class,
-        AdHocSubprocessActivityResponseImpl::new,
+        AdHocSubProcessActivitySearchQueryResult.class,
+        AdHocSubProcessActivityResponseImpl::new,
         result);
     return result;
   }

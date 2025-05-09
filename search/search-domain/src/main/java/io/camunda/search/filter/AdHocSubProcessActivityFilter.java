@@ -9,31 +9,31 @@ package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
 
-public record AdHocSubprocessActivityFilter(Long processDefinitionKey, String adHocSubprocessId)
+public record AdHocSubProcessActivityFilter(Long processDefinitionKey, String adHocSubProcessId)
     implements FilterBase {
 
   public static Builder builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ObjectBuilder<AdHocSubprocessActivityFilter> {
+  public static final class Builder implements ObjectBuilder<AdHocSubProcessActivityFilter> {
 
     private Long processDefinitionKey;
-    private String adHocSubprocessId;
+    private String adHocSubProcessId;
 
     public Builder processDefinitionKey(final Long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
-    public Builder adHocSubprocessId(final String adHocSubprocessId) {
-      this.adHocSubprocessId = adHocSubprocessId;
+    public Builder adHocSubProcessId(final String adHocSubProcessId) {
+      this.adHocSubProcessId = adHocSubProcessId;
       return this;
     }
 
     @Override
-    public AdHocSubprocessActivityFilter build() {
-      return new AdHocSubprocessActivityFilter(processDefinitionKey, adHocSubprocessId);
+    public AdHocSubProcessActivityFilter build() {
+      return new AdHocSubProcessActivityFilter(processDefinitionKey, adHocSubProcessId);
     }
   }
 }

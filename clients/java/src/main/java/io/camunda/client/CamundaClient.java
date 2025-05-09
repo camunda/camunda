@@ -16,7 +16,7 @@
 package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
-import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
@@ -89,7 +89,7 @@ import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -898,71 +898,71 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   ElementInstanceGetRequest newElementInstanceGetRequest(long elementInstanceKey);
 
   /**
-   * Executes a search request to query activities within ad-hoc subprocesses.
+   * Executes a search request to query activities within ad-hoc sub-processes.
    *
    * <p>Note that this API currently requires filters for both process definition key and ad-hoc
-   * subprocess ID and does not support paging or sorting.
+   * sub-process ID and does not support paging or sorting.
    *
    * <pre>
    * long processDefinitionKey = ...;
-   * String adHocSubprocessId = ...;
+   * String adHocSubProcessId = ...;
    *
    * camundaClient
-   *  .newAdHocSubprocessActivitySearchRequest()
+   *  .newAdHocSubProcessActivitySearchRequest()
    *  .filter((f) -> f
    *     .processDefinitionKey(processDefinitionKey)
-   *     .adHocSubprocessId(adHocSubprocessId)
+   *     .adHocSubProcessId(adHocSubProcessId)
    *  )
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity search request
+   * @return a builder for the ad-hoc sub-process activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest();
+  AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest();
 
   /**
-   * Executes a search request to query activities within ad-hoc subprocesses.
+   * Executes a search request to query activities within ad-hoc sub-processes.
    *
    * <p>Note that this API currently requires filters for both process definition key and ad-hoc
-   * subprocess ID and does not support paging or sorting.
+   * sub-process ID and does not support paging or sorting.
    *
    * <pre>
    * long processDefinitionKey = ...;
-   * String adHocSubprocessId = ...;
+   * String adHocSubProcessId = ...;
    *
    * camundaClient
-   *  .newAdHocSubprocessActivitySearchRequest(
+   *  .newAdHocSubProcessActivitySearchRequest(
    *    processDefinitionKey,
-   *    adHocSubprocessId
+   *    adHocSubProcessId
    *  )
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity search request
+   * @return a builder for the ad-hoc sub-process activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest(
-      long processDefinitionKey, String adHocSubprocessId);
+  AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest(
+      long processDefinitionKey, String adHocSubProcessId);
 
   /**
-   * Command to activate activities within an activated ad-hoc subprocess.
+   * Command to activate activities within an activated ad-hoc sub-process.
    *
    * <pre>
    *   camundaClient
-   *    .newActivateAdHocSubprocessActivitiesCommand(adHocSubprocessInstanceKey)
+   *    .newActivateAdHocSubProcessActivitiesCommand(adHocSubProcessInstanceKey)
    *    .activateElement("A")
    *    .activateElements("B", "C")
    *    .activateElements(Arrays.asList("D", "E"))
    *    .send();
    * </pre>
    *
-   * @param adHocSubprocessInstanceKey the key which identifies the corresponding ad-hoc subprocess
+   * @param adHocSubProcessInstanceKey the key which identifies the corresponding ad-hoc sub-process
    *     instance
    * @return a builder for the command
    */
-  ActivateAdHocSubprocessActivitiesCommandStep1 newActivateAdHocSubprocessActivitiesCommand(
-      String adHocSubprocessInstanceKey);
+  ActivateAdHocSubProcessActivitiesCommandStep1 newActivateAdHocSubProcessActivitiesCommand(
+      String adHocSubProcessInstanceKey);
 
   /**
    * Executes a search request to query user tasks.

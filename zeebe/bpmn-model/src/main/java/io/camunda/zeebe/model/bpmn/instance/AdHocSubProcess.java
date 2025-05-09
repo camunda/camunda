@@ -18,25 +18,25 @@ package io.camunda.zeebe.model.bpmn.instance;
 public interface AdHocSubProcess extends SubProcess {
 
   /**
-   * @return the completion condition to determine if the ad-hoc subprocess is completed.
+   * @return the completion condition to determine if the ad-hoc sub-process is completed.
    */
   CompletionCondition getCompletionCondition();
 
   /**
-   * Sets the completion condition to determine if the ad-hoc subprocess is completed.
+   * Sets the completion condition to determine if the ad-hoc sub-process is completed.
    *
    * @param completionCondition the completion condition to evaluate
    */
   void setCompletionCondition(CompletionCondition completionCondition);
 
   /**
-   * @return whether the ad-hoc subprocess should cancel remaining instances when completion
+   * @return whether the ad-hoc sub-process should cancel remaining instances when completion
    *     condition evaluates to true.
    */
   boolean isCancelRemainingInstances();
 
   /**
-   * Defines if the ad-hoc subprocess should cancel remaining instances when completion condition
+   * Defines if the ad-hoc sub-process should cancel remaining instances when completion condition
    * evaluates to true.
    *
    * @param cancelRemainingInstances whether to cancel remaining instances on completion
