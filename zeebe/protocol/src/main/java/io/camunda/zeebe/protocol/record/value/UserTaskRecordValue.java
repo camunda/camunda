@@ -52,6 +52,8 @@ public interface UserTaskRecordValue
 
   String getExternalFormReference();
 
+  UserTaskVariablesUpdateSemantic getVariableUpdateSemantics();
+
   Map<String, String> getCustomHeaders();
 
   long getCreationTimestamp();

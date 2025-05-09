@@ -75,13 +75,25 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
     final long userTaskElementInstanceKey = userTaskRecord.getElementInstanceKey();
     if (userTaskRecord.getChangedAttributes().contains(UserTaskRecord.VARIABLES)) {
-      variableBehavior.mergeLocalDocument(
-          userTaskElementInstanceKey,
-          userTaskRecord.getProcessDefinitionKey(),
-          userTaskRecord.getProcessInstanceKey(),
-          userTaskRecord.getBpmnProcessIdBuffer(),
-          userTaskRecord.getTenantId(),
-          command.getValue().getVariablesBuffer());
+      switch (userTaskRecord.getVariableUpdateSemantics()) {
+        case LOCAL ->
+            variableBehavior.mergeLocalDocument(
+                userTaskElementInstanceKey,
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                command.getValue().getVariablesBuffer());
+        case PROPAGATE ->
+            variableBehavior.mergeDocument(
+                userTaskElementInstanceKey,
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                command.getValue().getVariablesBuffer());
+        case NULL -> throw new IllegalArgumentException("Totally unexpected");
+      }
     }
 
     if (command.hasRequestMetadata()) {

@@ -67,12 +67,12 @@ public final class VariableDocumentUpdateProcessor
       final Writers writers,
       final MutableUserTaskState userTaskState,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    this.elementInstanceState = processingState.getElementInstanceState();
+    elementInstanceState = processingState.getElementInstanceState();
     this.userTaskState = userTaskState;
-    this.processState = processingState.getProcessState();
+    processState = processingState.getProcessState();
     this.keyGenerator = keyGenerator;
-    this.variableBehavior = bpmnBehaviors.variableBehavior();
-    this.jobBehavior = bpmnBehaviors.jobBehavior();
+    variableBehavior = bpmnBehaviors.variableBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
     this.writers = writers;
     this.authCheckBehavior = authCheckBehavior;
   }
@@ -115,14 +115,6 @@ public final class VariableDocumentUpdateProcessor
 
     if (isCamundaUserTask(scope)) {
       final long userTaskKey = scope.getUserTaskKey();
-      // Temporary check: to reject variable updates with 'PROPAGATE' semantic for a user task.
-      // This will be removed in the following PRs when support for propagation is implemented.
-      if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.PROPAGATE) {
-        final var reason = USER_TASK_PROPAGATE_SEMANTIC_NOT_SUPPORTED.formatted(userTaskKey);
-        writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
-        writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
-        return;
-      }
 
       final var lifecycleState = userTaskState.getLifecycleState(userTaskKey);
       if (lifecycleState != LifecycleState.CREATED) {
@@ -136,6 +128,7 @@ public final class VariableDocumentUpdateProcessor
       writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
 
       final var userTaskRecord = userTaskState.getUserTask(userTaskKey);
+      userTaskRecord.setVariableUpdateSemantics(value.getUpdateSemantics());
       if (hasVariables(value)) {
         userTaskRecord.setVariables(value.getVariablesBuffer()).setVariablesChanged();
       }
@@ -158,13 +151,24 @@ public final class VariableDocumentUpdateProcessor
         return;
       }
 
-      variableBehavior.mergeLocalDocument(
-          userTaskRecord.getElementInstanceKey(),
-          userTaskRecord.getProcessDefinitionKey(),
-          userTaskRecord.getProcessInstanceKey(),
-          userTaskRecord.getBpmnProcessIdBuffer(),
-          userTaskRecord.getTenantId(),
-          value.getVariablesBuffer());
+      switch (value.getUpdateSemantics()) {
+        case LOCAL ->
+            variableBehavior.mergeLocalDocument(
+                userTaskRecord.getElementInstanceKey(),
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                value.getVariablesBuffer());
+        case PROPAGATE ->
+            variableBehavior.mergeDocument(
+                userTaskRecord.getElementInstanceKey(),
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                value.getVariablesBuffer());
+      }
 
       writers
           .state()
@@ -216,7 +220,7 @@ public final class VariableDocumentUpdateProcessor
     return !DocumentValue.EMPTY_DOCUMENT.equals(record.getVariablesBuffer());
   }
 
-  private static boolean isCamundaUserTask(ElementInstance elementInstance) {
+  private static boolean isCamundaUserTask(final ElementInstance elementInstance) {
     return elementInstance.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
         && elementInstance.getUserTaskKey() > -1L;
   }

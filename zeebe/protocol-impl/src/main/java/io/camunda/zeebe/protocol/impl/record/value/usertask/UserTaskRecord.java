@@ -14,6 +14,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
@@ -25,6 +26,8 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskVariablesUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
@@ -92,6 +95,12 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new StringProperty("externalFormReference", EMPTY_STRING);
 
   private final DocumentProperty variableProp = new DocumentProperty("variables");
+  private final EnumProperty<UserTaskVariablesUpdateSemantic> variableUpdateSemanticsProperty =
+      new EnumProperty<>(
+          "variableUpdateSemantics",
+          UserTaskVariablesUpdateSemantic.class,
+          UserTaskVariablesUpdateSemantic.NULL);
+
   private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
 
   private final LongProperty processInstanceKeyProp =
@@ -148,7 +157,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final StringProperty deniedReasonProp = new StringProperty("deniedReason", EMPTY_STRING);
 
   public UserTaskRecord() {
-    super(22);
+    super(23);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -158,6 +167,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(formKeyProp)
         .declareProperty(externalFormReferenceProp)
         .declareProperty(variableProp)
+        .declareProperty(variableUpdateSemanticsProperty)
         .declareProperty(customHeadersProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionVersionProp)
@@ -183,6 +193,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     followUpDateProp.setValue(record.getFollowUpDateBuffer());
     formKeyProp.setValue(record.getFormKey());
     externalFormReferenceProp.setValue(record.getExternalFormReferenceBuffer());
+    variableUpdateSemanticsProperty.setValue(record.getVariableUpdateSemantics());
     final DirectBuffer customHeaders = record.getCustomHeadersBuffer();
     customHeadersProp.setValue(customHeaders, 0, customHeaders.capacity());
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
@@ -375,6 +386,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
+  public UserTaskVariablesUpdateSemantic getVariableUpdateSemantics() {
+    return variableUpdateSemanticsProperty.getValue();
+  }
+
+  @Override
   public Map<String, String> getCustomHeaders() {
     return MsgPackConverter.convertToStringMap(customHeadersProp.getValue());
   }
@@ -461,6 +477,22 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setCustomHeaders(final DirectBuffer buffer) {
     customHeadersProp.setValue(buffer, 0, buffer.capacity());
+    return this;
+  }
+
+  public UserTaskRecord setVariableUpdateSemantics(
+      final UserTaskVariablesUpdateSemantic variableUpdateSemantics) {
+    variableUpdateSemanticsProperty.setValue(variableUpdateSemantics);
+    return this;
+  }
+
+  public UserTaskRecord setVariableUpdateSemantics(
+      final VariableDocumentUpdateSemantic variableDocumentUpdateSemantic) {
+    variableUpdateSemanticsProperty.setValue(
+        switch (variableDocumentUpdateSemantic) {
+          case LOCAL -> UserTaskVariablesUpdateSemantic.LOCAL;
+          case PROPAGATE -> UserTaskVariablesUpdateSemantic.PROPAGATE;
+        });
     return this;
   }
 
