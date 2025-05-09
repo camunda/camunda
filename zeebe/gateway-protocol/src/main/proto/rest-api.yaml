@@ -7169,6 +7169,7 @@ components:
           enum:
             - roleKey
             - name
+            - roleId
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
@@ -7184,6 +7185,20 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleSearchQuerySortRequest"
+        filter:
+          description: The role search filters.
+          allOf:
+            - $ref: "#/components/schemas/RoleFilterRequest"
+    RoleFilterRequest:
+      description: Role filter request
+      type: object
+      properties:
+        roleId:
+          description: The role ID search filters.
+          type: string
+        name:
+          description: The role name search filters.
+          type: string
     RoleSearchQueryResult:
       description: Role search response.
       type: object

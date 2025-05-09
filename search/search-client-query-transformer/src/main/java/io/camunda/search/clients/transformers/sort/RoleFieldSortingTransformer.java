@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.index.RoleIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.RoleIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.RoleIndex.ROLE_ID;
 
 public class RoleFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -17,6 +18,7 @@ public class RoleFieldSortingTransformer implements FieldSortingTransformer {
     return switch (domainField) {
       case "roleKey" -> KEY;
       case "name" -> NAME;
+      case "roleId" -> ROLE_ID;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
   }
