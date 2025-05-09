@@ -17,7 +17,10 @@ import {FormRenderProps} from 'react-final-form';
 
 import {AddVariableButton, Form, VariablesContainer} from './styled';
 import {useWillAllFlowNodesBeCanceled} from 'modules/hooks/modifications';
-import {useHasPendingCancelOrMoveModification} from 'modules/hooks/flowNodeSelection';
+import {
+  useHasPendingCancelOrMoveModification,
+  useIsPlaceholderSelected,
+} from 'modules/hooks/flowNodeSelection';
 import Variables from '../Variables';
 
 const VariablesForm: React.FC<
@@ -26,6 +29,7 @@ const VariablesForm: React.FC<
   const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
   const hasPendingCancelOrMoveModification =
     useHasPendingCancelOrMoveModification();
+  const isPlaceholderSelected = useIsPlaceholderSelected();
   const hasEmptyNewVariable = (values: VariableFormValues) =>
     values.newVariables?.some(
       (variable) =>
@@ -49,7 +53,7 @@ const VariablesForm: React.FC<
     }
 
     return (
-      flowNodeSelectionStore.isPlaceholderSelected ||
+      isPlaceholderSelected ||
       (flowNodeMetaDataStore.isSelectedInstanceRunning &&
         !hasPendingCancelOrMoveModification)
     );

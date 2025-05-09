@@ -192,20 +192,6 @@ describe('stores/flowNodeSelection', () => {
     expect(flowNodeSelectionStore.state.selection).toEqual(rootNode);
   });
 
-  it('should get selected flow node name', async () => {
-    const selection = {
-      flowNodeId: 'startEvent',
-      flowNodeInstanceId: '2251799813689409',
-    };
-
-    expect(flowNodeSelectionStore.selectedFlowNodeName).toBe(
-      'some process name',
-    );
-
-    flowNodeSelectionStore.selectFlowNode(selection);
-    expect(flowNodeSelectionStore.selectedFlowNodeName).toBe('startEvent');
-  });
-
   it('should clear selection when last modification is removed which results in selected scope being removed', () => {
     const rootNode = {
       flowNodeInstanceId: PROCESS_INSTANCE_ID,

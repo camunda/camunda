@@ -8,10 +8,14 @@
 
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {useHasRunningOrFinishedTokens} from './flowNodeSelection';
+import {
+  useHasRunningOrFinishedTokens,
+  useNewTokenCountForSelectedNode,
+} from './flowNodeSelection';
 
 const useHasMultipleInstances = () => {
   const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
+  const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
   const {metaData} = flowNodeMetaDataStore.state;
 
   if (
@@ -21,13 +25,10 @@ const useHasMultipleInstances = () => {
   }
 
   if (!hasRunningOrFinishedTokens) {
-    return flowNodeSelectionStore.newTokenCountForSelectedNode > 1;
+    return newTokenCountForSelectedNode > 1;
   }
 
-  return (
-    (metaData?.instanceCount ?? 0) > 1 ||
-    flowNodeSelectionStore.newTokenCountForSelectedNode > 0
-  );
+  return (metaData?.instanceCount ?? 0) > 1 || newTokenCountForSelectedNode > 0;
 };
 
 export {useHasMultipleInstances};
