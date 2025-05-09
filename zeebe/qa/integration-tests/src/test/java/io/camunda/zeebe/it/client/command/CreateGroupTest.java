@@ -53,7 +53,6 @@ class CreateGroupTest {
             .join();
 
     // then
-    assertThat(response.getGroupKey()).isGreaterThan(0);
     assertThat(response.getGroupId()).isEqualTo(GROUP_ID);
     assertThat(response.getName()).isEqualTo(GROUP_NAME);
     assertThat(response.getDescription()).isEqualTo(GROUP_DESCRIPTION);
@@ -73,7 +72,6 @@ class CreateGroupTest {
         client.newCreateGroupCommand().groupId(GROUP_ID).name(GROUP_NAME).send().join();
 
     // then
-    assertThat(response.getGroupKey()).isGreaterThan(0);
     assertThat(response.getGroupId()).isEqualTo(GROUP_ID);
     assertThat(response.getName()).isEqualTo(GROUP_NAME);
     assertThat(response.getDescription()).isEqualTo("");

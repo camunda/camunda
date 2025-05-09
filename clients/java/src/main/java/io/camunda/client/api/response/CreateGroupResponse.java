@@ -16,12 +16,6 @@
 package io.camunda.client.api.response;
 
 public interface CreateGroupResponse {
-  /**
-   * Returns the key of the created group.
-   *
-   * @return the key of the created group.
-   */
-  long getGroupKey();
 
   /**
    * Returns the ID of the created group.

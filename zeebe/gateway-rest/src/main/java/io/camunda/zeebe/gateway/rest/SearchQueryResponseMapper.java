@@ -400,7 +400,6 @@ public final class SearchQueryResponseMapper {
 
   public static GroupResult toGroup(final GroupEntity groupEntity) {
     return new GroupResult()
-        .groupKey(KeyUtil.keyToString(groupEntity.groupKey()))
         .groupId(groupEntity.groupId())
         .name(groupEntity.name())
         .description(groupEntity.description());

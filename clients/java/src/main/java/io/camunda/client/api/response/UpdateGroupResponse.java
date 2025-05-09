@@ -16,15 +16,6 @@
 package io.camunda.client.api.response;
 
 public interface UpdateGroupResponse {
-  /**
-   * Returns the unique key of the updated group.
-   *
-   * <p>The group key is a system-generated identifier that is unique across all groups. It is
-   * primarily used internally by the system for efficient indexing and processing.
-   *
-   * @return the system-generated group key.
-   */
-  long getGroupKey();
 
   /**
    * Returns the unique identifier (ID) of the updated group.

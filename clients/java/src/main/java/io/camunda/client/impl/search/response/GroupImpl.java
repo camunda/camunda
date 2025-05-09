@@ -19,22 +19,14 @@ import io.camunda.client.api.search.response.Group;
 
 public class GroupImpl implements Group {
 
-  private final long groupKey;
   private final String groupId;
   private final String name;
   private final String description;
 
-  public GroupImpl(
-      final Long groupKey, final String groupId, final String name, final String description) {
-    this.groupKey = groupKey;
+  public GroupImpl(final String groupId, final String name, final String description) {
     this.groupId = groupId;
     this.name = name;
     this.description = description;
-  }
-
-  @Override
-  public Long getGroupKey() {
-    return groupKey;
   }
 
   @Override

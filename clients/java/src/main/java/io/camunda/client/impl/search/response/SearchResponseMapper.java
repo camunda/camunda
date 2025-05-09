@@ -164,11 +164,7 @@ public final class SearchResponseMapper {
   }
 
   public static Group toGroupResponse(final GroupResult response) {
-    return new GroupImpl(
-        ParseUtil.parseLongOrNull(response.getGroupKey()),
-        response.getGroupId(),
-        response.getName(),
-        response.getDescription());
+    return new GroupImpl(response.getGroupId(), response.getName(), response.getDescription());
   }
 
   public static User toUserResponse(final UserResult response) {

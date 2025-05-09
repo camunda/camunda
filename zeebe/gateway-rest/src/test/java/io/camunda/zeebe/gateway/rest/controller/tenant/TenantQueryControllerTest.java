@@ -148,13 +148,11 @@ public class TenantQueryControllerTest extends RestControllerTest {
       {
          "items": [
            {
-             "groupKey": %s,
              "name": "%s",
              "description": "%s",
              "groupId": "%s"
            },
            {
-             "groupKey": %s,
              "name": "%s",
              "description": "%s",
              "groupId": "%s"
@@ -170,11 +168,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   private static final String EXPECTED_GROUP_RESPONSE =
       GROUP_RESPONSE.formatted(
-          "\"%s\"".formatted(GROUP_ENTITIES.get(0).groupKey()),
           GROUP_ENTITIES.get(0).name(),
           GROUP_ENTITIES.get(0).description(),
           GROUP_ENTITIES.get(0).groupId(),
-          "\"%s\"".formatted(GROUP_ENTITIES.get(1).groupKey()),
           GROUP_ENTITIES.get(1).name(),
           GROUP_ENTITIES.get(1).description(),
           GROUP_ENTITIES.get(1).groupId(),
