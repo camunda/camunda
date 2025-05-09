@@ -43,7 +43,7 @@ public final class MinioContainer extends GenericContainer<MinioContainer> {
    * this.
    */
   public MinioContainer() {
-    this("RELEASE.2023-11-20T22-40-07Z");
+    this("RELEASE.2025-04-22T22-12-26Z");
   }
 
   /**
