@@ -27,6 +27,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
+import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.User;
@@ -70,6 +71,16 @@ public final class SearchResponseMapper {
         toSearchResponseInstances(response.getItems(), ProcessInstanceImpl::new);
 
     return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static List<ProcessInstanceSequenceFlow> toProcessInstanceSequenceFlowSearchResponse(
+      final ProcessInstanceSequenceFlowsQueryResult response) {
+    if (response.getItems() != null) {
+      return response.getItems().stream()
+          .map(ProcessInstanceSequenceFlowImpl::new)
+          .collect(Collectors.toList());
+    }
+    return Collections.emptyList();
   }
 
   public static SearchResponse<UserTask> toUserTaskSearchResponse(

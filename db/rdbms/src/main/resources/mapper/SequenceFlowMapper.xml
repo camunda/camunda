@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.SequenceFlowMapper">
+
+  <resultMap id="SequenceFlowResultMap"
+    type="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
+    <result column="FLOW_NODE_ID" property="flowNodeId" />
+    <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" />
+    <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" />
+    <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" />
+    <result column="TENANT_ID" property="tenantId" />
+  </resultMap>
+
+  <select id="search"
+    parameterType="io.camunda.search.query.SequenceFlowQuery"
+    resultMap="SequenceFlowResultMap"
+    statementType="PREPARED">
+    SELECT distinct
+      sf.FLOW_NODE_ID,
+      sf.PROCESS_INSTANCE_KEY,
+      sf.PROCESS_DEFINITION_KEY,
+      sf.PROCESS_DEFINITION_ID,
+      sf.TENANT_ID
+    FROM ${prefix}SEQUENCE_FLOW sf
+    WHERE sf.PROCESS_INSTANCE_KEY = #{filter.processInstanceKey}
+  </select>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
+    INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
+                                        PROCESS_INSTANCE_KEY,
+                                        PROCESS_DEFINITION_KEY,
+                                        PROCESS_DEFINITION_ID,
+                                        TENANT_ID,
+                                        PARTITION_ID,
+                                        HISTORY_CLEANUP_DATE)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP})
+  </insert>
+
+  <update
+    flushCache="true"
+    id="updateHistoryCleanupDate"
+    statementType="PREPARED">
+    UPDATE ${prefix}SEQUENCE_FLOW
+    SET HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete
+    flushCache="true"
+    id="cleanupHistory"
+    statementType="PREPARED">
+    <bind name="tableName" value="'SEQUENCE_FLOW'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
+</mapper>

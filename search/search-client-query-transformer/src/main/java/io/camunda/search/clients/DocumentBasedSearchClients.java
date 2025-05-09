@@ -33,6 +33,7 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricsEntity;
@@ -61,6 +62,7 @@ import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
@@ -116,6 +118,12 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return getSearchExecutor()
         .findAll(
             filter, io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity.class);
+  }
+
+  @Override
+  public List<SequenceFlowEntity> findAllSequenceFlows(final SequenceFlowQuery filter) {
+    return getSearchExecutor()
+        .findAll(filter, io.camunda.webapps.schema.entities.SequenceFlowEntity.class);
   }
 
   @Override

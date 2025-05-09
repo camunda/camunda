@@ -540,4 +540,26 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_sequence_flow_table" author="danielkelemen">
+    <createTable tableName="${prefix}SEQUENCE_FLOW">
+      <!-- no PK possible, flowNodeId can occur multiple times with multiInstanceLoopCharacteristics -->
+      <column name="FLOW_NODE_ID" type="VARCHAR(255)"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(255)"/>
+      <column name="TENANT_ID" type="VARCHAR(255)"/>
+      <column name="PARTITION_ID" type="NUMBER"/>
+      <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}SEQUENCE_FLOW" indexName="${prefix}IDX_SEQUENCE_FLOW_PROCESS_INSTANCE_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <modifySql dbms="mariadb">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+  </changeSet>
+
 </databaseChangeLog>
