@@ -21,18 +21,27 @@ import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.FieldSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class BrokerClientPartitionScalingExecutorTest {
+
+  static final List<Set<Integer>> INCOMPLETE_PARTITION_LIST =
+      List.of(Set.of(1, 2, 3, 4), Set.of(4));
+
+  static final List<Set<Integer>> COMPLETE_PARTITION_LIST =
+      List.of(Set.of(1, 2, 3, 4, 5), Set.of(4, 5));
 
   TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
   BrokerClientPartitionScalingExecutor executor;
@@ -53,10 +62,11 @@ public class BrokerClientPartitionScalingExecutorTest {
             "expected to await redistribution completion for partition count 5, but got 2");
   }
 
-  @Test
-  public void shouldFailFutureResponseWhenNotAllPartitionsAreReady() {
+  @ParameterizedTest
+  @FieldSource("INCOMPLETE_PARTITION_LIST")
+  public void shouldFailFutureResponseWhenNotAllPartitionsAreReady(final Set<Integer> partitions) {
     final var scaleRecord =
-        new ScaleRecord().setDesiredPartitionCount(5).setRedistributedPartitionsProperty(Set.of(4));
+        new ScaleRecord().setDesiredPartitionCount(5).setRedistributedPartitions(partitions);
 
     // then
     assertThat(awaitRedistributionWith(Either.right(scaleRecord)))
@@ -66,12 +76,11 @@ public class BrokerClientPartitionScalingExecutorTest {
             "Redistribution not completed yet: waiting for these partitions: [5]");
   }
 
-  @Test
-  public void shouldCompleteResponseWhenAllPartitionsAreReady() {
+  @ParameterizedTest
+  @FieldSource("COMPLETE_PARTITION_LIST")
+  public void shouldCompleteResponseWhenAllPartitionsAreReady(final Set<Integer> partitions) {
     final var scaleRecord =
-        new ScaleRecord()
-            .setDesiredPartitionCount(5)
-            .setRedistributedPartitionsProperty(Set.of(4, 5));
+        new ScaleRecord().setDesiredPartitionCount(5).setRedistributedPartitions(partitions);
 
     // then
     assertThat(awaitRedistributionWith(Either.right(scaleRecord))).isCompleted();

@@ -75,7 +75,7 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
           }
           final Set<Integer> currentlyRedistributedPartitions =
               new TreeSet<>(response.getRedistributedPartitions());
-          if (currentlyRedistributedPartitions.equals(redistributedPartitions)) {
+          if (currentlyRedistributedPartitions.containsAll(redistributedPartitions)) {
             result.complete(null);
           } else {
             final var missingPartitions = new TreeSet<>(redistributedPartitions);

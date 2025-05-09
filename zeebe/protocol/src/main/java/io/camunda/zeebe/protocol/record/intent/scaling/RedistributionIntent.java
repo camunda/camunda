@@ -25,6 +25,9 @@ public enum RedistributionIntent implements Intent {
   COMPLETE((short) 5, false),
   COMPLETED((short) 6, true);
 
+  // A static field is needed as values() would allocate at every call
+  private static final RedistributionIntent[] INTENTS = values();
+
   private final short value;
   private final boolean isEvent;
 
@@ -44,21 +47,10 @@ public enum RedistributionIntent implements Intent {
   }
 
   public static Intent from(final short intent) {
-    switch (intent) {
-      case 1:
-        return START;
-      case 2:
-        return STARTED;
-      case 3:
-        return CONTINUE;
-      case 4:
-        return CONTINUED;
-      case 5:
-        return COMPLETE;
-      case 6:
-        return COMPLETED;
-      default:
-        return Intent.UNKNOWN;
+    try {
+      return INTENTS[intent - 1];
+    } catch (final ArrayIndexOutOfBoundsException e) {
+      return Intent.UNKNOWN;
     }
   }
 }

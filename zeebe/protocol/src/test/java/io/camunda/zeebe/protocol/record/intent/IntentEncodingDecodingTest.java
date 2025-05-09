@@ -18,6 +18,8 @@ package io.camunda.zeebe.protocol.record.intent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -78,6 +80,8 @@ final class IntentEncodingDecodingTest {
         buildParameterSets(SignalSubscriptionIntent.class, SignalSubscriptionIntent::from));
     result.addAll(buildParameterSets(ClockIntent.class, ClockIntent::from));
     result.addAll(buildParameterSets(TenantIntent.class, TenantIntent::from));
+    result.addAll(buildParameterSets(ScaleIntent.class, ScaleIntent::from));
+    result.addAll(buildParameterSets(RedistributionIntent.class, RedistributionIntent::from));
 
     return result.stream();
   }

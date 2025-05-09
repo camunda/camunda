@@ -54,18 +54,18 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
     return relocatedPartitions.stream().map(IntegerValue::getValue).toList();
   }
 
-  public ScaleRecord setRedistributedPartitionsProperty(final Collection<Integer> partitions) {
-    redistributedPartitions.reset();
+  public ScaleRecord setRelocatedPartitions(final Collection<Integer> partitions) {
+    relocatedPartitions.reset();
     for (final int partition : partitions) {
-      redistributedPartitions.add().setValue(partition);
+      relocatedPartitions.add().setValue(partition);
     }
     return this;
   }
 
-  public ScaleRecord setRelocatedPartitionsProperty(final Collection<Integer> partitions) {
-    relocatedPartitions.reset();
+  public ScaleRecord setRedistributedPartitions(final Collection<Integer> partitions) {
+    redistributedPartitions.reset();
     for (final int partition : partitions) {
-      relocatedPartitions.add().setValue(partition);
+      redistributedPartitions.add().setValue(partition);
     }
     return this;
   }
