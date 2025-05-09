@@ -16,13 +16,16 @@ import {
   within,
 } from 'common/testing/testing-library';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
-import {createMockProcess} from 'v1/api/useProcesses.query';
 import {http, HttpResponse} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Component} from './index';
 import {notificationsStore} from 'common/notifications/notifications.store';
-import * as formMocks from 'v1/mocks/form';
+import * as formMocks from 'v2/mocks/form';
 import * as userMocks from 'common/mocks/current-user';
+import {
+  getProcessDefinitionMock,
+  getQueryProcessDefinitionsResponseMock,
+} from 'v2/mocks/processDefinitions';
 import {LocationLog} from 'common/testing/LocationLog';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
@@ -96,9 +99,13 @@ describe('Processes', () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
       http.get(
-        '/v1/internal/processes',
+        '/v2/process-definitions/search',
         () => {
-          return HttpResponse.json([]);
+          return HttpResponse.json(
+            getQueryProcessDefinitionsResponseMock([
+              getProcessDefinitionMock(),
+            ]),
+          );
         },
         {once: true},
       ),
@@ -137,11 +144,13 @@ describe('Processes', () => {
   it('should render a list of processes', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
-        return HttpResponse.json([
-          createMockProcess('process-0'),
-          createMockProcess('process-1'),
-        ]);
+      http.post('/v2/process-definitions/search', () => {
+        return HttpResponse.json(
+          getQueryProcessDefinitionsResponseMock([
+            getProcessDefinitionMock(),
+            getProcessDefinitionMock(),
+          ]),
+        );
       }),
     );
 
@@ -158,12 +167,14 @@ describe('Processes', () => {
 
   it.skip('should open a dialog with the start form', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    const mockProcess = createMockProcess('process-0');
+    const mockProcess = getProcessDefinitionMock();
     nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
-        return HttpResponse.json([mockProcess]);
+      http.post('/v2/process-definitions/search', () => {
+        return HttpResponse.json(
+          getQueryProcessDefinitionsResponseMock([mockProcess]),
+        );
       }),
-      http.get('/v1/forms/:formId', () => {
+      http.get('/v2/forms/:formKey', () => {
         return HttpResponse.json(formMocks.form);
       }),
     );
@@ -191,14 +202,14 @@ describe('Processes', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText('A sample text')).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      pages.internalStartProcessFromForm(mockProcess.bpmnProcessId),
+      pages.internalStartProcessFromForm(mockProcess.processDefinitionId),
     );
   });
 
   it('should show an error toast when the query fails', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
+      http.post('/v2/process-definitions/search', () => {
         return HttpResponse.error();
       }),
     );
@@ -219,8 +230,8 @@ describe('Processes', () => {
   it.skip('should show the filter dropdown', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
-        return HttpResponse.json([]);
+      http.post('/v2/process-definitions/search', () => {
+        return HttpResponse.json(getQueryProcessDefinitionsResponseMock([]));
       }),
     );
 
@@ -242,8 +253,8 @@ describe('Processes', () => {
       isMultiTenancyEnabled: true,
     });
     nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
-        return HttpResponse.json([]);
+      http.post('/v2/process-definitions/search', () => {
+        return HttpResponse.json(getQueryProcessDefinitionsResponseMock([]));
       }),
       http.get(
         '/v2/authentication/me',
@@ -280,8 +291,8 @@ describe('Processes', () => {
       isMultiTenancyEnabled: true,
     });
     nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
-        return HttpResponse.json([]);
+      http.post('/v2/process-definitions/search', () => {
+        return HttpResponse.json(getQueryProcessDefinitionsResponseMock([]));
       }),
       http.get(
         '/v2/authentication/me',
@@ -317,8 +328,8 @@ describe('Processes', () => {
       isMultiTenancyEnabled: true,
     });
     nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
-        return HttpResponse.json([]);
+      http.post('/v2/process-definitions/search', () => {
+        return HttpResponse.json(getQueryProcessDefinitionsResponseMock([]));
       }),
       http.get(
         '/v2/authentication/me',
@@ -344,19 +355,21 @@ describe('Processes', () => {
 
   it.skip('should render the start form with the correct URL', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    const mockProcess = createMockProcess('process-0');
+    const mockProcess = getProcessDefinitionMock();
     nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
-        return HttpResponse.json([mockProcess]);
+      http.post('/v2/process-definitions/search', () => {
+        return HttpResponse.json(
+          getQueryProcessDefinitionsResponseMock([mockProcess]),
+        );
       }),
-      http.get('/v1/forms/:bpmnProcessId', () => {
+      http.get('/v2/forms/:formKey', () => {
         return HttpResponse.json(formMocks.form);
       }),
     );
 
     render(<Component />, {
       wrapper: getWrapper([
-        pages.internalStartProcessFromForm(mockProcess.bpmnProcessId),
+        pages.internalStartProcessFromForm(mockProcess.processDefinitionId),
       ]),
     });
 
@@ -371,7 +384,7 @@ describe('Processes', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText('A sample text')).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      pages.internalStartProcessFromForm(mockProcess.bpmnProcessId),
+      pages.internalStartProcessFromForm(mockProcess.processDefinitionId),
     );
   });
 
@@ -379,8 +392,10 @@ describe('Processes', () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const wrongBpmnProcessId = 'wrong-bpmn-process-id';
     nodeMockServer.use(
-      http.get('/v1/internal/processes', () => {
-        return HttpResponse.json([createMockProcess('process-0')]);
+      http.post('/v2/process-definitions/search', () => {
+        return HttpResponse.json(
+          getQueryProcessDefinitionsResponseMock([getProcessDefinitionMock()]),
+        );
       }),
     );
 

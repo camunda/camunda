@@ -18,7 +18,10 @@ import {
   type QueryProcessDefinitionsRequestBody,
   type ProcessDefinition,
 } from '@vzeta/camunda-api-zod-schemas/operate';
-import {endpoints as processManagementEndpoints} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {
+  endpoints as processManagementEndpoints,
+  type CreateProcessInstanceRequestBody,
+} from '@vzeta/camunda-api-zod-schemas/process-management';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
 
 const api = {
@@ -145,6 +148,19 @@ const api = {
       {
         ...BASE_REQUEST_OPTIONS,
         method: tasklistEndpoints.getUserTaskForm.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+  createProcessInstance: (params: CreateProcessInstanceRequestBody) => {
+    return new Request(
+      getFullURL(processManagementEndpoints.createProcessInstance.getUrl()),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: processManagementEndpoints.createProcessInstance.method,
+        body: JSON.stringify(params),
         headers: {
           'Content-Type': 'application/json',
         },

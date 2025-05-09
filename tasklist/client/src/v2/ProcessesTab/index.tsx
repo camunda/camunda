@@ -15,7 +15,6 @@ import {
   Stack,
   type InlineLoadingProps,
 } from '@carbon/react';
-import {useLocation, useNavigate} from 'react-router-dom';
 import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
@@ -23,21 +22,19 @@ import {newProcessInstance} from 'common/processes/newProcessInstance';
 import {FirstTimeModal} from 'common/processes/FirstTimeModal';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {logger} from 'common/utils/logger';
-import {NewProcessInstanceTasksPolling} from 'v1/ProcessesTab/NewProcessInstanceTasksPolling';
+import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
 import {tracking} from 'common/tracking';
-import {useProcesses} from 'v1/api/useProcesses.query';
+import {useProcessDefinitions} from 'v2/api/useProcessDefinitions.query';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
-import {pages} from 'common/routing';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {getClientConfig} from 'common/config/getClientConfig';
-import {getProcessDisplayName} from 'v1/utils/getProcessDisplayName';
-import {useStartProcess} from 'v1/api/useStartProcess.mutation';
-import type {Process} from 'v1/api/types';
+import {useCreateProcessInstance} from 'v2/api/useCreateProcessInstance.mutation';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from 'common/processes/empty-message-image.svg';
 import {ProcessTile} from 'common/processes/ProcessTile';
 import {getMultiModeProcessDisplayName} from 'common/processes/getMultiModeProcessDisplayName';
+import type {ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/operate';
 
 type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
@@ -50,20 +47,23 @@ const ProcessesTab: React.FC = observer(() => {
   const {instance} = newProcessInstance;
   const {data: currentUser} = useCurrentUser();
   const defaultTenant = currentUser?.tenants[0];
-  const location = useLocation();
-  const navigate = useNavigate();
   const selectedTenantId = defaultTenant?.tenantId;
-  const {data, error, isLoading} = useProcesses(
+  const {data, error, isLoading} = useProcessDefinitions(
     {
-      tenantId: selectedTenantId,
+      filter: {
+        tenantId: selectedTenantId,
+      },
+      page: {
+        limit: 10,
+      },
     },
     {
       refetchInterval: 5000,
-      placeholderData: (previousData) => previousData,
     },
   );
-  const [selectedProcess, setSelectedProcess] = useState<Process | null>(null);
-  const {mutateAsync: startProcess} = useStartProcess({
+  const [selectedProcess, setSelectedProcess] =
+    useState<ProcessDefinition | null>(null);
+  const {mutateAsync: createProcessInstance} = useCreateProcessInstance({
     onSuccess(data) {
       tracking.track({
         eventName: 'process-started',
@@ -71,7 +71,7 @@ const ProcessesTab: React.FC = observer(() => {
       setStartProcessStatus('active-tasks');
 
       newProcessInstance.setInstance({
-        id: data.id,
+        id: data.processInstanceKey,
         removeCallback: () => {
           setStartProcessStatus('finished');
         },
@@ -83,7 +83,7 @@ const ProcessesTab: React.FC = observer(() => {
       });
     },
   });
-  const processes = data?.processes ?? [];
+  const processes = data?.items ?? [];
 
   useEffect(() => {
     if (error !== null) {
@@ -101,7 +101,7 @@ const ProcessesTab: React.FC = observer(() => {
 
   return (
     <main className={cn('cds--content', styles.splitPane)}>
-      <NewProcessInstanceTasksPolling newInstance={instance} />
+      <NewProcessInstanceTasksPolling newInstance={newProcessInstance} />
 
       <div className={styles.container}>
         <Stack className={styles.content} gap={2}>
@@ -168,7 +168,7 @@ const ProcessesTab: React.FC = observer(() => {
                           sm={4}
                           md={4}
                           lg={5}
-                          key={process.id}
+                          key={process.processDefinitionKey}
                         >
                           <ProcessTile
                             process={process}
@@ -181,35 +181,25 @@ const ProcessesTab: React.FC = observer(() => {
                             tenantId={selectedTenantId}
                             onStartProcess={async () => {
                               setSelectedProcess(process);
-                              const {bpmnProcessId} = process;
-                              if (process.startEventFormId === null) {
-                                setStartProcessStatus('active');
-                                tracking.track({
-                                  eventName: 'process-start-clicked',
+                              const {processDefinitionKey} = process;
+                              setStartProcessStatus('active');
+                              tracking.track({
+                                eventName: 'process-start-clicked',
+                              });
+                              try {
+                                await createProcessInstance({
+                                  processDefinitionKey,
+                                  tenantId: selectedTenantId,
                                 });
-                                try {
-                                  await startProcess({
-                                    bpmnProcessId,
-                                    tenantId: selectedTenantId,
-                                  });
-                                } catch (error) {
-                                  logger.error(error);
-                                  setStartProcessStatus('error');
-                                }
-                              } else {
-                                navigate({
-                                  ...location,
-                                  pathname:
-                                    pages.internalStartProcessFromForm(
-                                      bpmnProcessId,
-                                    ),
-                                });
+                              } catch (error) {
+                                logger.error(error);
+                                setStartProcessStatus('error');
                               }
                             }}
                             onStartProcessError={() => {
                               setSelectedProcess(null);
                               const displayName =
-                                getProcessDisplayName(process);
+                                getMultiModeProcessDisplayName(process);
                               tracking.track({
                                 eventName: 'process-start-failed',
                               });
@@ -240,8 +230,8 @@ const ProcessesTab: React.FC = observer(() => {
                               setStartProcessStatus('inactive');
                             }}
                             status={
-                              selectedProcess?.bpmnProcessId ===
-                              process.bpmnProcessId
+                              selectedProcess?.processDefinitionKey ===
+                              process.processDefinitionKey
                                 ? startProcessStatus
                                 : 'inactive'
                             }

@@ -299,7 +299,7 @@ const ProcessesTab: React.FC = observer(() => {
 
   return (
     <main className={cn('cds--content', styles.splitPane)}>
-      <NewProcessInstanceTasksPolling newInstance={instance} />
+      <NewProcessInstanceTasksPolling newInstance={newProcessInstance} />
 
       <div className={styles.container}>
         <Stack className={styles.content} gap={2}>
