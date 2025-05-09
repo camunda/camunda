@@ -19,7 +19,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default [
   {
-    ignores: ['node_modules/', 'yarn.lock', '.eslintcache', '.env'],
+    ignores: [
+      'node_modules/',
+      'yarn.lock',
+      '.eslintcache',
+      '.env',
+      'html-report/',
+    ],
   },
   {
     files: ['**/*.ts'],

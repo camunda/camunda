@@ -58,19 +58,40 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'chromium-subset',
       use: devices['Desktop Chrome'],
       // Specify only tests in the changed folders for the 'chromium' project
       testMatch: changedFolders.includes('chromium')
         ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
         : undefined,
+      testIgnore: 'task-panel.spec.ts',
+    },
+    {
+      name: 'firefox-subset',
+      use: devices['Desktop Firefox'],
+      testIgnore: 'task-panel.spec.ts',
+    },
+    {
+      name: 'msedge-subset',
+      use: devices['Desktop Edge'],
+      testIgnore: 'task-panel.spec.ts',
+    },
+    {
+      name: 'chromium',
+      dependencies: ['chromium-subset'],
+      testMatch: 'task-panel.spec.ts',
+      use: devices['Desktop Chrome'],
     },
     {
       name: 'firefox',
+      dependencies: ['firefox-subset'],
+      testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Firefox'],
     },
     {
       name: 'msedge',
+      dependencies: ['msedge-subset'],
+      testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Edge'],
     },
   ],

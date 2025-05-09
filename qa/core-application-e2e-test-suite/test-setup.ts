@@ -28,14 +28,11 @@ export async function captureScreenshot(page: Page, testInfo: TestInfo) {
 
 export async function captureFailureVideo(page: Page, testInfo: TestInfo) {
   if (testInfo.status === 'failed') {
-    const videoFileName = `video-${randomUUID()}.webm`;
-    const videoPath = path.resolve(testInfo.outputDir, videoFileName);
     const video = page.video();
     if (video) {
-      await video.saveAs(videoPath);
       testInfo.annotations.push({
         type: 'testrail_attachment',
-        description: videoPath,
+        description: 'Video recorded for failed test',
       });
     }
   }
