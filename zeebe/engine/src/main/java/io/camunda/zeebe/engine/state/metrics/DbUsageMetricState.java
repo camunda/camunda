@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbEnumValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import java.time.Duration;
 import java.time.InstantSource;
 
@@ -81,9 +82,5 @@ public class DbUsageMetricState implements MutableUsageMetricState {
       metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
     }
     return bucket;
-  }
-
-  enum IntervalType {
-    ROLLING
   }
 }
