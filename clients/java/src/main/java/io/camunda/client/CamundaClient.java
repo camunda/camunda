@@ -83,6 +83,7 @@ import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
@@ -1131,6 +1132,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CreateRoleCommandStep1 newCreateRoleCommand();
+
+  /**
+   * Request to get a role by role ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newRoleGetRequest(roleId)
+   *  .send();
+   * </pre>
+   *
+   * @param roleId the ID of the role
+   * @return a builder for the request to get a role
+   */
+  RoleGetRequest newRoleGetRequest(String roleId);
 
   /**
    * Command to create a group.

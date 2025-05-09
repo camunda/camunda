@@ -13,35 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.response;
+package io.camunda.client.api.search.response;
 
-public interface CreateRoleResponse {
+public interface Role {
 
-  /**
-   * Returns the key of the created role.
-   *
-   * @return the key of the created role.
-   */
-  long getRoleKey();
+  Long getRoleKey();
 
-  /**
-   * Returns the ID of the created role.
-   *
-   * @return the ID of the created role.
-   */
   String getRoleId();
 
-  /**
-   * Returns the name of the created role.
-   *
-   * @return the name of the created role.
-   */
   String getName();
 
-  /**
-   * Returns the description of the created role.
-   *
-   * @return the description of the created role.
-   */
   String getDescription();
 }

@@ -13,19 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.response;
+package io.camunda.client.impl.search.response;
 
-import io.camunda.client.api.response.CreateRoleResponse;
-import io.camunda.client.protocol.rest.RoleCreateResult;
+import io.camunda.client.api.search.response.Role;
 
-public class CreateRoleResponseImpl implements CreateRoleResponse {
-  private long roleKey;
-  private String roleId;
-  private String name;
-  private String description;
+public class RoleImpl implements Role {
+
+  private final long roleKey;
+  private final String roleId;
+  private final String name;
+  private final String description;
+
+  public RoleImpl(
+      final long roleKey, final String roleId, final String name, final String description) {
+    this.roleKey = roleKey;
+    this.roleId = roleId;
+    this.name = name;
+    this.description = description;
+  }
 
   @Override
-  public long getRoleKey() {
+  public Long getRoleKey() {
     return roleKey;
   }
 
@@ -42,13 +50,5 @@ public class CreateRoleResponseImpl implements CreateRoleResponse {
   @Override
   public String getDescription() {
     return description;
-  }
-
-  public CreateRoleResponseImpl setResponse(final RoleCreateResult response) {
-    roleKey = Long.parseLong(response.getRoleKey());
-    roleId = response.getRoleId();
-    name = response.getName();
-    description = response.getDescription();
-    return this;
   }
 }

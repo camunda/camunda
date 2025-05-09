@@ -27,6 +27,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
+import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.User;
@@ -152,6 +153,14 @@ public final class SearchResponseMapper {
   public static BatchOperationItems toBatchOperationItemsGetResponse(
       final BatchOperationItemSearchQueryResult response) {
     return new BatchOperationItemsImpl(response);
+  }
+
+  public static Role toRoleResponse(final RoleResult response) {
+    return new RoleImpl(
+        ParseUtil.parseLongOrNull(response.getRoleKey()),
+        response.getRoleId(),
+        response.getName(),
+        response.getDescription());
   }
 
   public static Group toGroupResponse(final GroupResult response) {

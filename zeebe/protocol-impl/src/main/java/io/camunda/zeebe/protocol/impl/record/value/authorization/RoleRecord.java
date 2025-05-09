@@ -71,6 +71,11 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   }
 
   public RoleRecord setDescription(final String description) {
+    if (description == null) {
+      descriptionProp.reset();
+      return this;
+    }
+
     descriptionProp.setValue(description);
     return this;
   }
