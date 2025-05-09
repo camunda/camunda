@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.sort.GroupSort;
+import io.camunda.client.api.search.sort.MappingSort;
 import io.camunda.client.api.search.sort.UserSort;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
@@ -70,6 +71,24 @@ public class GroupSearchTest extends ClientRestTest {
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/groups/groupId/users/search");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  public void testMappingsByGroupSearch() {
+    // when
+    final String groupId = "groupId";
+    client
+        .newMappingsByGroupSearchRequest(groupId)
+        .filter(fn -> fn.mappingId("mappingId"))
+        .sort(MappingSort::name)
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/groups/groupId/mapping-rules/search");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 }
