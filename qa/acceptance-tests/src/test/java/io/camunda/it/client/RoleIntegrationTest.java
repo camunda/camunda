@@ -24,8 +24,10 @@ public class RoleIntegrationTest {
 
   private static final String ROLE_ID_1 = Strings.newRandomValidIdentityId();
   private static final String ROLE_ID_2 = Strings.newRandomValidIdentityId();
+  private static final String ROLE_ID_3 = Strings.newRandomValidIdentityId();
   private static final String ROLE_NAME_1 = "ARoleName";
   private static final String ROLE_NAME_2 = "BRoleName";
+  private static final String ROLE_NAME_3 = "CRoleName";
   private static final String DESCRIPTION = "description";
 
   @Test
@@ -104,11 +106,83 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldReturnNotFoundIfRoleDoesNotExist() {
+  void shouldReturnNotFoundWhenGetRoleDoesNotExist() {
     // when / then
     assertThatThrownBy(() -> camundaClient.newRoleGetRequest("someRoleId").send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining("Role with role ID someRoleId not found");
+  }
+
+  @Test
+  void shouldRejectGetRoleIfNullRoleId() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newRoleGetRequest(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be null");
+  }
+
+  @Test
+  void shouldRejectGetRoleIfEmptyRoleId() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newRoleGetRequest("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be empty");
+  }
+
+  @Test
+  void shouldDeleteRoleById() {
+    // given
+    camundaClient
+        .newCreateRoleCommand()
+        .roleId(ROLE_ID_3)
+        .name(ROLE_NAME_3)
+        .description(DESCRIPTION)
+        .send()
+        .join();
+
+    Awaitility.await("Role is created and exported")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var role = camundaClient.newRoleGetRequest(ROLE_ID_3).send().join();
+              assertThat(role).isNotNull();
+            });
+
+    // when
+    camundaClient.newDeleteRoleCommand(ROLE_ID_3).send().join();
+
+    // then
+    Awaitility.await("Role is deleted")
+        .untilAsserted(
+            () ->
+                assertThatThrownBy(() -> camundaClient.newRoleGetRequest(ROLE_ID_3).send().join())
+                    .isInstanceOf(ProblemException.class)
+                    .hasMessageContaining("Failed with code 404: 'Not Found'"));
+  }
+
+  @Test
+  void shouldReturnNotFoundWhenRoleIdDoesNotExist() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newDeleteRoleCommand("someRoleId").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining("a role with this ID doesn't exist");
+  }
+
+  @Test
+  void shouldRejectDeletionIfNullRoleId() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newDeleteRoleCommand(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be null");
+  }
+
+  @Test
+  void shouldRejectDeletionIfEmptyRoleId() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newDeleteRoleCommand("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be empty");
   }
 }
