@@ -180,6 +180,11 @@ public class DecisionInstanceDto
         DtoCreator.create(entity.getEvaluatedOutputs(), DecisionInstanceOutputDto.class);
     Collections.sort(outputs, DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR);
 
+    final String evaluationFailureMessage =
+        entity.getEvaluationFailureMessage() != null
+            ? entity.getEvaluationFailureMessage()
+            : entity.getEvaluationFailure();
+
     setId(entity.getId())
         .setDecisionDefinitionId(entity.getDecisionDefinitionId())
         .setDecisionId(entity.getDecisionId())
@@ -187,7 +192,7 @@ public class DecisionInstanceDto
         .setDecisionName(entity.getDecisionName())
         .setDecisionType(entity.getDecisionType())
         .setDecisionVersion(entity.getDecisionVersion())
-        .setErrorMessage(entity.getEvaluationFailure())
+        .setErrorMessage(evaluationFailureMessage)
         .setEvaluationDate(entity.getEvaluationDate())
         .setEvaluatedInputs(inputs)
         .setEvaluatedOutputs(outputs)

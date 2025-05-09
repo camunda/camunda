@@ -17,6 +17,7 @@ public record DecisionInstanceEntity(
     DecisionInstanceState state,
     OffsetDateTime evaluationDate,
     String evaluationFailure,
+    String evaluationFailureMessage,
     Long processDefinitionKey,
     Long processInstanceKey,
     String tenantId,
@@ -36,6 +37,7 @@ public record DecisionInstanceEntity(
         .state(state)
         .evaluationDate(evaluationDate)
         .evaluationFailure(evaluationFailure)
+        .evaluationFailureMessage(evaluationFailureMessage)
         .processDefinitionKey(processDefinitionKey)
         .processInstanceKey(processInstanceKey)
         .decisionDefinitionKey(decisionDefinitionKey)
@@ -56,6 +58,7 @@ public record DecisionInstanceEntity(
     private DecisionInstanceState state;
     private OffsetDateTime evaluationDate;
     private String evaluationFailure;
+    private String evaluationFailureMessage;
     private Long processDefinitionKey;
     private Long processInstanceKey;
     private String tenantId;
@@ -68,82 +71,87 @@ public record DecisionInstanceEntity(
     private List<DecisionInstanceInputEntity> evaluatedInputs;
     private List<DecisionInstanceOutputEntity> evaluatedOutputs;
 
-    public Builder decisionInstanceId(String decisionInstanceId) {
+    public Builder decisionInstanceId(final String decisionInstanceId) {
       this.decisionInstanceId = decisionInstanceId;
       return this;
     }
 
-    public Builder decisionInstanceKey(Long decisionInstanceKey) {
+    public Builder decisionInstanceKey(final Long decisionInstanceKey) {
       this.decisionInstanceKey = decisionInstanceKey;
       return this;
     }
 
-    public Builder state(DecisionInstanceState state) {
+    public Builder state(final DecisionInstanceState state) {
       this.state = state;
       return this;
     }
 
-    public Builder evaluationDate(OffsetDateTime evaluationDate) {
+    public Builder evaluationDate(final OffsetDateTime evaluationDate) {
       this.evaluationDate = evaluationDate;
       return this;
     }
 
-    public Builder evaluationFailure(String evaluationFailure) {
+    public Builder evaluationFailure(final String evaluationFailure) {
       this.evaluationFailure = evaluationFailure;
       return this;
     }
 
-    public Builder processDefinitionKey(Long processDefinitionKey) {
+    public Builder evaluationFailureMessage(final String evaluationFailureMessage) {
+      this.evaluationFailureMessage = evaluationFailureMessage;
+      return this;
+    }
+
+    public Builder processDefinitionKey(final Long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
-    public Builder processInstanceKey(Long processInstanceKey) {
+    public Builder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
-    public Builder tenantId(String tenantId) {
+    public Builder tenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
-    public Builder decisionDefinitionId(String decisionDefinitionId) {
+    public Builder decisionDefinitionId(final String decisionDefinitionId) {
       this.decisionDefinitionId = decisionDefinitionId;
       return this;
     }
 
-    public Builder decisionDefinitionKey(Long decisionDefinitionKey) {
+    public Builder decisionDefinitionKey(final Long decisionDefinitionKey) {
       this.decisionDefinitionKey = decisionDefinitionKey;
       return this;
     }
 
-    public Builder decisionDefinitionName(String decisionDefinitionName) {
+    public Builder decisionDefinitionName(final String decisionDefinitionName) {
       this.decisionDefinitionName = decisionDefinitionName;
       return this;
     }
 
-    public Builder decisionDefinitionVersion(Integer decisionDefinitionVersion) {
+    public Builder decisionDefinitionVersion(final Integer decisionDefinitionVersion) {
       this.decisionDefinitionVersion = decisionDefinitionVersion;
       return this;
     }
 
-    public Builder decisionDefinitionType(DecisionDefinitionType decisionDefinitionType) {
+    public Builder decisionDefinitionType(final DecisionDefinitionType decisionDefinitionType) {
       this.decisionDefinitionType = decisionDefinitionType;
       return this;
     }
 
-    public Builder result(String result) {
+    public Builder result(final String result) {
       this.result = result;
       return this;
     }
 
-    public Builder evaluatedInputs(List<DecisionInstanceInputEntity> evaluatedInputs) {
+    public Builder evaluatedInputs(final List<DecisionInstanceInputEntity> evaluatedInputs) {
       this.evaluatedInputs = evaluatedInputs;
       return this;
     }
 
-    public Builder evaluatedOutputs(List<DecisionInstanceOutputEntity> evaluatedOutputs) {
+    public Builder evaluatedOutputs(final List<DecisionInstanceOutputEntity> evaluatedOutputs) {
       this.evaluatedOutputs = evaluatedOutputs;
       return this;
     }
@@ -156,6 +164,7 @@ public record DecisionInstanceEntity(
           state,
           evaluationDate,
           evaluationFailure,
+          evaluationFailureMessage,
           processDefinitionKey,
           processInstanceKey,
           tenantId,

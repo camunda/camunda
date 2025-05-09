@@ -102,7 +102,7 @@ public class DecisionEvaluationHandler
         .setRootDecisionDefinitionId(String.valueOf(decisionEvaluation.getDecisionKey()))
         .setDecisionId(decision.getDecisionId())
         .setDecisionDefinitionId(String.valueOf(decision.getDecisionKey()))
-        .setDecisionType(DecisionType.fromZeebeDecisionType(decision.getDecisionType()))
+        .setDecisionType(DecisionType.fromString(decision.getDecisionType()))
         .setDecisionName(decision.getDecisionName())
         .setDecisionVersion(decision.getDecisionVersion())
         .setState(state)
@@ -111,7 +111,7 @@ public class DecisionEvaluationHandler
         .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
         .setTenantId(ExporterUtil.tenantOrDefault(decisionEvaluation.getTenantId()));
     if (state.equals(DecisionInstanceState.FAILED)) {
-      entity.setEvaluationFailure(decisionEvaluation.getEvaluationFailureMessage());
+      entity.setEvaluationFailureMessage(decisionEvaluation.getEvaluationFailureMessage());
     }
   }
 
