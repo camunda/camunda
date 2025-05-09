@@ -48,6 +48,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -83,6 +84,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.UsageMetricEvent;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -104,6 +106,10 @@ final class JsonSerializableToJsonTest {
   private static final String VARIABLES_JSON = "{'foo':'bar'}";
   private static final DirectBuffer VARIABLES_MSGPACK =
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(VARIABLES_JSON));
+
+  private static final String USAGE_METRICS_JSON = "{'tenant1':[1, 2]}";
+  private static final DirectBuffer USAGE_METRICS_MSGPACK =
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(USAGE_METRICS_JSON));
 
   private static final RuntimeException RUNTIME_EXCEPTION = new RuntimeException("test");
 
@@ -3187,6 +3193,42 @@ final class JsonSerializableToJsonTest {
               "entityType": "UNSPECIFIED"
           },
           "mappings": []
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// UsageMetricRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UsageMetricRecord",
+        (Supplier<UsageMetricRecord>)
+            () ->
+                new UsageMetricRecord()
+                    .setEvent(UsageMetricEvent.EVENT_PROCESS_INSTANCE_FINISHED)
+                    .setStartTime(123L)
+                    .setEndTime(124L)
+                    .setValue(USAGE_METRICS_MSGPACK),
+        """
+      {
+        "event": "EVENT_PROCESS_INSTANCE_FINISHED",
+        "startTime": 123,
+        "endTime": 124,
+        "value": {"tenant1":[1,2]}
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty UsageMetricRecord ///////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty UsageMetricRecord",
+        (Supplier<UsageMetricRecord>) UsageMetricRecord::new,
+        """
+      {
+        "event": null,
+        "startTime": -1,
+        "endTime": -1,
+        "value": {}
       }
       """
       },

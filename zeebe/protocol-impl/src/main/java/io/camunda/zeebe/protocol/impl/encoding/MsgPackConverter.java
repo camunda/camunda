@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
@@ -51,6 +52,8 @@ public final class MsgPackConverter {
   private static final TypeReference<HashMap<String, String>> STRING_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
   private static final TypeReference<HashMap<String, Number>> NUMBER_MAP_TYPE_REFERENCE =
+      new TypeReference<>() {};
+  private static final TypeReference<HashMap<String, List<Long>>> LONG_LIST_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
   private static final TypeReference<HashMap<PermissionType, Set<String>>>
       PERMISSION_MAP_TYPE_REFERENCE = new TypeReference<>() {};
@@ -170,6 +173,10 @@ public final class MsgPackConverter {
 
   public static Map<String, String> convertToStringMap(final DirectBuffer buffer) {
     return convertToMap(STRING_MAP_TYPE_REFERENCE, buffer);
+  }
+
+  public static Map<String, List<Long>> convertToLongListMap(final DirectBuffer buffer) {
+    return convertToMap(LONG_LIST_MAP_TYPE_REFERENCE, buffer);
   }
 
   public static Map<String, Number> convertToNumberMap(final DirectBuffer buffer) {
