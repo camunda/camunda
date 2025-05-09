@@ -19,9 +19,9 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.MappingReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
+import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.fixtures.MappingFixtures;
-import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.RoleFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.MappingEntity;
@@ -63,9 +63,9 @@ public class MappingSpecificFilterIT {
     final var mapping1 = MappingFixtures.createRandomized();
     final var mapping2 = MappingFixtures.createRandomized();
     final var mapping3 = MappingFixtures.createRandomized();
-    createAndSaveMapping(rdbmsService, mapping1);
-    createAndSaveMapping(rdbmsService, mapping2);
-    createAndSaveMapping(rdbmsService, mapping3);
+    createAndSaveMapping(rdbmsWriter, mapping1);
+    createAndSaveMapping(rdbmsWriter, mapping2);
+    createAndSaveMapping(rdbmsWriter, mapping3);
 
     final var group = GroupFixtures.createRandomized(b -> b);
     final var anotherGroup = GroupFixtures.createRandomized(b -> b);
