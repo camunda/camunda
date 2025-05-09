@@ -208,6 +208,7 @@ class TaskDetailsPage {
     const input = this.page.getByLabel(label, {exact: true});
     await input.click({timeout: 60000});
     await input.fill(value);
+    await input.blur(); // forces blur event
     await expect(input).toHaveValue(value, {timeout: 5000});
   }
 

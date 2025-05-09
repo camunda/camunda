@@ -128,6 +128,7 @@ test.describe('process page', () => {
     tasklistProcessesPage,
     taskPanelPage,
   }) => {
+    test.slow();
     await tasklistHeader.clickProcessesTab();
     await expect(page).toHaveURL('/tasklist/processes');
     await tasklistProcessesPage.continueButton.click();

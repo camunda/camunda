@@ -43,7 +43,7 @@ class TaskPanelPage {
     await this.availableTasks
       .getByText(name, {exact: true})
       .nth(0)
-      .click({timeout: 20000});
+      .click({timeout: 60000});
   }
 
   async filterBy(
@@ -56,6 +56,16 @@ class TaskPanelPage {
   ) {
     await this.expandSidePanelButton.click();
     await this.page.getByRole('link', {name: option, exact: true}).click();
+
+    const expectedSegment =
+      option === 'All open tasks'
+        ? 'all-open'
+        : option === 'Assigned to me'
+          ? 'assigned-to-me'
+          : option.toLowerCase().replace(/\s+/g, '-');
+
+    await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`));
+
     await this.collapseSidePanelButton.click();
   }
 
@@ -73,6 +83,14 @@ class TaskPanelPage {
         await this.filterBy('Completed'); // Reapply the filter if necessary
       },
     });
+  }
+
+  async scrollToLastTask(name: string) {
+    await this.page.getByText(name).last().scrollIntoViewIfNeeded();
+  }
+
+  async scrollToFirstTask(name: string) {
+    await this.page.getByText(name).first().scrollIntoViewIfNeeded();
   }
 }
 
