@@ -167,6 +167,46 @@ public class UpdateAuthorizationMultipartitionTest {
             tuple(ValueType.AUTHORIZATION, AuthorizationIntent.UPDATE));
   }
 
+  @Test
+  public void shouldRejectUpdateWithNonexistentMappingId() {
+    // given
+    final var existingKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("valid-owner")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceId("res-id")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
+
+    final var nonexistentMappingId = "nonexistent-mapping";
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .updateAuthorization(existingKey)
+            .withOwnerId(nonexistentMappingId)
+            .withOwnerType(AuthorizationOwnerType.MAPPING)
+            .withResourceId("res-id")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .expectRejection()
+            .update();
+
+    // then
+    assertThat(rejection.getRejectionType())
+        .isEqualTo(io.camunda.zeebe.protocol.record.RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to create or update authorization with ownerId '%s', but a mapping with this ID does not exist."
+                .formatted(nonexistentMappingId));
+  }
+
   private void interceptAuthorizationCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
     engine.interceptInterPartitionCommands(
