@@ -220,16 +220,6 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     }
   }
 
-  /**
-   * Determines whether the given {@link TypedRecord} is a retried command reconstructed for
-   * reprocessing after an incident was resolved.
-   *
-   * <p>Used to skip redundant processing steps that were already performed during the original
-   * command execution.
-   *
-   * @param command the typed record to check
-   * @return {@code true} if the record represents a retried command
-   */
   private boolean isRetriedCommand(final TypedRecord<UserTaskRecord> command) {
     return command instanceof RetryTypedRecord<UserTaskRecord>;
   }
