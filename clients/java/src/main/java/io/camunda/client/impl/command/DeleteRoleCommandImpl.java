@@ -45,7 +45,7 @@ public class DeleteRoleCommandImpl implements DeleteRoleCommandStep1 {
 
   @Override
   public CamundaFuture<DeleteRoleResponse> send() {
-    ArgumentUtil.ensureNotNull("roleId", roleId);
+    ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     final HttpCamundaFuture<DeleteRoleResponse> result = new HttpCamundaFuture<>();
     httpClient.delete("/roles/" + roleId, httpRequestConfig.build(), result);
     return result;

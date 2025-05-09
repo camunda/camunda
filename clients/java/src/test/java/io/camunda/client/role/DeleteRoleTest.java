@@ -85,4 +85,12 @@ public class DeleteRoleTest extends ClientRestTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyRoleId() {
+    // when / then
+    assertThatThrownBy(() -> client.newDeleteRoleCommand("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be empty");
+  }
 }
