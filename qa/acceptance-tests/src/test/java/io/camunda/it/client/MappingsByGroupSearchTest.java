@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.User;
+import io.camunda.client.api.search.response.Mapping;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
@@ -20,56 +20,56 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class UsersByGroupSearchTest {
+public class MappingsByGroupSearchTest {
 
   private static CamundaClient camundaClient;
 
-  private static final String USER_USERNAME_1 = Strings.newRandomValidUsername();
-  private static final String USER_USERNAME_2 = Strings.newRandomValidUsername();
-  private static final String USER_USERNAME_3 = Strings.newRandomValidUsername();
+  private static final String MAPPING_ID_1 = Strings.newRandomValidUsername();
+  private static final String MAPPING_ID_2 = Strings.newRandomValidUsername();
+  private static final String MAPPING_ID_3 = Strings.newRandomValidUsername();
   private static final String GROUP_ID = Strings.newRandomValidIdentityId();
 
   @BeforeAll
   static void setup() {
-    createUser(USER_USERNAME_1);
-    createUser(USER_USERNAME_2);
-    createUser(USER_USERNAME_3);
+    createMapping(MAPPING_ID_1);
+    createMapping(MAPPING_ID_2);
+    createMapping(MAPPING_ID_3);
 
     createGroup(GROUP_ID);
 
-    assignUserToGroup(USER_USERNAME_1, GROUP_ID);
-    assignUserToGroup(USER_USERNAME_2, GROUP_ID);
+    assignMappingToGroup(MAPPING_ID_1, GROUP_ID);
+    assignMappingToGroup(MAPPING_ID_2, GROUP_ID);
 
     waitForGroupsToBeUpdated();
   }
 
   @Test
-  void shouldReturnUsersByGroup() {
-    final var users = camundaClient.newUsersByGroupSearchRequest(GROUP_ID).send().join();
+  void shouldReturnMappingsByGroup() {
+    final var mappings = camundaClient.newMappingsByGroupSearchRequest(GROUP_ID).send().join();
 
-    assertThat(users.items().size()).isEqualTo(2);
-    assertThat(users.items())
-        .extracting(User::getUsername)
-        .containsExactly(USER_USERNAME_1, USER_USERNAME_2);
+    assertThat(mappings.items().size()).isEqualTo(2);
+    assertThat(mappings.items())
+        .extracting(Mapping::getMappingId)
+        .contains(MAPPING_ID_1, MAPPING_ID_2);
   }
 
   @Test
-  void shouldReturnUsersByGroupFiltered() {
-    final var users =
+  void shouldReturnMappingsByGroupFiltered() {
+    final var mappings =
         camundaClient
-            .newUsersByGroupSearchRequest(GROUP_ID)
-            .filter(fn -> fn.username(USER_USERNAME_1))
+            .newMappingsByGroupSearchRequest(GROUP_ID)
+            .filter(fn -> fn.mappingId(MAPPING_ID_1))
             .send()
             .join();
 
-    assertThat(users.items().size()).isEqualTo(1);
-    assertThat(users.items()).extracting(User::getUsername).containsExactly(USER_USERNAME_1);
+    assertThat(mappings.items().size()).isEqualTo(1);
+    assertThat(mappings.items()).extracting(Mapping::getMappingId).containsExactly(MAPPING_ID_1);
   }
 
   @Test
   void shouldRejectIfMissingGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newUsersByGroupSearchRequest(null).send().join())
+    assertThatThrownBy(() -> camundaClient.newMappingsByGroupSearchRequest(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -77,18 +77,18 @@ public class UsersByGroupSearchTest {
   @Test
   void shouldRejectIfEmptyGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newUsersByGroupSearchRequest("").send().join())
+    assertThatThrownBy(() -> camundaClient.newMappingsByGroupSearchRequest("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
 
-  private static void createUser(final String username) {
+  private static void createMapping(final String mappingId) {
     camundaClient
-        .newUserCreateCommand()
-        .username(username)
-        .password("password")
+        .newCreateMappingCommand()
+        .mappingId(mappingId)
         .name("name")
-        .email("email@email.com")
+        .claimName(mappingId + "claimName")
+        .claimValue(mappingId + "claimValue")
         .send()
         .join();
   }
@@ -97,8 +97,8 @@ public class UsersByGroupSearchTest {
     camundaClient.newCreateGroupCommand().groupId(groupId).name("name").send().join();
   }
 
-  private static void assignUserToGroup(final String username, final String groupId) {
-    camundaClient.newAssignUserToGroupCommand(groupId).username(username).send().join();
+  private static void assignMappingToGroup(final String mappingId, final String groupId) {
+    camundaClient.newAssignMappingToGroupCommand(groupId).mappingId(mappingId).send().join();
   }
 
   private static void waitForGroupsToBeUpdated() {
@@ -107,8 +107,9 @@ public class UsersByGroupSearchTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var users = camundaClient.newUsersByGroupSearchRequest(GROUP_ID).send().join();
-              assertThat(users.items().size()).isEqualTo(2);
+              final var mappings =
+                  camundaClient.newMappingsByGroupSearchRequest(GROUP_ID).send().join();
+              assertThat(mappings.items().size()).isEqualTo(2);
             });
   }
 }
