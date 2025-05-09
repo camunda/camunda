@@ -17,6 +17,10 @@
       JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
       AND rm.ENTITY_TYPE = #{filter.memberType}
     </if>
+    <if test="filter.tenantId != null">
+      JOIN ${prefix}TENANT_MEMBER tm ON r.ROLE_ID = tm.ENTITY_ID
+      AND tm.ENTITY_TYPE = 'ROLE'
+    </if>
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
   </select>
 
@@ -33,6 +37,10 @@
     rm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
     FROM ${prefix}ROLES r
     LEFT JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
+    <if test="filter.tenantId != null">
+      JOIN ${prefix}TENANT_MEMBER tm ON r.ROLE_ID = tm.ENTITY_ID
+      AND tm.ENTITY_TYPE = 'ROLE'
+    </if>
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -52,6 +60,7 @@
       </foreach>
       AND rm.ENTITY_TYPE = #{filter.memberType}
     </if>
+    <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
   </sql>
 
   <resultMap id="roleResultMap" type="io.camunda.db.rdbms.write.domain.RoleDbModel">
