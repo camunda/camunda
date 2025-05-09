@@ -22,6 +22,7 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.LinkedList;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +41,14 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -279,6 +285,15 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
+        final SecurityConfiguration securityConfiguration) {
+      final var decoderFactory = new OidcIdTokenDecoderFactory();
+      decoderFactory.setJwtValidatorFactory(
+          registration -> getTokenValidator(securityConfiguration));
+      return decoderFactory;
+    }
+
+    @Bean
     public JwtDecoder jwtDecoder(
         final SecurityConfiguration securityConfiguration,
         final ClientRegistrationRepository clientRegistrationRepository) {
@@ -291,14 +306,26 @@ public class WebSecurityConfig {
               .getJwkSetUri();
 
       final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+      decoder.setJwtValidator(getTokenValidator(securityConfiguration));
+      return decoder;
+    }
 
-      final var validAudiences = securityConfiguration.getAuthentication().getOidc().getAudiences();
+    private static OAuth2TokenValidator<Jwt> getTokenValidator(
+        final SecurityConfiguration configuration) {
+      final var validAudiences = configuration.getAuthentication().getOidc().getAudiences();
+      final var validators = new LinkedList<OAuth2TokenValidator<Jwt>>();
       if (validAudiences != null) {
-        decoder.setJwtValidator(
-            JwtValidators.createDefaultWithValidators(new AudienceValidator(validAudiences)));
+        validators.add(new AudienceValidator(validAudiences));
+      }
+      if (configuration.getSaas().isConfigured()) {
+        validators.add(new OrganizationValidator(configuration.getSaas().getOrganizationId()));
+        validators.add(new ClusterValidator(configuration.getSaas().getClusterId()));
       }
 
-      return decoder;
+      if (!validators.isEmpty()) {
+        return JwtValidators.createDefaultWithValidators(validators);
+      }
+      return JwtValidators.createDefault();
     }
 
     @Bean

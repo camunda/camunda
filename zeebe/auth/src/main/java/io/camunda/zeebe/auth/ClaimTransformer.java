@@ -61,7 +61,7 @@ public final class ClaimTransformer {
         || value instanceof Collection<?>) {
       claims.put(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value);
     } else {
-      LOG.debug("Dropping claim '{}' with unsupported value type '{}'", key, value.getClass());
+      LOG.trace("Dropping claim '{}' with unsupported value type '{}'", key, value.getClass());
     }
   }
 }
