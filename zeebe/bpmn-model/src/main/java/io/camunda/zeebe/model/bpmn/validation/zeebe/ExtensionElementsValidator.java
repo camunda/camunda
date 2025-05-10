@@ -44,6 +44,7 @@ public final class ExtensionElementsValidator<T extends BaseElement, E extends M
 
   @Override
   public void validate(final T element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     final ExtensionElements extensionElements = element.getExtensionElements();
 

@@ -46,6 +46,7 @@ public class SignalValidator implements ModelElementValidator<Signal> {
   @Override
   public void validate(
       final Signal element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     if (isReferredByCatchEvent(element)
         || isReferredByThrowEvent(element)

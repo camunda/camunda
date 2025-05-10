@@ -87,6 +87,7 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
   @Override
   public void validate(
       final FlowElement element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     final Class<?> elementType = element.getElementType().getInstanceType();
 
     if (!SUPPORTED_ELEMENT_TYPES.contains(elementType)

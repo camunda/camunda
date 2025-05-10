@@ -35,6 +35,7 @@ public class ErrorEventDefinitionValidator implements ModelElementValidator<Erro
   public void validate(
       final ErrorEventDefinition element,
       final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     final ModelElementInstance parentElement = element.getParentElement();
     final Error error = element.getError();

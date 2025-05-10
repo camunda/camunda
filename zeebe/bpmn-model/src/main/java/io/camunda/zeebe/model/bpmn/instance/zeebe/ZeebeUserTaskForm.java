@@ -15,11 +15,6 @@
  */
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
-import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.IdentifiableBpmnElement;
 
-public interface ZeebeUserTaskForm extends BpmnModelElementInstance {
-
-  String getId();
-
-  void setId(String id);
-}
+public interface ZeebeUserTaskForm extends IdentifiableBpmnElement {}

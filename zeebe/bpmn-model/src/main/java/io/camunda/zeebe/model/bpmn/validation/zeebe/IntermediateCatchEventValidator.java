@@ -45,6 +45,7 @@ public class IntermediateCatchEventValidator
   public void validate(
       final IntermediateCatchEvent element,
       final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
 
     if (eventDefinitions.size() != 1) {

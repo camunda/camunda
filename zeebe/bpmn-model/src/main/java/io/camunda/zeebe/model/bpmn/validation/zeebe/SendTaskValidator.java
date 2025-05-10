@@ -36,6 +36,7 @@ public final class SendTaskValidator implements ModelElementValidator<SendTask> 
   @Override
   public void validate(
       final SendTask element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     final ExtensionElements extensionElements = element.getExtensionElements();
 
     final Collection<ZeebePublishMessage> publishMessageExtensions =
@@ -57,7 +58,7 @@ public final class SendTaskValidator implements ModelElementValidator<SendTask> 
   }
 
   public <T extends BpmnModelElementInstance> Collection<T> getExtensionElementsByType(
-      final ExtensionElements extensionElements, Class<T> type) {
+      final ExtensionElements extensionElements, final Class<T> type) {
     if (extensionElements == null) {
       return Collections.emptyList();
     }
