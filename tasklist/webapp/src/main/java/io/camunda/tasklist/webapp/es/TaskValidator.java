@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.webapp.es;
 
-import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_ALREADY_ASSIGNED;
-import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_IS_NOT_ACTIVE;
-import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED;
-import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED_TO_CURRENT_USER;
-import static io.camunda.tasklist.util.ErrorHandlingUtils.createErrorMessage;
+import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.TASK_ALREADY_ASSIGNED;
+import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.TASK_IS_NOT_ACTIVE;
+import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED;
+import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED_TO_CURRENT_USER;
+import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.createErrorMessage;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.dto.UserDTO;
