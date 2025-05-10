@@ -16,7 +16,7 @@ import {
   within,
 } from 'common/testing/testing-library';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
-import {http, HttpResponse} from 'msw';
+import {http, HttpResponse, type PathParams} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Component} from './index';
 import {notificationsStore} from 'common/notifications/notifications.store';
@@ -31,6 +31,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {pages} from 'common/routing';
 import {getClientConfig} from 'common/config/getClientConfig';
+import type {QueryProcessDefinitionsRequestBody} from '@vzeta/camunda-api-zod-schemas/operate';
 
 vi.mock('common/notifications/notifications.store', () => ({
   notificationsStore: {
@@ -416,5 +417,87 @@ describe('Processes', () => {
         title: `Process ${wrongBpmnProcessId} does not exist or has no start form`,
       }),
     );
+  });
+
+  it('should handle pagination correctly', async () => {
+    const processesPage1 = [
+      getProcessDefinitionMock({
+        name: 'Process A',
+        processDefinitionId: 'procA',
+      }),
+      getProcessDefinitionMock({
+        name: 'Process B',
+        processDefinitionId: 'procB',
+      }),
+    ];
+    const processesPage2 = [
+      getProcessDefinitionMock({
+        name: 'Process C',
+        processDefinitionId: 'procC',
+      }),
+    ];
+    const TOTAL_ITEMS = 24;
+
+    nodeMockServer.use(
+      http.post<PathParams, QueryProcessDefinitionsRequestBody>(
+        '/v2/process-definitions/search',
+        async ({request}) => {
+          const body = await request.json();
+          const searchAfter = body.page?.searchAfter;
+
+          if (Array.isArray(searchAfter)) {
+            return HttpResponse.json(
+              getQueryProcessDefinitionsResponseMock(
+                processesPage2,
+                TOTAL_ITEMS,
+              ),
+            );
+          }
+
+          return HttpResponse.json(
+            getQueryProcessDefinitionsResponseMock(processesPage1, TOTAL_ITEMS),
+          );
+        },
+      ),
+    );
+
+    const {user} = render(<Component />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('process-skeleton'),
+    );
+
+    expect(screen.getByText('Process A')).toBeVisible();
+    expect(screen.getByText('Process B')).toBeVisible();
+    expect(screen.queryByText('Process C')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('process-tile')).toHaveLength(2);
+
+    const nextButton = screen.getByRole('button', {name: /next page/i});
+    const prevButton = screen.getByRole('button', {name: /previous page/i});
+
+    expect(nextButton).toBeEnabled();
+    expect(prevButton).toBeDisabled();
+
+    await user.click(nextButton);
+
+    expect(await screen.findByText('Process C')).toBeVisible();
+    expect(screen.queryByText('Process A')).not.toBeInTheDocument();
+    expect(screen.queryByText('Process B')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('process-tile')).toHaveLength(1);
+
+    expect(nextButton).toBeDisabled();
+    expect(prevButton).toBeEnabled();
+
+    await user.click(prevButton);
+
+    expect(await screen.findByText('Process A')).toBeVisible();
+    expect(screen.getByText('Process B')).toBeVisible();
+    expect(screen.queryByText('Process C')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId('process-tile')).toHaveLength(2);
+
+    expect(nextButton).toBeEnabled();
+    expect(prevButton).toBeDisabled();
   });
 });

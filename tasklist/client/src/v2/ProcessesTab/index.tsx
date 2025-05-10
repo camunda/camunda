@@ -35,6 +35,9 @@ import EmptyMessageImage from 'common/processes/empty-message-image.svg';
 import {ProcessTile} from 'common/processes/ProcessTile';
 import {getMultiModeProcessDisplayName} from 'common/processes/getMultiModeProcessDisplayName';
 import type {ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/operate';
+import {Pagination} from './Pagination';
+
+const PAGE_SIZE = 12;
 
 type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
@@ -48,13 +51,21 @@ const ProcessesTab: React.FC = observer(() => {
   const {data: currentUser} = useCurrentUser();
   const defaultTenant = currentUser?.tenants[0];
   const selectedTenantId = defaultTenant?.tenantId;
+  const [paginationParams, setPaginationParams] = useState<{
+    currentPage: number;
+    searchAfter?: [number, number];
+    searchBefore?: [number, number];
+  }>({currentPage: 1});
+
   const {data, error, isLoading} = useProcessDefinitions(
     {
       filter: {
         tenantId: selectedTenantId,
       },
       page: {
-        limit: 10,
+        limit: PAGE_SIZE,
+        searchAfter: paginationParams.searchAfter,
+        searchBefore: paginationParams.searchBefore,
       },
     },
     {
@@ -84,6 +95,7 @@ const ProcessesTab: React.FC = observer(() => {
     },
   });
   const processes = data?.items ?? [];
+  const totalItems = data?.page.totalItems ?? 0;
 
   useEffect(() => {
     if (error !== null) {
@@ -98,6 +110,29 @@ const ProcessesTab: React.FC = observer(() => {
       logger.error(error);
     }
   }, [error, t]);
+
+  const handleNextPage = () => {
+    if (data?.page.lastSortValues === undefined) {
+      return;
+    }
+    const {lastSortValues} = data.page;
+
+    setPaginationParams(({currentPage}) => ({
+      currentPage: currentPage + 1,
+      searchAfter: lastSortValues,
+    }));
+  };
+
+  const handlePreviousPage = () => {
+    if (data?.page.firstSortValues === undefined) {
+      return;
+    }
+    const {firstSortValues} = data.page;
+    setPaginationParams(({currentPage}) => ({
+      currentPage: currentPage - 1,
+      searchBefore: firstSortValues,
+    }));
+  };
 
   return (
     <main className={cn('cds--content', styles.splitPane)}>
@@ -240,6 +275,13 @@ const ProcessesTab: React.FC = observer(() => {
                       ))}
                 </Grid>
               )}
+              <Pagination
+                totalPages={Math.ceil(totalItems / PAGE_SIZE)}
+                currentPage={paginationParams.currentPage}
+                onNextPage={handleNextPage}
+                onPreviousPage={handlePreviousPage}
+                className={styles.pagination}
+              />
             </div>
           </div>
         </Stack>

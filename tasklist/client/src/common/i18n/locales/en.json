@@ -345,6 +345,9 @@
     "relativeDateYearsFmt_time": "d MMM yyyy, p",
     "relativeDateYearsFmt_speech": "do 'of' MMMM, yyyy",
     "relativeDateYearsFmt_time_speech": "do 'of' MMMM, yyyy 'at' p",
-    "relativeDateUnknown": "'Unknown'"
+    "relativeDateUnknown": "'Unknown'",
+    "processesTabPreviousPageButtonLabel": "Previous page",
+    "processesTabNextPageButtonLabel": "Next page",
+    "processesTabPaginationOfLabel": "{{currentPage}} of {{totalPages}}"
   }
 }

@@ -62,3 +62,7 @@
   width: 100%;
   height: layout.to-rem(132px);
 }
+
+.pagination {
+  padding: 0 var(--cds-spacing-06);
+}

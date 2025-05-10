@@ -333,6 +333,9 @@
     "relativeDateYearsFmt_time": "d MMM yyyy, p",
     "relativeDateYearsFmt_speech": "d 'de' MMMM, yyyy",
     "relativeDateYearsFmt_time_speech": "d 'de' MMMM, yyyy 'a las' p",
-    "relativeDateUnknown": "'Desconocido'"
+    "relativeDateUnknown": "'Desconocido'",
+    "processesTabPreviousPageButtonLabel": "Página anterior",
+    "processesTabNextPageButtonLabel": "Página siguiente",
+    "processesTabPaginationOfLabel": "{{currentPage}} de {{totalPages}}"
   }
 }
