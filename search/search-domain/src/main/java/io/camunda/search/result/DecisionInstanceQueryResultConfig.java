@@ -41,6 +41,10 @@ public record DecisionInstanceQueryResultConfig(
       return this;
     }
 
+    public Builder includeAll() {
+      return includeEvaluatedInputs(true).includeEvaluatedOutputs(true);
+    }
+
     @Override
     public DecisionInstanceQueryResultConfig build() {
       return new DecisionInstanceQueryResultConfig(includeEvaluatedInputs, includeEvaluatedOutputs);

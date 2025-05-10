@@ -42,7 +42,7 @@ public record DecisionRequirementsQuery(
     private static final DecisionRequirementsSort EMPTY_SORT =
         SortOptionBuilders.decisionRequirements().build();
     private static final DecisionRequirementsQueryResultConfig EMPTY_RESULT_CONFIG =
-        DecisionRequirementsQueryResultConfig.of(b -> b);
+        QueryResultConfigBuilders.decisionRequirements().build();
 
     private DecisionRequirementsFilter filter;
     private DecisionRequirementsSort sort;

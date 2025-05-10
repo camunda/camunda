@@ -38,6 +38,8 @@ public record ProcessInstanceQuery(
         FilterBuilders.processInstance().build();
     private static final ProcessInstanceSort EMPTY_SORT =
         SortOptionBuilders.processInstance().build();
+    private static final ProcessInstanceQueryResultConfig RESULT_CONFIG =
+        QueryResultConfigBuilders.processInstance().build();
 
     private ProcessInstanceFilter filter;
     private ProcessInstanceSort sort;
@@ -87,6 +89,7 @@ public record ProcessInstanceQuery(
     public ProcessInstanceQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
+      resultConfig = Objects.requireNonNullElse(resultConfig, RESULT_CONFIG);
       return new ProcessInstanceQuery(filter, sort, page(), resultConfig);
     }
   }

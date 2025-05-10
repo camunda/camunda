@@ -8,14 +8,13 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.result.DecisionInstanceQueryResultConfig;
+import io.camunda.search.result.DecisionInstanceQueryResultConfig.Builder;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.exception.ForbiddenException;
@@ -59,13 +58,7 @@ public final class DecisionInstanceServices
                 Authorization.of(a -> a.decisionDefinition().readDecisionInstance())))
         .searchDecisionInstances(
             decisionInstanceSearchQuery(
-                q ->
-                    q.filter(query.filter())
-                        .sort(query.sort())
-                        .page(query.page())
-                        .resultConfig(
-                            ofNullable(query.resultConfig())
-                                .orElseGet(this::defaultSearchResultConfig))));
+                q -> q.filter(query.filter()).sort(query.sort()).page(query.page())));
   }
 
   /**
@@ -82,7 +75,9 @@ public final class DecisionInstanceServices
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchDecisionInstances(
                 decisionInstanceSearchQuery(
-                    q -> q.filter(f -> f.decisionInstanceIds(decisionInstanceId))));
+                    q ->
+                        q.filter(f -> f.decisionInstanceIds(decisionInstanceId))
+                            .resultConfig(Builder::includeAll)));
     final var decisionInstanceEntity =
         getSingleResultOrThrow(result, decisionInstanceId, "Decision instance");
     final var authorization = Authorization.of(a -> a.decisionDefinition().readDecisionInstance());
@@ -91,22 +86,5 @@ public final class DecisionInstanceServices
       throw new ForbiddenException(authorization);
     }
     return decisionInstanceEntity;
-  }
-
-  /**
-   * The default config excludes evaluateInputs and evaluateOutputs fields. To include them, the
-   * user must provide a config like
-   *
-   * <pre>
-   *   {
-   *     "includeEvaluatedInputs": true,
-   *     "includeEvaluatedOutputs": true
-   *   }
-   * </pre>
-   *
-   * @return a default config
-   */
-  private DecisionInstanceQueryResultConfig defaultSearchResultConfig() {
-    return DecisionInstanceQueryResultConfig.of(r -> r);
   }
 }

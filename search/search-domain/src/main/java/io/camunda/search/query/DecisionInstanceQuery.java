@@ -38,6 +38,8 @@ public record DecisionInstanceQuery(
         FilterBuilders.decisionInstance().build();
     private static final DecisionInstanceSort EMPTY_SORT =
         SortOptionBuilders.decisionInstance().build();
+    private static final DecisionInstanceQueryResultConfig EMPTY_CONFIG =
+        QueryResultConfigBuilders.decisionInstance().build();
 
     private DecisionInstanceFilter filter;
     private DecisionInstanceSort sort;
@@ -87,6 +89,7 @@ public record DecisionInstanceQuery(
     public DecisionInstanceQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
+      resultConfig = Objects.requireNonNullElse(resultConfig, EMPTY_CONFIG);
       return new DecisionInstanceQuery(filter, sort, page(), resultConfig);
     }
   }
