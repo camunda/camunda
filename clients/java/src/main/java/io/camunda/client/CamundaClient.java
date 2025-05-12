@@ -1125,7 +1125,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newRoleCreateCommand()
+   *  .roleId("roleId")
    *  .name(name)
+   *  .description("description")
    *  .send();
    * </pre>
    *
@@ -1141,7 +1143,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *
    * camundaClient
-   *  .newRoleGetRequest(roleId)
+   *  .newRoleGetRequest("roleId")
    *  .send();
    * </pre>
    *
@@ -1174,7 +1176,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newCreateGroupCommand()
-   *  .name(name)
+   *  .groupId("groupId")
+   *  .name("name")
    *  .send();
    * </pre>
    *
@@ -1191,8 +1194,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUpdateGroupCommand("123")
-   *  .name(name)
+   *  .newUpdateGroupCommand("groupId")
+   *  .name("name")
    *  .send();
    * </pre>
    *
@@ -1209,7 +1212,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newDeleteGroupCommand("123")
+   *  .newDeleteGroupCommand("groupId")
    *  .send();
    * </pre>
    *
