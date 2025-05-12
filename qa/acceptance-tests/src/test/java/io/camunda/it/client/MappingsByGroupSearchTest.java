@@ -104,7 +104,7 @@ public class MappingsByGroupSearchTest {
   private static void createMapping(final String mappingId) {
     camundaClient
         .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .name("name")
         .claimName(mappingId + "claimName")
         .claimValue(mappingId + "claimValue")
@@ -117,7 +117,7 @@ public class MappingsByGroupSearchTest {
   }
 
   private static void assignMappingToGroup(final String mappingId, final String groupId) {
-    camundaClient.newAssignMappingToGroupCommand(groupId).mappingId(mappingId).send().join();
+    camundaClient.newAssignMappingToGroupCommand(groupId).mappingRuleId(mappingId).send().join();
   }
 
   private static void waitForGroupsToBeUpdated() {
