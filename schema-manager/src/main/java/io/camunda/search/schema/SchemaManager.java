@@ -38,7 +38,7 @@ public class SchemaManager {
   private final Collection<IndexDescriptor> indexDescriptors;
   private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final SearchEngineConfiguration config;
-  private final ObjectMapper objectMapper;
+  private final IndexSchemaValidator schemaValidator;
   private final ExecutorService virtualThreadExecutor;
   private final RetryDecorator retryDecorator;
 
@@ -53,7 +53,7 @@ public class SchemaManager {
     this.indexDescriptors = indexDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
     this.config = config;
-    this.objectMapper = objectMapper;
+    schemaValidator = new IndexSchemaValidator(objectMapper);
     retryDecorator = new RetryDecorator(config.schemaManager().getRetry());
   }
 
@@ -68,9 +68,8 @@ public class SchemaManager {
 
   private void initializeSchema() {
     LOG.info("Schema creation is enabled. Start Schema management.");
-    final var schemaValidator = new IndexSchemaValidator(objectMapper);
-    final var newIndexProperties = validateIndices(schemaValidator);
-    final var newIndexTemplateProperties = validateIndexTemplates(schemaValidator);
+    final var newIndexProperties = validateIndices(getNonTemplateIndexDescriptors());
+    final var newIndexTemplateProperties = validateIndexTemplates(getIndexTemplateDescriptors());
     //  used to create any indices/templates which don't exist
     initialiseResources();
 
@@ -101,12 +100,19 @@ public class SchemaManager {
           searchEngineClient.updateIndexTemplateSettings(
               desc, getIndexSettingsFromConfig(desc.getIndexName()));
         });
-
     getAllIndexDescriptors().forEach(this::updateIndexReplicaCount);
   }
 
   private Collection<IndexDescriptor> getAllIndexDescriptors() {
     return Stream.concat(indexDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
+  }
+
+  private Collection<IndexDescriptor> getNonTemplateIndexDescriptors() {
+    return indexDescriptors;
+  }
+
+  private Collection<IndexTemplateDescriptor> getIndexTemplateDescriptors() {
+    return indexTemplateDescriptors;
   }
 
   private void updateIndexReplicaCount(final IndexDescriptor indexDescriptor) {
@@ -122,12 +128,12 @@ public class SchemaManager {
   }
 
   private void initialiseIndices() {
-    if (indexDescriptors.isEmpty()) {
+    if (getNonTemplateIndexDescriptors().isEmpty()) {
       LOG.info("Do not create any indices, as descriptors are missing");
       return;
     }
 
-    final var missingIndices = getMissingIndices();
+    final var missingIndices = getMissingIndices(getNonTemplateIndexDescriptors());
     LOG.info("Found '{}' missing indices", missingIndices.size());
     final var futures =
         missingIndices.stream()
@@ -148,11 +154,12 @@ public class SchemaManager {
     joinOnFutures(futures);
   }
 
-  private List<IndexDescriptor> getMissingIndices() {
+  private List<IndexDescriptor> getMissingIndices(
+      final Collection<IndexDescriptor> indexDescriptors) {
     if (indexDescriptors.isEmpty()) {
       return Collections.emptyList();
     }
-    final var existingIndexNames = existingIndexNames();
+    final var existingIndexNames = existingIndexNames(indexDescriptors);
 
     return indexDescriptors.stream()
         .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
@@ -160,14 +167,15 @@ public class SchemaManager {
   }
 
   private void initialiseIndexTemplates() {
-    if (indexTemplateDescriptors.isEmpty()) {
+    if (getIndexTemplateDescriptors().isEmpty()) {
       LOG.info("Do not create any index templates, as descriptors are missing");
       return;
     }
     LOG.info(
-        "Creating index templates based on '{}' descriptors.", indexTemplateDescriptors.size());
+        "Creating index templates based on '{}' descriptors.",
+        getIndexTemplateDescriptors().size());
     final var futures =
-        indexTemplateDescriptors.stream()
+        getIndexTemplateDescriptors().stream()
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
@@ -181,7 +189,8 @@ public class SchemaManager {
     joinOnFutures(futures);
   }
 
-  private List<IndexTemplateDescriptor> getMissingIndexTemplates() {
+  private List<IndexTemplateDescriptor> getMissingIndexTemplates(
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors) {
     if (indexTemplateDescriptors.isEmpty()) {
       return Collections.emptyList();
     }
@@ -264,20 +273,22 @@ public class SchemaManager {
 
   public List<String> truncateIndices() {
     final var indices =
-        indexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+        getAllIndexDescriptors().stream().map(IndexDescriptor::getFullQualifiedName).toList();
     indices.forEach(searchEngineClient::truncateIndex);
     return indices;
   }
 
   public void deleteArchivedIndices() {
     final var liveIndices =
-        indexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+        getIndexTemplateDescriptors().stream()
+            .map(IndexDescriptor::getFullQualifiedName)
+            .collect(Collectors.toSet());
+    final String indexPatterns =
+        getIndexTemplateDescriptors().stream()
+            .map(IndexTemplateDescriptor::getIndexPattern)
+            .collect(Collectors.joining(","));
     final var archivedIndices =
-        liveIndices.stream()
-            .map(indexName -> indexName + "*")
-            .map(idxWildcard -> searchEngineClient.getMappings(idxWildcard, MappingSource.INDEX))
-            .map(Map::keySet)
-            .flatMap(Collection::stream)
+        searchEngineClient.getMappings(indexPatterns, MappingSource.INDEX).keySet().stream()
             .filter(index -> !liveIndices.contains(index))
             .toList();
     archivedIndices.forEach(searchEngineClient::deleteIndex);
@@ -307,22 +318,25 @@ public class SchemaManager {
   }
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
-      final IndexSchemaValidator schemaValidator) {
+      final Collection<IndexDescriptor> indexDescriptors) {
     if (indexDescriptors.isEmpty()) {
       LOG.info("No validation of indices, as there are no descriptors");
       return Map.of();
     }
 
-    final var currentIndices = searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX);
+    final var currentIndices =
+        searchEngineClient.getMappings(allIndexNames(indexDescriptors), MappingSource.INDEX);
     LOG.info(
         "Validate '{}' existing indices based on '{}' descriptors",
         currentIndices.size(),
         indexDescriptors.size());
-    return schemaValidator.validateIndexMappings(currentIndices, indexDescriptors);
+    return schemaValidator.validateIndexMappings(
+        currentIndices, indexDescriptors, MappingSource.INDEX);
   }
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexTemplates(
-      final IndexSchemaValidator schemaValidator) {
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors) {
+
     if (indexTemplateDescriptors.isEmpty()) {
       LOG.info("No validation of index templates, as there are no descriptors");
       return Map.of();
@@ -340,17 +354,18 @@ public class SchemaManager {
         currentTemplates,
         indexTemplateDescriptors.stream()
             .map(IndexDescriptor.class::cast)
-            .collect(Collectors.toSet()));
+            .collect(Collectors.toSet()),
+        MappingSource.INDEX_TEMPLATE);
   }
 
-  private Set<String> existingIndexNames() {
-    final String allIndexNames = allIndexNames();
+  private Set<String> existingIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
+    final String allIndexNames = allIndexNames(indexDescriptors);
     return allIndexNames.isBlank()
         ? Set.of()
         : searchEngineClient.getMappings(allIndexNames, MappingSource.INDEX).keySet();
   }
 
-  private String allIndexNames() {
+  private String allIndexNames(final Collection<IndexDescriptor> indexDescriptors) {
 
     // The wildcard is required as without it, requests would fail if the index didn't exist.
     // this way all descriptors can be retrieved in one request without errors due to not created
@@ -362,14 +377,13 @@ public class SchemaManager {
   }
 
   public boolean isSchemaReadyForUse() {
-    final var schemaValidator = new IndexSchemaValidator(objectMapper);
-    return getMissingIndices().isEmpty()
-        && getMissingIndexTemplates().isEmpty()
-        && validateIndices(schemaValidator).isEmpty()
-        && validateIndexTemplates(schemaValidator).isEmpty();
+    return getMissingIndices(getAllIndexDescriptors()).isEmpty()
+        && getMissingIndexTemplates(getIndexTemplateDescriptors()).isEmpty()
+        && validateIndices(getNonTemplateIndexDescriptors()).isEmpty()
+        && validateIndexTemplates(getIndexTemplateDescriptors()).isEmpty();
   }
 
   public boolean isAllIndicesExist() {
-    return getMissingIndices().isEmpty();
+    return getMissingIndices(getAllIndexDescriptors()).isEmpty();
   }
 }
