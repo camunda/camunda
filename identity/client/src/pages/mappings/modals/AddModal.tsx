@@ -12,7 +12,7 @@ import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { createMapping } from "src/utility/api/mappings";
+import { createMappingRule } from "src/utility/api/mappings";
 import {
   CustomStack,
   EqualSignContainer,
@@ -24,20 +24,20 @@ import { Stack } from "@carbon/react";
 const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, error }] = useApiCall(createMapping, {
+  const [apiCall, { loading, error }] = useApiCall(createMappingRule, {
     suppressErrorNotification: true,
   });
-  const [mappingId, setMappingId] = useState("");
-  const [mappingName, setMappingName] = useState("");
+  const [mappingRuleId, setMappingRuleId] = useState("");
+  const [mappingRuleName, setMappingRuleName] = useState("");
   const [claimName, setClaimName] = useState("");
   const [claimValue, setClaimValue] = useState("");
 
-  const submitDisabled = loading || !mappingName;
+  const submitDisabled = loading || !mappingRuleName;
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      mappingId: mappingId,
-      name: mappingName,
+      mappingRuleId: mappingRuleId,
+      name: mappingRuleName,
       claimName,
       claimValue,
     });
@@ -45,8 +45,8 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("mappingCreated"),
-        subtitle: t("mappingCreatedSuccessfully", { name: mappingName }),
+        title: t("mappingRuleCreated"),
+        subtitle: t("mappingRuleCreatedSuccessfully", { name: mappingRuleName }),
       });
       onSuccess();
     }
@@ -64,19 +64,19 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       onSubmit={handleSubmit}
     >
       <TextField
-        label={t("mappingId")}
-        placeholder={t("enterMappingId")}
-        onChange={setMappingId}
-        value={mappingId}
-        helperText={t("uniqueIdForMapping")}
+        label={t("mappingRuleId")}
+        placeholder={t("enterMappingRuleId")}
+        onChange={setMappingRuleId}
+        value={mappingRuleId}
+        helperText={t("uniqueIdForMappingRule")}
         autoFocus
       />
       <TextField
-        label={t("mappingName")}
-        placeholder={t("enterMappingName")}
-        onChange={setMappingName}
-        value={mappingName}
-        helperText={t("uniqueNameForMapping")}
+        label={t("mappingRuleName")}
+        placeholder={t("enterMappingRuleName")}
+        onChange={setMappingRuleName}
+        value={mappingRuleName}
+        helperText={t("uniqueNameForMappingRule")}
       />
       <MappingRuleContainer>
         <Stack gap={spacing05}>

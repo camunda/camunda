@@ -13,24 +13,24 @@ import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
-import { updateMapping, Mapping } from "src/utility/api/mappings";
+import { updateMappingRule, MappingRule } from "src/utility/api/mappings";
 import {
   CustomStack,
   EqualSignContainer,
   MappingRuleContainer,
 } from "./components";
 
-const EditModal: FC<UseEntityModalProps<Mapping>> = ({
+const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
   open,
   onClose,
   onSuccess,
   entity,
 }) => {
   const { t } = useTranslate("mappingRules");
-  const [callUpdateMapping, { loading, error }] = useApiCall(updateMapping, {
+  const [callUpdateMapping, { loading, error }] = useApiCall(updateMappingRule, {
     suppressErrorNotification: true,
   });
-  const [mapping, setMapping] = useState<Mapping>(entity);
+  const [mapping, setMapping] = useState<MappingRule>(entity);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateMapping(mapping);
@@ -42,20 +42,20 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
   return (
     <FormModal
       open={open}
-      headline={t("editMapping")}
+      headline={t("editMappingRule")}
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
       error={error}
-      loadingDescription={t("updatingMapping")}
-      confirmLabel={t("updateMapping")}
+      loadingDescription={t("updatingMappingRule")}
+      confirmLabel={t("updateMappingRule")}
     >
       <TextField
-        label={t("mappingId")}
+        label={t("mappingRuleId")}
         onChange={(mappingId) =>
           setMapping((mapping) => ({ ...mapping, mappingId }))
         }
-        value={mapping.mappingId}
+        value={mapping.mappingRuleId}
         readOnly
       />
       <TextField
