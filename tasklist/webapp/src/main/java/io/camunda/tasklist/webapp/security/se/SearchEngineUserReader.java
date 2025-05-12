@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.security.se;
 
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.CONSOLIDATED_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 
@@ -24,7 +25,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
+@Profile(
+    "!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE + " & !" + CONSOLIDATED_AUTH_PROFILE)
 public class SearchEngineUserReader implements UserReader {
 
   @Autowired private UserStore userStore;
@@ -37,8 +39,7 @@ public class SearchEngineUserReader implements UserReader {
       return Optional.empty();
     }
     final Object principal = authentication.getPrincipal();
-    if (principal instanceof CamundaUser) {
-      final CamundaUser user = (CamundaUser) principal;
+    if (principal instanceof final CamundaUser user) {
       return Optional.of(
           new UserDTO()
               .setUserId(user.getUserId())
