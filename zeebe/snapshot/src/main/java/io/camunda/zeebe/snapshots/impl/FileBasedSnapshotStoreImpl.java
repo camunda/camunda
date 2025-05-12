@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static io.camunda.zeebe.util.FileUtil.deleteFolder;
 import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -633,7 +635,6 @@ public final class FileBasedSnapshotStoreImpl {
                 () ->
                     new IllegalArgumentException(
                         "Failed to parse snapshot id %s".formatted(snapshotId)));
-    final var checksumPath = buildSnapshotsChecksumPath(parsedSnapshotId);
     final var snapshotPath = buildSnapshotDirectory(parsedSnapshotId);
     ensureDirectoryExists(snapshotPath);
 
@@ -642,7 +643,7 @@ public final class FileBasedSnapshotStoreImpl {
     final var snapshotFileNames = snapshotFiles.keySet();
     snapshotFileNames.stream()
         .filter(name -> !isChecksumFile(name))
-        .forEach(name -> copyNamedFileToDirectory(name, snapshotFiles.get(name), snapshotPath));
+        .forEach(name -> moveNamedFileToDirectory(name, snapshotFiles.get(name), snapshotPath));
 
     final var checksumFile =
         snapshotFileNames.stream()
@@ -651,7 +652,8 @@ public final class FileBasedSnapshotStoreImpl {
             .map(snapshotFiles::get)
             .orElseThrow();
 
-    Files.copy(checksumFile, checksumPath);
+    moveNamedFileToDirectory(
+        checksumFile.getFileName().toString(), checksumFile, snapshotsDirectory);
 
     // Flush directory of this snapshot as well as root snapshot directory
     FileUtil.flushDirectory(snapshotPath);
@@ -667,11 +669,16 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
-  private void copyNamedFileToDirectory(
+  private void moveNamedFileToDirectory(
       final String name, final Path source, final Path targetDirectory) {
     final var targetFilePath = targetDirectory.resolve(name);
     try {
-      Files.move(source, targetFilePath);
+      try {
+        Files.move(source, targetFilePath, ATOMIC_MOVE);
+      } catch (final AtomicMoveNotSupportedException e) {
+        Files.move(source, targetFilePath);
+        FileUtil.flush(targetFilePath);
+      }
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
