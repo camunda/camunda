@@ -40,9 +40,9 @@
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
     <excludeUnitTestNames>**/*IT.java</excludeUnitTestNames>
-    <excludeCoreFeaturesTestNames/>
-    <excludeDataLayerTestNames/>
-    <excludeIdentityTestNames/>
+    <excludeCoreFeaturesTestNames></excludeCoreFeaturesTestNames>
+    <excludeDataLayerTestNames></excludeDataLayerTestNames>
+    <excludeIdentityTestNames></excludeIdentityTestNames>
     <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
