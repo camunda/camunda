@@ -102,7 +102,7 @@ public class CamundaExporter implements Exporter {
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
-    metrics = new CamundaExporterMetrics(context.getMeterRegistry());
+    metrics = new CamundaExporterMetrics(context.getMeterRegistry(), context.clock());
     clientAdapter = ClientAdapter.of(configuration.getConnect());
     if (metadata == null) {
       metadata = new ExporterMetadata(clientAdapter.objectMapper());
@@ -276,11 +276,6 @@ public class CamundaExporter implements Exporter {
         clientAdapter.objectMapper());
   }
 
-  @VisibleForTesting
-  ExporterMetadata getMetadata() {
-    return metadata;
-  }
-
   private List<String> prefixedNames(final String... names) {
     final var indexPrefix =
         AbstractIndexDescriptor.formatIndexPrefix(configuration.getConnect().getIndexPrefix());
@@ -325,9 +320,10 @@ processing records from previous version
   }
 
   private ExporterBatchWriter createBatchWriter() {
-    final var builder = ExporterBatchWriter.Builder.begin();
+    final var builder =
+        ExporterBatchWriter.Builder.begin(metrics)
+            .withCustomErrorHandlers(provider.getCustomErrorHandlers());
     provider.getExportHandlers().forEach(builder::withHandler);
-    builder.withCustomErrorHandlers(provider.getCustomErrorHandlers());
     return builder.build();
   }
 
@@ -393,7 +389,6 @@ processing records from previous version
       metrics.recordBulkSize(writer.getBatchSize());
       final BatchRequest batchRequest = clientAdapter.createBatchRequest();
       writer.flush(batchRequest);
-
     } catch (final PersistenceException ex) {
       throw new ExporterException(ex.getMessage(), ex);
     }
