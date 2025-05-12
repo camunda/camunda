@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createVariableFieldName} from '../createVariableFieldName';
-import {getNewVariablePrefix} from '../getVariableFieldName';
+import {createVariableFieldName} from 'common/tasks/variables-editor/createVariableFieldName';
+import {getNewVariablePrefix} from 'common/tasks/variables-editor/getVariableFieldName';
 import {isValidJSON} from 'common/utils/isValidJSON';
 import {promisifyValidator} from './promisifyValidator';
-import type {FormValues} from '../types';
+import type {FormValues} from 'common/tasks/variables-editor/types';
 import get from 'lodash/get';
 import type {FieldValidator} from 'final-form';
 

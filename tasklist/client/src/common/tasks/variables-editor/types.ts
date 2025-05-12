@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Variable} from 'v1/api/types';
-
 type FormValues = {
   [key: string]: string;
 } & {
-  newVariables?: Pick<Variable, 'name' | 'value'>[];
+  newVariables?: {name: string; value: string}[];
 };
 
 export type {FormValues};
