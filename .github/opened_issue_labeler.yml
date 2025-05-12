@@ -26,6 +26,8 @@ severity/mid:
   '(Medium-)'
 severity/low:
   '(Low-)'
+severity/unknown:
+  '(Unknown-)'
 likelihood/high:
   '(High_)'
 likelihood/mid:
