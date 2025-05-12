@@ -7137,9 +7137,6 @@ components:
     GroupCreateResult:
       type: object
       properties:
-        groupKey:
-          description: The key of the created group.
-          type: string
         groupId:
           description: The ID of the created group.
           type: string
@@ -7173,9 +7170,6 @@ components:
         description:
           type: string
           description: The description of the group.
-        groupKey:
-          type: string
-          description: The unique system-generated internal group key.
     GroupResult:
       description: Group search response item.
       type: object
@@ -7183,9 +7177,6 @@ components:
         name:
           type: string
           description: The group name.
-        groupKey:
-          type: string
-          description: The group key.
         groupId:
           type: string
           description: The group ID.
@@ -7199,7 +7190,6 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - groupKey
             - name
             - groupId
         order:

@@ -539,7 +539,6 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toGroupCreateResponse(final GroupRecord groupRecord) {
     final var response =
         new GroupCreateResult()
-            .groupKey(KeyUtil.keyToString(groupRecord.getGroupKey()))
             .name(groupRecord.getName())
             .groupId(groupRecord.getGroupId())
             .description(groupRecord.getDescription());
@@ -549,7 +548,6 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toGroupUpdateResponse(final GroupRecord groupRecord) {
     final var response =
         new GroupUpdateResult()
-            .groupKey(KeyUtil.keyToString(groupRecord.getGroupKey()))
             .groupId(groupRecord.getGroupId())
             .description(groupRecord.getDescription())
             .name(groupRecord.getName());

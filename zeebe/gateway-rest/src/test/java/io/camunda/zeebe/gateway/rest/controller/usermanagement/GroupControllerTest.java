@@ -260,13 +260,12 @@ public class GroupControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "groupKey": "%d",
               "groupId": "%s",
               "name": "%s",
               "description": "%s"
             }
             """
-                .formatted(groupKey, groupId, groupName, description));
+                .formatted(groupId, groupName, description));
 
     // then
     verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
@@ -275,9 +274,9 @@ public class GroupControllerTest extends RestControllerTest {
   @Test
   void shouldFailOnUpdateGroupWithEmptyName() {
     // given
-    final var groupKey = 111L;
+    final var groupId = "groupId";
     final var emptyGroupName = "";
-    final var uri = "%s/%s".formatted(GROUP_BASE_URL, groupKey);
+    final var uri = "%s/%s".formatted(GROUP_BASE_URL, groupId);
 
     // when / then
     webClient
@@ -307,9 +306,9 @@ public class GroupControllerTest extends RestControllerTest {
   @Test
   void shouldFailOnUpdateGroupWithoutDescription() {
     // given
-    final var groupKey = 111L;
+    final var groupId = "groupId";
     final var name = "name";
-    final var uri = "%s/%s".formatted(GROUP_BASE_URL, groupKey);
+    final var uri = "%s/%s".formatted(GROUP_BASE_URL, groupId);
 
     // when / then
     webClient
