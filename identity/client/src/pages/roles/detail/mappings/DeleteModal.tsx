@@ -34,7 +34,9 @@ const DeleteModal: FC<RemoveRoleMappingModalProps> = ({
   const { t, Translate } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMapping, { loading }] = useApiCall(unassignRoleMappingRule);
+  const [callUnassignMapping, { loading }] = useApiCall(
+    unassignRoleMappingRule,
+  );
 
   const handleSubmit = async () => {
     if (roleId && mapping) {

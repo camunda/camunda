@@ -27,9 +27,12 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
   entity,
 }) => {
   const { t } = useTranslate("mappingRules");
-  const [callUpdateMapping, { loading, error }] = useApiCall(updateMappingRule, {
-    suppressErrorNotification: true,
-  });
+  const [callUpdateMapping, { loading, error }] = useApiCall(
+    updateMappingRule,
+    {
+      suppressErrorNotification: true,
+    },
+  );
   const [mapping, setMapping] = useState<MappingRule>(entity);
 
   const handleSubmit = async () => {
