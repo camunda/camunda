@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotReservation;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
@@ -21,8 +22,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,15 +37,14 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final FileBasedSnapshotId snapshotId;
   private final SnapshotMetadata metadata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
-
-  private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
   private final ConcurrencyControl actor;
-
+  private final FileBasedSnapshotReservations reservations;
   private boolean deleted = false;
 
   FileBasedSnapshot(
       final Path directory,
       final Path checksumFile,
+      final Path reservationDirectory,
       final ImmutableChecksumsSFV checksums,
       final FileBasedSnapshotId snapshotId,
       final SnapshotMetadata metadata,
@@ -59,6 +57,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     this.metadata = metadata;
     this.onSnapshotDeleted = onSnapshotDeleted;
     this.actor = actor;
+    reservations = new FileBasedSnapshotReservations(this, reservationDirectory, actor);
   }
 
   public FileBasedSnapshotId getSnapshotId() {
@@ -130,8 +129,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     actor.run(
         () -> {
           if (!deleted) {
-            final FileBasedSnapshotReservation reservation = new FileBasedSnapshotReservation(this);
-            reservations.add(reservation);
+            final var reservation = reservations.inMemoryReservation();
             snapshotLocked.complete(reservation);
           } else {
             snapshotLocked.completeExceptionally(
@@ -144,8 +142,40 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
+  public ActorFuture<PersistedSnapshotReservation> reserveWithPersistence() {
+    final CompletableActorFuture<PersistedSnapshotReservation> snapshotLocked =
+        new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          if (!deleted) {
+            try {
+              final var reservation = reservations.persistedReservation();
+              snapshotLocked.complete(reservation);
+            } catch (final IOException e) {
+              snapshotLocked.completeExceptionally(e);
+            }
+          } else {
+            snapshotLocked.completeExceptionally(
+                new SnapshotNotFoundException(
+                    String.format(
+                        "Expected to reserve snapshot %s, but snapshot is deleted.", getId())));
+          }
+        });
+    return snapshotLocked;
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshotReservation> getPersistedSnapshotReservation(final byte b) {
+    try {
+      return CompletableActorFuture.completed(reservations.getPersistedSnapshotReservation(b));
+    } catch (final Exception e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
+  }
+
+  @Override
   public boolean isReserved() {
-    return !reservations.isEmpty();
+    return reservations.isReserved();
   }
 
   void delete() {
@@ -209,13 +239,5 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
         + ", metadata="
         + metadata
         + '}';
-  }
-
-  ActorFuture<Void> removeReservation(final FileBasedSnapshotReservation reservation) {
-    return actor.call(
-        () -> {
-          reservations.remove(reservation);
-          return null;
-        });
   }
 }

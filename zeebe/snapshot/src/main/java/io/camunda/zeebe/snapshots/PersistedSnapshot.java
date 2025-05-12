@@ -100,6 +100,27 @@ public interface PersistedSnapshot {
    */
   ActorFuture<SnapshotReservation> reserve();
 
+  /**
+   * Reserves the snapshot with a persistence guarantee. When the snapshot is reserved using this
+   * method, the reservation status is persisted, ensuring that the reservation is maintained even
+   * after if the system restarts. The reserved snapshot will not be deleted until the reservation
+   * is released.
+   *
+   * <p>The returned {@link PersistedSnapshotReservation} allows for further operations on the
+   * reserved snapshot and provides a unique identifier for the reservation.
+   *
+   * @return a future containing the {@link PersistedSnapshotReservation} if the reservation is
+   *     successfully completed. The future will fail exceptionally if the snapshot does not exist
+   *     or if the reservation cannot be persisted.
+   */
+  ActorFuture<PersistedSnapshotReservation> reserveWithPersistence();
+
+  /**
+   * @param b the id of the reservation that was already opened
+   * @return a persisted reservation
+   */
+  ActorFuture<PersistedSnapshotReservation> getPersistedSnapshotReservation(byte b);
+
   @VisibleForTesting
   boolean isReserved();
 }

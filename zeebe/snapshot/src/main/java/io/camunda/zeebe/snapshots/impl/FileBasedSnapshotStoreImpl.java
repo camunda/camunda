@@ -56,6 +56,10 @@ public final class FileBasedSnapshotStoreImpl {
   // versions, because the new checksum calculation already order the metadata file explicitly
   // instead of using the implicit sort order.
   static final String METADATA_FILE_NAME = "zeebe.metadata";
+
+  // The same considerations for the naming made for METADATA_FILE_NAME apply to this file as well.
+  static final String RESERVATIONS_DIRECTORY = "zeebe-reservations";
+
   // first is the metadata and the second the received snapshot count
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStoreImpl.class);
   private static final String CHECKSUM_SUFFIX = ".checksum";
@@ -77,6 +81,7 @@ public final class FileBasedSnapshotStoreImpl {
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
   private final CRC32CChecksumProvider checksumProvider;
   private final ConcurrencyControl actor;
+  private final Path reservationsDirectory;
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
@@ -87,12 +92,14 @@ public final class FileBasedSnapshotStoreImpl {
     this.brokerId = brokerId;
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     pendingDirectory = root.resolve(PENDING_DIRECTORY);
+    reservationsDirectory = root.resolve(RESERVATIONS_DIRECTORY);
     this.actor = actor;
     this.snapshotMetrics = snapshotMetrics;
 
     try {
       FileUtil.ensureDirectoryExists(snapshotsDirectory);
       FileUtil.ensureDirectoryExists(pendingDirectory);
+      FileUtil.ensureDirectoryExists(reservationsDirectory);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to create snapshot directories", e);
     }
@@ -202,7 +209,14 @@ public final class FileBasedSnapshotStoreImpl {
 
       final var metadata = collectMetadata(path, snapshotId);
       return new FileBasedSnapshot(
-          path, checksumPath, actualChecksum, snapshotId, metadata, this::onSnapshotDeleted, actor);
+          path,
+          checksumPath,
+          reservationsDirectory,
+          actualChecksum,
+          snapshotId,
+          metadata,
+          this::onSnapshotDeleted,
+          actor);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
@@ -511,6 +525,7 @@ public final class FileBasedSnapshotStoreImpl {
           new FileBasedSnapshot(
               destination,
               checksumPath,
+              reservationsDirectory,
               immutableChecksumsSFV,
               snapshotId,
               metadata,
