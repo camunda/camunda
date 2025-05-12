@@ -47,6 +47,8 @@ public final class SchemaTestUtil {
     when(descriptor.getComposedOf()).thenReturn(composedOf);
     when(descriptor.getTemplateName()).thenReturn(templateName);
     when(descriptor.getMappingsClasspathFilename()).thenReturn(mappingsFileName);
+    when(descriptor.getAllVersionsIndexNameRegexPattern())
+        .thenAnswer(ignored -> descriptor.getFullQualifiedName() + ".*");
 
     return descriptor;
   }
