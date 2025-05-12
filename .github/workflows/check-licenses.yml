@@ -10,6 +10,10 @@ on:
     - stable/*
     tags:
     - '*'
+  pull_request:
+    types:
+    - opened
+    - synchronize
 
 jobs:
   analyze:
@@ -17,6 +21,7 @@ jobs:
     permissions: {}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       # The matrix is necessary to run separate analyses
       matrix:
         project:
@@ -64,6 +69,9 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
     - name: Setup fossa-cli
       uses: camunda/infra-global-github-actions/fossa/setup@0e82486eaa9ef8589e051c556a1b5218efa6d37f
+    - name: Get context info
+      id: info
+      uses: camunda/infra-global-github-actions/fossa/info@0e82486eaa9ef8589e051c556a1b5218efa6d37f
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
       run: |
@@ -87,6 +95,19 @@ jobs:
       uses: camunda/infra-global-github-actions/fossa/analyze@0e82486eaa9ef8589e051c556a1b5218efa6d37f
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-        branch: ${{ github.ref_name }}
+        branch: ${{  steps.info.outputs.head-ref }}
         path: ${{ matrix.project.path }}
-        revision-id: ${{ github.sha }}
+        revision-id: ${{ steps.info.outputs.head-revision }}
+    # PR-only: Check for newly introduced license issues
+    # This step only fails if the PR introduces new license violations.
+    # It does not fail for pre-existing issues already present in the base branch.
+    - name: Check Pull Request for new License Issues
+      if: steps.info.outputs.is-pull-request == 'true'
+      uses: camunda/infra-global-github-actions/fossa/pr-check@0e82486eaa9ef8589e051c556a1b5218efa6d37f
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        base-ref: ${{ steps.info.outputs.base-ref }}
+        base-revision: ${{ steps.info.outputs.base-revision }}
+        path: ${{ matrix.project.path }}
+        project: ${{ matrix.project.name }}
+        revision: ${{ steps.info.outputs.head-revision }}
