@@ -99,7 +99,8 @@ public class MappingSpecificFilterIT {
     Arrays.asList(mappingId1, mappingId2, mappingId3)
         .forEach(
             mappingId ->
-                createAndSaveMapping(rdbmsWriter, createRandomized(m -> m.mappingRuleId(mappingId))));
+                createAndSaveMapping(
+                    rdbmsWriter, createRandomized(m -> m.mappingRuleId(mappingId))));
 
     addMappingToRole(role.roleId(), mappingId1);
     addMappingToRole(anotherRole.roleId(), mappingId2);
