@@ -26,6 +26,7 @@ import io.camunda.operate.webapp.zeebe.operation.adapter.ClientBasedAdapter;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.AddTokenHandler;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.CancelTokenHandler;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessZeebeWrapper;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.MoveTokenHandler;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
@@ -141,12 +142,15 @@ public class OperateZeebeSearchAbstractIT {
         .when(tenantService)
         .getAuthenticatedTenants();
 
+    final var camundaClient = zeebeContainerManager.getClient();
     operateServicesAdapter =
         new ClientBasedAdapter(
-            zeebeContainerManager.getClient(),
-            new AddTokenHandler(),
-            new CancelTokenHandler(flowNodeInstanceReader),
-            new MoveTokenHandler(flowNodeInstanceReader));
+            camundaClient,
+            new ModifyProcessZeebeWrapper(
+                camundaClient,
+                new AddTokenHandler(),
+                new CancelTokenHandler(flowNodeInstanceReader),
+                new MoveTokenHandler(flowNodeInstanceReader)));
 
     // Implementing tests can add any additional setup needed to run before each test
     runAdditionalBeforeEachSetup();
