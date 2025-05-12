@@ -202,7 +202,6 @@ func main() {
 	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
-	composeExtractedFolder := os.Getenv("COMPOSE_EXTRACTED_FOLDER")
 
 	expectedJavaVersion := 21
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.process")
