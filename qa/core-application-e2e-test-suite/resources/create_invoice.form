@@ -1,0 +1,246 @@
+{
+  "components": [
+    {
+      "components": [
+        {
+          "text": "### Invoice",
+          "type": "text",
+          "id": "Heading_0",
+          "layout": {
+            "row": "Row_0fp5znu",
+            "columns": null
+          }
+        }
+      ],
+      "showOutline": false,
+      "label": "",
+      "type": "group",
+      "layout": {
+        "row": "row_0",
+        "columns": null
+      },
+      "id": "Field_1ll8pgn"
+    },
+    {
+      "components": [
+        {
+          "type": "textfield",
+          "id": "Textfield_1",
+          "label": "Client Name",
+          "validate": {
+            "minLength": 2,
+            "maxLength": 50,
+            "required": true
+          },
+          "key": "name",
+          "layout": {
+            "row": "Row_18tb43e",
+            "columns": null
+          }
+        },
+        {
+          "label": "Client Address",
+          "type": "textarea",
+          "layout": {
+            "row": "Row_053xglo",
+            "columns": null
+          },
+          "id": "Field_0e9lblu",
+          "key": "address",
+          "validate": {
+            "required": true
+          }
+        }
+      ],
+      "showOutline": false,
+      "label": "Billed to",
+      "type": "group",
+      "layout": {
+        "row": "Row_0o7mon1",
+        "columns": null
+      },
+      "id": "Field_0g2mpc9",
+      "path": "client"
+    },
+    {
+      "components": [
+        {
+          "subtype": "date",
+          "dateLabel": "Invoice Date",
+          "type": "datetime",
+          "id": "Date_4",
+          "validate": {
+            "required": true
+          },
+          "key": "invoiceDate",
+          "layout": {
+            "row": "Row_0pc7qah",
+            "columns": null
+          }
+        },
+        {
+          "subtype": "date",
+          "dateLabel": "Due Date",
+          "type": "datetime",
+          "id": "Date_5",
+          "validate": {
+            "required": true
+          },
+          "key": "dueDate",
+          "layout": {
+            "row": "Row_0pc7qah",
+            "columns": null
+          }
+        },
+        {
+          "values": [
+            {
+              "label": "USD - United States Dollar",
+              "value": "USD"
+            },
+            {
+              "label": "EUR - Euro",
+              "value": "EUR"
+            }
+          ],
+          "label": "Currency",
+          "type": "select",
+          "layout": {
+            "row": "Row_1fv40q7",
+            "columns": null
+          },
+          "id": "Field_0nz4fgu",
+          "key": "currency",
+          "defaultValue": "USD"
+        },
+        {
+          "type": "textfield",
+          "id": "Textfield_3",
+          "label": "Invoice Number",
+          "validate": {
+            "minLength": 1,
+            "maxLength": 10,
+            "required": true
+          },
+          "key": "invoiceNumber",
+          "layout": {
+            "row": "Row_0rugl5w",
+            "columns": null
+          }
+        },
+        {
+          "label": "Reference #",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_0rugl5w",
+            "columns": null
+          },
+          "id": "Field_1l6w9gw",
+          "key": "referenceNumber"
+        }
+      ],
+      "showOutline": false,
+      "label": "Invoice Details",
+      "type": "group",
+      "layout": {
+        "row": "Row_0o7mon1",
+        "columns": null
+      },
+      "id": "Field_1g6x01a"
+    },
+    {
+      "components": [
+        {
+          "type": "textfield",
+          "id": "Textfield_7",
+          "label": "Item Name",
+          "validate": {
+            "minLength": 2,
+            "maxLength": 50,
+            "required": true
+          },
+          "key": "itemName",
+          "layout": {
+            "row": "Row_0kspk8y",
+            "columns": 6
+          }
+        },
+        {
+          "type": "number",
+          "id": "Number_9",
+          "label": "Unit Price",
+          "decimalDigits": 2,
+          "defaultValue": 0,
+          "validate": {
+            "min": 0,
+            "max": 1000,
+            "step": 0.5,
+            "required": true
+          },
+          "key": "unitPrice",
+          "layout": {
+            "row": "Row_0kspk8y",
+            "columns": 4
+          },
+          "appearance": {
+            "prefixAdorner": "=currency"
+          }
+        },
+        {
+          "type": "number",
+          "id": "Number_8",
+          "label": "Quantity",
+          "decimalDigits": 2,
+          "defaultValue": 1,
+          "validate": {
+            "min": 1,
+            "max": 100,
+            "step": 1,
+            "required": true
+          },
+          "key": "quantity",
+          "layout": {
+            "row": "Row_0kspk8y",
+            "columns": 4
+          },
+          "increment": "1"
+        },
+        {
+          "text": "{{currency}} {{this.unitPrice * this.quantity}}",
+          "label": "Text view",
+          "type": "text",
+          "layout": {
+            "row": "Row_0kspk8y",
+            "columns": null
+          },
+          "id": "Field_1cyz9yt"
+        }
+      ],
+      "showOutline": false,
+      "isRepeating": true,
+      "allowAddRemove": true,
+      "defaultRepetitions": 1,
+      "label": "Items",
+      "type": "dynamiclist",
+      "layout": {
+        "row": "Row_1k6j1pw",
+        "columns": null
+      },
+      "id": "Field_104boo3",
+      "path": "items",
+      "verticalAlignment": "end"
+    },
+    {
+      "content": "<style>\n    .invoice-total {\n      border: 1px solid #ccc;\n      padding: 10px;\n      max-width: 300px;\n      margin-left: auto;\n      text-align: right;\n    }\n</style>\n\n\n<div class=\"invoice-total\">\n    <h4>Invoice Total</h4>\n    <p>Subtotal: {{currency}} {{sum(items[unitPrice * quantity])}}</p>\n    <p>Tax (10%): {{currency}} {{floor(sum(items[unitPrice * quantity]) * 0.1, 2)}}</p>\n    <hr>\n    <p>Total: {{currency}} {{floor(sum(items[unitPrice * quantity ]) * 1.1, 2)}}</p>\n</div>\n",
+      "label": "HTML",
+      "type": "html",
+      "layout": {
+        "row": "Row_0cd4anm",
+        "columns": null
+      },
+      "id": "Field_0nl093o"
+    }
+  ],
+  "id": "Form_Invoice",
+  "type": "default"
+}
