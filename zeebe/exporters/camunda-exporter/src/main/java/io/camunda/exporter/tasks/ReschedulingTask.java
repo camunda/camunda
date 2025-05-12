@@ -13,6 +13,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 public final class ReschedulingTask implements RunnableTask {
@@ -23,7 +24,7 @@ public final class ReschedulingTask implements RunnableTask {
   private final ReschedulingTaskLogger periodicLogger;
   private final ExponentialBackoff idleStrategy;
   private final ExponentialBackoff errorStrategy;
-  private long executionCounter;
+  private final AtomicLong executionCounter = new AtomicLong(0L);
   private long delayMs;
   private long errorDelayMs;
   private volatile boolean closed = false;
@@ -61,7 +62,7 @@ public final class ReschedulingTask implements RunnableTask {
         .thenApplyAsync(this::onWorkPerformed, executor)
         .exceptionallyAsync(this::onError, executor)
         .thenAcceptAsync(this::reschedule, executor)
-        .thenAccept(unused -> executionCounter++);
+        .thenAccept(unused -> executionCounter.incrementAndGet());
   }
 
   @Override
@@ -71,7 +72,7 @@ public final class ReschedulingTask implements RunnableTask {
 
   @VisibleForTesting
   public long executionCount() {
-    return executionCounter;
+    return executionCounter.get();
   }
 
   private long onWorkPerformed(final int count) {
