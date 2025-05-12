@@ -12,6 +12,10 @@ import (
 
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/overrides"
+<<<<<<< HEAD
+=======
+	"github.com/camunda/camunda/c8run/internal/shutdown"
+>>>>>>> 7054ed09d55 (fix: moved package commands out to their out package leaving only the start/stop cmd in the distributed binary (#31694))
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
@@ -349,7 +353,11 @@ func main() {
 	case "start":
 		startCommand(c8, settings, processInfo, parentDir, javaBinary, expectedJavaVersion)
 	case "stop":
+<<<<<<< HEAD
 		stopCommand(c8, settings, processInfo)
+=======
+		shutdown.ShutdownProcesses(c8, settings, processInfo)
+>>>>>>> 7054ed09d55 (fix: moved package commands out to their out package leaving only the start/stop cmd in the distributed binary (#31694))
 	}
 }
 
@@ -451,6 +459,7 @@ type processes struct {
 type process struct {
 	version string
 	pid     string
+<<<<<<< HEAD
 }
 
 func stopCommand(c8 types.C8Run, settings types.C8RunSettings, processes processes) {
@@ -471,6 +480,8 @@ func stopCommand(c8 types.C8Run, settings types.C8RunSettings, processes process
 		fmt.Printf("%+v", err)
 	}
 	fmt.Println("Camunda is stopped.")
+=======
+>>>>>>> 7054ed09d55 (fix: moved package commands out to their out package leaving only the start/stop cmd in the distributed binary (#31694))
 }
 
 func startApplication(cmd *exec.Cmd, pid string, logPath string) {
