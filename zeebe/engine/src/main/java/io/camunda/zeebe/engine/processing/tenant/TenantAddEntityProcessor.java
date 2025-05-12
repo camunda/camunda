@@ -136,7 +136,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
       case USER -> true; // With simple mappings, any username can be assigned
-      case APPLICATION -> true; // With simple mappings, any application id can be assigned
+      case CLIENT -> true; // With simple mappings, any client id can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
       case GROUP -> groupState.get(entityId).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();

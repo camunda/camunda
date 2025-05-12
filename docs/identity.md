@@ -10,7 +10,7 @@ erDiagram
     string email
     string password
   }
-  Application {
+  Client {
     string id PK
   }
   Role {
@@ -56,14 +56,14 @@ erDiagram
   Mapping }o..o{ Role: "assigned"
   Mapping }o..o{ Group: "member"
   Role }o--o{ Tenant: "assigned"
-  Application ||--o{ Authorization: "granted"
-  Application }o..o{ Group: "member"
-  Application }o..o{ Role: "assigned"
-  Application }o..o{ Tenant: "assigned"
+  Client ||--o{ Authorization: "granted"
+  Client }o..o{ Group: "member"
+  Client }o..o{ Role: "assigned"
+  Client }o..o{ Tenant: "assigned"
 ```
 
 ### Unmanaged entities
 
-Under the "simple mapping" feature, users and applications are not managed as their own entities.
+Under the "simple mapping" feature, users and clients are not managed as their own entities.
 All relationships such as group, role and tenant membership, and assigned authorizations, are purely
-based on the username or application id.
+based on the username or client id.

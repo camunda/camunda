@@ -630,9 +630,9 @@ public class RequestMapper {
           claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
           authenticationBuilder.user(authenticatedUsername);
         } else {
-          final var authenticatedApplicationId = authenticationContext.applicationId();
-          claims.put(Authorization.AUTHORIZED_APPLICATION_ID, authenticatedApplicationId);
-          authenticationBuilder.applicationId(authenticatedApplicationId);
+          final var authenticatedClientId = authenticationContext.clientId();
+          claims.put(Authorization.AUTHORIZED_CLIENT_ID, authenticatedClientId);
+          authenticationBuilder.clientId(authenticatedClientId);
         }
 
         if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {

@@ -7,7 +7,7 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.api.search.enums.OwnerType.APPLICATION;
+import static io.camunda.client.api.search.enums.OwnerType.CLIENT;
 import static io.camunda.client.api.search.enums.OwnerType.USER;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
@@ -136,7 +136,7 @@ class AuthorizationSearchIT {
         adminClient
             .newCreateAuthorizationCommand()
             .ownerId(ADMIN)
-            .ownerType(APPLICATION)
+            .ownerType(CLIENT)
             .resourceId(resourceId)
             .resourceType(PROCESS_DEFINITION)
             .permissionTypes(READ_PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE)

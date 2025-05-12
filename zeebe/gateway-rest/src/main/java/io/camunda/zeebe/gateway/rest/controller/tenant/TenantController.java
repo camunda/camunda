@@ -124,10 +124,10 @@ public class TenantController {
             userQuery -> searchUsersInTenant(tenantId, userQuery));
   }
 
-  @CamundaPutMapping(path = "/{tenantId}/applications/{applicationId}")
-  public CompletableFuture<ResponseEntity<Object>> assignApplicationToTenant(
-      @PathVariable final String tenantId, @PathVariable final String applicationId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, applicationId, EntityType.APPLICATION)
+  @CamundaPutMapping(path = "/{tenantId}/clients/{clientId}")
+  public CompletableFuture<ResponseEntity<Object>> assignClientToTenant(
+      @PathVariable final String tenantId, @PathVariable final String clientId) {
+    return RequestMapper.toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -169,10 +169,10 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
-  @CamundaDeleteMapping(path = "/{tenantId}/applications/{applicationId}")
-  public CompletableFuture<ResponseEntity<Object>> removeApplicationFromTenant(
-      @PathVariable final String tenantId, @PathVariable final String applicationId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, applicationId, EntityType.APPLICATION)
+  @CamundaDeleteMapping(path = "/{tenantId}/clients/{clientId}")
+  public CompletableFuture<ResponseEntity<Object>> removeClientFromTenant(
+      @PathVariable final String tenantId, @PathVariable final String clientId) {
+    return RequestMapper.toTenantMemberRequest(tenantId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 

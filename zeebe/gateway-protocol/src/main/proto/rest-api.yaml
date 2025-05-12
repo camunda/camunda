@@ -617,7 +617,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RoleSearchQueryResult"
-  /tenants/{tenantId}/applications/{applicationId}:
+  /tenants/{tenantId}/applications/{clientId}:
     put:
       tags:
         - Tenant
@@ -631,15 +631,15 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: applicationId
+        - name: clientId
           in: path
           required: true
-          description: The ID of the application to assign.
+          description: The ID of the client to assign.
           schema:
             type: string
       responses:
         "204":
-          description: The application was successfully assigned to the tenant.
+          description: The client was successfully assigned to the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -656,8 +656,8 @@ paths:
       tags:
         - Tenant
       operationId: removeApplicationFromTenant
-      summary: Remove an application from a tenant
-      description: Removes a single application from a specified tenant.
+      summary: Remove a client from a tenant
+      description: Removes a single client from a specified tenant.
       parameters:
         - name: tenantId
           in: path
@@ -665,7 +665,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: applicationId
+        - name: clientId
           in: path
           required: true
           description: The unique identifier of the application.
@@ -673,13 +673,13 @@ paths:
             type: string
       responses:
         "204":
-          description: The application was successfully removed from the tenant.
+          description: The client was successfully removed from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The tenant does not exist or the application was not assigned to it.
+          description: The tenant does not exist or the client was not assigned to it.
           content:
             application/problem+json:
               schema:
@@ -2814,14 +2814,14 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /roles/{roleId}/applications/{applicationId}:
+  /roles/{roleId}/clients/{clientId}:
     put:
       tags:
         - Role
-      operationId: addApplicationToRole
-      summary: Assign an application to a role
+      operationId: addClientToRole
+      summary: Assign a client to a role
       description: |
-        Assigns an application to a role.
+        Assigns a client to a role.
       parameters:
         - name: roleId
           in: path
@@ -2829,15 +2829,15 @@ paths:
           description: The role ID.
           schema:
             type: string
-        - name: applicationId
+        - name: clientId
           in: path
           required: true
-          description: The application ID.
+          description: The client ID.
           schema:
             type: string
       responses:
         "202":
-          description: The application was assigned successfully to the role.
+          description: The client was assigned successfully to the role.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -2849,7 +2849,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The application with the given ID is already assigned to the role.
+          description: The client with the given ID is already assigned to the role.
           content:
             application/problem+json:
               schema:
@@ -2859,10 +2859,10 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeApplicationFromRole
-      summary: Unassign an application from a role
+      operationId: removeClientFromRole
+      summary: Unassign a client from a role
       description: |
-        Unassigns an application from a role.
+        Unassigns a client from a role.
       parameters:
         - name: roleId
           in: path
@@ -2870,21 +2870,21 @@ paths:
           description: The role ID.
           schema:
             type: string
-        - name: applicationId
+        - name: clientId
           in: path
           required: true
-          description: The application ID.
+          description: The client ID.
           schema:
             type: string
       responses:
         "202":
-          description: The application was unassigned successfully from the role.
+          description: The client was unassigned successfully from the role.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The role or application with the given ID or username was not found.
+          description: The role or client with the given ID or username was not found.
           content:
             application/problem+json:
               schema:
@@ -3126,7 +3126,7 @@ paths:
       tags:
         - Group
       operationId: createGroup
-      summary: Create group 
+      summary: Create group
       description: |
         Create a new group.
       requestBody:
@@ -3452,14 +3452,14 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /groups/{groupId}/applications/{applicationId}:
+  /groups/{groupId}/clients/{clientId}:
     put:
       tags:
         - Group
-      operationId: addApplicationToGroup
-      summary: Assign an application to a group
+      operationId: addClientToGroup
+      summary: Assign a client to a group
       description: |
-        Assigns an application to a group.
+        Assigns a client to a group.
       parameters:
         - name: groupId
           in: path
@@ -3467,15 +3467,15 @@ paths:
           description: The group ID.
           schema:
             type: string
-        - name: applicationId
+        - name: clientId
           in: path
           required: true
-          description: The application ID.
+          description: The client ID.
           schema:
             type: string
       responses:
         "202":
-          description: The application was assigned successfully to the group.
+          description: The client was assigned successfully to the group.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3487,7 +3487,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The application with the given ID is already assigned to the group.
+          description: The client with the given ID is already assigned to the group.
           content:
             application/problem+json:
               schema:
@@ -3497,10 +3497,10 @@ paths:
     delete:
       tags:
         - Group
-      operationId: unassignApplicationFromGroup
-      summary: Unassign an application from a group
+      operationId: unassignClientFromGroup
+      summary: Unassign a client from a group
       description: |
-        Unassigns an appliction from a group.
+        Unassigns a client from a group.
       parameters:
         - name: groupId
           in: path
@@ -3508,21 +3508,21 @@ paths:
           description: The group ID.
           schema:
             type: string
-        - name: applicationId
+        - name: clientId
           in: path
           required: true
-          description: The application ID.
+          description: The client ID.
           schema:
             type: string
       responses:
         "202":
-          description: The application was unassigned successfully from the group.
+          description: The client was unassigned successfully from the group.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The group with the given ID was not found, or the application is not assigned to this group.
+          description: The group with the given ID was not found, or the client is not assigned to this group.
           content:
             application/problem+json:
               schema:
@@ -6686,7 +6686,7 @@ components:
       description: The type of the owner of permissions.
       enum:
         - USER
-        - APPLICATION
+        - CLIENT
         - ROLE
         - GROUP
         - MAPPING

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.authorization;
 
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
-import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_APPLICATION_ID;
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -650,19 +650,15 @@ final class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  void shouldBeAuthorizedWhenApplicationHasPermission() {
+  void shouldBeAuthorizedWhenClientHasPermission() {
     // given
-    final var applicationId = createApplicationId();
+    final var clientId = createClientId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        applicationId,
-        AuthorizationOwnerType.APPLICATION,
-        resourceType,
-        permissionType,
-        resourceId);
-    final var command = mockCommandWithApplicationId(applicationId);
+        clientId, AuthorizationOwnerType.CLIENT, resourceType, permissionType, resourceId);
+    final var command = mockCommandWithClientId(clientId);
 
     // when
     final var request =
@@ -676,11 +672,11 @@ final class AuthorizationCheckBehaviorTest {
   @Test
   void shouldNotBeAuthorizedWhenApplicationHasNoPermission() {
     // given
-    final var applicationId = createApplicationId();
+    final var clientId = createClientId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.DELETE;
     final var resourceId = UUID.randomUUID().toString();
-    final var command = mockCommandWithApplicationId(applicationId);
+    final var command = mockCommandWithClientId(clientId);
 
     // when
     final var request =
@@ -694,19 +690,19 @@ final class AuthorizationCheckBehaviorTest {
   @Test
   void shouldGetResourceIdentifiersWhenApplicationHasPermissions() {
     // given
-    final var applicationId = createApplicationId();
+    final var clientId = createClientId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
     addPermission(
-        applicationId,
-        AuthorizationOwnerType.APPLICATION,
+        clientId,
+        AuthorizationOwnerType.CLIENT,
         resourceType,
         permissionType,
         resourceId1,
         resourceId2);
-    final var command = mockCommandWithApplicationId(applicationId);
+    final var command = mockCommandWithClientId(clientId);
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
@@ -720,10 +716,10 @@ final class AuthorizationCheckBehaviorTest {
   @Test
   void shouldGetEmptySetWhenApplicationHasNoPermissions() {
     // given
-    final var applicationId = createApplicationId();
+    final var clientId = createClientId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.DELETE;
-    final var command = mockCommandWithApplicationId(applicationId);
+    final var command = mockCommandWithClientId(clientId);
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
@@ -828,14 +824,14 @@ final class AuthorizationCheckBehaviorTest {
     return command;
   }
 
-  private TypedRecord<?> mockCommandWithApplicationId(final String applicationId) {
+  private TypedRecord<?> mockCommandWithClientId(final String clientId) {
     final var command = mock(TypedRecord.class);
-    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_APPLICATION_ID, applicationId));
+    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_CLIENT_ID, clientId));
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
   }
 
-  private String createApplicationId() {
+  private String createClientId() {
     return Strings.newRandomValidIdentityId();
   }
 }

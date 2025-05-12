@@ -246,40 +246,38 @@ public class TenantAppliersTest {
   }
 
   @Test
-  void shouldAddEntityToTenantWithTypeApplication() {
+  void shouldAddEntityToTenantWithTypeClient() {
     // given
-    final var applicationId = "application-" + UUID.randomUUID();
+    final var clientId = "application-" + UUID.randomUUID();
     final var tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
     tenantState.createTenant(tenantRecord);
-    tenantRecord.setEntityId(applicationId).setEntityType(EntityType.APPLICATION);
+    tenantRecord.setEntityId(clientId).setEntityType(EntityType.CLIENT);
 
     // when
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // then
     assertThat(
-            membershipState.hasRelation(
-                EntityType.APPLICATION, applicationId, RelationType.TENANT, tenantId))
+            membershipState.hasRelation(EntityType.CLIENT, clientId, RelationType.TENANT, tenantId))
         .isTrue();
   }
 
   @Test
-  void shouldRemoveEntityFromTenantWithTypeApplication() {
+  void shouldRemoveEntityFromTenantWithTypeClient() {
     // given
-    final var applicationId = "application-" + UUID.randomUUID();
+    final var clientId = "application-" + UUID.randomUUID();
     final var tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
     tenantState.createTenant(tenantRecord);
-    tenantRecord.setEntityId(applicationId).setEntityType(EntityType.APPLICATION);
+    tenantRecord.setEntityId(clientId).setEntityType(EntityType.CLIENT);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // Ensure the application is associated with the tenant before removal
     assertThat(
-            membershipState.hasRelation(
-                EntityType.APPLICATION, applicationId, RelationType.TENANT, tenantId))
+            membershipState.hasRelation(EntityType.CLIENT, clientId, RelationType.TENANT, tenantId))
         .isTrue();
 
     // when
@@ -287,8 +285,7 @@ public class TenantAppliersTest {
 
     // then
     assertThat(
-            membershipState.hasRelation(
-                EntityType.APPLICATION, applicationId, RelationType.TENANT, tenantId))
+            membershipState.hasRelation(EntityType.CLIENT, clientId, RelationType.TENANT, tenantId))
         .isFalse();
   }
 

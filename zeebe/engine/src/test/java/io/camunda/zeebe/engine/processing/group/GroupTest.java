@@ -395,10 +395,10 @@ public class GroupTest {
   }
 
   @Test
-  public void shouldAddApplicationEntityToGroup() {
+  public void shouldAddClientEntityToGroup() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var applicationId = "application-" + UUID.randomUUID();
+    final var clientId = "application-" + UUID.randomUUID();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(groupId).withName(name).create();
 
@@ -407,27 +407,27 @@ public class GroupTest {
         engine
             .group()
             .addEntity(groupId)
-            .withEntityId(applicationId)
-            .withEntityType(EntityType.APPLICATION)
+            .withEntityId(clientId)
+            .withEntityType(EntityType.CLIENT)
             .add()
             .getValue();
 
     // then
-    assertThat(updatedGroup).hasEntityId(applicationId).hasEntityType(EntityType.APPLICATION);
+    assertThat(updatedGroup).hasEntityId(clientId).hasEntityType(EntityType.CLIENT);
   }
 
   @Test
-  public void shouldRemoveApplicationEntityFromGroup() {
+  public void shouldRemoveClientEntityFromGroup() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
-    final var applicationId = "application-" + UUID.randomUUID();
+    final var clientId = "application-" + UUID.randomUUID();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(groupId).withName(name).create();
     engine
         .group()
         .addEntity(groupId)
-        .withEntityId(applicationId)
-        .withEntityType(EntityType.APPLICATION)
+        .withEntityId(clientId)
+        .withEntityType(EntityType.CLIENT)
         .add();
 
     // when
@@ -435,30 +435,30 @@ public class GroupTest {
         engine
             .group()
             .removeEntity(groupId)
-            .withEntityId(applicationId)
-            .withEntityType(EntityType.APPLICATION)
+            .withEntityId(clientId)
+            .withEntityType(EntityType.CLIENT)
             .remove()
             .getValue();
 
     // then
     assertThat(groupWithRemovedEntity)
         .hasGroupId(groupId)
-        .hasEntityId(applicationId)
-        .hasEntityType(EntityType.APPLICATION);
+        .hasEntityId(clientId)
+        .hasEntityType(EntityType.CLIENT);
   }
 
   @Test
-  public void shouldRejectIfApplicationEntityIsAlreadyAssigned() {
+  public void shouldRejectIfClientEntityIsAlreadyAssigned() {
     // given
     final var groupId = Strings.newRandomValidIdentityId();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(groupId).withName(name).create();
-    final var applicationId = "application-" + UUID.randomUUID();
+    final var clientId = "application-" + UUID.randomUUID();
     engine
         .group()
         .addEntity(groupId)
-        .withEntityId(applicationId)
-        .withEntityType(EntityType.APPLICATION)
+        .withEntityId(clientId)
+        .withEntityType(EntityType.CLIENT)
         .add();
 
     // when
@@ -466,8 +466,8 @@ public class GroupTest {
         engine
             .group()
             .addEntity(groupId)
-            .withEntityId(applicationId)
-            .withEntityType(EntityType.APPLICATION)
+            .withEntityId(clientId)
+            .withEntityType(EntityType.CLIENT)
             .expectRejection()
             .add();
 
@@ -476,7 +476,7 @@ public class GroupTest {
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group."
-                .formatted(applicationId, groupId));
+                .formatted(clientId, groupId));
   }
 
   @Test
@@ -493,7 +493,7 @@ public class GroupTest {
             .group()
             .removeEntity(groupId)
             .withEntityId(notPresentEntityId)
-            .withEntityType(EntityType.APPLICATION)
+            .withEntityType(EntityType.CLIENT)
             .expectRejection()
             .remove();
 

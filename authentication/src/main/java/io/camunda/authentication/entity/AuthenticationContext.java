@@ -15,7 +15,7 @@ import java.util.List;
 
 public record AuthenticationContext(
     String username,
-    String applicationId,
+    String clientId,
     List<RoleEntity> roles,
     List<String> authorizedApplications,
     List<TenantDTO> tenants,
@@ -24,7 +24,7 @@ public record AuthenticationContext(
 
   public static final class AuthenticationContextBuilder {
     private String username;
-    private String applicationId;
+    private String clientId;
     private List<RoleEntity> roles = new ArrayList<>();
     private List<String> authorizedApplications = new ArrayList<>();
     private List<TenantDTO> tenants = new ArrayList<>();
@@ -35,8 +35,8 @@ public record AuthenticationContext(
       return this;
     }
 
-    public AuthenticationContextBuilder withApplicationId(final String applicationId) {
-      this.applicationId = applicationId;
+    public AuthenticationContextBuilder withClientId(final String clientId) {
+      this.clientId = clientId;
       return this;
     }
 
@@ -63,7 +63,7 @@ public record AuthenticationContext(
 
     public AuthenticationContext build() {
       return new AuthenticationContext(
-          username, applicationId, roles, authorizedApplications, tenants, groups);
+          username, clientId, roles, authorizedApplications, tenants, groups);
     }
   }
 }

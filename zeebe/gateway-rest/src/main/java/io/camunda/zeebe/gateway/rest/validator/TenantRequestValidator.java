@@ -96,8 +96,8 @@ public final class TenantRequestValidator {
       case ROLE:
         validateId(entityId, "roleId", violations);
         break;
-      case APPLICATION:
-        validateId(entityId, "applicationId", violations);
+      case CLIENT:
+        validateId(entityId, "clientId", violations);
         break;
       default:
         validateId(entityId, "entityId", violations);

@@ -174,15 +174,15 @@ class RequestMapperTest {
 
     // then
     assertThat(authentication.authenticatedUsername()).isEqualTo(username);
-    assertThat(authentication.authenticationApplicationId()).isNull();
+    assertThat(authentication.authenticatedClientId()).isNull();
   }
 
   @Test
-  void applicationIdIsSetInAuthenticationWhenOnAuthenticationContext() {
+  void clientIdIsSetInAuthenticationWhenOnAuthenticationContext() {
     // given
-    final var applicationId = "my-application";
+    final var clientId = "my-application";
     final var authenticationContext =
-        new AuthenticationContextBuilder().withApplicationId(applicationId).build();
+        new AuthenticationContextBuilder().withClientId(clientId).build();
 
     final var principal =
         new CamundaOidcUser(
@@ -192,7 +192,7 @@ class RequestMapperTest {
                     "tokenValue",
                     Instant.now(),
                     Instant.now().plusSeconds(3600),
-                    Map.of("sub", applicationId))),
+                    Map.of("sub", clientId))),
             Collections.emptySet(),
             authenticationContext);
 
@@ -204,7 +204,7 @@ class RequestMapperTest {
 
     // then
     assertThat(authContext.authenticatedUsername()).isNull();
-    assertThat(authContext.authenticationApplicationId()).isEqualTo(applicationId);
+    assertThat(authContext.authenticatedClientId()).isEqualTo(clientId);
   }
 
   @Test

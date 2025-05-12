@@ -201,11 +201,11 @@ public class RoleController {
   }
 
   @CamundaPutMapping(
-      path = "/{roleId}/applications/{applicationId}",
+      path = "/{roleId}/clients/{clientId}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> addApplicationToRole(
-      @PathVariable final String roleId, @PathVariable final String applicationId) {
-    return RequestMapper.toRoleMemberRequest(roleId, applicationId, EntityType.APPLICATION)
+      @PathVariable final String roleId, @PathVariable final String clientId) {
+    return RequestMapper.toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
@@ -248,10 +248,10 @@ public class RoleController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
-  @CamundaDeleteMapping(path = "/{roleId}/applications/{applicationId}")
+  @CamundaDeleteMapping(path = "/{roleId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> removeApplicationFromRole(
-      @PathVariable final String roleId, @PathVariable final String applicationId) {
-    return RequestMapper.toRoleMemberRequest(roleId, applicationId, EntityType.USER)
+      @PathVariable final String roleId, @PathVariable final String clientId) {
+    return RequestMapper.toRoleMemberRequest(roleId, clientId, EntityType.USER)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 

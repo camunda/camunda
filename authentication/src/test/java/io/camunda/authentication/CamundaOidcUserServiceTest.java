@@ -90,7 +90,7 @@ public class CamundaOidcUserServiceTest {
   }
 
   @Test
-  public void applicationIdIsSetInAuthContext() {
+  public void clientIdIsSetInAuthContext() {
     // given
     final Map<String, Object> claims = Map.of("sub", "test|foo@camunda.test", "client_id", "blah");
 
@@ -99,14 +99,14 @@ public class CamundaOidcUserServiceTest {
             new OAuthContext(
                 Set.of("test-id", "test-id-2"),
                 new AuthenticationContext.AuthenticationContextBuilder()
-                    .withApplicationId("blah")
+                    .withClientId("blah")
                     .build()));
 
     final var oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
     final var camundaUser = (CamundaOidcUser) oidcUser;
     final var authenticationContext = camundaUser.getAuthenticationContext();
 
-    assertThat(authenticationContext.applicationId()).isEqualTo("blah");
+    assertThat(authenticationContext.clientId()).isEqualTo("blah");
     assertThat(authenticationContext.username()).isNull();
   }
 

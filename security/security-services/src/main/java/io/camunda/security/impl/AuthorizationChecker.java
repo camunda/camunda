@@ -129,8 +129,8 @@ public class AuthorizationChecker {
     if (authentication.authenticatedUsername() != null) {
       ownerIds.add(authentication.authenticatedUsername());
     }
-    if (authentication.authenticationApplicationId() != null) {
-      ownerIds.add(authentication.authenticationApplicationId());
+    if (authentication.authenticatedClientId() != null) {
+      ownerIds.add(authentication.authenticatedClientId());
     }
     ownerIds.addAll(authentication.authenticatedMappingIds());
     ownerIds.addAll(

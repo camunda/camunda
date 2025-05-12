@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
-import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAuth.USERNAME;
-
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
@@ -28,7 +26,7 @@ import org.springframework.security.oauth2.jwt.JwtException;
 /** Used by the {@link AuthenticationInterceptor} to authenticate incoming requests. */
 public sealed interface AuthenticationHandler {
   Context.Key<String> USERNAME = Context.key("io.camunda.zeebe:username");
-  Context.Key<String> APPLICATION_ID = Context.key("io.camunda.zeebe:application_id");
+  Context.Key<String> CLIENT_ID = Context.key("io.camunda.zeebe:client_id");
 
   /**
    * Applies authentication logic for the given authorization header. Must not throw exceptions, but
@@ -92,29 +90,29 @@ public sealed interface AuthenticationHandler {
         }
       }
 
-      final var applicationId =
-          token.getClaims().get(oidcAuthenticationConfiguration.getApplicationIdClaim());
+      final var clientId =
+          token.getClaims().get(oidcAuthenticationConfiguration.getClientIdClaim());
 
-      if (applicationId != null) {
-        if (applicationId instanceof String) {
+      if (clientId != null) {
+        if (clientId instanceof String) {
           return Either.right(
               Context.current()
-                  .withValue(APPLICATION_ID, applicationId.toString())
+                  .withValue(CLIENT_ID, clientId.toString())
                   .withValue(USER_CLAIMS, token.getClaims()));
         } else {
           return Either.left(
               Status.UNAUTHENTICATED.augmentDescription(
                   CONFIGURED_CLAIM_NOT_A_STRING.formatted(
-                      "application id", oidcAuthenticationConfiguration.getApplicationIdClaim())));
+                      "client id", oidcAuthenticationConfiguration.getClientIdClaim())));
         }
       }
 
       return Either.left(
           Status.UNAUTHENTICATED.augmentDescription(
-              "Expected either a username (claim: %s) or application ID (claim: %s) on the token, but no matching claim found"
+              "Expected either a username (claim: %s) or client ID (claim: %s) on the token, but no matching claim found"
                   .formatted(
                       oidcAuthenticationConfiguration.getUsernameClaim(),
-                      oidcAuthenticationConfiguration.getApplicationIdClaim())));
+                      oidcAuthenticationConfiguration.getClientIdClaim())));
     }
   }
 

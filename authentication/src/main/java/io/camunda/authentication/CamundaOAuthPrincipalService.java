@@ -45,7 +45,7 @@ public class CamundaOAuthPrincipalService {
   private final GroupServices groupServices;
   private final AuthorizationServices authorizationServices;
   private final String usernameClaim;
-  private final String applicationIdClaim;
+  private final String clientIdClaim;
 
   public CamundaOAuthPrincipalService(
       final MappingServices mappingServices,
@@ -60,8 +60,7 @@ public class CamundaOAuthPrincipalService {
     this.groupServices = groupServices;
     this.authorizationServices = authorizationServices;
     usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
-    applicationIdClaim =
-        securityConfiguration.getAuthentication().getOidc().getApplicationIdClaim();
+    clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
   }
 
   public OAuthContext loadOAuthContext(final Map<String, Object> claims)
@@ -94,19 +93,19 @@ public class CamundaOAuthPrincipalService {
             .withRoles(assignedRoles);
 
     final var username = getUsernameFromClaims(claims);
-    final var applicationId = getApplicationIdFromClaims(claims);
+    final var clientId = getClientIdFromClaims(claims);
 
-    if (username == null && applicationId == null) {
+    if (username == null && clientId == null) {
       throw new IllegalArgumentException(
-          "Neither username claim (%s) nor applicationId claim (%s) could be found in the claims. Please check your OIDC configuration."
-              .formatted(usernameClaim, applicationIdClaim));
+          "Neither username claim (%s) nor clientId claim (%s) could be found in the claims. Please check your OIDC configuration."
+              .formatted(usernameClaim, clientIdClaim));
     }
     if (username != null) {
       authContextBuilder.withUsername(getUsernameFromClaims(claims));
     }
 
-    if (applicationId != null) {
-      authContextBuilder.withApplicationId(getApplicationIdFromClaims(claims));
+    if (clientId != null) {
+      authContextBuilder.withClientId(getClientIdFromClaims(claims));
     }
 
     return new OAuthContext(mappingIds, authContextBuilder.build());
@@ -126,18 +125,17 @@ public class CamundaOAuthPrincipalService {
     }
   }
 
-  private String getApplicationIdFromClaims(final Map<String, Object> claims) {
-    final var maybeApplicationId = Optional.ofNullable(claims.get(applicationIdClaim));
+  private String getClientIdFromClaims(final Map<String, Object> claims) {
+    final var maybeClientId = Optional.ofNullable(claims.get(clientIdClaim));
 
-    if (maybeApplicationId.isEmpty()) {
+    if (maybeClientId.isEmpty()) {
       return null;
     }
 
-    if (maybeApplicationId.get() instanceof final String applicationId) {
-      return applicationId;
+    if (maybeClientId.get() instanceof final String clientId) {
+      return clientId;
     } else {
-      throw new IllegalArgumentException(
-          CLAIM_NOT_STRING.formatted("application", applicationIdClaim));
+      throw new IllegalArgumentException(CLAIM_NOT_STRING.formatted("client", clientIdClaim));
     }
   }
 }

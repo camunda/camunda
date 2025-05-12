@@ -17,7 +17,7 @@ package io.camunda.client.api.search.enums;
 
 public enum OwnerType {
   USER,
-  APPLICATION,
+  CLIENT,
   ROLE,
   GROUP,
   MAPPING,
