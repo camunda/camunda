@@ -120,14 +120,6 @@
     )
   </update>
 
-  <select id="getItems"
-    parameterType="java.lang.String"
-    resultMap="BatchOperationItemResultMap">
-    SELECT BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE, PROCESSED_DATE, ERROR_MESSAGE
-    FROM ${prefix}BATCH_OPERATION_ITEM
-    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
-  </select>
-
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}BATCH_OPERATION
@@ -170,6 +162,54 @@
       AND OPERATION_TYPE IN
       <foreach collection="filter.operationTypes" item="value" open="(" separator=", " close=")">
         #{value}
+      </foreach>
+    </if>
+    <if test="filter.state != null and !filter.state.isEmpty()">
+      AND STATE IN
+      <foreach collection="filter.state" item="value" open="(" separator=", " close=")">#{value}
+      </foreach>
+    </if>
+  </sql>
+
+  <select id="countItems" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM ${prefix}BATCH_OPERATION_ITEM
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
+  </select>
+
+  <select id="searchItems"
+    parameterType="io.camunda.db.rdbms.read.domain.BatchOperationItemDbQuery"
+    resultMap="BatchOperationItemResultMap"
+    statementType="PREPARED">
+
+    SELECT * FROM (
+    SELECT BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE, PROCESSED_DATE, ERROR_MESSAGE
+    FROM ${prefix}BATCH_OPERATION_ITEM
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
+    ) filtered
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="itemSearchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.batchOperationIds != null and !filter.batchOperationIds.isEmpty()">
+      AND BATCH_OPERATION_KEY IN
+      <foreach collection="filter.batchOperationIds" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.itemKeys != null and !filter.itemKeys.isEmpty()">
+      AND ITEM_KEYS IN
+      <foreach collection="filter.itemKeys" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
+      AND PROCESS_INSTANCE_KEY IN
+      <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}
       </foreach>
     </if>
     <if test="filter.state != null and !filter.state.isEmpty()">

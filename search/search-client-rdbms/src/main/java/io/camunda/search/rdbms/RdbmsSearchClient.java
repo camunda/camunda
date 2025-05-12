@@ -44,6 +44,7 @@ import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
@@ -308,12 +309,19 @@ public class RdbmsSearchClient implements SearchClientsProxy {
         "[RDBMS Search Client] Search for batch operation items by batchOperationId: {}",
         batchOperationId);
 
-    return rdbmsService.getBatchOperationReader().getItems(batchOperationId);
+    return rdbmsService
+        .getBatchOperationItemReader()
+        .search(
+            SearchQueryBuilders.batchOperationItemQuery(
+                b -> b.filter(f -> f.batchOperationIds(batchOperationId))))
+        .items();
   }
 
   @Override
   public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final BatchOperationItemQuery query) {
-    throw new UnsupportedOperationException("Not implemented yet");
+    LOG.debug("[RDBMS Search Client] Search for batch operation items: {}", query);
+
+    return rdbmsService.getBatchOperationItemReader().search(query);
   }
 }

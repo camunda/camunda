@@ -10,6 +10,7 @@ package io.camunda.application.commons.rdbms;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.AuthorizationReader;
+import io.camunda.db.rdbms.read.service.BatchOperationItemReader;
 import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
@@ -164,6 +165,12 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public BatchOperationItemReader batchOperationItemReader(
+      final BatchOperationMapper batchOperationMapper) {
+    return new BatchOperationItemReader(batchOperationMapper);
+  }
+
+  @Bean
   public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
     return new RdbmsWriterMetrics(meterRegistry);
   }
@@ -221,7 +228,8 @@ public class RdbmsConfiguration {
       final FormReader formReader,
       final MappingReader mappingReader,
       final BatchOperationReader batchOperationReader,
-      final SequenceFlowReader sequenceFlowReader) {
+      final SequenceFlowReader sequenceFlowReader,
+      final BatchOperationItemReader batchOperationItemReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         authorizationReader,
@@ -241,6 +249,7 @@ public class RdbmsConfiguration {
         formReader,
         mappingReader,
         batchOperationReader,
-        sequenceFlowReader);
+        sequenceFlowReader,
+        batchOperationItemReader);
   }
 }

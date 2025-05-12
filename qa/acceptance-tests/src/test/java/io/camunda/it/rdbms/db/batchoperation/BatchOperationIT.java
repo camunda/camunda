@@ -26,9 +26,12 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.filter.BatchOperationFilter;
+import io.camunda.search.filter.BatchOperationItemFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -97,10 +100,10 @@ public class BatchOperationIT {
 
     // and items are there
     final var updatedItems =
-        rdbmsService.getBatchOperationReader().getItems(batchOperation.batchOperationKey());
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationKey());
     assertThat(updatedItems).isNotNull();
-    assertThat(updatedItems).hasSize(3);
-    assertThat(updatedItems.stream().map(BatchOperationItemEntity::state))
+    assertThat(updatedItems.items()).hasSize(3);
+    assertThat(updatedItems.items().stream().map(BatchOperationItemEntity::state))
         .containsOnly(BatchOperationItemState.ACTIVE);
   }
 
@@ -145,7 +148,7 @@ public class BatchOperationIT {
 
     // and items have correct state
     final var updatedItems =
-        rdbmsService.getBatchOperationReader().getItems(batchOperation.batchOperationKey());
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationKey()).items();
     assertThat(updatedItems).isNotNull();
     assertThat(updatedItems).hasSize(2);
     final var firstItem =
@@ -207,7 +210,7 @@ public class BatchOperationIT {
 
     // and items have correct state
     final var updatedItems =
-        rdbmsService.getBatchOperationReader().getItems(batchOperation.batchOperationKey());
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationKey()).items();
     assertThat(updatedItems).isNotNull();
     assertThat(updatedItems).hasSize(2);
     final var firstItem =
@@ -469,6 +472,17 @@ public class BatchOperationIT {
                     .batchOperationIds(batchOperation.batchOperationKey())
                     .build(),
                 BatchOperationSort.of(b -> b),
+                SearchQueryPage.of(b -> b)));
+  }
+
+  private static SearchQueryResult<BatchOperationItemEntity> getBatchOperationItems(
+      final RdbmsService rdbmsService, final String batchOperationId) {
+    return rdbmsService
+        .getBatchOperationItemReader()
+        .search(
+            new BatchOperationItemQuery(
+                new BatchOperationItemFilter.Builder().batchOperationIds(batchOperationId).build(),
+                BatchOperationItemSort.of(b -> b),
                 SearchQueryPage.of(b -> b)));
   }
 }
