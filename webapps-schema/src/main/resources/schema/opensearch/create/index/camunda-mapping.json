@@ -5,7 +5,7 @@
       "id": {
         "type": "keyword"
       },
-      "mappingId": {
+      "mappingRuleId": {
         "type": "keyword"
       },
       "key": {
