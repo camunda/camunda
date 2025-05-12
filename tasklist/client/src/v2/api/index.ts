@@ -8,14 +8,17 @@
 
 import {
   endpoints as tasklistEndpoints,
+  type CompleteTaskRequestBody,
   type QueryUserTasksRequestBody,
   type UserTask,
+  type QueryVariablesByUserTaskRequestBody,
 } from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {
   endpoints as operateEndpoints,
   type QueryProcessDefinitionsRequestBody,
   type ProcessDefinition,
 } from '@vzeta/camunda-api-zod-schemas/operate';
+import {endpoints as processManagementEndpoints} from '@vzeta/camunda-api-zod-schemas/process-management';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
 
 const api = {
@@ -23,7 +26,7 @@ const api = {
     return new Request(getFullURL(tasklistEndpoints.queryUserTasks.getUrl()), {
       ...BASE_REQUEST_OPTIONS,
       method: tasklistEndpoints.queryUserTasks.method,
-      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+      body: JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
         'x-is-polling': 'true',
@@ -36,7 +39,7 @@ const api = {
       {
         ...BASE_REQUEST_OPTIONS,
         method: operateEndpoints.queryProcessDefinitions.method,
-        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        body: JSON.stringify(body),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -83,6 +86,53 @@ const api = {
       {
         ...BASE_REQUEST_OPTIONS,
         method: tasklistEndpoints.unassignTask.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+  queryVariablesByUserTask: (
+    params: Pick<UserTask, 'userTaskKey'> & QueryVariablesByUserTaskRequestBody,
+  ) => {
+    const {userTaskKey, ...body} = params;
+    return new Request(
+      getFullURL(
+        tasklistEndpoints.queryVariablesByUserTask.getUrl({userTaskKey}),
+      ),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: tasklistEndpoints.queryVariablesByUserTask.method,
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+  completeTask: (
+    params: Pick<UserTask, 'userTaskKey'> & CompleteTaskRequestBody,
+  ) => {
+    const {userTaskKey, variables, ...body} = params;
+
+    return new Request(
+      getFullURL(tasklistEndpoints.completeTask.getUrl({userTaskKey})),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: tasklistEndpoints.completeTask.method,
+        body: JSON.stringify({...body, variables}),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
+  getVariable: (variableKey: string) => {
+    return new Request(
+      getFullURL(processManagementEndpoints.getVariable.getUrl({variableKey})),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: processManagementEndpoints.getVariable.method,
         headers: {
           'Content-Type': 'application/json',
         },

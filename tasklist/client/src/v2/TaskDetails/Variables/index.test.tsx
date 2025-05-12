@@ -6,21 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'common/testing/testing-library';
+import {act, render, screen, waitFor} from 'common/testing/testing-library';
 import {Variables} from './index';
-import * as taskMocks from 'v1/mocks/task';
-import * as variableMocks from 'v1/mocks/variables';
+import * as taskMocks from 'v2/mocks/task';
+import * as variableMocks from 'v2/mocks/variables';
 import * as userMocks from 'common/mocks/current-user';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
 import {currentUser} from 'common/mocks/current-user';
-import type {Variable} from 'v1/api/types';
+import type {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
+import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
+
+const {getQueryVariablesResponseMock} = variableMocks;
 
 type VariableSearchRequestBody = {
-  variableNames?: string[];
+  page?: {limit?: number};
 };
 
 const getWrapper = () => {
@@ -36,7 +39,7 @@ const getWrapper = () => {
 };
 
 function isRequestingAllVariables(req: VariableSearchRequestBody) {
-  return req.variableNames !== undefined && req.variableNames.length == 0;
+  return req.page?.limit === 1000;
 }
 
 describe('<Variables />', () => {
@@ -62,7 +65,7 @@ describe('<Variables />', () => {
 
   it("should show an error message if variables can't be loaded", async () => {
     nodeMockServer.use(
-      http.post('/v1/tasks/:taskId/variables/search', () => {
+      http.post('/v2/user-tasks/:userTaskKey/variables/search', () => {
         return HttpResponse.json(null, {status: 404});
       }),
     );
@@ -91,10 +94,12 @@ describe('<Variables />', () => {
   it('should show existing variables for unassigned tasks', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -134,10 +139,10 @@ describe('<Variables />', () => {
   it('should show a message when the tasks has no variables', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json([]);
+            return HttpResponse.json(getQueryVariablesResponseMock([]));
           }
 
           return HttpResponse.json(
@@ -176,10 +181,12 @@ describe('<Variables />', () => {
   it('should edit variable', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -227,10 +234,12 @@ describe('<Variables />', () => {
   it('should add two variables and remove one', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -290,10 +299,12 @@ describe('<Variables />', () => {
   it('should add variable on task without variables', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -334,10 +345,12 @@ describe('<Variables />', () => {
   it('should validate an empty variable name', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -385,10 +398,12 @@ describe('<Variables />', () => {
   it('should validate an invalid variable name', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -425,7 +440,9 @@ describe('<Variables />', () => {
       '"valid_value"',
     );
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     await waitFor(() =>
       expect(
@@ -435,7 +452,9 @@ describe('<Variables />', () => {
 
     await user.clear(screen.getByLabelText(/1st variable name/i));
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     await waitFor(() =>
       expect(
@@ -445,7 +464,9 @@ describe('<Variables />', () => {
 
     await user.type(screen.getByLabelText(/1st variable name/i), 'test ');
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     expect(await screen.findByText(/name is invalid/i)).toBeInTheDocument();
   });
@@ -453,10 +474,12 @@ describe('<Variables />', () => {
   it('should validate an empty variable value', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -501,10 +524,12 @@ describe('<Variables />', () => {
   it('should validate an invalid variable value', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -556,10 +581,12 @@ describe('<Variables />', () => {
   it('should not validate valid variables', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -618,10 +645,12 @@ describe('<Variables />', () => {
   it('should handle submission', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -637,10 +666,12 @@ describe('<Variables />', () => {
         },
       ),
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -672,7 +703,9 @@ describe('<Variables />', () => {
       },
     );
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -681,13 +714,15 @@ describe('<Variables />', () => {
 
     expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(1);
-    expect(mockOnSubmit).toHaveBeenNthCalledWith(1, []);
+    expect(mockOnSubmit).toHaveBeenNthCalledWith(1, {});
 
     await user.click(await screen.findByText(/add variable/i));
     await user.type(screen.getByLabelText(/1st variable name/i), 'var');
     await user.type(screen.getByLabelText(/1st variable value/i), '1');
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -696,12 +731,9 @@ describe('<Variables />', () => {
 
     expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(2);
-    expect(mockOnSubmit).toHaveBeenNthCalledWith(2, [
-      {
-        name: 'var',
-        value: '1',
-      },
-    ]);
+    expect(mockOnSubmit).toHaveBeenNthCalledWith(2, {
+      var: 1,
+    });
 
     rerender(
       <Variables
@@ -720,7 +752,9 @@ describe('<Variables />', () => {
     await user.type(screen.getByLabelText(/1st variable name/i), 'name');
     await user.type(screen.getByLabelText(/1st variable value/i), '"Jon"');
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -729,21 +763,20 @@ describe('<Variables />', () => {
 
     expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(3);
-    expect(mockOnSubmit).toHaveBeenNthCalledWith(3, [
-      {
-        name: 'name',
-        value: '"Jon"',
-      },
-    ]);
+    expect(mockOnSubmit).toHaveBeenNthCalledWith(3, {
+      name: 'Jon',
+    });
   });
 
   it('should change variable and complete task', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -785,22 +818,21 @@ describe('<Variables />', () => {
     await user.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
-      expect(mockOnSubmit).toHaveBeenCalledWith([
-        {
-          name: 'myVar',
-          value: '"newValue"',
-        },
-      ]),
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        myVar: 'newValue',
+      }),
     );
   });
 
   it('should add new variable and complete task', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -842,30 +874,33 @@ describe('<Variables />', () => {
       '"newVariableValue"',
     );
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
     await user.click(screen.getByText(/complete task/i));
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
-      expect(mockOnSubmit).toHaveBeenCalledWith([
-        {
-          name: 'newVariableName',
-          value: '"newVariableValue"',
-        },
-      ]),
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        newVariableName: 'newVariableValue',
+      }),
     );
   });
 
   it('should hide add variable button on completed tasks', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -903,10 +938,12 @@ describe('<Variables />', () => {
   it('should disable submit button on form errors for existing variables', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -951,10 +988,12 @@ describe('<Variables />', () => {
   it('should disable submit button on form errors for new variables', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -1003,10 +1042,12 @@ describe('<Variables />', () => {
   it('should disable completion button', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -1044,10 +1085,12 @@ describe('<Variables />', () => {
   it('should hide completion button on completed tasks', async () => {
     nodeMockServer.use(
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           }
 
           return HttpResponse.json(
@@ -1093,10 +1136,12 @@ describe('<Variables />', () => {
         {once: true},
       ),
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.truncatedVariables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.truncatedVariables),
+            );
           }
           return HttpResponse.json(
             [
@@ -1109,7 +1154,7 @@ describe('<Variables />', () => {
         },
       ),
       http.get(
-        '/v1/variables/:variableId',
+        '/v2/variables/:variableKey',
         () => {
           return HttpResponse.json(variableMocks.fullVariable());
         },
@@ -1145,22 +1190,22 @@ describe('<Variables />', () => {
     await user.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
-      expect(mockOnSubmit).toHaveBeenCalledWith([
-        {
-          name: 'myVar',
-          value: '"newVariableValue"',
-        },
-      ]),
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        myVar: 'newVariableValue',
+      }),
     );
   });
 
   it('should preserve full value', async () => {
     const mockVariable: Variable = {
-      id: '1-myVar',
+      variableKey: '1-myVar',
       value: '"1112"',
-      previewValue: '"1112"',
       name: 'myVar1',
-      isValueTruncated: false,
+      isTruncated: false,
+      fullValue: '"1112"',
+      tenantId: DEFAULT_TENANT_ID,
+      scopeKey: '1-myVar',
+      processInstanceKey: '1-myVar',
     };
     const mockNewValue = '"new-value"';
     nodeMockServer.use(
@@ -1172,10 +1217,12 @@ describe('<Variables />', () => {
         {once: true},
       ),
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.truncatedVariables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.truncatedVariables),
+            );
           }
           return HttpResponse.json(
             [
@@ -1187,10 +1234,10 @@ describe('<Variables />', () => {
           );
         },
       ),
-      http.get<{variableId: string}>(
-        '/v1/variables/:variableId',
+      http.get<{variableKey: string}>(
+        '/v2/variables/:variableKey',
         ({params}) => {
-          switch (params.variableId) {
+          switch (params.variableKey) {
             case '0-myVar':
               return HttpResponse.json(variableMocks.fullVariable());
             case '1-myVar':
@@ -1247,10 +1294,12 @@ describe('<Variables />', () => {
         {once: true},
       ),
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.truncatedVariables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.truncatedVariables),
+            );
           }
           return HttpResponse.json(
             [
@@ -1270,10 +1319,12 @@ describe('<Variables />', () => {
         {once: true},
       ),
       http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (isRequestingAllVariables(await request.json())) {
-            return HttpResponse.json(variableMocks.truncatedVariables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.truncatedVariables),
+            );
           }
           return HttpResponse.json(
             [
@@ -1319,10 +1370,12 @@ describe('<Variables />', () => {
     it('should display error if name is the same with one of the existing variables', async () => {
       nodeMockServer.use(
         http.post<never, VariableSearchRequestBody>(
-          '/v1/tasks/:taskId/variables/search',
+          '/v2/user-tasks/:userTaskKey/variables/search',
           async ({request}) => {
             if (isRequestingAllVariables(await request.json())) {
-              return HttpResponse.json(variableMocks.variables);
+              return HttpResponse.json(
+                getQueryVariablesResponseMock(variableMocks.variables),
+              );
             }
             return HttpResponse.json(
               [
@@ -1366,9 +1419,11 @@ describe('<Variables />', () => {
     it('should display duplicate name error on last edited variable', async () => {
       nodeMockServer.use(
         http.post(
-          '/v1/tasks/:taskId/variables/search',
+          '/v2/user-tasks/:userTaskKey/variables/search',
           () => {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              getQueryVariablesResponseMock(variableMocks.variables),
+            );
           },
           {once: true},
         ),
@@ -1430,10 +1485,12 @@ describe('<Variables />', () => {
     it('should display error if duplicate name is used and immediately started typing on to the value field', async () => {
       nodeMockServer.use(
         http.post<never, VariableSearchRequestBody>(
-          '/v1/tasks/:taskId/variables/search',
+          '/v2/user-tasks/:userTaskKey/variables/search',
           async ({request}) => {
             if (isRequestingAllVariables(await request.json())) {
-              return HttpResponse.json(variableMocks.variables);
+              return HttpResponse.json(
+                getQueryVariablesResponseMock(variableMocks.variables),
+              );
             }
             return HttpResponse.json(
               [
@@ -1492,10 +1549,12 @@ describe('<Variables />', () => {
     it('should continue to display existing duplicate name error', async () => {
       nodeMockServer.use(
         http.post<never, VariableSearchRequestBody>(
-          '/v1/tasks/:taskId/variables/search',
+          '/v2/user-tasks/:userTaskKey/variables/search',
           async ({request}) => {
             if (isRequestingAllVariables(await request.json())) {
-              return HttpResponse.json(variableMocks.variables);
+              return HttpResponse.json(
+                getQueryVariablesResponseMock(variableMocks.variables),
+              );
             }
             return HttpResponse.json(
               [

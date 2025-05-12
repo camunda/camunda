@@ -15,7 +15,7 @@ import {match, Pattern} from 'ts-pattern';
 import {Button, Heading, type InlineLoadingProps, Layer} from '@carbon/react';
 import {Information, Add} from '@carbon/react/icons';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import type {Variable, Task} from 'v1/api/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
 import {
   ScrollableContent,
@@ -23,19 +23,27 @@ import {
   TaskDetailsRow,
 } from 'common/tasks/details/TaskDetailsLayout';
 import {Separator} from 'common/tasks/variables-editor/Separator';
-import {useAllVariables} from 'v1/api/useAllVariables.query';
+import {useQueryAllVariables} from 'v2/api/useQueryAllVariables.query';
 import {useTranslation} from 'react-i18next';
 import {FailedVariableFetchError} from 'common/tasks/details/FailedVariableFetchError';
 import {CompleteTaskButton} from 'common/tasks/details/CompleteTaskButton';
 import {createVariableFieldName} from 'common/tasks/variables-editor/createVariableFieldName';
 import {getVariableFieldName} from 'common/tasks/variables-editor/getVariableFieldName';
-import {VariableEditor} from 'v1/TaskDetails/Variables/VariableEditor';
+import {VariableEditor} from 'v2/TaskDetails/Variables/VariableEditor';
 import {IconButton} from 'common/tasks/variables-editor/IconButton';
 import {ResetForm} from 'common/tasks/variables-editor/ResetForm';
 import type {FormValues} from 'common/tasks/variables-editor/types';
 import styles from 'common/tasks/variables-editor/styles.module.scss';
 import cn from 'classnames';
-import {completionErrorMap} from 'v1/api/useCompleteTask.mutation';
+import {useFetchFullVariable} from 'v2/api/useFetchFullVariable.mutation';
+
+function tryParseJSON(value: string) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
@@ -49,10 +57,10 @@ const JSONEditorModal = lazy(async () => {
 });
 
 type Props = {
-  onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
+  onSubmit: (variables: Record<string, unknown>) => Promise<void>;
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
-  task: Task;
+  task: UserTask;
   user: CurrentUser;
 };
 
@@ -64,17 +72,15 @@ const Variables: React.FC<Props> = ({
   user,
 }) => {
   const formRef = useRef<HTMLFormElement | null>(null);
-  const {assignee, taskState} = task;
+  const {assignee, state} = task;
   const {t} = useTranslation();
-  const {
-    data,
-    isLoading,
-    fetchFullVariable,
-    variablesLoadingFullValue,
-    status,
-  } = useAllVariables(
+  const [variablesLoadingFullValue, setVariablesLoadingFullValue] = useState<
+    string[]
+  >([]);
+  const {mutateAsync: fetchFullVariable} = useFetchFullVariable();
+  const {data, isLoading, status} = useQueryAllVariables(
     {
-      taskId: task.id,
+      userTaskKey: task.userTaskKey,
     },
     {
       refetchOnWindowFocus: assignee === null,
@@ -85,10 +91,10 @@ const Variables: React.FC<Props> = ({
   const [submissionState, setSubmissionState] =
     useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const canCompleteTask =
-    user.userId === assignee && taskState === 'CREATED' && status === 'success';
+    user.userId === assignee && state === 'CREATED' && status === 'success';
   const hasEmptyNewVariable = (values: FormValues) =>
     values.newVariables?.some((variable) => variable === undefined);
-  const variables = data ?? [];
+  const variables = data?.items ?? [];
   const isJsonEditorModalOpen = editingVariable !== undefined;
 
   if (isLoading) {
@@ -100,35 +106,33 @@ const Variables: React.FC<Props> = ({
       mutators={{...arrayMutators}}
       onSubmit={async (values, form) => {
         const {dirtyFields, initialValues = []} = form.getState();
-
         const existingVariables = intersection(
           Object.keys(initialValues),
           Object.keys(dirtyFields),
-        ).map((name) => ({
-          name,
-          value: values[name],
-        }));
-        const newVariables = get(values, 'newVariables') || [];
+        ).reduce(
+          (acc, name) => ({
+            ...acc,
+            [getVariableFieldName(name)]: tryParseJSON(values[name]),
+          }),
+          {},
+        );
+        const newVariables = (get(values, 'newVariables') || []).reduce(
+          (acc, {name, value}) => ({
+            ...acc,
+            [name]: tryParseJSON(value),
+          }),
+          {},
+        );
 
         try {
           setSubmissionState('active');
-          await onSubmit([
-            ...existingVariables.map((variable) => ({
-              ...variable,
-              name: getVariableFieldName(variable.name),
-            })),
+          await onSubmit({
+            ...existingVariables,
             ...newVariables,
-          ]);
+          });
 
           setSubmissionState('finished');
         } catch (error) {
-          if (
-            error instanceof Error &&
-            error.name === completionErrorMap.taskProcessingTimeout
-          ) {
-            onSubmitFailure(error);
-            return;
-          }
           onSubmitFailure(error as Error);
           setSubmissionState('error');
         }
@@ -136,8 +140,7 @@ const Variables: React.FC<Props> = ({
       initialValues={variables.reduce(
         (values, variable) => ({
           ...values,
-          [createVariableFieldName(variable.name)]:
-            variable.value ?? variable.previewValue,
+          [createVariableFieldName(variable.name)]: variable.value,
         }),
         {},
       )}
@@ -154,7 +157,7 @@ const Variables: React.FC<Props> = ({
         <>
           <div className={styles.panelHeader}>
             <Heading>{t('variablesTitle')}</Heading>
-            {taskState !== 'COMPLETED' && (
+            {state !== 'COMPLETED' && (
               <Button
                 kind="ghost"
                 type="button"
@@ -199,7 +202,7 @@ const Variables: React.FC<Props> = ({
                         <C3EmptyState
                           heading={t('variablesNoVariablesHeading')}
                           description={
-                            taskState === 'COMPLETED'
+                            state === 'COMPLETED'
                               ? ''
                               : t('variablesClickOnAddVariablesPrompt')
                           }
@@ -237,7 +240,19 @@ const Variables: React.FC<Props> = ({
                           containerRef={formRef}
                           variables={variables}
                           readOnly={!canCompleteTask}
-                          fetchFullVariable={fetchFullVariable}
+                          fetchFullVariable={async (variableKey) => {
+                            setVariablesLoadingFullValue((variableKeys) => [
+                              ...variableKeys,
+                              variableKey,
+                            ]);
+                            await fetchFullVariable({
+                              variableKey,
+                              userTaskKey: task.userTaskKey,
+                            });
+                            setVariablesLoadingFullValue((variableKeys) =>
+                              variableKeys.filter((key) => key !== variableKey),
+                            );
+                          }}
                           variablesLoadingFullValue={variablesLoadingFullValue}
                           onEdit={(id) => setEditingVariable(id)}
                         />
@@ -266,7 +281,7 @@ const Variables: React.FC<Props> = ({
                     onError={() => {
                       setSubmissionState('inactive');
                     }}
-                    isHidden={taskState === 'COMPLETED'}
+                    isHidden={state === 'COMPLETED'}
                     isDisabled={
                       submitting ||
                       hasValidationErrors ||
