@@ -70,14 +70,14 @@ public class MappingAppliersTest {
     mappingDeletedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord);
 
     // then
-    assertThat(mappingState.get(mappingRecord.getMappingId())).isEmpty();
+    assertThat(mappingState.get(mappingRecord.getMappingRuleId())).isEmpty();
   }
 
   @Test
   public void shouldThrowExceptionWhenDeleteNotExistingMapping() {
     // given
     final String id = "id";
-    final var mappingRecord = new MappingRecord().setMappingId(id);
+    final var mappingRecord = new MappingRecord().setMappingRuleId(id);
 
     // when + then
     assertThatThrownBy(
@@ -101,18 +101,18 @@ public class MappingAppliersTest {
     mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord);
 
     // then
-    assertThat(mappingState.get(mappingRecord.getMappingId())).isNotEmpty();
-    final var updatedMapping = mappingState.get(mappingRecord.getMappingId()).get();
+    assertThat(mappingState.get(mappingRecord.getMappingRuleId())).isNotEmpty();
+    final var updatedMapping = mappingState.get(mappingRecord.getMappingRuleId()).get();
     assertThat(updatedMapping.getClaimName()).isEqualTo(newClaimName);
     assertThat(updatedMapping.getClaimValue()).isEqualTo(newClaimValue);
     assertThat(updatedMapping.getName()).isEqualTo(newName);
   }
 
   @Test
-  public void shouldThrowExceptionWhenUpdateNotExistingMappingId() {
+  public void shouldThrowExceptionWhenUpdateNotExistingMappingRuleId() {
     // given
     final var mappingRecord = createMapping();
-    mappingRecord.setMappingId(UUID.randomUUID().toString());
+    mappingRecord.setMappingRuleId(UUID.randomUUID().toString());
     // when + then
     assertThatThrownBy(
             () -> mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord))
@@ -120,18 +120,18 @@ public class MappingAppliersTest {
         .hasMessageContaining(
             String.format(
                 "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
-                mappingRecord.getMappingId()));
+                mappingRecord.getMappingRuleId()));
   }
 
   private MappingRecord createMapping() {
     final long mappingKey = 1L;
-    final String mappingId = Strings.newRandomValidIdentityId();
+    final String mappingRuleId = Strings.newRandomValidIdentityId();
     final String claimName = "foo";
     final String claimValue = "bar";
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(mappingKey)
-            .setMappingId(mappingId)
+            .setMappingRuleId(mappingRuleId)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
             .setName(claimName);
@@ -141,20 +141,21 @@ public class MappingAppliersTest {
         new RoleRecord()
             .setRoleKey(2L)
             .setRoleId(Strings.newRandomValidIdentityId())
-            .setEntityId(mappingId)
+            .setEntityId(mappingRuleId)
             .setEntityType(EntityType.MAPPING);
     roleState.create(role);
     membershipState.insertRelation(
-        EntityType.MAPPING, mappingId, RelationType.ROLE, role.getRoleId());
+        EntityType.MAPPING, mappingRuleId, RelationType.ROLE, role.getRoleId());
     // create tenant
     final long tenantKey = 3L;
     final var tenantId = "tenant";
-    membershipState.insertRelation(EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId);
+    membershipState.insertRelation(
+        EntityType.MAPPING, mappingRuleId, RelationType.TENANT, tenantId);
     final var tenant =
         new TenantRecord()
             .setTenantId(tenantId)
             .setTenantKey(tenantKey)
-            .setEntityId(mappingId)
+            .setEntityId(mappingRuleId)
             .setEntityType(EntityType.MAPPING);
     tenantState.createTenant(tenant);
     // create group
@@ -162,11 +163,11 @@ public class MappingAppliersTest {
         new GroupRecord()
             .setGroupKey(4L)
             .setGroupId(Strings.newRandomValidIdentityId())
-            .setEntityId(mappingId)
+            .setEntityId(mappingRuleId)
             .setEntityType(EntityType.MAPPING);
     groupState.create(group);
     membershipState.insertRelation(
-        EntityType.MAPPING, mappingId, RelationType.GROUP, group.getGroupId());
+        EntityType.MAPPING, mappingRuleId, RelationType.GROUP, group.getGroupId());
     // create authorization
     authorizationState.create(
         5L,
@@ -175,7 +176,7 @@ public class MappingAppliersTest {
             .setResourceId("process")
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setOwnerType(AuthorizationOwnerType.MAPPING)
-            .setOwnerId(mappingId));
+            .setOwnerId(mappingRuleId));
     return mappingRecord;
   }
 }

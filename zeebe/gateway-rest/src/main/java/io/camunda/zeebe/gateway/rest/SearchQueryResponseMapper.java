@@ -425,7 +425,7 @@ public final class SearchQueryResponseMapper {
     return new MappingResult()
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
-        .mappingId(mappingEntity.mappingId())
+        .mappingRuleId(mappingEntity.mappingRuleId())
         .name(mappingEntity.name());
   }
 

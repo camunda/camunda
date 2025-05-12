@@ -123,7 +123,7 @@ const AssignMappingsModal: FC<
         items={unassignedMappings}
         itemTitle={({ mappingId }) => mappingId}
         itemSubTitle={({ name }) => name}
-        placeholder={t("searchByMappingId")}
+        placeholder={t("searchByMappingRuleId")}
         onSelect={onSelectMapping}
       />
       {!loading && error && (

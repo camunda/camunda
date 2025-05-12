@@ -28,12 +28,12 @@ import org.junit.jupiter.api.Test;
 public class AssignMappingToTenantTest extends ClientRestTest {
 
   private static final String TENANT_ID = "tenantId";
-  private static final String MAPPING_ID = "mappingId";
+  private static final String MAPPING_ID = "mappingRuleId";
 
   @Test
   void shouldAssignMappingToTenant() {
     // when
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(MAPPING_ID).send().join();
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingRuleId(MAPPING_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -53,7 +53,7 @@ public class AssignMappingToTenantTest extends ClientRestTest {
             () ->
                 client
                     .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -72,7 +72,7 @@ public class AssignMappingToTenantTest extends ClientRestTest {
             () ->
                 client
                     .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -91,7 +91,7 @@ public class AssignMappingToTenantTest extends ClientRestTest {
             () ->
                 client
                     .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -110,7 +110,7 @@ public class AssignMappingToTenantTest extends ClientRestTest {
             () ->
                 client
                     .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

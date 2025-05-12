@@ -157,7 +157,7 @@ public final class IdentitySetupInitializeProcessor
         .map(MappingRecord.class::cast)
         .forEach(
             mapping -> {
-              final var existingById = mappingState.get(mapping.getMappingId());
+              final var existingById = mappingState.get(mapping.getMappingRuleId());
 
               existingById.ifPresentOrElse(
                   persistedMapping -> {
@@ -168,10 +168,11 @@ public final class IdentitySetupInitializeProcessor
                       stateWriter.appendFollowUpEvent(
                           mapping.getMappingKey(), MappingIntent.UPDATED, mapping);
                     }
-                    if (assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING)) {
+                    if (assignEntityToRole(role, mapping.getMappingRuleId(), EntityType.MAPPING)) {
                       createdNewEntities.set(true);
                     }
-                    if (assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING)) {
+                    if (assignEntityToTenant(
+                        tenant, mapping.getMappingRuleId(), EntityType.MAPPING)) {
                       createdNewEntities.set(true);
                     }
                   },
@@ -214,12 +215,13 @@ public final class IdentitySetupInitializeProcessor
         .forEach(
             mapping ->
                 mappingState
-                    .get(mapping.getMappingId())
+                    .get(mapping.getMappingRuleId())
                     .ifPresentOrElse(
                         persistedMapping -> {
                           assignEntityToRole(
-                              role, persistedMapping.getMappingId(), EntityType.MAPPING);
-                          assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
+                              role, persistedMapping.getMappingRuleId(), EntityType.MAPPING);
+                          assignEntityToTenant(
+                              tenant, mapping.getMappingRuleId(), EntityType.MAPPING);
                         },
                         () -> createMapping(mapping, role, tenant)));
   }
@@ -241,8 +243,8 @@ public final class IdentitySetupInitializeProcessor
   private void createMapping(
       final MappingRecord mapping, final RoleRecord role, final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
-    assignEntityToRole(role, mapping.getMappingId(), EntityType.MAPPING);
-    assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
+    assignEntityToRole(role, mapping.getMappingRuleId(), EntityType.MAPPING);
+    assignEntityToTenant(tenant, mapping.getMappingRuleId(), EntityType.MAPPING);
   }
 
   private boolean assignEntityToRole(

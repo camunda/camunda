@@ -26,18 +26,18 @@ public class MappingWriter {
         new QueueItem(
             ContextType.MAPPING,
             WriteStatementType.INSERT,
-            mapping.mappingId(),
+            mapping.mappingRuleId(),
             "io.camunda.db.rdbms.sql.MappingMapper.insert",
             mapping));
   }
 
-  public void delete(final String mappingId) {
+  public void delete(final String mappingRuleId) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.MAPPING,
             WriteStatementType.DELETE,
-            mappingId,
+            mappingRuleId,
             "io.camunda.db.rdbms.sql.MappingMapper.delete",
-            mappingId));
+            mappingRuleId));
   }
 }

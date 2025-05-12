@@ -38,8 +38,8 @@ public class BrokerMappingCreateRequest extends BrokerExecuteCommand<MappingReco
     return this;
   }
 
-  public BrokerMappingCreateRequest setMappingId(final String mappingId) {
-    requestDto.setMappingId(mappingId);
+  public BrokerMappingCreateRequest setMappingRuleId(final String mappingRuleId) {
+    requestDto.setMappingRuleId(mappingRuleId);
     return this;
   }
 

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 public record MappingFilter(
-    String mappingId,
+    String mappingRuleId,
     Long mappingKey,
     String claimName,
     List<String> claimNames,
@@ -23,14 +23,14 @@ public record MappingFilter(
     String name,
     List<Claim> claims,
     String tenantId,
-    Set<String> mappingIds,
+    Set<String> mappingRuleIds,
     String groupId,
     String roleId)
     implements FilterBase {
 
   public MappingFilter.Builder toBuilder() {
     return new Builder()
-        .mappingId(mappingId)
+        .mappingRuleId(mappingRuleId)
         .mappingKey(mappingKey)
         .claimName(claimName)
         .claimNames(claimNames)
@@ -38,14 +38,14 @@ public record MappingFilter(
         .name(name)
         .claims(claims)
         .tenantId(tenantId)
-        .mappingIds(mappingIds)
+        .mappingRuleIds(mappingRuleIds)
         .groupId(groupId)
         .roleId(roleId);
   }
 
   public static final class Builder implements ObjectBuilder<MappingFilter> {
-    private String mappingId;
-    private Set<String> mappingIds;
+    private String mappingRuleId;
+    private Set<String> mappingRuleIds;
     private Long mappingKey;
     private String claimName;
     private List<String> claimNames;
@@ -56,8 +56,8 @@ public record MappingFilter(
     private String groupId;
     private String roleId;
 
-    public Builder mappingId(final String value) {
-      mappingId = value;
+    public Builder mappingRuleId(final String value) {
+      mappingRuleId = value;
       return this;
     }
 
@@ -96,8 +96,8 @@ public record MappingFilter(
       return this;
     }
 
-    public Builder mappingIds(final Set<String> mappingIds) {
-      this.mappingIds = mappingIds;
+    public Builder mappingRuleIds(final Set<String> mappingRuleIds) {
+      this.mappingRuleIds = mappingRuleIds;
       return this;
     }
 
@@ -114,7 +114,7 @@ public record MappingFilter(
     @Override
     public MappingFilter build() {
       return new MappingFilter(
-          mappingId,
+          mappingRuleId,
           mappingKey,
           claimName,
           claimNames,
@@ -122,7 +122,7 @@ public record MappingFilter(
           name,
           claims,
           tenantId,
-          mappingIds,
+          mappingRuleIds,
           groupId,
           roleId);
     }

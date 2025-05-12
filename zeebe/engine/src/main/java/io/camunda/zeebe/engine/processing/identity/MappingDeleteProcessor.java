@@ -82,7 +82,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   @Override
   public void processNewCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
-    final String id = record.getMappingId();
+    final String id = record.getMappingRuleId();
     final var persistedMappingOptional = mappingState.get(id);
     if (persistedMappingOptional.isEmpty()) {
       final var errorMessage = MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(id);
@@ -115,7 +115,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
     mappingState
-        .get(record.getMappingId())
+        .get(record.getMappingRuleId())
         .ifPresentOrElse(
             persistedMapping -> deleteMapping(persistedMapping, command.getKey()),
             () -> {
@@ -128,11 +128,11 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   }
 
   private void deleteMapping(final PersistedMapping mapping, final long key) {
-    final var mappingId = mapping.getMappingId();
-    deleteAuthorizations(mappingId);
+    final var mappingRuleId = mapping.getMappingRuleId();
+    deleteAuthorizations(mappingRuleId);
     for (final var tenantId :
         membershipState.getMemberships(
-            EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT)) {
+            EntityType.MAPPING, mapping.getMappingRuleId(), RelationType.TENANT)) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           tenant.getTenantKey(),
@@ -140,11 +140,11 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           new TenantRecord()
               .setTenantKey(tenant.getTenantKey())
               .setTenantId(tenant.getTenantId())
-              .setEntityId(mapping.getMappingId())
+              .setEntityId(mapping.getMappingRuleId())
               .setEntityType(EntityType.MAPPING));
     }
     for (final var roleId :
-        membershipState.getMemberships(EntityType.MAPPING, mappingId, RelationType.ROLE)) {
+        membershipState.getMemberships(EntityType.MAPPING, mappingRuleId, RelationType.ROLE)) {
       final var role = roleState.getRole(roleId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           role.getRoleKey(),
@@ -152,12 +152,12 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           new RoleRecord()
               .setRoleKey(role.getRoleKey())
               .setRoleId(roleId)
-              .setEntityId(mappingId)
+              .setEntityId(mappingRuleId)
               .setEntityType(EntityType.MAPPING));
     }
     for (final var groupId :
         membershipState.getMemberships(
-            EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP)) {
+            EntityType.MAPPING, mapping.getMappingRuleId(), RelationType.GROUP)) {
       final var group = groupState.get(groupId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           group.getGroupKey(),
@@ -165,16 +165,19 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           new GroupRecord()
               .setGroupKey(group.getGroupKey())
               .setGroupId(groupId)
-              .setEntityId(mapping.getMappingId())
+              .setEntityId(mapping.getMappingRuleId())
               .setEntityType(EntityType.MAPPING));
     }
     stateWriter.appendFollowUpEvent(
-        key, MappingIntent.DELETED, new MappingRecord().setMappingId(mapping.getMappingId()));
+        key,
+        MappingIntent.DELETED,
+        new MappingRecord().setMappingRuleId(mapping.getMappingRuleId()));
   }
 
-  private void deleteAuthorizations(final String mappingId) {
+  private void deleteAuthorizations(final String mappingRuleId) {
     final var authorizationKeysForMapping =
-        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.MAPPING, mappingId);
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.MAPPING, mappingRuleId);
 
     authorizationKeysForMapping.forEach(
         authorizationKey -> {

@@ -11,4 +11,4 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MappingEntity(
-    String mappingId, Long mappingKey, String claimName, String claimValue, String name) {}
+    String mappingRuleId, Long mappingKey, String claimName, String claimValue, String name) {}
