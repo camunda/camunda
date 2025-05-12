@@ -34,7 +34,10 @@ abstract class AbstractServerConnection implements ServerConnection {
   @Override
   public void dispatch(final ProtocolRequest message) {
     final String subject = message.subject();
-    final BiConsumer<ProtocolRequest, ServerConnection> handler = handlers.get(subject);
+    BiConsumer<ProtocolRequest, ServerConnection> handler = null;
+    if (subject != null) {
+      handler = handlers.get(subject);
+    }
     if (handler != null) {
       log.trace("Received message type {} from {}", subject, message.sender());
       handler.accept(message, this);
