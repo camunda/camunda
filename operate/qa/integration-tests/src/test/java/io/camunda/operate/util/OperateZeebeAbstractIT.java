@@ -34,6 +34,7 @@ import io.camunda.operate.webapp.zeebe.operation.adapter.ClientBasedAdapter;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.AddTokenHandler;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.CancelTokenHandler;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessZeebeWrapper;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.MoveTokenHandler;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
@@ -218,9 +219,11 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     operateServicesAdapter =
         new ClientBasedAdapter(
             camundaClient,
-            new AddTokenHandler(),
-            new CancelTokenHandler(flowNodeInstanceReader),
-            new MoveTokenHandler(flowNodeInstanceReader));
+            new ModifyProcessZeebeWrapper(
+                camundaClient,
+                new AddTokenHandler(),
+                new CancelTokenHandler(flowNodeInstanceReader),
+                new MoveTokenHandler(flowNodeInstanceReader)));
     workerName = TestUtil.createRandomString(10);
 
     tester =
