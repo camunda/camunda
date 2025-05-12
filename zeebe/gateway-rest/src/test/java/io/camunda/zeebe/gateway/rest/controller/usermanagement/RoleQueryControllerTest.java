@@ -298,19 +298,19 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "mappingId": "mapping1",
+                 "mappingRuleId": "mapping1",
                  "claimName": "claim1",
                  "claimValue": "value1",
                  "name": "Mapping 1"
                },
                 {
-                  "mappingId": "mapping2",
+                  "mappingRuleId": "mapping2",
                   "claimName": "claim2",
                   "claimValue": "value2",
                   "name": "Mapping 2"
                 },
                 {
-                  "mappingId": "mapping3",
+                  "mappingRuleId": "mapping3",
                   "claimName": "claim3",
                   "claimValue": "value3",
                   "name": "Mapping 3"

@@ -498,16 +498,16 @@ public class RequestMapper {
                 request.getClaimName(),
                 request.getClaimValue(),
                 request.getName(),
-                request.getMappingId()));
+                request.getMappingRuleId()));
   }
 
   public static Either<ProblemDetail, MappingDTO> toMappingDTO(
-      final String mappingId, final MappingRuleUpdateRequest request) {
+      final String mappingRuleId, final MappingRuleUpdateRequest request) {
     return getResult(
         validateMappingRequest(request),
         () ->
             new MappingDTO(
-                request.getClaimName(), request.getClaimValue(), request.getName(), mappingId));
+                request.getClaimName(), request.getClaimValue(), request.getName(), mappingRuleId));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -641,7 +641,8 @@ public class RequestMapper {
           principal
               .getClaims()
               .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
-          authenticationBuilder.mapping(principal.getOAuthContext().mappingIds().stream().toList());
+          authenticationBuilder.mapping(
+              principal.getOAuthContext().mappingRuleIds().stream().toList());
         }
 
         authenticationBuilder.claims(claims);

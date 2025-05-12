@@ -93,7 +93,7 @@ const Mappings: FC<MappingsProps> = ({ roleId }) => {
         loading={loading}
         addEntityLabel={t("assignMapping")}
         onAddEntity={openAssignModal}
-        searchPlaceholder={t("searchByMappingId")}
+        searchPlaceholder={t("searchByMappingRuleId")}
         menuItems={[
           {
             label: t("remove"),

@@ -915,7 +915,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
       ofNullable(filter.getName()).ifPresent(builder::name);
-      ofNullable(filter.getMappingId()).ifPresent(builder::mappingId);
+      ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
     }
     return builder.build();
   }
@@ -1281,7 +1281,7 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case MAPPING_ID -> builder.mappingId();
+        case MAPPING_RULE_ID -> builder.mappingRuleId();
         case CLAIM_NAME -> builder.claimName();
         case CLAIM_VALUE -> builder.claimValue();
         case NAME -> builder.name();

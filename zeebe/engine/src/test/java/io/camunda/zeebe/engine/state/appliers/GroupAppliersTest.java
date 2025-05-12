@@ -130,10 +130,10 @@ public class GroupAppliersTest {
   void shouldAddMappingEntityToGroup() {
     // given
     final var entityKey = 1L;
-    final var mappingId = String.valueOf(entityKey);
+    final var mappingRuleId = String.valueOf(entityKey);
     final var mappingRecord =
         new MappingRecord()
-            .setMappingId(mappingId)
+            .setMappingRuleId(mappingRuleId)
             .setMappingKey(entityKey)
             .setClaimName("claimName")
             .setClaimValue("claimValue");
@@ -143,14 +143,15 @@ public class GroupAppliersTest {
     final var entityType = EntityType.MAPPING;
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityId(mappingId).setEntityType(entityType);
+    groupRecord.setEntityId(mappingRuleId).setEntityType(entityType);
 
     // when
     groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // then
     assertThat(
-            membershipState.hasRelation(EntityType.MAPPING, mappingId, RelationType.GROUP, groupId))
+            membershipState.hasRelation(
+                EntityType.MAPPING, mappingRuleId, RelationType.GROUP, groupId))
         .isTrue();
   }
 
@@ -185,10 +186,10 @@ public class GroupAppliersTest {
   @Test
   void shouldRemoveMappingEntityFromGroup() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var mappingRecord =
         new MappingRecord()
-            .setMappingId(mappingId)
+            .setMappingRuleId(mappingRuleId)
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
@@ -197,7 +198,7 @@ public class GroupAppliersTest {
     final var entityType = EntityType.MAPPING;
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
-    groupRecord.setEntityId(mappingId).setEntityType(entityType);
+    groupRecord.setEntityId(mappingRuleId).setEntityType(entityType);
     groupEntityAddedApplier.applyState(1L, groupRecord);
 
     // when
@@ -205,7 +206,8 @@ public class GroupAppliersTest {
 
     // then
     assertThat(
-            membershipState.hasRelation(EntityType.MAPPING, mappingId, RelationType.GROUP, groupId))
+            membershipState.hasRelation(
+                EntityType.MAPPING, mappingRuleId, RelationType.GROUP, groupId))
         .isFalse();
   }
 

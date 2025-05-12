@@ -19,7 +19,7 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty mappingIdProp = new StringProperty("mappingId", "");
+  private final StringProperty mappingRuleIdProp = new StringProperty("mappingRuleId", "");
 
   public PersistedMapping() {
     super(5);
@@ -27,7 +27,7 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
-        .declareProperty(mappingIdProp);
+        .declareProperty(mappingRuleIdProp);
   }
 
   public PersistedMapping copy() {
@@ -72,12 +72,12 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public String getMappingId() {
-    return BufferUtil.bufferAsString(mappingIdProp.getValue());
+  public String getMappingRuleId() {
+    return BufferUtil.bufferAsString(mappingRuleIdProp.getValue());
   }
 
-  public PersistedMapping setMappingId(final String mappingId) {
-    mappingIdProp.setValue(mappingId);
+  public PersistedMapping setMappingRuleId(final String mappingRuleId) {
+    mappingRuleIdProp.setValue(mappingRuleId);
     return this;
   }
 }

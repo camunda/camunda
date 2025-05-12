@@ -132,7 +132,7 @@ public class AuthorizationChecker {
     if (authentication.authenticatedClientId() != null) {
       ownerIds.add(authentication.authenticatedClientId());
     }
-    ownerIds.addAll(authentication.authenticatedMappingIds());
+    ownerIds.addAll(authentication.authenticatedMappingRuleIds());
     ownerIds.addAll(authentication.authenticatedGroupIds());
     ownerIds.addAll(authentication.authenticatedRoleIds());
     return ownerIds;

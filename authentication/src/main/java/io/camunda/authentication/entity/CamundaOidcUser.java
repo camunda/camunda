@@ -22,10 +22,10 @@ public class CamundaOidcUser implements OidcUser, CamundaOAuthPrincipal, Seriali
 
   public CamundaOidcUser(
       final OidcUser oidcUser,
-      final Set<String> mappingIds,
+      final Set<String> mappingRuleIds,
       final AuthenticationContext authentication) {
     user = oidcUser;
-    oAuthContext = new OAuthContext(mappingIds, authentication);
+    oAuthContext = new OAuthContext(mappingRuleIds, authentication);
   }
 
   public CamundaOidcUser(final OidcUser user, final OAuthContext oAuthContext) {
@@ -83,8 +83,8 @@ public class CamundaOidcUser implements OidcUser, CamundaOAuthPrincipal, Seriali
     return user.getName();
   }
 
-  public Set<String> getMappingIds() {
-    return oAuthContext.mappingIds();
+  public Set<String> getMappingRuleIds() {
+    return oAuthContext.mappingRuleIds();
   }
 
   @Override

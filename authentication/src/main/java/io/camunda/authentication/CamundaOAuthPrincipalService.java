@@ -67,9 +67,9 @@ public class CamundaOAuthPrincipalService {
   public OAuthContext loadOAuthContext(final Map<String, Object> claims)
       throws OAuth2AuthenticationException {
     final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
-    final Set<String> mappingIds =
-        mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
-    if (mappingIds.isEmpty()) {
+    final Set<String> mappingRuleIds =
+        mappings.stream().map(MappingEntity::mappingRuleId).collect(Collectors.toSet());
+    if (mappingRuleIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
@@ -112,7 +112,7 @@ public class CamundaOAuthPrincipalService {
       authContextBuilder.withClientId(getClientIdFromClaims(claims));
     }
 
-    return new OAuthContext(mappingIds, authContextBuilder.build());
+    return new OAuthContext(mappingRuleIds, authContextBuilder.build());
   }
 
   private String getUsernameFromClaims(final Map<String, Object> claims) {
@@ -129,17 +129,18 @@ public class CamundaOAuthPrincipalService {
     }
   }
 
-  private String getClientIdFromClaims(final Map<String, Object> claims) {
-    final var maybeClientId = Optional.ofNullable(claims.get(clientIdClaim));
+  private String getApplicationIdFromClaims(final Map<String, Object> claims) {
+    final var maybeApplicationId = Optional.ofNullable(claims.get(applicationIdClaim));
 
-    if (maybeClientId.isEmpty()) {
+    if (maybeApplicationId.isEmpty()) {
       return null;
     }
 
-    if (maybeClientId.get() instanceof final String clientId) {
-      return clientId;
+    if (maybeApplicationId.get() instanceof final String applicationId) {
+      return applicationId;
     } else {
-      throw new IllegalArgumentException(CLAIM_NOT_STRING.formatted("client", clientIdClaim));
+      throw new IllegalArgumentException(
+          CLAIM_NOT_STRING.formatted("application", applicationIdClaim));
     }
   }
 }

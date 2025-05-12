@@ -109,7 +109,7 @@ public final class AuthorizationCheckBehavior {
         request,
         EntityType.MAPPING,
         getPersistedMappings(request)
-            .map(PersistedMapping::getMappingId)
+            .map(PersistedMapping::getMappingRuleId)
             .collect(Collectors.toSet()));
   }
 
@@ -259,7 +259,7 @@ public final class AuthorizationCheckBehavior {
             mapping ->
                 getAuthorizedResourceIdentifiers(
                     EntityType.MAPPING,
-                    mapping.getMappingId(),
+                    mapping.getMappingRuleId(),
                     request.getResourceType(),
                     request.getPermissionType()))
         .forEach(authorizedResourceIds::add);
@@ -377,7 +377,8 @@ public final class AuthorizationCheckBehavior {
 
     final var tenantsOfMapping =
         getPersistedMappings(command)
-            .flatMap(mapping -> getAuthorizedTenantIds(EntityType.MAPPING, mapping.getMappingId()))
+            .flatMap(
+                mapping -> getAuthorizedTenantIds(EntityType.MAPPING, mapping.getMappingRuleId()))
             .collect(Collectors.toSet());
 
     return tenantsOfMapping.isEmpty()

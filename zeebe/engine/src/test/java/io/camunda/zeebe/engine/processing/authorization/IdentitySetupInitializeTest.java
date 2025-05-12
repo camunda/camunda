@@ -346,12 +346,12 @@ public class IdentitySetupInitializeTest {
     final var role = new RoleRecord().setRoleId(UUID.randomUUID().toString());
     final var mapping1 =
         new MappingRecord()
-            .setMappingId(UUID.randomUUID().toString())
+            .setMappingRuleId(UUID.randomUUID().toString())
             .setClaimName(UUID.randomUUID().toString())
             .setClaimValue(UUID.randomUUID().toString());
     final var mapping2 =
         new MappingRecord()
-            .setMappingId(UUID.randomUUID().toString())
+            .setMappingRuleId(UUID.randomUUID().toString())
             .setClaimName(UUID.randomUUID().toString())
             .setClaimValue(UUID.randomUUID().toString());
 
@@ -390,16 +390,16 @@ public class IdentitySetupInitializeTest {
             tuple(mapping1.getClaimName(), mapping1.getClaimValue()),
             tuple(mapping2.getClaimName(), mapping2.getClaimValue()));
     Assertions.assertThat(createdMappings)
-        .extracting(MappingRecordValue::getMappingId)
-        .containsExactly(mapping1.getMappingId(), mapping2.getMappingId());
+        .extracting(MappingRecordValue::getMappingRuleId)
+        .containsExactly(mapping1.getMappingRuleId(), mapping2.getMappingRuleId());
     Assertions.assertThat(createdMappings)
         .satisfiesExactly(
             m1 ->
                 assertThatEntityIsAssignedToRole(
-                    role.getRoleId(), m1.getMappingId(), EntityType.MAPPING),
+                    role.getRoleId(), m1.getMappingRuleId(), EntityType.MAPPING),
             m2 ->
                 assertThatEntityIsAssignedToRole(
-                    role.getRoleId(), m2.getMappingId(), EntityType.MAPPING));
+                    role.getRoleId(), m2.getMappingRuleId(), EntityType.MAPPING));
   }
 
   private static void assertUserIsNotCreated(final String username) {

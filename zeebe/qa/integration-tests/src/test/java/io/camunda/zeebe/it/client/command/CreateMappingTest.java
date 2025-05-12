@@ -27,7 +27,7 @@ public class CreateMappingTest {
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
   public static final String NAME = "Map Name";
-  public static final String ID = "mappingId";
+  public static final String ID = "mappingRuleId";
 
   @AutoClose CamundaClient client;
 
@@ -49,12 +49,12 @@ public class CreateMappingTest {
             .claimName(CLAIM_NAME)
             .claimValue(CLAIM_VALUE)
             .name(NAME)
-            .mappingId(ID)
+            .mappingRuleId(ID)
             .send()
             .join();
 
     // then
-    assertThat(response.getMappingId()).isEqualTo(ID);
+    assertThat(response.getMappingRuleId()).isEqualTo(ID);
     ZeebeAssertHelper.assertMappingCreated(
         ID,
         CLAIM_NAME,
@@ -92,7 +92,7 @@ public class CreateMappingTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId");
+        .hasMessageContaining("mappingRuleId");
   }
 
   @Test
@@ -118,7 +118,7 @@ public class CreateMappingTest {
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .mappingId(Strings.newRandomValidIdentityId())
+        .mappingRuleId(Strings.newRandomValidIdentityId())
         .send()
         .join();
 
@@ -130,7 +130,7 @@ public class CreateMappingTest {
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
-                    .mappingId(Strings.newRandomValidIdentityId())
+                    .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(RuntimeException.class)
@@ -147,7 +147,7 @@ public class CreateMappingTest {
         .claimName("c1")
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .mappingId(ID)
+        .mappingRuleId(ID)
         .send()
         .join();
 
@@ -159,7 +159,7 @@ public class CreateMappingTest {
                     .claimName("c2")
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
-                    .mappingId(ID)
+                    .mappingRuleId(ID)
                     .send()
                     .join())
         .isInstanceOf(RuntimeException.class)

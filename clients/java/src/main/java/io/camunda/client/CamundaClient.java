@@ -1584,7 +1584,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .newCreateMappingCommand()
    *  .claimName(claimName)
    *  .claimValue(claimValue)
-   *  .mappingId(mappingId)
+   *  .mappingRuleId(mappingRuleId)
    *  .name(name)
    *  .send();
    * </pre>
@@ -1960,7 +1960,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *   .newAssignMappingToTenantCommand(tenantId)
-   *   .mappingId(mappingId)
+   *   .mappingRuleId(mappingRuleId)
    *   .send();
    * </pre>
    *
@@ -2175,7 +2175,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newAssignMappingToGroupCommand(groupId)
-   *  .mappingId(mappingId)
+   *  .mappingRuleId(mappingRuleId)
    *  .send();
    * </pre>
    *
@@ -2193,7 +2193,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newUnassignMappingFromGroupCommand(groupId)
-   *  .mappingId(mappingId)
+   *  .mappingRuleId(mappingRuleId)
    *  .send();
    * </pre>
    *

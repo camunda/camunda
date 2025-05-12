@@ -26,7 +26,7 @@ public final class Authentication {
   private final List<String> authenticatedGroupIds;
   private final List<String> authenticatedRoleIds;
   private final List<String> authenticatedTenantIds;
-  private final List<String> authenticatedMappingIds;
+  private final List<String> authenticatedMappingRuleIds;
   private final Map<String, Object> claims;
 
   @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
@@ -36,14 +36,14 @@ public final class Authentication {
       final @JsonProperty("authenticated_group_ids") List<String> authenticatedGroupIds,
       final @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
       final @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
-      final @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
+      final @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingRuleIds,
       final @JsonProperty("claims") Map<String, Object> claims) {
     this.authenticatedUsername = authenticatedUsername;
     this.authenticatedClientId = authenticatedClientId;
     this.authenticatedGroupIds = authenticatedGroupIds;
     this.authenticatedRoleIds = authenticatedRoleIds;
     this.authenticatedTenantIds = authenticatedTenantIds;
-    this.authenticatedMappingIds = authenticatedMappingIds;
+    this.authenticatedMappingRuleIds = authenticatedMappingRuleIds;
     this.claims = claims;
   }
 
@@ -75,8 +75,8 @@ public final class Authentication {
     return authenticatedTenantIds;
   }
 
-  public List<String> authenticatedMappingIds() {
-    return authenticatedMappingIds;
+  public List<String> authenticatedMappingRuleIds() {
+    return authenticatedMappingRuleIds;
   }
 
   public Map<String, Object> claims() {
@@ -90,7 +90,7 @@ public final class Authentication {
         authenticatedGroupIds,
         authenticatedRoleIds,
         authenticatedTenantIds,
-        authenticatedMappingIds,
+        authenticatedMappingRuleIds,
         claims);
   }
 
@@ -108,7 +108,7 @@ public final class Authentication {
         && Objects.equals(authenticatedGroupIds, that.authenticatedGroupIds)
         && Objects.equals(authenticatedRoleIds, that.authenticatedRoleIds)
         && Objects.equals(authenticatedTenantIds, that.authenticatedTenantIds)
-        && Objects.equals(authenticatedMappingIds, that.authenticatedMappingIds)
+        && Objects.equals(authenticatedMappingRuleIds, that.authenticatedMappingRuleIds)
         && Objects.equals(claims, that.claims);
   }
 
@@ -130,8 +130,8 @@ public final class Authentication {
         + "authenticatedTenantIds="
         + authenticatedTenantIds
         + ", "
-        + "authenticatedMappingIds="
-        + authenticatedMappingIds
+        + "authenticatedMappingRuleIds="
+        + authenticatedMappingRuleIds
         + ", "
         + "claims="
         + claims

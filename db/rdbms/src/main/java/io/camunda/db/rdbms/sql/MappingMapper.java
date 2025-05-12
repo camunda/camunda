@@ -20,5 +20,5 @@ public interface MappingMapper {
 
   List<MappingEntity> search(MappingDbQuery filter);
 
-  void delete(String mappingId);
+  void delete(String mappingRuleId);
 }

@@ -107,11 +107,11 @@ public class GroupController {
   }
 
   @CamundaPutMapping(
-      path = "/{groupId}/mapping-rules/{mappingId}",
+      path = "/{groupId}/mapping-rules/{mappingRuleId}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> assignMappingToGroup(
-      @PathVariable final String groupId, @PathVariable final String mappingId) {
-    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+      @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
@@ -130,11 +130,11 @@ public class GroupController {
   }
 
   @CamundaDeleteMapping(
-      path = "/{groupId}/mapping-rules/{mappingId}",
+      path = "/{groupId}/mapping-rules/{mappingRuleId}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> unassignMappingToGroup(
-      @PathVariable final String groupId, @PathVariable final String mappingId) {
-    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+      @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
