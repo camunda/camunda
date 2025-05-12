@@ -75,6 +75,7 @@ import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.client.api.command.UpdateRoleCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
@@ -168,6 +169,7 @@ import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
+import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.client.impl.fetch.BatchOperationGetRequestImpl;
@@ -796,6 +798,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public RoleGetRequest newRoleGetRequest(final String roleId) {
     return new RoleGetRequestImpl(httpClient, roleId);
+  }
+
+  @Override
+  public UpdateRoleCommandStep1 newUpdateRoleCommand(final String roleId) {
+    return new UpdateRoleCommandImpl(httpClient, roleId, jsonMapper);
   }
 
   @Override

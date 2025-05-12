@@ -1168,7 +1168,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UpdateRoleCommandStep1 newUpdateRoleCommand();
+  UpdateRoleCommandStep1 newUpdateRoleCommand(String roleId);
 
   /**
    * Command to delete a role by role ID.

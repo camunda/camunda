@@ -9,30 +9,21 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UpdateRoleResponse;
 
-public interface UpdateRoleCommandStep1 {
+public interface UpdateRoleCommandStep1 extends FinalCommandStep<UpdateRoleResponse> {
+
   /**
-   * Set the ID to create role with.
+   * Set the name for the role to be updated.
    *
-   * @param roleId the role ID
-   * @return the builder for this command.
+   * @param name the role name
+   * @return the builder for this command
    */
-  UpdateRoleCommandStep1.UpdateRoleCommandStep2 roleId(String roleId);
+  UpdateRoleCommandStep1 name(String name);
 
-  interface UpdateRoleCommandStep2 extends FinalCommandStep<UpdateRoleResponse> {
-    /**
-     * Set the name for the role to be updated.
-     *
-     * @param name the role name
-     * @return the builder for this command
-     */
-    UpdateRoleCommandStep1.UpdateRoleCommandStep2 name(String name);
-
-    /**
-     * Set the description for the role to be updated.
-     *
-     * @param description the role description
-     * @return the builder for this command
-     */
-    UpdateRoleCommandStep1.UpdateRoleCommandStep2 description(String description);
-  }
+  /**
+   * Set the description for the role to be updated.
+   *
+   * @param description the role description
+   * @return the builder for this command
+   */
+  UpdateRoleCommandStep1 description(String description);
 }
