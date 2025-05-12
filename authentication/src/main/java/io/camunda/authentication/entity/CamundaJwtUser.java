@@ -38,6 +38,11 @@ public class CamundaJwtUser implements CamundaOAuthPrincipal, Serializable {
   }
 
   @Override
+  public String getUsername() {
+    return oauthContext.authenticationContext().username();
+  }
+
+  @Override
   public AuthenticationContext getAuthenticationContext() {
     return oauthContext.authenticationContext();
   }

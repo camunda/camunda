@@ -44,6 +44,11 @@ public class CamundaOidcUser implements OidcUser, CamundaOAuthPrincipal, Seriali
   }
 
   @Override
+  public String getUsername() {
+    return oAuthContext.authenticationContext().username();
+  }
+
+  @Override
   public AuthenticationContext getAuthenticationContext() {
     return oAuthContext.authenticationContext();
   }
