@@ -419,16 +419,16 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   private MappingQuery expandGroupFilter(final MappingQuery mappingQuery) {
-    final var mappingIds = getGroupMembers(mappingQuery.filter().groupId(), MAPPING);
+    final var mappingRuleIds = getGroupMembers(mappingQuery.filter().groupId(), MAPPING);
     return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 
   private MappingQuery expandTenantFilter(final MappingQuery mappingQuery) {
-    final var mappingIds = getTenantMembers(mappingQuery.filter().tenantId(), MAPPING);
+    final var mappingRuleIds = getTenantMembers(mappingQuery.filter().tenantId(), MAPPING);
     return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 
@@ -498,9 +498,9 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   private MappingQuery expandRoleFilter(final MappingQuery mappingQuery) {
-    final var mappingIds = getRoleMemberIds(mappingQuery.filter().roleId(), MAPPING);
+    final var mappingRuleIds = getRoleMemberIds(mappingQuery.filter().roleId(), MAPPING);
     return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 

@@ -114,13 +114,13 @@ public class TenantQueryControllerTest extends RestControllerTest {
              "name": "%s",
              "claimName": "%s",
              "claimValue": "%s",
-             "mappingId": %s
+             "mappingRuleId": %s
            },
            {
              "name": "%s",
              "claimName": "%s",
              "claimValue": "%s",
-             "mappingId": "%s"
+             "mappingRuleId": "%s"
            }
          ],
          "page": {
@@ -136,11 +136,11 @@ public class TenantQueryControllerTest extends RestControllerTest {
           MAPPING_ENTITIES.get(0).name(),
           MAPPING_ENTITIES.get(0).claimName(),
           MAPPING_ENTITIES.get(0).claimValue(),
-          MAPPING_ENTITIES.get(0).mappingId(),
+          MAPPING_ENTITIES.get(0).mappingRuleId(),
           MAPPING_ENTITIES.get(1).name(),
           MAPPING_ENTITIES.get(1).claimName(),
           MAPPING_ENTITIES.get(1).claimValue(),
-          MAPPING_ENTITIES.get(1).mappingId(),
+          MAPPING_ENTITIES.get(1).mappingRuleId(),
           MAPPING_ENTITIES.size());
 
   private static final String GROUP_RESPONSE =
@@ -350,7 +350,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort": [{"field": "mappingId", "order": "ASC"}]
+              "sort": [{"field": "mappingRuleId", "order": "ASC"}]
             }
             """)
         .exchange()

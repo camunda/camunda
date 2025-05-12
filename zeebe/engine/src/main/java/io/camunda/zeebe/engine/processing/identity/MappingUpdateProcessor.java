@@ -58,10 +58,10 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
   public void processNewCommand(final TypedRecord<MappingRecord> command) {
 
     final var record = command.getValue();
-    final var mappingId = record.getMappingId();
-    final var persistedRecord = mappingState.get(mappingId);
+    final var mappingRuleId = record.getMappingRuleId();
+    final var persistedRecord = mappingState.get(mappingRuleId);
     if (persistedRecord.isEmpty()) {
-      final var errorMessage = MAPPING_ID_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(mappingId);
+      final var errorMessage = MAPPING_ID_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(mappingRuleId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -70,7 +70,7 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
     final var authorizationRequest =
         new AuthorizationRequest(
                 command, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE)
-            .addResourceId(mappingId);
+            .addResourceId(mappingRuleId);
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
@@ -82,7 +82,7 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
     final var persistedMappingWithSameClaim =
         mappingState.get(record.getClaimName(), record.getClaimValue());
     if (persistedMappingWithSameClaim.isPresent()
-        && !persistedMappingWithSameClaim.get().getMappingId().equals(mappingId)) {
+        && !persistedMappingWithSameClaim.get().getMappingRuleId().equals(mappingRuleId)) {
       final var errorMessage =
           MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
               record.getClaimName(), record.getClaimValue());

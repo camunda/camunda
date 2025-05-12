@@ -33,21 +33,21 @@ public class UnassignMappingFromGroupTest {
   @AutoClose private CamundaClient client;
 
   private String groupId;
-  private String mappingId;
+  private String mappingRuleId;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    mappingId =
+    mappingRuleId =
         client
             .newCreateMappingCommand()
-            .mappingId(Strings.newRandomValidIdentityId())
+            .mappingRuleId(Strings.newRandomValidIdentityId())
             .name("mappingName")
             .claimName("name")
             .claimValue("value")
             .send()
             .join()
-            .getMappingId();
+            .getMappingRuleId();
 
     groupId =
         client
@@ -57,18 +57,18 @@ public class UnassignMappingFromGroupTest {
             .send()
             .join()
             .getGroupId();
-    client.newAssignMappingToGroupCommand(groupId).mappingId(mappingId).send().join();
+    client.newAssignMappingToGroupCommand(groupId).mappingRuleId(mappingRuleId).send().join();
   }
 
   @Test
   void shouldUnassignMappingFromGroup() {
     // when
-    client.newUnassignMappingFromGroupCommand(groupId).mappingId(mappingId).send().join();
+    client.newUnassignMappingFromGroupCommand(groupId).mappingRuleId(mappingRuleId).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityUnassignedFromGroup(
         groupId,
-        mappingId,
+        mappingRuleId,
         group -> {
           assertThat(group).hasEntityType(EntityType.MAPPING);
         });
@@ -84,7 +84,7 @@ public class UnassignMappingFromGroupTest {
             () ->
                 client
                     .newUnassignMappingFromGroupCommand(nonExistentGroupId)
-                    .mappingId(mappingId)
+                    .mappingRuleId(mappingRuleId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -99,7 +99,11 @@ public class UnassignMappingFromGroupTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newUnassignMappingFromGroupCommand(null).mappingId(mappingId).send().join())
+                client
+                    .newUnassignMappingFromGroupCommand(null)
+                    .mappingRuleId(mappingRuleId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -108,27 +112,41 @@ public class UnassignMappingFromGroupTest {
   void shouldRejectIfEmptyGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignMappingFromGroupCommand("").mappingId(mappingId).send().join())
+            () ->
+                client
+                    .newUnassignMappingFromGroupCommand("")
+                    .mappingRuleId(mappingRuleId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
 
   @Test
-  void shouldRejectIfMissingMappingId() {
+  void shouldRejectIfMissingMappingRuleId() {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newUnassignMappingFromGroupCommand("groupId").mappingId(null).send().join())
+                client
+                    .newUnassignMappingFromGroupCommand("groupId")
+                    .mappingRuleId(null)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be null");
+        .hasMessageContaining("mappingRuleId must not be null");
   }
 
   @Test
-  void shouldRejectIfEmptyMappingId() {
+  void shouldRejectIfEmptyMappingRuleId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignMappingFromGroupCommand("groupId").mappingId("").send().join())
+            () ->
+                client
+                    .newUnassignMappingFromGroupCommand("groupId")
+                    .mappingRuleId("")
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be empty");
+        .hasMessageContaining("mappingRuleId must not be empty");
   }
 }

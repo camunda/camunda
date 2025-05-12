@@ -19,7 +19,7 @@ public class MappingFieldSortingTransformer implements FieldSortingTransformer {
   public String apply(final String domainField) {
     return switch (domainField) {
       case "mappingKey" -> MAPPING_KEY;
-      case "mappingId" -> MAPPING_ID;
+      case "mappingRuleId" -> MAPPING_ID;
       case "claimName" -> CLAIM_NAME;
       case "claimValue" -> CLAIM_VALUE;
       case "name" -> NAME;
