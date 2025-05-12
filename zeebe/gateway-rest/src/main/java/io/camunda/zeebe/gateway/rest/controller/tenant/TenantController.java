@@ -11,10 +11,12 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
+import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
@@ -23,6 +25,8 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
@@ -52,16 +56,19 @@ public class TenantController {
   private final UserServices userServices;
   private final MappingServices mappingServices;
   private final GroupServices groupServices;
+  private final RoleServices roleServices;
 
   public TenantController(
       final TenantServices tenantServices,
       final UserServices userServices,
       final MappingServices mappingServices,
-      final GroupServices groupServices) {
+      final GroupServices groupServices,
+      final RoleServices roleServices) {
     this.tenantServices = tenantServices;
     this.userServices = userServices;
     this.mappingServices = mappingServices;
     this.groupServices = groupServices;
+    this.roleServices = roleServices;
   }
 
   @CamundaPostMapping
@@ -210,6 +217,16 @@ public class TenantController {
             groupQuery -> searchGroupsInTenant(tenantId, groupQuery));
   }
 
+  @CamundaPostMapping(path = "/{tenantId}/roles/search")
+  public ResponseEntity<RoleSearchQueryResult> searchRolesInTenant(
+      @PathVariable final String tenantId,
+      @RequestBody(required = false) final RoleSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toRoleQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            roleQuery -> searchRolesInTenant(tenantId, roleQuery));
+  }
+
   private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {
     return RequestMapper.executeServiceMethod(
         () ->
@@ -289,6 +306,20 @@ public class TenantController {
     }
   }
 
+  private ResponseEntity<RoleSearchQueryResult> searchRolesInTenant(
+      final String tenantId, final RoleQuery roleQuery) {
+    try {
+      final var composedRoleQuery = buildRoleQuery(tenantId, roleQuery);
+      final var result =
+          roleServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(composedRoleQuery);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   private MappingQuery buildMappingQuery(final String tenantId, final MappingQuery mappingQuery) {
     return mappingQuery.toBuilder()
         .filter(mappingQuery.filter().toBuilder().tenantId(tenantId).build())
@@ -304,6 +335,12 @@ public class TenantController {
   private GroupQuery buildGroupQuery(final String tenantId, final GroupQuery groupQuery) {
     return groupQuery.toBuilder()
         .filter(groupQuery.filter().toBuilder().tenantId(tenantId).build())
+        .build();
+  }
+
+  private RoleQuery buildRoleQuery(final String tenantId, final RoleQuery roleQuery) {
+    return roleQuery.toBuilder()
+        .filter(roleQuery.filter().toBuilder().tenantId(tenantId).build())
         .build();
   }
 

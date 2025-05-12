@@ -1014,6 +1014,7 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case ROLE_KEY -> builder.roleKey();
         case NAME -> builder.name();
+        case ROLE_ID -> builder.roleId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

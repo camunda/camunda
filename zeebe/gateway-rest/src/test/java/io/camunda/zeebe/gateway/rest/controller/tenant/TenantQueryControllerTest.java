@@ -15,16 +15,19 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
+import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -59,6 +62,11 @@ public class TenantQueryControllerTest extends RestControllerTest {
       List.of(
           new GroupEntity(1L, "group-id-1", "Group 1", "Description 1"),
           new GroupEntity(2L, "group-id-2", "Group 2", "Description 2"));
+
+  private static final List<RoleEntity> ROLE_ENTITIES =
+      List.of(
+          new RoleEntity(1L, "role-id-1", "Role 1", "Description 1"),
+          new RoleEntity(2L, "role-id-2", "Role 2", "Description 2"));
 
   private static final String RESPONSE =
       """
@@ -176,10 +184,48 @@ public class TenantQueryControllerTest extends RestControllerTest {
           GROUP_ENTITIES.get(1).groupId(),
           GROUP_ENTITIES.size());
 
+  private static final String ROLE_RESPONSE =
+      """
+      {
+         "items": [
+           {
+             "roleKey": %s,
+             "name": "%s",
+             "description": "%s",
+             "roleId": "%s"
+           },
+           {
+             "roleKey": %s,
+             "name": "%s",
+             "description": "%s",
+             "roleId": "%s"
+           }
+         ],
+         "page": {
+           "totalItems": %s,
+           "firstSortValues": ["f"],
+           "lastSortValues": ["v"]
+         }
+       }
+      """;
+
+  private static final String EXPECTED_ROLE_RESPONSE =
+      ROLE_RESPONSE.formatted(
+          "\"%s\"".formatted(ROLE_ENTITIES.get(0).roleKey()),
+          ROLE_ENTITIES.get(0).name(),
+          ROLE_ENTITIES.get(0).description(),
+          ROLE_ENTITIES.get(0).roleId(),
+          "\"%s\"".formatted(ROLE_ENTITIES.get(1).roleKey()),
+          ROLE_ENTITIES.get(1).name(),
+          ROLE_ENTITIES.get(1).description(),
+          ROLE_ENTITIES.get(1).roleId(),
+          ROLE_ENTITIES.size());
+
   @MockBean private TenantServices tenantServices;
   @MockBean private UserServices userServices;
   @MockBean private MappingServices mappingServices;
   @MockBean private GroupServices groupServices;
+  @MockBean private RoleServices roleServices;
 
   @BeforeEach
   void setup() {
@@ -187,6 +233,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
     when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
     when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
+    when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
   }
 
   @Test
@@ -453,6 +500,71 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_GROUP_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchTenantRolesWithSorting() {
+    // given
+    when(roleServices.search(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(ROLE_ENTITIES.size())
+                .items(ROLE_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/roles/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "roleId", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_ROLE_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchTenantRolesWithEmptyQuery() {
+    // given
+    when(roleServices.search(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleEntity>()
+                .total(ROLE_ENTITIES.size())
+                .items(ROLE_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/roles/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_ROLE_RESPONSE);
   }
 
   @ParameterizedTest
