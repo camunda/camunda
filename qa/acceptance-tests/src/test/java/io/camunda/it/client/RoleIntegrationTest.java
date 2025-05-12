@@ -350,4 +350,47 @@ public class RoleIntegrationTest {
       String resourceId,
       List<PermissionType> permissionTypes,
       String authorizationKey) {}
+
+  @Test
+  void shouldReturnNotFoundOnAssigningGroupToRoleIfRoleDoesNotExist() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignGroupToRoleCommand(Strings.newRandomValidIdentityId())
+                    .groupId("groupId")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining("a role with this ID does not exist");
+  }
+
+  @Test
+  void shouldRejectAssigningGroupToRoleIfMissingRoleId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignGroupToRoleCommand(null)
+                    .groupId("someGroupId")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("role must not be null");
+  }
+
+  @Test
+  void shouldRejectAssigningGroupToRoleIfMissingGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignGroupToRoleCommand(Strings.newRandomValidIdentityId())
+                    .groupId(null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
 }
