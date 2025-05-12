@@ -11,7 +11,7 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getMappingsByGroupId } from "src/utility/api/groups";
+import { getMappingRulesByGroupId } from "src/utility/api/groups";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/mappings/DeleteModal";
@@ -29,21 +29,21 @@ const Mappings: FC<MappingsProps> = ({ groupId }) => {
     loading,
     success,
     reload,
-  } = useApi(getMappingsByGroupId, {
+  } = useApi(getMappingRulesByGroupId, {
     groupId: groupId,
   });
 
   const isMappingsListEmpty = !mappings || mappings.items?.length === 0;
 
-  const [assignMappings, assignMappingsModal] = useEntityModal(
+  const [assignMappingRules, assignMappingsModal] = useEntityModal(
     AssignMappingsModal,
     reload,
     {
-      assignedMappings: mappings?.items || [],
+      assignedMappingRules: mappings?.items || [],
     },
   );
-  const openAssignModal = () => assignMappings({ id: groupId });
-  const [unassignMapping, unassignMappingModal] = useEntityModal(
+  const openAssignModal = () => assignMappingRules({ id: groupId });
+  const [unassignMappingRule, unassignMappingModal] = useEntityModal(
     DeleteModal,
     reload,
     {
@@ -64,10 +64,10 @@ const Mappings: FC<MappingsProps> = ({ groupId }) => {
     return (
       <>
         <C3EmptyState
-          heading={t("assignMappingsToGroup")}
+          heading={t("assignMappingRulesToGroup")}
           description={t("groupMemberAccessDisclaimer")}
           button={{
-            label: t("assignMapping"),
+            label: t("assignMappingRule"),
             onClick: openAssignModal,
           }}
           link={{
@@ -84,14 +84,14 @@ const Mappings: FC<MappingsProps> = ({ groupId }) => {
       <EntityList
         data={mappings?.items}
         headers={[
-          { header: t("mappingId"), key: "mappingId" },
+          { header: t("mappingRuleId"), key: "mappingRuleId" },
           { header: t("mappingName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
         ]}
-        sortProperty="mappingId"
+        sortProperty="mappingRuleId"
         loading={loading}
-        addEntityLabel={t("assignMapping")}
+        addEntityLabel={t("assignMappingRule")}
         onAddEntity={openAssignModal}
         searchPlaceholder={t("searchByMappingRuleId")}
         menuItems={[
@@ -99,7 +99,7 @@ const Mappings: FC<MappingsProps> = ({ groupId }) => {
             label: t("remove"),
             icon: TrashCan,
             isDangerous: true,
-            onClick: unassignMapping,
+            onClick: unassignMappingRule,
           },
         ]}
       />
