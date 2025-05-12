@@ -441,7 +441,15 @@ final class IncidentUpdateTaskTest {
           .containsEntry(
               "4",
               new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"));
-      verify(incidentNotifier, times(0)).notifyAsync(any());
+      final var incident =
+          new IncidentEntity()
+              .setKey(5L)
+              .setId("5")
+              .setFlowNodeInstanceKey(4L)
+              .setTreePath("PI_1/FNI_2/PI_3/FNI_4")
+              .setProcessInstanceKey(3L)
+              .setState(IncidentState.PENDING);
+      verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
     }
 
     @Test
@@ -466,6 +474,15 @@ final class IncidentUpdateTaskTest {
               "4",
               new DocumentUpdate(
                   "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, true), null));
+      final var incident =
+          new IncidentEntity()
+              .setKey(5L)
+              .setId("5")
+              .setFlowNodeInstanceKey(4L)
+              .setTreePath("PI_1/FNI_2/PI_3/FNI_4")
+              .setProcessInstanceKey(3L)
+              .setState(IncidentState.PENDING);
+      verify(incidentNotifier, times(1)).notifyAsync(List.of(incident));
     }
 
     @Test
