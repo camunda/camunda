@@ -56,6 +56,7 @@ improve
 - A change and the intention of how this would improve the system
 
 ### Severity and Likelihood (bugs):
+
 To help us prioritize, please also determine the severity and likelihood of the bug. To help you with this, here are the definitions for the options:
 
 Severity:
