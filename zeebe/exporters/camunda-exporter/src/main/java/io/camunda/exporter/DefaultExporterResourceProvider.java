@@ -154,18 +154,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new CaffeineCacheStatsCounter(NAMESPACE, "form", meterRegistry));
 
-    final M2mTokenManager m2mTokenManager =
-        new M2mTokenManager(
-            configuration.getNotifier(), HttpClientWrapper.newHttpClient(), objectMapper);
-    executor = Executors.newVirtualThreadPerTaskExecutor();
-    final IncidentNotifier incidentNotifier =
-        new IncidentNotifier(
-            m2mTokenManager,
-            processCache,
-            configuration.getNotifier(),
-            HttpClientWrapper.newHttpClient(),
-            executor,
-            objectMapper);
     exportHandlers =
         Set.of(
             new RoleCreateUpdateHandler(
@@ -221,9 +209,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FlowNodeInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new IncidentHandler(
-                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(),
-                processCache,
-                incidentNotifier),
+                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache),
             new SequenceFlowHandler(
                 indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
