@@ -226,7 +226,7 @@ jobs:
         shell: bash
 
       - name: Unit tests
-        run: go test .\...
+        run: go test ./...
         working-directory: .\c8run
         shell: bash
         env:
