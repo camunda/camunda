@@ -535,6 +535,60 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
+  void shouldIsSchemaReadyForUseReturnTrueWhenAllIndicesAndTemplatesAreCreated(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(index),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    // when, then
+    assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+  }
+
+  @TestTemplate
+  void shouldIsSchemaReadyForUseReturnFalseWhenARuntimeTemplatedIndexIsMissing(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final SearchEngineClient searchEngineClient = searchEngineClientFromConfig(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(index), Set.of(indexTemplate), config, objectMapper);
+
+    schemaManager.startup();
+
+    // delete the templated runtime index
+    searchEngineClient.deleteIndex(indexTemplate.getFullQualifiedName());
+
+    // when, then
+    assertThat(schemaManager.isSchemaReadyForUse()).isFalse();
+  }
+
+  @TestTemplate
+  void shouldIsSchemaReadyForUseReturnFalseWhenTemplateHasDifferentMapping(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final SearchEngineClient searchEngineClient = searchEngineClientFromConfig(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(), Set.of(indexTemplate), config, objectMapper);
+
+    schemaManager.startup();
+
+    // update the index template with a different mapping
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+
+    // when, then
+    assertThat(schemaManager.isSchemaReadyForUse()).isFalse();
+  }
+
+  @TestTemplate
   void shouldUseReplicaAndShardFromConfigIfConflictingWithValuesInJsonSchema(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {

@@ -1,0 +1,17 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "join": {
+        "type": "join",
+        "eager_global_ordinals": true,
+        "relations": {
+          "process": [
+            "task",
+            "variable"
+          ]
+        }
+      }
+    }
+  }
+}
