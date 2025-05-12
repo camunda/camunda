@@ -195,7 +195,8 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
       var validReservations = false;
       for (final var reservation : reservations.values()) {
         // TODO use clock
-        if (reservation.validUntil() > System.currentTimeMillis()) {
+        if (reservation.validUntil() >= 0
+            && reservation.validUntil() > System.currentTimeMillis()) {
           validReservations = true;
           break;
         }
