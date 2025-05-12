@@ -8,15 +8,15 @@
 package main
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/camunda/camunda/c8run/internal/overrides"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 )
 
 func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
-
 	settings := types.C8RunSettings{
 		Config:           "",
 		Detached:         false,
@@ -44,7 +44,6 @@ func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
 }
 
 func TestCamundaCmdKeystoreRequiresPassword(t *testing.T) {
-
 	settings := types.C8RunSettings{
 		Config:           "",
 		Detached:         false,
@@ -59,7 +58,6 @@ func TestCamundaCmdKeystoreRequiresPassword(t *testing.T) {
 }
 
 func TestCamundaCmdDifferentPort(t *testing.T) {
-
 	settings := types.C8RunSettings{
 		Port: 8087,
 	}
@@ -76,11 +74,9 @@ func TestCamundaCmdDifferentPort(t *testing.T) {
 		}
 	}
 	assert.Contains(t, javaOptsEnvVar, "-Dserver.port=8087")
-
 }
 
 func TestCamundaCmdUsername(t *testing.T) {
-
 	settings := types.C8RunSettings{
 		Username: "admin",
 	}
@@ -97,11 +93,9 @@ func TestCamundaCmdUsername(t *testing.T) {
 		}
 	}
 	assert.Contains(t, javaOptsEnvVar, "-Dcamunda.security.initialization.users[0].username=admin")
-
 }
 
 func TestCamundaCmdPassword(t *testing.T) {
-
 	settings := types.C8RunSettings{
 		Password: "changeme",
 	}
@@ -118,5 +112,4 @@ func TestCamundaCmdPassword(t *testing.T) {
 		}
 	}
 	assert.Contains(t, javaOptsEnvVar, "-Dcamunda.security.initialization.users[0].password=changeme")
-
 }
