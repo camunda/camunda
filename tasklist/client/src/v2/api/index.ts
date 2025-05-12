@@ -26,7 +26,7 @@ const api = {
     return new Request(getFullURL(tasklistEndpoints.queryUserTasks.getUrl()), {
       ...BASE_REQUEST_OPTIONS,
       method: tasklistEndpoints.queryUserTasks.method,
-      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+      body: JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
         'x-is-polling': 'true',
@@ -39,7 +39,7 @@ const api = {
       {
         ...BASE_REQUEST_OPTIONS,
         method: operateEndpoints.queryProcessDefinitions.method,
-        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        body: JSON.stringify(body),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -103,7 +103,7 @@ const api = {
       {
         ...BASE_REQUEST_OPTIONS,
         method: tasklistEndpoints.queryVariablesByUserTask.method,
-        body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+        body: JSON.stringify(body),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -120,10 +120,7 @@ const api = {
       {
         ...BASE_REQUEST_OPTIONS,
         method: tasklistEndpoints.completeTask.method,
-        body:
-          Object.keys(body).length > 0 || Object.keys(variables).length > 0
-            ? JSON.stringify({...body, variables})
-            : undefined,
+        body: JSON.stringify({...body, variables}),
         headers: {
           'Content-Type': 'application/json',
         },
