@@ -26,7 +26,6 @@ import io.camunda.zeebe.engine.processing.identity.GroupCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupRemoveEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupUpdateProcessor;
-import io.camunda.zeebe.engine.processing.identity.IdentitySetupInitializeProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingUpdateProcessor;
@@ -53,10 +52,6 @@ import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInter
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -65,7 +60,6 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -629,39 +623,6 @@ public class CommandDistributionIdempotencyTest {
                 MessageSubscriptionIntent.MIGRATE,
                 CommandDistributionIdempotencyTest::migrateMessageSubscription),
             MessageSubscriptionMigrateProcessor.class
-          },
-          {
-            "IdentitySetup.INITIALIZE is idempotent",
-            new Scenario(
-                ValueType.IDENTITY_SETUP,
-                IdentitySetupIntent.INITIALIZE,
-                () ->
-                    ENGINE
-                        .identitySetup()
-                        .initialize()
-                        .withRole(
-                            new RoleRecord()
-                                .setRoleKey(1L)
-                                .setRoleId(Strings.newRandomValidIdentityId()))
-                        .withUser(
-                            new UserRecord()
-                                .setUserKey(2L)
-                                .setUsername("user")
-                                .setEmail("email")
-                                .setPassword("password")
-                                .setName("name"))
-                        .withTenant(
-                            new TenantRecord()
-                                .setTenantKey(3L)
-                                .setTenantId("tenant-id")
-                                .setName("tenant-name"))
-                        .withMapping(
-                            new MappingRecord()
-                                .setMappingId("mapping-id")
-                                .setClaimName("claimName")
-                                .setClaimValue("claimValue"))
-                        .initialize()),
-            IdentitySetupInitializeProcessor.class
           }
         });
   }
