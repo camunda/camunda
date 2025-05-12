@@ -184,7 +184,7 @@
         </property>
       </activation>
       <properties>
-        <excludeCoreFeaturesTestNames>**/connect/**/*.java,**/util/**/*.java,**/entities/**/*.java,**/schema/**/*.java,**/rest/**/*.java,**/webapp/**/*.java,</excludeCoreFeaturesTestNames>
+        <excludeCoreFeaturesTestNames>**/util/**/*.java,**/entities/**/*.java,**/schema/**/*.java,**/rest/**/*.java,**/webapp/**/*.java,</excludeCoreFeaturesTestNames>
       </properties>
     </profile>
 
@@ -196,7 +196,7 @@
         </property>
       </activation>
       <properties>
-        <excludeDataLayerTestNames>**/elasticsearch/**/*.java,**/opensearch/**/*.java,**/zeebeimport/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java,</excludeDataLayerTestNames>
+        <excludeDataLayerTestNames>**/elasticsearch/**/*.java,**/opensearch/**/*.java,**/zeebeimport/**/*.java,**/connect/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java,</excludeDataLayerTestNames>
       </properties>
     </profile>
 
