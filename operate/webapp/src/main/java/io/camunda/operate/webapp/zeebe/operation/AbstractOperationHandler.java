@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import io.camunda.client.api.command.CommandWithOperationReferenceStep;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
@@ -142,18 +141,5 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       LOGGER.debug("Operation {} was sent to Zeebe", operation.getId());
     }
     recordCommandMetric(operation);
-  }
-
-  protected static <T extends CommandWithOperationReferenceStep<T>> T withOperationReference(
-      final T command, final String id) {
-    try {
-      final long operationReference = Long.parseLong(id);
-      command.operationReference(operationReference);
-    } catch (final NumberFormatException e) {
-      LOGGER.debug(
-          "The operation reference provided is not a number: {}. Ignoring propagating it to zeebe commands.",
-          id);
-    }
-    return command;
   }
 }
