@@ -12,15 +12,22 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotReservation;
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.sbe.MessageHeaderDecoder;
+import io.camunda.zeebe.snapshots.sbe.MessageHeaderEncoder;
+import io.camunda.zeebe.snapshots.sbe.ReservationReason;
+import io.camunda.zeebe.snapshots.sbe.ReservationsDecoder;
+import io.camunda.zeebe.snapshots.sbe.ReservationsEncoder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import org.agrona.BitUtil;
+import java.util.UUID;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Handles in-memory and persisted reservations for a given snapshot.
@@ -30,16 +37,10 @@ import org.agrona.LangUtil;
  */
 public class FileBasedSnapshotReservations implements AutoCloseable {
 
-  // Header format
-  // +++++++++++++++++++++++++
-  private static final int HEADER_SIZE = BitUtil.SIZE_OF_INT * 2;
-  private static final int CURRENT_VERSION = 1;
   private final Set<FileBasedSnapshotReservation> inMemory = new HashSet<>();
   private final PersistedReservationsV1 persisted;
-  private byte nextReservationId;
   private FileChannel fileChannel;
   private final ConcurrencyControl actor;
-  private int version;
 
   /**
    * @param snapshot the corresponding Snapshot
@@ -62,7 +63,7 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
       if (!fileCreated) {
         persisted.readFromFile();
       } else {
-        persisted.initializeByteBuffer();
+        persisted.writeReservations();
       }
     } catch (final IOException e) {
       LangUtil.rethrowUnchecked(e);
@@ -76,12 +77,10 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
   }
 
   // to be called inside an actor from IO bound scheduler
-  public FileBasedSnapshotReservation persistedReservation() throws IOException {
-    if (nextReservationId == Byte.MAX_VALUE) {
-      throw new IllegalStateException(
-          "Too many reservations have been created: " + nextReservationId);
-    }
-    final var reservation = FileBasedSnapshotReservation.persisted(this, nextReservationId++);
+  public FileBasedSnapshotReservation persistedReservation(
+      final UUID id, final long validUntil, final PersistedSnapshotReservation.Reason reason)
+      throws IOException {
+    final var reservation = new FileBasedSnapshotReservation(this, id, false, validUntil, reason);
     persisted.addPersistedReservation(reservation);
     return reservation;
   }
@@ -114,12 +113,8 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
     fileChannel.close();
   }
 
-  public PersistedSnapshotReservation getPersistedSnapshotReservation(final byte b) {
-    if (persisted.persistedReservations.get(HEADER_SIZE + b) == 1) {
-      return FileBasedSnapshotReservation.persisted(this, b);
-    } else {
-      throw new IllegalArgumentException("No persisted reservation found for id " + b);
-    }
+  public PersistedSnapshotReservation getPersistedSnapshotReservation(final UUID id) {
+    return persisted.reservations.get(id);
   }
 
   public String fileName(final SnapshotId snapshotId) {
@@ -127,50 +122,58 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
   }
 
   class PersistedReservationsV1 {
-    // ++++++++++++++++++++++++++
-    // |0 8 16 32 | 40 48 56 64 |
-    // | VERSION  | EMPTY       |
-    // | 256 bytes: reservations|
-    // |........................|
-    // |........................|
-    // |........................|
-    // |....................264 |
-    // +++++++++++++++++++++++++
-    // each reservation is written at position HEADER_SIZE + reservationId with the value 1
-    // to check if there is any reservation, it's enough to check if any byte is set to 1 (after the
-    // header)
-    private final ByteBuffer persistedReservations = ByteBuffer.allocate(HEADER_SIZE + 256);
+    private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    private final ReservationsEncoder reservationsEncoder = new ReservationsEncoder();
+    private final ReservationsDecoder reservationsDecoder = new ReservationsDecoder();
+    private final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(1024));
+    private final HashMap<UUID, FileBasedSnapshotReservation> reservations = new HashMap<>();
 
     // Read the persisted reservations from the file and save them into persistedReservations
     private void readFromFile() throws IOException {
-      fileChannel.read(persistedReservations, 0);
-      persistedReservations.flip();
-      version = persistedReservations.getInt();
-      if (version != CURRENT_VERSION) {
-        throw new IllegalStateException(
-            String.format(
-                "PersistedReservations contains an incompatible version: %d. Current version is %d.",
-                version, CURRENT_VERSION));
-      }
-      persistedReservations.rewind();
-      nextReservationId = (byte) (maxReservationId() + 1);
-    }
-
-    // Initialize the persistedReservations buffer if the file was not created yet.
-    private void initializeByteBuffer() throws IOException {
-      persistedReservations.putInt(CURRENT_VERSION);
-      persistedReservations.putInt(0);
-      version = CURRENT_VERSION;
-      nextReservationId = 0;
-      writeReservations();
+      fileChannel.read(buffer.byteBuffer(), 0);
+      buffer.byteBuffer().flip();
+      reservationsDecoder.wrapAndApplyHeader(buffer, 0, headerDecoder);
+      reservations.clear();
+      final var reservationsInFiles = reservationsDecoder.reservationsList();
+      reservationsInFiles
+          .iterator()
+          .forEachRemaining(
+              r -> {
+                final var reservation = r.reservation();
+                final var id = new UUID(reservation.high(), reservation.low());
+                final var validUntil = r.validUntil();
+                final var reason =
+                    switch (r.reason()) {
+                      case BACKUP -> PersistedSnapshotReservation.Reason.BACKUP;
+                      case SCALE_UP -> PersistedSnapshotReservation.Reason.SCALE_UP;
+                      default -> throw new IllegalStateException("Unknown reason " + r.reason());
+                    };
+                reservations.put(
+                    id,
+                    new FileBasedSnapshotReservation(
+                        FileBasedSnapshotReservations.this, id, false, validUntil, reason));
+              });
     }
 
     // Writes the entire persistedReservations buffer to the file.
     // considering that the size of the bytebuffer is 264 bytes, it's ok to write the entire buffer
     // The fileChannel is opened in O_DIRECT mode: flush is not needed
     public void writeReservations() throws IOException {
-      persistedReservations.rewind();
-      final var written = fileChannel.write(persistedReservations, 0);
+      reservationsEncoder.wrapAndApplyHeader(buffer, 0, headerEncoder);
+      final var writer = reservationsEncoder.reservationsListCount(reservations.size());
+      reservations.forEach(
+          (id, r) -> {
+            final var reservation = writer.next();
+            reservation
+                .reservation()
+                .high(r.reservationId().getMostSignificantBits())
+                .low(r.reservationId().getLeastSignificantBits());
+            reservation.validUntil(r.validUntil());
+            reservation.reason(ReservationReason.get(r.reason().code()));
+          });
+      buffer.byteBuffer().rewind();
+      final var written = fileChannel.write(buffer.byteBuffer(), 0);
       if (written == 0) {
         throw new IllegalStateException("Failed to persist reservations. No bytes written.");
       }
@@ -178,35 +181,26 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
 
     private void addPersistedReservation(final FileBasedSnapshotReservation reservation)
         throws IOException {
-      persistedReservations.put(HEADER_SIZE + reservation.reservationId(), (byte) 1);
+      reservations.put(reservation.reservationId(), reservation);
       writeReservations();
     }
 
     private void removePersistedReservation(final FileBasedSnapshotReservation reservation)
         throws IOException {
-      persistedReservations.put(HEADER_SIZE + reservation.reservationId(), (byte) 0);
+      reservations.remove(reservation.reservationId());
       writeReservations();
     }
 
-    /** There is no reservation if all bytes are set to zero. */
-    private boolean hasReservations() {
-      int v = 0;
-      final var array = persisted.persistedReservations.array();
-      for (int i = HEADER_SIZE; i < array.length; i++) {
-        v |= array[i];
-      }
-      return v != 0;
-    }
-
-    private int maxReservationId() {
-      int maxReservationIndex = -1;
-      final var array = persisted.persistedReservations.array();
-      for (int i = HEADER_SIZE; i < array.length; i++) {
-        if (array[i] == 1) {
-          maxReservationIndex = i - HEADER_SIZE;
+    boolean hasReservations() {
+      var validReservations = false;
+      for (final var reservation : reservations.values()) {
+        // TODO use clock
+        if (reservation.validUntil() > System.currentTimeMillis()) {
+          validReservations = true;
+          break;
         }
       }
-      return maxReservationIndex;
+      return validReservations;
     }
   }
 }

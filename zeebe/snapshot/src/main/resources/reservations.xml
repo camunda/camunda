@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+xmlns:xi="http://www.w3.org/2001/XInclude"
+package="io.camunda.zeebe.snapshots.sbe" id="11" version="1"
+semanticVersion="0.1.0" description="Zeebe Snapshot Reservation Schema" byteOrder="littleEndian">
+
+<types>
+
+  <composite name="messageHeader" description="Message identifiers and length of message root">
+    <type name="blockLength" primitiveType="uint16"/>
+    <type name="templateId" primitiveType="uint16"/>
+    <type name="schemaId" primitiveType="uint16"/>
+    <type name="version" primitiveType="uint16"/>
+  </composite>
+
+  <composite name="ReservationId" description="The UUID of a reservation">
+    <type name="high" primitiveType="int64" />
+    <type name="low" primitiveType="int64" />
+  </composite>
+  <enum name="ReservationReason" encodingType="uint8">
+    <validValue name="SCALE_UP">1</validValue>
+    <validValue name="BACKUP">2</validValue>
+  </enum>
+  <composite name="groupSizeEncoding" description="Repeating group dimensions">
+    <type name="blockLength" primitiveType="uint16"/>
+    <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup"/>
+  </composite>
+</types>
+
+<sbe:message name="Reservations" id="4">
+  <group name="reservationsList" id="10">
+    <field name="reservation" id="1" type="ReservationId"/>
+    <field name="validUntil" id="2" type="uint64" />
+    <field name="reason" id="3" type="ReservationReason" />
+  </group>
+</sbe:message>
+</sbe:messageSchema>

@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.file.Path;
+import java.util.UUID;
 
 /** Represents a snapshot, which was persisted at the {@link PersistedSnapshotStore}. */
 public interface PersistedSnapshot {
@@ -113,13 +114,14 @@ public interface PersistedSnapshot {
    *     successfully completed. The future will fail exceptionally if the snapshot does not exist
    *     or if the reservation cannot be persisted.
    */
-  ActorFuture<PersistedSnapshotReservation> reserveWithPersistence();
+  ActorFuture<PersistedSnapshotReservation> reserveWithPersistence(
+      final UUID id, final long validUntil, final PersistedSnapshotReservation.Reason reason);
 
   /**
-   * @param b the id of the reservation that was already opened
+   * @param id the id of the reservation that was already opened
    * @return a persisted reservation
    */
-  ActorFuture<PersistedSnapshotReservation> getPersistedSnapshotReservation(byte b);
+  ActorFuture<PersistedSnapshotReservation> getPersistedSnapshotReservation(UUID id);
 
   @VisibleForTesting
   boolean isReserved();

@@ -9,41 +9,19 @@ package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotReservation;
+import java.util.UUID;
 
-public final class FileBasedSnapshotReservation implements PersistedSnapshotReservation {
-
-  private static final byte IN_MEMORY_RESERVATION_ID = -1;
-
-  private final FileBasedSnapshotReservations reservations;
-  private final byte reservationId;
-
-  private FileBasedSnapshotReservation(
-      final FileBasedSnapshotReservations reservations, final byte reservationId) {
-    this.reservations = reservations;
-    this.reservationId = reservationId;
-  }
+public record FileBasedSnapshotReservation(
+    FileBasedSnapshotReservations reservations,
+    UUID reservationId,
+    boolean isInMemory,
+    long validUntil,
+    Reason reason)
+    implements PersistedSnapshotReservation {
 
   public static FileBasedSnapshotReservation inMemory(
       final FileBasedSnapshotReservations reservations) {
-    return new FileBasedSnapshotReservation(reservations, IN_MEMORY_RESERVATION_ID);
-  }
-
-  public static FileBasedSnapshotReservation persisted(
-      final FileBasedSnapshotReservations reservations, final byte reservationId) {
-    if (reservationId == IN_MEMORY_RESERVATION_ID) {
-      throw new IllegalArgumentException(
-          "reservationId cannot be equal to " + IN_MEMORY_RESERVATION_ID);
-    }
-    return new FileBasedSnapshotReservation(reservations, reservationId);
-  }
-
-  @Override
-  public byte reservationId() {
-    return reservationId;
-  }
-
-  public boolean isInMemory() {
-    return reservationId == IN_MEMORY_RESERVATION_ID;
+    return new FileBasedSnapshotReservation(reservations, UUID.randomUUID(), true, 0L, null);
   }
 
   @Override

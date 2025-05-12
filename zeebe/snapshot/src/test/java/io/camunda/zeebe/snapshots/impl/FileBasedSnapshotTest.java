@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.PersistedSnapshotReservation.Reason;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,6 +38,7 @@ public final class FileBasedSnapshotTest {
   private Path snapshotDir;
   private Path reservationsDir;
   private TestActor actor;
+  private final long validUntil = System.currentTimeMillis() + 120000L;
 
   @Before
   public void beforeEach() throws Exception {
@@ -80,7 +83,9 @@ public final class FileBasedSnapshotTest {
     final var snapshotPath = snapshotDir.resolve("snapshot");
     final Path checksumPath = snapshotDir.resolve("checksum");
     var snapshot = createSnapshot(snapshotPath, checksumPath);
-    final var reservationId = snapshot.reserveWithPersistence().join().reservationId();
+    final var id = UUID.randomUUID();
+    final var reservationId =
+        snapshot.reserveWithPersistence(id, validUntil, Reason.SCALE_UP).join().reservationId();
     assertThat(snapshot.isReserved()).isTrue();
 
     // when
@@ -102,7 +107,9 @@ public final class FileBasedSnapshotTest {
     final var snapshotPath = snapshotDir.resolve("snapshot");
     final Path checksumPath = snapshotDir.resolve("checksum");
     final var snapshot = createSnapshot(snapshotPath, checksumPath);
-    final var persistedReservation = snapshot.reserveWithPersistence().join();
+    final var id = UUID.randomUUID();
+    final var persistedReservation =
+        snapshot.reserveWithPersistence(id, validUntil, Reason.BACKUP).join();
     assertThat(snapshot.isReserved()).isTrue();
     final var inMemoryReservation = snapshot.reserve().join();
     assertThat(snapshot.isReserved()).isTrue();
@@ -123,7 +130,9 @@ public final class FileBasedSnapshotTest {
     final var snapshotPath = snapshotDir.resolve("snapshot");
     final Path checksumPath = snapshotDir.resolve("checksum");
     var snapshot = createSnapshot(snapshotPath, checksumPath);
-    final var reservationId = snapshot.reserveWithPersistence().join().reservationId();
+    final var id = UUID.randomUUID();
+    final var reservationId =
+        snapshot.reserveWithPersistence(id, validUntil, Reason.SCALE_UP).join().reservationId();
     assertThat(snapshot.isReserved()).isTrue();
 
     // when
@@ -133,7 +142,9 @@ public final class FileBasedSnapshotTest {
     assertThat(snapshot.isReserved()).isTrue();
 
     // when
-    final var newReservation = snapshot.reserveWithPersistence().join();
+    final var id2 = UUID.randomUUID();
+    final var newReservation =
+        snapshot.reserveWithPersistence(id2, validUntil, Reason.SCALE_UP).join();
     // then
     assertThat(newReservation.reservationId()).isNotEqualTo(reservationId);
 

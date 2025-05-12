@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,14 +143,15 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public ActorFuture<PersistedSnapshotReservation> reserveWithPersistence() {
+  public ActorFuture<PersistedSnapshotReservation> reserveWithPersistence(
+      final UUID id, final long validUntil, final PersistedSnapshotReservation.Reason reason) {
     final CompletableActorFuture<PersistedSnapshotReservation> snapshotLocked =
         new CompletableActorFuture<>();
     actor.run(
         () -> {
           if (!deleted) {
             try {
-              final var reservation = reservations.persistedReservation();
+              final var reservation = reservations.persistedReservation(id, validUntil, reason);
               snapshotLocked.complete(reservation);
             } catch (final IOException e) {
               snapshotLocked.completeExceptionally(e);
@@ -165,9 +167,9 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public ActorFuture<PersistedSnapshotReservation> getPersistedSnapshotReservation(final byte b) {
+  public ActorFuture<PersistedSnapshotReservation> getPersistedSnapshotReservation(final UUID id) {
     try {
-      return CompletableActorFuture.completed(reservations.getPersistedSnapshotReservation(b));
+      return CompletableActorFuture.completed(reservations.getPersistedSnapshotReservation(id));
     } catch (final Exception e) {
       return CompletableActorFuture.completedExceptionally(e);
     }
