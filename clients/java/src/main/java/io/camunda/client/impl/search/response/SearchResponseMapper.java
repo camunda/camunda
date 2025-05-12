@@ -231,7 +231,7 @@ public final class SearchResponseMapper {
 
   public static Mapping toMappingResponse(final MappingResult response) {
     return new MappingImpl(
-        response.getMappingId(),
+        response.getMappingRuleId(),
         response.getClaimName(),
         response.getClaimValue(),
         response.getName());
