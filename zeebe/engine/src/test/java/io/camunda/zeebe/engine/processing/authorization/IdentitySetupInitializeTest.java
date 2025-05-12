@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
@@ -66,42 +67,32 @@ public class IdentitySetupInitializeTest {
     final var tenant = new TenantRecord().setName(tenantName).setTenantId(tenantId);
 
     // when
-    final var initialized =
-        engine
-            .identitySetup()
-            .initialize()
-            .withRole(role)
-            .withUser(user)
-            .withTenant(tenant)
-            .initialize();
-    final var userKey = initialized.getValue().getUsers().getFirst().getUserKey();
-    final var roleKey = initialized.getValue().getDefaultRole().getRoleKey();
-    final var tenantKey = initialized.getValue().getDefaultTenant().getTenantKey();
+    engine
+        .identitySetup()
+        .initialize()
+        .withRole(role)
+        .withUser(user)
+        .withTenant(tenant)
+        .initialize();
 
     // then
-    assertThat(
-            RecordingExporter.roleRecords(RoleIntent.CREATED)
-                .withRecordKey(roleKey)
-                .getFirst()
-                .getValue())
-        .hasRoleKey(roleKey)
-        .hasRoleId(roleId);
+    Assertions.assertThat(
+            RecordingExporter.roleRecords(RoleIntent.CREATED).withRoleId(roleId).exists())
+        .isTrue();
     assertThat(
             RecordingExporter.userRecords(UserIntent.CREATED)
-                .withRecordKey(userKey)
+                .withUsername(username)
                 .getFirst()
                 .getValue())
-        .hasUserKey(userKey)
         .hasUsername(username)
         .hasName(username)
         .hasPassword(password)
         .hasEmail(mail);
     assertThat(
             RecordingExporter.tenantRecords(TenantIntent.CREATED)
-                .withTenantKey(tenantKey)
+                .withTenantId(tenantId)
                 .getFirst()
                 .getValue())
-        .hasTenantKey(tenantKey)
         .hasName(tenantName)
         .hasTenantId(tenantId);
     assertThatEntityIsAssignedToRole(roleId, username, EntityType.USER);
@@ -132,11 +123,10 @@ public class IdentitySetupInitializeTest {
         .getKey();
 
     // when
-    final var initializeRecord =
-        engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
 
     // then
-    assertUserIsNotCreated(initializeRecord.getSourceRecordPosition());
+    assertUserIsNotCreated(username);
     assertThatEntityIsAssignedToRole(roleId, username, EntityType.USER);
   }
 
@@ -154,14 +144,13 @@ public class IdentitySetupInitializeTest {
             .setName(username)
             .setPassword(password)
             .setEmail(mail);
-    final var roleKey = engine.role().newRole(roleId).create().getKey();
+    engine.role().newRole(roleId).create().getKey();
 
     // when
-    final var initializeRecord =
-        engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
 
     // then
-    assertRoleIsNotCreated(initializeRecord.getSourceRecordPosition());
+    assertRoleIsNotCreated(roleId);
     assertThatEntityIsAssignedToRole(roleId, username, EntityType.USER);
     Assertions.assertThat(
             RecordingExporter.records()
@@ -181,17 +170,16 @@ public class IdentitySetupInitializeTest {
     engine.tenant().newTenant().withTenantId(tenantId).withName(tenantName).create().getKey();
 
     // when
-    final var initializeRecord =
-        engine
-            .identitySetup()
-            .initialize()
-            .withUser(new UserRecord().setUsername(Strings.newRandomValidUsername()))
-            .withRole(new RoleRecord().setRoleId(Strings.newRandomValidIdentityId()))
-            .withTenant(tenant)
-            .initialize();
+    engine
+        .identitySetup()
+        .initialize()
+        .withUser(new UserRecord().setUsername(Strings.newRandomValidUsername()))
+        .withRole(new RoleRecord().setRoleId(Strings.newRandomValidIdentityId()))
+        .withTenant(tenant)
+        .initialize();
 
     // then
-    assertTenantIsNotCreated(initializeRecord.getSourceRecordPosition());
+    assertTenantIsNotCreated(tenantId);
   }
 
   @Test
@@ -220,12 +208,11 @@ public class IdentitySetupInitializeTest {
         .getKey();
 
     // when
-    final var initializeRecord =
-        engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
 
     // then
-    assertRoleIsNotCreated(initializeRecord.getSourceRecordPosition());
-    assertUserIsNotCreated(initializeRecord.getSourceRecordPosition());
+    assertRoleIsNotCreated(roleId);
+    assertUserIsNotCreated(username);
     assertThatEntityIsAssignedToRole(roleId, username, EntityType.USER);
   }
 
@@ -260,9 +247,9 @@ public class IdentitySetupInitializeTest {
         engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
 
     // then
-    assertRoleIsNotCreated(initializeRecord.getSourceRecordPosition());
-    assertUserIsNotCreated(initializeRecord.getSourceRecordPosition());
-    assertNoAssignmentIsCreated(initializeRecord.getSourceRecordPosition());
+    assertRoleIsNotCreated(roleId);
+    assertUserIsNotCreated(username);
+    assertNoAssignmentIsCreated(roleId, username);
   }
 
   @Test
@@ -382,46 +369,57 @@ public class IdentitySetupInitializeTest {
     }
   }
 
-  private static void assertUserIsNotCreated(final long initializePosition) {
-    Assertions.assertThat(
-            RecordingExporter.records()
-                .after(initializePosition)
-                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
-                .userRecords()
-                .withIntent(UserIntent.CREATED)
-                .toList())
-        .isEmpty();
+  private static void assertUserIsNotCreated(final String username) {
+    assertThat(
+            RecordingExporter.userRecords(UserIntent.CREATE)
+                .withUsername(username)
+                .onlyCommandRejections()
+                .limit(1)
+                .getFirst())
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to create user with username '%s', but a user with this username already exists"
+                .formatted(username));
   }
 
-  private static void assertRoleIsNotCreated(final long initializePosition) {
-    Assertions.assertThat(
-            RecordingExporter.records()
-                .after(initializePosition)
-                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
-                .roleRecords()
-                .withIntent(RoleIntent.CREATED)
-                .toList())
-        .isEmpty();
+  private static void assertRoleIsNotCreated(final String roleId) {
+    assertThat(
+            RecordingExporter.roleRecords(RoleIntent.CREATE)
+                .withRoleId(roleId)
+                .onlyCommandRejections()
+                .limit(1)
+                .getFirst())
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to create role with ID '%s', but a role with this ID already exists"
+                .formatted(roleId));
   }
 
-  private static void assertTenantIsNotCreated(final long initializePosition) {
-    Assertions.assertThat(
-            RecordingExporter.records()
-                .after(initializePosition)
-                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
-                .withIntent(TenantIntent.CREATED))
-        .isEmpty();
+  private static void assertTenantIsNotCreated(final String tenantId) {
+    assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.CREATE)
+                .withTenantId(tenantId)
+                .onlyCommandRejections()
+                .limit(1)
+                .getFirst())
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to create tenant with ID '%s', but a tenant with this ID already exists"
+                .formatted(tenantId));
   }
 
-  private static void assertNoAssignmentIsCreated(final long initializePosition) {
-    Assertions.assertThat(
-            RecordingExporter.records()
-                .after(initializePosition)
-                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
-                .roleRecords()
-                .withIntent(RoleIntent.ENTITY_ADDED)
-                .toList())
-        .isEmpty();
+  private static void assertNoAssignmentIsCreated(final String roleId, final String entityId) {
+    assertThat(
+            RecordingExporter.roleRecords(RoleIntent.ADD_ENTITY)
+                .withRoleId(roleId)
+                .withEntityId(entityId)
+                .onlyCommandRejections()
+                .limit(1)
+                .getFirst())
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add entity with ID '%s' to role with ID '%s', but the entity is already assigned to this role."
+                .formatted(entityId, roleId));
   }
 
   private void assertThatEntityIsAssignedToRole(
