@@ -8,6 +8,7 @@
 package io.camunda.security.auth;
 
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.BATCH_OPERATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.GROUP;
@@ -174,6 +175,10 @@ public final class Authorization {
 
     public Builder readDecisionInstance() {
       return permissionType(READ_DECISION_INSTANCE);
+    }
+
+    public Builder batchOperation() {
+      return resourceType(BATCH_OPERATION);
     }
 
     public Authorization build() {

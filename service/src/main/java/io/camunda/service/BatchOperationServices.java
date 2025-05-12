@@ -58,7 +58,7 @@ public final class BatchOperationServices
     return batchOperationSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(Builder::read)))
+                authentication, Authorization.of(a -> a.batchOperation().read())))
         .searchBatchOperations(query);
   }
 
@@ -73,8 +73,12 @@ public final class BatchOperationServices
 
   public BatchOperationEntity getById(final String batchOperationId) {
     final var result =
-        batchOperationSearchClient.searchBatchOperations(
-            batchOperationQuery(q -> q.filter(f -> f.batchOperationIds(batchOperationId))));
+        batchOperationSearchClient
+            .withSecurityContext(
+                securityContextProvider.provideSecurityContext(
+                    authentication, Authorization.of(a -> a.batchOperation().read())))
+            .searchBatchOperations(
+                batchOperationQuery(q -> q.filter(f -> f.batchOperationIds(batchOperationId))));
     return getSingleResultOrThrow(result, batchOperationId, "BatchOperation");
   }
 
