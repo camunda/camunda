@@ -13,13 +13,10 @@ import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
-import java.util.List;
 
 public interface BatchOperationSearchClient {
 
   SearchQueryResult<BatchOperationEntity> searchBatchOperations(BatchOperationQuery query);
-
-  List<BatchOperationItemEntity> getBatchOperationItems(String batchOperationId);
 
   SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       BatchOperationItemQuery query);

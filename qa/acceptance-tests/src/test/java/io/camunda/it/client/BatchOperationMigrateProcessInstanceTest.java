@@ -118,7 +118,11 @@ public class BatchOperationMigrateProcessInstanceTest {
               // and
               final var batchItems =
                   client
-                      .newBatchOperationItemsGetRequest(batchCreated.getBatchOperationKey())
+                      .newBatchOperationItemsSearchRequest()
+                      .filter(
+                          f ->
+                              f.batchOperationId(
+                                  Long.toString(batchCreated.getBatchOperationKey())))
                       .send()
                       .join()
                       .items();

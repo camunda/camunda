@@ -85,7 +85,6 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
-import io.camunda.client.api.fetch.BatchOperationItemsGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -188,7 +187,6 @@ import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.client.impl.fetch.BatchOperationGetRequestImpl;
-import io.camunda.client.impl.fetch.BatchOperationItemsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DecisionInstanceGetRequestImpl;
@@ -1066,12 +1064,6 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public BatchOperationSearchRequest newBatchOperationSearchRequest() {
     return new BatchOperationSearchRequestImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(
-      final Long batchOperationKey) {
-    return new BatchOperationItemsGetRequestImpl(httpClient, batchOperationKey);
   }
 
   @Override

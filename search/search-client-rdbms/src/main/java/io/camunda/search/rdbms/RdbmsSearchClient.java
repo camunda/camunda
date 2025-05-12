@@ -44,7 +44,6 @@ import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
@@ -301,20 +300,6 @@ public class RdbmsSearchClient implements SearchClientsProxy {
     LOG.debug("[RDBMS Search Client] Search for batch operations: {}", query);
 
     return rdbmsService.getBatchOperationReader().search(query);
-  }
-
-  @Override
-  public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
-    LOG.debug(
-        "[RDBMS Search Client] Search for batch operation items by batchOperationId: {}",
-        batchOperationId);
-
-    return rdbmsService
-        .getBatchOperationItemReader()
-        .search(
-            SearchQueryBuilders.batchOperationItemQuery(
-                b -> b.filter(f -> f.batchOperationIds(batchOperationId))))
-        .items();
   }
 
   @Override

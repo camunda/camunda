@@ -11,7 +11,6 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.service.BatchOperationServices;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
@@ -47,22 +46,6 @@ public class BatchOperationController {
                   batchOperationServices
                       .withAuthentication(RequestMapper.getAuthentication())
                       .getById(batchOperationId)));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
-
-  // TODO remove when secondaryDb support search for items
-  @CamundaGetMapping(path = "/{batchOperationId}/items")
-  public ResponseEntity<BatchOperationItemSearchQueryResult> getItemsById(
-      @PathVariable("batchOperationId") final String batchOperationId) {
-    try {
-      return ResponseEntity.ok()
-          .body(
-              SearchQueryResponseMapper.toBatchOperationItemSearchQueryResult(
-                  batchOperationServices
-                      .withAuthentication(RequestMapper.getAuthentication())
-                      .getItemsById(batchOperationId)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
