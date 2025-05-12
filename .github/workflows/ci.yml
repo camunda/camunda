@@ -1156,6 +1156,7 @@ jobs:
       - optimize-frontend-unit-tests
       - protobuf-checks
       - rdbms-h2-integration-tests
+      - rdbms-integration-tests
       - tasklist-docker-tests
       - tasklist-frontend-tests
       - zeebe-ci
