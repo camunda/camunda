@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -39,11 +41,16 @@ public final class IdentitySetupInitializeProcessor
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
+  private final RoleState roleState;
 
-  public IdentitySetupInitializeProcessor(final Writers writers, final KeyGenerator keyGenerator) {
+  public IdentitySetupInitializeProcessor(
+      final Writers writers,
+      final KeyGenerator keyGenerator,
+      final ProcessingState processingState) {
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     stateWriter = writers.state();
+    roleState = processingState.getRoleState();
   }
 
   @Override
@@ -52,6 +59,7 @@ public final class IdentitySetupInitializeProcessor
     final var setupRecord = command.getValue();
 
     final var defaultRole = setupRecord.getDefaultRole();
+    final var roleExists = roleState.getRole(defaultRole.getRoleId()).isPresent();
     createDefaultRole(initializationKey, defaultRole);
 
     final var defaultTenant = setupRecord.getDefaultTenant();
@@ -63,7 +71,9 @@ public final class IdentitySetupInitializeProcessor
     final var mappings = setupRecord.getMappings();
     createMappings(initializationKey, mappings, defaultRole, defaultTenant);
 
-    addAllPermissions(initializationKey, defaultRole);
+    if (!roleExists) {
+      addAllPermissions(initializationKey, defaultRole);
+    }
 
     stateWriter.appendFollowUpEvent(
         initializationKey, IdentitySetupIntent.INITIALIZED, setupRecord);

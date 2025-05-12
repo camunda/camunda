@@ -304,7 +304,12 @@ public final class EngineProcessors {
         commandDistributionBehavior);
 
     IdentitySetupProcessors.addIdentitySetupProcessors(
-        keyGenerator, typedRecordProcessors, writers, securityConfig, featureFlags);
+        keyGenerator,
+        typedRecordProcessors,
+        writers,
+        securityConfig,
+        featureFlags,
+        processingState);
 
     addResourceFetchProcessors(typedRecordProcessors, writers, processingState, authCheckBehavior);
 
