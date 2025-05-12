@@ -34,7 +34,7 @@ on:
         type: boolean
         default: false
       artifactVersionSuffix:
-        description: "Add extra suffix for release artifacts like \"-rc\" (Note: the dash should be included)"
+        description: 'Add extra suffix for release artifacts like "-rc" (Note: the dash should be included)'
         type: string
         default: ""
 
@@ -78,7 +78,7 @@ jobs:
           ref: ${{ inputs.branch }}
       - name: Create the release if needed
         env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           gh release view ${{ env.CAMUNDA_RUN_NAME }} ||
             gh release create ${{ env.CAMUNDA_RUN_NAME }} --title ${{ env.CAMUNDA_RUN_NAME }} \
@@ -88,7 +88,7 @@ jobs:
           git tag --force ${{ env.CAMUNDA_RUN_NAME }}
           git push --force origin ${{ env.CAMUNDA_RUN_NAME }}
         env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
   release:
     needs: init
@@ -104,22 +104,34 @@ jobs:
             id: ubuntu-latest
             artifactFileSuffix: linux-x86_64.tar.gz
             workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
             command: ./c8run
+            packagingCmd: ./packager
           - name: MacOS (ARM64)
             id: macos-latest
             artifactFileSuffix: darwin-aarch64.zip
             workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
             command: ./c8run
+            packagingCmd: ./packager
           - name: MacOS (AMD64)
             id: macos-13
             artifactFileSuffix: darwin-x86_64.zip
             workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
             command: ./c8run
+            packagingCmd: ./packager
           - name: Windows (AMD64)
             id: windows-latest
             artifactFileSuffix: windows-x86_64.zip
             workingDir: ./c8run
+            c8runArtifactName: c8run.exe
+            packagerArtifactName: packager.exe
             command: ./c8run.exe
+            packagingCmd: ./packager.exe
     env:
       C8RUN_NAME_ARTIFACT_WITH_MINOR_VERSION: >-
         camunda8-run-${{ inputs.camundaVersion }}${{ inputs.artifactVersionSuffix }}-${{ matrix.os.artifactFileSuffix }}
@@ -149,15 +161,19 @@ jobs:
             secret/data/common/jenkins/downloads-camunda-cloud_google_sa_key DOWNLOAD_CENTER_GCLOUD_KEY_BYTES | GCP_CREDENTIALS_NAME;
       - uses: actions/setup-go@v5
         with:
-          go-version: '>=1.23.1'
-          cache: false  # disabling since not working anyways without a cache-dependency-path specified
-      - name: Build artifact
+          go-version: ">=1.23.1"
+          cache: false # disabling since not working anyways without a cache-dependency-path specified
+      - name: Build artifact runtime distro
         working-directory: ${{ matrix.os.workingDir }}
-        run: go build
+        run: go build -o ${{ matrix.os.c8runArtifactName }} ./cmd/c8run
+
+      - name: Build artifact packaging distro
+        working-directory: ${{ matrix.os.workingDir }}
+        run: go build -o ${{ matrix.os.packagerArtifactName }} ./cmd/packager
 
       - name: Create artifact package
         working-directory: ${{ matrix.os.workingDir }}
-        run: ${{ matrix.os.command }} package
+        run: ${{ matrix.os.packagingCmd }} package
         env:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
@@ -224,7 +240,7 @@ jobs:
       - name: Set GitHub release type
         if: inputs.typePrerelease
         env:
-          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           gh release edit "${{ inputs.camundaAppsRelease }}" \
             --prerelease

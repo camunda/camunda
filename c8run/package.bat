@@ -1,3 +1,3 @@
 @echo on
-go build
-.\c8run.exe package
+go build -o packager.exe ./cmd/packager
+.\packager.exe package
