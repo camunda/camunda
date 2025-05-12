@@ -88,7 +88,10 @@ class DecisionInstanceServiceTest {
     verify(client)
         .searchDecisionInstances(
             SearchQueryBuilders.decisionInstanceSearchQuery(
-                q -> q.filter(f -> f.decisionInstanceIds(decisionInstanceId))));
+                q ->
+                    q.filter(f -> f.decisionInstanceIds(decisionInstanceId))
+                        .resultConfig(
+                            c -> c.includeEvaluatedInputs(true).includeEvaluatedOutputs(true))));
   }
 
   @Test
