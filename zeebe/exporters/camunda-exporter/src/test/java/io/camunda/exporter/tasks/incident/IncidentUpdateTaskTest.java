@@ -146,14 +146,17 @@ final class IncidentUpdateTaskTest {
     }
 
     @Override
-    public CompletionStage<Integer> bulkUpdate(final IncidentBulkUpdate update) {
+    public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update) {
       updated = update;
-      return bulkUpdate != null
-          ? bulkUpdate
-          : CompletableFuture.completedFuture(
-              update.incidentRequests().size()
-                  + update.listViewRequests().size()
-                  + update.flowNodeInstanceRequests().size());
+      final List<String> aggregatedIds =
+          new ArrayList<>() {
+            {
+              addAll(update.incidentRequests().keySet());
+              addAll(update.listViewRequests().keySet());
+              addAll(update.flowNodeInstanceRequests().keySet());
+            }
+          };
+      return bulkUpdate != null ? bulkUpdate : CompletableFuture.completedFuture(aggregatedIds);
     }
 
     @Override

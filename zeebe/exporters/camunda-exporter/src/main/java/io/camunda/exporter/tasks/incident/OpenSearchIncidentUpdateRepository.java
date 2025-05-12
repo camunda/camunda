@@ -40,6 +40,7 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.opensearch.client.opensearch.indices.AnalyzeRequest;
@@ -199,7 +200,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Integer> bulkUpdate(final IncidentBulkUpdate bulk) {
+  public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate bulk) {
     final var updates = bulk.stream().map(this::createUpdateOperation).toList();
     final var request =
         new BulkRequest.Builder()
@@ -217,7 +218,11 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
                   return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
                 }
 
-                return CompletableFuture.completedFuture(r.items().size());
+                return CompletableFuture.completedFuture(
+                    r.items().stream()
+                        .filter(f -> f.result() != null && f.result().equalsIgnoreCase("updated"))
+                        .map(BulkResponseItem::id)
+                        .toList());
               },
               executor);
     } catch (final IOException e) {

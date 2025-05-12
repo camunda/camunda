@@ -97,7 +97,7 @@ public interface IncidentUpdateRepository extends AutoCloseable {
    * @param update the bulk update to execute
    * @return the number of documents updated
    */
-  CompletionStage<Integer> bulkUpdate(final IncidentBulkUpdate update);
+  CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update);
 
   /**
    * Returns the tree path as tokenized by an analyze request to the underlying document store.
@@ -210,8 +210,8 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletionStage<Integer> bulkUpdate(final IncidentBulkUpdate update) {
-      return CompletableFuture.completedFuture(0);
+    public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate update) {
+      return CompletableFuture.completedFuture(List.of());
     }
 
     @Override

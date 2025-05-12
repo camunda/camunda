@@ -17,6 +17,7 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
@@ -183,7 +184,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   }
 
   @Override
-  public CompletionStage<Integer> bulkUpdate(final IncidentBulkUpdate bulk) {
+  public CompletionStage<List<String>> bulkUpdate(final IncidentBulkUpdate bulk) {
     final var updates = bulk.stream().map(this::createUpdateOperation).toList();
     final var request =
         new BulkRequest.Builder()
@@ -200,7 +201,11 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
                 return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
               }
 
-              return CompletableFuture.completedFuture(r.items().size());
+              return CompletableFuture.completedFuture(
+                  r.items().stream()
+                      .filter(f -> f.result() != null && f.result().equalsIgnoreCase("updated"))
+                      .map(BulkResponseItem::id)
+                      .toList());
             },
             executor);
   }
