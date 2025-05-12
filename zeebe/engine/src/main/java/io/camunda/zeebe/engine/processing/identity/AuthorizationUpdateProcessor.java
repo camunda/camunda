@@ -61,6 +61,7 @@ public class AuthorizationUpdateProcessor
                     command.getValue().getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to update authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
+        .flatMap(permissionsBehavior::mappingExists)
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
@@ -72,7 +73,11 @@ public class AuthorizationUpdateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
-        .authorizationExists(command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE)
+        .mappingExists(command.getValue())
+        .flatMap(
+            s ->
+                permissionsBehavior.authorizationExists(
+                    s, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE))
         .ifRightOrLeft(
             ignored ->
                 stateWriter.appendFollowUpEvent(

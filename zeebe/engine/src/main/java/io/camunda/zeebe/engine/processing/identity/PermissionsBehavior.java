@@ -11,9 +11,11 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -28,13 +30,17 @@ public class PermissionsBehavior {
       "Expected to update authorization with key %s, but an authorization with this key does not exist";
   public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION =
       "Expected to delete authorization with key %s, but an authorization with this key does not exist";
+  public static final String MAPPING_DOES_NOT_EXIST_ERROR_MESSAGE =
+      "Expected to create or update authorization with ownerId '%s', but a mapping with this ID does not exist.";
 
   private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final MappingState mappingState;
 
   public PermissionsBehavior(
       final ProcessingState processingState, final AuthorizationCheckBehavior authCheckBehavior) {
     authorizationState = processingState.getAuthorizationState();
+    mappingState = processingState.getMappingState();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -97,5 +103,20 @@ public class PermissionsBehavior {
             RejectionType.INVALID_ARGUMENT,
             rejectionMessage.formatted(
                 permissionTypes, resourceType, resourceType.getSupportedPermissionTypes())));
+  }
+
+  public Either<Rejection, AuthorizationRecord> mappingExists(final AuthorizationRecord record) {
+    if (record.getOwnerType() != AuthorizationOwnerType.MAPPING) {
+      return Either.right(record);
+    }
+
+    if (mappingState.get(record.getOwnerId()).isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              MAPPING_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
+    }
+
+    return Either.right(record);
   }
 }

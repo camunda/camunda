@@ -163,6 +163,33 @@ public class CreateAuthorizationMultipartitionTest {
             tuple(ValueType.AUTHORIZATION, AuthorizationIntent.CREATE));
   }
 
+  @Test
+  public void shouldRejectAuthorizationWithNonexistentMappingInMultiPartitionSetup() {
+    // given
+    final var nonexistentMappingId = "nonexistent-mapping-id";
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(nonexistentMappingId)
+            .withOwnerType(AuthorizationOwnerType.MAPPING)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .expectRejection()
+            .create();
+
+    // then
+    assertThat(rejection.getRejectionType())
+        .isEqualTo(io.camunda.zeebe.protocol.record.RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to create or update authorization with ownerId '%s', but a mapping with this ID does not exist."
+                .formatted(nonexistentMappingId));
+  }
+
   private void interceptUserCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
     engine.interceptInterPartitionCommands(
