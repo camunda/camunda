@@ -47,7 +47,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     }
   }
 
-  private long completedAt;
+  private volatile long completedAt;
   private V value;
   private String failure;
   private Throwable failureCause;

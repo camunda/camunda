@@ -9,12 +9,13 @@ package io.camunda.zeebe.scheduler.clock;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** For testcases */
 public final class ControlledActorClock implements ActorClock {
-  private volatile long currentTime;
-  private volatile long currentOffset;
-  private volatile long updatedTime;
+  private final AtomicLong currentTime = new AtomicLong();
+  private final AtomicLong currentOffset = new AtomicLong();
+  private final AtomicLong updatedTime = new AtomicLong();
 
   public ControlledActorClock() {
     reset();
@@ -26,16 +27,16 @@ public final class ControlledActorClock implements ActorClock {
 
   public void addTime(final Duration durationToAdd) {
     if (usesPointInTime()) {
-      currentTime += durationToAdd.toMillis();
+      currentTime.addAndGet(durationToAdd.toMillis());
     } else {
-      currentOffset += durationToAdd.toMillis();
+      currentOffset.addAndGet(durationToAdd.toMillis());
     }
   }
 
   public void reset() {
-    currentTime = -1;
-    currentOffset = 0;
-    updatedTime = System.currentTimeMillis();
+    currentTime.set(-1);
+    currentOffset.set(0);
+    updatedTime.set(System.currentTimeMillis());
   }
 
   public Instant getCurrentTime() {
@@ -43,30 +44,30 @@ public final class ControlledActorClock implements ActorClock {
   }
 
   public void setCurrentTime(final long currentTime) {
-    this.currentTime = currentTime;
+    this.currentTime.set(currentTime);
   }
 
   public void setCurrentTime(final Instant currentTime) {
-    this.currentTime = currentTime.toEpochMilli();
+    this.currentTime.set(currentTime.toEpochMilli());
   }
 
   private boolean usesPointInTime() {
-    return currentTime > 0;
+    return currentTime.get() > 0;
   }
 
   @Override
   public boolean update() {
     if (usesPointInTime()) {
-      updatedTime = currentTime;
+      updatedTime.set(currentTime.get());
     } else {
-      updatedTime = System.currentTimeMillis() + currentOffset;
+      updatedTime.set(System.currentTimeMillis() + currentOffset.get());
     }
     return true;
   }
 
   @Override
   public long getTimeMillis() {
-    return updatedTime;
+    return updatedTime.get();
   }
 
   @Override

@@ -16,9 +16,9 @@ public final class StampedTimerSubscription implements TimerSubscription {
   private final long deadline;
   private volatile boolean isDone = false;
   private volatile boolean isCanceled = false;
-  private long timerId = -1L;
+  private volatile long timerId = -1L;
   private ActorThread thread;
-  private long timerExpiredAt;
+  private volatile long timerExpiredAt;
 
   public StampedTimerSubscription(final ActorJob job, final long timestamp) {
     this.job = job;
