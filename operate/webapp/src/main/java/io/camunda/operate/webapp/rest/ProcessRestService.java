@@ -27,7 +27,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Processes")
@@ -76,7 +75,6 @@ public class ProcessRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Delete process definition and dependant resources")
   @DeleteMapping(path = "/{id}")
-  @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity deleteProcessDefinition(
       @ValidLongId @PathVariable("id") final String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
