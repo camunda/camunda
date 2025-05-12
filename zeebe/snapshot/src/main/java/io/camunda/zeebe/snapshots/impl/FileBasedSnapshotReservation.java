@@ -10,7 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotReservation;
 
-public class FileBasedSnapshotReservation implements PersistedSnapshotReservation {
+public final class FileBasedSnapshotReservation implements PersistedSnapshotReservation {
 
   private static final byte IN_MEMORY_RESERVATION_ID = -1;
 
