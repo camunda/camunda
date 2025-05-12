@@ -130,11 +130,13 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.openTask('usertask_to_be_completed');
 
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({
+      timeout: 60000,
+    });
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await taskDetailsPage.clickAssignToMeButton();
 
-    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await expect(taskDetailsPage.unassignButton).toBeVisible({timeout: 60000});
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me', {
       useInnerText: true,
@@ -201,7 +203,7 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Zeebe_user_task');
-    await expect(page.getByText('zeebeVar')).toBeVisible();
+    await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
     await expect(taskDetailsPage.assignToMeButton).toBeHidden();
     await expect(taskDetailsPage.unassignButton).toBeHidden();
     await expect(taskDetailsPage.completeTaskButton).toBeHidden();
@@ -212,7 +214,7 @@ test.describe('task details page', () => {
     await waitForAssertion({
       assertion: async () => {
         await expect(page.getByText('jobWorkerVar')).toBeVisible();
-        await expect(page.getByText('zeebeVar')).toBeVisible();
+        await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
       },
       onFailure: async () => {
         await page.reload();

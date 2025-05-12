@@ -77,10 +77,16 @@ const test = base.extend<PlaywrightFixtures>({
   },
   resetData: async ({baseURL}, use) => {
     await use(async () => {
-      await fetch(`${baseURL}../v1/external/devUtil/recreateData`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `${baseURL}/v1/external/devUtil/recreateData`,
+        {
+          method: 'POST',
+        },
+      );
 
+      if (!response.ok) {
+        throw new Error(`Failed to reset data: ${response.statusText}`);
+      }
       await sleep(1000);
     });
   },
