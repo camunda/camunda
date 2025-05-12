@@ -25,7 +25,6 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -167,7 +166,7 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldReturnNotFoundWhenRoleIdDoesNotExist() {
+  void shouldReturnNotFoundOnDeleteWhenRoleDoesNotExist() {
     // when / then
     assertThatThrownBy(() -> camundaClient.newDeleteRoleCommand("someRoleId").send().join())
         .isInstanceOf(ProblemException.class)
@@ -273,13 +272,10 @@ public class RoleIntegrationTest {
   private static AuthorizationSearchResponse searchAuthorizations(
       final String restAddress, final String username)
       throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder().encodeToString("%s:%s".formatted(username, "password").getBytes());
     final HttpRequest request =
         HttpRequest.newBuilder()
             .uri(new URI("%s%s".formatted(restAddress, "v2/authorizations/search")))
             .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
             .build();
 
     final HttpResponse<String> response =

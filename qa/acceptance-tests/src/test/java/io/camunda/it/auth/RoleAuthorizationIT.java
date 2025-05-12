@@ -101,7 +101,7 @@ class RoleAuthorizationIT {
   @Test
   void shouldCreateRoleAndGetRoleByIdIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
-    final String roleId = "roleId";
+    final String roleId = Strings.newRandomValidIdentityId();
     final String name = "name";
     final String description = "description";
 
@@ -132,7 +132,7 @@ class RoleAuthorizationIT {
 
   @Test
   void shouldDeleteRoleByIdIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    final String roleId = "roleId";
+    final String roleId = Strings.newRandomValidIdentityId();
     final String name = "name";
     final String description = "description";
 
@@ -154,7 +154,12 @@ class RoleAuthorizationIT {
   @Test
   void deleteRoleShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    assertThatThrownBy(() -> camundaClient.newDeleteRoleCommand("roleId").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newDeleteRoleCommand(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
   }
@@ -163,7 +168,13 @@ class RoleAuthorizationIT {
   void createRoleShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
-            () -> camundaClient.newCreateRoleCommand().roleId("roleId").name("name").send().join())
+            () ->
+                camundaClient
+                    .newCreateRoleCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .name("name")
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
   }
@@ -187,7 +198,8 @@ class RoleAuthorizationIT {
   @Test
   void getRoleByIdShouldReturnNotFoundForNonExistentRoleIdIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    assertThatThrownBy(() -> camundaClient.newRoleGetRequest("Non-existing id").send().join())
+    assertThatThrownBy(
+            () -> camundaClient.newRoleGetRequest(Strings.newRandomValidIdentityId()).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("404: 'Not Found'");
   }

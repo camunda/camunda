@@ -1156,7 +1156,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *
    * camundaClient
-   *  .newDeleteRoleCommand("123")
+   *  .newDeleteRoleCommand("roleId")
    *  .send();
    * </pre>
    *
