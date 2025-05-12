@@ -2984,7 +2984,10 @@
               <threshold>Low</threshold>
               <xmlOutput>true</xmlOutput>
               <includeFilterFile>${spotbugs.include}</includeFilterFile>
-              <excludeFilterFile>${spotbugs.exclude}</excludeFilterFile>
+              <excludeFilterFiles>
+                <excludeFilterFile>${maven.multiModuleProjectDirectory}/build-tools/src/main/resources/spotbugs/spotbugs-exclude.xml</excludeFilterFile>
+                <excludeFilterFile>${spotbugs.exclude}</excludeFilterFile>
+              </excludeFilterFiles>
             </configuration>
 
             <!-- dependency on build tool to reference the spotbugs filter-->

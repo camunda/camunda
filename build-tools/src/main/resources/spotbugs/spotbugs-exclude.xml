@@ -29,4 +29,6 @@
   </Match>
 
   <Bug code="RCN"/>
+  <Bug pattern="AT_NONATOMIC_64BIT_PRIMITIVE"/>
+  <Bug pattern="HSM_HIDING_METHOD" />
 </FindBugsFilter>
