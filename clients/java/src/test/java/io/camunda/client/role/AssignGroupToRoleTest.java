@@ -106,11 +106,27 @@ public class AssignGroupToRoleTest extends ClientRestTest {
   }
 
   @Test
+  void shouldRaiseExceptionOnEmptyRoleId() {
+    // when / then
+    assertThatThrownBy(() -> client.newAssignGroupToRoleCommand("").groupId(GROUP_ID).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("role must not be empty");
+  }
+
+  @Test
   void shouldRaiseExceptionOnNullGroupId() {
     // when / then
     assertThatThrownBy(
             () -> client.newAssignGroupToRoleCommand(ROLE_ID).groupId(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyGroupId() {
+    // when / then
+    assertThatThrownBy(() -> client.newAssignGroupToRoleCommand(ROLE_ID).groupId("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
   }
 }
