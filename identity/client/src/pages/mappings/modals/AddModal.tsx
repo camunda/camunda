@@ -46,7 +46,9 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       enqueueNotification({
         kind: "success",
         title: t("mappingRuleCreated"),
-        subtitle: t("mappingRuleCreatedSuccessfully", { name: mappingRuleName }),
+        subtitle: t("mappingRuleCreatedSuccessfully", {
+          name: mappingRuleName,
+        }),
       });
       onSuccess();
     }

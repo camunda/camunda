@@ -56,8 +56,9 @@ const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
           i18nKey="deleteMappingRuleConfirmation"
           values={{ mappingRuleName: name || mappingRuleId }}
         >
-          Are you sure you want to delete <strong>{name || mappingRuleId}</strong>?
-          This action cannot be undone.
+          Are you sure you want to delete{" "}
+          <strong>{name || mappingRuleId}</strong>? This action cannot be
+          undone.
         </Translate>
       </p>
     </Modal>
