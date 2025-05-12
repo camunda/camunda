@@ -686,7 +686,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /tenants/{tenantId}/mappings/{mappingId}:
+  /tenants/{tenantId}/mapping-rules/{mappingId}:
     put:
       tags:
         - Tenant
@@ -756,7 +756,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /tenants/{tenantId}/mappings/search:
+  /tenants/{tenantId}/mapping-rules/search:
     post:
       tags:
         - Tenant
@@ -3001,7 +3001,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /roles/{roleId}/mappings/{mappingId}:
+  /roles/{roleId}/mapping-rules/{mappingId}:
     put:
       tags:
         - Role
@@ -3126,7 +3126,7 @@ paths:
       tags:
         - Group
       operationId: createGroup
-      summary: Create group 
+      summary: Create group
       description: |
         Create a new group.
       requestBody:
