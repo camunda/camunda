@@ -74,9 +74,9 @@ public class IncidentNotifier {
     objectWriter = objectMapper.writer();
   }
 
-  public void notifyAsync(final List<IncidentEntity> incidents) {
-    CompletableFuture.runAsync(() -> notifyOnIncidents(incidents), executor);
+  public CompletableFuture<Void> notifyAsync(final List<IncidentEntity> incidents) {
     LOGGER.debug("Incident notification is scheduled");
+    return CompletableFuture.runAsync(() -> notifyOnIncidents(incidents), executor);
   }
 
   public void notifyOnIncidents(final List<IncidentEntity> incidents) {
