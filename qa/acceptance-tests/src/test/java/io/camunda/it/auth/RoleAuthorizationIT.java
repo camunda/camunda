@@ -75,6 +75,7 @@ class RoleAuthorizationIT {
               new Permissions(ResourceType.ROLE, PermissionType.CREATE, List.of("*")),
               new Permissions(ResourceType.ROLE, PermissionType.UPDATE, List.of("*")),
               new Permissions(ResourceType.ROLE, PermissionType.READ, List.of("*")),
+              new Permissions(ResourceType.ROLE, PermissionType.DELETE, List.of("*")),
               new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
@@ -99,9 +100,8 @@ class RoleAuthorizationIT {
 
   @Test
   void shouldCreateRoleAndGetRoleByIdIfAuthorized(
-      @Authenticated(ADMIN) final CamundaClient adminClient)
-      throws URISyntaxException, IOException, InterruptedException {
-    final String roleId = "roleId";
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
     final String name = "name";
     final String description = "description";
 
@@ -126,15 +126,55 @@ class RoleAuthorizationIT {
     assertThat(role.getRoleId()).isEqualTo(roleId);
     assertThat(role.getName()).isEqualTo(name);
     assertThat(role.getDescription()).isEqualTo(description);
+    // clean up
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
 
-    // TODO: introduce clean up using role delete in #31710
+  @Test
+  void shouldDeleteRoleByIdIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
+    final String name = "name";
+    final String description = "description";
+
+    adminClient
+        .newCreateRoleCommand()
+        .roleId(roleId)
+        .name(name)
+        .description(description)
+        .send()
+        .join();
+
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+
+    assertThatThrownBy(() -> adminClient.newRoleGetRequest(roleId).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("404: 'Not Found'");
+  }
+
+  @Test
+  void deleteRoleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newDeleteRoleCommand(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   @Test
   void createRoleShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
-            () -> camundaClient.newCreateRoleCommand().roleId("roleId").name("name").send().join())
+            () ->
+                camundaClient
+                    .newCreateRoleCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .name("name")
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
   }
@@ -158,7 +198,8 @@ class RoleAuthorizationIT {
   @Test
   void getRoleByIdShouldReturnNotFoundForNonExistentRoleIdIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    assertThatThrownBy(() -> camundaClient.newRoleGetRequest("Non-existing id").send().join())
+    assertThatThrownBy(
+            () -> camundaClient.newRoleGetRequest(Strings.newRandomValidIdentityId()).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("404: 'Not Found'");
   }
@@ -172,7 +213,7 @@ class RoleAuthorizationIT {
 
     assertThat(roleSearchResponse.items())
         .map(RoleResult::getName)
-        .containsAll(List.of("Admin", ROLE_NAME_1, ROLE_NAME_2));
+        .containsExactlyInAnyOrder("Admin", ROLE_NAME_1, ROLE_NAME_2);
   }
 
   @Test
