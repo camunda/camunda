@@ -62,7 +62,7 @@ public class MappingsByGroupSearchTest {
     final var mappings =
         camundaClient
             .newMappingsByGroupSearchRequest(GROUP_ID)
-            .filter(fn -> fn.mappingId(MAPPING_ID_1))
+            .filter(fn -> fn.mappingRuleId(MAPPING_ID_1))
             .send()
             .join();
 

@@ -25,7 +25,7 @@ public interface MappingFilter extends SearchRequestFilter {
    * @param mappingId the id of the mapping
    * @return the updated filter
    */
-  MappingFilter mappingId(final String mappingId);
+  MappingFilter mappingRuleId(final String mappingId);
 
   /**
    * Filter mappings by the specified claim name.
