@@ -31,6 +31,14 @@ public final class EngineConfiguration {
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
 
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
+  // key has 8 bytes, stay below 4MB
+  public static final int DEFAULT_BATCH_OPERATION_CHUNK_SIZE = 400000;
+  // key has 8 bytes, stay below 32KB block size
+  public static final int DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE = 3500;
+  // ES/OS have max 10000 entities per query
+  public static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE = 10000;
+  // Oracle can only have 1000 elements in `IN` clause
+  public static final int DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE = 1000;
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
@@ -49,6 +57,10 @@ public final class EngineConfiguration {
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
 
   private Duration batchOperationSchedulerInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
+  private int batchOperationChunkSize = DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
+  private int batchOperationDbChunkSize = DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
+  private int batchOperationQueryPageSize = DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
+  private int batchOperationQueryInClauseSize = DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -160,6 +172,43 @@ public final class EngineConfiguration {
   public EngineConfiguration setBatchOperationSchedulerInterval(
       final Duration batchOperationSchedulerInterval) {
     this.batchOperationSchedulerInterval = batchOperationSchedulerInterval;
+    return this;
+  }
+
+  public int getBatchOperationChunkSize() {
+    return batchOperationChunkSize;
+  }
+
+  public EngineConfiguration setBatchOperationChunkSize(final int batchOperationChunkSize) {
+    this.batchOperationChunkSize = batchOperationChunkSize;
+    return this;
+  }
+
+  public int getBatchOperationDbChunkSize() {
+    return batchOperationDbChunkSize;
+  }
+
+  public EngineConfiguration setBatchOperationDbChunkSize(final int batchOperationDbChunkSize) {
+    this.batchOperationDbChunkSize = batchOperationDbChunkSize;
+    return this;
+  }
+
+  public int getBatchOperationQueryPageSize() {
+    return batchOperationQueryPageSize;
+  }
+
+  public EngineConfiguration setBatchOperationQueryPageSize(final int batchOperationQueryPageSize) {
+    this.batchOperationQueryPageSize = batchOperationQueryPageSize;
+    return this;
+  }
+
+  public int getBatchOperationQueryInClauseSize() {
+    return batchOperationQueryInClauseSize;
+  }
+
+  public EngineConfiguration setBatchOperationQueryInClauseSize(
+      final int batchOperationQueryInClauseSize) {
+    this.batchOperationQueryInClauseSize = batchOperationQueryInClauseSize;
     return this;
   }
 }

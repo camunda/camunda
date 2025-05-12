@@ -18,9 +18,11 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -28,10 +30,20 @@ class BatchOperationItemProviderTest {
 
   private static final int PARTITION_ID = 1;
 
-  private final SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
+  private SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
 
-  private final BatchOperationItemProvider provider =
-      new BatchOperationItemProvider(searchClientsProxy);
+  private BatchOperationItemProvider provider;
+
+  @BeforeEach
+  void setUp() {
+    searchClientsProxy = mock(SearchClientsProxy.class);
+
+    final EngineConfiguration engineConfiguration = mock(EngineConfiguration.class);
+    when(engineConfiguration.getBatchOperationQueryPageSize()).thenReturn(10);
+    when(engineConfiguration.getBatchOperationQueryInClauseSize()).thenReturn(10);
+
+    provider = new BatchOperationItemProvider(searchClientsProxy, engineConfiguration);
+  }
 
   @Test
   public void shouldFetchProcessInstanceKeys() {

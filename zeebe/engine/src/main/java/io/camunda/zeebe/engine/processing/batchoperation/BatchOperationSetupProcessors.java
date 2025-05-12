@@ -108,7 +108,7 @@ public final class BatchOperationSetupProcessors {
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
-                new BatchOperationItemProvider(searchClientsProxy),
+                new BatchOperationItemProvider(searchClientsProxy, engineConfiguration),
                 engineConfiguration,
                 partitionId));
   }
