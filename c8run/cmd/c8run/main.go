@@ -13,7 +13,6 @@ import (
 
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/overrides"
-	"github.com/camunda/camunda/c8run/internal/packages"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
@@ -62,7 +61,7 @@ func getC8RunPlatform() types.C8Run {
 }
 
 func usage(exitcode int) {
-	fmt.Printf("Usage: %s [command] [options]\nCommands:\n  start\n  stop\n  package\n", os.Args[0])
+	fmt.Printf("Usage: %s [command] [options]\nCommands:\n  start\n  stop\n", os.Args[0])
 	os.Exit(exitcode)
 }
 
@@ -76,10 +75,6 @@ func getBaseCommand() (string, error) {
 		return "start", nil
 	case "stop":
 		return "stop", nil
-	case "package":
-		return "package", nil
-	case "clean":
-		return "clean", nil
 	case "-h", "--help":
 		usage(0)
 	default:
@@ -256,14 +251,6 @@ func main() {
 		startCommand(c8, settings, processInfo, parentDir, javaBinary, expectedJavaVersion)
 	case "stop":
 		stopCommand(c8, settings, processInfo)
-	case "package":
-		err := packages.New(camundaVersion, elasticsearchVersion, connectorsVersion)
-		if err != nil {
-			fmt.Printf("%+v", err)
-			os.Exit(1)
-		}
-	case "clean":
-		cleanCommand(camundaVersion, elasticsearchVersion)
 	}
 }
 
@@ -389,10 +376,6 @@ func stopCommand(c8 types.C8Run, settings types.C8RunSettings, processes process
 		fmt.Printf("%+v", err)
 	}
 	fmt.Println("Camunda is stopped.")
-}
-
-func cleanCommand(camundaVersion string, elasticsearchVersion string) {
-	packages.Clean(camundaVersion, elasticsearchVersion)
 }
 
 func startApplication(cmd *exec.Cmd, pid string, logPath string) {
