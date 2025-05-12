@@ -57,7 +57,7 @@ public class UpdateRoleCommandImpl implements UpdateRoleCommandStep1 {
 
   @Override
   public CamundaFuture<UpdateRoleResponse> send() {
-    ArgumentUtil.ensureNotNull("name", request.getName());
+    ArgumentUtil.ensureNotNullNorEmpty("name", request.getName());
     ArgumentUtil.ensureNotNull("description", request.getDescription());
     final HttpCamundaFuture<UpdateRoleResponse> result = new HttpCamundaFuture<>();
     final UpdateRoleResponseImpl response = new UpdateRoleResponseImpl();
