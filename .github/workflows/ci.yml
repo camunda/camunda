@@ -299,7 +299,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
@@ -556,6 +555,63 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  rdbms-integration-tests:
+    if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
+    needs: [detect-changes]
+    name: "[IT] RDBMS"
+    timeout-minutes: 15
+    runs-on: gcp-perf-core-8-default
+    permissions: {}  # no GITHUB_TOKEN is needed
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/setup-build
+      with:
+        dockerhub-readonly: true
+        maven-cache-key-modifier: it-rdbms
+        vault-address: ${{ secrets.VAULT_ADDR }}
+        vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+    - uses: ./.github/actions/build-zeebe
+      with:
+        maven-extra-args: -T1C -PskipFrontendBuild
+    - name: Create build output log file
+      run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+    # Run integration tests with RDBMS database
+    - name: Maven Test Build
+      run: >
+        ./mvnw -B -T1C --no-snapshot-updates
+        -D forkCount=1
+        -D maven.javadoc.skip=true
+        -D skipUTs -D skipChecks
+        -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+        -P rdbms
+        -pl qa/acceptance-tests
+        verify
+        | tee "${BUILD_OUTPUT_FILE_PATH}"
+    - name: Analyze Test Runs
+      id: analyze-test-run
+      if: always()
+      uses: ./.github/actions/analyze-test-runs
+      with:
+        buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+    - name: Upload test artifacts
+      uses: ./.github/actions/collect-test-artifacts
+      if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+      with:
+        name: "[IT] RDBMS"
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        build_status: ${{ job.status }}
+        user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+        user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+        detailed_junit_flaky_tests: true
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
