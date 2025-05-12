@@ -8,7 +8,10 @@
 package io.camunda.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
+import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.handlers.ExportHandler;
@@ -64,4 +67,18 @@ public interface ExporterResourceProvider {
    * @return A {@link BiConsumer} of {@link String} and {@link Error} to handle custom errors
    */
   BiConsumer<String, Error> getCustomErrorHandlers();
+
+  /**
+   * Returns the reference to the Process Cache
+   *
+   * @return {@link ExporterEntityCacheImpl} of {@link CachedProcessEntity}
+   */
+  ExporterEntityCacheImpl<Long, CachedProcessEntity> getProcessCache();
+
+  /**
+   * Returns the reference to the Form Cache
+   *
+   * @return {@link ExporterEntityCacheImpl} of {@link CachedFormEntity}
+   */
+  ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache();
 }
