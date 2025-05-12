@@ -36,7 +36,7 @@ public class MappingReader extends AbstractEntityReader<MappingEntity> {
   }
 
   public SearchQueryResult<MappingEntity> search(final MappingQuery query) {
-    final var dbSort = convertSort(query.sort(), MappingSearchColumn.MAPPING_ID);
+    final var dbSort = convertSort(query.sort(), MappingSearchColumn.MAPPING_RULE_ID);
     final var dbQuery =
         MappingDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));

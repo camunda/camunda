@@ -14,7 +14,7 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.MappingEntity">
     <constructor>
-      <idArg column="MAPPING_ID" javaType="string"/>
+      <idArg column="MAPPING_RULE_ID" javaType="string"/>
       <arg column="MAPPING_KEY" javaType="long"/>
       <arg column="CLAIM_NAME" javaType="string"/>
       <arg column="CLAIM_VALUE" javaType="string"/>
@@ -23,26 +23,26 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingDbModel">
-    INSERT INTO ${prefix}MAPPINGS (MAPPING_ID, MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
-    VALUES (#{mappingId}, #{mappingKey}, #{claimName}, #{claimValue}, #{name})
+    INSERT INTO ${prefix}MAPPING_RULES (MAPPING_RULE_ID, MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
+    VALUES (#{mappingRuleId}, #{mappingKey}, #{claimName}, #{claimValue}, #{name})
   </insert>
 
   <delete id="delete" parameterType="string">
     DELETE
-    FROM ${prefix}MAPPINGS
-    WHERE MAPPING_ID = #{mappingId}
+    FROM ${prefix}MAPPING_RULES
+    WHERE MAPPING_RULE_ID = #{mappingRuleId}
   </delete>
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingDbQuery"
     resultType="long">
     SELECT COUNT(*)
-    FROM ${prefix}MAPPINGS m
+    FROM ${prefix}MAPPING_RULES m
     <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
       AND gm.ENTITY_TYPE = 'MAPPING'
     </if>
     <if test="filter.roleId != null">
-      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_ID = rm.ENTITY_ID
+      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
       AND rm.ENTITY_TYPE = 'MAPPING'
     </if>
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
@@ -52,18 +52,18 @@
     resultMap="io.camunda.db.rdbms.sql.MappingMapper.searchResultMap">
     SELECT * FROM (
     SELECT
-    MAPPING_ID,
+    MAPPING_RULE_ID,
     MAPPING_KEY,
     CLAIM_NAME,
     CLAIM_VALUE,
     NAME
-    FROM ${prefix}MAPPINGS m
+    FROM ${prefix}MAPPING_RULES m
     <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
       AND gm.ENTITY_TYPE = 'MAPPING'
     </if>
     <if test="filter.roleId != null">
-      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_ID = rm.ENTITY_ID
+      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
       AND rm.ENTITY_TYPE = 'MAPPING'
     </if>
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
@@ -75,8 +75,8 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
-    <if test="filter.mappingId != null">
-      AND MAPPING_ID = #{filter.mappingId}
+    <if test="filter.mappingRuleId != null">
+      AND MAPPING_RULE_ID = #{filter.mappingRuleId}
     </if>
     <if test="filter.mappingKey != null">
       AND MAPPING_KEY = #{filter.mappingKey}
