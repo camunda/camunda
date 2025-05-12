@@ -210,7 +210,6 @@ test.describe('task details page', () => {
 
     await taskPanelPage.openTask('JobWorker_user_task');
 
-    // this is necessary because sometimes the importer takes some time to receive the variables
     await waitForAssertion({
       assertion: async () => {
         await expect(page.getByText('jobWorkerVar')).toBeVisible();
