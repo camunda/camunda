@@ -115,8 +115,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   public void modifyProcessInstance(
       final long processInstanceKey,
       final List<Modification> modifications,
-      final String operationId)
-      throws Exception {
+      final String operationId) {
     executeCamundaServiceAuthenticated(
         (authentication) ->
             withOperationReference(
