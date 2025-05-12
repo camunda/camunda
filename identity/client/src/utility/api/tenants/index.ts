@@ -17,7 +17,7 @@ import { SearchResponse } from "src/utility/api";
 import { EntityData } from "src/components/entityList/EntityList";
 import { Group } from "src/utility/api/groups";
 import { Role } from "src/utility/api/roles";
-import { Mapping } from "src/utility/api/mappings";
+import { MappingRule } from "src/utility/api/mappings";
 
 export const TENANTS_ENDPOINT = "/tenants";
 
@@ -117,28 +117,30 @@ export const unassignTenantRole: ApiDefinition<
 
 // ----------------- Mappings within a Tenant -----------------
 
-export type GetTenantMappingsParams = {
+export type GetTenantMappingRulesParams = {
   tenantId: string;
 };
 export const getMappingsByTenantId: ApiDefinition<
-  SearchResponse<Mapping>,
-  GetTenantMappingsParams
+  SearchResponse<MappingRule>,
+  GetTenantMappingRulesParams
 > = ({ tenantId }) =>
   apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/search`);
 
-type AssignTenantMappingParams = GetTenantMappingsParams & {
-  mappingId: string;
+type AssignTenantMappingRuleParams = GetTenantMappingRulesParams & {
+  mappingRuleId: string;
 };
-export const assignTenantMapping: ApiDefinition<
+export const assignTenantMappingRule: ApiDefinition<
   undefined,
-  AssignTenantMappingParams
-> = ({ tenantId, mappingId }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingId}`);
+  AssignTenantMappingRuleParams
+> = ({ tenantId, mappingRuleId }) => {
+  return apiPut(
+    `${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingRuleId}`,
+  );
 };
 
-type UnassignTenantMappingParams = AssignTenantMappingParams;
-export const unassignTenantMapping: ApiDefinition<
+type UnassignTenantMappingRuleParams = AssignTenantMappingRuleParams;
+export const unassignTenantMappingRule: ApiDefinition<
   undefined,
-  UnassignTenantMappingParams
-> = ({ tenantId, mappingId }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingId}`);
+  UnassignTenantMappingRuleParams
+> = ({ tenantId, mappingRuleId }) =>
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingRuleId}`);
