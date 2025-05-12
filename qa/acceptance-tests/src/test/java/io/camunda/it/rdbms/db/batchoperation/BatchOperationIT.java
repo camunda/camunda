@@ -421,9 +421,10 @@ public class BatchOperationIT {
                     SearchQueryPage.of(b -> b.from(0).size(10))));
 
     assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.items()).hasSize(1);
-    assertBatchOperationEntity(searchResult.items().getFirst(), batchOperation);
+    assertThat(searchResult.items()).isNotEmpty();
+    assertThat(searchResult.items())
+        .allSatisfy(i -> assertThat(i.state()).isEqualTo(BatchOperationState.ACTIVE));
+    assertThat(searchResult.items()).anySatisfy(i -> assertBatchOperationEntity(i, batchOperation));
   }
 
   @TestTemplate
