@@ -25,7 +25,7 @@ func process_tree(pid int) []*os.Process {
 	for i, pid := range tree {
 		process, err := os.FindProcess(int(pid))
 		if err != nil {
-			fmt.Println("Process " + string(pid) + " not found")
+			fmt.Printf("Process %d not found", pid)
 			continue
 		}
 		processList[i] = process
