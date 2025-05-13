@@ -215,10 +215,7 @@ const DiagramPanel: React.FC = observer(() => {
                       );
                     }
                   },
-                  overlaysData: [
-                    ...processStatisticsStore.getOverlaysData(),
-                    ...(overlays || []),
-                  ],
+                  overlaysData: overlays,
                   selectableFlowNodes: processXmlStore.selectableIds,
                 })}
           >
