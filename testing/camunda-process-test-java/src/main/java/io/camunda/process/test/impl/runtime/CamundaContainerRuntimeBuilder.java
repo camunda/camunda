@@ -16,6 +16,9 @@
 package io.camunda.process.test.impl.runtime;
 
 import io.camunda.process.test.impl.containers.ContainerFactory;
+import io.camunda.process.test.impl.extension.CamundaRuntimeConnection;
+import io.camunda.process.test.impl.extension.RemoteRuntimeConnection;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +54,12 @@ public class CamundaContainerRuntimeBuilder {
 
   private boolean connectorsEnabled = false;
   private final Map<String, String> connectorsSecrets = new HashMap<>();
+
+  private boolean remoteRuntime = false;
+  private final URI camundaRestApiAddress = URI.create("http://localhost:8080");
+  private final URI camundaGrpcApiAddress = URI.create("http://localhost:26500");
+  private final URI camundaMonitoringApiAddress = URI.create("http://localhost:9600");
+  private final URI connectorsRestApiAddress = URI.create("http://localhost:8085");
 
   // ============ For testing =================
 
@@ -173,10 +182,23 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
+  public CamundaContainerRuntimeBuilder withRemoteRuntime() {
+    remoteRuntime = true;
+    return this;
+  }
+
   // ============ Build =================
 
-  public CamundaContainerRuntime build() {
-    return new CamundaContainerRuntime(this, containerFactory);
+  public CamundaRuntimeConnection build() {
+    if (remoteRuntime) {
+      return new RemoteRuntimeConnection(
+          camundaRestApiAddress,
+          camundaGrpcApiAddress,
+          camundaMonitoringApiAddress,
+          connectorsRestApiAddress);
+    } else {
+      return new CamundaContainerRuntime(this, containerFactory);
+    }
   }
 
   // ============ Getters =================
@@ -247,5 +269,9 @@ public class CamundaContainerRuntimeBuilder {
 
   public Map<String, String> getConnectorsSecrets() {
     return connectorsSecrets;
+  }
+
+  public boolean isRemoteRuntime() {
+    return remoteRuntime;
   }
 }

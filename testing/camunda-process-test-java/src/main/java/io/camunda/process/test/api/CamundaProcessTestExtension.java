@@ -399,4 +399,9 @@ public class CamundaProcessTestExtension
       }
     }
   }
+
+  public CamundaProcessTestExtension withRemoteRuntime() {
+    containerRuntimeBuilder.withRemoteRuntime();
+    return this;
+  }
 }

@@ -218,7 +218,7 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntimeCon
     return new CamundaContainerRuntimeBuilder();
   }
 
-  public static CamundaContainerRuntime newDefaultRuntime() {
+  public static CamundaRuntimeConnection newDefaultRuntime() {
     return newBuilder().build();
   }
 }

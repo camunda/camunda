@@ -30,9 +30,14 @@ import java.time.Instant;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@CamundaProcessTest
+// @CamundaProcessTest
 public class CamundaProcessTestExtensionIT {
+
+  @RegisterExtension
+  private static CamundaProcessTestExtension EXTENSION =
+      new CamundaProcessTestExtension().withRemoteRuntime();
 
   // to be injected
   private CamundaClient client;
