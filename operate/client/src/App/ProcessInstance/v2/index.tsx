@@ -150,7 +150,7 @@ const ProcessInstance: React.FC = observer(() => {
     state: {modifications, status: modificationStatus},
   } = modificationsStore;
 
-  const isBreadcrumbVisible = callHierarchy && callHierarchy.items.length > 0;
+  const isBreadcrumbVisible = callHierarchy && callHierarchy.length > 0;
 
   const hasPendingModifications = modifications.length > 0;
 
@@ -183,7 +183,7 @@ const ProcessInstance: React.FC = observer(() => {
             breadcrumb={
               isBreadcrumbVisible && callHierarchy ? (
                 <Breadcrumb
-                  callHierarchy={callHierarchy.items}
+                  callHierarchy={callHierarchy}
                   processInstance={processInstance}
                 />
               ) : undefined
