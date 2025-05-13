@@ -521,17 +521,22 @@ public final class EngineRule extends ExternalResource {
   }
 
   public void awaitIdentitySetup() {
+    final var totalAmountOfAuthorizationsCreated =
+        AuthorizationResourceType.getUserProvidedResourceTypes().size();
+
     if (partitionCount > 1) {
-      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED)
-          .skip(partitionCount - 1)
-          .await();
+      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
       RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
           .withDistributionIntent(AuthorizationIntent.CREATE)
-          .skip(AuthorizationResourceType.getUserProvidedResourceTypes().size() - 1)
+          .skip(totalAmountOfAuthorizationsCreated - 1)
           .await();
     } else {
       RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
+      RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+          .skip(totalAmountOfAuthorizationsCreated - 1)
+          .await();
     }
+
     RecordingExporter.reset();
   }
 

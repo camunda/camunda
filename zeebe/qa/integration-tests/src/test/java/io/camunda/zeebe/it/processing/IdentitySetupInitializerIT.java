@@ -16,24 +16,24 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
-import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
@@ -68,12 +68,11 @@ final class IdentitySetupInitializerIT {
         });
 
     // then identity should be initialized
-    final var record =
-        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE)
+    final var createdUser =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(username)
             .getFirst()
             .getValue();
-
-    final var createdUser = record.getUsers().getFirst();
     Assertions.assertThat(createdUser)
         .isNotNull()
         .hasUsername(username)
@@ -82,10 +81,11 @@ final class IdentitySetupInitializerIT {
     final var passwordMatches = passwordEncoder.matches(password, createdUser.getPassword());
     assertTrue(passwordMatches);
 
-    final var createdRole = record.getDefaultRole();
+    final var createdRole = RecordingExporter.roleRecords(RoleIntent.CREATED).getFirst().getValue();
     Assertions.assertThat(createdRole).hasName(IdentitySetupInitializer.DEFAULT_ROLE_NAME);
 
-    final var createdTenant = record.getDefaultTenant();
+    final var createdTenant =
+        RecordingExporter.tenantRecords(TenantIntent.CREATED).getFirst().getValue();
     Assertions.assertThat(createdTenant)
         .hasTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
         .hasName(IdentitySetupInitializer.DEFAULT_TENANT_NAME);
@@ -102,59 +102,14 @@ final class IdentitySetupInitializerIT {
     // result in an exception.
     client.newClockResetCommand().send();
 
-    final var initializeRecords =
-        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE).limit(2).toList();
-
-    assertThat(initializeRecords)
-        .describedAs("One partition should initialize identity and distribute it to the other")
-        .hasSize(2);
-
-    final var partition1Record =
-        initializeRecords.stream().filter(r -> r.getKey() == -1L).findFirst().orElseThrow();
-    final var partition2Record =
-        initializeRecords.stream().filter(r -> r.getKey() != -1L).findFirst().orElseThrow();
-
-    assertThat(partition1Record.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(partition2Record.getPartitionId()).isNotEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(
-            Protocol.decodePartitionId(partition2Record.getValue().getDefaultRole().getRoleKey()))
-        .describedAs("Role key should be generated on the deployment partition")
-        .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(
-            Protocol.decodePartitionId(
-                partition2Record.getValue().getUsers().getFirst().getUserKey()))
-        .describedAs("User key should be generated on the deployment partition")
-        .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-  }
-
-  @Test
-  void shouldNotRecreateEntitiesOnRestart(@TempDir final Path tempDir) {
-    // given a broker with authorization enabled
-    createBroker(true, 1, tempDir);
-
-    RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).limit(1).await();
-
-    // when broker is restarted
-    final var partitions = PartitionsActuator.of(broker);
-    partitions.takeSnapshot();
-    Awaitility.await("Snapshot is taken")
-        .atMost(Duration.ofSeconds(60))
-        .until(
-            () ->
-                Optional.ofNullable(partitions.query().get(1).snapshotId())
-                    .flatMap(FileBasedSnapshotId::ofFileName),
-            Optional::isPresent)
-        .orElseThrow();
-    broker.stop();
-    broker.start().awaitCompleteTopology();
-
-    // then the next Initialize command is rejected
     assertThat(
             RecordingExporter.records()
-                .onlyCommandRejections()
-                .withIntent(IdentitySetupIntent.INITIALIZE)
-                .exists())
-        .isTrue();
+                .limit(r -> r.getIntent().equals(ClockIntent.RESET))
+                .identitySetupRecords()
+                .withIntent(IdentitySetupIntent.INITIALIZED))
+        .hasSize(1)
+        .extracting(Record::getPartitionId)
+        .containsOnly(Protocol.DEPLOYMENT_PARTITION);
   }
 
   @Test

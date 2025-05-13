@@ -306,11 +306,10 @@ public final class EngineProcessors {
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator,
         typedRecordProcessors,
-        processingState,
         writers,
-        commandDistributionBehavior,
         securityConfig,
-        featureFlags);
+        featureFlags,
+        processingState);
 
     addResourceFetchProcessors(typedRecordProcessors, writers, processingState, authCheckBehavior);
 
