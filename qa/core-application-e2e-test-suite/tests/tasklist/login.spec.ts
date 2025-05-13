@@ -97,7 +97,7 @@ test.describe.parallel('Login Tests', () => {
   }) => {
     await page.goto('tasklist/123');
 
-    await taskListLoginPage.login('demo', 'demo');
+    await taskListLoginPage.login('demo', 'demo/esraa');
     await expect(page).toHaveURL('/tasklist/123');
 
     await tasklistHeader.logout();

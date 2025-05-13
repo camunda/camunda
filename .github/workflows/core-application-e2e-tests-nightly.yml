@@ -126,7 +126,8 @@ jobs:
           INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ matrix.branch }}
-        run: npm run test -- --project=chromium
+        run: npx playwright test --project=chromium --grep-invert @subset && npx playwright test --project=chromium --grep @subset
+
         working-directory: qa/core-application-e2e-test-suite
 
       - name: Publish test results to TestRail

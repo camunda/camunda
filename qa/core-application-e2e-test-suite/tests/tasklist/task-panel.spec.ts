@@ -34,7 +34,7 @@ test.beforeAll(async ({resetData}) => {
   await sleep(500);
 });
 
-test.describe('task panel page', () => {
+test.describe('@subset task panel page', () => {
   test.beforeEach(async ({page, taskListLoginPage}) => {
     await navigateToApp(page, 'tasklist');
     await taskListLoginPage.login('demo', 'demo');
