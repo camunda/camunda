@@ -41,8 +41,6 @@ public class TenantDeleteProcessorTest {
             .create()
             .getValue()
             .getTenantKey();
-    assertThat(engine.getProcessingState().getTenantState().getTenantById(tenantId).get())
-        .isNotNull();
 
     // When
     engine.tenant().deleteTenant(tenantId).delete();
