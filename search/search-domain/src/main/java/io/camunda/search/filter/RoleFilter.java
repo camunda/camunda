@@ -88,7 +88,7 @@ public record RoleFilter(
     }
 
     public Builder roleIds(final Set<String> value) {
-      roleIds = value == null ? Set.of() : value;
+      roleIds = value;
       return this;
     }
 
