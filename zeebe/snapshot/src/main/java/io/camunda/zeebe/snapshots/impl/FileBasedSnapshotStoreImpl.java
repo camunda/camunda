@@ -593,7 +593,6 @@ public final class FileBasedSnapshotStoreImpl {
         previousSnapshot -> {
           LOGGER.debug("Deleting previous snapshot {}", previousSnapshot.getId());
           previousSnapshot.delete();
-          previousSnapshot.delete();
         });
     purgePendingSnapshots(newPersistedSnapshot.getSnapshotId());
   }
