@@ -51,7 +51,10 @@ public class MappingsByGroupSearchTest {
     assertThat(mappings.items().size()).isEqualTo(2);
     assertThat(mappings.items())
         .extracting(
-            Mapping::getMappingId, Mapping::getClaimName, Mapping::getClaimValue, Mapping::getName)
+            Mapping::getMappingRuleId,
+            Mapping::getClaimName,
+            Mapping::getClaimValue,
+            Mapping::getName)
         .contains(
             tuple(MAPPING_ID_1, MAPPING_ID_1 + "claimName", MAPPING_ID_1 + "claimValue", "name"),
             tuple(MAPPING_ID_2, MAPPING_ID_2 + "claimName", MAPPING_ID_2 + "claimValue", "name"));
@@ -67,7 +70,9 @@ public class MappingsByGroupSearchTest {
             .join();
 
     assertThat(mappings.items().size()).isEqualTo(1);
-    assertThat(mappings.items()).extracting(Mapping::getMappingId).containsExactly(MAPPING_ID_1);
+    assertThat(mappings.items())
+        .extracting(Mapping::getMappingRuleId)
+        .containsExactly(MAPPING_ID_1);
   }
 
   @Test
@@ -75,13 +80,13 @@ public class MappingsByGroupSearchTest {
     final var mappings =
         camundaClient
             .newMappingsByGroupSearchRequest(GROUP_ID)
-            .sort(fn -> fn.mappingId().desc())
+            .sort(fn -> fn.mappingRuleId().desc())
             .send()
             .join();
 
     assertThat(mappings.items().size()).isEqualTo(2);
     assertThat(mappings.items())
-        .extracting(Mapping::getMappingId)
+        .extracting(Mapping::getMappingRuleId)
         .containsExactly(MAPPING_ID_2, MAPPING_ID_1);
   }
 

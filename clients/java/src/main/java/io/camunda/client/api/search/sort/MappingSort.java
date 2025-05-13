@@ -19,7 +19,7 @@ import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestSort
 
 public interface MappingSort extends SearchRequestSort<MappingSort> {
 
-  MappingSort mappingId();
+  MappingSort mappingRuleId();
 
   MappingSort claimName();
 
