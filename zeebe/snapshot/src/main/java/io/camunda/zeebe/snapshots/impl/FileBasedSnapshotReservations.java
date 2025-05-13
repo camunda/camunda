@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -41,6 +42,7 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
   private final PersistedReservationsV1 persisted;
   private FileChannel fileChannel;
   private final ConcurrencyControl actor;
+  private final InstantSource clock;
 
   /**
    * @param snapshot the corresponding Snapshot
@@ -49,8 +51,10 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
   public FileBasedSnapshotReservations(
       final FileBasedSnapshot snapshot,
       final Path reservationsDirectory,
-      final ConcurrencyControl actor) {
+      final ConcurrencyControl actor,
+      final InstantSource clock) {
     this.actor = actor;
+    this.clock = clock;
     persisted = new PersistedReservationsV1();
     final var path = reservationsDirectory.resolve(fileName(snapshot.getSnapshotId()));
     try {
@@ -194,9 +198,7 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
     boolean hasReservations() {
       var validReservations = false;
       for (final var reservation : reservations.values()) {
-        // TODO use clock
-        if (reservation.validUntil() >= 0
-            && reservation.validUntil() > System.currentTimeMillis()) {
+        if (reservation.validUntil() >= 0 && reservation.validUntil() > clock.millis()) {
           validReservations = true;
           break;
         }

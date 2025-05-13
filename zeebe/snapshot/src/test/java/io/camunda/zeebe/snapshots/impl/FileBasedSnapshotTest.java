@@ -19,6 +19,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.InstantSource;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Before;
@@ -38,7 +46,12 @@ public final class FileBasedSnapshotTest {
   private Path snapshotDir;
   private Path reservationsDir;
   private TestActor actor;
-  private final long validUntil = System.currentTimeMillis() + 120000L;
+  private final InstantSource clock =
+      Clock.fixed(
+          LocalDateTime.of(LocalDate.of(2025, 4, 30), LocalTime.of(8, 30))
+              .toInstant(ZoneOffset.UTC),
+          ZoneId.of("UTC"));
+  private final long validUntil = clock.millis() + Duration.ofMinutes(5).toMillis();
 
   @Before
   public void beforeEach() throws Exception {
@@ -155,6 +168,20 @@ public final class FileBasedSnapshotTest {
   }
 
   @Test
+  public void shouldRelaseReservationAfterTimeout() throws IOException {
+    // given
+    final var snapshotPath = snapshotDir.resolve("snapshot");
+    final Path checksumPath = snapshotDir.resolve("checksum");
+    final var snapshot = createSnapshot(snapshotPath, checksumPath);
+    final var id = UUID.randomUUID();
+    // when
+    snapshot.reserveWithPersistence(id, clock.millis() - 1000L, Reason.SCALE_UP).join();
+
+    // then
+    assertThat(snapshot.isReserved()).isFalse();
+  }
+
+  @Test
   public void shouldReleaseReservedSnapshot() throws IOException {
     // given
     final var snapshotPath = snapshotDir.resolve("snapshot");
@@ -211,7 +238,8 @@ public final class FileBasedSnapshotTest {
         metadata,
         null,
         s -> {},
-        actor.getActorControl());
+        actor.getActorControl(),
+        clock);
   }
 
   // Opens an already persisted snapshot to simulate restarts
@@ -226,7 +254,8 @@ public final class FileBasedSnapshotTest {
         metadata,
         null,
         s -> {},
-        actor.getActorControl());
+        actor.getActorControl(),
+        clock);
   }
 
   static class TestActor extends Actor {

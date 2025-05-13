@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.InstantSource;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -50,7 +51,8 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       final FileBasedSnapshotId snapshotId,
       final SnapshotMetadata metadata,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
-      final ConcurrencyControl actor) {
+      final ConcurrencyControl actor,
+      final InstantSource clock) {
     this.directory = directory;
     this.checksumFile = checksumFile;
     this.checksums = checksums;
@@ -58,7 +60,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     this.metadata = metadata;
     this.onSnapshotDeleted = onSnapshotDeleted;
     this.actor = actor;
-    reservations = new FileBasedSnapshotReservations(this, reservationDirectory, actor);
+    reservations = new FileBasedSnapshotReservations(this, reservationDirectory, actor, clock);
   }
 
   public FileBasedSnapshotId getSnapshotId() {

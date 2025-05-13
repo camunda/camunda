@@ -25,10 +25,13 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
@@ -82,19 +85,22 @@ public final class FileBasedSnapshotStoreImpl {
   private final CRC32CChecksumProvider checksumProvider;
   private final ConcurrencyControl actor;
   private final Path reservationsDirectory;
+  private final InstantSource clock;
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
       final Path root,
       final CRC32CChecksumProvider checksumProvider,
       final ConcurrencyControl actor,
-      final SnapshotMetrics snapshotMetrics) {
+      final SnapshotMetrics snapshotMetrics,
+      final InstantSource clock) {
     this.brokerId = brokerId;
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     pendingDirectory = root.resolve(PENDING_DIRECTORY);
     reservationsDirectory = root.resolve(RESERVATIONS_DIRECTORY);
     this.actor = actor;
     this.snapshotMetrics = snapshotMetrics;
+    this.clock = clock;
 
     try {
       FileUtil.ensureDirectoryExists(snapshotsDirectory);
@@ -108,6 +114,16 @@ public final class FileBasedSnapshotStoreImpl {
 
     listeners = new CopyOnWriteArraySet<>();
     this.checksumProvider = Objects.requireNonNull(checksumProvider);
+  }
+
+  @VisibleForTesting
+  public FileBasedSnapshotStoreImpl(
+      final int brokerId,
+      final Path root,
+      final CRC32CChecksumProvider checksumProvider,
+      final ConcurrencyControl actor,
+      final SnapshotMetrics snapshotMetrics) {
+    this(brokerId, root, checksumProvider, actor, snapshotMetrics, Clock.systemUTC());
   }
 
   public void start() {
@@ -216,7 +232,8 @@ public final class FileBasedSnapshotStoreImpl {
           snapshotId,
           metadata,
           this::onSnapshotDeleted,
-          actor);
+          actor,
+          clock);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
@@ -530,7 +547,8 @@ public final class FileBasedSnapshotStoreImpl {
               snapshotId,
               metadata,
               this::onSnapshotDeleted,
-              actor);
+              actor,
+              clock);
       final var failed =
           !currentPersistedSnapshotRef.compareAndSet(
               currentPersistedSnapshot, newPersistedSnapshot);
