@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.CamundaRuntimeConnection;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -86,7 +87,7 @@ public class CamundaProcessTestExtension
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
 
-  private CamundaContainerRuntime containerRuntime;
+  private CamundaRuntimeConnection runtimeConnection;
   private CamundaProcessTestResultCollector processTestResultCollector;
 
   private CamundaManagementClient camundaManagementClient;
@@ -121,30 +122,31 @@ public class CamundaProcessTestExtension
   @Override
   public void beforeAll(final ExtensionContext context) {
     // create runtime
-    containerRuntime = containerRuntimeBuilder.build();
-    containerRuntime.start();
+    runtimeConnection = containerRuntimeBuilder.build();
+    runtimeConnection.start();
 
     camundaManagementClient =
         new CamundaManagementClient(
-            containerRuntime.getCamundaContainer().getMonitoringApiAddress(),
-            containerRuntime.getCamundaContainer().getRestApiAddress());
+            runtimeConnection.getCamundaMonitoringApiAddress(),
+            runtimeConnection.getCamundaRestApiAddress());
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            containerRuntime.getCamundaContainer(),
-            containerRuntime.getConnectorsContainer(),
+            runtimeConnection.getCamundaRestApiAddress(),
+            runtimeConnection.getCamundaGrpcApiAddress(),
+            runtimeConnection.getConnectorsRestApiAddress(),
             createdClients::add,
             camundaManagementClient);
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
-    store.put(STORE_KEY_RUNTIME, containerRuntime);
+    store.put(STORE_KEY_RUNTIME, runtimeConnection);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
   }
 
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
-    if (containerRuntime == null) {
+    if (runtimeConnection == null) {
       throw new IllegalStateException(
           "The CamundaProcessTestExtension failed to start because the runtime is not created. "
               + "Make sure that you registering the extension on a static field.");
@@ -157,7 +159,7 @@ public class CamundaProcessTestExtension
       injectField(context, CamundaProcessTestContext.class, () -> camundaProcessTestContext);
     } catch (final Exception e) {
       closeCreatedClients();
-      containerRuntime.close();
+      runtimeConnection.close();
       throw e;
     }
 
@@ -203,7 +205,7 @@ public class CamundaProcessTestExtension
 
   @Override
   public void afterEach(final ExtensionContext extensionContext) {
-    if (containerRuntime == null) {
+    if (runtimeConnection == null) {
       // Skip if the runtime is not created.
       return;
     }
@@ -248,11 +250,11 @@ public class CamundaProcessTestExtension
 
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
-    if (containerRuntime == null) {
+    if (runtimeConnection == null) {
       // Skip if the runtime is not created.
       return;
     }
-    containerRuntime.close();
+    runtimeConnection.close();
   }
 
   private static boolean isTestFailed(final ExtensionContext extensionContext) {

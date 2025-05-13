@@ -27,8 +27,6 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.containers.CamundaContainer;
-import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.mock.JobWorkerMockImpl;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -58,18 +56,21 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private static final int TIMEOUT = 40;
 
-  private final CamundaContainer camundaContainer;
-  private final ConnectorsContainer connectorsContainer;
+  private final URI camundaRestApiAddress;
+  private final URI camundaGrpcApiAddress;
+  private final URI connectorsRestApiAddress;
   private final Consumer<AutoCloseable> clientCreationCallback;
   private final CamundaManagementClient camundaManagementClient;
 
   public CamundaProcessTestContextImpl(
-      final CamundaContainer camundaContainer,
-      final ConnectorsContainer connectorsContainer,
+      final URI camundaRestApiAddress,
+      final URI camundaGrpcApiAddress,
+      final URI connectorsRestApiAddress,
       final Consumer<AutoCloseable> clientCreationCallback,
       final CamundaManagementClient camundaManagementClient) {
-    this.camundaContainer = camundaContainer;
-    this.connectorsContainer = connectorsContainer;
+    this.camundaRestApiAddress = camundaRestApiAddress;
+    this.camundaGrpcApiAddress = camundaGrpcApiAddress;
+    this.connectorsRestApiAddress = connectorsRestApiAddress;
     this.clientCreationCallback = clientCreationCallback;
     this.camundaManagementClient = camundaManagementClient;
   }
@@ -118,17 +119,17 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public URI getCamundaGrpcAddress() {
-    return camundaContainer.getGrpcApiAddress();
+    return camundaGrpcApiAddress;
   }
 
   @Override
   public URI getCamundaRestAddress() {
-    return camundaContainer.getRestApiAddress();
+    return camundaRestApiAddress;
   }
 
   @Override
   public URI getConnectorsAddress() {
-    return connectorsContainer.getRestApiAddress();
+    return connectorsRestApiAddress;
   }
 
   @Override
@@ -148,6 +149,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void mockChildProcess(final String childProcessId) {
+    mockChildProcess(childProcessId, new HashMap<>());
+  }
+
+  @Override
   public void mockChildProcess(final String childProcessId, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
     final BpmnModelInstance processModel =
@@ -164,46 +170,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     client
         .newDeployResourceCommand()
         .addProcessModel(processModel, "test-process.bpmn")
-        .send()
-        .join();
-  }
-
-  @Override
-  public void mockChildProcess(final String childProcessId) {
-    mockChildProcess(childProcessId, new HashMap<>());
-  }
-
-  @Override
-  public void mockDmnDecision(final String decisionId, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-    final String jsonVariables = client.getConfiguration().getJsonMapper().toJson(variables);
-
-    // Create an empty DMN model
-    final DmnModelInstance modelInstance = Dmn.createEmptyModel();
-
-    // Create and configure the definitions element
-    final Definitions definitions = modelInstance.newInstance(Definitions.class);
-    definitions.setName(decisionId + "-name");
-    definitions.setNamespace("http://camunda.org/schema/1.0/dmn");
-    modelInstance.setDefinitions(definitions);
-
-    // Create the decision element
-    final Decision decision = modelInstance.newInstance(Decision.class);
-    decision.setId(decisionId);
-    decision.setName(decisionId + "-decision-name");
-    definitions.addChildElement(decision);
-
-    final LiteralExpression literalExpression = modelInstance.newInstance(LiteralExpression.class);
-    final Text text = modelInstance.newInstance(Text.class);
-    text.setTextContent(jsonVariables);
-    literalExpression.setText(text);
-    decision.addChildElement(literalExpression);
-
-    client
-        .newDeployResourceCommand()
-        .addResourceStream(
-            new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()),
-            decisionId + ".dmn")
         .send()
         .join();
   }
@@ -276,6 +242,41 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
 
     client.newUserTaskCompleteCommand(userTaskKey.get()).variables(variables).send().join();
+  }
+
+  @Override
+  public void mockDmnDecision(final String decisionId, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final String jsonVariables = client.getConfiguration().getJsonMapper().toJson(variables);
+
+    // Create an empty DMN model
+    final DmnModelInstance modelInstance = Dmn.createEmptyModel();
+
+    // Create and configure the definitions element
+    final Definitions definitions = modelInstance.newInstance(Definitions.class);
+    definitions.setName(decisionId + "-name");
+    definitions.setNamespace("http://camunda.org/schema/1.0/dmn");
+    modelInstance.setDefinitions(definitions);
+
+    // Create the decision element
+    final Decision decision = modelInstance.newInstance(Decision.class);
+    decision.setId(decisionId);
+    decision.setName(decisionId + "-decision-name");
+    definitions.addChildElement(decision);
+
+    final LiteralExpression literalExpression = modelInstance.newInstance(LiteralExpression.class);
+    final Text text = modelInstance.newInstance(Text.class);
+    text.setTextContent(jsonVariables);
+    literalExpression.setText(text);
+    decision.addChildElement(literalExpression);
+
+    client
+        .newDeployResourceCommand()
+        .addResourceStream(
+            new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()),
+            decisionId + ".dmn")
+        .send()
+        .join();
   }
 
   private ActivatedJob getActivatedJob(final String jobType) {

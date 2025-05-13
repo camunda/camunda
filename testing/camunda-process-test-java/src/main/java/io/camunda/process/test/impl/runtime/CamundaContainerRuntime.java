@@ -18,10 +18,12 @@ package io.camunda.process.test.impl.runtime;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
+import io.camunda.process.test.impl.extension.CamundaRuntimeConnection;
 import io.camunda.process.test.impl.runtime.logging.CamundaLogEntry;
 import io.camunda.process.test.impl.runtime.logging.ConnectorsLogEntry;
 import io.camunda.process.test.impl.runtime.logging.LogEntry;
 import io.camunda.process.test.impl.runtime.logging.Slf4jJsonLogConsumer;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,7 +36,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-public class CamundaContainerRuntime implements AutoCloseable {
+public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntimeConnection {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaContainerRuntime.class);
 
@@ -130,6 +132,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     return container;
   }
 
+  @Override
   public void start() {
     final List<GenericContainer<?>> containers = new ArrayList<>();
     containers.add(camundaContainer);
@@ -149,6 +152,30 @@ public class CamundaContainerRuntime implements AutoCloseable {
     final Instant endTime = Instant.now();
     final Duration startupTime = Duration.between(startTime, endTime);
     LOGGER.info("Camunda container runtime started in {}", startupTime);
+  }
+
+  @Override
+  public URI getCamundaMonitoringApiAddress() {
+    return getCamundaContainer().getMonitoringApiAddress();
+  }
+
+  @Override
+  public URI getCamundaRestApiAddress() {
+    return getCamundaContainer().getRestApiAddress();
+  }
+
+  @Override
+  public URI getCamundaGrpcApiAddress() {
+    return getCamundaContainer().getGrpcApiAddress();
+  }
+
+  @Override
+  public URI getConnectorsRestApiAddress() {
+    if (connectorsEnabled) {
+      return getConnectorsContainer().getRestApiAddress();
+    } else {
+      return URI.create("http://localhost:8080/connectors-disabled");
+    }
   }
 
   public CamundaContainer getCamundaContainer() {

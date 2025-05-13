@@ -21,6 +21,7 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.CamundaRuntimeConnection;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
@@ -77,7 +78,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
-  private CamundaContainerRuntime containerRuntime;
+  private CamundaRuntimeConnection runtimeConnection;
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
@@ -98,18 +99,19 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   @Override
   public void beforeTestClass(final TestContext testContext) {
     // create runtime
-    containerRuntime = buildRuntime(testContext);
-    containerRuntime.start();
+    runtimeConnection = buildRuntime(testContext);
+    runtimeConnection.start();
 
     camundaManagementClient =
         new CamundaManagementClient(
-            containerRuntime.getCamundaContainer().getMonitoringApiAddress(),
-            containerRuntime.getCamundaContainer().getRestApiAddress());
+            runtimeConnection.getCamundaMonitoringApiAddress(),
+            runtimeConnection.getCamundaRestApiAddress());
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            containerRuntime.getCamundaContainer(),
-            containerRuntime.getConnectorsContainer(),
+            runtimeConnection.getCamundaRestApiAddress(),
+            runtimeConnection.getCamundaGrpcApiAddress(),
+            runtimeConnection.getConnectorsRestApiAddress(),
             createdClients::add,
             camundaManagementClient);
   }
@@ -143,7 +145,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
-    if (containerRuntime == null) {
+    if (runtimeConnection == null) {
       // Skip if the runtime is not created.
       return;
     }
@@ -175,11 +177,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestClass(final TestContext testContext) throws Exception {
-    if (containerRuntime == null) {
+    if (runtimeConnection == null) {
       // Skip if the runtime is not created.
       return;
     }
-    containerRuntime.close();
+    runtimeConnection.close();
   }
 
   private void printTestResults() {
@@ -221,7 +223,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
   }
 
-  private CamundaContainerRuntime buildRuntime(final TestContext testContext) {
+  private CamundaRuntimeConnection buildRuntime(final TestContext testContext) {
     final CamundaContainerRuntimeConfiguration runtimeConfiguration =
         testContext.getApplicationContext().getBean(CamundaContainerRuntimeConfiguration.class);
 

@@ -69,7 +69,8 @@ public class CamundaContainerRuntimeTest {
   void shouldCreateContainers() {
     // given/when
     final CamundaContainerRuntime runtime =
-        CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
+        (CamundaContainerRuntime)
+            CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
 
     // then
     assertThat(runtime).isNotNull();
@@ -84,7 +85,8 @@ public class CamundaContainerRuntimeTest {
   void shouldStartAndStopContainers() throws Exception {
     // given
     final CamundaContainerRuntime runtime =
-        CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
+        (CamundaContainerRuntime)
+            CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
 
     // when
     runtime.start();
@@ -171,10 +173,11 @@ public class CamundaContainerRuntimeTest {
   void shouldEnableConnectors() throws Exception {
     // given
     final CamundaContainerRuntime runtime =
-        CamundaContainerRuntime.newBuilder()
-            .withContainerFactory(containerFactory)
-            .withConnectorsEnabled(true)
-            .build();
+        (CamundaContainerRuntime)
+            CamundaContainerRuntime.newBuilder()
+                .withContainerFactory(containerFactory)
+                .withConnectorsEnabled(true)
+                .build();
 
     // when
     runtime.start();
