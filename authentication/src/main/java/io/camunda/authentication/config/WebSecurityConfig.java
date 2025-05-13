@@ -17,6 +17,7 @@ import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
@@ -191,9 +192,10 @@ public class WebSecurityConfig {
         final UserServices userServices,
         final AuthorizationServices authorizationServices,
         final RoleServices roleServices,
-        final TenantServices tenantServices) {
+        final TenantServices tenantServices,
+        final GroupServices groupServices) {
       return new CamundaUserDetailsService(
-          userServices, authorizationServices, roleServices, tenantServices);
+          userServices, authorizationServices, roleServices, tenantServices, groupServices);
     }
 
     @Bean
