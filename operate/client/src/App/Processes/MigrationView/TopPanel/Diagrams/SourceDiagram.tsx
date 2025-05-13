@@ -54,7 +54,7 @@ const SourceDiagram: React.FC = observer(() => {
             }}
             overlaysData={
               processInstanceMigrationStore.isSummaryStep
-                ? processStatisticsStore.overlaysData
+                ? processStatisticsStore.getOverlaysData()
                 : []
             }
           >

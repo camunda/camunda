@@ -79,7 +79,7 @@ describe('stores/processStatistics.batchModification', () => {
 
   it('should get overlays data', async () => {
     expect(
-      processStatisticsBatchModificationStore.getOverlaysData({
+      processStatisticsBatchModificationStore.getOverlaysDataBatchModification({
         sourceFlowNodeId: 'userTask',
         targetFlowNodeId: 'startEvent',
       }),
@@ -99,7 +99,7 @@ describe('stores/processStatistics.batchModification', () => {
     ]);
 
     expect(
-      processStatisticsBatchModificationStore.getOverlaysData({
+      processStatisticsBatchModificationStore.getOverlaysDataBatchModification({
         sourceFlowNodeId: 'startEvent',
         targetFlowNodeId: 'endEvent',
       }),
@@ -119,7 +119,7 @@ describe('stores/processStatistics.batchModification', () => {
     ]);
 
     expect(
-      processStatisticsBatchModificationStore.getOverlaysData({
+      processStatisticsBatchModificationStore.getOverlaysDataBatchModification({
         sourceFlowNodeId: 'endEvent',
         targetFlowNodeId: 'userTask',
       }),

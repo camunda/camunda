@@ -16,7 +16,7 @@
  */
 
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useLocation, useNavigate, Location} from 'react-router-dom';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
@@ -36,6 +36,7 @@ import {processStatisticsStore} from 'modules/stores/processStatistics/processSt
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
+import {OverlayData} from 'modules/bpmn-js/BpmnJS';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
 import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
 import {BatchModificationNotification} from './BatchModificationNotification';
@@ -68,6 +69,10 @@ const DiagramPanel: React.FC = observer(() => {
     location.search,
   );
 
+  const [overlays, setOverlays] = useState<OverlayData[] | undefined>(
+    undefined,
+  );
+
   const isVersionSelected = version !== undefined && version !== 'all';
 
   const {bpmnProcessId, processName} =
@@ -92,6 +97,11 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {selectedTargetFlowNodeId} = batchModificationStore.state;
 
+  const {selectableFlowNodes} = processXmlStore;
+  const {xml} = processXmlStore.state;
+
+  const panelHeaderRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     processStatisticsStore.init();
     return () => {
@@ -115,9 +125,15 @@ const DiagramPanel: React.FC = observer(() => {
     fetchDiagram();
   }, [processId, location.search]);
 
-  const {xml} = processXmlStore.state;
+  useEffect(() => {
+    if (processStatisticsStore.state.status === 'fetched') {
+      const overlaysData =
+        processStatisticsStore.getOverlaysData(selectableFlowNodes);
 
-  const panelHeaderRef = useRef<HTMLDivElement>(null);
+      setOverlays(overlaysData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectableFlowNodes, processStatisticsStore.state.status]);
 
   useOperationsPanelResize(panelHeaderRef, (target, width) => {
     target.style['marginRight'] =
@@ -196,11 +212,13 @@ const DiagramPanel: React.FC = observer(() => {
                     );
                   },
                   overlaysData: [
-                    ...processStatisticsStore.overlaysData,
-                    ...processStatisticsBatchModificationStore.getOverlaysData({
-                      sourceFlowNodeId: flowNodeId,
-                      targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
-                    }),
+                    ...processStatisticsStore.getOverlaysData(),
+                    ...processStatisticsBatchModificationStore.getOverlaysDataBatchModification(
+                      {
+                        sourceFlowNodeId: flowNodeId,
+                        targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
+                      },
+                    ),
                   ],
                   // All flow nodes that can be a move modification target,
                   // except the source flow node
@@ -225,7 +243,7 @@ const DiagramPanel: React.FC = observer(() => {
                       );
                     }
                   },
-                  overlaysData: processStatisticsStore.overlaysData,
+                  overlaysData: overlays,
                   selectableFlowNodes: processXmlStore.selectableIds,
                 })}
           >
