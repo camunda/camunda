@@ -151,7 +151,6 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
-    provider.close();
 
     if (writer != null) {
       try {

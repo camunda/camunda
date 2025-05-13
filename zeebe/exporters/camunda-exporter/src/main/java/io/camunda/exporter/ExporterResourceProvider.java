@@ -31,8 +31,6 @@ public interface ExporterResourceProvider {
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper);
 
-  void close();
-
   /**
    * This should return descriptors describing the desired state of all indices provided.
    *

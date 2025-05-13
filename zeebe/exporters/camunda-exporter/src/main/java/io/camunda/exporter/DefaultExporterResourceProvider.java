@@ -109,7 +109,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 
 /**
@@ -118,11 +117,9 @@ import java.util.function.BiConsumer;
  */
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
   public static final String NAMESPACE = "zeebe.camunda.exporter.cache";
+
   private IndexDescriptors indexDescriptors;
   private Set<ExportHandler<?, ?>> exportHandlers;
-
-  private ExporterMetadata exporterMetadata;
-  private ExecutorService executor;
   private Map<String, ErrorHandler> indicesWithCustomErrorHandlers;
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
@@ -138,7 +135,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
     indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);
-    this.exporterMetadata = exporterMetadata;
 
     processCache =
         new ExporterEntityCacheImpl<>(
@@ -280,13 +276,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         Map.of(
             indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
-  }
-
-  @Override
-  public void close() {
-    if (executor != null) {
-      executor.shutdown();
-    }
   }
 
   @Override
