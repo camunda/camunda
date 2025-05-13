@@ -168,7 +168,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
-        github.event_name == 'pull_request' ||
+        github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
