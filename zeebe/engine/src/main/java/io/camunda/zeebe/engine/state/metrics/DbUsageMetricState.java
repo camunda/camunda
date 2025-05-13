@@ -49,7 +49,7 @@ public class DbUsageMetricState implements MutableUsageMetricState {
         eventTimeKey,
         (eventTimePiKey, tenantIdVal) -> {
           tenantIdPIsMap
-              .computeIfAbsent(tenantIdVal.toString(), tenantId -> new ArrayList<>())
+              .computeIfAbsent(tenantIdVal.toString(), ignored -> new ArrayList<>())
               .add(eventTimePiKey.second().getValue());
         });
     return tenantIdPIsMap;
