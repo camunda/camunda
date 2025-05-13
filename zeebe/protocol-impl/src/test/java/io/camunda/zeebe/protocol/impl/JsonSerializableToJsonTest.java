@@ -3076,7 +3076,6 @@ final class JsonSerializableToJsonTest {
                             .setEntityType(EntityType.USER))
                     .addRoleMember(
                         new RoleRecord()
-                            .setRoleKey(1)
                             .setRoleId("id")
                             .setEntityType(EntityType.USER)
                             .setEntityId("username"))
@@ -3098,7 +3097,6 @@ final class JsonSerializableToJsonTest {
                         new TenantRecord().setTenantKey(5).setTenantId("id").setName("name"))
                     .addTenantMember(
                         new TenantRecord()
-                            .setTenantKey(5)
                             .setTenantId("id")
                             .setEntityType(EntityType.ROLE)
                             .setEntityId("id"))
@@ -3115,7 +3113,14 @@ final class JsonSerializableToJsonTest {
                             .setMappingId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
-                            .setName("Claim 2")),
+                            .setName("Claim 2"))
+                    .addAuthorization(
+                        new AuthorizationRecord()
+                            .setOwnerId("id2")
+                            .setOwnerType(AuthorizationOwnerType.MAPPING)
+                            .setResourceType(AuthorizationResourceType.RESOURCE)
+                            .setResourceId("resource-id")
+                            .setPermissionTypes(Set.of(PermissionType.CREATE))),
         """
       {
         "roles": [
@@ -3130,9 +3135,11 @@ final class JsonSerializableToJsonTest {
         ],
         "roleMembers": [
           {
-            "roleKey": 1,
+            "roleKey": -1,
             "roleId": "id",
-            "entityId": "username
+            "name": "",
+            "description": "",
+            "entityId": "username",
             "entityType": "USER"
           }
         ],
@@ -3162,8 +3169,10 @@ final class JsonSerializableToJsonTest {
         },
         "tenantMembers": [
           {
-            "tenantKey": 5,
+            "tenantKey": -1,
             "tenantId": "id",
+            "name": "",
+            "description": "",
             "entityId": "id",
             "entityType": "ROLE"
           }
@@ -3182,6 +3191,16 @@ final class JsonSerializableToJsonTest {
             "claimName": "claim2",
             "claimValue": "value2",
             "name": "Claim 2"
+          }
+        ],
+        "authorizations": [
+          {
+            "authorizationKey": -1,
+            "ownerId": "id2",
+            "ownerType": "MAPPING",
+            "resourceId": "resource-id",
+            "resourceType": "RESOURCE",
+            "permissionTypes": ["CREATE"]
           }
         ]
       }
@@ -3208,7 +3227,10 @@ final class JsonSerializableToJsonTest {
               "entityId": "",
               "entityType": "UNSPECIFIED"
           },
-          "mappings": []
+          "mappings": [],
+          "roleMembers": [],
+          "tenantMembers": [],
+          "authorizations": []
       }
       """
       },

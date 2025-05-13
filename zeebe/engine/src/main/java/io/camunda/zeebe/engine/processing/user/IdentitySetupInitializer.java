@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -29,13 +30,13 @@ import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware, Task {
-  public static final String DEFAULT_ROLE_NAME = "Admin";
-  public static final String DEFAULT_ROLE_ID = "admin";
+  public static final String ADMIN_ROLE_ID = "admin";
   public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
@@ -76,8 +77,9 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     final var setupRecord = new IdentitySetupRecord();
 
-    final var defaultRole = new RoleRecord().setRoleId(DEFAULT_ROLE_ID).setName(DEFAULT_ROLE_NAME);
-    setupRecord.addRole(defaultRole);
+    setupAdminRole(setupRecord);
+    setupRpaRole(setupRecord);
+    setupConnectorsRole(setupRecord);
 
     securityConfig
         .getInitialization()
@@ -93,7 +95,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
               setupRecord.addUser(userRecord);
               setupRecord.addRoleMember(
                   new RoleRecord()
-                      .setRoleId(DEFAULT_ROLE_ID)
+                      .setRoleId(ADMIN_ROLE_ID)
                       .setEntityType(EntityType.USER)
                       .setEntityId(user.getUsername()));
             });
@@ -112,7 +114,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
               setupRecord.addMapping(mappingrecord);
               setupRecord.addRoleMember(
                   new RoleRecord()
-                      .setRoleId(DEFAULT_ROLE_ID)
+                      .setRoleId(ADMIN_ROLE_ID)
                       .setEntityType(EntityType.MAPPING)
                       .setEntityId(mapping.getMappingId()));
             });
@@ -120,12 +122,12 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     setupRecord.setDefaultTenant(
         new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));
 
-    setupRecord.addTenantMember(
-        new TenantRecord()
-            .setTenantId(DEFAULT_TENANT_ID)
-            .setEntityType(EntityType.ROLE)
-            .setEntityId(defaultRole.getRoleId()));
+    taskResultBuilder.appendCommandRecord(IdentitySetupIntent.INITIALIZE, setupRecord);
+    return taskResultBuilder.build();
+  }
 
+  private static void setupAdminRole(final IdentitySetupRecord setupRecord) {
+    setupRecord.addRole(new RoleRecord().setRoleId(ADMIN_ROLE_ID).setName("Admin"));
     for (final var resourceType : AuthorizationResourceType.values()) {
       if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
         // We shouldn't add empty permissions for an unspecified resource type
@@ -134,14 +136,64 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
       setupRecord.addAuthorization(
           new AuthorizationRecord()
-              .setOwnerId(defaultRole.getRoleId())
               .setOwnerType(AuthorizationOwnerType.ROLE)
+              .setOwnerId(ADMIN_ROLE_ID)
               .setResourceType(resourceType)
               .setResourceId(WILDCARD_PERMISSION)
               .setPermissionTypes(resourceType.getSupportedPermissionTypes()));
     }
+    setupRecord.addTenantMember(
+        new TenantRecord()
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setEntityType(EntityType.ROLE)
+            .setEntityId(ADMIN_ROLE_ID));
+  }
 
-    taskResultBuilder.appendCommandRecord(IdentitySetupIntent.INITIALIZE, setupRecord);
-    return taskResultBuilder.build();
+  private static void setupConnectorsRole(final IdentitySetupRecord setupRecord) {
+    final var connectorsRoleId = "connectors";
+    setupRecord.addRole(new RoleRecord().setRoleId(connectorsRoleId).setName("Connectors"));
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerId(connectorsRoleId)
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setResourceId(WILDCARD_PERMISSION)
+            .setPermissionTypes(
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.UPDATE_PROCESS_INSTANCE)));
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerId(connectorsRoleId)
+            .setResourceType(AuthorizationResourceType.MESSAGE)
+            .setResourceId(WILDCARD_PERMISSION)
+            .setPermissionTypes(Set.of(PermissionType.CREATE)));
+    setupRecord.addTenantMember(
+        new TenantRecord()
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setEntityType(EntityType.ROLE)
+            .setEntityId(connectorsRoleId));
+  }
+
+  private static void setupRpaRole(final IdentitySetupRecord setupRecord) {
+    final var rpaRoleId = "rpa";
+    setupRecord
+        .addRole(new RoleRecord().setRoleId(rpaRoleId).setName("RPA"))
+        .addAuthorization(
+            new AuthorizationRecord()
+                .setOwnerId(rpaRoleId)
+                .setResourceType(AuthorizationResourceType.RESOURCE)
+                .setResourceId(WILDCARD_PERMISSION)
+                .setPermissionTypes(Set.of(PermissionType.READ)))
+        .addAuthorization(
+            new AuthorizationRecord()
+                .setOwnerId(rpaRoleId)
+                .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                .setResourceId(WILDCARD_PERMISSION)
+                .setPermissionTypes(Set.of(PermissionType.UPDATE_PROCESS_INSTANCE)))
+        .addTenantMember(
+            new TenantRecord()
+                .setTenantId(DEFAULT_TENANT_ID)
+                .setEntityType(EntityType.ROLE)
+                .setEntityId(rpaRoleId));
   }
 }
