@@ -12,9 +12,6 @@ import {modificationsStore} from './modifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {mockProcessXml} from 'modules/mocks/mockProcessXml';
-import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {cancelAllTokens} from 'modules/utils/modifications';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
@@ -43,7 +40,6 @@ describe('stores/flowNodeSelection', () => {
   afterEach(() => {
     flowNodeSelectionStore.reset();
     modificationsStore.reset();
-    processInstanceDetailsDiagramStore.reset();
     flowNodeMetaDataStore.reset();
   });
 
@@ -510,10 +506,6 @@ describe('stores/flowNodeSelection', () => {
   });
 
   it('should get has pending cancel modification', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessXml);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml('some-process-id');
-
     // cancel all tokens
     cancelAllTokens('userTask', 0, 0, {});
 
@@ -576,10 +568,6 @@ describe('stores/flowNodeSelection', () => {
   });
 
   it('should get has pending move modification', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessXml);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml('some-process-id');
-
     // move all tokens
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'userTask',

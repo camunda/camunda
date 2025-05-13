@@ -13,7 +13,6 @@ import {
 } from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   createEventSubProcessFlowNodeInstances,
   createInstance,
@@ -797,7 +796,6 @@ const adHocNodeFlowNodeInstances: {
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
     return () => {
-      processInstanceDetailsDiagramStore.reset();
       flowNodeInstanceStore.reset();
       modificationsStore.reset();
       instanceHistoryModificationStore.reset();

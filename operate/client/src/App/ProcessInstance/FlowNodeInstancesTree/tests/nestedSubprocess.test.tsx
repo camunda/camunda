@@ -10,7 +10,6 @@ import {createRef, act} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {open} from 'modules/mocks/diagrams';
 import {
   nestedSubProcessesInstance,
@@ -22,20 +21,14 @@ import {FlowNodeInstancesTree} from '..';
 import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(nestedSubProcessesInstance);
-    mockFetchProcessXML().withSuccess(open('NestedSubProcesses.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(
       open('NestedSubProcesses.bpmn'),
-    );
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      nestedSubProcessesInstance.bpmnProcessId,
     );
 
     processInstanceDetailsStore.init({id: nestedSubProcessesInstance.id});

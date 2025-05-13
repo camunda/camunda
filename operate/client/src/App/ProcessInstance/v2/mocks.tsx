@@ -41,7 +41,6 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
@@ -104,7 +103,6 @@ const mockRequests = (contextPath: string = '') => {
   mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
   mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
   mockFetchCallHierarchy(contextPath).withSuccess({items: []});
-  mockFetchProcessXML(contextPath).withSuccess('');
   mockFetchProcessDefinitionXml({contextPath}).withSuccess('');
   mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
   mockFetchFlowNodeInstances(contextPath).withSuccess(
