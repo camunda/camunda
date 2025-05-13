@@ -18,7 +18,10 @@ import {
   clearSelection,
   getSelectedRunningInstanceCount,
 } from 'modules/utils/flowNodeSelection';
-import {useRootNode} from 'modules/hooks/flowNodeSelection';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -59,8 +62,10 @@ const Diagram: React.FC<Props> = observer(
     const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
     const {data: totalRunningInstances} =
       useTotalRunningInstancesForFlowNode(flowNodeId);
+    const isRootNodeSelected = useIsRootNodeSelected();
     const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
       totalRunningInstances ?? 0,
+      isRootNodeSelected,
     );
     const rootNode = useRootNode();
 

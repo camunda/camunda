@@ -28,7 +28,7 @@ import {
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
-import {OverlayPosition, SubprocessOverlay} from 'bpmn-js/lib/NavigatedViewer';
+import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram/v2';
 import {MetadataPopover} from '../MetadataPopover/v2';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
@@ -63,7 +63,10 @@ import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAss
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
-import {useRootNode} from 'modules/hooks/flowNodeSelection';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -113,6 +116,7 @@ const TopPanel: React.FC = observer(() => {
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const rootNode = useRootNode();
+  const isRootNodeSelected = useIsRootNodeSelected();
 
   const {
     data: processDefinitionData,
@@ -275,13 +279,17 @@ const TopPanel: React.FC = observer(() => {
                   affectedTokenCount,
                   visibleAffectedTokenCount,
                   businessObjects,
+                  '',
                 ),
               label: 'Discard',
             }}
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        getSelectedRunningInstanceCount(totalRunningInstances || 0) > 1 && (
+        getSelectedRunningInstanceCount(
+          totalRunningInstances || 0,
+          isRootNodeSelected,
+        ) > 1 && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
       {modificationsStore.state.status === 'adding-token' &&
@@ -319,6 +327,7 @@ const TopPanel: React.FC = observer(() => {
                       affectedTokenCount,
                       visibleAffectedTokenCount,
                       businessObjects,
+                      '',
                       flowNodeId,
                     );
                   } else {

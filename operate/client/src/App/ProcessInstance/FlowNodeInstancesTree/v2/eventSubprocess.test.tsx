@@ -16,8 +16,8 @@ import {
   mockFlowNodeInstance,
   processInstanceId,
   Wrapper,
-  eventSubprocessProcessInstance,
   mockEventSubprocessInstance,
+  eventSubprocessProcessInstance,
 } from './mocks';
 import {eventSubProcess} from 'modules/testUtils';
 import {createRef} from 'react';

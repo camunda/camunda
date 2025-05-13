@@ -7,7 +7,6 @@
  */
 
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getFlowNodeName} from './flowNodes';
 import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {
@@ -95,6 +94,7 @@ const selectFlowNode = (rootNode: Selection, selection: Selection) => {
 
 const getSelectedRunningInstanceCount = (
   totalRunningInstancesForFlowNode: number,
+  isRootNodeSelected: boolean,
 ) => {
   const currentSelection = flowNodeSelectionStore.state.selection;
 
@@ -104,7 +104,7 @@ const getSelectedRunningInstanceCount = (
 
   if (
     currentSelection.isPlaceholder ||
-    flowNodeSelectionStore.isRootNodeSelected ||
+    isRootNodeSelected ||
     currentSelection.flowNodeId === undefined
   ) {
     return 0;
@@ -117,16 +117,20 @@ const getSelectedRunningInstanceCount = (
   return totalRunningInstancesForFlowNode;
 };
 
-const getSelectedFlowNodeName = (businessObjects?: BusinessObjects) => {
+const getSelectedFlowNodeName = (
+  businessObjects?: BusinessObjects,
+  processDefinitionName?: string,
+  isRootNodeSelected?: boolean,
+) => {
   if (
-    processInstanceDetailsStore.state.processInstance === null ||
+    processDefinitionName === undefined ||
     flowNodeSelectionStore.state.selection === null
   ) {
     return '';
   }
 
-  if (flowNodeSelectionStore.isRootNodeSelected) {
-    return processInstanceDetailsStore.state.processInstance.processName;
+  if (isRootNodeSelected) {
+    return processDefinitionName;
   }
 
   if (flowNodeSelectionStore.state.selection.flowNodeId === undefined) {

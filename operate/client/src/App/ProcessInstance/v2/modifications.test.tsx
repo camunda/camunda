@@ -546,8 +546,8 @@ describe('ProcessInstance - modification mode', () => {
 
     mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
     mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-    mockFetchCallHierarchy(contextPath).withSuccess({items: []});
-    mockFetchCallHierarchy(contextPath).withSuccess({items: []});
+    mockFetchCallHierarchy(contextPath).withSuccess([]);
+    mockFetchCallHierarchy(contextPath).withSuccess([]);
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
