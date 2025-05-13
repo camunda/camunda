@@ -59,6 +59,7 @@ it('should evaluate the raw data of the report on mount', () => {
           sorting: {by: 'startDate', order: 'desc'},
         },
         groupBy: {type: 'none', value: null},
+        distributedBy: {type: 'none', value: null},
         view: {entity: null, properties: ['rawData']},
         visualization: 'table',
       },
@@ -79,6 +80,7 @@ it('should evaluate the raw data of the report on report prop change', () => {
           sorting: {by: 'startDate', order: 'desc'},
         },
         groupBy: {type: 'none', value: null},
+        distributedBy: {type: 'none', value: null},
         view: {entity: null, properties: ['rawData']},
         visualization: 'table',
       },
@@ -99,6 +101,7 @@ it('should evaluate the raw data of the report on report prop change', () => {
           sorting: {by: 'startDate', order: 'desc'},
         },
         groupBy: {type: 'none', value: null},
+        distributedBy: {type: 'none', value: null},
         view: {entity: null, properties: ['rawData']},
         visualization: 'table',
       },
@@ -133,4 +136,39 @@ it('evaluate re-evaluate the report when called loadReport prop', () => {
   runAllEffects();
 
   expect(evaluateReport).toHaveBeenCalledWith(report, [], sortParams);
+});
+
+it('should reset report setup when converting it to raw data', () => {
+  const existingReport = {
+    data: {
+      configuration: {
+        xml: 'same xml',
+        someOtherConfig: 'should be removed',
+      },
+      view: {oldProperty: 'should be removed'},
+      groupBy: {type: 'oldType', value: 'oldValue'},
+      distributedBy: {type: 'oldType', value: 'oldValue'},
+      visualization: 'oldVisualization',
+    },
+  };
+
+  shallow(<InstanceViewTable report={existingReport} />);
+  runAllEffects();
+
+  expect(evaluateReport).toHaveBeenCalledWith(
+    {
+      data: {
+        configuration: {
+          xml: 'same xml',
+          sorting: {by: 'startDate', order: 'desc'},
+        },
+        groupBy: {type: 'none', value: null},
+        distributedBy: {type: 'none', value: null},
+        view: {entity: null, properties: ['rawData']},
+        visualization: 'table',
+      },
+    },
+    [],
+    undefined
+  );
 });
