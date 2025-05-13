@@ -191,13 +191,13 @@ public class RoleServicesTest {
     final var memberType = EntityType.USER;
     final var roleEntity = mock(RoleEntity.class);
     when(client.findAllRoles(
-            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).memberType(memberType)))))
+            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).childMemberType(memberType)))))
         .thenReturn(List.of(roleEntity));
 
     // when
     final var result =
         services.findAll(
-            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).memberType(memberType))));
+            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).childMemberType(memberType))));
 
     // then
     assertThat(result).isEqualTo(List.of(roleEntity));

@@ -47,6 +47,11 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
                 : hasChildQuery(
                     IdentityJoinRelationshipType.MEMBER.getType(),
                     stringTerms(RoleIndex.MEMBER_ID, filter.memberIds())),
+        filter.childMemberType() == null
+            ? null
+            : hasChildQuery(
+                IdentityJoinRelationshipType.MEMBER.getType(),
+                term(RoleIndex.MEMBER_TYPE, filter.childMemberType().name())),
         filter.roleIds() == null
             ? null
             : filter.roleIds().isEmpty()

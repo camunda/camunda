@@ -65,7 +65,8 @@ public class CamundaUserDetailsServiceTest {
         .thenReturn(List.of("operate", "identity"));
     final RoleEntity adminRole = new RoleEntity(2L, roleId, "ADMIN", "description");
     when(roleServices.findAll(
-            RoleQuery.of(q -> q.filter(f -> f.memberId(TEST_USER_ID).memberType(EntityType.USER)))))
+            RoleQuery.of(
+                q -> q.filter(f -> f.memberId(TEST_USER_ID).childMemberType(EntityType.USER)))))
         .thenReturn(List.of(adminRole));
 
     // when
