@@ -22,6 +22,7 @@ import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
+import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
@@ -60,6 +61,7 @@ import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
+import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
@@ -106,6 +108,7 @@ import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
@@ -1242,6 +1245,57 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the assign role to group command
    */
   AssignRoleToGroupCommandStep1 newAssignRoleToGroupCommand();
+
+  /**
+   * Command to assign a role to a tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newAssignRoleToTenantCommand("tenantId")
+   *  .roleId("role-id")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP.
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the assign role to tenant command
+   */
+  AssignRoleToTenantCommandStep1 newAssignRoleToTenantCommand(String tenantId);
+
+  /**
+   * Command to unassign a role from a tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUnassignRoleFromTenantCommand("tenantId")
+   *  .roleId("role-id")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP.
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the unassign role from tenant command
+   */
+  UnassignRoleFromTenantCommandStep1 newUnassignRoleFromTenantCommand(String tenantId);
+
+  /**
+   * Executes a search request to query roles assigned to a specific tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newRolesByTenantSearchRequest("tenantId")
+   *  .filter((f) -> f.name("admin"))
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(50))
+   *  .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the roles by tenant search request
+   */
+  RolesByTenantSearchRequest newRolesByTenantSearchRequest(String tenantId);
 
   /**
    * Command to create a group.
