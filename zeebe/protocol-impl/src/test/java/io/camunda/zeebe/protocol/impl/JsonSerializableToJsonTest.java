@@ -3066,7 +3066,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<IdentitySetupRecord>)
             () ->
                 new IdentitySetupRecord()
-                    .setDefaultRole(
+                    .addRole(
                         new RoleRecord()
                             .setRoleKey(1)
                             .setRoleId("id")
@@ -3074,6 +3074,12 @@ final class JsonSerializableToJsonTest {
                             .setDescription("description")
                             .setEntityId("entityId")
                             .setEntityType(EntityType.USER))
+                    .addRoleMember(
+                        new RoleRecord()
+                            .setRoleKey(1)
+                            .setRoleId("id")
+                            .setEntityType(EntityType.USER)
+                            .setEntityId("username"))
                     .addUser(
                         new UserRecord()
                             .setUserKey(3L)
@@ -3090,6 +3096,12 @@ final class JsonSerializableToJsonTest {
                             .setPassword("qux"))
                     .setDefaultTenant(
                         new TenantRecord().setTenantKey(5).setTenantId("id").setName("name"))
+                    .addTenantMember(
+                        new TenantRecord()
+                            .setTenantKey(5)
+                            .setTenantId("id")
+                            .setEntityType(EntityType.ROLE)
+                            .setEntityId("id"))
                     .addMapping(
                         new MappingRecord()
                             .setMappingKey(6)
@@ -3106,14 +3118,24 @@ final class JsonSerializableToJsonTest {
                             .setName("Claim 2")),
         """
       {
-        "defaultRole": {
-          "roleKey": 1,
-          "roleId": "id",
-          "name": "roleName",
-          "description": "description",
-          "entityId": "entityId",
-          "entityType": "USER"
-        },
+        "roles": [
+          {
+            "roleKey": 1,
+            "roleId": "id",
+            "name": "roleName",
+            "description": "description",
+            "entityId": "entityId",
+            "entityType": "USER"
+          }
+        ],
+        "roleMembers": [
+          {
+            "roleKey": 1,
+            "roleId": "id",
+            "entityId": "username
+            "entityType": "USER"
+          }
+        ],
         "users": [
           {
             "userKey": 3,
@@ -3138,6 +3160,14 @@ final class JsonSerializableToJsonTest {
           "entityId": "",
           "entityType": "UNSPECIFIED"
         },
+        "tenantMembers": [
+          {
+            "tenantKey": 5,
+            "tenantId": "id",
+            "entityId": "id",
+            "entityType": "ROLE"
+          }
+        ],
         "mappings": [
           {
             "mappingKey": 6,
@@ -3165,18 +3195,10 @@ final class JsonSerializableToJsonTest {
         (Supplier<IdentitySetupRecord>)
             () ->
                 new IdentitySetupRecord()
-                    .setDefaultRole(new RoleRecord().setRoleId("roleId"))
                     .setDefaultTenant(new TenantRecord().setTenantId("tenantId")),
         """
       {
-          "defaultRole": {
-              "roleKey": -1,
-              "roleId": "roleId",
-              "name": "",
-              "description": "",
-              "entityId": "",
-              "entityType": "UNSPECIFIED"
-          },
+          "roles": [],
           "users": [],
           "defaultTenant": {
               "tenantKey": -1,

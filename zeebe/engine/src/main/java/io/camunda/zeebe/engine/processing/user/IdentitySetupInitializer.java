@@ -7,15 +7,21 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
+
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -71,7 +77,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     final var setupRecord = new IdentitySetupRecord();
 
     final var defaultRole = new RoleRecord().setRoleId(DEFAULT_ROLE_ID).setName(DEFAULT_ROLE_NAME);
-    setupRecord.setDefaultRole(defaultRole);
+    setupRecord.addRole(defaultRole);
 
     securityConfig
         .getInitialization()
@@ -85,11 +91,12 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                       .setEmail(user.getEmail())
                       .setPassword(passwordEncoder.encode(user.getPassword()));
               setupRecord.addUser(userRecord);
+              setupRecord.addRoleMember(
+                  new RoleRecord()
+                      .setRoleId(DEFAULT_ROLE_ID)
+                      .setEntityType(EntityType.USER)
+                      .setEntityId(user.getUsername()));
             });
-
-    final var defaultTenant =
-        new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME);
-    setupRecord.setDefaultTenant(defaultTenant);
 
     securityConfig
         .getInitialization()
@@ -103,7 +110,36 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                       .setClaimValue(mapping.getClaimValue())
                       .setName(mapping.getMappingId());
               setupRecord.addMapping(mappingrecord);
+              setupRecord.addRoleMember(
+                  new RoleRecord()
+                      .setRoleId(DEFAULT_ROLE_ID)
+                      .setEntityType(EntityType.MAPPING)
+                      .setEntityId(mapping.getMappingId()));
             });
+
+    setupRecord.setDefaultTenant(
+        new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));
+
+    setupRecord.addTenantMember(
+        new TenantRecord()
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setEntityType(EntityType.ROLE)
+            .setEntityId(defaultRole.getRoleId()));
+
+    for (final var resourceType : AuthorizationResourceType.values()) {
+      if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
+        // We shouldn't add empty permissions for an unspecified resource type
+        continue;
+      }
+
+      setupRecord.addAuthorization(
+          new AuthorizationRecord()
+              .setOwnerId(defaultRole.getRoleId())
+              .setOwnerType(AuthorizationOwnerType.ROLE)
+              .setResourceType(resourceType)
+              .setResourceId(WILDCARD_PERMISSION)
+              .setPermissionTypes(resourceType.getSupportedPermissionTypes()));
+    }
 
     taskResultBuilder.appendCommandRecord(IdentitySetupIntent.INITIALIZE, setupRecord);
     return taskResultBuilder.build();

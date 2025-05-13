@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -57,12 +58,17 @@ public final class IdentitySetupClient {
     public IdentitySetupInitializeClient(final CommandWriter writer) {
       this.writer = writer;
       record = new IdentitySetupRecord();
-      record.setDefaultRole(defaultRole);
+      record.addRole(defaultRole);
       record.setDefaultTenant(defaultTenant);
     }
 
     public IdentitySetupInitializeClient withRole(final RoleRecord role) {
-      record.setDefaultRole(role);
+      record.addRole(role);
+      return this;
+    }
+
+    public IdentitySetupInitializeClient withRoleMember(final RoleRecord role) {
+      record.addRoleMember(role);
       return this;
     }
 
@@ -76,8 +82,19 @@ public final class IdentitySetupClient {
       return this;
     }
 
+    public IdentitySetupInitializeClient withTenantMember(final TenantRecord tenant) {
+      record.addTenantMember(tenant);
+      return this;
+    }
+
     public IdentitySetupInitializeClient withMapping(final MappingRecord mapping) {
       record.addMapping(mapping);
+      return this;
+    }
+
+    public IdentitySetupInitializeClient withAuthorization(
+        final AuthorizationRecord authorization) {
+      record.addAuthorization(authorization);
       return this;
     }
 

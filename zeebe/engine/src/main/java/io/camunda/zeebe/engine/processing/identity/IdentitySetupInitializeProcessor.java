@@ -7,18 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
-
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -26,13 +20,14 @@ import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Collection;
 import java.util.List;
 
 @ExcludeAuthorizationCheck
@@ -41,16 +36,11 @@ public final class IdentitySetupInitializeProcessor
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
-  private final RoleState roleState;
 
-  public IdentitySetupInitializeProcessor(
-      final Writers writers,
-      final KeyGenerator keyGenerator,
-      final ProcessingState processingState) {
+  public IdentitySetupInitializeProcessor(final Writers writers, final KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     stateWriter = writers.state();
-    roleState = processingState.getRoleState();
   }
 
   @Override
@@ -58,91 +48,51 @@ public final class IdentitySetupInitializeProcessor
     final var initializationKey = keyGenerator.nextKey();
     final var setupRecord = command.getValue();
 
-    final var defaultRole = setupRecord.getDefaultRole();
-    final var roleExists = roleState.getRole(defaultRole.getRoleId()).isPresent();
-    createDefaultRole(initializationKey, defaultRole);
-
-    final var defaultTenant = setupRecord.getDefaultTenant();
-    createDefaultTenant(initializationKey, defaultTenant);
-
-    final var users = setupRecord.getUsers();
-    createUsers(initializationKey, users, defaultRole, defaultTenant);
-
-    final var mappings = setupRecord.getMappings();
-    createMappings(initializationKey, mappings, defaultRole, defaultTenant);
-
-    if (!roleExists) {
-      addAllPermissions(initializationKey, defaultRole);
-    }
+    createRoles(initializationKey, setupRecord.getRoles());
+    createDefaultTenant(initializationKey, setupRecord.getDefaultTenant());
+    createUsers(initializationKey, setupRecord.getUsers());
+    createMappings(initializationKey, setupRecord.getMappings());
+    createRoleMembers(initializationKey, setupRecord.getRoleMembers());
+    createTenantMembers(initializationKey, setupRecord.getTenantMembers());
+    createAuthorizations(initializationKey, setupRecord.getAuthorizations());
 
     stateWriter.appendFollowUpEvent(
         initializationKey, IdentitySetupIntent.INITIALIZED, setupRecord);
-  }
-
-  private void createDefaultRole(final long key, final RoleRecord defaultRole) {
-    commandWriter.appendFollowUpCommand(key, RoleIntent.CREATE, defaultRole);
-  }
-
-  private void addAllPermissions(final long key, final RoleRecord defaultRole) {
-    for (final AuthorizationResourceType resourceType : AuthorizationResourceType.values()) {
-      if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
-        // We shouldn't add empty permissions for an unspecified resource type
-        continue;
-      }
-
-      final var record =
-          new AuthorizationRecord()
-              .setOwnerId(defaultRole.getRoleId())
-              .setOwnerType(AuthorizationOwnerType.ROLE)
-              .setResourceType(resourceType)
-              .setResourceId(WILDCARD_PERMISSION)
-              .setPermissionTypes(resourceType.getSupportedPermissionTypes());
-      commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATE, record);
-    }
   }
 
   private void createDefaultTenant(final long key, final TenantRecord defaultTenant) {
     commandWriter.appendFollowUpCommand(key, TenantIntent.CREATE, defaultTenant);
   }
 
-  private void createUsers(
-      final long key,
-      final List<UserRecordValue> users,
-      final RoleRecord defaultRole,
-      final TenantRecord defaultTenant) {
-    users.forEach(
-        user -> {
-          commandWriter.appendFollowUpCommand(key, UserIntent.CREATE, user);
-          assignToRole(key, defaultRole.getRoleId(), user.getUsername(), EntityType.USER);
-          assignToTenant(key, defaultTenant.getTenantId(), user.getUsername(), EntityType.USER);
-        });
+  private void createUsers(final long key, final List<UserRecordValue> users) {
+    users.forEach(user -> commandWriter.appendFollowUpCommand(key, UserIntent.CREATE, user));
   }
 
-  private void createMappings(
-      final long key,
-      final List<MappingRecordValue> mappings,
-      final RoleRecord defaultRole,
-      final TenantRecord defaultTenant) {
+  private void createMappings(final long key, final List<MappingRecordValue> mappings) {
     mappings.forEach(
-        mapping -> {
-          commandWriter.appendFollowUpCommand(key, MappingIntent.CREATE, mapping);
-          assignToRole(key, defaultRole.getRoleId(), mapping.getMappingId(), EntityType.MAPPING);
-          assignToTenant(
-              key, defaultTenant.getTenantId(), mapping.getMappingId(), EntityType.MAPPING);
-        });
+        mapping -> commandWriter.appendFollowUpCommand(key, MappingIntent.CREATE, mapping));
   }
 
-  private void assignToRole(
-      final long key, final String roleId, final String entityId, final EntityType entityType) {
-    final var record =
-        new RoleRecord().setRoleId(roleId).setEntityId(entityId).setEntityType(entityType);
-    commandWriter.appendFollowUpCommand(key, RoleIntent.ADD_ENTITY, record);
+  private void createRoles(final long key, final Collection<RoleRecordValue> defaultRole) {
+    defaultRole.forEach(role -> commandWriter.appendFollowUpCommand(key, RoleIntent.CREATE, role));
   }
 
-  private void assignToTenant(
-      final long key, final String tenantId, final String entityId, final EntityType entityType) {
-    final var record =
-        new TenantRecord().setTenantId(tenantId).setEntityId(entityId).setEntityType(entityType);
-    commandWriter.appendFollowUpCommand(key, TenantIntent.ADD_ENTITY, record);
+  private void createRoleMembers(final long key, final Collection<RoleRecordValue> roleMembers) {
+    roleMembers.forEach(
+        roleMember -> commandWriter.appendFollowUpCommand(key, RoleIntent.ADD_ENTITY, roleMember));
+  }
+
+  private void createTenantMembers(
+      final long key, final Collection<TenantRecordValue> tenantMembers) {
+    tenantMembers.forEach(
+        tenantMember ->
+            commandWriter.appendFollowUpCommand(key, TenantIntent.ADD_ENTITY, tenantMember));
+  }
+
+  private void createAuthorizations(
+      final long key, final Collection<AuthorizationRecordValue> authorizations) {
+    authorizations.forEach(
+        authorization ->
+            commandWriter.appendFollowUpCommand(key, AuthorizationIntent.CREATE, authorization));
   }
 }
