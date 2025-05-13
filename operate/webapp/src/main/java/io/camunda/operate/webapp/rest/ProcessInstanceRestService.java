@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -121,6 +122,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Perform single operation on an instance (async)")
   @PostMapping("/{id}/operation")
+  @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity operation(
       @PathVariable @ValidLongId final String id,
       @RequestBody final CreateOperationRequestDto operationRequest) {
@@ -135,6 +137,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Perform modify process instance operation")
   @PostMapping("/{id}/modify")
+  @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity modify(
       @PathVariable @ValidLongId final String id,
       @RequestBody final ModifyProcessInstanceRequestDto modifyRequest) {
@@ -146,6 +149,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Create batch operation based on filter")
   @PostMapping("/batch-operation")
+  @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity createBatchOperation(
       @RequestBody final CreateBatchOperationRequestDto batchOperationRequest) {
     processInstanceRequestValidator.validateCreateBatchOperationRequest(batchOperationRequest);
