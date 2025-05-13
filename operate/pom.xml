@@ -40,6 +40,9 @@
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
     <excludeUnitTestNames>**/*IT.java</excludeUnitTestNames>
+    <excludeCoreFeaturesTestNames></excludeCoreFeaturesTestNames>
+    <excludeDataLayerTestNames></excludeDataLayerTestNames>
+    <excludeIdentityTestNames></excludeIdentityTestNames>
     <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
@@ -79,7 +82,7 @@
               <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             </systemPropertyVariables>
             <excludes>
-              <exclude>${excludeUnitTestNames}</exclude>
+              <exclude>${excludeCoreFeaturesTestNames}${excludeDataLayerTestNames}${excludeIdentityTestNames}</exclude>
             </excludes>
           </configuration>
         </plugin>
@@ -181,7 +184,7 @@
         </property>
       </activation>
       <properties>
-        <excludeUnitTestNames>**/connect/**/*.java,**/util/**/*.java,**/entities/**/*.java,**/schema/**/*.java,**/rest/**/*.java,**/webapp/**/*.java</excludeUnitTestNames>
+        <excludeCoreFeaturesTestNames>**/util/**/*.java,**/entities/**/*.java,**/schema/**/*.java,**/rest/**/*.java,**/webapp/**/*.java,</excludeCoreFeaturesTestNames>
       </properties>
     </profile>
 
@@ -193,7 +196,7 @@
         </property>
       </activation>
       <properties>
-        <excludeUnitTestNames>**/elasticsearch/**/*.java,,**/opensearch/**/*.java,**/zeebeimport/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java</excludeUnitTestNames>
+        <excludeDataLayerTestNames>**/elasticsearch/**/*.java,**/opensearch/**/*.java,**/zeebeimport/**/*.java,**/connect/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java,</excludeDataLayerTestNames>
       </properties>
     </profile>
 
@@ -205,7 +208,7 @@
         </property>
       </activation>
       <properties>
-        <excludeUnitTestNames>**/identity/**/*.java</excludeUnitTestNames>
+        <excludeIdentityTestNames>**/identity/**/*.java,</excludeIdentityTestNames>
       </properties>
     </profile>
 

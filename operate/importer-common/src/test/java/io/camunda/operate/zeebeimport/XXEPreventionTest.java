@@ -14,7 +14,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -43,7 +43,8 @@ public class XXEPreventionTest {
             xmlInputStream,
             new DefaultHandler() {
               @Override
-              public void characters(char ch[], int start, int length) throws SAXException {
+              public void characters(final char[] ch, final int start, final int length)
+                  throws SAXException {
                 elementContent.append(new String(ch, start, length));
               }
             });

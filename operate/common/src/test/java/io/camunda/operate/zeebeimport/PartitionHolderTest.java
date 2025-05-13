@@ -13,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class PartitionHolderTest {
 
@@ -41,7 +41,7 @@ public class PartitionHolderTest {
         }
       };
 
-  @Before
+  @BeforeEach
   public void setUp() {
     slept = 0;
     zeebePartitionIds = null;
