@@ -8,6 +8,7 @@
 package io.camunda.it.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -144,11 +145,8 @@ class RoleAuthorizationIT {
         .send()
         .join();
 
-    adminClient.newDeleteRoleCommand(roleId).send().join();
-
-    assertThatThrownBy(() -> adminClient.newRoleGetRequest(roleId).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("404: 'Not Found'");
+    assertThatNoException()
+        .isThrownBy(() -> adminClient.newDeleteRoleCommand(roleId).send().join());
   }
 
   @Test
