@@ -77,6 +77,7 @@ class RoleAuthorizationIT {
               new Permissions(ResourceType.ROLE, PermissionType.UPDATE, List.of("*")),
               new Permissions(ResourceType.ROLE, PermissionType.READ, List.of("*")),
               new Permissions(ResourceType.ROLE, PermissionType.DELETE, List.of("*")),
+              new Permissions(ResourceType.GROUP, PermissionType.CREATE, List.of("*")),
               new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
@@ -259,6 +260,55 @@ class RoleAuthorizationIT {
         .hasMessageContaining("403: 'Forbidden'");
   }
 
+  @Test
+  void shouldAssignGroupToRoleIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
+    final String groupId = Strings.newRandomValidIdentityId();
+
+    createRole(adminClient, roleId, "roleName");
+    waitForRolesToBeCreated(
+        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, roleId);
+
+    adminClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
+    Awaitility.await("Group is created and exported")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var group = adminClient.newGroupGetRequest(groupId).send().join();
+              assertThat(group).isNotNull();
+            });
+
+    adminClient.newAssignGroupToRoleCommand(roleId).groupId(groupId).send().join();
+
+    Awaitility.await("Group is assigned to the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchRolesByGroupId(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                groupId)
+                            .items())
+                    .anyMatch(r -> roleId.equals(r.getRoleId())));
+
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void assignGroupToRoleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignGroupToRoleCommand(Strings.newRandomValidIdentityId())
+                    .groupId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
   private static void createRole(
       final CamundaClient adminClient, final String roleId, final String roleName) {
     createRole(adminClient, roleId, roleName, null);
@@ -307,6 +357,25 @@ class RoleAuthorizationIT {
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
+    return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
+  }
+
+  // TODO once available, this test should use the client to make the request
+  private static RoleSearchResponse searchRolesByGroupId(
+      final String restAddress, final String username, final String groupId)
+      throws URISyntaxException, IOException, InterruptedException {
+    final var encodedCredentials =
+        Base64.getEncoder()
+            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(restAddress, "v2/groups/" + groupId + "/roles/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
   }
 
