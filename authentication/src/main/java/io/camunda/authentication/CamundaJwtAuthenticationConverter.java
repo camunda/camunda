@@ -29,12 +29,11 @@ public class CamundaJwtAuthenticationConverter
   }
 
   @Override
-  public AbstractAuthenticationToken convert(final Jwt source) {
-    final AbstractAuthenticationToken token = jwtAuthenticationConverter.convert(source);
+  public AbstractAuthenticationToken convert(final Jwt jwt) {
+    final AbstractAuthenticationToken token = jwtAuthenticationConverter.convert(jwt);
     return new CamundaJwtAuthenticationToken(
-        source,
-        new CamundaJwtUser(
-            source, camundaOAuthPrincipalService.loadOAuthContext(source.getClaims())),
+        jwt,
+        new CamundaJwtUser(jwt, camundaOAuthPrincipalService.loadOAuthContext(jwt.getTokenValue())),
         token.getCredentials(),
         token.getAuthorities());
   }

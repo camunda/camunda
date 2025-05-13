@@ -31,6 +31,8 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public class CamundaOidcUserServiceTest {
   private static final String REGISTRATION_ID = "test";
@@ -41,6 +43,8 @@ public class CamundaOidcUserServiceTest {
   private CamundaOidcUserService camundaOidcUserService;
 
   @Mock private CamundaOAuthPrincipalService camundaOAuthPrincipalService;
+  @Mock private JwtDecoder jwtDecoder;
+  @Mock private Jwt jwt;
 
   @BeforeEach
   public void setUp() throws Exception {
@@ -50,6 +54,18 @@ public class CamundaOidcUserServiceTest {
 
   @Test
   public void loadUser() {
+    final String jsonString =
+        """
+        {
+          "sub": "test|foo@camunda.test",
+          "email": "foo@camunda.test",
+          "role": "R1",
+          "group": "G1"
+        }
+        """;
+
+    // given
+    when(jwt.getTokenValue()).thenReturn(jsonString);
     // given
     final Map<String, Object> claims =
         Map.of(
@@ -60,7 +76,7 @@ public class CamundaOidcUserServiceTest {
 
     final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
 
-    when(camundaOAuthPrincipalService.loadOAuthContext(claims))
+    when(camundaOAuthPrincipalService.loadOAuthContext(jsonString))
         .thenReturn(
             new OAuthContext(
                 Set.of("test-id", "test-id-2"),
@@ -72,7 +88,8 @@ public class CamundaOidcUserServiceTest {
                     .build()));
 
     // when
-    final OidcUser oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
+    final OidcUser oidcUser =
+        camundaOidcUserService.loadUser(createOidcUserRequest(jsonString, claims));
 
     // then
     assertThat(oidcUser).isNotNull();
@@ -91,10 +108,22 @@ public class CamundaOidcUserServiceTest {
 
   @Test
   public void applicationIdIsSetInAuthContext() {
+    final String jsonString =
+        """
+        {
+          "sub": "test|foo@camunda.test",
+          "client_id": "blah",
+          "role": "R1",
+          "group": "G1"
+        }
+        """;
+
+    // given
+    when(jwt.getTokenValue()).thenReturn(jsonString);
     // given
     final Map<String, Object> claims = Map.of("sub", "test|foo@camunda.test", "client_id", "blah");
 
-    when(camundaOAuthPrincipalService.loadOAuthContext(claims))
+    when(camundaOAuthPrincipalService.loadOAuthContext(jsonString))
         .thenReturn(
             new OAuthContext(
                 Set.of("test-id", "test-id-2"),
@@ -102,7 +131,7 @@ public class CamundaOidcUserServiceTest {
                     .withApplicationId("blah")
                     .build()));
 
-    final var oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
+    final var oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(jsonString, claims));
     final var camundaUser = (CamundaOidcUser) oidcUser;
     final var authenticationContext = camundaUser.getAuthenticationContext();
 
@@ -110,13 +139,13 @@ public class CamundaOidcUserServiceTest {
     assertThat(authenticationContext.username()).isNull();
   }
 
-  private static OidcUserRequest createOidcUserRequest(final Map<String, Object> claims) {
+  private static OidcUserRequest createOidcUserRequest(
+      final String token, final Map<String, Object> claims) {
     return new OidcUserRequest(
         ClientRegistration.withRegistrationId(REGISTRATION_ID)
             .authorizationGrantType(AuthorizationGrantType.JWT_BEARER)
             .build(),
-        new OAuth2AccessToken(
-            TokenType.BEARER, TOKEN_VALUE, TOKEN_ISSUED_AT, TOKEN_EXPIRES_AT, Set.of()),
-        new OidcIdToken(TOKEN_VALUE, TOKEN_ISSUED_AT, TOKEN_EXPIRES_AT, claims));
+        new OAuth2AccessToken(TokenType.BEARER, token, TOKEN_ISSUED_AT, TOKEN_EXPIRES_AT, Set.of()),
+        new OidcIdToken(token, TOKEN_ISSUED_AT, TOKEN_EXPIRES_AT, claims));
   }
 }

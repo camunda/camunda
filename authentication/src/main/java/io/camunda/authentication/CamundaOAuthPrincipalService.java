@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication;
 
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
@@ -29,6 +31,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -46,6 +49,7 @@ public class CamundaOAuthPrincipalService {
   private final AuthorizationServices authorizationServices;
   private final String usernameClaim;
   private final String applicationIdClaim;
+  private final JwtDecoder jwtDecoder;
 
   public CamundaOAuthPrincipalService(
       final MappingServices mappingServices,
@@ -53,7 +57,8 @@ public class CamundaOAuthPrincipalService {
       final RoleServices roleServices,
       final GroupServices groupServices,
       final AuthorizationServices authorizationServices,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      final JwtDecoder jwtDecoder) {
     this.mappingServices = mappingServices;
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
@@ -62,15 +67,17 @@ public class CamundaOAuthPrincipalService {
     usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
     applicationIdClaim =
         securityConfiguration.getAuthentication().getOidc().getApplicationIdClaim();
+    this.jwtDecoder = jwtDecoder;
   }
 
-  public OAuthContext loadOAuthContext(final Map<String, Object> claims)
+  public OAuthContext loadOAuthContext(final String tokenValue)
       throws OAuth2AuthenticationException {
-    final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
+    final var jwtClaims = jwtDecoder.decode(tokenValue).getClaims();
+    final List<MappingEntity> mappings = mappingServices.getMatchingMappings(jwtClaims);
     final Set<String> mappingIds =
         mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
     if (mappingIds.isEmpty()) {
-      LOG.debug("No mappings found for these claims: {}", claims);
+      LOG.debug("No mappings found for these claims: {}", jwtClaims);
     }
 
     final var assignedRoles = roleServices.getRolesByMemberIds(mappingIds, EntityType.MAPPING);
@@ -93,8 +100,8 @@ public class CamundaOAuthPrincipalService {
                     .toList())
             .withRoles(assignedRoles);
 
-    final var username = getUsernameFromClaims(claims);
-    final var applicationId = getApplicationIdFromClaims(claims);
+    final var username = getUsernameFromToken(tokenValue);
+    final var applicationId = getApplicationIdFromClaims(jwtClaims);
 
     if (username == null && applicationId == null) {
       throw new IllegalArgumentException(
@@ -102,28 +109,29 @@ public class CamundaOAuthPrincipalService {
               .formatted(usernameClaim, applicationIdClaim));
     }
     if (username != null) {
-      authContextBuilder.withUsername(getUsernameFromClaims(claims));
+      authContextBuilder.withUsername(getUsernameFromToken(tokenValue));
     }
 
     if (applicationId != null) {
-      authContextBuilder.withApplicationId(getApplicationIdFromClaims(claims));
+      authContextBuilder.withApplicationId(getApplicationIdFromClaims(jwtClaims));
     }
 
     return new OAuthContext(mappingIds, authContextBuilder.build());
   }
 
-  private String getUsernameFromClaims(final Map<String, Object> claims) {
-    final var maybeUsername = Optional.ofNullable(claims.get(usernameClaim));
+  private String getUsernameFromToken(final String token) {
+    final var jsonContext = JsonPath.parse(token);
+    final String username;
 
-    if (maybeUsername.isEmpty()) {
+    try {
+      username = jsonContext.read(usernameClaim);
+    } catch (final ClassCastException e) {
+      throw new IllegalArgumentException(CLAIM_NOT_STRING.formatted("username", usernameClaim));
+    } catch (final PathNotFoundException e) {
       return null;
     }
 
-    if (maybeUsername.get() instanceof final String username) {
-      return username;
-    } else {
-      throw new IllegalArgumentException(CLAIM_NOT_STRING.formatted("username", usernameClaim));
-    }
+    return username;
   }
 
   private String getApplicationIdFromClaims(final Map<String, Object> claims) {

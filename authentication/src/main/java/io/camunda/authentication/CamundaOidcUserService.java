@@ -9,7 +9,6 @@ package io.camunda.authentication;
 
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.security.entity.AuthenticationMethod;
-import java.util.Map;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -29,7 +28,8 @@ public class CamundaOidcUserService extends OidcUserService {
   @Override
   public OidcUser loadUser(final OidcUserRequest userRequest) throws OAuth2AuthenticationException {
     final OidcUser oidcUser = super.loadUser(userRequest);
-    final Map<String, Object> claims = userRequest.getIdToken().getClaims();
-    return new CamundaOidcUser(oidcUser, camundaOAuthPrincipalService.loadOAuthContext(claims));
+    return new CamundaOidcUser(
+        oidcUser,
+        camundaOAuthPrincipalService.loadOAuthContext(userRequest.getIdToken().getTokenValue()));
   }
 }
