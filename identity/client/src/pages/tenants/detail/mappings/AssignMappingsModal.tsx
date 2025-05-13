@@ -11,12 +11,12 @@ import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApi, useApiCall } from "src/utility/api/hooks";
-import { searchMapping, Mapping } from "src/utility/api/mappings";
+import { searchMappingRule, MappingRule } from "src/utility/api/mappings";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignTenantMapping, Tenant } from "src/utility/api/tenants";
+import { assignTenantMappingRule, Tenant } from "src/utility/api/tenants";
 
 const SelectedMappings = styled.div`
   margin-top: 0;
@@ -25,55 +25,64 @@ const SelectedMappings = styled.div`
 const AssignMappingsModal: FC<
   UseEntityModalCustomProps<
     { id: Tenant["tenantKey"] },
-    { assignedMappings: Mapping[] }
+    { assignedMappingRules: MappingRule[] }
   >
-> = ({ entity: tenant, assignedMappings, onSuccess, open, onClose }) => {
+> = ({ entity: tenant, assignedMappingRules, onSuccess, open, onClose }) => {
   const { t, Translate } = useTranslate("tenants");
-  const [selectedMappings, setSelectedMappings] = useState<Mapping[]>([]);
-  const [loadingAssignMapping, setLoadingAssignMapping] = useState(false);
+  const [selectedMappingRules, setSelectedMappingRules] = useState<
+    MappingRule[]
+  >([]);
+  const [loadingAssignMappingRule, setLoadingAssignMappingRule] =
+    useState(false);
 
   const {
-    data: mappingSearchResults,
+    data: mappingRuleSearchResults,
     loading,
     reload,
     error,
-  } = useApi(searchMapping);
+  } = useApi(searchMappingRule);
 
-  const [callAssignMapping] = useApiCall(assignTenantMapping);
+  const [callAssignMappingRule] = useApiCall(assignTenantMappingRule);
 
   const unassignedMappings =
-    mappingSearchResults?.items.filter(
-      ({ mappingId }) =>
-        !assignedMappings.some((mapping) => mapping.mappingId === mappingId) &&
-        !selectedMappings.some((mapping) => mapping.mappingId === mappingId),
+    mappingRuleSearchResults?.items.filter(
+      ({ mappingRuleId }) =>
+        !assignedMappingRules.some(
+          (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
+        ) &&
+        !selectedMappingRules.some(
+          (mappingRule) => mappingRule.mappingRuleId === mappingRuleId,
+        ),
     ) || [];
 
-  const onSelectMapping = (mapping: Mapping) => {
-    setSelectedMappings([...selectedMappings, mapping]);
+  const onSelectMapping = (mappingRule: MappingRule) => {
+    setSelectedMappingRules([...selectedMappingRules, mappingRule]);
   };
 
   const onUnselectMapping =
-    ({ mappingId }: Mapping) =>
+    ({ mappingRuleId }: MappingRule) =>
     () => {
-      setSelectedMappings(
-        selectedMappings.filter((mapping) => mapping.mappingId !== mappingId),
+      setSelectedMappingRules(
+        selectedMappingRules.filter(
+          (mappingRule) => mappingRule.mappingRuleId !== mappingRuleId,
+        ),
       );
     };
 
-  const canSubmit = tenant && selectedMappings.length;
+  const canSubmit = tenant && selectedMappingRules.length;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
 
-    setLoadingAssignMapping(true);
+    setLoadingAssignMappingRule(true);
 
     const results = await Promise.all(
-      selectedMappings.map(({ mappingId }) =>
-        callAssignMapping({ mappingId, tenantId: tenant.id }),
+      selectedMappingRules.map(({ mappingRuleId }) =>
+        callAssignMappingRule({ mappingRuleId, tenantId: tenant.id }),
       ),
     );
 
-    setLoadingAssignMapping(false);
+    setLoadingAssignMappingRule(false);
 
     if (results.every(({ success }) => success)) {
       onSuccess();
@@ -82,16 +91,16 @@ const AssignMappingsModal: FC<
 
   useEffect(() => {
     if (open) {
-      setSelectedMappings([]);
+      setSelectedMappingRules([]);
     }
   }, [open]);
 
   return (
     <FormModal
-      headline={t("assignMapping")}
-      confirmLabel={t("assignMapping")}
-      loading={loadingAssignMapping}
-      loadingDescription={t("assigningMapping")}
+      headline={t("assignMappingRule")}
+      confirmLabel={t("assignMappingRule")}
+      loading={loadingAssignMappingRule}
+      loadingDescription={t("assigningMappingRule")}
       open={open}
       onSubmit={handleSubmit}
       submitDisabled={!canSubmit}
@@ -99,21 +108,21 @@ const AssignMappingsModal: FC<
       overflowVisible
     >
       <p>
-        <Translate i18nKey="searchAndAssignMappingToTenant">
-          Search and assign mapping to tenant
+        <Translate i18nKey="searchAndAssignMappingRuleToTenant">
+          Search and assign mapping rule to tenant
         </Translate>
       </p>
-      {selectedMappings.length > 0 && (
+      {selectedMappingRules.length > 0 && (
         <SelectedMappings>
-          {selectedMappings.map((mapping) => (
+          {selectedMappingRules.map((mapping) => (
             <Tag
-              key={mapping.mappingId}
+              key={mapping.mappingRuleId}
               onClose={onUnselectMapping(mapping)}
               size="md"
               type="blue"
               filter
             >
-              {mapping.mappingId}
+              {mapping.mappingRuleId}
             </Tag>
           ))}
         </SelectedMappings>
@@ -121,9 +130,9 @@ const AssignMappingsModal: FC<
       <DropdownSearch
         autoFocus
         items={unassignedMappings}
-        itemTitle={({ mappingId }) => mappingId}
+        itemTitle={({ mappingRuleId }) => mappingRuleId}
         itemSubTitle={({ name }) => name}
-        placeholder={t("searchByMappingId")}
+        placeholder={t("searchByMappingRuleId")}
         onSelect={onSelectMapping}
       />
       {!loading && error && (

@@ -71,7 +71,7 @@ public class MappingUpdateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.mappingRecords(MappingIntent.UPDATED)
-                .withMappingId(id)
+                .withMappingRuleId(id)
                 .withClaimName(claimName)
                 .withClaimValue(claimValueNew)
                 .exists())
@@ -85,14 +85,14 @@ public class MappingUpdateAuthorizationTest {
     final var claimValue = UUID.randomUUID().toString();
     final var claimValueNew = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var mappingId = UUID.randomUUID().toString();
+    final var mappingRuleId = UUID.randomUUID().toString();
 
     final var user = createUser();
     addPermissionsToUser(user, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE);
 
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -101,7 +101,7 @@ public class MappingUpdateAuthorizationTest {
     // when
     engine
         .mapping()
-        .updateMapping(mappingId)
+        .updateMapping(mappingRuleId)
         .withClaimValue(claimValue)
         .withClaimValue(claimValueNew)
         .withName(name)
@@ -111,7 +111,7 @@ public class MappingUpdateAuthorizationTest {
     // then
     assertThat(
             RecordingExporter.mappingRecords(MappingIntent.UPDATED)
-                .withMappingId(mappingId)
+                .withMappingRuleId(mappingRuleId)
                 .withClaimName(claimName)
                 .withClaimValue(claimValueNew)
                 .exists())

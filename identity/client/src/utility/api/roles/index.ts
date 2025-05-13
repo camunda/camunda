@@ -14,7 +14,7 @@ import {
   apiPut,
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
-import { Mapping } from "src/utility/api/mappings";
+import { MappingRule } from "src/utility/api/mappings";
 
 export const ROLES_ENDPOINT = "/roles";
 
@@ -48,25 +48,27 @@ export const deleteRole: ApiDefinition<undefined, { roleKey: string }> = ({
 
 // ----------------- Mappings within a Role -----------------
 
-export type GetRoleMappingsParams = {
+export type GetRoleMappingRulesParams = {
   roleId: string;
 };
-export const getMappingsByRoleId: ApiDefinition<
-  SearchResponse<Mapping>,
-  GetRoleMappingsParams
+export const getMappingRulesByRoleId: ApiDefinition<
+  SearchResponse<MappingRule>,
+  GetRoleMappingRulesParams
 > = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`);
 
-type AssignRoleMappingParams = GetRoleMappingsParams & { mappingId: string };
-export const assignRoleMapping: ApiDefinition<
+type AssignRoleMappingRuleParams = GetRoleMappingRulesParams & {
+  mappingRuleId: string;
+};
+export const assignRoleMappingRule: ApiDefinition<
   undefined,
-  AssignRoleMappingParams
-> = ({ roleId, mappingId }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingId}`);
+  AssignRoleMappingRuleParams
+> = ({ roleId, mappingRuleId }) => {
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingRuleId}`);
 };
 
-type UnassignRoleMappingParams = AssignRoleMappingParams;
-export const unassignRoleMapping: ApiDefinition<
+type UnassignRoleMappingRuleParams = AssignRoleMappingRuleParams;
+export const unassignRoleMappingRule: ApiDefinition<
   undefined,
-  UnassignRoleMappingParams
-> = ({ roleId, mappingId }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingId}`);
+  UnassignRoleMappingRuleParams
+> = ({ roleId, mappingRuleId }) =>
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingRuleId}`);

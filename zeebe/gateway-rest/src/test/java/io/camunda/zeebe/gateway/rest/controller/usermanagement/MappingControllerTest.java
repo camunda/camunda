@@ -52,7 +52,7 @@ public class MappingControllerTest extends RestControllerTest {
             .setMappingKey(1L)
             .setClaimName(dto.claimName())
             .setClaimValue(dto.claimValue())
-            .setMappingId(id)
+            .setMappingRuleId(id)
             .setName(dto.name());
 
     when(mappingServices.createMapping(dto))
@@ -87,7 +87,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "No mappingId provided.",
+              "detail": "No mappingRuleId provided.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -102,7 +102,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("claim")
             .claimValue("claimValue")
             .name("name")
-            .mappingId("");
+            .mappingRuleId("");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -112,7 +112,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "No mappingId provided.",
+              "detail": "No mappingRuleId provided.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -123,7 +123,7 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingClaimName() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingId("id");
+        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -148,7 +148,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("")
             .claimValue("claimValue")
             .name("name")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -169,7 +169,7 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingClaimValue() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingId("id");
+        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -194,7 +194,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("claimName")
             .claimValue("")
             .name("name")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -218,7 +218,7 @@ public class MappingControllerTest extends RestControllerTest {
         new MappingRuleCreateRequest()
             .claimName("claimName")
             .claimValue("claimValue")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -246,7 +246,7 @@ public class MappingControllerTest extends RestControllerTest {
     // given
     final var request =
         new MappingRuleCreateRequest()
-            .mappingId(id)
+            .mappingRuleId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");
@@ -259,7 +259,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+              "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
             .formatted(IdentifierPatterns.ID_PATTERN, MAPPING_RULES_PATH));
@@ -272,7 +272,7 @@ public class MappingControllerTest extends RestControllerTest {
     final var id = "x".repeat(257);
     final var request =
         new MappingRuleCreateRequest()
-            .mappingId(id)
+            .mappingRuleId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");
@@ -285,7 +285,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided mappingId exceeds the limit of 256 characters.",
+              "detail": "The provided mappingRuleId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -295,24 +295,24 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void deleteMappingShouldReturnNoContent() {
     // given
-    final String mappingId = "id";
+    final String mappingRuleId = "id";
 
-    final var mappingRecord = new MappingRecord().setMappingId(mappingId);
+    final var mappingRecord = new MappingRecord().setMappingRuleId(mappingRuleId);
 
-    when(mappingServices.deleteMapping(mappingId))
+    when(mappingServices.deleteMapping(mappingRuleId))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
 
     // when
     webClient
         .delete()
-        .uri("%s/%s".formatted(MAPPING_RULES_PATH, mappingId))
+        .uri("%s/%s".formatted(MAPPING_RULES_PATH, mappingRuleId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(mappingServices, times(1)).deleteMapping(mappingId);
+    verify(mappingServices, times(1)).deleteMapping(mappingRuleId);
   }
 
   @ParameterizedTest
@@ -325,7 +325,7 @@ public class MappingControllerTest extends RestControllerTest {
             .setMappingKey(1L)
             .setClaimName(dto.claimName())
             .setClaimValue(dto.claimValue())
-            .setMappingId(id)
+            .setMappingRuleId(id)
             .setName(dto.name());
 
     when(mappingServices.updateMapping(dto))

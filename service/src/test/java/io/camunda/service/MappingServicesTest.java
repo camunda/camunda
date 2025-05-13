@@ -116,7 +116,7 @@ public class MappingServicesTest {
     when(client.searchMappings(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findMapping("mappingId");
+    final var searchQueryResult = services.findMapping("mappingRuleId");
 
     // then
     assertThat(searchQueryResult).contains(entity);
@@ -128,7 +128,7 @@ public class MappingServicesTest {
     when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
-    assertThat(services.findMapping("mappingId")).isEmpty();
+    assertThat(services.findMapping("mappingRuleId")).isEmpty();
   }
 
   @Test
@@ -138,7 +138,7 @@ public class MappingServicesTest {
 
     // when / then
     final var exception =
-        assertThrows(CamundaSearchException.class, () -> services.getMapping("mappingId"));
+        assertThrows(CamundaSearchException.class, () -> services.getMapping("mappingRuleId"));
     assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
   }
 
@@ -153,7 +153,7 @@ public class MappingServicesTest {
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
     final var mappingRecord = new MappingRecord();
-    mappingRecord.setMappingId("id");
+    mappingRecord.setMappingRuleId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
@@ -163,7 +163,7 @@ public class MappingServicesTest {
     // then
     verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
     final var request = mappingDeleteRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingId()).isEqualTo("id");
+    assertThat(request.getRequestWriter().getMappingRuleId()).isEqualTo("id");
   }
 
   @Test
@@ -177,13 +177,16 @@ public class MappingServicesTest {
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
     final var mappingRecord = new MappingRecord();
-    mappingRecord.setMappingId("id");
+    mappingRecord.setMappingRuleId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
     final var mappingDTO =
         new MappingDTO(
-            "newClaimName", "newClaimValue", "newMappingRuleName", mappingRecord.getMappingId());
+            "newClaimName",
+            "newClaimValue",
+            "newMappingRuleName",
+            mappingRecord.getMappingRuleId());
 
     //  when
     testMappingServices.updateMapping(mappingDTO);
@@ -191,7 +194,7 @@ public class MappingServicesTest {
     // then
     verify(mockBrokerClient).sendRequest(mappingUpdateRequestArgumentCaptor.capture());
     final var request = mappingUpdateRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingId()).isEqualTo(mappingDTO.mappingId());
+    assertThat(request.getRequestWriter().getMappingRuleId()).isEqualTo(mappingDTO.mappingRuleId());
     assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(request.getRequestWriter().getClaimValue()).isEqualTo(mappingDTO.claimValue());
     assertThat(request.getRequestWriter().getName()).isEqualTo(mappingDTO.name());

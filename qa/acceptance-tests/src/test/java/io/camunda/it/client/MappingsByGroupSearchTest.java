@@ -51,7 +51,10 @@ public class MappingsByGroupSearchTest {
     assertThat(mappings.items().size()).isEqualTo(2);
     assertThat(mappings.items())
         .extracting(
-            Mapping::getMappingId, Mapping::getClaimName, Mapping::getClaimValue, Mapping::getName)
+            Mapping::getMappingRuleId,
+            Mapping::getClaimName,
+            Mapping::getClaimValue,
+            Mapping::getName)
         .contains(
             tuple(MAPPING_ID_1, MAPPING_ID_1 + "claimName", MAPPING_ID_1 + "claimValue", "name"),
             tuple(MAPPING_ID_2, MAPPING_ID_2 + "claimName", MAPPING_ID_2 + "claimValue", "name"));
@@ -62,12 +65,14 @@ public class MappingsByGroupSearchTest {
     final var mappings =
         camundaClient
             .newMappingsByGroupSearchRequest(GROUP_ID)
-            .filter(fn -> fn.mappingId(MAPPING_ID_1))
+            .filter(fn -> fn.mappingRuleId(MAPPING_ID_1))
             .send()
             .join();
 
     assertThat(mappings.items().size()).isEqualTo(1);
-    assertThat(mappings.items()).extracting(Mapping::getMappingId).containsExactly(MAPPING_ID_1);
+    assertThat(mappings.items())
+        .extracting(Mapping::getMappingRuleId)
+        .containsExactly(MAPPING_ID_1);
   }
 
   @Test
@@ -75,13 +80,13 @@ public class MappingsByGroupSearchTest {
     final var mappings =
         camundaClient
             .newMappingsByGroupSearchRequest(GROUP_ID)
-            .sort(fn -> fn.mappingId().desc())
+            .sort(fn -> fn.mappingRuleId().desc())
             .send()
             .join();
 
     assertThat(mappings.items().size()).isEqualTo(2);
     assertThat(mappings.items())
-        .extracting(Mapping::getMappingId)
+        .extracting(Mapping::getMappingRuleId)
         .containsExactly(MAPPING_ID_2, MAPPING_ID_1);
   }
 
@@ -104,7 +109,7 @@ public class MappingsByGroupSearchTest {
   private static void createMapping(final String mappingId) {
     camundaClient
         .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .name("name")
         .claimName(mappingId + "claimName")
         .claimValue(mappingId + "claimValue")
@@ -117,7 +122,7 @@ public class MappingsByGroupSearchTest {
   }
 
   private static void assignMappingToGroup(final String mappingId, final String groupId) {
-    camundaClient.newAssignMappingToGroupCommand(groupId).mappingId(mappingId).send().join();
+    camundaClient.newAssignMappingToGroupCommand(groupId).mappingRuleId(mappingId).send().join();
   }
 
   private static void waitForGroupsToBeUpdated() {

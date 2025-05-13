@@ -29,8 +29,8 @@ public class MappingFilterImpl extends TypedSearchRequestPropertyProvider<Mappin
   }
 
   @Override
-  public MappingFilter mappingId(final String mappingId) {
-    filter.setMappingId(mappingId);
+  public MappingFilter mappingRuleId(final String mappingId) {
+    filter.setMappingRuleId(mappingId);
     return this;
   }
 

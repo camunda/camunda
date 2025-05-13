@@ -21,8 +21,8 @@ import io.camunda.client.impl.search.request.SearchRequestSortBase;
 public class MappingSortImpl extends SearchRequestSortBase<MappingSort> implements MappingSort {
 
   @Override
-  public MappingSort mappingId() {
-    return field("mappingId");
+  public MappingSort mappingRuleId() {
+    return field("mappingRuleId");
   }
 
   @Override

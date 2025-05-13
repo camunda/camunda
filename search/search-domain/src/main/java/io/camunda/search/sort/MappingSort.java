@@ -45,8 +45,8 @@ public record MappingSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder mappingId() {
-      currentOrdering = new FieldSorting("mappingId", null);
+    public Builder mappingRuleId() {
+      currentOrdering = new FieldSorting("mappingRuleId", null);
       return this;
     }
 

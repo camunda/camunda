@@ -14,11 +14,11 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { Mapping } from "src/utility/api/mappings";
-import { unassignTenantMapping } from "src/utility/api/tenants";
+import { MappingRule } from "src/utility/api/mappings";
+import { unassignTenantMappingRule } from "src/utility/api/tenants";
 
 type RemoveTenantMappingModalProps = UseEntityModalCustomProps<
-  Mapping,
+  MappingRule,
   {
     tenant: string;
   }
@@ -34,13 +34,15 @@ const DeleteModal: FC<RemoveTenantMappingModalProps> = ({
   const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMapping, { loading }] = useApiCall(unassignTenantMapping);
+  const [callUnassignMapping, { loading }] = useApiCall(
+    unassignTenantMappingRule,
+  );
 
   const handleSubmit = async () => {
     if (tenant && mapping) {
       const { success } = await callUnassignMapping({
         tenantId: tenant,
-        mappingId: mapping.mappingId,
+        mappingRuleId: mapping.mappingRuleId,
       });
 
       if (success) {
@@ -66,10 +68,10 @@ const DeleteModal: FC<RemoveTenantMappingModalProps> = ({
       <p>
         <Translate
           i18nKey="removeMappingFromTenant"
-          values={{ mappingId: mapping.mappingId }}
+          values={{ mappingId: mapping.mappingRuleId }}
         >
-          Are you sure you want to remove <strong>{mapping.mappingId}</strong>{" "}
-          from this tenant?
+          Are you sure you want to remove{" "}
+          <strong>{mapping.mappingRuleId}</strong> from this tenant?
         </Translate>
       </p>
     </Modal>

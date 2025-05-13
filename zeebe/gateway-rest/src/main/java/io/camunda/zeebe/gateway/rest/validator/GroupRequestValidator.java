@@ -57,7 +57,7 @@ public final class GroupRequestValidator {
         validateId(entityId, "groupId", violations);
         break;
       case MAPPING:
-        validateId(entityId, "mappingId", violations);
+        validateId(entityId, "mappingRuleId", violations);
         break;
       default:
         validateId(entityId, "entityId", violations);

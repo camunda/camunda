@@ -22,9 +22,9 @@ public interface AssignMappingToGroupStep1 extends FinalCommandStep<AssignMappin
   /**
    * Sets the mapping ID for the assignment.
    *
-   * @param mappingId the ID of the mapping to assign
+   * @param mappingRuleId the ID of the mapping to assign
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  AssignMappingToGroupStep1 mappingId(String mappingId);
+  AssignMappingToGroupStep1 mappingRuleId(String mappingRuleId);
 }

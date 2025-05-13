@@ -17,7 +17,7 @@ package io.camunda.client.api.search.response;
 
 public interface Mapping {
 
-  String getMappingId();
+  String getMappingRuleId();
 
   String getClaimName();
 

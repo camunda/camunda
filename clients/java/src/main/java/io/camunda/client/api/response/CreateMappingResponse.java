@@ -17,5 +17,5 @@ package io.camunda.client.api.response;
 
 public interface CreateMappingResponse {
 
-  String getMappingId();
+  String getMappingRuleId();
 }

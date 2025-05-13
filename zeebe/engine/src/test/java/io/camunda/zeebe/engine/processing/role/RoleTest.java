@@ -283,10 +283,10 @@ public class RoleTest {
 
   @Test
   public void shouldRemoveMappingFromRole() {
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName("claimName")
         .withClaimValue("claimValue")
         .create();
@@ -295,14 +295,14 @@ public class RoleTest {
     engine
         .role()
         .addEntity(roleId)
-        .withEntityId(mappingId)
+        .withEntityId(mappingRuleId)
         .withEntityType(EntityType.MAPPING)
         .add();
     final var removedEntity =
         engine
             .role()
             .removeEntity(roleId)
-            .withEntityId(mappingId)
+            .withEntityId(mappingRuleId)
             .withEntityType(EntityType.MAPPING)
             .remove()
             .getValue();
@@ -310,7 +310,7 @@ public class RoleTest {
     assertThat(removedEntity)
         .isNotNull()
         .hasRoleId(roleId)
-        .hasEntityId(mappingId)
+        .hasEntityId(mappingRuleId)
         .hasEntityType(EntityType.MAPPING);
   }
 

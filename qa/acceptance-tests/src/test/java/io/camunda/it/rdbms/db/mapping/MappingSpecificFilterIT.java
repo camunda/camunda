@@ -72,9 +72,9 @@ public class MappingSpecificFilterIT {
     createAndSaveGroup(rdbmsWriter, group);
     createAndSaveGroup(rdbmsWriter, anotherGroup);
 
-    addMappingToGroup(group.groupId(), mapping1.mappingId());
-    addMappingToGroup(group.groupId(), mapping2.mappingId());
-    addMappingToGroup(anotherGroup.groupId(), mapping3.mappingId());
+    addMappingToGroup(group.groupId(), mapping1.mappingRuleId());
+    addMappingToGroup(group.groupId(), mapping2.mappingRuleId());
+    addMappingToGroup(anotherGroup.groupId(), mapping3.mappingRuleId());
 
     final var mappings =
         mappingReader.search(
@@ -93,17 +93,18 @@ public class MappingSpecificFilterIT {
     createAndSaveRole(rdbmsWriter, role);
     createAndSaveRole(rdbmsWriter, anotherRole);
 
-    final var mappingId1 = nextStringId();
-    final var mappingId2 = nextStringId();
-    final var mappingId3 = nextStringId();
-    Arrays.asList(mappingId1, mappingId2, mappingId3)
+    final var mappingRuleId1 = nextStringId();
+    final var mappingRuleId2 = nextStringId();
+    final var mappingRuleId3 = nextStringId();
+    Arrays.asList(mappingRuleId1, mappingRuleId2, mappingRuleId3)
         .forEach(
-            mappingId ->
-                createAndSaveMapping(rdbmsWriter, createRandomized(m -> m.mappingId(mappingId))));
+            mappingRuleId ->
+                createAndSaveMapping(
+                    rdbmsWriter, createRandomized(m -> m.mappingRuleId(mappingRuleId))));
 
-    addMappingToRole(role.roleId(), mappingId1);
-    addMappingToRole(anotherRole.roleId(), mappingId2);
-    addMappingToRole(anotherRole.roleId(), mappingId3);
+    addMappingToRole(role.roleId(), mappingRuleId1);
+    addMappingToRole(anotherRole.roleId(), mappingRuleId2);
+    addMappingToRole(anotherRole.roleId(), mappingRuleId3);
 
     final var mappings =
         mappingReader.search(
@@ -115,19 +116,21 @@ public class MappingSpecificFilterIT {
     assertThat(mappings.total()).isEqualTo(1);
     assertThat(mappings.items())
         .hasSize(1)
-        .extracting(MappingEntity::mappingId)
-        .containsOnly(mappingId1);
+        .extracting(MappingEntity::mappingRuleId)
+        .containsOnly(mappingRuleId1);
   }
 
-  private void addMappingToGroup(final String groupId, final String mappingId) {
-    rdbmsWriter.getGroupWriter().addMember(new GroupMemberDbModel(groupId, mappingId, "MAPPING"));
+  private void addMappingToGroup(final String groupId, final String mappingRuleId) {
+    rdbmsWriter
+        .getGroupWriter()
+        .addMember(new GroupMemberDbModel(groupId, mappingRuleId, "MAPPING"));
     rdbmsWriter.flush();
   }
 
-  private void addMappingToRole(final String roledId, final String mappingId) {
+  private void addMappingToRole(final String roledId, final String mappingRuleId) {
     rdbmsWriter
         .getRoleWriter()
-        .addMember(new RoleMemberDbModel(roledId, mappingId, MAPPING.name()));
+        .addMember(new RoleMemberDbModel(roledId, mappingRuleId, MAPPING.name()));
     rdbmsWriter.flush();
   }
 }

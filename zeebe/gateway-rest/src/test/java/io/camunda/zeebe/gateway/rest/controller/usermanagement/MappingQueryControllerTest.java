@@ -43,12 +43,12 @@ public class MappingQueryControllerTest extends RestControllerTest {
   void getMappingShouldReturnOk() {
     // given
     final var mapping = new MappingEntity("id", 100L, "Claim Name", "Claim Value", "Map Name");
-    when(mappingServices.getMapping(mapping.mappingId())).thenReturn(mapping);
+    when(mappingServices.getMapping(mapping.mappingRuleId())).thenReturn(mapping);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(MAPPING_BASE_URL, mapping.mappingId()))
+        .uri("%s/%s".formatted(MAPPING_BASE_URL, mapping.mappingRuleId()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -63,15 +63,15 @@ public class MappingQueryControllerTest extends RestControllerTest {
                           }""");
 
     // then
-    verify(mappingServices, times(1)).getMapping(mapping.mappingId());
+    verify(mappingServices, times(1)).getMapping(mapping.mappingRuleId());
   }
 
   @Test
   void getNonExistingMappingShouldReturnNotFound() {
     // given
-    final var mappingId = "id";
-    final var path = "%s/%s".formatted(MAPPING_BASE_URL, mappingId);
-    when(mappingServices.getMapping(mappingId))
+    final var mappingRuleId = "id";
+    final var path = "%s/%s".formatted(MAPPING_BASE_URL, mappingRuleId);
+    when(mappingServices.getMapping(mappingRuleId))
         .thenThrow(
             new CamundaSearchException(
                 "mapping not found", CamundaSearchException.Reason.NOT_FOUND));
@@ -97,7 +97,7 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .formatted(path));
 
     // then
-    verify(mappingServices, times(1)).getMapping(mappingId);
+    verify(mappingServices, times(1)).getMapping(mappingRuleId);
   }
 
   @Test

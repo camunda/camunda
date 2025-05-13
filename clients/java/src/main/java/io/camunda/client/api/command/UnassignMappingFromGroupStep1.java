@@ -23,9 +23,9 @@ public interface UnassignMappingFromGroupStep1
   /**
    * Sets the mapping ID for the unassignment.
    *
-   * @param mappingId the ID of the mapping to unassign
+   * @param mappingRuleId the ID of the mapping to unassign
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  UnassignMappingFromGroupStep1 mappingId(String mappingId);
+  UnassignMappingFromGroupStep1 mappingRuleId(String mappingRuleId);
 }

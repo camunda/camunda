@@ -3,7 +3,7 @@
   "groups": "Groups",
   "roles": "Roles",
   "tenants": "Tenants",
-  "mappings": "Mappings",
+  "mappingRules": "Mapping Rules",
   "authorizations": "Authorizations",
   "unauthorized": "Unauthorized",
   "sessionExpired": "Looks like your session has expired",

@@ -328,6 +328,6 @@ public class AddEntityTenantTest {
         .withClaimValue("claimValue")
         .create()
         .getValue()
-        .getMappingId();
+        .getMappingRuleId();
   }
 }

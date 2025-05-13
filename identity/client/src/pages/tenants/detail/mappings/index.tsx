@@ -39,7 +39,7 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
     AssignMappingsModal,
     reload,
     {
-      assignedMappings: mappings?.items || [],
+      assignedMappingRules: mappings?.items || [],
     },
   );
   const openAssignModal = () => assignMappings({ id: tenantId });
@@ -84,16 +84,16 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
       <EntityList
         data={mappings?.items}
         headers={[
-          { header: t("mappingId"), key: "mappingId" },
-          { header: t("mappingName"), key: "name" },
+          { header: t("mappingRuleId"), key: "mappingRuleId" },
+          { header: t("mappingRuleName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
         ]}
-        sortProperty="mappingId"
+        sortProperty="mappingRuleId"
         loading={loading}
-        addEntityLabel={t("assignMapping")}
+        addEntityLabel={t("assignMappingRule")}
         onAddEntity={openAssignModal}
-        searchPlaceholder={t("searchByMappingId")}
+        searchPlaceholder={t("searchByMappingRuleId")}
         menuItems={[
           {
             label: t("remove"),

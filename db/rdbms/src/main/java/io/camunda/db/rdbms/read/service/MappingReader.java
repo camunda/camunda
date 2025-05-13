@@ -28,15 +28,15 @@ public class MappingReader extends AbstractEntityReader<MappingEntity> {
     this.mappingMapper = mappingMapper;
   }
 
-  public Optional<MappingEntity> findOne(final String mappingId) {
-    LOG.trace("[RDBMS DB] Search for mapping with mapping ID {}", mappingId);
+  public Optional<MappingEntity> findOne(final String mappingRuleId) {
+    LOG.trace("[RDBMS DB] Search for mapping with mapping ID {}", mappingRuleId);
     final SearchQueryResult<MappingEntity> queryResult =
-        search(MappingQuery.of(b -> b.filter(f -> f.mappingId(mappingId))));
+        search(MappingQuery.of(b -> b.filter(f -> f.mappingRuleId(mappingRuleId))));
     return Optional.ofNullable(queryResult.items()).flatMap(hits -> hits.stream().findFirst());
   }
 
   public SearchQueryResult<MappingEntity> search(final MappingQuery query) {
-    final var dbSort = convertSort(query.sort(), MappingSearchColumn.MAPPING_ID);
+    final var dbSort = convertSort(query.sort(), MappingSearchColumn.MAPPING_RULE_ID);
     final var dbQuery =
         MappingDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
