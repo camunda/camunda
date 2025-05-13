@@ -36,7 +36,7 @@ public class StackdriverJSONLayoutTest {
   private final ObjectReader jsonReader = new ObjectMapper().reader();
 
   @Test
-  @Disabled
+  @Disabled("Currently failing. Will be fixed an re-enabled with https://github.com/camunda/product-hub/issues/2872")
   public void testLayout() throws Exception {
     // having Stackdriver appender activated
     final LoggerContext ctx = loggerRule.getLoggerContext();
