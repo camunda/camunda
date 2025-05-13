@@ -88,11 +88,9 @@ const v2Routes = createRoutesFromElements(
     <Route path="login" lazy={() => import('common/auth/Login')} />
     <Route path="/" lazy={() => import('./common/components/Layout')}>
       <Route path="forbidden" element={<Forbidden />} />
-      <Route
-        path="processes"
-        ErrorBoundary={ErrorWithinLayout}
-        Component={null}
-      />
+      <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
+        <Route index lazy={() => import('./v2/ProcessesTab')} />
+      </Route>
       <Route
         path="/"
         lazy={() => import('./v2/TasksTab')}

@@ -8,18 +8,19 @@
 
 @use '@carbon/layout';
 
+.splitPane {
+  --header-height: 48px;
+  width: 100%;
+  height: calc(100% - var(--header-height));
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  background: var(--cds-layer);
+}
+
 .container {
   width: 100%;
   overflow: auto;
-}
-
-.historyAside {
-  max-width: 320px;
-  width: 320px;
-  height: 100%;
-  background-color: var(--cds-layer);
-  overflow-y: auto;
-  border-left: 1px solid var(--cds-border-subtle);
 }
 
 .content {
