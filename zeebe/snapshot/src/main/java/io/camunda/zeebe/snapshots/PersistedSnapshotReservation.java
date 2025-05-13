@@ -17,26 +17,26 @@ public interface PersistedSnapshotReservation extends SnapshotReservation {
   Reason reason();
 
   enum Reason {
-    SCALE_UP((byte) 1),
-    BACKUP((byte) 2);
+    SCALE_UP((short) 1),
+    BACKUP((short) 2),
+    UNKNOWN((short) 255);
 
-    private static final Reason[] VALUES = values();
-    private final byte code;
+    private final short code;
 
-    Reason(final byte code) {
+    Reason(final short code) {
       this.code = code;
     }
 
-    public byte code() {
+    public short code() {
       return code;
     }
 
-    public static Reason fromCode(final byte code) {
-      try {
-        return VALUES[code - 1];
-      } catch (final ArrayIndexOutOfBoundsException e) {
-        throw new IllegalArgumentException("Unknown reason code: " + code);
-      }
+    public static Reason fromCode(final short code) {
+      return switch (code) {
+        case 1 -> SCALE_UP;
+        case 2 -> BACKUP;
+        default -> UNKNOWN;
+      };
     }
   }
 }
