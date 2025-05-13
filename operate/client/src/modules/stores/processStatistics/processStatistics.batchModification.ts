@@ -22,7 +22,7 @@ class ProcessStatisticsBatchModification extends ProcessStatisticsBase {
     return flowNodeStatistics.active + flowNodeStatistics.incidents;
   }
 
-  getOverlaysData = ({
+  getOverlaysDataBatchModification = ({
     sourceFlowNodeId,
     targetFlowNodeId,
   }: {
