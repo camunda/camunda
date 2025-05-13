@@ -128,6 +128,7 @@ const Header: React.FC = observer(() => {
           });
         },
         appTeaserRouteProps: IS_SAAS ? {} : undefined,
+        elements: IS_SAAS ? undefined : [],
       }}
       app={{
         ariaLabel: 'Camunda Tasklist',
