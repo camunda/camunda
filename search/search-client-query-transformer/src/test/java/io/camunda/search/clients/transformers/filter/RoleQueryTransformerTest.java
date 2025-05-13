@@ -99,12 +99,40 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
         SearchQuery.of(q1 -> q1.term(t -> t.field("memberType").value(USER.name())));
     final var roleIdQuery =
         SearchQuery.of(q1 -> q1.term(t -> t.field("roleId").value("test-parent-id")));
-    final var expectedJoinQuery =
+    final var expectedParentQuery =
         SearchQuery.of(q -> q.hasParent(hp -> hp.parentType("role").query(roleIdQuery)));
 
     assertThat(query.filter()).isEmpty();
     assertThat(query.should()).isEmpty();
-    assertThat(query.must()).containsExactlyInAnyOrder(expectedMemberTypeQuery, expectedJoinQuery);
+    assertThat(query.must())
+        .containsExactlyInAnyOrder(expectedMemberTypeQuery, expectedParentQuery);
+  }
+
+  @Test
+  void shouldQueryRolesByMemberId() {
+    // given
+    final var filter =
+        FilterBuilders.role((f) -> f.memberId("test-member-id").childMemberType(USER));
+
+    // when
+    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
+
+    // then
+    final var memberTypeQuery =
+        SearchQuery.of(q1 -> q1.term(t -> t.field("memberType").value(USER.name())));
+    final var expectedChildMemberTypeQuery =
+        SearchQuery.of(q -> q.hasChild(hc -> hc.type("member").query(memberTypeQuery)));
+    final var memberIdQuery =
+        SearchQuery.of(q1 -> q1.term(t -> t.field("memberId").value("test-member-id")));
+    final var expectedChildMemberIdQuery =
+        SearchQuery.of(q -> q.hasChild(hc -> hc.type("member").query(memberIdQuery)));
+    final var joinQuery = SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role")));
+
+    assertThat(query.filter()).isEmpty();
+    assertThat(query.should()).isEmpty();
+    assertThat(query.must())
+        .containsExactlyInAnyOrder(
+            expectedChildMemberTypeQuery, expectedChildMemberIdQuery, joinQuery);
   }
 
   @Test

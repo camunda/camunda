@@ -97,7 +97,7 @@ public class RoleSpecificFilterIT {
             new RoleQuery(
                 new RoleFilter.Builder()
                     .memberId(group.groupId())
-                    .memberType(EntityType.GROUP)
+                    .childMemberType(EntityType.GROUP)
                     .build(),
                 RoleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -160,7 +160,7 @@ public class RoleSpecificFilterIT {
         new RoleFilter.Builder().roleId(ROLE_ID).build(),
         new RoleFilter.Builder().roleKey(ROLE_KEY).build(),
         new RoleFilter.Builder().name(ROLE_NAME).build(),
-        new RoleFilter.Builder().memberId(ENTITY_ID).memberType(ENTITY_TYPE).build());
+        new RoleFilter.Builder().memberId(ENTITY_ID).childMemberType(ENTITY_TYPE).build());
   }
 
   private void addGroupToRole(final String roleId, final String entityId) {

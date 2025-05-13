@@ -20,10 +20,20 @@ public record RoleFilter(
     Set<String> memberIds,
     EntityType memberType,
     Set<String> roleIds,
+    EntityType childMemberType,
     String tenantId)
     implements FilterBase {
   public Builder toBuilder() {
-    return new Builder().roleKey(roleKey).roleId(roleId).name(name).memberIds(memberIds);
+    return new Builder()
+        .roleKey(roleKey)
+        .roleId(roleId)
+        .name(name)
+        .description(description)
+        .memberIds(memberIds)
+        .memberType(memberType)
+        .roleIds(roleIds)
+        .childMemberType(childMemberType)
+        .tenantId(tenantId);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
@@ -35,6 +45,7 @@ public record RoleFilter(
     private Set<String> memberIds;
     private EntityType memberType;
     private Set<String> roleIds;
+    private EntityType childMemberType;
     private String tenantId;
 
     public Builder roleKey(final Long value) {
@@ -81,6 +92,11 @@ public record RoleFilter(
       return this;
     }
 
+    public Builder childMemberType(final EntityType value) {
+      childMemberType = value;
+      return this;
+    }
+
     public Builder tenantId(final String value) {
       tenantId = value;
       return this;
@@ -88,8 +104,8 @@ public record RoleFilter(
 
     @Override
     public RoleFilter build() {
-      if (memberIds != null && memberType == null) {
-        throw new IllegalArgumentException("If memberIds is set, memberType must be set too");
+      if (memberIds != null && childMemberType == null) {
+        throw new IllegalArgumentException("If memberIds is set, childMemberType must be set too");
       }
       return new RoleFilter(
           roleKey,
@@ -100,6 +116,7 @@ public record RoleFilter(
           memberIds,
           memberType,
           roleIds,
+          childMemberType,
           tenantId);
     }
   }

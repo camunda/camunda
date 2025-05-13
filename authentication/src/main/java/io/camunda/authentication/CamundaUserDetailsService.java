@@ -58,7 +58,8 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
     final var roles =
         roleServices.findAll(
-            RoleQuery.of(q -> q.filter(f -> f.memberId(username).memberType(EntityType.USER))));
+            RoleQuery.of(
+                q -> q.filter(f -> f.memberId(username).childMemberType(EntityType.USER))));
 
     final var authorizedApplications =
         authorizationServices.getAuthorizedApplications(

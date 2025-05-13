@@ -287,7 +287,7 @@ public class GroupController {
 
   private RoleQuery buildRoleQuery(final String groupId, final RoleQuery roleQuery) {
     return roleQuery.toBuilder()
-        .filter(roleQuery.filter().toBuilder().memberId(groupId).memberType(GROUP).build())
+        .filter(roleQuery.filter().toBuilder().memberId(groupId).childMemberType(GROUP).build())
         .build();
   }
 

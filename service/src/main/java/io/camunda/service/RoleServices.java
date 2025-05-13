@@ -54,7 +54,8 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   public List<RoleEntity> getRolesByMemberIds(
       final Set<String> memberIds, final EntityType entityType) {
-    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberIds).memberType(entityType))));
+    return findAll(
+        RoleQuery.of(q -> q.filter(f -> f.memberIds(memberIds).childMemberType(entityType))));
   }
 
   public List<RoleEntity> findAll(final RoleQuery query) {

@@ -15,7 +15,7 @@
     FROM ${prefix}ROLES r
     <if test="filter.memberIds != null">
       JOIN ${prefix}ROLE_MEMBER rm ON r.ROLE_ID = rm.ROLE_ID
-      AND rm.ENTITY_TYPE = #{filter.memberType}
+      AND rm.ENTITY_TYPE = #{filter.childMemberType}
     </if>
     <if test="filter.tenantId != null">
       JOIN ${prefix}TENANT_MEMBER tm ON r.ROLE_ID = tm.ENTITY_ID
@@ -58,7 +58,7 @@
       <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
         #{memberId}
       </foreach>
-      AND rm.ENTITY_TYPE = #{filter.memberType}
+      AND rm.ENTITY_TYPE = #{filter.childMemberType}
     </if>
     <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
   </sql>
