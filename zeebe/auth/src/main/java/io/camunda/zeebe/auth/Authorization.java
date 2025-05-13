@@ -12,6 +12,6 @@ public class Authorization {
   public static final String AUTHORIZED_ANONYMOUS_USER = "authorized_anonymous_user";
   public static final String AUTHORIZED_TENANTS = "authorized_tenants";
   public static final String AUTHORIZED_USERNAME = "authorized_username";
-  public static final String AUTHORIZED_APPLICATION_ID = "authorized_application_id";
+  public static final String AUTHORIZED_CLIENT_ID = "authorized_client_id";
   public static final String USER_TOKEN_CLAIM_PREFIX = "user_token_";
 }
