@@ -14,6 +14,7 @@ import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,22 +32,25 @@ public class BatchOperationItemProvider {
 
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationItemProvider.class);
 
+  private final SearchClientsProxy searchClientsProxy;
+
   /**
    * The size of a page when fetching entities. This is the maximum number of items that can be
    * fetched in a single query and is limited by ElasticSearch.
    */
-  private static final int PAGE_SIZE = 10000;
+  private final int queryPageSize;
 
   /**
    * The maximum number of keys that can be passed in a single IN clause in a query. This is limited
    * to 1000 because the Oracle DB supports a maximum of 1000 elements in an IN clause.
    */
-  private static final int IN_CLAUSE_SIZE = 1000;
+  private final int inClauseSize;
 
-  private final SearchClientsProxy searchClientsProxy;
-
-  public BatchOperationItemProvider(final SearchClientsProxy searchClientsProxy) {
+  public BatchOperationItemProvider(
+      final SearchClientsProxy searchClientsProxy, final EngineConfiguration engineConfiguration) {
     this.searchClientsProxy = searchClientsProxy;
+    queryPageSize = engineConfiguration.getBatchOperationQueryPageSize();
+    inClauseSize = engineConfiguration.getBatchOperationQueryInClauseSize();
   }
 
   /**
@@ -136,7 +140,7 @@ public class BatchOperationItemProvider {
     final Set<Item> incidents = new LinkedHashSet<>();
 
     final List<List<Long>> processInstanceKeysBatches =
-        Lists.partition(processInstanceKeys, IN_CLAUSE_SIZE);
+        Lists.partition(processInstanceKeys, inClauseSize);
 
     for (final List<Long> processInstanceKeysBatch : processInstanceKeysBatches) {
       if (shouldAbort.get()) {
@@ -184,7 +188,7 @@ public class BatchOperationItemProvider {
     @Override
     public ItemPage fetchItems(final ProcessInstanceFilter filter, final Object[] sortValues) {
       final var page =
-          SearchQueryPageBuilders.page().size(PAGE_SIZE).searchAfter(sortValues).build();
+          SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(sortValues).build();
       final var query =
           SearchQueryBuilders.processInstanceSearchQuery()
               .filter(filter)
@@ -205,7 +209,7 @@ public class BatchOperationItemProvider {
     @Override
     public ItemPage fetchItems(final IncidentFilter filter, final Object[] sortValues) {
       final var page =
-          SearchQueryPageBuilders.page().size(PAGE_SIZE).searchAfter(sortValues).build();
+          SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(sortValues).build();
       final var query = SearchQueryBuilders.incidentSearchQuery().filter(filter).page(page).build();
       final var result = searchClientsProxy.searchIncidents(query);
       return new ItemPage(

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import static io.camunda.zeebe.engine.processing.batchoperation.BatchOperationExecutionScheduler.CHUNK_SIZE_IN_RECORD;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.MIGRATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.RESOLVE_INCIDENT;
@@ -51,8 +50,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class BatchOperationExecutionSchedulerTest {
 
+  public static final Duration SCHEDULER_INTERVAL = Duration.ofSeconds(1);
+  public static final int CHUNK_SIZE = 10;
   private static final int PARTITION_ID = 1;
-
   @Mock private Supplier<ScheduledTaskState> scheduledTaskStateFactory;
   @Mock private BatchOperationItemProvider entityKeyProvider;
   @Mock private TaskResultBuilder taskResultBuilder;
@@ -85,8 +85,8 @@ public class BatchOperationExecutionSchedulerTest {
     lenient().when(batchOperationState.exists(anyLong())).thenReturn(true);
 
     final var engineConfiguration = mock(EngineConfiguration.class);
-    when(engineConfiguration.getBatchOperationSchedulerInterval())
-        .thenReturn(Duration.ofSeconds(1));
+    when(engineConfiguration.getBatchOperationSchedulerInterval()).thenReturn(SCHEDULER_INTERVAL);
+    when(engineConfiguration.getBatchOperationChunkSize()).thenReturn(CHUNK_SIZE);
 
     scheduler =
         new BatchOperationExecutionScheduler(
@@ -195,7 +195,7 @@ public class BatchOperationExecutionSchedulerTest {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
 
     // given
-    final var queryItems = createItems(LongStream.range(0, CHUNK_SIZE_IN_RECORD * 2).toArray());
+    final var queryItems = createItems(LongStream.range(0, CHUNK_SIZE * 2).toArray());
     when(entityKeyProvider.fetchProcessInstanceItems(
             eq(PARTITION_ID), queryCaptor.capture(), any()))
         .thenReturn(new HashSet<>(queryItems));
@@ -212,16 +212,15 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     var batchOperationChunkRecord = chunkRecordCaptor.getAllValues().getFirst();
-    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE);
     assertThat(extractRecordItemKeys(batchOperationChunkRecord.getItems()))
         .containsExactlyInAnyOrder(
-            extractQueryItemKeys(queryItems, 0, CHUNK_SIZE_IN_RECORD).toArray(Long[]::new));
+            extractQueryItemKeys(queryItems, 0, CHUNK_SIZE).toArray(Long[]::new));
     batchOperationChunkRecord = chunkRecordCaptor.getAllValues().get(1);
-    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE);
     assertThat(extractRecordItemKeys(batchOperationChunkRecord.getItems()))
         .containsExactlyInAnyOrder(
-            extractQueryItemKeys(queryItems, CHUNK_SIZE_IN_RECORD, CHUNK_SIZE_IN_RECORD)
-                .toArray(Long[]::new));
+            extractQueryItemKeys(queryItems, CHUNK_SIZE, CHUNK_SIZE).toArray(Long[]::new));
   }
 
   @Test
