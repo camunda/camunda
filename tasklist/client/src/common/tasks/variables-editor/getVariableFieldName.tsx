@@ -6,8 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {VARIABLE_NAME_DOT_ESCAPE_CHAR} from './constants';
+
 const getVariableFieldName = (variableNameWithPrefix: string) => {
-  return variableNameWithPrefix.substring(1);
+  const nameWithoutPrefix = variableNameWithPrefix.substring(1);
+  return nameWithoutPrefix.replaceAll(VARIABLE_NAME_DOT_ESCAPE_CHAR, '.');
 };
 
 const getNewVariablePrefix = (variableName: string) => {

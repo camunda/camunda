@@ -6,8 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {VARIABLE_NAME_DOT_ESCAPE_CHAR} from './constants';
+
 const createVariableFieldName = (name: string) => {
-  return `#${name}`;
+  const escapedName = name.replaceAll('.', VARIABLE_NAME_DOT_ESCAPE_CHAR);
+  return `#${escapedName}`;
 };
 
 const createNewVariableFieldName = (prefix: string, suffix: string) => {

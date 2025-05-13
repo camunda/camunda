@@ -1625,4 +1625,70 @@ describe('<Variables />', () => {
       ).not.toHaveAccessibleDescription(/name must be unique/i);
     });
   });
+
+  it('should handle variables with dots in names correctly', async () => {
+    const variableWithDot = {
+      variableKey: 'var.with.dots',
+      name: 'var.with.dots',
+      value: '"dotted-value"',
+      isTruncated: false,
+      tenantId: DEFAULT_TENANT_ID,
+      scopeKey: 'var.with.dots',
+      processInstanceKey: 'var.with.dots',
+    } satisfies Variable;
+
+    nodeMockServer.use(
+      http.post<never, VariableSearchRequestBody>(
+        '/v2/user-tasks/:userTaskKey/variables/search',
+        async ({request}) => {
+          if (isRequestingAllVariables(await request.json())) {
+            return HttpResponse.json(
+              getQueryVariablesResponseMock([variableWithDot]),
+            );
+          }
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
+            {status: 400},
+          );
+        },
+      ),
+    );
+
+    const mockOnSubmit = vi.fn();
+    const {user} = render(
+      <Variables
+        task={taskMocks.assignedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(await screen.findByText('var.with.dots')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('"dotted-value"')).toBeInTheDocument();
+
+    await user.clear(await screen.findByLabelText('var.with.dots'));
+    await user.type(screen.getByLabelText('var.with.dots'), '"updated-value"');
+
+    vi.runOnlyPendingTimers();
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
+
+    await user.click(screen.getByText(/complete task/i));
+
+    await waitFor(() =>
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        'var.with.dots': 'updated-value',
+      }),
+    );
+  });
 });

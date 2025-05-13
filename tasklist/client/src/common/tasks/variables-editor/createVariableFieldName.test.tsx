@@ -17,6 +17,13 @@ describe('createVariableFieldName', () => {
       '#someVariableName',
     );
   });
+
+  it('should escape dots in variable names', () => {
+    expect(createVariableFieldName('some.variable.name')).toBe(
+      '#some___DOT___variable___DOT___name',
+    );
+  });
+
   it('should create new variable field name', () => {
     expect(createNewVariableFieldName('newVariables[0]', 'name')).toBe(
       'newVariables[0].name',
