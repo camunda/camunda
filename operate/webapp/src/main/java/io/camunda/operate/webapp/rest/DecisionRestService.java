@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Decisions")
@@ -64,6 +65,7 @@ public class DecisionRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Delete decision definition and dependant resources")
   @DeleteMapping(path = "/{id}")
+  @PreAuthorize("hasPermission('write')")
   public BatchOperationEntity deleteDecisionDefinition(
       @ValidLongId @PathVariable("id") final String decisionDefinitionId) {
     final DecisionDefinitionEntity decisionDefinitionEntity =
