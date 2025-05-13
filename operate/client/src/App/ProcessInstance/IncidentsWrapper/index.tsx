@@ -17,12 +17,17 @@ import {IncidentsTable} from './IncidentsTable';
 import {IncidentsTable as IncidentsTableV2} from './IncidentsTable/v2';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {IS_PROCESS_INSTANCE_V2_ENABLED} from 'modules/feature-flags';
+import {getFilteredIncidents} from 'modules/utils/incidents';
+import {useIncidents} from 'modules/hooks/incidents';
 
 type Props = {
   setIsInTransition: (isTransitionActive: boolean) => void;
 };
 
 const IncidentsWrapper: React.FC<Props> = observer(({setIsInTransition}) => {
+  const incidents = useIncidents();
+  const filteredIncidents = getFilteredIncidents(incidents);
+
   useEffect(() => {
     incidentsStore.init();
 
@@ -50,7 +55,7 @@ const IncidentsWrapper: React.FC<Props> = observer(({setIsInTransition}) => {
         <IncidentsOverlay>
           <PanelHeader
             title="Incidents View"
-            count={incidentsStore.filteredIncidents.length}
+            count={filteredIncidents.length}
             size="sm"
           >
             <IncidentsFilter />

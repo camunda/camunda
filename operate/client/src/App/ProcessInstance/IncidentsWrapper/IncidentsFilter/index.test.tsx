@@ -13,6 +13,9 @@ import {mockIncidents} from './index.setup';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {useEffect} from 'react';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const {reset, fetchIncidents} = incidentsStore;
 
@@ -21,7 +24,13 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
     return reset;
   }, []);
 
-  return <>{children}</>;
+  return (
+    <ProcessDefinitionKeyContext.Provider value="123">
+      <QueryClientProvider client={getMockQueryClient()}>
+        {children}
+      </QueryClientProvider>
+    </ProcessDefinitionKeyContext.Provider>
+  );
 };
 
 describe('IncidentsFilter', () => {
