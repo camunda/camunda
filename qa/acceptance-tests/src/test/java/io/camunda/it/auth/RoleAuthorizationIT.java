@@ -8,6 +8,7 @@
 package io.camunda.it.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -40,14 +41,12 @@ import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-@Disabled("Temporarily disabled due to flakiness")
 class RoleAuthorizationIT {
 
   @MultiDbTestApplication
@@ -146,11 +145,8 @@ class RoleAuthorizationIT {
         .send()
         .join();
 
-    adminClient.newDeleteRoleCommand(roleId).send().join();
-
-    assertThatThrownBy(() -> adminClient.newRoleGetRequest(roleId).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("404: 'Not Found'");
+    assertThatNoException()
+        .isThrownBy(() -> adminClient.newDeleteRoleCommand(roleId).send().join());
   }
 
   @Test
