@@ -56,10 +56,14 @@ public class CamundaContainerRuntimeBuilder {
   private final Map<String, String> connectorsSecrets = new HashMap<>();
 
   private boolean remoteRuntime = false;
-  private final URI camundaRestApiAddress = URI.create("http://localhost:8080");
-  private final URI camundaGrpcApiAddress = URI.create("http://localhost:26500");
-  private final URI camundaMonitoringApiAddress = URI.create("http://localhost:9600");
-  private final URI connectorsRestApiAddress = URI.create("http://localhost:8085");
+  private URI remoteCamundaRestApiAddress =
+      URI.create(ContainerRuntimeDefaults.REMOTE_CAMUNDA_REST_API_ADDRESS);
+  private URI remoteCamundaGrpcApiAddress =
+      URI.create(ContainerRuntimeDefaults.REMOTE_CAMUNDA_GRPC_API_ADDRESS);
+  private URI remoteCamundaMonitoringApiAddress =
+      URI.create(ContainerRuntimeDefaults.REMOTE_CAMUNDA_MONITORING_API_ADDRESS);
+  private URI remoteConnectorsRestApiAddress =
+      URI.create(ContainerRuntimeDefaults.REMOTE_CONNECTORS_REST_API_ADDRESS);
 
   // ============ For testing =================
 
@@ -187,15 +191,39 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
+  public CamundaContainerRuntimeBuilder withRemoteCamundaRestApiAddress(
+      final URI remoteCamundaRestApiAddress) {
+    this.remoteCamundaRestApiAddress = remoteCamundaRestApiAddress;
+    return this;
+  }
+
+  public CamundaContainerRuntimeBuilder withRemoteCamundaGrpcApiAddress(
+      final URI remoteCamundaGrpcApiAddress) {
+    this.remoteCamundaGrpcApiAddress = remoteCamundaGrpcApiAddress;
+    return this;
+  }
+
+  public CamundaContainerRuntimeBuilder withRemoteCamundaMonitoringApiAddress(
+      final URI remoteCamundaMonitoringApiAddress) {
+    this.remoteCamundaMonitoringApiAddress = remoteCamundaMonitoringApiAddress;
+    return this;
+  }
+
+  public CamundaContainerRuntimeBuilder withRemoteConnectorsRestApiAddress(
+      final URI remoteConnectorsRestApiAddress) {
+    this.remoteConnectorsRestApiAddress = remoteConnectorsRestApiAddress;
+    return this;
+  }
+
   // ============ Build =================
 
   public CamundaRuntimeConnection build() {
     if (remoteRuntime) {
       return new RemoteRuntimeConnection(
-          camundaRestApiAddress,
-          camundaGrpcApiAddress,
-          camundaMonitoringApiAddress,
-          connectorsRestApiAddress);
+          remoteCamundaRestApiAddress,
+          remoteCamundaGrpcApiAddress,
+          remoteCamundaMonitoringApiAddress,
+          connectorsEnabled ? remoteConnectorsRestApiAddress : null);
     } else {
       return new CamundaContainerRuntime(this, containerFactory);
     }

@@ -41,7 +41,13 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   @Override
   public void start() {
     // nothing to start. the runtime is managed remotely.
-    LOGGER.info("Connecting to remote runtime. {}", this);
+    LOGGER.info(
+        "Connecting to remote runtime. [Camunda REST: {}, Camunda gRPC: {}, Camunda Monitoring: {}, Connectors REST: {}]",
+        camundaRestApiAddress,
+        camundaGrpcApiAddress,
+        camundaMonitoringApiAddress,
+        connectorsRestApiAddress);
+
     // check connection to remote runtime
     try {
       checkConnection(camundaMonitoringApiAddress.resolve("/actuator/health"));
@@ -50,11 +56,13 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
       throw new RuntimeException("Failed to connect to remote Camunda runtime.");
     }
 
-    try {
-      checkConnection(connectorsRestApiAddress.resolve("/actuator/health"));
-      LOGGER.info("Connected to remote Connectors runtime successfully.");
-    } catch (final IOException e) {
-      LOGGER.warn("Failed to connect to remote Connectors runtime.");
+    if (connectorsRestApiAddress != null) {
+      try {
+        checkConnection(connectorsRestApiAddress.resolve("/actuator/health"));
+        LOGGER.info("Connected to remote Connectors runtime successfully.");
+      } catch (final IOException e) {
+        LOGGER.warn("Failed to connect to remote Connectors runtime.");
+      }
     }
   }
 
@@ -100,19 +108,5 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   @Override
   public void close() throws Exception {
     // nothing to close. the runtime is managed remotely.
-  }
-
-  @Override
-  public String toString() {
-    return "{"
-        + "camundaRestApiAddress="
-        + camundaRestApiAddress
-        + ", camundaGrpcApiAddress="
-        + camundaGrpcApiAddress
-        + ", camundaMonitoringApiAddress="
-        + camundaMonitoringApiAddress
-        + ", connectorsRestApiAddress="
-        + connectorsRestApiAddress
-        + '}';
   }
 }

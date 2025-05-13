@@ -29,6 +29,11 @@ public class ContainerRuntimeDefaults {
   public static final String CAMUNDA_LOGGER_NAME = "tc.camunda";
   public static final String CONNECTORS_LOGGER_NAME = "tc.connectors";
 
+  public static final String REMOTE_CAMUNDA_REST_API_ADDRESS = "http://localhost:8080";
+  public static final String REMOTE_CAMUNDA_GRPC_API_ADDRESS = "http://localhost:26500";
+  public static final String REMOTE_CAMUNDA_MONITORING_API_ADDRESS = "http://localhost:9600";
+  public static final String REMOTE_CONNECTORS_REST_API_ADDRESS = "http://localhost:8085";
+
   private static final ContainerRuntimePropertiesUtil PROPERTIES_UTIL =
       ContainerRuntimePropertiesUtil.readProperties();
 
