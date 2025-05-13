@@ -99,11 +99,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setTenantId(request.tenantId())
             .setEntity(request.entityType(), request.entityId()));
   }
-
-  public List<TenantEntity> getTenantsByMemberIds(final Set<String> memberIds) {
-    return findAll(TenantQuery.of(q -> q.filter(b -> b.memberIds(memberIds))));
-  }
-
+  
   public List<TenantEntity> getTenantsByMemberIds(
       final Set<String> memberIds, final EntityType memberType) {
     return findAll(
@@ -112,7 +108,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public List<TenantEntity> getTenantsByUserAndGroups(
       final String username, final Set<String> groupIds) {
-    final var tenants = new ArrayList<>(getTenantsByMemberIds(Set.of(username)));
+    final var tenants = new ArrayList<>(getTenantsByMemberIds(Set.of(username), EntityType.USER));
     final var groupTenants = getTenantsByMemberIds(groupIds, EntityType.GROUP);
 
     tenants.addAll(groupTenants);
