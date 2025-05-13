@@ -71,6 +71,10 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     return directory;
   }
 
+  public Path getReservationsPath() {
+    return reservations.path();
+  }
+
   @Override
   public int version() {
     return VERSION;
@@ -188,6 +192,11 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       Files.deleteIfExists(checksumFile);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete snapshot checksum file {}", checksumFile, e);
+    }
+    try {
+      Files.deleteIfExists(reservations.path());
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete snapshot reservation file {}", reservations.path(), e);
     }
 
     try {

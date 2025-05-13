@@ -65,8 +65,13 @@ public final class FileBasedSnapshotTest {
   public void shouldDeleteSnapshot() throws IOException {
     // given
     final var snapshotPath = snapshotDir.resolve("snapshot");
-    final Path checksumPath = snapshotDir.resolve("checksum");
+    final var checksumPath = snapshotDir.resolve("checksum");
     final var snapshot = createSnapshot(snapshotPath, checksumPath);
+    final var reservationPath = reservationsDir.resolve(snapshot.getReservationsPath());
+
+    assertThat(reservationPath).exists();
+    assertThat(snapshotPath).exists();
+    assertThat(checksumPath).exists();
 
     // when
     snapshot.delete();
@@ -74,6 +79,7 @@ public final class FileBasedSnapshotTest {
     // then
     assertThat(snapshotPath).doesNotExist();
     assertThat(checksumPath).doesNotExist();
+    assertThat(reservationPath).doesNotExist();
   }
 
   @Test

@@ -43,6 +43,7 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
   private FileChannel fileChannel;
   private final ConcurrencyControl actor;
   private final InstantSource clock;
+  private final Path path;
 
   /**
    * @param snapshot the corresponding Snapshot
@@ -56,7 +57,7 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
     this.actor = actor;
     this.clock = clock;
     persisted = new PersistedReservationsV1();
-    final var path = reservationsDirectory.resolve(fileName(snapshot.getSnapshotId()));
+    path = reservationsDirectory.resolve(fileName(snapshot.getSnapshotId()));
     try {
       final var file = path.toFile();
       final var fileCreated = file.createNewFile();
@@ -72,6 +73,10 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
     } catch (final IOException e) {
       LangUtil.rethrowUnchecked(e);
     }
+  }
+
+  Path path() {
+    return path;
   }
 
   public FileBasedSnapshotReservation inMemoryReservation() {
