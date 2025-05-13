@@ -39,6 +39,7 @@ import {
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 
 const TREE_NODE_HEIGHT = 32;
 
@@ -53,10 +54,12 @@ const getVisibleChildPlaceholdersFromFlowNodeInstance = ({
   isModificationModeEnabled,
   flowNodeInstance,
   businessObjects,
+  processInstance,
 }: {
   isModificationModeEnabled: boolean;
   flowNodeInstance: FlowNodeInstance;
   businessObjects: BusinessObjects;
+  processInstance?: ProcessInstance;
 }) => {
   const {state, isPlaceholder, flowNodeId, id} = flowNodeInstance;
   if (
@@ -71,6 +74,8 @@ const getVisibleChildPlaceholdersFromFlowNodeInstance = ({
     id,
     flowNodeId,
     businessObjects,
+    processInstance?.processDefinitionId,
+    processInstance?.processInstanceKey,
     isPlaceholder,
   );
 };
@@ -128,6 +133,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         isModificationModeEnabled: modificationsStore.isModificationModeEnabled,
         flowNodeInstance,
         businessObjects: processInstanceXmlData?.businessObjects || {},
+        processInstance,
       });
 
     const visibleChildren = [...visibleChildNodes, ...visibleChildPlaceholders];
@@ -157,6 +163,8 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         hasChildPlaceholders(
           flowNodeInstance.id,
           processInstanceXmlData?.businessObjects,
+          processInstance?.processDefinitionId,
+          processInstance?.processInstanceKey,
         )
       : isFoldable;
 

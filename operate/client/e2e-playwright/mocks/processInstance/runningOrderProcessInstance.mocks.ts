@@ -18,6 +18,12 @@ const runningOrderProcessInstance: InstanceMock = {
     processName: 'Order process',
     bpmnProcessId: 'orderProcess',
   },
+  detailV2: {
+    ...runningInstance.detailV2,
+    processInstanceKey: '225179981395430',
+    processDefinitionName: 'Order process',
+    processDefinitionId: 'orderProcess',
+  },
   xml: open('orderProcess.bpmn'),
   statisticsV2: {
     items: [

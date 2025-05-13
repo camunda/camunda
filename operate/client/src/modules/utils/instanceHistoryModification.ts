@@ -17,7 +17,6 @@ import {
   FlowNodeModification,
   modificationsStore,
 } from 'modules/stores/modifications';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {
   const {operation} = modificationPayload;
@@ -34,6 +33,8 @@ const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {
 
 const generateParentPlaceholders = (
   modificationPayload: FlowNodeModification['payload'],
+  processDefinitionId?: string,
+  processInstanceKey?: string,
   flowNode?: BusinessObject,
 ): ModificationPlaceholder[] => {
   if (
@@ -51,7 +52,12 @@ const generateParentPlaceholders = (
   const parentFlowNode = flowNode?.$parent;
 
   return [
-    ...generateParentPlaceholders(modificationPayload, parentFlowNode),
+    ...generateParentPlaceholders(
+      modificationPayload,
+      processDefinitionId,
+      processInstanceKey,
+      parentFlowNode,
+    ),
     {
       flowNodeInstance: {
         flowNodeId: flowNode.id,
@@ -67,6 +73,8 @@ const generateParentPlaceholders = (
       parentFlowNodeId: parentFlowNode?.id,
       parentInstanceId: getParentInstanceIdForPlaceholder(
         modificationPayload,
+        processDefinitionId,
+        processInstanceKey,
         parentFlowNode?.id,
       ),
     },
@@ -75,6 +83,8 @@ const generateParentPlaceholders = (
 
 const getParentInstanceIdForPlaceholder = (
   modificationPayload: FlowNodeModification['payload'],
+  processDefinitionId?: string,
+  processInstanceKey?: string,
   parentFlowNodeId?: string,
 ) => {
   if (
@@ -84,11 +94,8 @@ const getParentInstanceIdForPlaceholder = (
     return undefined;
   }
 
-  if (
-    parentFlowNodeId ===
-    processInstanceDetailsStore.state.processInstance?.bpmnProcessId
-  ) {
-    return processInstanceDetailsStore.state.processInstance?.id;
+  if (parentFlowNodeId === processDefinitionId) {
+    return processInstanceKey;
   }
 
   if (
@@ -107,9 +114,13 @@ const getParentInstanceIdForPlaceholder = (
 const createModificationPlaceholders = ({
   modificationPayload,
   flowNode,
+  processDefinitionId,
+  processInstanceKey,
 }: {
   modificationPayload: FlowNodeModification['payload'];
   flowNode: BusinessObject;
+  processDefinitionId?: string;
+  processInstanceKey?: string;
 }): ModificationPlaceholder[] => {
   const parentFlowNodeId = flowNode.$parent?.id;
 
@@ -135,12 +146,18 @@ const createModificationPlaceholders = ({
     parentFlowNodeId,
     parentInstanceId: getParentInstanceIdForPlaceholder(
       modificationPayload,
+      processDefinitionId,
+      processInstanceKey,
       parentFlowNodeId,
     ),
   }));
 };
 
-const getModificationPlaceholders = (businessObjects: BusinessObjects) => {
+const getModificationPlaceholders = (
+  businessObjects: BusinessObjects,
+  processDefinitionId?: string,
+  processInstanceKey?: string,
+) => {
   return modificationsStore.flowNodeModifications.reduce<
     ModificationPlaceholder[]
   >((modificationPlaceHolders, modificationPayload) => {
@@ -162,6 +179,8 @@ const getModificationPlaceholders = (businessObjects: BusinessObjects) => {
 
     const newParentModificationPlaceholders = generateParentPlaceholders(
       modificationPayload,
+      processDefinitionId,
+      processInstanceKey,
       flowNode.$parent,
     );
 
@@ -182,6 +201,8 @@ const getVisibleChildPlaceholders = (
   id: FlowNodeInstance['id'],
   flowNodeId: FlowNodeInstance['flowNodeId'],
   businessObjects: BusinessObjects,
+  processDefinitionId?: string,
+  processInstanceKey?: string,
   isPlaceholder?: boolean,
 ) => {
   if (
@@ -193,7 +214,11 @@ const getVisibleChildPlaceholders = (
     return [];
   }
 
-  const placeholders = getModificationPlaceholders(businessObjects)
+  const placeholders = getModificationPlaceholders(
+    businessObjects,
+    processDefinitionId,
+    processInstanceKey,
+  )
     .filter(({parentInstanceId}) => parentInstanceId === id)
     .map(({flowNodeInstance}) => flowNodeInstance);
 
@@ -201,7 +226,11 @@ const getVisibleChildPlaceholders = (
     return placeholders;
   }
 
-  return getModificationPlaceholders(businessObjects)
+  return getModificationPlaceholders(
+    businessObjects,
+    processDefinitionId,
+    processInstanceKey,
+  )
     .filter(
       ({parentInstanceId, parentFlowNodeId}) =>
         parentInstanceId === undefined && parentFlowNodeId === flowNodeId,
@@ -212,20 +241,28 @@ const getVisibleChildPlaceholders = (
 const hasChildPlaceholders = (
   id: FlowNodeInstance['id'],
   businessObjects: BusinessObjects,
+  processDefinitionId?: string,
+  processInstanceKey?: string,
 ) => {
-  return getModificationPlaceholders(businessObjects).some(
-    ({parentInstanceId}) => parentInstanceId === id,
-  );
+  return getModificationPlaceholders(
+    businessObjects,
+    processDefinitionId,
+    processInstanceKey,
+  ).some(({parentInstanceId}) => parentInstanceId === id);
 };
 
 const appendExpandedFlowNodeInstanceIds = (
   id: FlowNodeInstance['id'],
   businessObjects: BusinessObjects,
+  processDefinitionId?: string,
+  processInstanceKey?: string,
 ) => {
   if (
-    !getModificationPlaceholders(businessObjects).some(
-      ({parentInstanceId}) => parentInstanceId === id,
-    )
+    !getModificationPlaceholders(
+      businessObjects,
+      processDefinitionId,
+      processInstanceKey,
+    ).some(({parentInstanceId}) => parentInstanceId === id)
   ) {
     return;
   }

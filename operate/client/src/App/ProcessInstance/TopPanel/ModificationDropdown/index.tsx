@@ -44,6 +44,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getParentElement} from 'modules/bpmn-js/utils/getParentElement';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -65,6 +66,7 @@ const ModificationDropdown: React.FC<Props> = observer(
       useTotalRunningInstancesByFlowNode();
     const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
       totalRunningInstances || 0,
+      flowNodeSelectionStore.isRootNodeSelected,
     );
     const availableModifications = useAvailableModifications(
       selectedRunningInstanceCount,
@@ -162,6 +164,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                                   parentScopeIds: generateParentScopeIds(
                                     businessObjects,
                                     flowNodeId,
+                                    processInstanceDetailsStore?.state
+                                      .processInstance?.bpmnProcessId,
                                   ),
                                 },
                               });

@@ -13,6 +13,20 @@ import {open} from 'modules/mocks/diagrams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: 'instance_id',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: false,
+};
 
 describe('selectedRunningInstanceCount', () => {
   beforeEach(() => {
@@ -103,6 +117,9 @@ describe('selectedRunningInstanceCount', () => {
   });
 
   it('should render when there are running instances selected', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+
     modificationsStore.enableModificationMode();
 
     renderPopover();

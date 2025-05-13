@@ -65,6 +65,8 @@ const getFilteredVisibleChildPlaceholders = ({
     id,
     flowNodeId,
     businessObjects,
+    processInstanceDetailsStore.state.processInstance?.bpmnProcessId,
+    processInstanceDetailsStore.state.processInstance?.id,
     isPlaceholder,
   );
 };
@@ -153,6 +155,8 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         hasChildPlaceholders(
           flowNodeInstance.id,
           processInstanceXmlData.businessObjects,
+          processInstanceDetailsStore.state.processInstance?.bpmnProcessId,
+          processInstanceDetailsStore.state.processInstance?.id,
         )
       : isFoldable;
 
@@ -171,6 +175,8 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         appendExpandedFlowNodeInstanceIds(
           flowNodeInstance.id,
           processInstanceXmlData.businessObjects,
+          processInstanceDetailsStore.state.processInstance?.bpmnProcessId,
+          processInstanceDetailsStore.state.processInstance?.id,
         );
       }
     };

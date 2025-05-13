@@ -178,6 +178,17 @@ const orderProcessInstance: {
       permissions: [],
       tenantId: '<default>',
     },
+    detailV2: {
+      processInstanceKey: '2251799813725328',
+      processDefinitionKey: '2251799813688192',
+      processDefinitionName: 'order-process',
+      processDefinitionVersion: 2,
+      startDate: '2023-08-14T05:47:07.376+0000',
+      state: 'ACTIVE',
+      processDefinitionId: 'order-process',
+      tenantId: '<default>',
+      hasIncident: true,
+    },
     flowNodeInstances: {
       '2251799813725328': {
         children: [
@@ -395,6 +406,17 @@ const orderProcessInstance: {
       permissions: [],
       tenantId: '<default>',
     },
+    detailV2: {
+      processInstanceKey: '2251799813725328',
+      processDefinitionKey: '2251799813688192',
+      processDefinitionName: 'order-process',
+      processDefinitionVersion: 2,
+      startDate: '2023-08-14T05:47:07.376+0000',
+      state: 'ACTIVE',
+      processDefinitionId: 'order-process',
+      tenantId: '<default>',
+      hasIncident: false,
+    },
     flowNodeInstances: {
       '2251799813725328': {
         children: [
@@ -602,6 +624,18 @@ const orderProcessInstance: {
       sortValues: [],
       permissions: [],
       tenantId: '<default>',
+    },
+    detailV2: {
+      processInstanceKey: '2251799813725328',
+      processDefinitionKey: '2251799813737336',
+      processDefinitionName: 'order-process',
+      processDefinitionVersion: 2,
+      startDate: '2023-09-29T10:59:36.048+0000',
+      endDate: '2023-09-29T11:01:50.073+0000',
+      state: 'COMPLETED',
+      processDefinitionId: 'order-process',
+      tenantId: '<default>',
+      hasIncident: false,
     },
     flowNodeInstances: {
       '2251799813725328': {

@@ -22,6 +22,8 @@ import {Layer} from '@carbon/react';
 import {getSelectedFlowNodeName} from 'modules/utils/flowNodeSelection';
 import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 type Props = {
   id?: string;
@@ -75,7 +77,11 @@ const createModification = ({
         operation: 'EDIT_VARIABLE',
         id: name,
         scopeId,
-        flowNodeName: getSelectedFlowNodeName(businessObjects),
+        flowNodeName: getSelectedFlowNodeName(
+          businessObjects,
+          processInstanceDetailsStore.state.processInstance?.processName,
+          flowNodeSelectionStore.isRootNodeSelected,
+        ),
         name,
         oldValue,
         newValue,

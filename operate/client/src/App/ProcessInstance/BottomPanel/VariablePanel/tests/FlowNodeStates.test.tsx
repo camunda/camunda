@@ -142,7 +142,6 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
-
     act(() => {
       flowNodeSelectionStore.selectFlowNode({
         flowNodeId: 'Activity_0qtp1k6',

@@ -27,6 +27,17 @@ const runningInstance: InstanceMock = {
     permissions: [],
     tenantId: '',
   },
+  detailV2: {
+    processInstanceKey: '2251799813687144',
+    processDefinitionKey: '2251799813686165',
+    processDefinitionName: 'Signal event',
+    processDefinitionVersion: 1,
+    startDate: '2023-08-14T05:45:17.331+0000',
+    state: 'ACTIVE',
+    processDefinitionId: 'signalEventProcess',
+    tenantId: '',
+    hasIncident: false,
+  },
   xml: `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1w68912" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.6.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.1.0">
       <bpmn:process id="signalEventProcess" name="Signal event" isExecutable="true">

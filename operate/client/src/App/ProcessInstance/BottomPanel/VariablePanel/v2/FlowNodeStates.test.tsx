@@ -84,20 +84,20 @@ const getWrapper = (
   return Wrapper;
 };
 
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: 'instance_id',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: false,
+};
+
 describe.skip('VariablePanel', () => {
   beforeEach(() => {
-    const mockProcessInstance: ProcessInstance = {
-      processInstanceKey: 'instance_id',
-      state: 'ACTIVE',
-      startDate: '2018-06-21',
-      processDefinitionKey: '2',
-      processDefinitionVersion: 1,
-      processDefinitionId: 'someKey',
-      tenantId: '<default>',
-      processDefinitionName: 'someProcessName',
-      hasIncident: false,
-    };
-
     const mockProcessInstanceDeprecated = createInstance();
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -149,6 +149,7 @@ describe.skip('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -158,7 +159,11 @@ describe.skip('VariablePanel', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     initFlowNodeMetadata('instance_id', statistics);
-    initFlowNodeSelection({}, 'instance_id');
+    initFlowNodeSelection(
+      {flowNodeId: 'Activity_0qtp1k6', flowNodeInstanceId: 'instance_id'},
+      'instance_id',
+      true,
+    );
   });
 
   afterEach(async () => {
@@ -200,18 +205,7 @@ describe.skip('VariablePanel', () => {
         },
       );
     });
-
-    await waitFor(() =>
-      expect(flowNodeMetaDataStore.state.metaData).toEqual({
-        ...singleInstanceMetadata,
-        flowNodeInstanceId: '2251799813695856',
-        instanceCount: 1,
-        instanceMetadata: {
-          ...singleInstanceMetadata.instanceMetadata!,
-          endDate: null,
-        },
-      }),
-    );
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     // initial state
     expect(
@@ -507,7 +501,7 @@ describe.skip('VariablePanel', () => {
     ).toBeInTheDocument();
   });
 
-  it.only('should display correct state for a flow node that has only one finished token on it', async () => {
+  it('should display correct state for a flow node that has only one finished token on it', async () => {
     const statistics = [
       {
         elementId: 'StartEvent_1',
@@ -541,6 +535,7 @@ describe.skip('VariablePanel', () => {
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),
@@ -549,6 +544,7 @@ describe.skip('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
       selectFlowNode(
@@ -562,7 +558,6 @@ describe.skip('VariablePanel', () => {
     await waitFor(() =>
       expect(flowNodeMetaDataStore.state.metaData).toEqual({
         ...singleInstanceMetadata,
-        flowNodeInstanceId: null,
         instanceMetadata: {
           ...singleInstanceMetadata.instanceMetadata!,
           endDate: '2018-12-12 00:00:00',
