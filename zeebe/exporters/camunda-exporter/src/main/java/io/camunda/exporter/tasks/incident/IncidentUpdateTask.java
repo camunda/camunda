@@ -536,7 +536,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
     return incidentNotifier
         .notifyAsync(incidentsToNotify)
-        .thenCompose(ignored -> CompletableFuture.completedFuture(updatedIds.size()));
+        .thenApply(ignored -> updatedIds.size());
   }
 
   private boolean shouldNotifyAboutUpdate(final DocumentUpdate update) {
