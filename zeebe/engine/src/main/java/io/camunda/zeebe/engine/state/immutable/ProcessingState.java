@@ -89,4 +89,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   BatchOperationState getBatchOperationState();
 
   MembershipState getMembershipState();
+
+  UsageMetricState getUsageMetricState();
 }

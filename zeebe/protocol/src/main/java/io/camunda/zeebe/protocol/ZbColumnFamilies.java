@@ -236,7 +236,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   RELATIONS_BY_ENTITY(119, ColumnFamilyScope.GLOBAL),
   ENTITIES_BY_RELATION(120, ColumnFamilyScope.GLOBAL),
 
-  USER_TASK_INITIAL_ASSIGNEE(121);
+  USER_TASK_INITIAL_ASSIGNEE(121),
+
+  RPI_USAGE_METRICS(122);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
