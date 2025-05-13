@@ -15,28 +15,38 @@
  */
 package io.camunda.process.test.impl.configuration;
 
-import io.camunda.process.test.impl.runtime.ContainerRuntimeDefaults;
+import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.spring.client.properties.CamundaClientProperties;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConfigurationProperties(prefix = "io.camunda.process.test")
-public class CamundaContainerRuntimeConfiguration {
+public class CamundaProcessTestRuntimeConfiguration {
 
-  private String camundaVersion = ContainerRuntimeDefaults.CAMUNDA_VERSION;
-  private String camundaDockerImageName = ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
+  private String camundaVersion = CamundaProcessTestRuntimeDefaults.CAMUNDA_VERSION;
+  private String camundaDockerImageName =
+      CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
   private Map<String, String> camundaEnvVars = Collections.emptyMap();
   private List<Integer> camundaExposedPorts = Collections.emptyList();
 
   private boolean connectorsEnabled = false;
-  private String connectorsDockerImageName = ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME;
+  private String connectorsDockerImageName =
+      CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME;
   private String connectorsDockerImageVersion =
-      ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
+      CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
   private Map<String, String> connectorsEnvVars = Collections.emptyMap();
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
+
+  private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
+
+  @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
   public String getCamundaVersion() {
     return camundaVersion;
@@ -108,5 +118,57 @@ public class CamundaContainerRuntimeConfiguration {
 
   public void setConnectorsSecrets(final Map<String, String> connectorsSecrets) {
     this.connectorsSecrets = connectorsSecrets;
+  }
+
+  public CamundaProcessTestRuntimeMode getRuntimeMode() {
+    return runtimeMode;
+  }
+
+  public void setRuntimeMode(final CamundaProcessTestRuntimeMode runtimeMode) {
+    this.runtimeMode = runtimeMode;
+  }
+
+  public RemoteConfiguration getRemote() {
+    return remote;
+  }
+
+  public void setRemote(final RemoteConfiguration remote) {
+    this.remote = remote;
+  }
+
+  public static class RemoteConfiguration {
+
+    @NestedConfigurationProperty
+    private CamundaClientProperties client = new CamundaClientProperties();
+
+    private URI camundaMonitoringApiAddress =
+        CamundaProcessTestRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS;
+
+    private URI connectorsRestApiAddress =
+        CamundaProcessTestRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS;
+
+    public CamundaClientProperties getClient() {
+      return client;
+    }
+
+    public void setClient(final CamundaClientProperties client) {
+      this.client = client;
+    }
+
+    public URI getCamundaMonitoringApiAddress() {
+      return camundaMonitoringApiAddress;
+    }
+
+    public void setCamundaMonitoringApiAddress(final URI camundaMonitoringApiAddress) {
+      this.camundaMonitoringApiAddress = camundaMonitoringApiAddress;
+    }
+
+    public URI getConnectorsRestApiAddress() {
+      return connectorsRestApiAddress;
+    }
+
+    public void setConnectorsRestApiAddress(final URI connectorsRestApiAddress) {
+      this.connectorsRestApiAddress = connectorsRestApiAddress;
+    }
   }
 }
