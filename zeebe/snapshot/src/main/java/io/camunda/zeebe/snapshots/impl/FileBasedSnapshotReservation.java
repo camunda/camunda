@@ -24,6 +24,14 @@ public record FileBasedSnapshotReservation(
     return new FileBasedSnapshotReservation(reservations, UUID.randomUUID(), true, 0L, null);
   }
 
+  public static FileBasedSnapshotReservation persisted(
+      final FileBasedSnapshotReservationStore reservations,
+      final UUID reservationId,
+      final long validUntil,
+      final Reason reason) {
+    return new FileBasedSnapshotReservation(reservations, reservationId, false, validUntil, reason);
+  }
+
   @Override
   public ActorFuture<Void> release() {
     return reservations.removeReservation(this);

@@ -89,7 +89,7 @@ public class FileBasedSnapshotReservationStore implements AutoCloseable {
   public FileBasedSnapshotReservation persistedReservation(
       final UUID id, final long validUntil, final PersistedSnapshotReservation.Reason reason)
       throws IOException {
-    final var reservation = new FileBasedSnapshotReservation(this, id, false, validUntil, reason);
+    final var reservation = FileBasedSnapshotReservation.persisted(this, id, validUntil, reason);
     persisted.addPersistedReservation(reservation);
     return reservation;
   }
