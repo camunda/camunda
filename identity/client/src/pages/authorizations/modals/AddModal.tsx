@@ -131,8 +131,11 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           label={t("selectOwnerType")}
           titleText={t("ownerType")}
           items={ownerTypeItems.filter((ownerType) => {
-            const excludedType = isOIDC ? OwnerType.USER : OwnerType.MAPPING;
-            return ownerType !== excludedType;
+            const excludedType = isOIDC
+              ? [OwnerType.USER]
+              : [OwnerType.MAPPING, OwnerType.CLIENT];
+
+            return !excludedType.includes(ownerType);
           })}
           onChange={(item: { selectedItem: OwnerType }) => {
             setOwnerId("");
@@ -144,7 +147,11 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           selectedItem={ownerType}
         />
         <TextFieldContainer>
-          <OwnerSelection type={ownerType} onChange={setOwnerId} />
+          <OwnerSelection
+            type={ownerType}
+            ownerId={ownerId}
+            onChange={setOwnerId}
+          />
         </TextFieldContainer>
       </Row>
       <Divider />
