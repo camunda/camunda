@@ -354,7 +354,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should display spinner when loading meta data', async () => {
-    init(statisticsData);
+    init('process-instance', statisticsData);
 
     renderPopover();
 
@@ -390,7 +390,9 @@ describe('Modification Dropdown', () => {
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
     act(() => {
-      fetchMetaData(statisticsData, {flowNodeId: 'service-task-7'});
+      fetchMetaData(statisticsData, 'process-instance', {
+        flowNodeId: 'service-task-7',
+      });
     });
 
     expect(
@@ -424,7 +426,7 @@ describe('Modification Dropdown', () => {
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
     act(() => {
-      fetchMetaData(statisticsData, {
+      fetchMetaData(statisticsData, 'process-instance', {
         flowNodeId: 'service-task-1',
         flowNodeInstanceId: 'some-instance-id',
       });

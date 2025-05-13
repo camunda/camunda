@@ -80,10 +80,21 @@ describe('flowNodeMetadata', () => {
         },
       ];
 
+      (fetchFlowNodeMetaData as jest.Mock).mockResolvedValue({
+        isSuccess: true,
+        data: {
+          instanceMetadata: {
+            startDate: '2025-01-01T00:00:00Z',
+            endDate: '2025-01-02T00:00:00Z',
+            jobDeadline: '2025-01-03T00:00:00Z',
+          },
+        },
+      });
+
       const disposer = jest.fn();
       (reaction as jest.Mock).mockReturnValue(disposer);
 
-      init(statistics);
+      init('process-instance', statistics);
 
       expect(reaction).toHaveBeenCalledWith(
         expect.any(Function),
@@ -109,7 +120,7 @@ describe('flowNodeMetadata', () => {
           completed: 0,
         },
       ];
-      await fetchMetaData(statistics, {
+      await fetchMetaData(statistics, 'process-instance', {
         isPlaceholder: true,
         elementId: 'node1',
       });
@@ -129,7 +140,7 @@ describe('flowNodeMetadata', () => {
       ];
       processInstanceDetailsStore.state.processInstance = null;
 
-      await fetchMetaData(statistics, {
+      await fetchMetaData(statistics, 'process-instance', {
         elementId: 'node1',
       });
 
@@ -149,7 +160,7 @@ describe('flowNodeMetadata', () => {
       processInstanceDetailsStore.state.processInstance =
         mockProcessInstances.processInstances[0] || null;
 
-      await fetchMetaData(statistics, {});
+      await fetchMetaData(statistics, 'process-instance', {});
 
       expect(fetchFlowNodeMetaData).not.toHaveBeenCalled();
     });
@@ -189,7 +200,7 @@ describe('flowNodeMetadata', () => {
         }),
       }));
 
-      await fetchMetaData(statistics, {
+      await fetchMetaData(statistics, '2251799813685594', {
         flowNodeId: 'node1',
       });
 
@@ -225,7 +236,7 @@ describe('flowNodeMetadata', () => {
         isSuccess: false,
       });
 
-      await fetchMetaData(statistics, {
+      await fetchMetaData(statistics, '2251799813685594', {
         flowNodeId: 'node1',
       });
 

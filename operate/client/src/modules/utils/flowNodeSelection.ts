@@ -7,10 +7,91 @@
  */
 
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getFlowNodeName} from './flowNodes';
 import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {
+  flowNodeSelectionStore,
+  Selection,
+} from 'modules/stores/flowNodeSelection';
+import {reaction, when} from 'mobx';
+import {modificationsStore} from 'modules/stores/modifications';
+
+const init = (
+  rootNode: Selection | null,
+  processInstanceKey?: string,
+  isRootNodeSelected?: boolean,
+) => {
+  flowNodeSelectionStore.rootNodeSelectionDisposer = when(
+    () => processInstanceKey !== undefined,
+    () => clearSelection(rootNode),
+  );
+
+  flowNodeSelectionStore.modificationModeChangeDisposer = reaction(
+    () => modificationsStore.isModificationModeEnabled,
+    () => clearSelection(rootNode),
+  );
+  flowNodeSelectionStore.lastModificationRemovedDisposer = reaction(
+    () => modificationsStore.flowNodeModifications,
+    (modificationsNext, modificationsPrev) => {
+      if (
+        flowNodeSelectionStore.state.selection === null ||
+        isRootNodeSelected ||
+        modificationsNext.length >= modificationsPrev.length
+      ) {
+        return;
+      }
+
+      const {flowNodeInstanceId} = flowNodeSelectionStore.state.selection;
+
+      if (flowNodeInstanceId === undefined) {
+        return;
+      }
+
+      const newScopeIds = modificationsStore.flowNodeModifications.reduce<
+        string[]
+      >((scopeIds, modification) => {
+        if (modification.operation === 'ADD_TOKEN') {
+          return [
+            ...scopeIds,
+            ...Object.values(modification.parentScopeIds),
+            ...[modification.scopeId],
+          ];
+        }
+
+        if (modification.operation === 'MOVE_TOKEN') {
+          return [
+            ...scopeIds,
+            ...Object.values(modification.parentScopeIds),
+            ...modification.scopeIds,
+          ];
+        }
+
+        return scopeIds;
+      }, []);
+
+      if (!newScopeIds.includes(flowNodeInstanceId)) {
+        clearSelection(rootNode);
+      }
+    },
+  );
+};
+
+const clearSelection = (rootNode: Selection | null) => {
+  flowNodeSelectionStore.setSelection(rootNode);
+};
+
+const selectFlowNode = (rootNode: Selection, selection: Selection) => {
+  if (
+    selection.flowNodeId === undefined ||
+    (!flowNodeSelectionStore.areMultipleInstancesSelected &&
+      flowNodeSelectionStore.isSelected(selection))
+  ) {
+    flowNodeSelectionStore.setSelection(rootNode);
+  } else {
+    flowNodeSelectionStore.setSelection(selection);
+  }
+};
 
 const getSelectedRunningInstanceCount = (
   totalRunningInstancesForFlowNode: number,
@@ -58,4 +139,10 @@ const getSelectedFlowNodeName = (businessObjects?: BusinessObjects) => {
   });
 };
 
-export {getSelectedRunningInstanceCount, getSelectedFlowNodeName};
+export {
+  init,
+  clearSelection,
+  selectFlowNode,
+  getSelectedRunningInstanceCount,
+  getSelectedFlowNodeName,
+};

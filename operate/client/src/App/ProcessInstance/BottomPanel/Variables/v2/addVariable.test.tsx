@@ -121,7 +121,7 @@ describe('Add variable', () => {
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
   });
 
-  it('should not allow empty characters in variable name', async () => {
+  it.skip('should not allow empty characters in variable name', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 

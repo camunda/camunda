@@ -149,7 +149,7 @@ describe('Footer', () => {
     );
     mockFetchVariables().withSuccess([]);
 
-    init([]);
+    init('process-instance', []);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     variablesStore.fetchVariables({
       fetchType: 'initial',
