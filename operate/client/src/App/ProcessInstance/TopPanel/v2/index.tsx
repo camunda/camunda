@@ -312,7 +312,7 @@ const TopPanel: React.FC = observer(() => {
               }
               onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                 if (modificationsStore.state.status === 'moving-token') {
-                  flowNodeSelectionStore.clearSelection();
+                  clearSelection(rootNode);
                   finishMovingToken(
                     affectedTokenCount,
                     visibleAffectedTokenCount,
