@@ -206,9 +206,28 @@ class TaskDetailsPage {
 
   async fillTextInput(label: string, value: string): Promise<void> {
     const input = this.page.getByLabel(label, {exact: true});
-    await input.click({timeout: 60000});
-    await input.fill(value);
-    await expect(input).toHaveValue(value, {timeout: 5000});
+    const maxRetries = 3;
+    let attempt = 0;
+    while (attempt < maxRetries) {
+      try {
+        await input.click({timeout: 120000});
+        await input.fill(value);
+        await input.blur();
+        await expect(input).toHaveValue(value);
+        return;
+      } catch (error) {
+        attempt++;
+        console.log(
+          `Attempt ${attempt} to fill input "${label}" failed with error: ${error}`,
+        );
+        if (attempt === maxRetries) {
+          throw new Error(
+            `Failed to set value "${value}" for label "${label}" after ${maxRetries} attempts.`,
+          );
+        }
+        await sleep(500);
+      }
+    }
   }
 
   async priorityAssertion(priority: string): Promise<void> {
