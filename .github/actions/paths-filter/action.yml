@@ -170,6 +170,7 @@ outputs:
         github.event_name == 'push' ||
         github.event_name == 'pull_request' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
       }}
 
@@ -235,7 +236,6 @@ runs:
         rdbms-change:
         - 'db/rdbms/**'
         - 'db/rdbms-schema/**'
-        - 'parent/**'
         - 'qa/acceptance-tests/**'
         - 'search/search-domain/**'
         - 'zeebe/exporters/rdbms-exporter/**'

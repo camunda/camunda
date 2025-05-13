@@ -560,7 +560,7 @@ jobs:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [detect-changes]
     name: "[IT] RDBMS"
-    timeout-minutes: 15
+    timeout-minutes: 5
     runs-on: gcp-perf-core-8-default
     permissions: {}  # no GITHUB_TOKEN is needed
     steps:
