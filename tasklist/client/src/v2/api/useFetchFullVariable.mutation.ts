@@ -22,7 +22,10 @@ function useFetchFullVariable() {
       const {response, error} = await request(api.getVariable(variableKey));
 
       if (response !== null) {
-        const variable = (await response.json()) as Variable;
+        const variable = (await response.json()) as Omit<
+          Variable,
+          'isTruncated'
+        >;
         const variablesQueryKey = getAllVariablesQueryKey(userTaskKey);
         const allVariables =
           client.getQueryData<QueryVariablesByUserTaskResponseBody>(

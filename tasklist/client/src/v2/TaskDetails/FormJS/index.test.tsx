@@ -7,29 +7,20 @@
  */
 
 import {render, screen, waitFor} from 'common/testing/testing-library';
-import {assignedTaskWithForm, unassignedTaskWithForm} from 'v1/mocks/task';
 import {FormJS} from './index';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
-import * as formMocks from 'v1/mocks/form';
-import * as variableMocks from 'v1/mocks/variables';
+import * as formMocks from 'v2/mocks/form';
+import * as variableMocks from 'v2/mocks/variables';
 import * as userMocks from 'common/mocks/current-user';
+import {assignedTaskWithForm, unassignedTaskWithForm} from 'v2/mocks/task';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
+import type {QueryVariablesByUserTaskRequestBody} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
-const MOCK_FORM_ID = 'form-0';
-const MOCK_PROCESS_DEFINITION_KEY = 'process';
-const MOCK_TASK_ID = 'task-0';
 const REQUESTED_VARIABLES = ['myVar', 'isCool'];
 const DYNAMIC_FORM_REQUESTED_VARIABLES = ['radio_field', 'radio_field_options'];
-
-type VariableSearchRequestBody = {
-  includeVariables?: Array<{
-    name: string;
-    alwaysReturnFullValue: boolean;
-  }>;
-};
 
 const getWrapper = () => {
   const mockClient = getMockQueryClient();
@@ -56,11 +47,11 @@ function arraysContainSameValues(
 }
 
 function hasRequestedVariables(
-  req: VariableSearchRequestBody,
+  req: QueryVariablesByUserTaskRequestBody,
   expectedVariableNames: string[],
 ) {
-  const requestedVariables = req.includeVariables ?? [];
-  const names = requestedVariables.map((variable) => variable.name);
+  const requestedVariables = req.filter?.name?.$in ?? [];
+  const names = requestedVariables.map((variable) => variable);
   return arraysContainSameValues(expectedVariableNames, names);
 }
 
@@ -68,16 +59,9 @@ describe('<FormJS />', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
-        '/v1/forms/:formId',
+        '/v2/user-tasks/:userTaskKey/form',
         () => {
           return HttpResponse.json(formMocks.form);
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v2/authentication/me',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
         },
         {once: true},
       ),
@@ -86,13 +70,17 @@ describe('<FormJS />', () => {
 
   it('should render form for unassigned task', async () => {
     nodeMockServer.use(
-      http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+      http.post<never, QueryVariablesByUserTaskRequestBody>(
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
           ) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              variableMocks.getQueryVariablesResponseMock(
+                variableMocks.variables,
+              ),
+            );
           }
 
           return HttpResponse.json(
@@ -112,9 +100,7 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={unassignedTaskWithForm(MOCK_TASK_ID)}
+        task={unassignedTaskWithForm()}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}
@@ -143,13 +129,17 @@ describe('<FormJS />', () => {
 
   it('should render form for assigned task', async () => {
     nodeMockServer.use(
-      http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+      http.post<never, QueryVariablesByUserTaskRequestBody>(
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
           ) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              variableMocks.getQueryVariablesResponseMock(
+                variableMocks.variables,
+              ),
+            );
           }
 
           return HttpResponse.json(
@@ -169,9 +159,7 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        task={assignedTaskWithForm()}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}
@@ -199,13 +187,17 @@ describe('<FormJS />', () => {
 
   it('should render a prefilled form', async () => {
     nodeMockServer.use(
-      http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+      http.post<never, QueryVariablesByUserTaskRequestBody>(
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
           ) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              variableMocks.getQueryVariablesResponseMock(
+                variableMocks.variables,
+              ),
+            );
           }
 
           return HttpResponse.json(
@@ -225,9 +217,7 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        task={assignedTaskWithForm()}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}
@@ -252,13 +242,17 @@ describe('<FormJS />', () => {
 
   it('should submit prefilled form', async () => {
     nodeMockServer.use(
-      http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+      http.post<never, QueryVariablesByUserTaskRequestBody>(
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
           ) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              variableMocks.getQueryVariablesResponseMock(
+                variableMocks.variables,
+              ),
+            );
           }
 
           return HttpResponse.json(
@@ -279,9 +273,7 @@ describe('<FormJS />', () => {
     const mockOnSubmit = vi.fn();
     const {user} = render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        task={assignedTaskWithForm()}
         user={userMocks.currentUser}
         onSubmit={mockOnSubmit}
         onFileUpload={() => Promise.resolve(new Map())}
@@ -308,28 +300,26 @@ describe('<FormJS />', () => {
     expect(await screen.findByText('Completed')).toBeInTheDocument();
 
     await waitFor(() =>
-      expect(mockOnSubmit).toHaveBeenCalledWith([
-        {
-          name: 'myVar',
-          value: '"0001"',
-        },
-        {
-          name: 'isCool',
-          value: '"yes"',
-        },
-      ]),
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        myVar: '0001',
+        isCool: 'yes',
+      }),
     );
   });
 
   it('should submit edited form', async () => {
     nodeMockServer.use(
-      http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+      http.post<never, QueryVariablesByUserTaskRequestBody>(
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
           ) {
-            return HttpResponse.json(variableMocks.variables);
+            return HttpResponse.json(
+              variableMocks.getQueryVariablesResponseMock(
+                variableMocks.variables,
+              ),
+            );
           }
 
           return HttpResponse.json(
@@ -350,9 +340,7 @@ describe('<FormJS />', () => {
     const mockOnSubmit = vi.fn();
     const {user} = render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        task={assignedTaskWithForm()}
         user={userMocks.currentUser}
         onSubmit={mockOnSubmit}
         onFileUpload={() => Promise.resolve(new Map())}
@@ -379,29 +367,20 @@ describe('<FormJS />', () => {
     expect(await screen.findByText('Completed')).toBeInTheDocument();
 
     await waitFor(() =>
-      expect(mockOnSubmit).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          {
-            name: 'isCool',
-            value: '"yes"',
-          },
-          {
-            name: 'myVar',
-            value: '"new value"',
-          },
-        ]),
-      ),
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        myVar: 'new value',
+        isCool: 'yes',
+      }),
     );
   });
 
-  // TODO: #3957
   it('should render a prefilled dynamic form', async () => {
     nodeMockServer.use(
-      http.get('/v1/forms/:formId', () => {
+      http.get('/v2/user-tasks/:userTaskKey/form', () => {
         return HttpResponse.json(formMocks.dynamicForm);
       }),
-      http.post<never, VariableSearchRequestBody>(
-        '/v1/tasks/:taskId/variables/search',
+      http.post<never, QueryVariablesByUserTaskRequestBody>(
+        '/v2/user-tasks/:userTaskKey/variables/search',
         async ({request}) => {
           if (
             hasRequestedVariables(
@@ -409,7 +388,11 @@ describe('<FormJS />', () => {
               DYNAMIC_FORM_REQUESTED_VARIABLES,
             )
           ) {
-            return HttpResponse.json(variableMocks.dynamicFormVariables);
+            return HttpResponse.json(
+              variableMocks.getQueryVariablesResponseMock(
+                variableMocks.dynamicFormVariables,
+              ),
+            );
           }
 
           return HttpResponse.json(
@@ -429,9 +412,7 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        task={assignedTaskWithForm()}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}
@@ -455,7 +436,7 @@ describe('<FormJS />', () => {
 
   it("should show an error message if variables can't be loaded", async () => {
     nodeMockServer.use(
-      http.post('/v1/tasks/:taskId/variables/search', () => {
+      http.post('/v2/user-tasks/:userTaskKey/variables/search', () => {
         return HttpResponse.json(null, {
           status: 404,
         });
@@ -463,9 +444,7 @@ describe('<FormJS />', () => {
     );
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        task={assignedTaskWithForm()}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}
@@ -488,7 +467,7 @@ describe('<FormJS />', () => {
   it('should enable completion button when form has no inputs', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/forms/:formId',
+        '/v2/user-tasks/:userTaskKey/form',
         () => {
           return HttpResponse.json(formMocks.noInputForm);
         },
@@ -497,7 +476,7 @@ describe('<FormJS />', () => {
         },
       ),
       http.post(
-        '/v1/tasks/:taskId/variables/search',
+        '/v2/user-tasks/:userTaskKey/variables/search',
         () => {
           return HttpResponse.json([]);
         },
@@ -507,9 +486,7 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        task={assignedTaskWithForm()}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onFileUpload={() => Promise.resolve(new Map())}

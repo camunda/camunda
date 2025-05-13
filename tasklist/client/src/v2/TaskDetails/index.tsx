@@ -20,6 +20,8 @@ import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTas
 import {autoSelectNextTaskStore} from 'common/tasks/next-task/autoSelectFirstTask';
 import type {OutletContext} from 'v2/TaskDetailsLayout';
 import {Variables} from './Variables';
+import {FormJS} from './FormJS';
+import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
 
 const TaskDetails: React.FC = observer(() => {
   const {task, currentUser} = useOutletContext<OutletContext>();
@@ -32,6 +34,7 @@ const TaskDetails: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
   const {mutateAsync: completeTask} = useCompleteTask();
+  const {mutateAsync: uploadDocuments} = useUploadDocuments();
   const {formKey, userTaskKey} = task;
   const {enabled: autoSelectNextTaskEnabled} = autoSelectNextTaskStore;
   const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
@@ -95,8 +98,28 @@ const TaskDetails: React.FC = observer(() => {
     });
   }
 
+  async function handleFileUpload(files: Map<string, File[]>) {
+    if (files.size === 0) {
+      return new Map();
+    }
+
+    return uploadDocuments({
+      files,
+    });
+  }
+
   if (formKey !== undefined) {
-    return null;
+    return (
+      <FormJS
+        key={userTaskKey}
+        task={task}
+        user={currentUser}
+        onSubmit={handleSubmission}
+        onSubmitSuccess={handleSubmissionSuccess}
+        onSubmitFailure={handleSubmissionFailure}
+        onFileUpload={handleFileUpload}
+      />
+    );
   }
 
   return (
