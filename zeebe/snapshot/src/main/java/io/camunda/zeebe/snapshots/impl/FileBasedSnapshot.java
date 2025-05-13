@@ -40,7 +40,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final SnapshotMetadata metadata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
   private final ConcurrencyControl actor;
-  private final FileBasedSnapshotReservations reservations;
+  private final FileBasedSnapshotReservationStore reservations;
   private boolean deleted = false;
 
   FileBasedSnapshot(
@@ -60,7 +60,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     this.metadata = metadata;
     this.onSnapshotDeleted = onSnapshotDeleted;
     this.actor = actor;
-    reservations = new FileBasedSnapshotReservations(this, reservationDirectory, actor, clock);
+    reservations = new FileBasedSnapshotReservationStore(this, reservationDirectory, actor, clock);
   }
 
   public FileBasedSnapshotId getSnapshotId() {

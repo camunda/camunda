@@ -36,7 +36,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>Persisted reservations are stored in the file ${reservationsDirectory}/${snapshotId}.bin} in
  * binary format, see {@link PersistedReservationsV1}
  */
-public class FileBasedSnapshotReservations implements AutoCloseable {
+public class FileBasedSnapshotReservationStore implements AutoCloseable {
 
   private final Set<FileBasedSnapshotReservation> inMemory = new HashSet<>();
   private final PersistedReservationsV1 persisted;
@@ -49,7 +49,7 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
    * @param snapshot the corresponding Snapshot
    * @param actor the actor to run future on. It must be on an IO bound pool
    */
-  public FileBasedSnapshotReservations(
+  public FileBasedSnapshotReservationStore(
       final FileBasedSnapshot snapshot,
       final Path reservationsDirectory,
       final ConcurrencyControl actor,
@@ -161,7 +161,7 @@ public class FileBasedSnapshotReservations implements AutoCloseable {
                 reservations.put(
                     id,
                     new FileBasedSnapshotReservation(
-                        FileBasedSnapshotReservations.this, id, false, validUntil, reason));
+                        FileBasedSnapshotReservationStore.this, id, false, validUntil, reason));
               });
     }
 

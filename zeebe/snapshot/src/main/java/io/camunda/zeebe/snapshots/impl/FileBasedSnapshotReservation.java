@@ -12,7 +12,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotReservation;
 import java.util.UUID;
 
 public record FileBasedSnapshotReservation(
-    FileBasedSnapshotReservations reservations,
+    FileBasedSnapshotReservationStore reservations,
     UUID reservationId,
     boolean isInMemory,
     long validUntil,
@@ -20,7 +20,7 @@ public record FileBasedSnapshotReservation(
     implements PersistedSnapshotReservation {
 
   public static FileBasedSnapshotReservation inMemory(
-      final FileBasedSnapshotReservations reservations) {
+      final FileBasedSnapshotReservationStore reservations) {
     return new FileBasedSnapshotReservation(reservations, UUID.randomUUID(), true, 0L, null);
   }
 
