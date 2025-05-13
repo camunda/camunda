@@ -6,8 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {
+  BusinessObject,
+  BusinessObjects,
+  SubprocessOverlay,
+} from 'bpmn-js/lib/NavigatedViewer';
 import {DiagramModel} from 'bpmn-moddle';
+import {SUBPROCESS_WITH_INCIDENTS} from 'modules/bpmn-js/badgePositions';
 
 export function isFlowNode(businessObject: BusinessObject) {
   return businessObject.$instanceOf?.('bpmn:FlowNode') ?? false;
@@ -41,4 +46,28 @@ export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
   return Object.values(elementsById).filter((businessObject) =>
     isFlowNode(businessObject),
   );
+}
+
+export function getSubprocessOverlayFromIncidentFlowNodes(
+  flowNodes?: (BusinessObject | undefined)[],
+  type: string = 'flowNodeState',
+) {
+  const overlays: SubprocessOverlay[] = [];
+
+  flowNodes?.forEach((flowNode) => {
+    while (flowNode?.$parent) {
+      const parent = flowNode.$parent;
+      if (parent.$type === 'bpmn:SubProcess') {
+        overlays.push({
+          payload: {flowNodeState: 'incidents'},
+          type: type,
+          flowNodeId: parent.id,
+          position: SUBPROCESS_WITH_INCIDENTS,
+        });
+      }
+      flowNode = parent;
+    }
+  });
+
+  return overlays;
 }
