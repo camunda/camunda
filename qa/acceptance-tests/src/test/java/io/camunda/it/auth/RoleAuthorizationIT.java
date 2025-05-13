@@ -225,6 +225,48 @@ class RoleAuthorizationIT {
     assertThat(roleSearchResponse.items()).hasSize(0).map(RoleResult::getName).isEmpty();
   }
 
+  @Test
+  void shouldUpdateRoleByIdIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
+    final String name = "name";
+    final String description = "description";
+
+    adminClient
+        .newCreateRoleCommand()
+        .roleId(roleId)
+        .name(name)
+        .description(description)
+        .send()
+        .join();
+
+    final var updatedRole =
+        adminClient
+            .newUpdateRoleCommand(roleId)
+            .name("updatedName")
+            .description("updatedDescription")
+            .send()
+            .join();
+
+    assertThat(updatedRole.getRoleId()).isEqualTo(roleId);
+    // cleanup
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void updateRoleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUpdateRoleCommand(Strings.newRandomValidIdentityId())
+                    .name("name")
+                    .description("description")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
   private static void createRole(
       final CamundaClient adminClient, final String roleId, final String roleName) {
     adminClient.newCreateRoleCommand().roleId(roleId).name(roleName).send().join();
