@@ -64,6 +64,7 @@ import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.client.api.command.UpdateRoleCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
@@ -1127,7 +1128,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newRoleCreateCommand()
+   *  .roleId("roleId")
    *  .name(name)
+   *  .description("description")
    *  .send();
    * </pre>
    *
@@ -1143,7 +1146,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *
    * camundaClient
-   *  .newRoleGetRequest(roleId)
+   *  .newRoleGetRequest("roleId")
    *  .send();
    * </pre>
    *
@@ -1151,6 +1154,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a role
    */
   RoleGetRequest newRoleGetRequest(String roleId);
+
+  /**
+   * Command to update a role.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUpdateRoleCommand("roleId")
+   *  .name("name")
+   *  .description("description")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UpdateRoleCommandStep1 newUpdateRoleCommand(String roleId);
 
   /**
    * Command to delete a role by role ID.
@@ -1176,7 +1196,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newCreateGroupCommand()
-   *  .name(name)
+   *  .groupId("groupId")
+   *  .name("name")
    *  .send();
    * </pre>
    *
@@ -1193,8 +1214,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUpdateGroupCommand("123")
-   *  .name(name)
+   *  .newUpdateGroupCommand("groupId")
+   *  .name("name")
    *  .send();
    * </pre>
    *
@@ -1211,7 +1232,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newDeleteGroupCommand("123")
+   *  .newDeleteGroupCommand("groupId")
    *  .send();
    * </pre>
    *

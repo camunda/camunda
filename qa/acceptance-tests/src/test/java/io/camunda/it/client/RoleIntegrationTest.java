@@ -26,6 +26,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
@@ -251,6 +252,62 @@ public class RoleIntegrationTest {
                             auth.resourceId().equals("resourceId")
                                 && auth.resourceType().equals(ResourceType.RESOURCE)
                                 && auth.ownerId().equals(ROLE_ID_4)));
+  }
+
+  @Test
+  void shouldUpdateRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleName = UUID.randomUUID().toString();
+    final var description = UUID.randomUUID().toString();
+    final var updatedName = UUID.randomUUID().toString();
+    final var updatedDescription = UUID.randomUUID().toString();
+    camundaClient
+        .newCreateRoleCommand()
+        .roleId(roleId)
+        .name(roleName)
+        .description(description)
+        .send()
+        .join();
+
+    // when
+    camundaClient
+        .newUpdateRoleCommand(roleId)
+        .name(updatedName)
+        .description(updatedDescription)
+        .send()
+        .join();
+
+    // then
+    Awaitility.await("Role is updated")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var role = camundaClient.newRoleGetRequest(roleId).send().join();
+              assertThat(role).isNotNull();
+              assertThat(role.getRoleId()).isEqualTo(roleId);
+              assertThat(role.getName()).isEqualTo(updatedName);
+              assertThat(role.getDescription()).isEqualTo(updatedDescription);
+            });
+  }
+
+  @Test
+  void shouldReturnNotFoundWhenUpdatingIfRoleDoesNotExist() {
+    // when / then
+    final var nonExistingRoleId = Strings.newRandomValidIdentityId();
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUpdateRoleCommand(nonExistingRoleId)
+                    .name("Role Name")
+                    .description("Description")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            "Expected to update role with ID '%s', but a role with this ID does not exist."
+                .formatted(nonExistingRoleId));
   }
 
   private static void assertRoleCreated(
