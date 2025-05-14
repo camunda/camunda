@@ -500,7 +500,7 @@ describe('Modification Summary Modal', () => {
       cancelModificationAfectedTokenCount,
     ] = await screen.findAllByTestId('affected-token-count');
     expect(addModificationAffectedTokenCount).toHaveTextContent('1');
-    expect(cancelModificationAfectedTokenCount).toHaveTextContent('7');
+    expect(cancelModificationAfectedTokenCount).toHaveTextContent('13'); // 7 from subprocess + 6 from service task
   });
 
   it('should display success notification when modifications are applied with success', async () => {
