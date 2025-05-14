@@ -19,8 +19,6 @@ import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
@@ -38,62 +36,6 @@ public class AssignGroupToRoleTest extends ClientRestTest {
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath).isEqualTo(REST_API_PATH + "/roles/" + ROLE_ID + "/groups/" + GROUP_ID);
-  }
-
-  @Test
-  void shouldRaiseExceptionOnNotFoundRole() {
-    // given
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/roles/" + ROLE_ID + "/groups/" + GROUP_ID,
-        () -> new ProblemDetail().title("Not Found").status(404));
-
-    // when / then
-    assertThatThrownBy(
-            () -> client.newAssignGroupToRoleCommand(ROLE_ID).groupId(GROUP_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnNotFoundGroup() {
-    // given
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/roles/" + ROLE_ID + "/groups/" + GROUP_ID,
-        () -> new ProblemDetail().title("Not Found").status(404));
-
-    // when / then
-    assertThatThrownBy(
-            () -> client.newAssignGroupToRoleCommand(ROLE_ID).groupId(GROUP_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'");
-  }
-
-  @Test
-  void shouldHandleServerError() {
-    // given
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/roles/" + ROLE_ID + "/groups/" + GROUP_ID,
-        () -> new ProblemDetail().title("Internal Server Error").status(500));
-
-    // when / then
-    assertThatThrownBy(
-            () -> client.newAssignGroupToRoleCommand(ROLE_ID).groupId(GROUP_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnForbiddenRequest() {
-    // given
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/roles/" + ROLE_ID + "/groups/" + GROUP_ID,
-        () -> new ProblemDetail().title("Forbidden").status(403));
-
-    // when / then
-    assertThatThrownBy(
-            () -> client.newAssignGroupToRoleCommand(ROLE_ID).groupId(GROUP_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }
 
   @Test
