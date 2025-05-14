@@ -211,7 +211,7 @@ class RoleAuthorizationIT {
 
     assertThat(roleSearchResponse.items())
         .map(RoleResult::getName)
-        .containsExactlyInAnyOrder("Admin", ROLE_NAME_1, ROLE_NAME_2);
+        .containsExactlyInAnyOrder("Admin", "RPA", "Connectors", ROLE_NAME_1, ROLE_NAME_2);
   }
 
   @Test

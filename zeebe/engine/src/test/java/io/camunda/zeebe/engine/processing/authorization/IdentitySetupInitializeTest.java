@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -23,7 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
@@ -32,10 +33,6 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -73,6 +70,15 @@ public class IdentitySetupInitializeTest {
         .withRole(role)
         .withUser(user)
         .withTenant(tenant)
+        .withRoleMember(
+            new RoleRecord().setRoleId(roleId).setEntityType(EntityType.USER).setEntityId(username))
+        .withAuthorization(
+            new AuthorizationRecord()
+                .setResourceType(AuthorizationResourceType.TENANT)
+                .setResourceId(tenantId)
+                .setPermissionTypes(Set.of(PermissionType.READ))
+                .setOwnerType(AuthorizationOwnerType.ROLE)
+                .setOwnerId(roleId))
         .initialize();
 
     // then
@@ -96,7 +102,23 @@ public class IdentitySetupInitializeTest {
         .hasName(tenantName)
         .hasTenantId(tenantId);
     assertThatEntityIsAssignedToRole(roleId, username, EntityType.USER);
-    assertThatAllPermissionsAreAddedToRole(roleId);
+    final var authorizations =
+        RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+            .withOwnerId(roleId)
+            // exclude UNSPECIFIED resource type
+            .limit(1)
+            .map(Record::getValue)
+            .toList();
+    Assertions.assertThat(authorizations)
+        .singleElement()
+        .satisfies(
+            record ->
+                assertThat(record)
+                    .hasResourceType(AuthorizationResourceType.TENANT)
+                    .hasResourceId(tenantId)
+                    .hasPermissionTypes(Set.of(PermissionType.READ))
+                    .hasOwnerId(roleId)
+                    .hasOwnerType(AuthorizationOwnerType.ROLE));
   }
 
   @Test
@@ -123,7 +145,14 @@ public class IdentitySetupInitializeTest {
         .getKey();
 
     // when
-    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine
+        .identitySetup()
+        .initialize()
+        .withRole(role)
+        .withUser(user)
+        .withRoleMember(
+            new RoleRecord().setRoleId(roleId).setEntityType(EntityType.USER).setEntityId(username))
+        .initialize();
 
     // then
     assertUserIsNotCreated(username);
@@ -147,7 +176,14 @@ public class IdentitySetupInitializeTest {
     engine.role().newRole(roleId).create().getKey();
 
     // when
-    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine
+        .identitySetup()
+        .initialize()
+        .withRole(role)
+        .withUser(user)
+        .withRoleMember(
+            new RoleRecord().setRoleId(roleId).setEntityType(EntityType.USER).setEntityId(username))
+        .initialize();
 
     // then
     assertRoleIsNotCreated(roleId);
@@ -208,7 +244,17 @@ public class IdentitySetupInitializeTest {
         .getKey();
 
     // when
-    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine
+        .identitySetup()
+        .initialize()
+        .withRole(role)
+        .withUser(user)
+        .withRoleMember(
+            new RoleRecord()
+                .setRoleId(role.getRoleId())
+                .setEntityType(EntityType.USER)
+                .setEntityId(username))
+        .initialize();
 
     // then
     assertRoleIsNotCreated(roleId);
@@ -244,7 +290,17 @@ public class IdentitySetupInitializeTest {
 
     // when
     final var initializeRecord =
-        engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+        engine
+            .identitySetup()
+            .initialize()
+            .withRole(role)
+            .withUser(user)
+            .withRoleMember(
+                new RoleRecord()
+                    .setRoleId(roleId)
+                    .setEntityType(EntityType.USER)
+                    .setEntityId(username))
+            .initialize();
 
     // then
     assertRoleIsNotCreated(roleId);
@@ -307,6 +363,16 @@ public class IdentitySetupInitializeTest {
             .withRole(role)
             .withMapping(mapping1)
             .withMapping(mapping2)
+            .withRoleMember(
+                new RoleRecord()
+                    .setRoleId(role.getRoleId())
+                    .setEntityType(EntityType.MAPPING)
+                    .setEntityId(mapping1.getMappingId()))
+            .withRoleMember(
+                new RoleRecord()
+                    .setRoleId(role.getRoleId())
+                    .setEntityType(EntityType.MAPPING)
+                    .setEntityId(mapping2.getMappingId()))
             .initialize()
             .getValue();
 
@@ -334,39 +400,6 @@ public class IdentitySetupInitializeTest {
             m2 ->
                 assertThatEntityIsAssignedToRole(
                     role.getRoleId(), m2.getMappingId(), EntityType.MAPPING));
-  }
-
-  private static void assertThatAllPermissionsAreAddedToRole(final String roleId) {
-    final var expectedResourceTypes =
-        Arrays.stream(AuthorizationResourceType.values())
-            .filter(resourceType -> resourceType != AuthorizationResourceType.UNSPECIFIED)
-            .toArray(AuthorizationResourceType[]::new);
-    final var addedPermissions =
-        RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
-            .withOwnerId(roleId)
-            // exclude UNSPECIFIED resource type
-            .limit(AuthorizationResourceType.values().length - 1)
-            .map(Record::getValue)
-            .toList();
-
-    Assertions.assertThat(addedPermissions)
-        .describedAs("Added permissions for all resource types except UNSPECIFIED")
-        .extracting(AuthorizationRecordValue::getResourceType)
-        .containsExactly(expectedResourceTypes);
-
-    final Map<AuthorizationResourceType, Set<PermissionType>> expectedPermissions = new HashMap<>();
-    for (final AuthorizationResourceType resourceType : expectedResourceTypes) {
-      final var permissionTypes = new HashSet<>(resourceType.getSupportedPermissionTypes());
-      expectedPermissions.put(resourceType, permissionTypes);
-    }
-
-    for (final var resourceType : expectedPermissions.keySet()) {
-      Assertions.assertThat(addedPermissions)
-          .filteredOn(record -> record.getResourceType() == resourceType)
-          .describedAs("Added supported permission types for resource type %s", resourceType)
-          .flatMap(AuthorizationRecordValue::getPermissionTypes)
-          .containsOnly(expectedPermissions.get(resourceType).toArray(new PermissionType[0]));
-    }
   }
 
   private static void assertUserIsNotCreated(final String username) {

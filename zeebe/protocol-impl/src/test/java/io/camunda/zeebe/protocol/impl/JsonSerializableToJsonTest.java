@@ -3066,7 +3066,7 @@ final class JsonSerializableToJsonTest {
         (Supplier<IdentitySetupRecord>)
             () ->
                 new IdentitySetupRecord()
-                    .setDefaultRole(
+                    .addRole(
                         new RoleRecord()
                             .setRoleKey(1)
                             .setRoleId("id")
@@ -3074,6 +3074,11 @@ final class JsonSerializableToJsonTest {
                             .setDescription("description")
                             .setEntityId("entityId")
                             .setEntityType(EntityType.USER))
+                    .addRoleMember(
+                        new RoleRecord()
+                            .setRoleId("id")
+                            .setEntityType(EntityType.USER)
+                            .setEntityId("username"))
                     .addUser(
                         new UserRecord()
                             .setUserKey(3L)
@@ -3090,6 +3095,11 @@ final class JsonSerializableToJsonTest {
                             .setPassword("qux"))
                     .setDefaultTenant(
                         new TenantRecord().setTenantKey(5).setTenantId("id").setName("name"))
+                    .addTenantMember(
+                        new TenantRecord()
+                            .setTenantId("id")
+                            .setEntityType(EntityType.ROLE)
+                            .setEntityId("id"))
                     .addMapping(
                         new MappingRecord()
                             .setMappingKey(6)
@@ -3103,17 +3113,36 @@ final class JsonSerializableToJsonTest {
                             .setMappingId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
-                            .setName("Claim 2")),
+                            .setName("Claim 2"))
+                    .addAuthorization(
+                        new AuthorizationRecord()
+                            .setOwnerId("id2")
+                            .setOwnerType(AuthorizationOwnerType.MAPPING)
+                            .setResourceType(AuthorizationResourceType.RESOURCE)
+                            .setResourceId("resource-id")
+                            .setPermissionTypes(Set.of(PermissionType.CREATE))),
         """
       {
-        "defaultRole": {
-          "roleKey": 1,
-          "roleId": "id",
-          "name": "roleName",
-          "description": "description",
-          "entityId": "entityId",
-          "entityType": "USER"
-        },
+        "roles": [
+          {
+            "roleKey": 1,
+            "roleId": "id",
+            "name": "roleName",
+            "description": "description",
+            "entityId": "entityId",
+            "entityType": "USER"
+          }
+        ],
+        "roleMembers": [
+          {
+            "roleKey": -1,
+            "roleId": "id",
+            "name": "",
+            "description": "",
+            "entityId": "username",
+            "entityType": "USER"
+          }
+        ],
         "users": [
           {
             "userKey": 3,
@@ -3138,6 +3167,16 @@ final class JsonSerializableToJsonTest {
           "entityId": "",
           "entityType": "UNSPECIFIED"
         },
+        "tenantMembers": [
+          {
+            "tenantKey": -1,
+            "tenantId": "id",
+            "name": "",
+            "description": "",
+            "entityId": "id",
+            "entityType": "ROLE"
+          }
+        ],
         "mappings": [
           {
             "mappingKey": 6,
@@ -3153,6 +3192,16 @@ final class JsonSerializableToJsonTest {
             "claimValue": "value2",
             "name": "Claim 2"
           }
+        ],
+        "authorizations": [
+          {
+            "authorizationKey": -1,
+            "ownerId": "id2",
+            "ownerType": "MAPPING",
+            "resourceId": "resource-id",
+            "resourceType": "RESOURCE",
+            "permissionTypes": ["CREATE"]
+          }
         ]
       }
       """
@@ -3165,18 +3214,10 @@ final class JsonSerializableToJsonTest {
         (Supplier<IdentitySetupRecord>)
             () ->
                 new IdentitySetupRecord()
-                    .setDefaultRole(new RoleRecord().setRoleId("roleId"))
                     .setDefaultTenant(new TenantRecord().setTenantId("tenantId")),
         """
       {
-          "defaultRole": {
-              "roleKey": -1,
-              "roleId": "roleId",
-              "name": "",
-              "description": "",
-              "entityId": "",
-              "entityType": "UNSPECIFIED"
-          },
+          "roles": [],
           "users": [],
           "defaultTenant": {
               "tenantKey": -1,
@@ -3186,7 +3227,10 @@ final class JsonSerializableToJsonTest {
               "entityId": "",
               "entityType": "UNSPECIFIED"
           },
-          "mappings": []
+          "mappings": [],
+          "roleMembers": [],
+          "tenantMembers": [],
+          "authorizations": []
       }
       """
       },

@@ -132,10 +132,10 @@ final class ClusteredSnapshotTest {
   }
 
   private void configureBroker(final BrokerCfg brokerCfg) {
-    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(4));
+    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
 
     final DataCfg data = brokerCfg.getData();
-    data.setLogSegmentSize(DataSize.ofKilobytes(4));
+    data.setLogSegmentSize(DataSize.ofKilobytes(32));
     data.setLogIndexDensity(5);
     data.setSnapshotPeriod(SNAPSHOT_INTERVAL);
 

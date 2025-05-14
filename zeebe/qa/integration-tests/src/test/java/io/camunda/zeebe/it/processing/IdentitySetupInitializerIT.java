@@ -81,8 +81,9 @@ final class IdentitySetupInitializerIT {
     final var passwordMatches = passwordEncoder.matches(password, createdUser.getPassword());
     assertTrue(passwordMatches);
 
-    final var createdRole = RecordingExporter.roleRecords(RoleIntent.CREATED).getFirst().getValue();
-    Assertions.assertThat(createdRole).hasName(IdentitySetupInitializer.DEFAULT_ROLE_NAME);
+    assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).limit(3))
+        .extracting(record -> record.getValue().getName())
+        .containsExactlyInAnyOrder("Admin", "RPA", "Connectors");
 
     final var createdTenant =
         RecordingExporter.tenantRecords(TenantIntent.CREATED).getFirst().getValue();

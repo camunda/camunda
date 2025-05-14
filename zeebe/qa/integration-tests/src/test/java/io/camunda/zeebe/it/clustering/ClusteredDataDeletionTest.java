@@ -60,9 +60,9 @@ public final class ClusteredDataDeletionTest {
   private static void configureNoExporters(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setSnapshotPeriod(SNAPSHOT_PERIOD);
-    data.setLogSegmentSize(DataSize.ofKilobytes(16));
+    data.setLogSegmentSize(DataSize.ofKilobytes(32));
     data.setLogIndexDensity(50);
-    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(16));
+    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
 
     brokerCfg.setExporters(Collections.emptyMap());
   }
@@ -70,9 +70,9 @@ public final class ClusteredDataDeletionTest {
   private static void configureCustomExporter(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setSnapshotPeriod(SNAPSHOT_PERIOD);
-    data.setLogSegmentSize(DataSize.ofKilobytes(16));
+    data.setLogSegmentSize(DataSize.ofKilobytes(32));
     data.setLogIndexDensity(50);
-    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(16));
+    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(TestExporter.class.getName());
