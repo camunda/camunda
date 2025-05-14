@@ -18,8 +18,7 @@ package io.camunda.client.api.command;
 import io.camunda.client.api.response.AssignRoleToMappingResponse;
 
 /** Command to assign a mapping to a role. */
-public interface AssignRoleToMappingCommandStep1
-    extends FinalCommandStep<AssignRoleToMappingResponse> {
+public interface AssignRoleToMappingCommandStep1 {
 
   /**
    * Sets the role ID.
