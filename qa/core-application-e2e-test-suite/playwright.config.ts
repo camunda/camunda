@@ -60,13 +60,34 @@ export default defineConfig({
       testMatch: changedFolders.includes('chromium')
         ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
         : undefined,
+      testIgnore: 'task-panel.spec.ts',
+      teardown: 'chromium-subset',
+    },
+    {
+      name: 'chromium-subset',
+      testMatch: 'task-panel.spec.ts',
+      use: devices['Desktop Chrome'],
     },
     {
       name: 'firefox',
       use: devices['Desktop Firefox'],
+      testIgnore: 'task-panel.spec.ts',
+      teardown: 'firefox-subset',
+    },
+    {
+      name: 'firefox-subset',
+      testMatch: 'task-panel.spec.ts',
+      use: devices['Desktop Firefox'],
     },
     {
       name: 'msedge',
+      use: devices['Desktop Edge'],
+      testIgnore: 'task-panel.spec.ts',
+      teardown: 'msedge-subset',
+    },
+    {
+      name: 'msedge-subset',
+      testMatch: 'task-panel.spec.ts',
       use: devices['Desktop Edge'],
     },
   ],
