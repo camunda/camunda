@@ -231,13 +231,7 @@ class RoleAuthorizationIT {
     final String name = "name";
     final String description = "description";
 
-    adminClient
-        .newCreateRoleCommand()
-        .roleId(roleId)
-        .name(name)
-        .description(description)
-        .send()
-        .join();
+    createRole(adminClient, roleId, name, description);
 
     final var updatedRole =
         adminClient
@@ -269,7 +263,21 @@ class RoleAuthorizationIT {
 
   private static void createRole(
       final CamundaClient adminClient, final String roleId, final String roleName) {
-    adminClient.newCreateRoleCommand().roleId(roleId).name(roleName).send().join();
+    createRole(adminClient, roleId, roleName, null);
+  }
+
+  private static void createRole(
+      final CamundaClient adminClient,
+      final String roleId,
+      final String roleName,
+      final String description) {
+    adminClient
+        .newCreateRoleCommand()
+        .roleId(roleId)
+        .name(roleName)
+        .description(description)
+        .send()
+        .join();
   }
 
   private static void waitForRolesToBeCreated(
