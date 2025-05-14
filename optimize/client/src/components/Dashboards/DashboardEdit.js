@@ -154,11 +154,6 @@ export class DashboardEdit extends React.Component {
         },
         {capture: true, once: true}
       );
-
-      window.setTimeout(() => {
-        node.dispatchEvent(createEvent('mousemove', this.mousePosition));
-        node.dispatchEvent(createEvent('mousemove', this.mousePosition));
-      });
     });
 
     track(getEventName('create', newTile.type), {entityId: newTile.id});
