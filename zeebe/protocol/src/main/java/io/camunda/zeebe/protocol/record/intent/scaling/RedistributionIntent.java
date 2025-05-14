@@ -20,13 +20,8 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 public enum RedistributionIntent implements Intent {
   START((short) 1, false),
   STARTED((short) 2, true),
-  CONTINUE((short) 3, false),
-  CONTINUED((short) 4, true),
   COMPLETE((short) 5, false),
   COMPLETED((short) 6, true);
-
-  // A static field is needed as values() would allocate at every call
-  private static final RedistributionIntent[] INTENTS = values();
 
   private final short value;
   private final boolean isEvent;
@@ -47,10 +42,21 @@ public enum RedistributionIntent implements Intent {
   }
 
   public static Intent from(final short intent) {
-    try {
-      return INTENTS[intent - 1];
-    } catch (final ArrayIndexOutOfBoundsException e) {
-      return Intent.UNKNOWN;
+    switch (intent) {
+      case 1:
+        return START;
+      case 2:
+        return STARTED;
+      // old CONTINUE is mapped to COMPLETE
+      case 3:
+      case 5:
+        return COMPLETE;
+      case 4:
+      // old CONTINUED is mapped to COMPLETED
+      case 6:
+        return COMPLETED;
+      default:
+        return Intent.UNKNOWN;
     }
   }
 }

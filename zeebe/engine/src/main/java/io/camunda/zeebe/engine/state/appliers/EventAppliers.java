@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.scaling.ScaleUpStatusResponseApplier;
 import io.camunda.zeebe.engine.scaling.ScaledUpApplier;
 import io.camunda.zeebe.engine.scaling.ScalingUpApplier;
 import io.camunda.zeebe.engine.scaling.redistribution.RedistributionCompletedApplier;
-import io.camunda.zeebe.engine.scaling.redistribution.RedistributionContinuedApplier;
 import io.camunda.zeebe.engine.scaling.redistribution.RedistributionStartedApplier;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
@@ -570,7 +569,6 @@ public final class EventAppliers implements EventApplier {
     register(ScaleIntent.SCALED_UP, new ScaledUpApplier(state.getRoutingState()));
     register(ScaleIntent.STATUS_RESPONSE, new ScaleUpStatusResponseApplier());
     register(RedistributionIntent.STARTED, new RedistributionStartedApplier(state));
-    register(RedistributionIntent.CONTINUED, new RedistributionContinuedApplier(state));
     register(RedistributionIntent.COMPLETED, new RedistributionCompletedApplier(state));
   }
 
