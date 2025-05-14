@@ -91,6 +91,6 @@ test.describe.serial("users CRUD", () => {
       name: EDITED_USER.email,
     });
 
-    await waitForItemInList(page, item, false);
+    await waitForItemInList(page, item, { shouldBeVisible: false });
   });
 });
