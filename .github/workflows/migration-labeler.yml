@@ -1,6 +1,10 @@
 # owner: @vheinila
 name: Issue Migration Labeler
 
+permissions:
+  contents: read
+  issues: write
+
 on:
   workflow_dispatch:
     
