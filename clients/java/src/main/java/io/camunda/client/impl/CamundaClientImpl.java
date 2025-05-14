@@ -31,6 +31,7 @@ import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
+import io.camunda.client.api.command.AssignUserToRoleCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
