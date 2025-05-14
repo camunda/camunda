@@ -39,7 +39,7 @@ services:
 
   zeebe: &zeebe
     container_name: zeebe-${DATABASE}
-    image: camunda/zeebe:8.6.12
+    image: camunda/zeebe:8.6.14
     environment:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m'
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
@@ -57,11 +57,11 @@ services:
 
   tasklist: &tasklist
     container_name: tasklist-${DATABASE}
-    image: camunda/tasklist:8.6.12
+    image: camunda/tasklist:8.6.14
     ports:
       - 8080:8080
     environment:
-      - SPRING_PROFILES_ACTIVE=dev,auth
+      - SPRING_PROFILES_ACTIVE=dev,auth,e2e-test
     depends_on:
       - ${DATABASE}
       - zeebe
@@ -75,7 +75,7 @@ services:
 
   operate: &operate
     container_name: operate-${DATABASE}
-    image: camunda/operate:8.6.12
+    image: camunda/operate:8.6.14
     ports:
       - 8081:8080
     environment:

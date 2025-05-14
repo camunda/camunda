@@ -13,16 +13,14 @@ export async function navigateToApp(
   appName: string,
 ): Promise<void> {
   if (appName == 'operate') {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    page.goto(
+    await page.goto(
       process.env.CORE_APPLICATION_OPERATE_URL +
         '/' +
         appName.toLowerCase() +
         '/login',
     );
   } else if (appName == 'tasklist') {
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    page.goto(
+    await page.goto(
       process.env.CORE_APPLICATION_TASKLIST_URL +
         '/' +
         appName.toLowerCase() +
