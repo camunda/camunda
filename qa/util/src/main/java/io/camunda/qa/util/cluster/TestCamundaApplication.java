@@ -33,6 +33,8 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -88,6 +90,10 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
                 InitializationConfiguration.DEFAULT_USER_PASSWORD,
                 InitializationConfiguration.DEFAULT_USER_NAME,
                 InitializationConfiguration.DEFAULT_USER_EMAIL));
+    securityConfig
+        .getInitialization()
+        .getDefaultRoles()
+        .put("admin", Map.of("users", List.of(InitializationConfiguration.DEFAULT_USER_USERNAME)));
 
     //noinspection resource
     withBean("config", brokerProperties, BrokerBasedProperties.class)

@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -58,7 +59,12 @@ public class TenantAwareResourceFetchTest {
                 config
                     .getInitialization()
                     .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email")));
-              });
+              })
+          .withSecurityConfig(
+              cfg ->
+                  cfg.getInitialization()
+                      .getDefaultRoles()
+                      .put("admin", Map.of("users", List.of(USERNAME))));
 
   private CommandResponseWriter mockCommandResponseWriter;
   private ResourceRecord resourceResponse;

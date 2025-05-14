@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,7 +41,12 @@ public class UserCreateAuthorizationTest {
       EngineRule.singlePartition()
           .withIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
-          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withSecurityConfig(
+              cfg ->
+                  cfg.getInitialization()
+                      .getDefaultRoles()
+                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 

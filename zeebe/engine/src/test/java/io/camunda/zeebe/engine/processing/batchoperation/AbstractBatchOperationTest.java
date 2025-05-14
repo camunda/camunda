@@ -62,6 +62,11 @@ abstract class AbstractBatchOperationTest {
           .withIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withSecurityConfig(
+              cfg ->
+                  cfg.getInitialization()
+                      .getDefaultRoles()
+                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))))
           .withSearchClientsProxy(searchClientsProxy);
 
   protected long createNewCancelProcessInstanceBatchOperation(final Set<Long> itemKeys) {
