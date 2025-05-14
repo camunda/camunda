@@ -729,6 +729,38 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
+  void shouldPropagateMappingsAndSettingsUpdateToArchivedIndices(
+      final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    final var archivedIndex =
+        mockIndex(
+            CONFIG_PREFIX + "-qualified_name_2025-01-01",
+            index.getAlias(),
+            index.getIndexName(),
+            index.getMappingsClasspathFilename());
+    final var schemaManager = createSchemaManager(Set.of(index, archivedIndex), Set.of(), config);
+
+    schemaManager.startup();
+
+    // when
+    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    config.index().setNumberOfReplicas(5);
+
+    schemaManager.startup();
+
+    // then
+    final var retrievedArchivedIndex =
+        clientAdapter.getIndexAsNode(archivedIndex.getFullQualifiedName());
+
+    assertThat(
+            mappingsMatch(retrievedArchivedIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+    assertThat(retrievedArchivedIndex.at("/settings/index/number_of_replicas").asInt())
+        .isEqualTo(5);
+  }
+
+  @TestTemplate
   void shouldCreateHarmonizedSchema(
       final SearchEngineConfiguration config, final SearchClientAdapter adapter)
       throws IOException {
