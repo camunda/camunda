@@ -4889,6 +4889,34 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /batch-operation-items/search:
+    post:
+      tags:
+        - Batch operation
+      operationId: searchBatchOperationItems
+      summary: Search batch operation items
+      description: Search for batch operation items based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchOperationItemSearchQuery"
+      responses:
+        "200":
+          description: The batch operation search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationItemSearchQueryResult"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   schemas:
@@ -8998,6 +9026,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
+            - batchOperationId
             - operationType
             - state
             - startDate
@@ -9041,6 +9070,57 @@ components:
             - COMPLETED_WITH_ERRORS
             - CANCELED
             - INCOMPLETED
+    BatchOperationItemSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - batchOperationId
+            - itemKey
+            - processInstanceKey
+            - state
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
+    BatchOperationItemSearchQuery:
+      description: Batch operation item search request.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationItemSearchQuerySortRequest"
+        filter:
+          description: The batch operation search filters.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationItemFilter"
+    BatchOperationItemFilter:
+      description: Batch operation item filter request.
+      type: object
+      properties:
+        batchOperationId:
+          description: The key (or operate legacy ID) of the batch operation.
+          type: string
+        itemKey:
+          description: The key of the item, e.g. a process instance key.
+          type: string
+        processInstanceKey:
+          description: The process instance key of the processed item.
+          type: string
+        state:
+          type: string
+          description: The state of the batch operation.
+          enum:
+            - ACTIVE
+            - COMPLETED
+            - CANCELED
+            - FAILED
     BatchOperationSearchQueryResult:
       type: object
       allOf:

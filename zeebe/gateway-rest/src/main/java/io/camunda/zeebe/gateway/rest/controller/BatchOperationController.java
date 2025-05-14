@@ -52,6 +52,7 @@ public class BatchOperationController {
     }
   }
 
+  // TODO remove when secondaryDb support search for items
   @CamundaGetMapping(path = "/{batchOperationId}/items")
   public ResponseEntity<BatchOperationItemSearchQueryResult> getItemsById(
       @PathVariable("batchOperationId") final String batchOperationId) {

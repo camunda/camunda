@@ -31,6 +31,7 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -74,6 +75,12 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
     return List.of();
+  }
+
+  @Override
+  public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
+      final BatchOperationItemQuery query) {
+    return SearchQueryResult.empty();
   }
 
   @Override
