@@ -30,10 +30,8 @@ import io.camunda.spring.client.bean.ParameterInfo;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
@@ -78,9 +76,6 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       if (camundaClientProperties.getWorker().getDefaults().getFetchVariables() != null) {
         variables.addAll(camundaClientProperties.getWorker().getDefaults().getFetchVariables());
       }
-      findWorkerOverride(jobWorkerValue.getType())
-          .map(CamundaClientJobWorkerProperties::getFetchVariables)
-          .ifPresent(variables::addAll);
       variables.addAll(
           readZeebeVariableParameters(jobWorkerValue.getMethodInfo()).stream()
               .map(this::extractVariableName)
@@ -154,6 +149,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
           "fetchVariables", overrideSource, source::getFetchVariables, target::setFetchVariables);
       copyProperty("type", overrideSource, source::getType, target::setType);
       copyProperty("name", overrideSource, source::getName, target::setName);
+      copyProperty("tenantIds", overrideSource, source::getTenantIds, target::setTenantIds);
     }
     copyProperty("timeout", overrideSource, source::getTimeout, target::setTimeout);
     copyProperty(
@@ -167,7 +163,6 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
         "streamEnabled", overrideSource, source::getStreamEnabled, target::setStreamEnabled);
     copyProperty(
         "streamTimeout", overrideSource, source::getStreamTimeout, target::setStreamTimeout);
-    copyProperty("tenantIds", overrideSource, source::getTenantIds, target::setTenantIds);
     copyProperty(
         "forceFetchAllVariables",
         overrideSource,
@@ -232,17 +227,21 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyDefaultJobWorkerTenantIds(final JobWorkerValue jobWorkerValue) {
-    final Set<String> defaultJobWorkerTenantIds =
-        new HashSet<>(
+    final List<String> defaultJobWorkerTenantIds =
+        new ArrayList<>(
             ofNullable(camundaClientProperties.getWorker().getDefaults().getTenantIds())
                 .orElse(Collections.emptyList()));
     if (jobWorkerValue.getTenantIds() == null || jobWorkerValue.getTenantIds().isEmpty()) {
       if (!defaultJobWorkerTenantIds.isEmpty()) {
         LOG.debug(
             "Worker '{}': Setting tenantIds to default {}",
-            jobWorkerValue.getTenantIds(),
+            jobWorkerValue.getName(),
             defaultJobWorkerTenantIds);
-        jobWorkerValue.setTenantIds(new ArrayList<>(defaultJobWorkerTenantIds));
+        jobWorkerValue.setTenantIds(defaultJobWorkerTenantIds);
+      } else if (camundaClientProperties.getTenantId() != null) {
+        LOG.debug("Worker '{}': No tenantIds set, using global default", jobWorkerValue.getName());
+        jobWorkerValue.setTenantIds(
+            Collections.singletonList(camundaClientProperties.getTenantId()));
       }
     }
   }

@@ -475,6 +475,19 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     assertThat(jobWorkerValue.getFetchVariables()).containsExactly("value");
   }
 
+  @Test
+  void shouldApplyTenantIdIfNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantId("testTenantId");
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "emptyWorker"));
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getTenantIds()).containsOnly("testTenantId");
+  }
+
   private record Input<T extends Object>(
       String displayName,
       BiConsumer<CamundaClientJobWorkerProperties, T> setter,
