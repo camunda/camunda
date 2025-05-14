@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.ExporterMetadata;
+import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
@@ -44,6 +45,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final ScheduledExecutorService executor;
   private final Logger logger;
   private final Duration waitForRefreshInterval;
+  private final IncidentNotifier incidentNotifier;
 
   public IncidentUpdateTask(
       final ExporterMetadata metadata,
@@ -51,6 +53,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final boolean ignoreMissingData,
       final int batchSize,
       final ScheduledExecutorService executor,
+      final IncidentNotifier incidentNotifier,
       final Logger logger) {
     this(
         metadata,
@@ -58,6 +61,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
         ignoreMissingData,
         batchSize,
         executor,
+        incidentNotifier,
         logger,
         Duration.ofSeconds(5));
   }
@@ -69,6 +73,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final boolean ignoreMissingData,
       final int batchSize,
       final ScheduledExecutorService executor,
+      final IncidentNotifier incidentNotifier,
       final Logger logger,
       final Duration waitForRefreshInterval) {
     this.metadata = metadata;
@@ -78,6 +83,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     this.executor = executor;
     this.logger = logger;
     this.waitForRefreshInterval = waitForRefreshInterval;
+    this.incidentNotifier = incidentNotifier;
   }
 
   @Override
@@ -277,6 +283,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
                     executor),
             executor)
         .thenCompose(ignored -> repository.bulkUpdate(bulkUpdate))
+        .thenCompose(
+            updatedIds ->
+                notifyIncidents(updatedIds, bulkUpdate.incidentRequests(), data.incidents()))
         .join();
   }
 
@@ -509,6 +518,31 @@ public final class IncidentUpdateTask implements BackgroundTask {
           .listViewRequests()
           .put(piId, newListViewInstanceUpdate(piId, index, hasIncident, piId));
     }
+  }
+
+  private CompletableFuture<Integer> notifyIncidents(
+      final List<String> updatedIds,
+      final Map<String, DocumentUpdate> incidentUpdates,
+      final Map<String, IncidentDocument> incidents) {
+    final var incidentsToNotify =
+        updatedIds.stream()
+            .filter(incidentUpdates::containsKey)
+            .filter(id -> shouldNotifyAboutUpdate(incidentUpdates.get(id)))
+            .map(incidents::get)
+            .map(IncidentDocument::incident)
+            .toList();
+    if (incidentsToNotify.isEmpty()) {
+      return CompletableFuture.completedFuture(updatedIds.size());
+    }
+    return incidentNotifier.notifyAsync(incidentsToNotify).thenApply(ignored -> updatedIds.size());
+  }
+
+  private boolean shouldNotifyAboutUpdate(final DocumentUpdate update) {
+    if (update.doc().containsKey(IncidentTemplate.STATE)) {
+      final var stateUpdate = update.doc().get(IncidentTemplate.STATE);
+      return IncidentState.RESOLVED != stateUpdate && IncidentState.MIGRATED != stateUpdate;
+    }
+    return false;
   }
 
   private DocumentUpdate newIncidentUpdate(

@@ -123,7 +123,9 @@ public class CamundaExporter implements Exporter {
                 provider,
                 metrics,
                 context.getLogger(),
-                metadata)
+                metadata,
+                clientAdapter.objectMapper(),
+                provider.getProcessCache())
             .build();
     LOG.debug("Exporter configured with {}", configuration);
   }
@@ -149,7 +151,6 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
-    provider.close();
 
     if (writer != null) {
       try {

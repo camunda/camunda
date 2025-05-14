@@ -10,6 +10,8 @@ package io.camunda.exporter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
+import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
@@ -73,9 +75,6 @@ import io.camunda.exporter.handlers.batchoperation.BatchOperationStartedHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
-import io.camunda.exporter.notifier.HttpClientWrapper;
-import io.camunda.exporter.notifier.IncidentNotifier;
-import io.camunda.exporter.notifier.M2mTokenManager;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -110,8 +109,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 
 /**
@@ -120,12 +117,12 @@ import java.util.function.BiConsumer;
  */
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
   public static final String NAMESPACE = "zeebe.camunda.exporter.cache";
+
   private IndexDescriptors indexDescriptors;
   private Set<ExportHandler<?, ?>> exportHandlers;
-
-  private ExporterMetadata exporterMetadata;
-  private ExecutorService executor;
   private Map<String, ErrorHandler> indicesWithCustomErrorHandlers;
+  private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
+  private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
 
   @Override
   public void init(
@@ -138,34 +135,21 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
     indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);
-    this.exporterMetadata = exporterMetadata;
 
-    final var processCache =
+    processCache =
         new ExporterEntityCacheImpl<>(
             configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry));
 
-    final var formCache =
+    formCache =
         new ExporterEntityCacheImpl<>(
             configuration.getFormCache().getMaxCacheSize(),
             entityCacheProvider.getFormCacheLoader(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new CaffeineCacheStatsCounter(NAMESPACE, "form", meterRegistry));
 
-    final M2mTokenManager m2mTokenManager =
-        new M2mTokenManager(
-            configuration.getNotifier(), HttpClientWrapper.newHttpClient(), objectMapper);
-    executor = Executors.newVirtualThreadPerTaskExecutor();
-    final IncidentNotifier incidentNotifier =
-        new IncidentNotifier(
-            m2mTokenManager,
-            processCache,
-            configuration.getNotifier(),
-            HttpClientWrapper.newHttpClient(),
-            executor,
-            objectMapper);
     exportHandlers =
         Set.of(
             new RoleCreateUpdateHandler(
@@ -221,9 +205,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FlowNodeInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new IncidentHandler(
-                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(),
-                processCache,
-                incidentNotifier),
+                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache),
             new SequenceFlowHandler(
                 indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
@@ -297,13 +279,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
-  public void close() {
-    if (executor != null) {
-      executor.shutdown();
-    }
-  }
-
-  @Override
   public Collection<IndexDescriptor> getIndexDescriptors() {
     return indexDescriptors.indices();
   }
@@ -335,5 +310,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     return (index, error) -> {
       indicesWithCustomErrorHandlers.getOrDefault(index, ErrorHandlers.THROWING).handle(error);
     };
+  }
+
+  @Override
+  public ExporterEntityCacheImpl<Long, CachedProcessEntity> getProcessCache() {
+    return processCache;
+  }
+
+  @Override
+  public ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache() {
+    return formCache;
   }
 }
