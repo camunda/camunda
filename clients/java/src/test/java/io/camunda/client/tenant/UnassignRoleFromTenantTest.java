@@ -19,16 +19,15 @@ import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
+/** Unit tests for UnassignRoleFromTenantCommand validation and request path. */
 public class UnassignRoleFromTenantTest extends ClientRestTest {
 
-  private static final String TENANT_ID = "foo";
-  private static final String ROLE_ID = "roleId";
+  private static final String TENANT_ID = "test-tenant";
+  private static final String ROLE_ID = "test-role";
 
   @Test
   void shouldUnassignRoleFromTenant() {
@@ -42,50 +41,34 @@ public class UnassignRoleFromTenantTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnNotFoundTenant() {
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/roles/" + ROLE_ID,
-        () -> new ProblemDetail().title("Not Found").status(404));
-
+  void shouldRaiseExceptionOnNullTenantId() {
     assertThatThrownBy(
-            () -> client.newUnassignRoleFromTenantCommand(TENANT_ID).roleId(ROLE_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'");
+            () -> client.newUnassignRoleFromTenantCommand(null).roleId(ROLE_ID).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be null");
   }
 
   @Test
-  void shouldRaiseExceptionOnNotFoundRole() {
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/roles/" + ROLE_ID,
-        () -> new ProblemDetail().title("Not Found").status(404));
-
+  void shouldRaiseExceptionOnEmptyTenantId() {
     assertThatThrownBy(
-            () -> client.newUnassignRoleFromTenantCommand(TENANT_ID).roleId(ROLE_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'");
+            () -> client.newUnassignRoleFromTenantCommand("").roleId(ROLE_ID).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be empty");
   }
 
   @Test
-  void shouldRaiseExceptionOnForbiddenRequest() {
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/roles/" + ROLE_ID,
-        () -> new ProblemDetail().title("Forbidden").status(403));
-
+  void shouldRaiseExceptionOnNullRoleId() {
     assertThatThrownBy(
-            () -> client.newUnassignRoleFromTenantCommand(TENANT_ID).roleId(ROLE_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 403: 'Forbidden'");
+            () -> client.newUnassignRoleFromTenantCommand(TENANT_ID).roleId(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be null");
   }
 
   @Test
-  void shouldHandleServerError() {
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/roles/" + ROLE_ID,
-        () -> new ProblemDetail().title("Internal Server Error").status(500));
-
+  void shouldRaiseExceptionOnEmptyRoleId() {
     assertThatThrownBy(
-            () -> client.newUnassignRoleFromTenantCommand(TENANT_ID).roleId(ROLE_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
+            () -> client.newUnassignRoleFromTenantCommand(TENANT_ID).roleId("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be empty");
   }
 }

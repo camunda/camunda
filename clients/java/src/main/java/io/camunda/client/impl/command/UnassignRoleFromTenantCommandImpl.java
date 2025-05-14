@@ -54,7 +54,6 @@ public final class UnassignRoleFromTenantCommandImpl implements UnassignRoleFrom
   public CamundaFuture<UnassignRoleFromTenantResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
-
     final HttpCamundaFuture<UnassignRoleFromTenantResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
         String.format("/tenants/%s/roles/%s", tenantId, roleId),

@@ -1252,7 +1252,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *  .newAssignRoleToTenantCommand("tenantId")
-   *  .roleId("role-id")
+   *  .roleId("roleId")
    *  .send();
    * </pre>
    *
@@ -1269,7 +1269,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *  .newUnassignRoleFromTenantCommand("tenantId")
-   *  .roleId("role-id")
+   *  .roleId("roleId")
    *  .send();
    * </pre>
    *

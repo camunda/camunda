@@ -19,8 +19,7 @@ import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.ProblemDetail;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
@@ -40,35 +39,33 @@ public class SearchRolesByTenantTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionIfTenantNotFound() {
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/roles/search",
-        () -> new ProblemDetail().title("Not Found").status(404));
+  void shouldIncludeFiltersInSearchRequestBody() {
+    // when
+    client
+        .newRolesByTenantSearchRequest(TENANT_ID)
+        .filter(f -> f.roleId("roleId").name("roleName"))
+        .send()
+        .join();
 
-    assertThatThrownBy(() -> client.newRolesByTenantSearchRequest(TENANT_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'");
+    // then
+    final LoggedRequest lastRequest = RestGatewayService.getLastRequest();
+    final String requestBody = lastRequest.getBodyAsString();
+
+    assertThat(requestBody).contains("\"roleId\":\"roleId\"");
+    assertThat(requestBody).contains("\"name\":\"roleName\"");
   }
 
   @Test
-  void shouldRaiseExceptionOnForbiddenRequest() {
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/roles/search",
-        () -> new ProblemDetail().title("Forbidden").status(403));
-
-    assertThatThrownBy(() -> client.newRolesByTenantSearchRequest(TENANT_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 403: 'Forbidden'");
+  void shouldRaiseExceptionOnNullTenantId() {
+    assertThatThrownBy(() -> client.newRolesByTenantSearchRequest(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be null");
   }
 
   @Test
-  void shouldHandleInternalServerError() {
-    gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/roles/search",
-        () -> new ProblemDetail().title("Internal Server Error").status(500));
-
-    assertThatThrownBy(() -> client.newRolesByTenantSearchRequest(TENANT_ID).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
+  void shouldRaiseExceptionOnEmptyTenantId() {
+    assertThatThrownBy(() -> client.newRolesByTenantSearchRequest("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be empty");
   }
 }

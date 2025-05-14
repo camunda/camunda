@@ -53,6 +53,8 @@ public final class AssignRoleToTenantCommandImpl implements AssignRoleToTenantCo
 
   @Override
   public CamundaFuture<AssignRoleToTenantResponse> send() {
+    ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
+    ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     final HttpCamundaFuture<AssignRoleToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/roles/%s", tenantId, roleId);
     httpClient.put(endpoint, null, httpRequestConfig.build(), result);
