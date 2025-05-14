@@ -20,6 +20,7 @@ import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandSte
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
+import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
@@ -1187,6 +1188,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   DeleteRoleCommandStep1 newDeleteRoleCommand(String roleId);
+
+  /**
+   * Command to assign a role to a group.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAssignRoleToGroupCommand()
+   *  .roleId("roleId")
+   *  .groupId("groupId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the assign role to group command
+   */
+  AssignRoleToGroupCommandStep1 newAssignRoleToGroupCommand();
 
   /**
    * Command to create a group.
