@@ -22,6 +22,7 @@ import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
+import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
@@ -120,9 +121,14 @@ public class CamundaServicesConfiguration {
   public ProcessInstanceServices processInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ProcessInstanceSearchClient processInstanceSearchClient) {
+      final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient) {
     return new ProcessInstanceServices(
-        brokerClient, securityContextProvider, processInstanceSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        null);
   }
 
   @Bean

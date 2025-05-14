@@ -104,6 +104,7 @@ import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
@@ -816,7 +817,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the process definition statistics
+   * @return a builder for the process definition statistics request
    */
   ProcessDefinitionElementStatisticsRequest newProcessDefinitionElementStatisticsRequest(
       final long processDefinitionKey);
@@ -832,9 +833,25 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the process instance statistics
+   * @return a builder for the process instance statistics request
    */
   ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
+      final long processInstanceKey);
+
+  /**
+   * Executes a search request to query process instance sequence flows.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * camundaClient
+   *  .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process instance sequence flows request
+   */
+  ProcessInstanceSequenceFlowsRequest newProcessInstanceSequenceFlowsRequest(
       final long processInstanceKey);
 
   /**

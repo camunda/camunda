@@ -50,6 +50,10 @@ public final class FilterBuilders {
     return new ProcessInstanceFilter.Builder();
   }
 
+  public static SequenceFlowFilter.Builder sequenceFlow() {
+    return new SequenceFlowFilter.Builder();
+  }
+
   public static UserTaskFilter.Builder userTask() {
     return new UserTaskFilter.Builder();
   }
@@ -102,6 +106,11 @@ public final class FilterBuilders {
   public static ProcessInstanceFilter processInstance(
       final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
     return fn.apply(processInstance()).build();
+  }
+
+  public static SequenceFlowFilter sequenceFlow(
+      final Function<SequenceFlowFilter.Builder, ObjectBuilder<SequenceFlowFilter>> fn) {
+    return fn.apply(sequenceFlow()).build();
   }
 
   public static UserTaskFilter userTask(

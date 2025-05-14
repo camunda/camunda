@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -39,8 +40,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(value = ProcessInstanceController.class)
@@ -64,8 +65,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Captor ArgumentCaptor<ProcessInstanceCancelRequest> cancelRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceMigrateRequest> migrateRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceModifyRequest> modifyRequestCaptor;
-  @MockBean ProcessInstanceServices processInstanceServices;
-  @MockBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean ProcessInstanceServices processInstanceServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
 
   @BeforeEach
   void setupServices() {
@@ -1306,7 +1307,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldCancelProcessInstanceBatchOperation() throws Exception {
+  void shouldCancelProcessInstanceBatchOperation() {
     // given
     final var record = new BatchOperationCreationRecord();
     record.setBatchOperationKey(123L);
@@ -1345,7 +1346,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldModifyProcessInstanceBatchOperation() throws Exception {
+  void shouldModifyProcessInstanceBatchOperation() {
     // given
     final var record = new BatchOperationCreationRecord();
     record.setBatchOperationKey(123L);
@@ -1399,13 +1400,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final long processInstanceKey = 1L;
     final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
     when(processInstanceServices.elementStatistics(processInstanceKey)).thenReturn(stats);
-    final var request =
-        """
-            {
-              "filter": {
-                "hasIncident": true
-              }
-            }""";
     final var response =
         """
             {"items":[
@@ -1437,7 +1431,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldResolveIncidentsBatchOperation() throws Exception {
+  void shouldResolveIncidentsBatchOperation() {
     // given
     final var record = new BatchOperationCreationRecord();
     record.setBatchOperationKey(123L);
@@ -1524,5 +1518,40 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     verify(processInstanceServices)
         .migrateProcessInstancesBatchOperation(
             any(ProcessInstanceMigrationBatchOperationRequest.class));
+  }
+
+  @Test
+  public void shouldGetSequenceFlows() {
+    // given
+    final long processInstanceKey = 1L;
+    final var sequenceFlows =
+        List.of(new SequenceFlowEntity("pi1_sequenceFlow1", "node1", 1L, 1L, "pd1", "<default>"));
+    when(processInstanceServices.sequenceFlows(processInstanceKey)).thenReturn(sequenceFlows);
+    final var response =
+        """
+            {"items":[
+              {
+                "processInstanceKey": "1",
+                "processDefinitionKey": "1",
+                "processDefinitionId": "pd1",
+                "elementId": "node1",
+                "tenantId": "<default>"
+              }
+            ]}""";
+
+    // when / then
+    webClient
+        .get()
+        .uri("%s/%d/sequence-flows".formatted(PROCESS_INSTANCES_START_URL, processInstanceKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response);
+
+    verify(processInstanceServices).sequenceFlows(processInstanceKey);
   }
 }

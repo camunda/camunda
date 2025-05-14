@@ -35,6 +35,7 @@ public class HistoryCleanupService {
   private final VariableWriter variableInstanceWriter;
   private final DecisionInstanceWriter decisionInstanceWriter;
   private final JobWriter jobWriter;
+  private final SequenceFlowWriter sequenceFlowWriter;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
@@ -47,6 +48,7 @@ public class HistoryCleanupService {
       final VariableWriter variableInstanceWriter,
       final DecisionInstanceWriter decisionInstanceWriter,
       final JobWriter jobWriter,
+      final SequenceFlowWriter sequenceFlowWriter,
       final RdbmsWriterMetrics metrics) {
     LOG.info(
         "Creating HistoryCleanupService with default history ttl {}", config.defaultHistoryTTL());
@@ -62,6 +64,7 @@ public class HistoryCleanupService {
     this.variableInstanceWriter = variableInstanceWriter;
     this.decisionInstanceWriter = decisionInstanceWriter;
     this.jobWriter = jobWriter;
+    this.sequenceFlowWriter = sequenceFlowWriter;
     this.metrics = metrics;
   }
 
@@ -80,6 +83,7 @@ public class HistoryCleanupService {
     variableInstanceWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     decisionInstanceWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     jobWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
+    sequenceFlowWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
   }
 
   public Duration cleanupHistory(final int partitionId, final OffsetDateTime cleanupDate) {
@@ -107,6 +111,9 @@ public class HistoryCleanupService {
         decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
     numDeletedRecords.put(
         "job", jobWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "sequenceFlow",
+        sequenceFlowWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
     final long end = System.currentTimeMillis();
     sample.close();
 

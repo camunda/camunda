@@ -27,7 +27,8 @@ public interface SearchClientsProxy
         MappingSearchClient,
         GroupSearchClient,
         UsageMetricsSearchClient,
-        BatchOperationSearchClient {
+        BatchOperationSearchClient,
+        SequenceFlowSearchClient {
 
   @Override
   SearchClientsProxy withSecurityContext(SecurityContext securityContext);
