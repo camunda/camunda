@@ -94,11 +94,6 @@ public final class CamundaUser extends User implements CamundaPrincipal {
     return authentication;
   }
 
-  @Override
-  public String getUsername() {
-    return getUsername();
-  }
-
   public static final class CamundaUserBuilder {
     private Long userKey;
     private String name;
