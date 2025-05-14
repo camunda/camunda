@@ -48,9 +48,13 @@ export default defineConfig({
   timeout: 12 * 60 * 1000,
   workers: 4,
   retries: 1,
+  expect: {
+    timeout: 10_000,
+  },
   use: {
     baseURL: getBaseURL(),
     actionTimeout: 10000,
+    screenshot: 'only-on-failure',
   },
   projects: [
     {
