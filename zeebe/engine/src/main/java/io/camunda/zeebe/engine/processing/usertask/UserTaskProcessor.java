@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.incident.RetryTypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -165,27 +166,31 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private void processOperationCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskIntent intent) {
     final var commandProcessor = commandProcessors.getCommandProcessor(intent);
-    commandProcessor
-        .validateCommand(command)
-        .ifRightOrLeft(
-            persistedRecord ->
-                handleCommandProcessing(commandProcessor, command, persistedRecord.copy(), intent),
-            rejection -> handleCommandRejection(command, rejection));
+
+    if (isRetriedCommand(command)) {
+      // Skip `validateCommand` and `onCommand` invocations for retried command,
+      // as it was already validated during the original execution
+      finalizeCommandOrCreateTaskListenerJob(commandProcessor, command, command.getValue(), intent);
+    } else {
+      commandProcessor
+          .validateCommand(command)
+          // Create a modifiable copy of the persisted user task record, as `onCommand` may
+          // apply the changed attributes from the command on top of persisted instance.
+          .map(UserTaskRecord::copy)
+          .thenDo(persistedRecord -> commandProcessor.onCommand(command, persistedRecord))
+          .ifRightOrLeft(
+              persistedRecord ->
+                  finalizeCommandOrCreateTaskListenerJob(
+                      commandProcessor, command, persistedRecord, intent),
+              rejection -> handleCommandRejection(command, rejection));
+    }
   }
 
-  private void handleCommandProcessing(
+  private void finalizeCommandOrCreateTaskListenerJob(
       final UserTaskCommandProcessor processor,
       final TypedRecord<UserTaskRecord> command,
       final UserTaskRecord persistedRecord,
       final UserTaskIntent intent) {
-
-    // If a user-triggered command (ASSIGN, CLAIM, UPDATE, COMPLETE) lacks request metadata,
-    // it indicates the command was retried by the engine after resolving an incident caused
-    // by a task listener property expression evaluation failure. In this case, the `onCommand`
-    // method was already processed during the initial execution, so we can safely skip it now.
-    if (command.hasRequestMetadata()) {
-      processor.onCommand(command, persistedRecord);
-    }
 
     final var userTaskElement = getUserTaskElement(persistedRecord);
     final var eventType = mapIntentToEventType(intent);
@@ -215,7 +220,11 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     }
   }
 
-  void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
+  private boolean isRetriedCommand(final TypedRecord<UserTaskRecord> command) {
+    return command instanceof RetryTypedRecord<UserTaskRecord>;
+  }
+
+  private void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
     if (!command.hasRequestMetadata()) {
       return;
     }
