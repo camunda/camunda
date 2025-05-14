@@ -77,7 +77,8 @@ public class CamundaUserDetailsServiceTest {
     final var groupTenant = new TenantEntity(200L, "tenant1", "Tenant One", "First Tenant");
     when(roleServices.getRolesByUserAndGroups(TEST_USER_ID, Set.of(adminGroup.groupId())))
         .thenReturn(List.of(adminRole, groupRole));
-    when(tenantServices.getTenantsByUserAndGroupsAndRoles(TEST_USER_ID, Set.of(adminGroup.groupId()), Set.of(roleId, groupRole.roleId())))
+    when(tenantServices.getTenantsByUserAndGroupsAndRoles(
+            TEST_USER_ID, Set.of(adminGroup.groupId()), Set.of(roleId, groupRole.roleId())))
         .thenReturn(List.of(adminTenant, groupTenant));
 
     // when

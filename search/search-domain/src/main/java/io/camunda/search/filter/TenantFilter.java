@@ -73,7 +73,8 @@ public record TenantFilter(
 
     @Override
     public TenantFilter build() {
-      return new TenantFilter(key, tenantId, name, joinParentId, entityType, memberIds, childMemberType);
+      return new TenantFilter(
+          key, tenantId, name, joinParentId, entityType, memberIds, childMemberType);
     }
   }
 }
