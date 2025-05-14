@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.user;
 
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
 
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
@@ -75,14 +76,14 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
+    final var initialization = securityConfig.getInitialization();
     final var setupRecord = new IdentitySetupRecord();
 
     setupAdminRole(setupRecord);
     setupRpaRole(setupRecord);
     setupConnectorsRole(setupRecord);
 
-    securityConfig
-        .getInitialization()
+    initialization
         .getUsers()
         .forEach(
             user -> {
@@ -100,8 +101,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                       .setEntityId(user.getUsername()));
             });
 
-    securityConfig
-        .getInitialization()
+    initialization
         .getMappings()
         .forEach(
             mapping -> {
@@ -122,8 +122,35 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     setupRecord.setDefaultTenant(
         new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));
 
+    setupRoleMembership(initialization, setupRecord);
+
     taskResultBuilder.appendCommandRecord(IdentitySetupIntent.INITIALIZE, setupRecord);
     return taskResultBuilder.build();
+  }
+
+  private static void setupRoleMembership(
+      final InitializationConfiguration initialization, final IdentitySetupRecord setupRecord) {
+    for (final var assignmentsForRole : initialization.getDefaultRoles().entrySet()) {
+      final var roleId = assignmentsForRole.getKey();
+      for (final var assignmentsForEntityType : assignmentsForRole.getValue().entrySet()) {
+        final var entityType =
+            switch (assignmentsForEntityType.getKey()) {
+              case "users" -> EntityType.USER;
+              case "clients" -> EntityType.CLIENT;
+              case "mappings" -> EntityType.MAPPING;
+              case "groups" -> EntityType.GROUP;
+              case "roles" -> EntityType.ROLE;
+              default ->
+                  throw new IllegalStateException(
+                      "Unexpected entity type for role membership: %s"
+                          .formatted(assignmentsForEntityType.getKey()));
+            };
+        for (final var entityId : assignmentsForEntityType.getValue()) {
+          setupRecord.addRoleMember(
+              new RoleRecord().setRoleId(roleId).setEntityType(entityType).setEntityId(entityId));
+        }
+      }
+    }
   }
 
   private static void setupAdminRole(final IdentitySetupRecord setupRecord) {

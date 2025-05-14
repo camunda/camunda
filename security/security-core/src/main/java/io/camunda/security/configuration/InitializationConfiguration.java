@@ -8,7 +8,10 @@
 package io.camunda.security.configuration;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class InitializationConfiguration {
 
@@ -19,6 +22,7 @@ public class InitializationConfiguration {
 
   private List<ConfiguredUser> users = new ArrayList<>();
   private List<ConfiguredMapping> mappings = new ArrayList<>();
+  private Map<String, Map<String, Collection<String>>> defaultRoles = new HashMap<>();
 
   public List<ConfiguredUser> getUsers() {
     return users;
@@ -34,5 +38,13 @@ public class InitializationConfiguration {
 
   public void setMappings(final List<ConfiguredMapping> mappings) {
     this.mappings = mappings;
+  }
+
+  public Map<String, Map<String, Collection<String>>> getDefaultRoles() {
+    return defaultRoles;
+  }
+
+  public void setDefaultRoles(final Map<String, Map<String, Collection<String>>> defaultRoles) {
+    this.defaultRoles = defaultRoles;
   }
 }
