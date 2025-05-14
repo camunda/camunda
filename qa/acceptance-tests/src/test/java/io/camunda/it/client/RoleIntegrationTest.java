@@ -489,7 +489,7 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldAssignMappingToRole() {
+  void shouldAssignRoleToMapping() {
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
 
@@ -504,7 +504,7 @@ public class RoleIntegrationTest {
         .send()
         .join();
 
-    camundaClient.newAssignMappingToRoleCommand(roleId).mappingId(mappingId).send().join();
+    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
 
     Awaitility.await("Mapping is assigned to the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -520,7 +520,7 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldRejectAssigningAlreadyAssignedMappingToRole() {
+  void shouldRejectAssigningAlreadyAssignedRoleToMapping() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
@@ -535,13 +535,14 @@ public class RoleIntegrationTest {
         .send()
         .join();
 
-    camundaClient.newAssignMappingToRoleCommand(roleId).mappingId(mappingId).send().join();
+    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
 
     // when/then
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignMappingToRoleCommand(roleId)
+                    .newAssignRoleToMappingCommand()
+                    .roleId(roleId)
                     .mappingId(mappingId)
                     .send()
                     .join())
@@ -555,7 +556,7 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldUnassignMappingOnRoleDeletion() {
+  void shouldUnassignRoleFromMappingOnRoleDeletion() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
@@ -570,7 +571,7 @@ public class RoleIntegrationTest {
         .send()
         .join();
 
-    camundaClient.newAssignMappingToRoleCommand(roleId).mappingId(mappingId).send().join();
+    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
 
     Awaitility.await("Mapping is assigned to the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)

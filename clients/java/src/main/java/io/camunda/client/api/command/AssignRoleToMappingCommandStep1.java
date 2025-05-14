@@ -15,18 +15,28 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.response.AssignMappingToRoleResponse;
+import io.camunda.client.api.response.AssignRoleToMappingResponse;
 
 /** Command to assign a mapping to a role. */
-public interface AssignMappingToRoleCommandStep1
-    extends FinalCommandStep<AssignMappingToRoleResponse> {
+public interface AssignRoleToMappingCommandStep1
+    extends FinalCommandStep<AssignRoleToMappingResponse> {
 
   /**
-   * Sets the mapping ID for the assignment to a role.
+   * Sets the role ID.
    *
-   * @param mappingId the id of the mapping
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
+   * @param roleId the id of the role
+   * @return the builder for this command
    */
-  AssignMappingToRoleCommandStep1 mappingId(String mappingId);
+  AssignRoleToMappingCommandStep2 roleId(String roleId);
+
+  interface AssignRoleToMappingCommandStep2 extends FinalCommandStep<AssignRoleToMappingResponse> {
+    /**
+     * Sets the mapping ID.
+     *
+     * @param mappingId the id of the mapping
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    AssignRoleToMappingCommandStep2 mappingId(String mappingId);
+  }
 }

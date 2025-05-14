@@ -23,15 +23,15 @@ import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
-public class AssignMappingToRoleTest extends ClientRestTest {
+public class AssignRoleToMappingTest extends ClientRestTest {
 
   public static final String ROLE_ID = "roleId";
   public static final String MAPPING_ID = "mappingId";
 
   @Test
-  void shouldAssignMappingToRole() {
+  void shouldAssignRoleToMapping() {
     // when
-    client.newAssignMappingToRoleCommand(ROLE_ID).mappingId(MAPPING_ID).send().join();
+    client.newAssignRoleToMappingCommand().roleId(ROLE_ID).mappingId(MAPPING_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -43,7 +43,13 @@ public class AssignMappingToRoleTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullRoleId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignMappingToRoleCommand(null).mappingId(MAPPING_ID).send().join())
+            () ->
+                client
+                    .newAssignRoleToMappingCommand()
+                    .roleId(null)
+                    .mappingId(MAPPING_ID)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("role must not be null");
   }
@@ -52,7 +58,13 @@ public class AssignMappingToRoleTest extends ClientRestTest {
   void shouldRaiseExceptionOnEmptyRoleId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignMappingToRoleCommand("").mappingId(MAPPING_ID).send().join())
+            () ->
+                client
+                    .newAssignRoleToMappingCommand()
+                    .roleId("")
+                    .mappingId(MAPPING_ID)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("role must not be empty");
   }
@@ -61,7 +73,13 @@ public class AssignMappingToRoleTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullMappingId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignMappingToRoleCommand(ROLE_ID).mappingId(null).send().join())
+            () ->
+                client
+                    .newAssignRoleToMappingCommand()
+                    .roleId(ROLE_ID)
+                    .mappingId(null)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be null");
   }
@@ -70,7 +88,8 @@ public class AssignMappingToRoleTest extends ClientRestTest {
   void shouldRaiseExceptionOnEmptyMappingId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignMappingToRoleCommand(ROLE_ID).mappingId("").send().join())
+            () ->
+                client.newAssignRoleToMappingCommand().roleId(ROLE_ID).mappingId("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be empty");
   }

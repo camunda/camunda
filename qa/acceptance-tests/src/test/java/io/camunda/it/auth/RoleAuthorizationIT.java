@@ -206,7 +206,7 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void shouldAssignMappingToRoleIfAuthorized(
+  void shouldAssignRoleToMappingIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
     final String roleId = Strings.newRandomValidIdentityId();
     final String mappingId = Strings.newRandomValidIdentityId();
@@ -221,7 +221,7 @@ class RoleAuthorizationIT {
         .send()
         .join();
 
-    adminClient.newAssignMappingToRoleCommand(roleId).mappingId(mappingId).send().join();
+    adminClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
 
     Awaitility.await("Mapping is assigned to the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -240,12 +240,13 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void assignMappingToRoleShouldReturnForbiddenIfUnauthorized(
+  void assignRoleToMappingShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignMappingToRoleCommand(Strings.newRandomValidIdentityId())
+                    .newAssignRoleToMappingCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
                     .mappingId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
