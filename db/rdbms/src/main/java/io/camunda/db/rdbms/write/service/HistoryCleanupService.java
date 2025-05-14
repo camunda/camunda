@@ -112,7 +112,7 @@ public class HistoryCleanupService {
     numDeletedRecords.put(
         "job", jobWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
     numDeletedRecords.put(
-        "sequenceFlowWriter",
+        "sequenceFlow",
         sequenceFlowWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
     final long end = System.currentTimeMillis();
     sample.close();

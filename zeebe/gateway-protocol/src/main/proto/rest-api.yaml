@@ -1680,7 +1680,7 @@ paths:
       operationId: getProcessInstanceSequenceFlows
       summary: Get process instance sequence flows
       description: |
-        Get sequence flows taken by the process instance key.
+        Get sequence flows taken by the process instance.
       parameters:
         - name: processInstanceKey
           in: path
@@ -6084,7 +6084,7 @@ components:
           items:
             $ref: "#/components/schemas/ProcessInstanceSequenceFlowResult"
     ProcessInstanceSequenceFlowResult:
-      description: Process instance sequence flows result.
+      description: Process instance sequence flow result.
       type: object
       properties:
         sequenceFlowId:
@@ -6101,7 +6101,7 @@ components:
           description: The process definition ID.
         elementId:
           type: string
-          description: The element ID for this element instance.
+          description: The element ID for this sequence flow, as provided in the BPMN process.
         tenantId:
           description: The tenant ID for this sequence flow.
           type: string
