@@ -103,7 +103,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   public List<TenantEntity> getTenantsByMemberIds(
       final Set<String> memberIds, final EntityType memberType) {
     return findAll(
-        TenantQuery.of(q -> q.filter(b -> b.memberIds(memberIds).memberType(memberType))));
+        TenantQuery.of(q -> q.filter(b -> b.memberIds(memberIds).childMemberType(memberType))));
   }
 
   public List<TenantEntity> getTenantsByUserAndGroupsAndRoles(
