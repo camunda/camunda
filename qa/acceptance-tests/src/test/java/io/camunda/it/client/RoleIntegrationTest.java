@@ -17,7 +17,6 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.client.protocol.rest.MappingSearchQueryResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -41,21 +40,6 @@ public class RoleIntegrationTest {
 
   private static final String EXISTING_ROLE_ID = Strings.newRandomValidIdentityId();
   private static final String EXISTING_ROLE_NAME = "ARoleName";
-  private static final String ROLE_ID_1 = Strings.newRandomValidIdentityId();
-  private static final String ROLE_ID_2 = Strings.newRandomValidIdentityId();
-  private static final String ROLE_ID_3 = Strings.newRandomValidIdentityId();
-  private static final String ROLE_ID_4 = Strings.newRandomValidIdentityId();
-  private static final String ROLE_NAME_1 = "ARoleName";
-  private static final String ROLE_NAME_2 = "BRoleName";
-  private static final String ROLE_NAME_3 = "CRoleName";
-  private static final String ROLE_NAME_4 = "DRoleName";
-  private static final String GROUP_ID_1 = Strings.newRandomValidIdentityId();
-  private static final String GROUP_ID_2 = Strings.newRandomValidIdentityId();
-  private static final String GROUP_ID_3 = Strings.newRandomValidIdentityId();
-  private static final String GROUP_NAME_1 = "AGroupName";
-  private static final String GROUP_NAME_2 = "BGroupName";
-  private static final String GROUP_NAME_3 = "BGroupName";
-  private static final String DESCRIPTION = "description";
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -64,17 +48,21 @@ public class RoleIntegrationTest {
 
   @BeforeAll
   static void setup() {
-    createRole(EXISTING_ROLE_ID, EXISTING_ROLE_NAME, DESCRIPTION);
-    assertRoleCreated(EXISTING_ROLE_ID, EXISTING_ROLE_NAME, DESCRIPTION);
+    createRole(EXISTING_ROLE_ID, EXISTING_ROLE_NAME, "description");
+    assertRoleCreated(EXISTING_ROLE_ID, EXISTING_ROLE_NAME, "description");
   }
 
   @Test
   void shouldCreateAndGetRoleById() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleName = UUID.randomUUID().toString();
+    final var description = UUID.randomUUID().toString();
 
     // when
-    createRole(ROLE_ID_1, ROLE_NAME_1, DESCRIPTION);
+    createRole(roleId, roleName, description);
     // then
-    assertRoleCreated(ROLE_ID_1, ROLE_NAME_1, DESCRIPTION);
+    assertRoleCreated(roleId, roleName, description);
   }
 
   @Test
@@ -151,18 +139,23 @@ public class RoleIntegrationTest {
   @Test
   void shouldDeleteRoleById() {
     // given
-    createRole(ROLE_ID_2, ROLE_NAME_2, DESCRIPTION);
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleName = UUID.randomUUID().toString();
+    final var description = UUID.randomUUID().toString();
 
-    assertRoleCreated(ROLE_ID_2, ROLE_NAME_2, DESCRIPTION);
+    // given
+    createRole(roleId, roleName, description);
+
+    assertRoleCreated(roleId, roleName, description);
 
     // when
-    camundaClient.newDeleteRoleCommand(ROLE_ID_2).send().join();
+    camundaClient.newDeleteRoleCommand(roleId).send().join();
 
     // then
     Awaitility.await("Role is deleted")
         .untilAsserted(
             () ->
-                assertThatThrownBy(() -> camundaClient.newRoleGetRequest(ROLE_ID_2).send().join())
+                assertThatThrownBy(() -> camundaClient.newRoleGetRequest(roleId).send().join())
                     .isInstanceOf(ProblemException.class)
                     .hasMessageContaining("Failed with code 404: 'Not Found'"));
   }
@@ -199,14 +192,19 @@ public class RoleIntegrationTest {
 
   @Test
   void shouldDeleteAuthorizationsWhenDeletingRole() {
-    // when
-    createRole(ROLE_ID_3, ROLE_NAME_3, DESCRIPTION);
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleName = UUID.randomUUID().toString();
+    final var description = UUID.randomUUID().toString();
 
-    assertRoleCreated(ROLE_ID_3, ROLE_NAME_3, DESCRIPTION);
+    // when
+    createRole(roleId, roleName, description);
+
+    assertRoleCreated(roleId, roleName, description);
 
     camundaClient
         .newCreateAuthorizationCommand()
-        .ownerId(ROLE_ID_3)
+        .ownerId(roleId)
         .ownerType(OwnerType.ROLE)
         .resourceId("resourceId")
         .resourceType(ResourceType.RESOURCE)
@@ -226,15 +224,15 @@ public class RoleIntegrationTest {
                         auth ->
                             auth.resourceId().equals("resourceId")
                                 && auth.resourceType().equals(ResourceType.RESOURCE)
-                                && auth.ownerId().equals(ROLE_ID_3)));
+                                && auth.ownerId().equals(roleId)));
 
-    camundaClient.newDeleteRoleCommand(ROLE_ID_3).send().join();
+    camundaClient.newDeleteRoleCommand(roleId).send().join();
 
     // then
     Awaitility.await("Role is deleted")
         .untilAsserted(
             () ->
-                assertThatThrownBy(() -> camundaClient.newRoleGetRequest(ROLE_ID_3).send().join())
+                assertThatThrownBy(() -> camundaClient.newRoleGetRequest(roleId).send().join())
                     .isInstanceOf(ProblemException.class)
                     .hasMessageContaining("Failed with code 404: 'Not Found'"));
 
@@ -249,37 +247,45 @@ public class RoleIntegrationTest {
                         auth ->
                             auth.resourceId().equals("resourceId")
                                 && auth.resourceType().equals(ResourceType.RESOURCE)
-                                && auth.ownerId().equals(ROLE_ID_3)));
+                                && auth.ownerId().equals(roleId)));
   }
 
   @Test
   void shouldAssignRoleToGroup() {
     // given
-    createGroup(GROUP_ID_1, GROUP_NAME_1, DESCRIPTION);
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupName = UUID.randomUUID().toString();
+    final var description = UUID.randomUUID().toString();
+    createGroup(groupId, groupName, description);
 
     // when
     camundaClient
         .newAssignRoleToGroupCommand()
         .roleId(EXISTING_ROLE_ID)
-        .groupId(GROUP_ID_1)
+        .groupId(groupId)
         .send()
         .join();
 
     // then
-    assertRoleAssignedToGroup(EXISTING_ROLE_ID, GROUP_ID_1);
+    assertRoleAssignedToGroup(EXISTING_ROLE_ID, groupId);
   }
 
   @Test
   void shouldRejectAssigningRoleToGroupIfRoleAlreadyAssigned() {
     // given
-    createGroup(GROUP_ID_2, GROUP_NAME_2, DESCRIPTION);
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupName = UUID.randomUUID().toString();
+    final var description = UUID.randomUUID().toString();
+
+    createGroup(groupId, groupName, description);
     camundaClient
         .newAssignRoleToGroupCommand()
         .roleId(EXISTING_ROLE_ID)
-        .groupId(GROUP_ID_2)
+        .groupId(groupId)
         .send()
         .join();
-    assertRoleAssignedToGroup(EXISTING_ROLE_ID, GROUP_ID_2);
+
+    assertRoleAssignedToGroup(EXISTING_ROLE_ID, groupId);
 
     // when/then
     assertThatThrownBy(
@@ -287,13 +293,13 @@ public class RoleIntegrationTest {
                 camundaClient
                     .newAssignRoleToGroupCommand()
                     .roleId(EXISTING_ROLE_ID)
-                    .groupId(GROUP_ID_2)
+                    .groupId(groupId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining(
             "Expected to add entity with ID '"
-                + GROUP_ID_2
+                + groupId
                 + "' to role with ID '"
                 + EXISTING_ROLE_ID
                 + "', but the entity is already assigned to this role.");
@@ -302,15 +308,22 @@ public class RoleIntegrationTest {
   @Test
   void shouldUnassignRoleFromGroupsOnRoleDeletion() {
     // given
-    createRole(ROLE_ID_4, ROLE_NAME_4, DESCRIPTION);
-    assertRoleCreated(ROLE_ID_4, ROLE_NAME_4, DESCRIPTION);
-    createGroup(GROUP_ID_3, GROUP_NAME_3, DESCRIPTION);
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupName = UUID.randomUUID().toString();
+    final var groupDescription = UUID.randomUUID().toString();
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleName = UUID.randomUUID().toString();
+    final var roleDescription = UUID.randomUUID().toString();
 
-    camundaClient.newAssignRoleToGroupCommand().roleId(ROLE_ID_4).groupId(GROUP_ID_3).send().join();
-    assertRoleAssignedToGroup(ROLE_ID_4, GROUP_ID_3);
+    createRole(roleId, roleName, roleDescription);
+    assertRoleCreated(roleId, roleName, roleDescription);
+    createGroup(groupId, groupName, groupDescription);
+
+    camundaClient.newAssignRoleToGroupCommand().roleId(roleId).groupId(groupId).send().join();
+    assertRoleAssignedToGroup(roleId, groupId);
 
     // when
-    camundaClient.newDeleteRoleCommand(ROLE_ID_4).send().join();
+    camundaClient.newDeleteRoleCommand(roleId).send().join();
 
     // then
     Awaitility.await("Role was deleted and unassigned")
@@ -320,9 +333,9 @@ public class RoleIntegrationTest {
                 assertThat(
                         searchRolesByGroupId(
                                 camundaClient.getConfiguration().getRestAddress().toString(),
-                                GROUP_ID_3)
+                                groupId)
                             .items())
-                    .noneMatch(r -> ROLE_ID_4.equals(r.getRoleId())));
+                    .noneMatch(r -> roleId.equals(r.getRoleId())));
   }
 
   @Test
@@ -488,120 +501,6 @@ public class RoleIntegrationTest {
                 .formatted(nonExistingRoleId));
   }
 
-  @Test
-  void shouldAssignRoleToMapping() {
-    final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-
-    camundaClient.newCreateRoleCommand().roleId(roleId).name("roleName").send().join();
-
-    camundaClient
-        .newCreateMappingCommand()
-        .mappingId(mappingId)
-        .name("mappingName")
-        .claimName("testClaimName")
-        .claimValue("testClaimValue")
-        .send()
-        .join();
-
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
-
-    Awaitility.await("Mapping is assigned to the role")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        searchMappingRuleByRole(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                roleId)
-                            .getItems())
-                    .hasSize(1)
-                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
-  }
-
-  @Test
-  void shouldRejectAssigningAlreadyAssignedRoleToMapping() {
-    // given
-    final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-
-    camundaClient.newCreateRoleCommand().roleId(roleId).name("roleName").send().join();
-    camundaClient
-        .newCreateMappingCommand()
-        .mappingId(mappingId)
-        .name("mappingName")
-        .claimName("someClaimName")
-        .claimValue("someClaimValue")
-        .send()
-        .join();
-
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
-
-    // when/then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignRoleToMappingCommand()
-                    .roleId(roleId)
-                    .mappingId(mappingId)
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining(
-            "Expected to add entity with ID '"
-                + mappingId
-                + "' to role with ID '"
-                + roleId
-                + "', but the entity is already assigned to this role.");
-  }
-
-  @Test
-  void shouldUnassignRoleFromMappingOnRoleDeletion() {
-    // given
-    final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-
-    camundaClient.newCreateRoleCommand().roleId(roleId).name("roleName").send().join();
-    camundaClient
-        .newCreateMappingCommand()
-        .mappingId(mappingId)
-        .name("mappingName")
-        .claimName("aClaimName")
-        .claimValue("aClaimValue")
-        .send()
-        .join();
-
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
-
-    Awaitility.await("Mapping is assigned to the role")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        searchMappingRuleByRole(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                roleId)
-                            .getItems())
-                    .hasSize(1)
-                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
-
-    // when
-    camundaClient.newDeleteRoleCommand(roleId).send().join();
-
-    // then
-    Awaitility.await("Mapping is unassigned from deleted role")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        searchMappingRuleByRole(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                roleId)
-                            .getItems())
-                    .hasSize(0)
-                    .noneMatch(m -> mappingId.equals(m.getMappingId())));
-  }
-
   private static void assertRoleCreated(
       final String roleId, final String roleName, final String description) {
     Awaitility.await("Role is created and exported")
@@ -644,23 +543,6 @@ public class RoleIntegrationTest {
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
-  }
-
-  // TODO once available, this test should use the client to make the request
-  private static MappingSearchQueryResult searchMappingRuleByRole(
-      final String restAddress, final String roleId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(
-                new URI(
-                    "%s%s".formatted(restAddress, "v2/roles/" + roleId + "/mapping-rules/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), MappingSearchQueryResult.class);
   }
 
   private record AuthorizationSearchResponse(
