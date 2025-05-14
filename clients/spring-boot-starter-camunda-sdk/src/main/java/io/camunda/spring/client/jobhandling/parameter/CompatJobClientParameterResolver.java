@@ -28,6 +28,6 @@ public class CompatJobClientParameterResolver implements ParameterResolver {
 
   @Override
   public Object resolve(final JobClient jobClient, final ActivatedJob job) {
-    return jobClient;
+    return this.jobClient;
   }
 }

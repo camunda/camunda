@@ -58,6 +58,8 @@ public class DefaultParameterResolverStrategyTest {
     assertThat(jobClientResolver).isInstanceOf(CompatJobClientParameterResolver.class);
     final ParameterResolver activatedJobResolver = strategy.createResolver(parameters.get(1));
     assertThat(activatedJobResolver).isInstanceOf(CompatActivatedJobParameterResolver.class);
+    final Object resolvedJobClient = jobClientResolver.resolve(null, null);
+    assertThat(resolvedJobClient).isEqualTo(zeebeClient);
   }
 
   @Test
