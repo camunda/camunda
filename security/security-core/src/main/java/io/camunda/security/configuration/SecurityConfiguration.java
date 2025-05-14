@@ -7,12 +7,15 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.configuration.headers.HeaderConfiguration;
+
 public class SecurityConfiguration {
 
   private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
   private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
+  private HeaderConfiguration httpHeaders = new HeaderConfiguration();
   private SaasConfiguration saas = new SaasConfiguration();
 
   public AuthenticationConfiguration getAuthentication() {
@@ -57,5 +60,13 @@ public class SecurityConfiguration {
 
   public void setSaas(final SaasConfiguration saas) {
     this.saas = saas;
+  }
+
+  public HeaderConfiguration getHttpHeaders() {
+    return httpHeaders;
+  }
+
+  public void setHttpHeaders(final HeaderConfiguration httpHeaders) {
+    this.httpHeaders = httpHeaders;
   }
 }
