@@ -28,6 +28,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 
