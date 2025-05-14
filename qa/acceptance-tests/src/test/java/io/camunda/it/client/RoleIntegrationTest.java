@@ -251,29 +251,40 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldAssignGroupToRole() {
+  void shouldAssignRoleToGroup() {
     // given
     createGroup(GROUP_ID_1, GROUP_NAME_1, DESCRIPTION);
 
     // when
-    camundaClient.newAssignGroupToRoleCommand(EXISTING_ROLE_ID).groupId(GROUP_ID_1).send().join();
+    camundaClient
+        .newAssignRoleToGroupCommand()
+        .roleId(EXISTING_ROLE_ID)
+        .groupId(GROUP_ID_1)
+        .send()
+        .join();
 
     // then
-    assertGroupAssignedToRole(GROUP_ID_1, EXISTING_ROLE_ID);
+    assertRoleAssignedToGroup(EXISTING_ROLE_ID, GROUP_ID_1);
   }
 
   @Test
-  void shouldRejectAssigningAlreadyAssignedGroupToRole() {
+  void shouldRejectAssigningRoleToGroupIfRoleAlreadyAssigned() {
     // given
     createGroup(GROUP_ID_2, GROUP_NAME_2, DESCRIPTION);
-    camundaClient.newAssignGroupToRoleCommand(EXISTING_ROLE_ID).groupId(GROUP_ID_2).send().join();
-    assertGroupAssignedToRole(GROUP_ID_2, EXISTING_ROLE_ID);
+    camundaClient
+        .newAssignRoleToGroupCommand()
+        .roleId(EXISTING_ROLE_ID)
+        .groupId(GROUP_ID_2)
+        .send()
+        .join();
+    assertRoleAssignedToGroup(EXISTING_ROLE_ID, GROUP_ID_2);
 
     // when/then
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignGroupToRoleCommand(EXISTING_ROLE_ID)
+                    .newAssignRoleToGroupCommand()
+                    .roleId(EXISTING_ROLE_ID)
                     .groupId(GROUP_ID_2)
                     .send()
                     .join())
@@ -287,20 +298,20 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldUnassignGroupsOnRoleDeletion() {
+  void shouldUnassignRoleFromGroupsOnRoleDeletion() {
     // given
     createRole(ROLE_ID_4, ROLE_NAME_4, DESCRIPTION);
     assertRoleCreated(ROLE_ID_4, ROLE_NAME_4, DESCRIPTION);
     createGroup(GROUP_ID_3, GROUP_NAME_3, DESCRIPTION);
 
-    camundaClient.newAssignGroupToRoleCommand(ROLE_ID_4).groupId(GROUP_ID_3).send().join();
-    assertGroupAssignedToRole(GROUP_ID_3, ROLE_ID_4);
+    camundaClient.newAssignRoleToGroupCommand().roleId(ROLE_ID_4).groupId(GROUP_ID_3).send().join();
+    assertRoleAssignedToGroup(ROLE_ID_4, GROUP_ID_3);
 
     // when
     camundaClient.newDeleteRoleCommand(ROLE_ID_4).send().join();
 
     // then
-    Awaitility.await("Group is unassigned from deleted role")
+    Awaitility.await("Role was deleted and unassigned")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
@@ -313,12 +324,13 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldReturnNotFoundOnAssigningGroupToRoleIfGroupDoesNotExist() {
+  void shouldReturnNotFoundOnAssigningRoleToGroupIfGroupDoesNotExist() {
     // when / then
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignGroupToRoleCommand(EXISTING_ROLE_ID)
+                    .newAssignRoleToGroupCommand()
+                    .roleId(EXISTING_ROLE_ID)
                     .groupId("someGroupId")
                     .send()
                     .join())
@@ -330,12 +342,13 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldReturnNotFoundOnAssigningGroupToRoleIfRoleDoesNotExist() {
+  void shouldReturnNotFoundOnAssigningRoleToGroupIfRoleDoesNotExist() {
     // when / then
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignGroupToRoleCommand(Strings.newRandomValidIdentityId())
+                    .newAssignRoleToGroupCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
                     .groupId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
@@ -345,12 +358,13 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldRejectAssigningGroupToRoleIfMissingRoleId() {
+  void shouldRejectAssigningRoleToGroupIfMissingRoleId() {
     // when / then
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignGroupToRoleCommand(null)
+                    .newAssignRoleToGroupCommand()
+                    .roleId(null)
                     .groupId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
@@ -359,12 +373,13 @@ public class RoleIntegrationTest {
   }
 
   @Test
-  void shouldRejectAssigningGroupToRoleIfMissingGroupId() {
+  void shouldRejectAssigningRoleToGroupIfMissingGroupId() {
     // when / then
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignGroupToRoleCommand(EXISTING_ROLE_ID)
+                    .newAssignRoleToGroupCommand()
+                    .roleId(EXISTING_ROLE_ID)
                     .groupId(null)
                     .send()
                     .join())
@@ -402,7 +417,7 @@ public class RoleIntegrationTest {
             });
   }
 
-  private static void assertGroupAssignedToRole(final String groupId, final String roleId) {
+  private static void assertRoleAssignedToGroup(final String roleId, final String groupId) {
     Awaitility.await("Group is assigned to the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(

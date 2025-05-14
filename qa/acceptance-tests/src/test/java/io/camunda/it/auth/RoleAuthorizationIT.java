@@ -261,13 +261,13 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void shouldAssignGroupToRoleIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+  void shouldAssignRoleToGroupIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
     final String roleId = Strings.newRandomValidIdentityId();
     final String groupId = Strings.newRandomValidIdentityId();
 
     createRole(adminClient, roleId, "roleName");
     adminClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
-    adminClient.newAssignGroupToRoleCommand(roleId).groupId(groupId).send().join();
+    adminClient.newAssignRoleToGroupCommand().roleId(roleId).groupId(groupId).send().join();
 
     Awaitility.await("Group is assigned to the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -285,12 +285,13 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void assignGroupToRoleShouldReturnForbiddenIfUnauthorized(
+  void assignRoleToGroupShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignGroupToRoleCommand(Strings.newRandomValidIdentityId())
+                    .newAssignRoleToGroupCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
                     .groupId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())

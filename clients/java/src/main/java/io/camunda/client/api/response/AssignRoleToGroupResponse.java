@@ -15,4 +15,4 @@
  */
 package io.camunda.client.api.response;
 
-public interface AssignGroupToRoleResponse {}
+public interface AssignRoleToGroupResponse {}

@@ -23,15 +23,15 @@ import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
-public class AssignGroupToRoleTest extends ClientRestTest {
+public class AssignRoleToGroupTest extends ClientRestTest {
 
   public static final String ROLE_ID = "roleId";
   public static final String GROUP_ID = "groupId";
 
   @Test
-  void shouldAssignGroupToRole() {
+  void shouldAssignRoleToGroup() {
     // when
-    client.newAssignGroupToRoleCommand(ROLE_ID).groupId(GROUP_ID).send().join();
+    client.newAssignRoleToGroupCommand().roleId(ROLE_ID).groupId(GROUP_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -42,7 +42,7 @@ public class AssignGroupToRoleTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullRoleId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignGroupToRoleCommand(null).groupId(GROUP_ID).send().join())
+            () -> client.newAssignRoleToGroupCommand().roleId(null).groupId(GROUP_ID).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("role must not be null");
   }
@@ -50,7 +50,8 @@ public class AssignGroupToRoleTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnEmptyRoleId() {
     // when / then
-    assertThatThrownBy(() -> client.newAssignGroupToRoleCommand("").groupId(GROUP_ID).send().join())
+    assertThatThrownBy(
+            () -> client.newAssignRoleToGroupCommand().roleId("").groupId(GROUP_ID).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("role must not be empty");
   }
@@ -59,7 +60,7 @@ public class AssignGroupToRoleTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignGroupToRoleCommand(ROLE_ID).groupId(null).send().join())
+            () -> client.newAssignRoleToGroupCommand().roleId(ROLE_ID).groupId(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -67,7 +68,8 @@ public class AssignGroupToRoleTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnEmptyGroupId() {
     // when / then
-    assertThatThrownBy(() -> client.newAssignGroupToRoleCommand(ROLE_ID).groupId("").send().join())
+    assertThatThrownBy(
+            () -> client.newAssignRoleToGroupCommand().roleId(ROLE_ID).groupId("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
