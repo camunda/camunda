@@ -1190,7 +1190,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DeleteRoleCommandStep1 newDeleteRoleCommand(String roleId);
 
   /**
-   * Command to assign a group to a role.
+   * Command to assign a role to a group.
    *
    * <pre>
    *
