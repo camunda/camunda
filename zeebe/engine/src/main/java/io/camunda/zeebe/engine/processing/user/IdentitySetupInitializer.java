@@ -37,7 +37,6 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware, Task {
-  public static final String ADMIN_ROLE_ID = "admin";
   public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
@@ -86,38 +85,24 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     initialization
         .getUsers()
         .forEach(
-            user -> {
-              final var userRecord =
-                  new UserRecord()
-                      .setUsername(user.getUsername())
-                      .setName(user.getName())
-                      .setEmail(user.getEmail())
-                      .setPassword(passwordEncoder.encode(user.getPassword()));
-              setupRecord.addUser(userRecord);
-              setupRecord.addRoleMember(
-                  new RoleRecord()
-                      .setRoleId(ADMIN_ROLE_ID)
-                      .setEntityType(EntityType.USER)
-                      .setEntityId(user.getUsername()));
-            });
+            user ->
+                setupRecord.addUser(
+                    new UserRecord()
+                        .setUsername(user.getUsername())
+                        .setName(user.getName())
+                        .setEmail(user.getEmail())
+                        .setPassword(passwordEncoder.encode(user.getPassword()))));
 
     initialization
         .getMappings()
         .forEach(
-            mapping -> {
-              final var mappingrecord =
-                  new MappingRecord()
-                      .setMappingId(mapping.getMappingId())
-                      .setClaimName(mapping.getClaimName())
-                      .setClaimValue(mapping.getClaimValue())
-                      .setName(mapping.getMappingId());
-              setupRecord.addMapping(mappingrecord);
-              setupRecord.addRoleMember(
-                  new RoleRecord()
-                      .setRoleId(ADMIN_ROLE_ID)
-                      .setEntityType(EntityType.MAPPING)
-                      .setEntityId(mapping.getMappingId()));
-            });
+            mapping ->
+                setupRecord.addMapping(
+                    new MappingRecord()
+                        .setMappingId(mapping.getMappingId())
+                        .setClaimName(mapping.getClaimName())
+                        .setClaimValue(mapping.getClaimValue())
+                        .setName(mapping.getMappingId())));
 
     setupRecord.setDefaultTenant(
         new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));
@@ -154,7 +139,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   }
 
   private static void setupAdminRole(final IdentitySetupRecord setupRecord) {
-    setupRecord.addRole(new RoleRecord().setRoleId(ADMIN_ROLE_ID).setName("Admin"));
+    final var adminRoleId = "admin";
+    setupRecord.addRole(new RoleRecord().setRoleId(adminRoleId).setName("Admin"));
     for (final var resourceType : AuthorizationResourceType.values()) {
       if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
         // We shouldn't add empty permissions for an unspecified resource type
@@ -164,7 +150,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
       setupRecord.addAuthorization(
           new AuthorizationRecord()
               .setOwnerType(AuthorizationOwnerType.ROLE)
-              .setOwnerId(ADMIN_ROLE_ID)
+              .setOwnerId(adminRoleId)
               .setResourceType(resourceType)
               .setResourceId(WILDCARD_PERMISSION)
               .setPermissionTypes(resourceType.getSupportedPermissionTypes()));
@@ -173,7 +159,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         new TenantRecord()
             .setTenantId(DEFAULT_TENANT_ID)
             .setEntityType(EntityType.ROLE)
-            .setEntityId(ADMIN_ROLE_ID));
+            .setEntityId(adminRoleId));
   }
 
   private static void setupConnectorsRole(final IdentitySetupRecord setupRecord) {
