@@ -31,6 +31,7 @@ function useProcessDefinitions(
 
       throw error;
     },
+    placeholderData: (previousData) => previousData,
     ...options,
   });
 }

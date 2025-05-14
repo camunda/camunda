@@ -275,13 +275,15 @@ const ProcessesTab: React.FC = observer(() => {
                       ))}
                 </Grid>
               )}
-              <Pagination
-                totalPages={Math.ceil(totalItems / PAGE_SIZE)}
-                currentPage={paginationParams.currentPage}
-                onNextPage={handleNextPage}
-                onPreviousPage={handlePreviousPage}
-                className={styles.pagination}
-              />
+              {isLoading || totalItems <= PAGE_SIZE ? null : (
+                <Pagination
+                  totalPages={Math.ceil(totalItems / PAGE_SIZE)}
+                  currentPage={paginationParams.currentPage}
+                  onNextPage={handleNextPage}
+                  onPreviousPage={handlePreviousPage}
+                  className={styles.pagination}
+                />
+              )}
             </div>
           </div>
         </Stack>
