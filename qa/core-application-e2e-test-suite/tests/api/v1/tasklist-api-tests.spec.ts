@@ -31,8 +31,8 @@ test.describe('API tests', () => {
   });
 
   test('Search for tasks', async ({request}) => {
-    const taskList = await request.post('/v1/tasks/search');
-    expect(taskList.status()).toBe(200);
+    const response = await request.post('/v1/tasks/search');
+    expect(response.status()).toBe(200);
   });
 
   test('Get a task via ID', async ({request}) => {

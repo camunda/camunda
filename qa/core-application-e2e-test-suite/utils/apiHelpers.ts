@@ -14,13 +14,13 @@ export async function authAPI(
   application: string,
 ): Promise<void> {
   let baseURL: string;
-  let authFilePath: string; // Define separate storage path for each app
+  let authFilePath: string;
   if (application === 'tasklist') {
     baseURL = process.env.CORE_APPLICATION_TASKLIST_URL as string;
-    authFilePath = 'utils/.auth_tasklist'; // Tasklist-specific auth file
+    authFilePath = 'utils/.auth_tasklist';
   } else if (application === 'operate') {
     baseURL = process.env.CORE_APPLICATION_OPERATE_URL as string;
-    authFilePath = 'utils/.auth_operate'; // Operate-specific auth file
+    authFilePath = 'utils/.auth_operate';
   } else {
     throw new Error(`Unsupported application: ${application}`);
   }
@@ -36,6 +36,5 @@ export async function authAPI(
       password: password,
     },
   });
-  // Save authentication session in the app-specific file
   await apiRequestContext.storageState({path: authFilePath});
 }

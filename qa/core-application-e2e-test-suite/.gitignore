@@ -6,3 +6,5 @@ node_modules/
 /playwright/.cache/
 .env
 .DS_Store
+/utils/.auth_operate
+/utils/.auth_tasklist
