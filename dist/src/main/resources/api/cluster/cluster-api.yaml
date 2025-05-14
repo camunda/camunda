@@ -196,41 +196,41 @@ components:
     AddBrokersResponse:
       description: Request to add a new broker is accepted.
       content:
-        application.json:
+        application/json:
           schema:
             $ref: "components.yaml#/schemas/PlannedOperationsResponse"
 
     ScaleBrokersResponse:
       description: Request to reconfigure brokers is accepted.
       content:
-        application.json:
+        application/json:
           schema:
             $ref: "components.yaml#/schemas/PlannedOperationsResponse"
 
     ClusterConfigPatchResponse:
       description: Request to reconfigure cluster is accepted.
       content:
-        application.json:
+        application/json:
           schema:
             $ref: "components.yaml#/schemas/PlannedOperationsResponse"
 
     ClusterConfigPurgeResponse:
       description: Request to purge cluster data is accepted.
       content:
-        application.json:
+        application/json:
           schema:
             $ref: "components.yaml#/schemas/PlannedOperationsResponse"
 
     RemoveBrokerResponse:
       description: Request to remove broker is accepted.
       content:
-        application.json:
+        application/json:
           schema:
             $ref: "components.yaml#/schemas/PlannedOperationsResponse"
 
     GetTopologyResponse:
       description: response body for getting current topology
       content:
-        application.json:
+        application/json:
           schema:
             $ref: "components.yaml#/schemas/GetTopologyResponse"
