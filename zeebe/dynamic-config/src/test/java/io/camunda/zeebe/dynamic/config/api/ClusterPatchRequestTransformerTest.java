@@ -12,9 +12,12 @@ import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.zeebe.dynamic.config.RoutingStateInitializer;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -104,7 +107,7 @@ final class ClusterPatchRequestTransformerTest {
 
     // then
     applyRequestAndVerifyResultingTopology(
-        2, getClusterMembers(3), patchRequest, currentTopology, expectedDistribution);
+        2, 2, getClusterMembers(3), patchRequest, currentTopology, expectedDistribution);
   }
 
   @Test
@@ -127,7 +130,7 @@ final class ClusterPatchRequestTransformerTest {
 
     // then
     applyRequestAndVerifyResultingTopology(
-        2, Set.of(id0), patchRequest, currentTopology, expectedDistribution);
+        2, 2, Set.of(id0), patchRequest, currentTopology, expectedDistribution);
   }
 
   @Test
@@ -151,18 +154,19 @@ final class ClusterPatchRequestTransformerTest {
 
     // then
     applyRequestAndVerifyResultingTopology(
-        2, Set.of(id0, id2), patchRequest, currentTopology, expectedDistribution);
+        2, 2, Set.of(id0, id2), patchRequest, currentTopology, expectedDistribution);
   }
 
   @Test
   void shouldAddAndRemoveBrokersAndAddPartitions() {
     // given
-    final var currentTopology =
+    var currentTopology =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()))
             .addMember(id1, MemberState.initializeAsActive(Map.of()))
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+    currentTopology = new RoutingStateInitializer(true, 2).modify(currentTopology).join();
 
     // when
     final int newPartitionCount = 4;
@@ -176,18 +180,24 @@ final class ClusterPatchRequestTransformerTest {
 
     // then
     applyRequestAndVerifyResultingTopology(
-        newPartitionCount, Set.of(id0, id2), patchRequest, currentTopology, expectedDistribution);
+        2,
+        newPartitionCount,
+        Set.of(id0, id2),
+        patchRequest,
+        currentTopology,
+        expectedDistribution);
   }
 
   @Test
   void shouldAddAndRemoveBrokersAndAddPartitionsAndChangeReplicationFactor() {
     // given
-    final var currentTopology =
+    var currentTopology =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()))
             .addMember(id1, MemberState.initializeAsActive(Map.of()))
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+    currentTopology = new RoutingStateInitializer(true, 2).modify(currentTopology).join();
 
     // when
     final int newPartitionCount = 4;
@@ -201,10 +211,16 @@ final class ClusterPatchRequestTransformerTest {
 
     // then
     applyRequestAndVerifyResultingTopology(
-        newPartitionCount, Set.of(id0, id2), patchRequest, currentTopology, expectedDistribution);
+        2,
+        newPartitionCount,
+        Set.of(id0, id2),
+        patchRequest,
+        currentTopology,
+        expectedDistribution);
   }
 
   private void applyRequestAndVerifyResultingTopology(
+      final int oldPartitionCount,
       final int partitionCount,
       final Set<MemberId> expectedMembers,
       final ClusterPatchRequest patchRequest,
@@ -236,6 +252,26 @@ final class ClusterPatchRequestTransformerTest {
         .describedAs("Expected cluster members")
         .containsExactlyInAnyOrderElementsOf(expectedMembers);
     Assertions.assertThat(newTopology.partitionCount()).isEqualTo(partitionCount);
+    if (oldPartitionCount == partitionCount) {
+      Assertions.assertThat(operations)
+          .allSatisfy(
+              op ->
+                  Assertions.assertThat(op)
+                      .isNotInstanceOfAny(
+                          ScaleUpOperation.class, PartitionBootstrapOperation.class));
+    } else if (partitionCount > oldPartitionCount) {
+      final var scaleUpInstances =
+          operations.stream()
+              .filter(ScaleUpOperation.class::isInstance)
+              .map(Object::getClass)
+              .collect(Collectors.toSet());
+      Assertions.assertThat(scaleUpInstances)
+          .isEqualTo(
+              Set.of(
+                  ScaleUpOperation.StartPartitionScaleUp.class,
+                  ScaleUpOperation.AwaitRedistributionCompletion.class,
+                  ScaleUpOperation.AwaitRelocationCompletion.class));
+    }
   }
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {

@@ -19,15 +19,21 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Add new partitions and reassign all partitions to the given members based on round-robin
@@ -78,7 +84,8 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
 
     final var oldDistribution =
-        ConfigurationUtil.getPartitionDistributionFrom(currentConfiguration, "temp");
+        ConfigurationUtil.getPartitionDistributionFrom(currentConfiguration, "temp").stream()
+            .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
 
     final int partitionCount = getPartitionCount(currentConfiguration);
     if (partitionCount < currentConfiguration.partitionCount()) {
@@ -104,27 +111,61 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
                   brokers.size(), replicationFactor)));
     }
 
-    final var sortedPartitions =
-        IntStream.rangeClosed(1, partitionCount)
-            .mapToObj(i -> PartitionId.from("temp", i))
-            .sorted()
-            .toList();
+    final var coordinatorNodeId =
+        currentConfiguration.members().entrySet().stream().min(Entry.comparingByKey()).stream()
+            .map(Entry::getKey)
+            .findFirst();
+    if (coordinatorNodeId.isEmpty()) {
+      return Either.left(new InvalidRequest("No members found in the cluster configuration"));
+    }
+
+    final List<PartitionId> oldPartitions = oldDistribution.keySet().stream().sorted().toList();
+
+    final List<PartitionId> newPartitions =
+        newPartitionCount
+            .map(
+                n ->
+                    IntStream.rangeClosed(currentConfiguration.partitionCount() + 1, n)
+                        .mapToObj(i -> PartitionId.from("temp", i))
+                        .sorted()
+                        .toList())
+            .orElse(List.of());
 
     final PartitionDistributor roundRobinDistributor = new RoundRobinPartitionDistributor();
 
-    final var newDistribution =
-        roundRobinDistributor.distributePartitions(brokers, sortedPartitions, replicationFactor);
+    final var allPartitions =
+        Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
-    // Can bootstrap partitions only in the sorted order
-    final var sortedPartitionMetadata =
-        newDistribution.stream().sorted(Comparator.comparingInt(p -> p.id().id())).toList();
-    for (final PartitionMetadata newMetadata : sortedPartitionMetadata) {
-      oldDistribution.stream()
-          .filter(old -> old.id().id().equals(newMetadata.id().id()))
-          .findFirst()
-          .ifPresentOrElse(
-              oldMetadata -> operations.addAll(movePartition(oldMetadata, newMetadata)),
-              () -> operations.addAll(addPartition(newMetadata)));
+    final var newDistribution =
+        roundRobinDistributor
+            .distributePartitions(brokers, allPartitions, replicationFactor)
+            .stream()
+            .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
+
+    for (final PartitionId partition : oldPartitions) {
+      final var newMetadata = newDistribution.get(partition);
+      final var oldMetadata = oldDistribution.get(partition);
+      operations.addAll(movePartition(oldMetadata, newMetadata));
+    }
+    final var hasNewPartitions = !newPartitions.isEmpty();
+
+    for (final PartitionId partition : newPartitions) {
+      final var newMetadata = newDistribution.get(partition);
+      operations.addAll(addPartition(newMetadata));
+    }
+
+    if (hasNewPartitions) {
+      operations.addAll(
+          List.of(
+              new StartPartitionScaleUp(coordinatorNodeId.get(), newPartitionCount.get()),
+              new AwaitRedistributionCompletion(
+                  coordinatorNodeId.get(),
+                  newPartitionCount.get(),
+                  new TreeSet<>(newPartitions.stream().map(PartitionId::id).toList())),
+              new AwaitRelocationCompletion(
+                  coordinatorNodeId.get(),
+                  newPartitionCount.get(),
+                  new TreeSet<>(newPartitions.stream().map(PartitionId::id).toList()))));
     }
 
     return Either.right(operations);
