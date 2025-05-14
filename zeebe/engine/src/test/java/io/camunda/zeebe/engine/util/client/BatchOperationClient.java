@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementR
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Random;
-import java.util.Set;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 
@@ -218,8 +217,8 @@ public final class BatchOperationClient {
       return this;
     }
 
-    public BatchOperationExecutionClient withItemKeys(final Set<Long> items) {
-      batchOperationExecutionRecord.setItemKeys(items);
+    public BatchOperationExecutionClient withItemKey(final Long itemKey) {
+      batchOperationExecutionRecord.setItemKey(itemKey);
       return this;
     }
 

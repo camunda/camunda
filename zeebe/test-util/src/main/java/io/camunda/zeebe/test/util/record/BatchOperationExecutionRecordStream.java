@@ -31,6 +31,6 @@ public class BatchOperationExecutionRecordStream
   }
 
   public BatchOperationExecutionRecordStream withItemKey(final long itemKey) {
-    return valueFilter(v -> v.getItemKeys().contains(itemKey));
+    return valueFilter(v -> v.getItemKey().equals(itemKey));
   }
 }

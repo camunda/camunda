@@ -20,9 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,22 +74,22 @@ public final class BatchOperationExecuteProcessor
       return;
     }
 
-    final var entityKeys = batchOperationState.getNextItemKeys(batchKey, BATCH_SIZE);
-    if (entityKeys.isEmpty()) {
+    final var itemKey = batchOperationState.getNextItemKey(batchKey);
+    if (itemKey.isEmpty()) {
       LOGGER.debug(
           "No items to process for BatchOperation {} on partition {}", batchKey, partitionId);
 
-      appendBatchOperationExecutionExecutedEvent(command.getValue(), Collections.emptySet());
+      appendBatchOperationExecutionExecutedEvent(command.getValue(), -1L);
       appendBatchOperationExecutionCompletedEvent(command.getValue());
       return;
     }
 
-    appendBatchOperationExecutionExecutingEvent(command.getValue(), Set.copyOf(entityKeys));
+    appendBatchOperationExecutionExecutingEvent(command.getValue(), itemKey.get());
 
     final var handler = handlers.get(batchOperation.getBatchOperationType());
-    entityKeys.forEach(entityKey -> handler.execute(entityKey, batchOperation));
+    handler.execute(itemKey.get(), batchOperation);
 
-    appendBatchOperationExecutionExecutedEvent(command.getValue(), Set.copyOf(entityKeys));
+    appendBatchOperationExecutionExecutedEvent(command.getValue(), itemKey.get());
 
     LOGGER.debug(
         "Scheduling next batch for BatchOperation {} on partition {}", batchKey, partitionId);
@@ -106,10 +104,10 @@ public final class BatchOperationExecuteProcessor
   }
 
   private void appendBatchOperationExecutionExecutingEvent(
-      final BatchOperationExecutionRecord executionRecord, final Set<Long> keys) {
+      final BatchOperationExecutionRecord executionRecord, final Long itemKey) {
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(executionRecord.getBatchOperationKey());
-    batchExecute.setItemKeys(keys);
+    batchExecute.setItemKey(itemKey);
     stateWriter.appendFollowUpEvent(
         executionRecord.getBatchOperationKey(),
         BatchOperationExecutionIntent.EXECUTING,
@@ -117,10 +115,10 @@ public final class BatchOperationExecuteProcessor
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
-      final BatchOperationExecutionRecord executionRecord, final Set<Long> keys) {
+      final BatchOperationExecutionRecord executionRecord, final Long itemKey) {
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(executionRecord.getBatchOperationKey());
-    batchExecute.setItemKeys(keys);
+    batchExecute.setItemKey(itemKey);
     stateWriter.appendFollowUpEvent(
         executionRecord.getBatchOperationKey(),
         BatchOperationExecutionIntent.EXECUTED,

@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.Batc
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -131,11 +130,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void removeItemKeys(final long batchOperationKey, final Set<Long> itemKeys) {
-    LOGGER.trace(
-        "Removing item keys {} from batch operation with key {}",
-        itemKeys.size(),
-        batchOperationKey);
+  public void removeItemKey(final long batchOperationKey, final Long itemKey) {
+    LOGGER.trace("Removing an item key from batch operation with key {}", batchOperationKey);
 
     // First, get the batch operation
     final var batch = get(batchOperationKey);
@@ -148,7 +144,9 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
     // Second, delete the keys from chunk
     final var chunk = getMinChunk(batch.get());
-    chunk.removeItemKeys(itemKeys);
+    // FIXME what if there are no more chunks?
+    // FIXME can we rely on remove first? assuming executions will always be in order?
+    chunk.removeItemKey(itemKey);
 
     // Finally, update the chunk and batch in the column family
     updateBatchAndChunkAfterRemoval(batch.get(), chunk);
@@ -174,12 +172,12 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   @Override
   public void resume(final long batchOperationKey) {
     LOGGER.trace("Resume batch operation with key {}", batchOperationKey);
-    this.batchKey.wrapLong(batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
 
     // Set status to STARTED
-    final var batch = batchOperationColumnFamily.get(this.batchKey);
+    final var batch = batchOperationColumnFamily.get(batchKey);
     batch.setStatus(BatchOperationStatus.STARTED);
-    batchOperationColumnFamily.update(this.batchKey, batch);
+    batchOperationColumnFamily.update(batchKey, batch);
   }
 
   @Override
@@ -212,23 +210,23 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public List<Long> getNextItemKeys(final long batchOperationKey, final int batchSize) {
+  public Optional<Long> getNextItemKey(final long batchOperationKey) {
     final var batch = get(batchOperationKey);
     if (batch.isEmpty()) {
       LOGGER.error(
-          "Batch operation with key {} not found, cannot get next item keys.", batchOperationKey);
-      return List.of();
+          "Batch operation with key {} not found, cannot get next item key.", batchOperationKey);
+      return Optional.empty();
     }
 
     if (batch.get().getMinChunkKey() == -1) {
-      return List.of();
+      return Optional.empty();
     }
 
     chunkKey.wrapLong(batch.get().getMinChunkKey());
     final var chunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
     final var chunkKeys = chunk.getItemKeys();
 
-    return chunkKeys.stream().limit(batchSize).toList();
+    return chunkKeys.stream().findFirst();
   }
 
   /** This deletes everything related to the batch operation. */
