@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.scaling.redistribution.RedistributionBehavior;
 import io.camunda.zeebe.engine.scaling.redistribution.RedistributionCompleteProcessor;
-import io.camunda.zeebe.engine.scaling.redistribution.RedistributionContinueProcessor;
 import io.camunda.zeebe.engine.scaling.redistribution.RedistributionStartProcessor;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -41,10 +40,6 @@ public final class ScalingProcessors {
         ValueType.REDISTRIBUTION,
         RedistributionIntent.START,
         new RedistributionStartProcessor(redistributionBehavior));
-    typedRecordProcessors.onCommand(
-        ValueType.REDISTRIBUTION,
-        RedistributionIntent.CONTINUE,
-        new RedistributionContinueProcessor(redistributionBehavior));
     typedRecordProcessors.onCommand(
         ValueType.REDISTRIBUTION,
         RedistributionIntent.COMPLETE,
