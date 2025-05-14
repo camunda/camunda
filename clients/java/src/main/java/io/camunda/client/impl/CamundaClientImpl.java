@@ -79,6 +79,7 @@ import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromMappingCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignUserFromRoleCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
@@ -188,6 +189,7 @@ import io.camunda.client.impl.command.UnassignRoleFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromMappingCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
+import io.camunda.client.impl.command.UnassignUserFromRoleCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
@@ -892,6 +894,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UnassignRoleFromClientCommandStep1 newUnassignRoleFromClientCommand() {
     return new UnassignRoleFromClientCommandImpl(httpClient);
+  }
+
+  @Override
+  public UnassignUserFromRoleCommandStep1 newUnassignUserFromRoleCommand(final String roleId) {
+    return new UnassignUserFromRoleCommandImpl(roleId, httpClient);
   }
 
   @Override

@@ -16,47 +16,47 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.AssignUserToRoleCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.response.AssignUserToRoleResponse;
+import io.camunda.client.api.command.UnassignUserFromRoleCommandStep1;
+import io.camunda.client.api.response.UnassignUserFromRoleResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class AssignUserToRoleCommandImpl implements AssignUserToRoleCommandStep1 {
+public class UnassignUserFromRoleCommandImpl implements UnassignUserFromRoleCommandStep1 {
 
   private final String roleId;
-  private String username;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
+  private String username;
 
-  public AssignUserToRoleCommandImpl(final HttpClient httpClient, final String roleId) {
-    this.httpClient = httpClient;
+  public UnassignUserFromRoleCommandImpl(final String roleId, final HttpClient httpClient) {
     this.roleId = roleId;
+    this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignUserToRoleCommandStep1 username(final String username) {
+  public UnassignUserFromRoleCommandStep1 username(final String username) {
     this.username = username;
     return this;
   }
 
   @Override
-  public FinalCommandStep<AssignUserToRoleResponse> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<UnassignUserFromRoleResponse> requestTimeout(
+      final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<AssignUserToRoleResponse> send() {
+  public CamundaFuture<UnassignUserFromRoleResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
-    final HttpCamundaFuture<AssignUserToRoleResponse> result = new HttpCamundaFuture<>();
-    final String endpoint = String.format("/roles/%s/users/%s", roleId, username);
-    httpClient.put(endpoint, null, httpRequestConfig.build(), result);
+    final HttpCamundaFuture<UnassignUserFromRoleResponse> result = new HttpCamundaFuture<>();
+    httpClient.delete("/roles/" + roleId + "/users/" + username, httpRequestConfig.build(), result);
     return result;
   }
 }
