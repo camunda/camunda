@@ -19,6 +19,7 @@ import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
+import io.camunda.client.api.command.AssignMappingToRoleCommandStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
@@ -1172,6 +1173,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateRoleCommandStep1 newUpdateRoleCommand(String roleId);
+
+  /**
+   * Command to assign a mapping to a role.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAssignMappingToRoleCommand("roleId")
+   *  .mappingId("mappingId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the assign mapping to role command
+   */
+  AssignMappingToRoleCommandStep1 newAssignMappingToRoleCommand(String roleId);
 
   /**
    * Command to delete a role by role ID.
