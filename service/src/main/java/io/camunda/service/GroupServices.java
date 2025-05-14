@@ -102,7 +102,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public List<GroupEntity> getGroupsByMemberId(final String memberId, final EntityType memberType) {
     return findAll(
         SearchQueryBuilders.groupSearchQuery()
-            .filter(f -> f.memberId(memberId).memberType(memberType))
+            .filter(f -> f.memberId(memberId).childMemberType(memberType))
             .build());
   }
 
@@ -110,7 +110,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
       final Set<String> memberIds, final EntityType memberType) {
     return findAll(
         SearchQueryBuilders.groupSearchQuery()
-            .filter(f -> f.memberIds(memberIds).memberType(memberType))
+            .filter(f -> f.memberIds(memberIds).childMemberType(memberType))
             .build());
   }
 

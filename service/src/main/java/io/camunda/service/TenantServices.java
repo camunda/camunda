@@ -99,7 +99,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setTenantId(request.tenantId())
             .setEntity(request.entityType(), request.entityId()));
   }
-  
+
   public List<TenantEntity> getTenantsByMemberIds(
       final Set<String> memberIds, final EntityType memberType) {
     return findAll(

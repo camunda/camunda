@@ -19,8 +19,10 @@ import java.util.List;
 public class GroupAuthorizationQueryTransformer implements AuthorizationQueryTransformer {
 
   @Override
-  public SearchQuery toSearchQuery(final AuthorizationResourceType resourceType,
-      final PermissionType permissionType, final List<String> resourceIds) {
+  public SearchQuery toSearchQuery(
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final List<String> resourceIds) {
     if (resourceType == GROUP && permissionType == READ) {
       return stringTerms("groupId", resourceIds);
     }

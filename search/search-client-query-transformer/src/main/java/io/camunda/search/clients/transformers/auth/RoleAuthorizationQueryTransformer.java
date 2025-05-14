@@ -17,10 +17,11 @@ import java.util.List;
 public class RoleAuthorizationQueryTransformer implements AuthorizationQueryTransformer {
 
   @Override
-  public SearchQuery toSearchQuery(final AuthorizationResourceType resourceType,
-      final PermissionType permissionType, final List<String> resourceIds) {
-    if (resourceType == AuthorizationResourceType.ROLE
-        && permissionType == PermissionType.READ) {
+  public SearchQuery toSearchQuery(
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final List<String> resourceIds) {
+    if (resourceType == AuthorizationResourceType.ROLE && permissionType == PermissionType.READ) {
       return stringTerms("groupId", resourceIds);
     }
     throw new IllegalArgumentException(
