@@ -266,18 +266,7 @@ class RoleAuthorizationIT {
     final String groupId = Strings.newRandomValidIdentityId();
 
     createRole(adminClient, roleId, "roleName");
-    waitForRolesToBeCreated(
-        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, roleId);
-
     adminClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
-    Awaitility.await("Group is created and exported")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () -> {
-              final var group = adminClient.newGroupGetRequest(groupId).send().join();
-              assertThat(group).isNotNull();
-            });
-
     adminClient.newAssignGroupToRoleCommand(roleId).groupId(groupId).send().join();
 
     Awaitility.await("Group is assigned to the role")
