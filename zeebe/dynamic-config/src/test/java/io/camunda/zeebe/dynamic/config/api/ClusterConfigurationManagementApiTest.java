@@ -14,7 +14,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier.ClusterClusterConfigurationAwareCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
@@ -34,6 +33,9 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -50,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
@@ -92,7 +95,7 @@ final class ClusterConfigurationManagementApiTest {
     clientApi =
         new ClusterConfigurationManagementRequestSender(
             gateway.getCommunicationService(),
-            new ClusterClusterConfigurationAwareCoordinatorSupplier(
+            ClusterConfigurationCoordinatorSupplier.of(
                 () -> recordingCoordinator.getClusterConfiguration().join()),
             new ProtoBufSerializer());
 
@@ -368,7 +371,10 @@ final class ClusterConfigurationManagementApiTest {
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
             new PartitionLeaveOperation(id0, 2, 1),
-            new PartitionBootstrapOperation(id0, 3, 1));
+            new PartitionBootstrapOperation(id0, 3, 1),
+            new StartPartitionScaleUp(id0, 3),
+            new AwaitRedistributionCompletion(id0, 3, new TreeSet<>(List.of(3))),
+            new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))));
   }
 
   @Test
@@ -392,7 +398,10 @@ final class ClusterConfigurationManagementApiTest {
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
             new PartitionLeaveOperation(id0, 2, 1),
-            new PartitionBootstrapOperation(id0, 3, 1));
+            new PartitionBootstrapOperation(id0, 3, 1),
+            new StartPartitionScaleUp(id0, 3),
+            new AwaitRedistributionCompletion(id0, 3, new TreeSet<>(List.of(3))),
+            new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))));
   }
 
   @Test

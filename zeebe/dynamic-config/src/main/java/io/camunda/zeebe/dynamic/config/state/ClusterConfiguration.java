@@ -24,14 +24,12 @@ import java.util.stream.Stream;
  * Represents the cluster configuration which describes the current active, joining or leaving
  * brokers and the partitions that each broker replicates.
  *
- * <p>version - represents the current version of the configuration. It is incremented only by the
- * coordinator when a new configuration change is triggered.
- *
- * <p>members - represents the state of each member
- *
- * <p>changes - keeps track of the ongoing configuration changes
- *
- * <p>This class is immutable. Each mutable methods returns a new instance with the updated state.
+ * @param version - represents the current version of the configuration. It is incremented only by
+ *     the coordinator when a new configuration change is triggered.
+ * @param members - represents the state of each member
+ * @param pendingChanges- keeps track of the ongoing configuration changes
+ *     <p>This class is immutable. Each mutable methods returns a new instance with the updated
+ *     state.
  */
 public record ClusterConfiguration(
     long version,

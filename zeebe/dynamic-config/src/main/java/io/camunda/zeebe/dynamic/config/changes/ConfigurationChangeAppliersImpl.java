@@ -108,9 +108,8 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
             case final AwaitRedistributionCompletion awaitRedistributionCompletion ->
                 new AwaitRedistributionCompletionApplier(
                     partitionScalingChangeExecutor, awaitRedistributionCompletion);
-            case final AwaitRelocationCompletion ignored ->
-                // TODO IMPLEMENT
-                throw new UnsupportedOperationException("Not implemented yet");
+            case final AwaitRelocationCompletion relocation ->
+                new AwaitRelocationCompletionApplier(partitionScalingChangeExecutor, relocation);
           };
     };
   }

@@ -20,39 +20,36 @@ public interface ClusterConfigurationCoordinatorSupplier {
 
   MemberId getNextCoordinatorExcluding(Set<MemberId> memberIds);
 
-  class ClusterClusterConfigurationAwareCoordinatorSupplier
-      implements ClusterConfigurationCoordinatorSupplier {
-    private final Supplier<ClusterConfiguration> clusterTopologySupplier;
+  static ClusterConfigurationCoordinatorSupplier of(
+      final Supplier<ClusterConfiguration> clusterTopologySupplier) {
 
-    public ClusterClusterConfigurationAwareCoordinatorSupplier(
-        final Supplier<ClusterConfiguration> clusterTopologySupplier) {
-      this.clusterTopologySupplier = clusterTopologySupplier;
-    }
+    return new ClusterConfigurationCoordinatorSupplier() {
 
-    private MemberId lowestMemberId(final Collection<MemberId> members) {
-      if (members.isEmpty()) {
-        // if cluster configuration is not initialized, fall back to member 0
-        return MemberId.from("0");
+      private MemberId lowestMemberId(final Collection<MemberId> members) {
+        if (members.isEmpty()) {
+          // if cluster configuration is not initialized, fall back to member 0
+          return MemberId.from("0");
+        }
+        return members.stream().min(MemberId::compareTo).orElseThrow();
       }
-      return members.stream().min(MemberId::compareTo).orElseThrow();
-    }
 
-    @Override
-    public MemberId getDefaultCoordinator() {
-      final var clusterTopology = clusterTopologySupplier.get();
-      return lowestMemberId(clusterTopology.members().keySet());
-    }
+      @Override
+      public MemberId getDefaultCoordinator() {
+        final var clusterTopology = clusterTopologySupplier.get();
+        return lowestMemberId(clusterTopology.members().keySet());
+      }
 
-    @Override
-    public MemberId getNextCoordinator(final Collection<MemberId> members) {
-      return lowestMemberId(members);
-    }
+      @Override
+      public MemberId getNextCoordinator(final Collection<MemberId> members) {
+        return lowestMemberId(members);
+      }
 
-    @Override
-    public MemberId getNextCoordinatorExcluding(final Set<MemberId> memberIds) {
-      final var currentMembers = clusterTopologySupplier.get().members().keySet();
-      final var newMembers = currentMembers.stream().filter(m -> !memberIds.contains(m)).toList();
-      return lowestMemberId(newMembers);
-    }
+      @Override
+      public MemberId getNextCoordinatorExcluding(final Set<MemberId> memberIds) {
+        final var currentMembers = clusterTopologySupplier.get().members().keySet();
+        final var newMembers = currentMembers.stream().filter(m -> !memberIds.contains(m)).toList();
+        return lowestMemberId(newMembers);
+      }
+    };
   }
 }
