@@ -10,12 +10,9 @@ package io.camunda.tasklist.webapp.security.consolidatedAuth;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.CONSOLIDATED_AUTH_PROFILE;
 
 import io.camunda.authentication.entity.CamundaPrincipal;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.se.Role;
-import io.camunda.tasklist.webapp.security.se.RolePermissionService;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
@@ -25,12 +22,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile(CONSOLIDATED_AUTH_PROFILE)
 public class ConsolidatedAuthUserReader implements UserReader {
-
-  private final RolePermissionService rolePermissionService;
-
-  public ConsolidatedAuthUserReader(final RolePermissionService rolePermissionService) {
-    this.rolePermissionService = rolePermissionService;
-  }
 
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
@@ -42,7 +33,13 @@ public class ConsolidatedAuthUserReader implements UserReader {
           new UserDTO()
               .setUserId(camundaPrincipal.getUsername())
               .setDisplayName(camundaPrincipal.getDisplayName())
-              .setPermissions(getPermissions(camundaPrincipal)));
+              // Temporarily set these permissions because the roles that we retrieve on the
+              // CamundaPrinciple
+              // are not able to be mapped to the Tasklist roles of "OWNER", "EDITOR" and "READER".
+              // In addition to this we do not retrieve the direct permissions on the
+              // CamundaPrincipal
+              // so we cannot add in mapping currently.
+              .setPermissions(List.of(Permission.READ, Permission.WRITE)));
     }
     return Optional.empty();
   }
@@ -61,17 +58,5 @@ public class ConsolidatedAuthUserReader implements UserReader {
   public Optional<String> getUserToken(final Authentication authentication) {
     throw new UnsupportedOperationException(
         "Get token is not supported for consolidated-auth authentication");
-  }
-
-  private List<Permission> getPermissions(final CamundaPrincipal principal) {
-    if (principal.getAuthenticationContext() == null) {
-      return List.of();
-    }
-
-    return rolePermissionService.getPermissions(
-        principal.getAuthenticationContext().roles().stream()
-            .map(RoleEntity::name)
-            .map(Role::fromString)
-            .toList());
   }
 }
